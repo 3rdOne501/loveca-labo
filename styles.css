@@ -2479,16 +2479,21 @@ body.play-mode .hand-zone.hand-zone--overlap .card-item + .card-item {
   margin-left: calc(var(--loveca-play-w) * var(--hand-overlap-frac));
 }
 
-/* 手札のライブカードは行をまたいで縦に並べる（1枚あたり 1 行） */
-body.play-mode #zone-hand.card-strip .card-item[data-type="ライブ"] {
-  flex: 0 0 100%;
+/* 手札のライブ: メンバーと同じ枠幅・画像の表示高（ライブ画は横長でも slot に収める） */
+body.play-mode #zone-hand .card-item[data-type="ライブ"] {
   width: var(--loveca-play-w);
-  max-width: 100%;
   box-sizing: border-box;
 }
-body.play-mode #zone-hand.hand-zone--overlap .card-item[data-type="ライブ"] + .card-item[data-type="ライブ"] {
-  margin-left: 0;
-  margin-top: 0.35rem;
+body.play-mode #zone-hand .card-item[data-type="ライブ"] .card-img:not(.rotated) {
+  width: 100%;
+  height: var(--card-h);
+  object-fit: contain;
+  object-position: center top;
+}
+/* 横向き（ウェイト）にしたときはメンバーと同様、縦横は画像に任せる */
+body.play-mode #zone-hand .card-item[data-type="ライブ"] .card-img.rotated {
+  height: auto;
+  object-fit: contain;
 }
 
 body.play-mode #zone-waiting.waiting-zone-strip.waiting-zone--t1 .card-item + .card-item {

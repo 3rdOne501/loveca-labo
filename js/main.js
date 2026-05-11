@@ -3,11 +3,85 @@ import {
   loadCardDatabase,
   setCardsJsonUrlOverride,
 } from "./cards.js";
+import { STORAGE_PLAY_RESUME } from "./config.js";
+import { normalizeDeckMapCounts } from "./deckLibrary.js";
 import { initDeckBuilder, loadDeckBundleFromStorage } from "./deckbuilder.js";
 import { mountSimulator, teardownDeckPileLayoutWatchers } from "./simulator.js";
 import { showToast } from "./ui.js";
 
 let appStarted = false;
+
+function clearPlayResumeStorage() {
+  try {
+    sessionStorage.removeItem(STORAGE_PLAY_RESUME);
+  } catch (_) {
+    /* noop */
+  }
+}
+
+/**
+ * 直前のプレイ盤面がセッションにあればプレイ画面へ復帰する。
+ * @returns {boolean} 復元を開始したか
+ */
+function tryResumePlaySession(viewDeck, viewGame) {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_PLAY_RESUME);
+    if (!raw) return false;
+    const pr = JSON.parse(raw);
+    if (
+      !pr ||
+      pr.v !== 1 ||
+      !pr.board ||
+      typeof pr.board !== "object" ||
+      !pr.board.deckMeta ||
+      typeof pr.board.deckMeta !== "object" ||
+      !pr.board.deckMeta.activePlayDeckMap ||
+      typeof pr.board.deckMeta.activePlayDeckMap !== "object"
+    ) {
+      return false;
+    }
+    const deckMap = normalizeDeckMapCounts(pr.board.deckMeta.activePlayDeckMap);
+    const dm = pr.board.deckMeta;
+    viewDeck.hidden = true;
+    viewGame.hidden = false;
+    document.body.classList.add("play-mode");
+    requestAnimationFrame(function () {
+      setTimeout(function () {
+        try {
+          mountSimulator(viewGame, deckMap, {
+            onBackToDeck() {
+              teardownDeckPileLayoutWatchers();
+              clearPlayResumeStorage();
+              viewGame.hidden = true;
+              viewDeck.hidden = false;
+              document.body.classList.remove("play-mode");
+              document.body.classList.remove("live-turn-pick-mode");
+              document.body.classList.remove("zone-hints-visible");
+            },
+            deckRoleLabels: {
+              keyCardNos: Array.isArray(dm.keyCardNos) ? dm.keyCardNos : [],
+              keyCard2Nos: Array.isArray(dm.keyCard2Nos) ? dm.keyCard2Nos : [],
+              keyCard3Nos: Array.isArray(dm.keyCard3Nos) ? dm.keyCard3Nos : [],
+              middleCardNos: Array.isArray(dm.middleCardNos) ? dm.middleCardNos : [],
+            },
+            resumeFromStorage: true,
+          });
+        } catch (err) {
+          console.error(err);
+          teardownDeckPileLayoutWatchers();
+          clearPlayResumeStorage();
+          document.body.classList.remove("play-mode");
+          viewGame.hidden = true;
+          viewDeck.hidden = false;
+          showToast("前回の盤面の復元に失敗しました。デッキ画面からやり直してください。");
+        }
+      }, 0);
+    });
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
 
 function hideBootToolbar() {
   const b = document.getElementById("boot-toolbar");
@@ -31,6 +105,7 @@ function startApp(viewDeck, viewGame, statusEl) {
     initDeckBuilder(viewDeck, {
       onStartGame: (deckMap) => {
         const bundle = loadDeckBundleFromStorage();
+        clearPlayResumeStorage();
         viewDeck.hidden = true;
         viewGame.hidden = false;
         document.body.classList.add("play-mode");
@@ -40,6 +115,7 @@ function startApp(viewDeck, viewGame, statusEl) {
               mountSimulator(viewGame, deckMap, {
                 onBackToDeck() {
                   teardownDeckPileLayoutWatchers();
+                  clearPlayResumeStorage();
                   viewGame.hidden = true;
                   viewDeck.hidden = false;
                   document.body.classList.remove("play-mode");
@@ -67,6 +143,7 @@ function startApp(viewDeck, viewGame, statusEl) {
         });
       },
     });
+    tryResumePlaySession(viewDeck, viewGame);
   } else {
     location.reload();
   }

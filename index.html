@@ -647,7 +647,7 @@ python3 -m http.server 8080</pre>
             </div>
           </div>
           <p class="hint live-area-hint zone-inline-help">
-            <strong>ライブターン中</strong>の配置は、3枠とも<strong>横向き・表面非表示（裏）</strong>です。<strong>ライブ開始</strong>後は残るライブカードが<strong>縦向きで表面表示</strong>になります（手札のライブカードもメンバーと同じく縦）。<strong>メンバーはライブターン以外はこの3枠に置けません</strong>（通常はライブカードのみ）。通常時に枠へ置いたカードも<strong>メンバーと同サイズの縦</strong>です。ドラッグでメンバーが枠<strong>へ入った</strong>ときだけ山札から<strong>手札に1ドロー</strong>します（自動）。この3枠には<strong>W／A（ウェイト／アクティブ）は表示されません。</strong><strong>ライブ開始</strong>でライブカード以外は<strong>控え室</strong>へ送ります。
+            <strong>ライブターン中</strong>の配置は、3枠とも<strong>横向き・表面非表示（裏）</strong>です。<strong>ライブ開始</strong>後は残るライブカードが<strong>縦向きで表面表示</strong>になります（手札のライブも<strong>メンバーと同じ枠・画像クリックで向き切替</strong>）。<strong>メンバーはライブターン以外はこの3枠に置けません</strong>（通常はライブカードのみ）。通常時に枠へ置いたカードも<strong>メンバーと同サイズの縦</strong>です。ドラッグでメンバーが枠<strong>へ入った</strong>ときだけ山札から<strong>手札に1ドロー</strong>します（自動）。この3枠には<strong>W／A（ウェイト／アクティブ）は表示されません。</strong><strong>ライブ開始</strong>でライブカード以外は<strong>控え室</strong>へ送ります。
           </p>
 
           <div id="live-turn-stats-wrap" class="live-turn-stats-wrap" hidden>
@@ -664,13 +664,13 @@ python3 -m http.server 8080</pre>
                     <span id="live-need-heart-detail" class="live-stats-detail">—</span>
                     <span class="live-need-suffix"> ／ 計 <strong id="live-need-heart-total">0</strong></span>
                   </dd>
-                  <dt title="ステージ上メンバーの色ごとの所持H − ライブ need_heart（残り／不足）">要求色</dt>
+                  <dt title="（場メンバー所持H＋解決BH）とライブ need_heart の差（残り／不足）">要求色</dt>
                   <dd id="live-required-colors" class="muted live-stats-colors">—</dd>
-                  <dt title="盤面ブレード合計（ステージ・ライブ枠）＋盤面所持H計 − need_heart 合計">非BH許容数</dt>
+                  <dt title="ブレード盤面計＋場メンバー所持H計＋解決BH計− need 合計（公式の非BH許容とは異なる場合あり）">目安（B+H+解決BH−need）</dt>
                   <dd id="live-nonbh-tolerance" class="muted live-stats-detail">—</dd>
                   <dt title="ステージ上メンバーの blade（ブレード）合計のみ">ステB合計</dt>
                   <dd><strong id="live-total-blade">0</strong></dd>
-                  <dt>所持総H</dt>
+                  <dt title="ステージ＋ライブ枠のメンバー所持H合計（play ボーナス ALL の分を含む表示）">場メンバーH計</dt>
                   <dd><strong id="live-board-h-total">0</strong></dd>
                   <dt title="ステージ上メンバーの所持ハート内訳">ステH色</dt>
                   <dd id="live-stage-h-colors" class="muted live-stats-colors">—</dd>
@@ -931,7 +931,7 @@ python3 -m http.server 8080</pre>
           「<strong>ターン開始</strong>」を押すまでマリガンできます。手札カード左上の<strong>チェック</strong>で複数選択、「<strong>マリガン実行</strong>」で選んだ枚数を山札に戻してシャッフルし、同じ枚数をドローします。<strong>1枚も選ばずに実行可能</strong>（そのときはシャッフル・ドローはしません）。リセット後も「ターン開始」までこのモードになります。
         </p>
         <p>
-          手札欄の<strong>ライブ進行ボタン</strong>では、まず「<strong>ライブターン開始</strong>」で<strong>成功したライブ</strong>のカードがすべて<strong>控え室</strong>へ送られ、手札<strong>右上のチェック</strong>で複数選び、同じボタンが「<strong>ライブエリアへ</strong>」に変わってからそれを押すと左→中央→右の<strong>空き枠に順に配置</strong>できます。配置した<strong>メンバー／ライブ</strong>1枚につき<strong>山札から手札へ1ドロー</strong>します。<strong>ライブターン中のみ、3枠は横向き・裏見えです。</strong>「<strong>ライブ開始</strong>」で<strong>ライブカード以外</strong>を<strong>控え室</strong>へ送ってモード終了すると、ライブカードが<strong>表面の縦向き</strong>になり、このタイミングで中央に<strong>ライブの計算</strong>パネル（概要と必要ハート・ステB・所持総H・ステH色・解決 BH・判定）が出ます。<strong>解決ゾーンの所持H・BH も成否判定に含まれます</strong>（所持Hの色内訳はパネルには出しません）（ターン開始前はマリガン中のみのため、これらは無効になります）。
+          手札欄の<strong>ライブ進行ボタン</strong>では、まず「<strong>ライブターン開始</strong>」で<strong>成功したライブ</strong>のカードがすべて<strong>控え室</strong>へ送られ、手札<strong>右上のチェック</strong>で複数選び、同じボタンが「<strong>ライブエリアへ</strong>」に変わってからそれを押すと左→中央→右の<strong>空き枠に順に配置</strong>できます。配置した<strong>メンバー／ライブ</strong>1枚につき<strong>山札から手札へ1ドロー</strong>します。<strong>ライブターン中のみ、3枠は横向き・裏見えです。</strong>「<strong>ライブ開始</strong>」で<strong>ライブカード以外</strong>を<strong>控え室</strong>へ送ってモード終了すると、ライブカードが<strong>表面の縦向き</strong>になり、このタイミングで中央に<strong>ライブの計算</strong>パネル（概要と必要ハート・ステB・場メンバーH計・要求色・ステH色・解決 BH・判定）が出ます。<strong>ライブ成功判定</strong>は、ライブの need_heart に対し<strong>場にいるメンバーの所持ハート（ステージ＋ライブ枠）</strong>と<strong>ブレード枚数で捲れた解決カードの BH（blade_heart）</strong>を足し合わせた供給で照合します（ターン開始前はマリガン中のみのため、これらは無効になります）。
         </p>
         <p>
           PC でもタブレットでも、ドラッグでカードを移動します。ドラッグ開始時点から取り消し対象になります。<strong>U</strong> で
@@ -967,7 +967,7 @@ python3 -m http.server 8080</pre>
       <h2 id="dlg-member-hb-title">所持H／ブレードを追加</h2>
       <p id="dlg-member-hb-lead" class="muted dlg-member-hb-lead"></p>
       <p class="hint">
-        メンバーDBの<code>base_heart</code>・<code>blade</code>に<strong>加算</strong>して集計します（Undo 可能）。「ALL」追加分はライブ<code>need_heart</code>の<strong>任意</strong>点数の支払いにのみ使われます。
+        メンバーDBの<code>base_heart</code>・<code>blade</code>に<strong>加算</strong>して集計します（Undo 可能）。<strong>場にいるメンバー</strong>への所持H加算は<strong>ライブ成功判定の「場メンバー所持H」に反映</strong>されます。ブレード加算は捲り枚数の目安などに影響します。
         右の数値は<strong>クリックで +1</strong>（<kbd>Shift</kbd>+クリックで −1、上限 999）。
       </p>
       <div class="dlg-member-hb-fields" role="group" aria-label="追加する所持ハートとブレード">

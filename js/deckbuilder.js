@@ -355,6 +355,8 @@ export function initDeckBuilder(root, { onStartGame }) {
   let deckGridFlushRaf = 0;
   let cardGridVirtualRaf = 0;
   let cardGridVirtualMeasureGuard = 0;
+  let cardGridVirtualScrollIdleTimer = 0;
+  let cardGridVirtualIsScrolling = false;
   /** @type {{ active: boolean, list: typeof cards, cols: number, rowH: number, w0: number, w1: number, lastPanel: string, lastCount: number, lastOrderedSig: string }} */
   let cardGridVirtual = {
     active: false,
@@ -587,11 +589,12 @@ export function initDeckBuilder(root, { onStartGame }) {
     for (let i = 0; i < changedNos.length; i++) {
       const no = String(changedNos[i] || "");
       if (!no) continue;
+      const qty = deckMap[no] || 0;
+      if (!(qty > 0)) continue;
       const btn = ul.querySelector('button[data-act="plus"][data-no="' + esc(no) + '"]');
       if (!btn || !btn.parentElement) return false;
       const span = btn.parentElement.querySelector("span.deck-qty");
       if (!span) return false;
-      const qty = deckMap[no] || 0;
       span.textContent = "× " + qty;
     }
     return true;
@@ -786,10 +789,12 @@ export function initDeckBuilder(root, { onStartGame }) {
     return await openTestCardVariantDialog(card);
   }
 
-  function builderCatalogThumbImgHtml(url, className) {
+  function builderCatalogThumbImgHtml(url, className, imgOpts) {
     if (!url) return "";
+    imgOpts = imgOpts || {};
     const low = catalogListThumbnailUrl(url);
     const cls = className || "deck-builder-card-thumb";
+    const eager = imgOpts.eager === true;
     return (
       '<img class="' +
       escapeAttr(cls) +
@@ -797,7 +802,11 @@ export function initDeckBuilder(root, { onStartGame }) {
       escapeAttr(low) +
       '" data-full-src="' +
       escapeAttr(url) +
-      '" alt="" loading="lazy" fetchpriority="low" decoding="async" onerror="this.onerror=null;this.src=this.dataset.fullSrc||this.src" />'
+      '" alt="" loading="' +
+      (eager ? "eager" : "lazy") +
+      '" fetchpriority="' +
+      (eager ? "auto" : "low") +
+      '" decoding="async" onerror="this.onerror=null;this.src=this.dataset.fullSrc||this.src" />'
     );
   }
 
@@ -1798,7 +1807,9 @@ export function initDeckBuilder(root, { onStartGame }) {
     div.innerHTML =
       rolesHtml +
       qtyBadge +
-      `<span class="thumb-type">${escapeHtml(tlab)}</span>${builderCatalogThumbImgHtml(card.img, "deck-builder-card-thumb")}<span class="thumb-cap">${escapeHtml(card.name)}${thumbExtraHtml(card)}</span>`;
+      `<span class="thumb-type">${escapeHtml(tlab)}</span>${builderCatalogThumbImgHtml(card.img, "deck-builder-card-thumb", {
+        eager: cardGridVirtual.active,
+      })}<span class="thumb-cap">${escapeHtml(card.name)}${thumbExtraHtml(card)}</span>`;
     div.addEventListener("click", function (ev) {
       if (
         ev.target &&
@@ -1953,7 +1964,7 @@ export function initDeckBuilder(root, { onStartGame }) {
     for (let i = startIdx; i < endIdx; i++) grid.appendChild(createCardGridItemWrap(list[i]));
 
     requestAnimationFrame(function () {
-      if (!cardGridVirtual.active) return;
+      if (!cardGridVirtual.active || cardGridVirtualIsScrolling) return;
       const nh = measureVirtualRowHeightFromGrid(grid, cols);
       if (nh > 0 && Math.abs(nh - cardGridVirtual.rowH) > 8 && cardGridVirtualMeasureGuard < 5) {
         cardGridVirtualMeasureGuard++;
@@ -2626,6 +2637,14 @@ export function initDeckBuilder(root, { onStartGame }) {
       "scroll",
       function () {
         if (!cardGridVirtual.active) return;
+        cardGridVirtualIsScrolling = true;
+        if (cardGridVirtualScrollIdleTimer) clearTimeout(cardGridVirtualScrollIdleTimer);
+        cardGridVirtualScrollIdleTimer = setTimeout(function () {
+          cardGridVirtualScrollIdleTimer = 0;
+          cardGridVirtualIsScrolling = false;
+          cardGridVirtual.w0 = -1;
+          syncVirtualCardGridWindow(true);
+        }, 140);
         if (cardGridVirtualRaf) cancelAnimationFrame(cardGridVirtualRaf);
         cardGridVirtualRaf = requestAnimationFrame(function () {
           cardGridVirtualRaf = 0;

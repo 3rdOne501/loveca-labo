@@ -19,6 +19,7 @@ import {
   STORAGE_FIRST_PLAYER,
   STORAGE_SNAPSHOT_PREFIX,
   STORAGE_PLAY_ENERGY_CARD_NO,
+  STORAGE_PLAY_RESUME,
   T_ENERGY,
   T_LIVE,
   T_MEMBER,
@@ -207,7 +208,7 @@ function trimRedo() {
   while (redoHistory.length > HISTORY_MAX_STEPS) redoHistory.shift();
 }
 
-export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) {
+export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, resumeFromStorage } = {}) {
   if (typeof Sortable === "undefined") {
     throw new Error(
       "Sortable が未定義です。index.html の CDN（sortablejs）が読み込めるか（オフライン・ブロッカー）を確認してください。",
@@ -868,6 +869,14 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
 
   teardownDeckPileLayoutWatchers();
 
+  if (!resumeFromStorage) {
+    try {
+      sessionStorage.removeItem(STORAGE_PLAY_RESUME);
+    } catch (_) {
+      /* noop */
+    }
+  }
+
   root.querySelectorAll("button").forEach(function (b) {
     const n = b.cloneNode(true);
     b.parentNode.replaceChild(n, b);
@@ -894,7 +903,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
   }
 
   const state = {
-    deck: buildMainDeckInstances(activePlayDeckMap),
+    deck: [],
     deckPileOpen: false,
     /** 山札一覧での表面非表示（ソロ確認用／Undo可） */
     deckPileFacesDown: false,
@@ -920,7 +929,32 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
     liveStatsAfterBegin: false,
     liveTurnSelectedIds: [],
   };
-  dealOpeningHand(state.deck, state.hand, OPENING_HAND_SIZE);
+  var resumedFromStorage = false;
+  if (resumeFromStorage) {
+    try {
+      var rawPlayResume = sessionStorage.getItem(STORAGE_PLAY_RESUME);
+      if (rawPlayResume) {
+        var playResumeObj = JSON.parse(rawPlayResume);
+        if (playResumeObj && playResumeObj.v === 1 && playResumeObj.board && typeof playResumeObj.board === "object") {
+          applyBoard(playResumeObj.board);
+          if (typeof playResumeObj.uid === "number" && playResumeObj.uid > 0) {
+            uid = Math.floor(playResumeObj.uid);
+          }
+          if (typeof playResumeObj.firstPlayer === "string" && playResumeObj.firstPlayer.trim()) {
+            var fpEarly = root.querySelector("#select-first-player") || document.getElementById("select-first-player");
+            if (fpEarly) fpEarly.value = playResumeObj.firstPlayer.trim();
+          }
+          resumedFromStorage = true;
+        }
+      }
+    } catch (resumeErr) {
+      console.warn(resumeErr);
+    }
+  }
+  if (!resumedFromStorage) {
+    state.deck = buildMainDeckInstances(activePlayDeckMap);
+    dealOpeningHand(state.deck, state.hand, OPENING_HAND_SIZE);
+  }
 
   if (
     state.deck.length === 0 &&
@@ -1208,6 +1242,15 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
     return { bhSlotsAcc: acc, wildcardBumpFromBh: wildFromBh };
   }
 
+  /** 解決ゾーンの BH 重み合計（枚数×DB） */
+  function sumResolutionBladeHeartWeighted() {
+    var t = 0;
+    state.resolutionArea.forEach(function (inst) {
+      t += sumBladeHeartWeightedValues(mergedCatalogCard(inst));
+    });
+    return t;
+  }
+
   /** 解決ゾーン：BH サマリー（パネル表示・ログ参考） */
   function accumulateResolutionBladeHeartStats() {
     var totalBh = 0;
@@ -1277,27 +1320,34 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
     return String(ev.reason || "要件不足");
   }
 
-  /** ライブの need_heart に対し、ステージ・ライブ・解決（所持 base_heart 等）および解決の blade_heart を供給に加えて照合 */
+  /**
+   * ライブの need_heart 充足判定。
+   * 供給＝<strong>場（ステージ＋ライブ枠）にいるメンバーの所持ハート（base_heart）</strong>
+   * ＋<strong>解決に捲れているカードの blade_heart（BH）</strong>。
+   * メンバー play の ALL heart（任意プール加算）は場のメンバーのみ。解決の所持Hは判定に含めない。
+   */
   function evaluateLiveMechanicalFulfillmentBundle() {
     var needAccum = aggregateNeedHeartSlotsFromLiveArea();
     var needSum = sumSlotAccumValues(needAccum);
-    var boardHAcc = boardHeldHeartSlotAccum();
+    var fieldMemberHeartAcc = boardHeldHeartSlotAccum();
+    var bhFromRes = resolutionBladeHeartContributionForFulfillment();
+    var mergedSupply = mergeNumericSlotAccums(fieldMemberHeartAcc, bhFromRes.bhSlotsAcc);
+    /** 解決に見えているカードの BH ALL（slot7）— 有色不足にも充当、余りは任意プール */
+    var wildcardBhAllFlex = bhFromRes.wildcardBumpFromBh;
+    /** 場のメンバーの play ボーナス等の ALL heart（heart0 のみ） */
+    var wildcardHeartBump = wildcardBoardBumpFromMembers();
+
+    var boardHAcc = fieldMemberHeartAcc;
     var resHAcc = resolutionHeldHeartSlotAccum();
     var stageHAcc = stageHeldHeartSlotAccum();
     var liveHAcc = liveHeldHeartSlotAccumOnly();
     var boardWild = wildcardBoardBumpFromMembers();
     var resWild = wildcardResolutionBumpFromMembers();
-    var bhFromRes = resolutionBladeHeartContributionForFulfillment();
-    var mergedSupply = mergeNumericSlotAccums(boardHAcc, resHAcc);
-    mergedSupply = mergeNumericSlotAccums(mergedSupply, bhFromRes.bhSlotsAcc);
-    /** メンバー ALL heart（heart0 のみ） */
-    var wildcardHeartBump = boardWild + resWild;
-    /** 解決ゾーンの BH ALL — 有色 need にも充当可 */
-    var wildcardBhAllFlex = bhFromRes.wildcardBumpFromBh;
     var boardHSum = sumSlotAccumValues(boardHAcc);
     var resHSum = sumSlotAccumValues(resHAcc);
     var bladeSum = sumStageMemberBladesOnly();
     var liveCt = liveCardCountOnBoard();
+    var resolutionBhWeightedSum = sumResolutionBladeHeartWeighted();
     var ev = evaluateNeedHeartFulfillment(mergedSupply, needAccum, {
       wildcardAllBump: wildcardHeartBump,
       wildcardBhAllFlex: wildcardBhAllFlex,
@@ -1313,14 +1363,13 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
       resWild: resWild,
       boardHSum: boardHSum,
       resHSum: resHSum,
-      /** heart0 向け ALL のみ（UI・内訳用） */
       wildcardHeartBump: wildcardHeartBump,
-      /** 解決 BH ALL（有色可） */
       wildcardBhAllFlex: wildcardBhAllFlex,
-      /** 後方互換: 旧コード参照用の合計（heart + BH ALL） */
       wildcardAllBump: wildcardHeartBump + wildcardBhAllFlex,
       mergedSupplyPreview: mergedSupply,
+      resolutionBhSlotsAcc: bhFromRes.bhSlotsAcc,
       bhWildcardFromResolution: bhFromRes.wildcardBumpFromBh,
+      resolutionBhWeightedSum: resolutionBhWeightedSum,
       bladeSum: bladeSum,
       liveCt: liveCt,
       evaluateResult: ev,
@@ -1711,17 +1760,26 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
     if (b) {
       lines.push("ライブ枚数: " + (b.liveCt || 0) + " · need 合計: " + (b.needSum || 0));
       lines.push("need 内訳: " + formatLiveNeedHeartLine(b.needAccum));
-      lines.push("ステージ＋ライブ所持H: " + formatHeartSlotAccumBreakdown(b.boardHAcc));
-      lines.push("解決ゾーン所持H: " + formatHeartSlotAccumBreakdown(b.resHAcc));
-      var rsBh = accumulateResolutionBladeHeartStats();
-      lines.push("解決ゾーン BH: " + formatBladeHeartSlotBreakdown(rsBh.slots) + "（BH計 " + rsBh.totalBh + "）");
       lines.push(
-        "任意プール加算（メンバー ALL heart 等）: " +
-          (b.wildcardHeartBump != null ? b.wildcardHeartBump : b.wildcardAllBump != null ? b.wildcardAllBump : "—"),
+        "充足モデル: ライブ need_heart に対し、場メンバー所持H（ステージ＋ライブ枠）＋解決めくりの BH を合算。",
       );
       lines.push(
-        "BH ALL（有色不足にも充当・エール分は k 枚で増える）: " +
+        "場メンバー所持H（充足に使用）: " + formatHeartSlotAccumBreakdown(b.boardHAcc),
+      );
+      lines.push(
+        "解決ゾーン BH（充足の色源・slot7 除く）: " +
+          formatBladeHeartSlotBreakdown(b.resolutionBhSlotsAcc || {}),
+      );
+      lines.push(
+        "BH ALL（解決 slot7。有色不足にも充当・エールで k 枚増える分は上に加算）: " +
           (b.wildcardBhAllFlex != null ? b.wildcardBhAllFlex : "—"),
+      );
+      lines.push(
+        "任意プール加算（場メンバーの play ALL heart のみ）: " +
+          (b.wildcardHeartBump != null ? b.wildcardHeartBump : "—"),
+      );
+      lines.push(
+        "参考・解決ゾーン所持H（成功判定には未使用）: " + formatHeartSlotAccumBreakdown(b.resHAcc),
       );
       if (b.evaluateResult && !b.evaluateResult.ok) {
         lines.push("現時点（追加ランダム前）の不足: " + formatLiveEvalFailShort(b.evaluateResult));
@@ -1948,7 +2006,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
     if (!b.liveCt) return "ライブカードが無い";
     if (!(b.needSum > 0)) return "必要ハート（need_heart）が無い";
     if (ev && ev.ok) {
-      return "必要条件を充足";
+      return "必要条件を充足（場メンバー所持H＋解決の BH で need を満たす）";
     }
     if (!ev || ev.ok) return "—";
 
@@ -2198,7 +2256,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
   }
 
   /**
-   * 要求色: ステージ上メンバーの所持H（色ごと）から、ライブ need_heart（色ごと）を引いた残り／不足
+   * 要求色: 充足に使う BH（色スロット）とライブ need_heart（色ごと）の差（残り／不足）
    */
   function formatStageHeartMinusNeedRemainderLine(stageHAcc, needAccum) {
     if (!needAccum || sumSlotAccumValues(needAccum) <= 0) return "—";
@@ -2261,7 +2319,9 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
     $("live-need-heart-total").textContent = String(needSum);
 
     var reqCol = $("live-required-colors");
-    if (reqCol) reqCol.textContent = formatStageHeartMinusNeedRemainderLine(b.stageHAcc, needAccum);
+    if (reqCol) {
+      reqCol.textContent = formatStageHeartMinusNeedRemainderLine(b.mergedSupplyPreview, needAccum);
+    }
 
     var tolEl = $("live-nonbh-tolerance");
     var tolHint = $("live-zone-hint-nonbh");
@@ -2271,25 +2331,29 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
         if (tolHint) tolHint.textContent = "";
       } else {
         var bladesAll = sumBoardMemberBlades();
-        var heartBoard = b.boardHSum;
-        var tolN = bladesAll + heartBoard - needSum;
+        var fieldH = b.boardHSum != null ? b.boardHSum : 0;
+        var resBhW = b.resolutionBhWeightedSum != null ? b.resolutionBhWeightedSum : 0;
+        var tolN = bladesAll + fieldH + resBhW - needSum;
         tolEl.textContent = String(tolN);
         if (tolHint) {
           tolHint.textContent =
-            "非BH許容の内訳: ブレード盤面計 " +
+            "参考（目安）: ブレード盤面計 " +
             bladesAll +
-            " ＋ 盤面所持H計 " +
-            heartBoard +
+            " ＋ 場メンバー所持H計 " +
+            fieldH +
+            " ＋ 解決BH計 " +
+            resBhW +
             " − 必要ハート計 " +
             needSum +
             " ＝ " +
-            tolN;
+            tolN +
+            "（公式の非BH許容とは異なる場合があります）";
         }
       }
     }
 
-    var boardTotalVis = b.boardHSum + b.boardWild;
-    $("live-board-h-total").textContent = String(boardTotalVis);
+    var boardTotalVis = (b.boardHSum != null ? b.boardHSum : 0) + (b.boardWild != null ? b.boardWild : 0);
+    $("live-board-h-total").textContent = String(Math.round(boardTotalVis));
 
     $("live-total-blade").textContent = String(b.bladeSum);
 
@@ -2668,7 +2732,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
         "（計 " +
         afterCnt +
         " 枚）。" +
-        (bhLine ? " ライブ成否計算へ反映されます。" + bhLine : " 所持H／BH がライブ成否に反映されます。"),
+        (bhLine ? " ライブ成功判定の「解決めくりの BH」に反映されます。" + bhLine : " 解決の BH がライブ成功判定に反映されます。"),
       { duration: 4000 },
     );
     logReplay("live-turn-eale-resolution", { flipCount: afterCnt, bhTotal: rsBh.totalBh });
@@ -2809,6 +2873,32 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
       }
     }
     return JSON.parse(JSON.stringify(raw));
+  }
+
+  var playResumePersistTimer = 0;
+  var playResumeLastFp = "";
+  function schedulePersistPlayResume() {
+    if (playResumePersistTimer) clearTimeout(playResumePersistTimer);
+    playResumePersistTimer = setTimeout(function () {
+      playResumePersistTimer = 0;
+      try {
+        var fpLive = fingerprintZonesFromLive();
+        if (fpLive === playResumeLastFp) return;
+        playResumeLastFp = fpLive;
+        var fpSel = $("select-first-player");
+        sessionStorage.setItem(
+          STORAGE_PLAY_RESUME,
+          JSON.stringify({
+            v: 1,
+            board: snapshotBoard(),
+            uid: uid,
+            firstPlayer: fpSel && fpSel.value != null ? String(fpSel.value) : "",
+          }),
+        );
+      } catch (_e) {
+        /* QuotaExceeded or session blocked */
+      }
+    }, 400);
   }
 
   /** ドラッグ前後の比較用（DOM 全体の stringify は重すぎる） */
@@ -3371,12 +3461,6 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
     arr.forEach(function (c) {
       ensureCardBoardFields(c);
 
-      if (zoneId === "zone-hand" && c.type === T_LIVE) {
-        /** 手札のライブはメンバーと同じ「普通の角度」（縦・原本表示）に矯正。Wフラグも消す */
-        c.isRotated = false;
-        c.lcWait = false;
-      }
-
       if (isLiveBoard && (c.type === T_LIVE || c.type === T_MEMBER)) {
         if (state.liveTurnPickMode) c.isRotated = true;
         else if (c.type === T_LIVE) c.isRotated = false;
@@ -3395,8 +3479,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
       var liveSlotFaceDown = state.liveTurnPickMode && isLiveBoard;
       if (
         (isLiveBoard && state.liveTurnPickMode) ||
-        (isLiveBoard && c.type === T_LIVE && !state.liveTurnPickMode) ||
-        (zoneId === "zone-hand" && c.type === T_LIVE)
+        (isLiveBoard && c.type === T_LIVE && !state.liveTurnPickMode)
       ) {
         onRotate = null;
       }
@@ -4206,6 +4289,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
     updateResolutionZoneOverlapMode();
     syncWaitingRailAria();
     syncPreviewRailAria();
+    schedulePersistPlayResume();
   }
 
   function render() {
@@ -4264,8 +4348,10 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
 
   function loadSessionTexts() {
     try {
-      var fp = $("select-first-player");
-      if (fp) fp.value = sessionStorage.getItem(STORAGE_FIRST_PLAYER) || "—";
+      if (!resumedFromStorage) {
+        var fp = $("select-first-player");
+        if (fp) fp.value = sessionStorage.getItem(STORAGE_FIRST_PLAYER) || "—";
+      }
       loadDeckPickSelection();
       loadDeckOddsKManual();
       loadDeckOddsTurnSteps();
@@ -5288,7 +5374,9 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
   );
 
   loadSessionTexts();
+  if (resumedFromStorage) persistSessionTexts();
   (function randomizeSoloFirstPlayerForNewSession() {
+    if (resumedFromStorage) return;
     var fp = $("select-first-player");
     if (!fp) return;
     fp.value = Math.random() < 0.5 ? "先攻" : "後攻";

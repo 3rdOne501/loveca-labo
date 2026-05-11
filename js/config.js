@@ -61,6 +61,8 @@ export const STORAGE_FIRST_PLAYER = "llocg_first_player";
 /** プレイ画面: 側面エネルギーに使うカード番号（空で既定画像） */
 export const STORAGE_PLAY_ENERGY_CARD_NO = "llocg_play_energy_card_no";
 export const STORAGE_SNAPSHOT_PREFIX = "llocg_snapshot_";
+/** プレイ画面: 再読み込み時に盤面・Undo 等を復元するセッション用バッファ */
+export const STORAGE_PLAY_RESUME = "llocg_play_resume_v1";
 
 /** Undo 履歴の最大長 */
 export const HISTORY_MAX_STEPS = 35;
