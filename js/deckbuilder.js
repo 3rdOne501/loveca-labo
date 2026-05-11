@@ -368,6 +368,8 @@ export function initDeckBuilder(root, { onStartGame }) {
   };
   /** これ未満だと仮想化しないが、フル描画は重いので低めに保つ */
   const CARD_GRID_VIRTUAL_MIN = 36;
+  /** 登録デッキ一覧の「行の集合」が前回フル描画と同じか判定する（枚数だけの変更なら一覧は差分更新） */
+  let lastDeckListActiveNosSig = "";
   let catalogFilterCacheKey = "";
   /** @type {typeof cards | null} */
   let catalogFilterCached = null;
@@ -553,6 +555,43 @@ export function initDeckBuilder(root, { onStartGame }) {
       deckSummaryDebounceTimer = 0;
       writeDeckSummaryDom();
     }, 160);
+  }
+
+  function computeActiveDeckNosSig() {
+    const keys = Object.keys(deckMap).filter(function (no) {
+      return (deckMap[no] || 0) > 0;
+    });
+    keys.sort();
+    return keys.join("\u0001");
+  }
+
+  /**
+   * 登録デッキ一覧で枚数表示だけ更新（行ごと innerHTML し直さないので画像の再ロードを避ける）。
+   * @param {string[]} changedNos
+   * @returns {boolean} 全ノードを更新できたか
+   */
+  function patchDeckListQtyForNos(changedNos) {
+    const ul = el("deck-list");
+    if (!ul || !changedNos || !changedNos.length) return false;
+    const esc =
+      typeof CSS !== "undefined" && typeof CSS.escape === "function"
+        ? function (s) {
+            return CSS.escape(String(s));
+          }
+        : function (s) {
+            return String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+          };
+    for (let i = 0; i < changedNos.length; i++) {
+      const no = String(changedNos[i] || "");
+      if (!no) continue;
+      const btn = ul.querySelector('button[data-act="plus"][data-no="' + esc(no) + '"]');
+      if (!btn || !btn.parentElement) return false;
+      const span = btn.parentElement.querySelector("span.deck-qty");
+      if (!span) return false;
+      const qty = deckMap[no] || 0;
+      span.textContent = "× " + qty;
+    }
+    return true;
   }
 
   function deckTotal() {
@@ -1025,6 +1064,7 @@ export function initDeckBuilder(root, { onStartGame }) {
         afterDeckMapQuickChange(no);
       });
     });
+    lastDeckListActiveNosSig = computeActiveDeckNosSig();
   }
 
   /** 保存スロット／メインデッキを覗きレイアウトで表示。opts.roleEditMode: 'off' | 'main' | 'library-slot' */
@@ -1670,7 +1710,7 @@ export function initDeckBuilder(root, { onStartGame }) {
     div.innerHTML =
       rolesHtml +
       qtyBadge +
-      `<span class="thumb-type">${escapeHtml(tlab)}</span><img src="${escapeAttr(card.img)}" alt="" class="deck-builder-card-thumb" loading="eager" fetchpriority="low" decoding="async" /><span class="thumb-cap">${escapeHtml(card.name)}${thumbExtraHtml(card)}</span>`;
+      `<span class="thumb-type">${escapeHtml(tlab)}</span><img src="${escapeAttr(card.img)}" alt="" class="deck-builder-card-thumb" loading="lazy" fetchpriority="low" decoding="async" /><span class="thumb-cap">${escapeHtml(card.name)}${thumbExtraHtml(card)}</span>`;
     div.addEventListener("click", function (ev) {
       if (
         ev.target &&
@@ -1891,7 +1931,12 @@ export function initDeckBuilder(root, { onStartGame }) {
         : [];
     persistDeckState();
     renderCounts();
-    scheduleRenderDeckList();
+    const activeNosSig = computeActiveDeckNosSig();
+    if (activeNosSig === lastDeckListActiveNosSig && patchDeckListQtyForNos(list)) {
+      /* 登録デッキ一覧は枚数のみ更新（行の集合が変わったときだけフル再描画） */
+    } else {
+      scheduleRenderDeckList();
+    }
     const filtered = computeFilteredCardListForGrid();
     updateCardHitCountFromFiltered(filtered);
     if (cardPanelMode === "deck") scheduleDeckSummaryDebounced();
