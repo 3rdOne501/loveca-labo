@@ -1195,7 +1195,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
 
   /**
    * 解決にあるカードの blade_heart を need_heart 充足へ加算する。
-   * slot7（b_all／ALL）は任意ハート側の wildcard bump に回し、評価ルーチンの slot pool と整合させる。
+   * slot7（b_all／ALL）は wildcardBhAllFlex として渡し、有色不足の充当に使ったあと余りは任意（heart0）プールへ回す。
    */
   function resolutionBladeHeartContributionForFulfillment() {
     var acc = {};
@@ -1290,12 +1290,18 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
     var bhFromRes = resolutionBladeHeartContributionForFulfillment();
     var mergedSupply = mergeNumericSlotAccums(boardHAcc, resHAcc);
     mergedSupply = mergeNumericSlotAccums(mergedSupply, bhFromRes.bhSlotsAcc);
-    var wildcardAllBump = boardWild + resWild + bhFromRes.wildcardBumpFromBh;
+    /** メンバー ALL heart（heart0 のみ） */
+    var wildcardHeartBump = boardWild + resWild;
+    /** 解決ゾーンの BH ALL — 有色 need にも充当可 */
+    var wildcardBhAllFlex = bhFromRes.wildcardBumpFromBh;
     var boardHSum = sumSlotAccumValues(boardHAcc);
     var resHSum = sumSlotAccumValues(resHAcc);
     var bladeSum = sumStageMemberBladesOnly();
     var liveCt = liveCardCountOnBoard();
-    var ev = evaluateNeedHeartFulfillment(mergedSupply, needAccum, { wildcardAllBump: wildcardAllBump });
+    var ev = evaluateNeedHeartFulfillment(mergedSupply, needAccum, {
+      wildcardAllBump: wildcardHeartBump,
+      wildcardBhAllFlex: wildcardBhAllFlex,
+    });
     return {
       needAccum: needAccum,
       needSum: needSum,
@@ -1307,7 +1313,12 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
       resWild: resWild,
       boardHSum: boardHSum,
       resHSum: resHSum,
-      wildcardAllBump: wildcardAllBump,
+      /** heart0 向け ALL のみ（UI・内訳用） */
+      wildcardHeartBump: wildcardHeartBump,
+      /** 解決 BH ALL（有色可） */
+      wildcardBhAllFlex: wildcardBhAllFlex,
+      /** 後方互換: 旧コード参照用の合計（heart + BH ALL） */
+      wildcardAllBump: wildcardHeartBump + wildcardBhAllFlex,
       mergedSupplyPreview: mergedSupply,
       bhWildcardFromResolution: bhFromRes.wildcardBumpFromBh,
       bladeSum: bladeSum,
@@ -1340,13 +1351,23 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
 
   function evalAfterExtraResolutionCards(b, deltas, indexList) {
     var merged = b.mergedSupplyPreview;
-    var wild = b.wildcardAllBump;
+    var wildHeart = 0;
+    var wildBh = 0;
+    if (b.wildcardHeartBump != null || b.wildcardBhAllFlex != null) {
+      wildHeart = b.wildcardHeartBump != null ? b.wildcardHeartBump : 0;
+      wildBh = b.wildcardBhAllFlex != null ? b.wildcardBhAllFlex : 0;
+    } else {
+      wildHeart = b.wildcardAllBump || 0;
+    }
     for (var j = 0; j < indexList.length; j++) {
       var d = deltas[indexList[j]];
       merged = mergeNumericSlotAccums(merged, d.bh);
-      wild += d.wild;
+      wildBh += d.wild;
     }
-    return evaluateNeedHeartFulfillment(merged, b.needAccum, { wildcardAllBump: wild });
+    return evaluateNeedHeartFulfillment(merged, b.needAccum, {
+      wildcardAllBump: wildHeart,
+      wildcardBhAllFlex: wildBh,
+    });
   }
 
   function nextCombination(n, k, idx) {
@@ -1457,9 +1478,20 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
   }
 
   function withAppliedDeltaBundle(base, dsum) {
+    var h = 0;
+    var bh = 0;
+    if (base.wildcardHeartBump != null || base.wildcardBhAllFlex != null) {
+      h = base.wildcardHeartBump != null ? base.wildcardHeartBump : 0;
+      bh = base.wildcardBhAllFlex != null ? base.wildcardBhAllFlex : 0;
+    } else {
+      h = base.wildcardAllBump || 0;
+    }
+    bh += dsum.wild || 0;
     return {
       mergedSupplyPreview: mergeNumericSlotAccums(base.mergedSupplyPreview, dsum.bh || {}),
-      wildcardAllBump: (base.wildcardAllBump || 0) + (dsum.wild || 0),
+      wildcardHeartBump: h,
+      wildcardBhAllFlex: bh,
+      wildcardAllBump: h + bh,
       needAccum: base.needAccum,
     };
   }
@@ -1525,9 +1557,23 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
 
     var fromDeck = Math.min(kRem, n);
     var fromWaiting = kRem - fromDeck;
+    var wh =
+      b.wildcardHeartBump != null || b.wildcardBhAllFlex != null
+        ? b.wildcardHeartBump != null
+          ? b.wildcardHeartBump
+          : 0
+        : b.wildcardAllBump || 0;
+    var wb =
+      b.wildcardHeartBump != null || b.wildcardBhAllFlex != null
+        ? b.wildcardBhAllFlex != null
+          ? b.wildcardBhAllFlex
+          : 0
+        : 0;
     var workingBase = {
       mergedSupplyPreview: b.mergedSupplyPreview,
-      wildcardAllBump: b.wildcardAllBump,
+      wildcardHeartBump: wh,
+      wildcardBhAllFlex: wb,
+      wildcardAllBump: wh + wb,
       needAccum: b.needAccum,
     };
 
@@ -1538,17 +1584,45 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
 
     function resolveOnPool(poolBase, poolDeltas, poolN, poolK, seedOffset) {
       if (poolK <= 0) {
+        var h0 =
+          poolBase.wildcardHeartBump != null || poolBase.wildcardBhAllFlex != null
+            ? poolBase.wildcardHeartBump != null
+              ? poolBase.wildcardHeartBump
+              : 0
+            : poolBase.wildcardAllBump || 0;
+        var bh0 =
+          poolBase.wildcardHeartBump != null || poolBase.wildcardBhAllFlex != null
+            ? poolBase.wildcardBhAllFlex != null
+              ? poolBase.wildcardBhAllFlex
+              : 0
+            : 0;
         var ev0 = evaluateNeedHeartFulfillment(poolBase.mergedSupplyPreview, poolBase.needAccum, {
-          wildcardAllBump: poolBase.wildcardAllBump,
+          wildcardAllBump: h0,
+          wildcardBhAllFlex: bh0,
         });
         return ev0 && ev0.ok ? 100 : 0;
       }
       if (poolK >= poolN) {
         var bsum = sumAllDeltas(poolDeltas);
+        var h1 =
+          poolBase.wildcardHeartBump != null || poolBase.wildcardBhAllFlex != null
+            ? poolBase.wildcardHeartBump != null
+              ? poolBase.wildcardHeartBump
+              : 0
+            : poolBase.wildcardAllBump || 0;
+        var bh1 =
+          poolBase.wildcardHeartBump != null || poolBase.wildcardBhAllFlex != null
+            ? poolBase.wildcardBhAllFlex != null
+              ? poolBase.wildcardBhAllFlex
+              : 0
+            : 0;
         var evAll = evaluateNeedHeartFulfillment(
           mergeNumericSlotAccums(poolBase.mergedSupplyPreview, bsum.bh),
           poolBase.needAccum,
-          { wildcardAllBump: (poolBase.wildcardAllBump || 0) + (bsum.wild || 0) },
+          {
+            wildcardAllBump: h1,
+            wildcardBhAllFlex: bh1 + (bsum.wild || 0),
+          },
         );
         return evAll && evAll.ok ? 100 : 0;
       }
@@ -1641,7 +1715,14 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
       lines.push("解決ゾーン所持H: " + formatHeartSlotAccumBreakdown(b.resHAcc));
       var rsBh = accumulateResolutionBladeHeartStats();
       lines.push("解決ゾーン BH: " + formatBladeHeartSlotBreakdown(rsBh.slots) + "（BH計 " + rsBh.totalBh + "）");
-      lines.push("任意プール加算（ALL 等）: " + (b.wildcardAllBump != null ? b.wildcardAllBump : "—"));
+      lines.push(
+        "任意プール加算（メンバー ALL heart 等）: " +
+          (b.wildcardHeartBump != null ? b.wildcardHeartBump : b.wildcardAllBump != null ? b.wildcardAllBump : "—"),
+      );
+      lines.push(
+        "BH ALL（有色不足にも充当・エール分は k 枚で増える）: " +
+          (b.wildcardBhAllFlex != null ? b.wildcardBhAllFlex : "—"),
+      );
       if (b.evaluateResult && !b.evaluateResult.ok) {
         lines.push("現時点（追加ランダム前）の不足: " + formatLiveEvalFailShort(b.evaluateResult));
       }
@@ -1778,6 +1859,86 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
     return moved;
   }
 
+  /** 指定 id のライブカード 1 枚だけを成功置き場へ（複数ライブ成功時の選択用） */
+  function migrateOneLiveCardToSuccessfulAreaById(cardId) {
+    var want = String(cardId);
+    var moved = 0;
+    ["left", "center", "right"].forEach(function (k) {
+      if (moved) return;
+      var slot = state.liveArea[k];
+      for (var i = 0; i < slot.length; i++) {
+        var c = slot[i];
+        if (c && c.type === T_LIVE && String(c.id) === want) {
+          c.isRotated = false;
+          c.lcWait = false;
+          state.successfulLiveArea.push(c);
+          slot.splice(i, 1);
+          moved++;
+          return;
+        }
+      }
+    });
+    return moved;
+  }
+
+  /** @param {{ id: * }[]} pend @param {(id: string | null) => void} onDone */
+  function openPickSuccessLiveDialog(pend, onDone) {
+    var dlg = document.getElementById("dlg-pick-success-live");
+    var list = document.getElementById("dlg-pick-success-live-list");
+    var btnOk = document.getElementById("dlg-pick-success-live-ok");
+    var btnCx = document.getElementById("dlg-pick-success-live-cancel");
+    if (!dlg || !list || !btnOk || typeof dlg.showModal !== "function") {
+      onDone(pend && pend[0] && pend[0].id != null ? String(pend[0].id) : null);
+      return;
+    }
+    var html = "";
+    pend.forEach(function (c, i) {
+      var mc = mergedCatalogCard(c);
+      var lab = ((mc.card_no != null ? String(mc.card_no) + " " : "") + (mc.name || c.name || "ライブ")).trim();
+      html +=
+        '<label class="dlg-pick-success-live__opt"><input type="radio" name="pickSuccLive" value="' +
+        escapeHtmlPlain(String(c.id)) +
+        '"' +
+        (i === 0 ? " checked" : "") +
+        " /> " +
+        escapeHtmlPlain(lab) +
+        "</label>";
+    });
+    list.innerHTML = html;
+    function cleanup() {
+      btnOk.removeEventListener("click", onOk);
+      if (btnCx) btnCx.removeEventListener("click", onCx);
+      dlg.removeEventListener("cancel", onDismiss);
+    }
+    function onOk() {
+      var r = list.querySelector('input[name="pickSuccLive"]:checked');
+      cleanup();
+      try {
+        dlg.close();
+      } catch (_) {
+        /* noop */
+      }
+      onDone(r && r.value ? String(r.value) : null);
+    }
+    function onCx() {
+      cleanup();
+      try {
+        dlg.close();
+      } catch (_) {
+        /* noop */
+      }
+      onDone(null);
+    }
+    function onDismiss() {
+      cleanup();
+      onDone(null);
+    }
+    btnOk.addEventListener("click", onOk);
+    if (btnCx) btnCx.addEventListener("click", onCx);
+    dlg.addEventListener("cancel", onDismiss);
+    dlg.showModal();
+  }
+
   /**
    * ライブ計算パネル「概要」— 不足色を列挙（evaluateNeedHeartFulfillment と同順ですべて）。
    */
@@ -1831,8 +1992,23 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
       return "要件が不足";
     }
 
+    var gh =
+      b.wildcardHeartBump != null || b.wildcardBhAllFlex != null
+        ? b.wildcardHeartBump != null
+          ? b.wildcardHeartBump
+          : 0
+        : b.wildcardAllBump != null
+          ? b.wildcardAllBump
+          : 0;
+    var gb =
+      b.wildcardHeartBump != null || b.wildcardBhAllFlex != null
+        ? b.wildcardBhAllFlex != null
+          ? b.wildcardBhAllFlex
+          : 0
+        : 0;
     var gaps = listAllNeedHeartDeficitsSequential(b.mergedSupplyPreview, b.needAccum, {
-      wildcardAllBump: b.wildcardAllBump,
+      wildcardAllBump: gh,
+      wildcardBhAllFlex: gb,
     });
     if (gaps.length) return gaps.map(fmtDeficit).join(" · ");
 
@@ -3776,6 +3952,68 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
   }
 
   /** ライブターン（手札選択・配置）のヒントとボタン — 開始と「ライブエリアへ」を 1 ボタンで切替 */
+  /** 次に押すとよい操作へボタンを光らせる（複数条件は優先度で 1 系統のみ） */
+  function syncPlayFlowHintGlows() {
+    var body = document.body;
+    if (!body || !body.classList.contains("play-mode")) return;
+    body.classList.remove(
+      "flow-hint--live-turn-start",
+      "flow-hint--live-to-area",
+      "flow-hint--live-begin",
+      "flow-hint--turn-start",
+      "flow-hint--live-success",
+    );
+    var mull = state.awaitingTurnStart === true;
+    var ltp = state.liveTurnPickMode === true;
+    var lsb = state.liveStatsAfterBegin === true;
+    var bundle = null;
+    try {
+      bundle = evaluateLiveMechanicalFulfillmentBundle();
+    } catch (_) {
+      bundle = null;
+    }
+    var evalOk = !!(bundle && bundle.evaluateResult && bundle.evaluateResult.ok);
+    function liveSlotsHaveCard() {
+      return ["left", "center", "right"].some(function (k) {
+        var arr = state.liveArea[k];
+        return arr && arr.some(function (c) {
+          return c && (c.type === T_LIVE || c.type === T_MEMBER);
+        });
+      });
+    }
+    var bladeN = Math.max(0, Math.floor(sumBoardMemberBlades()));
+    var resN = Array.isArray(state.resolutionArea) ? state.resolutionArea.length : 0;
+    var ealeDone = bladeN > 0 && resN >= bladeN;
+    var upEn = countUprightEnergyInArea(state.energyArea);
+    var hasEn = state.energyArea.some(function (e) {
+      return e && e.type === T_ENERGY;
+    });
+    var bPrim = $("btn-live-turn-primary");
+    var primaryIsToArea = !!(bPrim && bPrim.textContent && bPrim.textContent.indexOf("ライブエリア") >= 0);
+    var bBegin = $("btn-live-turn-begin");
+
+    if (lsb && evalOk) {
+      body.classList.add("flow-hint--live-success");
+      body.classList.add("flow-hint--turn-start");
+      return;
+    }
+    if (ltp && bBegin && !bBegin.disabled && liveSlotsHaveCard()) {
+      body.classList.add("flow-hint--live-begin");
+      return;
+    }
+    if (ltp && state.liveTurnSelectedIds.length > 0 && primaryIsToArea) {
+      body.classList.add("flow-hint--live-to-area");
+      return;
+    }
+    if (!mull && !ltp && !lsb && hasEn && upEn === 0) {
+      body.classList.add("flow-hint--live-turn-start");
+      return;
+    }
+    if (!mull && !ltp && !lsb && ealeDone && !liveSlotsHaveCard()) {
+      body.classList.add("flow-hint--turn-start");
+    }
+  }
+
   function syncLiveTurnHandUi() {
     const hint = $("hand-live-turn-hint");
     if (hint) hint.hidden = !state.liveTurnPickMode;
@@ -3954,6 +4192,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
     syncDeckPileUi();
     syncMulliganUi();
     syncLiveTurnHandUi();
+    syncPlayFlowHintGlows();
     syncDeckOddsKInput();
     syncLiveTurnStatsPanel();
     syncDeckPickPanel();
@@ -4251,38 +4490,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
     logReplay("coin");
   });
 
-  function doTurnPhaseStart() {
-    pushHistoryBefore("turn-phase-start");
-    state.turnCount += 1;
-    var bundleTurn = evaluateLiveMechanicalFulfillmentBundle();
-    if (shouldPromptMoveSuccessfulLiveOnTurnStart(bundleTurn)) {
-      var pend = liveCardsAwaitingSuccessfulBenchPlacement();
-      var seen = [];
-      var seenSet = new Set();
-      pend.forEach(function (c) {
-        var mc = mergedCatalogCard(c);
-        var label = ((mc.card_no != null ? String(mc.card_no) + " " : "") + (mc.name || c.name || "ライブ")).trim();
-        if (!seenSet.has(label)) {
-          seenSet.add(label);
-          seen.push(label);
-        }
-      });
-      var nameLine =
-        seen.length <= 2 ? seen.join("・") : seen.slice(0, 2).join("・") + " ほか計 " + pend.length + " 枚";
-      if (
-        window.confirm(
-          "ライブ判定は成功ですが、「成功したライブ」エリアに該当のライブカードが載っていません。\n「" +
-            nameLine +
-            "」を成功したライブ置き場へ移しますか？\n（OK で移動。キャンセルでは自動移動せず、このあとも解決・ライブ枠は控え室へ送られます）",
-        )
-      ) {
-        var movedN = migratePendingLiveCardsToSuccessfulArea();
-        if (movedN) {
-          showToast(movedN + " 枚のライブカードを成功したライブ置き場へ移しました");
-          logReplay("turn-phase-auto-move-success-live", { liveCards: movedN });
-        }
-      }
-    }
+  function runTurnPhaseStartAfterSuccessLivePrompt() {
     state.awaitingTurnStart = false;
     state.mulliganSelectedIds = [];
     state.liveTurnPickMode = false;
@@ -4343,6 +4551,64 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
       turn: state.turnCount,
     });
     render();
+  }
+
+  function doTurnPhaseStart() {
+    pushHistoryBefore("turn-phase-start");
+    state.turnCount += 1;
+    var bundleTurn = evaluateLiveMechanicalFulfillmentBundle();
+    if (shouldPromptMoveSuccessfulLiveOnTurnStart(bundleTurn)) {
+      var pend = liveCardsAwaitingSuccessfulBenchPlacement();
+      var seen = [];
+      var seenSet = new Set();
+      pend.forEach(function (c) {
+        var mc = mergedCatalogCard(c);
+        var label = ((mc.card_no != null ? String(mc.card_no) + " " : "") + (mc.name || c.name || "ライブ")).trim();
+        if (!seenSet.has(label)) {
+          seenSet.add(label);
+          seen.push(label);
+        }
+      });
+      var nameLine =
+        seen.length <= 2 ? seen.join("・") : seen.slice(0, 2).join("・") + " ほか計 " + pend.length + " 枚";
+      if (pend.length > 1) {
+        if (
+          !window.confirm(
+            "ライブ判定は成功ですが、「成功したライブ」エリアに該当のライブカードが載っていません。\n「" +
+              nameLine +
+              "」のうち 1 枚だけ成功したライブ置き場へ移しますか？\n（OK でカードを選びます。キャンセルでは移しません）",
+          )
+        ) {
+          runTurnPhaseStartAfterSuccessLivePrompt();
+          return;
+        }
+        openPickSuccessLiveDialog(pend, function (chosenId) {
+          if (chosenId != null) {
+            var m = migrateOneLiveCardToSuccessfulAreaById(chosenId);
+            if (m) {
+              showToast("選んだライブカードを成功したライブ置き場へ移しました");
+              logReplay("turn-phase-auto-move-success-live", { liveCards: m, pickOne: true });
+            }
+          }
+          runTurnPhaseStartAfterSuccessLivePrompt();
+        });
+        return;
+      }
+      if (
+        window.confirm(
+          "ライブ判定は成功ですが、「成功したライブ」エリアに該当のライブカードが載っていません。\n「" +
+            nameLine +
+            "」を成功したライブ置き場へ移しますか？\n（OK で移動。キャンセルでは自動移動せず、このあとも解決・ライブ枠は控え室へ送られます）",
+        )
+      ) {
+        var movedN = migratePendingLiveCardsToSuccessfulArea();
+        if (movedN) {
+          showToast(movedN + " 枚のライブカードを成功したライブ置き場へ移しました");
+          logReplay("turn-phase-auto-move-success-live", { liveCards: movedN });
+        }
+      }
+    }
+    runTurnPhaseStartAfterSuccessLivePrompt();
   }
 
   function doMulliganExecute() {
@@ -4913,6 +5179,11 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
       liveTurnHandSpreadPick: false,
       liveStatsAfterBegin: false,
     });
+    var fpR = $("select-first-player");
+    if (fpR) {
+      fpR.value = Math.random() < 0.5 ? "先攻" : "後攻";
+      persistSessionTexts();
+    }
     uid = Math.max(uid, 999);
     logReplay("reset-board");
     render();
@@ -5017,6 +5288,12 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
   );
 
   loadSessionTexts();
+  (function randomizeSoloFirstPlayerForNewSession() {
+    var fp = $("select-first-player");
+    if (!fp) return;
+    fp.value = Math.random() < 0.5 ? "先攻" : "後攻";
+    persistSessionTexts();
+  })();
   refreshPlayDeckPresetSelect();
   /** 初回レンダーが重く長タスクになり、直後のクリックが無視されるのを防ぐため 1 フレーム遅延 */
   if (typeof requestAnimationFrame === "function") {

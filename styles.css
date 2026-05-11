@@ -1434,7 +1434,7 @@ body.play-mode.layout-16-9-mode {
   --loveca-play-w: min(78px, 9.6vw);
 }
 body.play-mode.layout-16-9-mode .game-board {
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1.1fr);
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.72fr) minmax(0, 0.92fr);
 }
 
 body.play-mode #btn-layout-16-9 {
@@ -1461,21 +1461,57 @@ body.play-mode .draw-row {
   gap: 0.35rem;
   align-items: stretch;
 }
-body.play-mode .draw-row #btn-turn-start {
-  flex: 1 1 11rem;
-  min-width: min(100%, 11rem);
+body.play-mode .draw-row.draw-row--turn {
+  margin-top: 0.3rem;
+}
+body.play-mode .draw-row.draw-row--turn #btn-turn-start {
+  flex: 1 1 100%;
+  width: 100%;
+  min-width: 0;
   font-weight: 800;
 }
-body.play-mode.layout-16-9-mode .draw-row {
-  flex-wrap: nowrap;
+body.play-mode .draw-row.draw-row--top .btn {
+  flex: 1 1 8.5rem;
+  min-width: min(100%, 7.5rem);
 }
-body.play-mode.layout-16-9-mode .draw-row #btn-turn-start {
-  flex: 2 1 12rem;
-  min-width: 9.5rem;
+body.play-mode.layout-16-9-mode .draw-row.draw-row--top {
+  flex-wrap: nowrap;
 }
 
 body.play-mode.layout-16-9-mode .deck-tools-split {
   min-width: 0;
+}
+
+@keyframes flow-btn-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(255, 140, 200, 0.45),
+      0 0 14px rgba(255, 90, 160, 0.35);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px rgba(255, 200, 235, 0.65),
+      0 0 22px rgba(255, 130, 200, 0.55);
+  }
+}
+body.play-mode.flow-hint--live-turn-start #btn-live-turn-primary:not(:disabled) {
+  animation: flow-btn-glow 1.55s ease-in-out infinite;
+}
+body.play-mode.flow-hint--live-to-area #btn-live-turn-primary:not(:disabled) {
+  animation: flow-btn-glow 1.55s ease-in-out infinite;
+}
+body.play-mode.flow-hint--live-begin #btn-live-turn-begin:not(:disabled) {
+  animation: flow-btn-glow 1.55s ease-in-out infinite;
+}
+body.play-mode.flow-hint--turn-start #btn-turn-start:not(:disabled) {
+  animation: flow-btn-glow 1.55s ease-in-out infinite;
+}
+body.play-mode.flow-hint--live-success #success-live-zone-shell {
+  border-radius: var(--radius-sm);
+  outline: 2px solid rgba(255, 160, 210, 0.65);
+  outline-offset: 2px;
+  animation: flow-btn-glow 1.55s ease-in-out infinite;
 }
 body.play-mode .deck-remain-bh-panel,
 body.play-mode .play-deck-preset-panel {
@@ -2419,6 +2455,19 @@ table.deck-odds-grid {
   }
   .deck-tools-split {
     grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+  .deck-tools-split__odds,
+  .deck-tools-split__pick {
+    width: 100%;
+    min-width: 0;
+  }
+  .deck-remain-bh-panel,
+  .play-deck-preset-panel {
+    max-width: none;
+    width: 100%;
+    min-height: min(140px, 26vh);
+    box-sizing: border-box;
   }
 }
 
@@ -2428,6 +2477,18 @@ body.play-mode .card-strip {
 
 body.play-mode .hand-zone.hand-zone--overlap .card-item + .card-item {
   margin-left: calc(var(--loveca-play-w) * var(--hand-overlap-frac));
+}
+
+/* 手札のライブカードは行をまたいで縦に並べる（1枚あたり 1 行） */
+body.play-mode #zone-hand.card-strip .card-item[data-type="ライブ"] {
+  flex: 0 0 100%;
+  width: var(--loveca-play-w);
+  max-width: 100%;
+  box-sizing: border-box;
+}
+body.play-mode #zone-hand.hand-zone--overlap .card-item[data-type="ライブ"] + .card-item[data-type="ライブ"] {
+  margin-left: 0;
+  margin-top: 0.35rem;
 }
 
 body.play-mode #zone-waiting.waiting-zone-strip.waiting-zone--t1 .card-item + .card-item {
@@ -3094,6 +3155,30 @@ body.play-mode .site-footer {
 .app-dialog .btn.wide {
   width: 100%;
   margin-top: 0.5rem;
+}
+.app-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+.dlg-pick-success-live-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0.65rem 0 0;
+  max-height: min(46vh, 21rem);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.dlg-pick-success-live__opt {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  font-size: 0.84rem;
+  line-height: 1.35;
+  cursor: pointer;
 }
 
 dialog.app-dialog:not([open]) {

@@ -198,12 +198,44 @@ export function sumSlotAccumValues(accum) {
 }
 
 /**
+ * blade_heart の BH ALL（b_all／スロット7）分を、need の有色 1〜6 の不足に先に充当する（桃→…→紫の順）。
+ * 余った分は任意プール（heart0）側の wildcard 加算に回す。
+ * @returns {{ supply: Record<number, number>, remainderFlex: number }}
+ */
+export function applyWildcardBhAllFlexToColoredSupply(supplyAccum, needAccum, flexIn) {
+  const supply = Object.assign({}, supplyAccum || {});
+  let flex = Number(flexIn);
+  if (!Number.isFinite(flex)) flex = 0;
+  flex = Math.max(0, Math.floor(flex));
+  for (let slot = 1; slot <= 6 && flex > 0; slot++) {
+    const need = needAccum[slot] || 0;
+    if (need <= 0) continue;
+    const have = supply[slot] || 0;
+    if (have >= need) continue;
+    const short = need - have;
+    const pay = Math.min(flex, short);
+    supply[slot] = have + pay;
+    flex -= pay;
+  }
+  return { supply: supply, remainderFlex: flex };
+}
+
+/**
  * 所持H（色情報別）かつ need_heart に対する充足判定。
  * 1〜6 は同色をそのまま比較。残りポイント集合で slot0（heart0／任意ハート）を支払い。99 は同色キーのみ対応。
+ *
+ * options.wildcardBhAllFlex: 解決・エールで得た BH ALL の点数。有色不足を埋めた残りは任意プールに加算する。
+ * options.wildcardAllBump: メンバー play ボーナス等の「heart0 のみ」向け ALL 加算（従来どおり）。
  */
 export function evaluateNeedHeartFulfillment(supplyAccum, needAccum, options) {
   options = options || {};
-  const supply = Object.assign({}, supplyAccum || {});
+  const flexOpt = Number(options.wildcardBhAllFlex);
+  const flex0 = Number.isFinite(flexOpt) ? Math.max(0, Math.floor(flexOpt)) : 0;
+  const afterFlex =
+    flex0 > 0
+      ? applyWildcardBhAllFlexToColoredSupply(supplyAccum, needAccum, flex0)
+      : { supply: Object.assign({}, supplyAccum || {}), remainderFlex: 0 };
+  let supply = afterFlex.supply;
   for (let slot = 1; slot <= 6; slot++) {
     var need = needAccum[slot] || 0;
     if (need <= 0) continue;
@@ -222,7 +254,7 @@ export function evaluateNeedHeartFulfillment(supplyAccum, needAccum, options) {
   }
   var bump = Number(options.wildcardAllBump);
   if (!Number.isFinite(bump)) bump = 0;
-  bump = Math.max(0, Math.floor(bump));
+  bump = Math.max(0, Math.floor(bump)) + afterFlex.remainderFlex;
   var pool = [1, 2, 3, 4, 5, 6].reduce(function (acc, slot) {
     return acc + Math.max(0, supply[slot] || 0);
   }, 0);
@@ -263,7 +295,13 @@ export function evaluateNeedHeartFulfillment(supplyAccum, needAccum, options) {
  */
 export function listAllNeedHeartDeficitsSequential(supplyAccum, needAccum, options) {
   options = options || {};
-  const supply = Object.assign({}, supplyAccum || {});
+  const flexOpt = Number(options.wildcardBhAllFlex);
+  const flex0 = Number.isFinite(flexOpt) ? Math.max(0, Math.floor(flexOpt)) : 0;
+  const afterFlex =
+    flex0 > 0
+      ? applyWildcardBhAllFlexToColoredSupply(supplyAccum, needAccum, flex0)
+      : { supply: Object.assign({}, supplyAccum || {}), remainderFlex: 0 };
+  let supply = afterFlex.supply;
   const out = [];
 
   for (let slot = 1; slot <= 6; slot++) {
@@ -283,7 +321,7 @@ export function listAllNeedHeartDeficitsSequential(supplyAccum, needAccum, optio
 
   var bump = Number(options.wildcardAllBump);
   if (!Number.isFinite(bump)) bump = 0;
-  bump = Math.max(0, Math.floor(bump));
+  bump = Math.max(0, Math.floor(bump)) + afterFlex.remainderFlex;
   var pool = [1, 2, 3, 4, 5, 6].reduce(function (acc, slot) {
     return acc + Math.max(0, supply[slot] || 0);
   }, 0);

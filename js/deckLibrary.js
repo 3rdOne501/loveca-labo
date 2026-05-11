@@ -9,6 +9,7 @@ import {
   DEFAULT_STARTER_KEY3_CARD_NOS,
   DEFAULT_STARTER_KEY_CARD_NOS,
   DEFAULT_STARTER_MIDDLE_CARD_NOS,
+  DEFAULT_STARTER_THUMBNAIL_CARD_NO,
   MAX_COPIES_PER_CARD,
   MAX_SAVED_DECKS,
   STORAGE_DECK_LIBRARY,
@@ -38,7 +39,7 @@ export function getBuiltInStarterSlot() {
     keyCard2Nos: sanitizeCardNoList(DEFAULT_STARTER_KEY2_CARD_NOS),
     keyCard3Nos: sanitizeCardNoList(DEFAULT_STARTER_KEY3_CARD_NOS),
     middleCardNos: sanitizeCardNoList(DEFAULT_STARTER_MIDDLE_CARD_NOS),
-    thumbnailCardNo: "LL-TA-01",
+    thumbnailCardNo: DEFAULT_STARTER_THUMBNAIL_CARD_NO,
     updatedAt: "1970-01-01T00:00:00.000Z",
   };
 }

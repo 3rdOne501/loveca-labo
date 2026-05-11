@@ -69,29 +69,45 @@ export const HISTORY_MAX_STEPS = 35;
 export const DECK_EXPORT_VERSION = 1;
 
 /**
- * 組み込みプリセット・初回メインデッキ用（cards.js が注入するテストカードのみ使用。公式 DB と衝突しにくい）
+ * 組み込みプリセット・初回メインデッキ用（リポジトリ既定の大会用例。カード DB に番号が無い場合はデッキ構築で警告になります）
  */
 export const BUILTIN_STARTER_PRESET_ID = "llocg-builtin-starter";
-export const BUILTIN_STARTER_PRESET_NAME = "初期デッキ（共通・サンプル60）";
+export const BUILTIN_STARTER_PRESET_NAME = "１０軸青紫ミラステ";
 
-function buildDefaultStarterDeckMap() {
-  /** @type {Record<string, number>} */
-  const map = {};
-  for (let i = 1; i <= 12; i++) {
-    map["LL-TA-" + String(i).padStart(2, "0")] = 4;
-  }
-  for (let i = 1; i <= 3; i++) {
-    map["LL-TL-" + String(i).padStart(2, "0")] = 4;
-  }
-  return map;
-}
-
-/** メンバー48＋ライブ12＝60（常にカタログに存在するテスト枠） */
-export const DEFAULT_STARTER_DECK_MAP = buildDefaultStarterDeckMap();
-export const DEFAULT_STARTER_KEY_CARD_NOS = ["LL-TA-01", "LL-TA-02", "LL-TA-03"];
-export const DEFAULT_STARTER_KEY2_CARD_NOS = ["LL-TL-01"];
+/** メンバー48＋ライブ12＝60 */
+export const DEFAULT_STARTER_DECK_MAP = {
+  "PL!-bp5-003-R＋": 2,
+  "PL!-bp5-007-R": 1,
+  "PL!-bp5-011-N": 4,
+  "PL!HS-bp5-001-P": 1,
+  "PL!HS-PR-022-PR": 4,
+  "PL!N-bp1-003-R＋": 1,
+  "PL!N-pb1-011-R": 4,
+  "PL!S-bp2-009-R": 1,
+  "PL!S-bp2-016-N": 4,
+  "PL!S-bp5-111-R": 4,
+  "PL!S-pb1-004-R": 1,
+  "PL!S-PR-026-PR": 4,
+  "PL!S-sd1-008-SD": 2,
+  "PL!SP-bp2-019-N": 3,
+  "PL!SP-bp5-001-R＋": 2,
+  "PL!SP-bp5-006-R": 4,
+  "PL!SP-pb1-014-N": 1,
+  "PL!SP-sd1-003-SD": 1,
+  "PL!SP-sd1-019-SD": 4,
+  "PL!N-bp1-026-L": 1,
+  "PL!N-bp3-030-L": 4,
+  "PL!N-bp4-030-L": 4,
+  "PL!N-bp5-027-L": 3,
+};
+/** キーライブ（枚数は deck 側。ここは識別用の card_no のみ） */
+export const DEFAULT_STARTER_KEY_CARD_NOS = ["PL!N-bp4-030-L"];
+export const DEFAULT_STARTER_KEY2_CARD_NOS = [];
 export const DEFAULT_STARTER_KEY3_CARD_NOS = [];
-export const DEFAULT_STARTER_MIDDLE_CARD_NOS = ["LL-TA-04", "LL-TA-05"];
+/** 中間（メンバー） */
+export const DEFAULT_STARTER_MIDDLE_CARD_NOS = ["PL!SP-bp5-001-R＋", "PL!N-bp1-003-R＋"];
+/** プリセット一覧サムネ（デッキに収録されている番号） */
+export const DEFAULT_STARTER_THUMBNAIL_CARD_NO = "PL!N-bp4-030-L";
 
 /** 初期エネルギートークン（公式サイトの SD エネ画像） */
 export const DEFAULT_ENERGY_CARD_NO = "LL-E-001-SD";

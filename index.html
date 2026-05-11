@@ -309,6 +309,7 @@ python3 -m http.server 8080</pre>
         <div class="game-bar-row game-bar-actions">
           <button type="button" class="btn primary" id="btn-back-builder">デッキ編集に戻る</button>
           <button type="button" class="btn secondary" id="btn-help" title="? キー">ヘルプ</button>
+          <button type="button" class="btn sm secondary" id="toggle-hand-mask">手札を隠す</button>
         </div>
         <div class="game-bar-row game-tools-row">
           <details class="energy-card-details">
@@ -384,7 +385,7 @@ python3 -m http.server 8080</pre>
                 </details>
                 <pre id="deck-live-sim-stats" class="deck-live-sim-stats deck-draw-odds-visible" hidden></pre>
                 <p id="deck-live-sim-note" class="hint zone-inline-help deck-live-sim-note deck-prob-explain-hide">
-                  モードは盤面B（k=B−R）／デッキ全体。めくりで増えるのは BH のみ。
+                  モードは盤面B（k=B−R）／デッキ全体。めくりで増えるのは BH のみ。BH の ALL（b_all）は有色 need にも充当されます。
                 </p>
               </div>
             </section>
@@ -749,10 +750,12 @@ python3 -m http.server 8080</pre>
                 山札一覧: 裏向き
               </button>
             </div>
-            <div class="btn-row draw-row wrap">
+            <div class="btn-row draw-row draw-row--top wrap">
               <button type="button" class="btn" id="btn-draw-hand">1枚ドロー（手札）</button>
               <button type="button" class="btn" id="btn-draw-waiting">1枚ドロー（控室）</button>
               <button type="button" class="btn" id="btn-draw-resolution">1枚ドロー（解決）</button>
+            </div>
+            <div class="btn-row draw-row draw-row--turn wrap">
               <button type="button" class="btn primary" id="btn-turn-start" title="解決・ライブ枠を控え室へ送る／手札に山札から 1 枚ドロー／側面エネのウェイト解除・メンバーを縦・アクティブにし側面エネを1枚加算（上限12）">
                 ターン開始
               </button>
@@ -821,7 +824,6 @@ python3 -m http.server 8080</pre>
                 <button type="button" class="btn sm" id="btn-mulligan-execute" disabled>
                   マリガン実行
                 </button>
-                <button type="button" class="btn sm secondary" id="toggle-hand-mask">手札を隠す</button>
                 <button type="button" class="btn sm danger" id="btn-reset-game" title="キー山札から初手／Undo 消去">
                   盤面リセット
                 </button>
@@ -1095,6 +1097,18 @@ python3 -m http.server 8080</pre>
       <form method="dialog">
         <button type="submit" class="btn primary wide">閉じる</button>
       </form>
+    </dialog>
+
+    <dialog id="dlg-pick-success-live" class="app-dialog dlg-pick-success-live" aria-labelledby="dlg-pick-success-live-title">
+      <h2 id="dlg-pick-success-live-title" class="app-dialog__title">成功したライブを1枚選ぶ</h2>
+      <p class="hint zone-inline-help">
+        成功置き場へ移すライブカードを 1 枚だけ選んでください。
+      </p>
+      <div id="dlg-pick-success-live-list" class="dlg-pick-success-live-list"></div>
+      <div class="app-dialog__actions dlg-pick-success-live-actions">
+        <button type="button" class="btn secondary" id="dlg-pick-success-live-cancel">キャンセル</button>
+        <button type="button" class="btn primary" id="dlg-pick-success-live-ok">選択した1枚を移動</button>
+      </div>
     </dialog>
 
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
