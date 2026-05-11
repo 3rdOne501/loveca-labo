@@ -1,5 +1,10 @@
 import {
   DECK_EXPORT_VERSION,
+  DEFAULT_STARTER_DECK_MAP,
+  DEFAULT_STARTER_KEY2_CARD_NOS,
+  DEFAULT_STARTER_KEY3_CARD_NOS,
+  DEFAULT_STARTER_KEY_CARD_NOS,
+  DEFAULT_STARTER_MIDDLE_CARD_NOS,
   MAX_COPIES_PER_CARD,
   MAX_LIVE_IN_MAIN,
   MAX_MEMBER_IN_MAIN,
@@ -13,6 +18,7 @@ import {
   addDeckSlot,
   cloneDeckMap,
   duplicateDeckSlot,
+  isBuiltInStarterDeckId,
   loadDeckLibrary,
   persistDeckLibrary,
   removeDeckSlot,
@@ -307,6 +313,15 @@ function thumbExtraHtml(card) {
 }
 
 export function initDeckBuilder(root, { onStartGame }) {
+  if (!localStorage.getItem(STORAGE_DECK)) {
+    saveDeckBundleToStorage({
+      map: cloneDeckMap(DEFAULT_STARTER_DECK_MAP),
+      keyCardNos: DEFAULT_STARTER_KEY_CARD_NOS,
+      keyCard2Nos: DEFAULT_STARTER_KEY2_CARD_NOS,
+      keyCard3Nos: DEFAULT_STARTER_KEY3_CARD_NOS,
+      middleCardNos: DEFAULT_STARTER_MIDDLE_CARD_NOS,
+    });
+  }
   const initialBundle = loadDeckBundleFromStorage();
   let deckMap = initialBundle.map;
   /** @type {Set<string>} */
@@ -335,6 +350,20 @@ export function initDeckBuilder(root, { onStartGame }) {
   let filterSeries = "";
   let filterUnit = "";
   let deckGridFlushRaf = 0;
+  let cardGridVirtualRaf = 0;
+  let cardGridVirtualMeasureGuard = 0;
+  /** @type {{ active: boolean, list: typeof cards, cols: number, rowH: number, w0: number, w1: number, lastPanel: string, lastCount: number }} */
+  let cardGridVirtual = {
+    active: false,
+    list: [],
+    cols: 8,
+    rowH: 228,
+    w0: -1,
+    w1: -1,
+    lastPanel: "",
+    lastCount: -1,
+  };
+  const CARD_GRID_VIRTUAL_MIN = 80;
   /** @type {"catalog"|"deck"} */
   let cardPanelMode = "catalog";
   const cards = getAllCards();
@@ -689,6 +718,7 @@ export function initDeckBuilder(root, { onStartGame }) {
       const o = document.createElement("option");
       o.value = s.id;
       const when =
+        !isBuiltInStarterDeckId(s.id) &&
         s.updatedAt &&
         typeof s.updatedAt === "string" &&
         !Number.isNaN(Date.parse(s.updatedAt))
@@ -807,7 +837,7 @@ export function initDeckBuilder(root, { onStartGame }) {
         card && card.img
           ? '<img class="deck-thumb deck-builder-card-thumb" src="' +
             escapeAttr(card.img) +
-            '" alt="" loading="eager" decoding="async" />'
+            '" alt="" loading="lazy" fetchpriority="low" decoding="async" />'
           : '<span class="deck-thumb deck-thumb-missing" title="カードデータなし"></span>';
       const isKey = keyCardNos.has(no);
       const isKey2 = keyCard2Nos.has(no);
@@ -1120,7 +1150,7 @@ export function initDeckBuilder(root, { onStartGame }) {
         var imgHtml = card
           ? '<img class="deck-thumb deck-builder-card-thumb" src="' +
             escapeAttr(card.img) +
-            '" alt="" loading="eager" decoding="async" />'
+            '" alt="" loading="lazy" fetchpriority="low" decoding="async" />'
           : '<span class="deck-thumb deck-thumb-missing" title="未登録"></span>';
         var rk = peekKey.has(row.no);
         var rk2 = peekKey2.has(row.no);
@@ -1251,6 +1281,10 @@ export function initDeckBuilder(root, { onStartGame }) {
       }
       if (mode.indexOf("library:") !== 0) return;
       var sid = mode.slice(8);
+      if (isBuiltInStarterDeckId(sid)) {
+        showToast("共通の初期デッキはロール設定を変更できません。「別名で保存」してから編集してください。");
+        return;
+      }
       var slot = library.slots.find(function (s) {
         return s.id === sid;
       });
@@ -1467,148 +1501,246 @@ export function initDeckBuilder(root, { onStartGame }) {
           "";
       }
     }
-    grid.innerHTML = "";
-    for (const card of filtered) {
-      const wrap = document.createElement("div");
-      wrap.className = "card-grid-item";
-      const div = document.createElement("div");
-      div.className =
-        "card-thumb card-thumb--" + (card.type === T_LIVE ? "live" : card.type === T_MEMBER ? "member" : "misc");
-      const tlab = card.type === T_LIVE ? "ライブカード" : card.type === T_MEMBER ? "メンバーカード" : "";
-      const inDeck = (deckMap[card.card_no] || 0) > 0;
-      const pills = [];
-      if (inDeck && keyCardNos.has(card.card_no))
-        pills.push('<span class="card-thumb-role card-thumb-role--key">キー</span>');
-      if (inDeck && keyCard2Nos.has(card.card_no))
-        pills.push('<span class="card-thumb-role card-thumb-role--key2">キ②</span>');
-      if (inDeck && keyCard3Nos.has(card.card_no))
-        pills.push('<span class="card-thumb-role card-thumb-role--key3">キ③</span>');
-      if (inDeck && middleCardNos.has(card.card_no))
-        pills.push('<span class="card-thumb-role card-thumb-role--mid">中間</span>');
-      const rolesHtml = pills.length ? '<div class="card-thumb-roles">' + pills.join("") + "</div>" : "";
-      const qtyBadge =
-        cardPanelMode === "deck"
-          ? '<span class="thumb-deck-qty">' + (deckMap[card.card_no] || 0) + " 枚</span>"
-          : "";
-      div.innerHTML =
-        rolesHtml +
-        qtyBadge +
-        `<span class="thumb-type">${escapeHtml(tlab)}</span><img src="${escapeAttr(card.img)}" alt="" class="deck-builder-card-thumb" loading="eager" decoding="async" /><span class="thumb-cap">${escapeHtml(card.name)}${thumbExtraHtml(card)}</span>`;
-      div.addEventListener("click", function (ev) {
-        if (
-          ev.target &&
-          ev.target.closest &&
-          (ev.target.closest(".deck-builder-card-thumb") || ev.target.tagName === "IMG")
-        ) {
-          ev.preventDefault();
-          ev.stopPropagation();
-          openDeckBuilderCardZoom(card);
-          return;
+    const scrollEl = el("card-grid-scroll");
+    const topSp = el("card-grid-top-spacer");
+    const botSp = el("card-grid-bottom-spacer");
+    const useVirtual = !!(topSp && botSp && scrollEl) && filtered.length >= CARD_GRID_VIRTUAL_MIN;
+
+    if (!useVirtual) {
+      cardGridVirtual.active = false;
+      if (topSp) topSp.style.height = "0px";
+      if (botSp) botSp.style.height = "0px";
+      grid.innerHTML = "";
+      for (const card of filtered) grid.appendChild(createCardGridItemWrap(card));
+      return;
+    }
+
+    const needScrollReset =
+      !cardGridVirtual.active ||
+      cardGridVirtual.lastPanel !== cardPanelMode ||
+      cardGridVirtual.lastCount !== filtered.length;
+    cardGridVirtual.lastPanel = cardPanelMode;
+    cardGridVirtual.lastCount = filtered.length;
+    if (needScrollReset && scrollEl) {
+      scrollEl.scrollTop = 0;
+      cardGridVirtualMeasureGuard = 0;
+    }
+    cardGridVirtual.active = true;
+    cardGridVirtual.list = filtered;
+    cardGridVirtual.w0 = -1;
+    cardGridVirtual.rowH = cardPanelMode === "deck" ? 268 : 234;
+    syncVirtualCardGridWindow(true);
+  }
+
+  function estimateCardGridCols(scrollEl) {
+    if (!scrollEl || scrollEl.clientWidth < 48) return 6;
+    const gap = 9;
+    const minCol = 100;
+    const pad = 28;
+    const inner = Math.max(0, scrollEl.clientWidth - pad);
+    return Math.max(2, Math.floor((inner + gap) / (minCol + gap)));
+  }
+
+  function measureVirtualRowHeightFromGrid(gridEl, cols) {
+    const ch = gridEl.children;
+    if (!ch.length) return cardGridVirtual.rowH;
+    const n = Math.min(Math.max(1, cols), ch.length);
+    let h = 0;
+    for (let i = 0; i < n; i++) h = Math.max(h, /** @type {HTMLElement} */ (ch[i]).offsetHeight || 0);
+    return Math.max(168, h + 10);
+  }
+
+  function createCardGridItemWrap(card) {
+    const wrap = document.createElement("div");
+    wrap.className = "card-grid-item";
+    const div = document.createElement("div");
+    div.className =
+      "card-thumb card-thumb--" + (card.type === T_LIVE ? "live" : card.type === T_MEMBER ? "member" : "misc");
+    const tlab = card.type === T_LIVE ? "ライブカード" : card.type === T_MEMBER ? "メンバーカード" : "";
+    const inDeck = (deckMap[card.card_no] || 0) > 0;
+    const pills = [];
+    if (inDeck && keyCardNos.has(card.card_no))
+      pills.push('<span class="card-thumb-role card-thumb-role--key">キー</span>');
+    if (inDeck && keyCard2Nos.has(card.card_no))
+      pills.push('<span class="card-thumb-role card-thumb-role--key2">キ②</span>');
+    if (inDeck && keyCard3Nos.has(card.card_no))
+      pills.push('<span class="card-thumb-role card-thumb-role--key3">キ③</span>');
+    if (inDeck && middleCardNos.has(card.card_no))
+      pills.push('<span class="card-thumb-role card-thumb-role--mid">中間</span>');
+    const rolesHtml = pills.length ? '<div class="card-thumb-roles">' + pills.join("") + "</div>" : "";
+    const qtyBadge =
+      cardPanelMode === "deck"
+        ? '<span class="thumb-deck-qty">' + (deckMap[card.card_no] || 0) + " 枚</span>"
+        : "";
+    div.innerHTML =
+      rolesHtml +
+      qtyBadge +
+      `<span class="thumb-type">${escapeHtml(tlab)}</span><img src="${escapeAttr(card.img)}" alt="" class="deck-builder-card-thumb" loading="lazy" fetchpriority="low" decoding="async" /><span class="thumb-cap">${escapeHtml(card.name)}${thumbExtraHtml(card)}</span>`;
+    div.addEventListener("click", function (ev) {
+      if (
+        ev.target &&
+        ev.target.closest &&
+        (ev.target.closest(".deck-builder-card-thumb") || ev.target.tagName === "IMG")
+      ) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        openDeckBuilderCardZoom(card);
+        return;
+      }
+      const addNo = resolvedCardNoForAdd(card);
+      if (!addNo) return;
+      if (!canAddNo(addNo, 1)) return;
+      deckMap[addNo] = (deckMap[addNo] || 0) + 1;
+      persistDeckState();
+      renderCounts();
+      renderDeckList();
+      scheduleRenderCardGrid();
+    });
+    wrap.appendChild(div);
+    if (cardPanelMode === "deck") {
+      const roleRow = document.createElement("div");
+      roleRow.className = "card-thumb-role-edit-row";
+      roleRow.innerHTML =
+        '<label class="chk deck-role-chk"><input type="checkbox" data-picker="role-grid" data-role="key" data-no="' +
+        escapeAttr(card.card_no) +
+        '"' +
+        (keyCardNos.has(card.card_no) ? " checked" : "") +
+        '> キー</label>' +
+        '<label class="chk deck-role-chk"><input type="checkbox" data-picker="role-grid" data-role="key2" data-no="' +
+        escapeAttr(card.card_no) +
+        '"' +
+        (keyCard2Nos.has(card.card_no) ? " checked" : "") +
+        '> キ②</label>' +
+        '<label class="chk deck-role-chk"><input type="checkbox" data-picker="role-grid" data-role="key3" data-no="' +
+        escapeAttr(card.card_no) +
+        '"' +
+        (keyCard3Nos.has(card.card_no) ? " checked" : "") +
+        '> キ③</label>' +
+        '<label class="chk deck-role-chk"><input type="checkbox" data-picker="role-grid" data-role="middle" data-no="' +
+        escapeAttr(card.card_no) +
+        '"' +
+        (middleCardNos.has(card.card_no) ? " checked" : "") +
+        '> 中間</label>';
+      roleRow.querySelectorAll("input[data-picker='role-grid']").forEach(function (inp) {
+        inp.addEventListener("change", function () {
+          const no = inp.getAttribute("data-no");
+          const role = inp.getAttribute("data-role");
+          if (!no || !role) return;
+          if (role === "key") {
+            if (inp.checked) keyCardNos.add(no);
+            else keyCardNos.delete(no);
+          } else if (role === "key2") {
+            if (inp.checked) keyCard2Nos.add(no);
+            else keyCard2Nos.delete(no);
+          } else if (role === "key3") {
+            if (inp.checked) keyCard3Nos.add(no);
+            else keyCard3Nos.delete(no);
+          } else if (role === "middle") {
+            if (inp.checked) middleCardNos.add(no);
+            else middleCardNos.delete(no);
+          }
+          persistDeckState();
+          renderDeckList();
+          scheduleRenderCardGrid();
+        });
+      });
+      wrap.appendChild(roleRow);
+    }
+    const emCat = effectiveMainDeckCategory(card);
+    if (emCat === T_MEMBER || emCat === T_LIVE) {
+      const qrow = document.createElement("div");
+      qrow.className = "card-thumb-qty-row";
+      const bMinus = document.createElement("button");
+      bMinus.type = "button";
+      bMinus.className = "card-thumb-qty-btn";
+      bMinus.textContent = "−";
+      bMinus.setAttribute("aria-label", "メインデッキから1枚減らす");
+      const bPlus = document.createElement("button");
+      bPlus.type = "button";
+      bPlus.className = "card-thumb-qty-btn card-thumb-qty-btn--plus";
+      bPlus.textContent = "+";
+      bPlus.setAttribute("aria-label", "メインデッキへ1枚追加");
+      function bump(delta) {
+        var no = card.card_no;
+        if (delta > 0) {
+          no = resolvedCardNoForAdd(card) || card.card_no;
         }
-        const addNo = resolvedCardNoForAdd(card);
-        if (!addNo) return;
-        if (!canAddNo(addNo, 1)) return;
-        deckMap[addNo] = (deckMap[addNo] || 0) + 1;
+        var cur = deckMap[no] || 0;
+        if (delta < 0 && cur <= 0) return;
+        if (delta > 0 && !canAddNo(no, 1)) return;
+        deckMap[no] = Math.max(0, cur + delta);
+        if (!(deckMap[no] > 0)) delete deckMap[no];
         persistDeckState();
         renderCounts();
         renderDeckList();
         scheduleRenderCardGrid();
+      }
+      bMinus.addEventListener("click", function (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        bump(-1);
       });
-      wrap.appendChild(div);
-      if (cardPanelMode === "deck") {
-        const roleRow = document.createElement("div");
-        roleRow.className = "card-thumb-role-edit-row";
-        roleRow.innerHTML =
-          '<label class="chk deck-role-chk"><input type="checkbox" data-picker="role-grid" data-role="key" data-no="' +
-          escapeAttr(card.card_no) +
-          '"' +
-          (keyCardNos.has(card.card_no) ? " checked" : "") +
-          '> キー</label>' +
-          '<label class="chk deck-role-chk"><input type="checkbox" data-picker="role-grid" data-role="key2" data-no="' +
-          escapeAttr(card.card_no) +
-          '"' +
-          (keyCard2Nos.has(card.card_no) ? " checked" : "") +
-          '> キ②</label>' +
-          '<label class="chk deck-role-chk"><input type="checkbox" data-picker="role-grid" data-role="key3" data-no="' +
-          escapeAttr(card.card_no) +
-          '"' +
-          (keyCard3Nos.has(card.card_no) ? " checked" : "") +
-          '> キ③</label>' +
-          '<label class="chk deck-role-chk"><input type="checkbox" data-picker="role-grid" data-role="middle" data-no="' +
-          escapeAttr(card.card_no) +
-          '"' +
-          (middleCardNos.has(card.card_no) ? " checked" : "") +
-          '> 中間</label>';
-        roleRow.querySelectorAll("input[data-picker='role-grid']").forEach(function (inp) {
-          inp.addEventListener("change", function () {
-            const no = inp.getAttribute("data-no");
-            const role = inp.getAttribute("data-role");
-            if (!no || !role) return;
-            if (role === "key") {
-              if (inp.checked) keyCardNos.add(no);
-              else keyCardNos.delete(no);
-            } else if (role === "key2") {
-              if (inp.checked) keyCard2Nos.add(no);
-              else keyCard2Nos.delete(no);
-            } else if (role === "key3") {
-              if (inp.checked) keyCard3Nos.add(no);
-              else keyCard3Nos.delete(no);
-            } else if (role === "middle") {
-              if (inp.checked) middleCardNos.add(no);
-              else middleCardNos.delete(no);
-            }
-            persistDeckState();
-            renderDeckList();
-            scheduleRenderCardGrid();
-          });
-        });
-        wrap.appendChild(roleRow);
-      }
-      const emCat = effectiveMainDeckCategory(card);
-      if (emCat === T_MEMBER || emCat === T_LIVE) {
-        const qrow = document.createElement("div");
-        qrow.className = "card-thumb-qty-row";
-        const bMinus = document.createElement("button");
-        bMinus.type = "button";
-        bMinus.className = "card-thumb-qty-btn";
-        bMinus.textContent = "−";
-        bMinus.setAttribute("aria-label", "メインデッキから1枚減らす");
-        const bPlus = document.createElement("button");
-        bPlus.type = "button";
-        bPlus.className = "card-thumb-qty-btn card-thumb-qty-btn--plus";
-        bPlus.textContent = "+";
-        bPlus.setAttribute("aria-label", "メインデッキへ1枚追加");
-        function bump(delta) {
-          var no = card.card_no;
-          if (delta > 0) {
-            no = resolvedCardNoForAdd(card) || card.card_no;
-          }
-          var cur = deckMap[no] || 0;
-          if (delta < 0 && cur <= 0) return;
-          if (delta > 0 && !canAddNo(no, 1)) return;
-          deckMap[no] = Math.max(0, cur + delta);
-          if (!(deckMap[no] > 0)) delete deckMap[no];
-          persistDeckState();
-          renderCounts();
-          renderDeckList();
-          scheduleRenderCardGrid();
-        }
-        bMinus.addEventListener("click", function (ev) {
-          ev.preventDefault();
-          ev.stopPropagation();
-          bump(-1);
-        });
-        bPlus.addEventListener("click", function (ev) {
-          ev.preventDefault();
-          ev.stopPropagation();
-          bump(1);
-        });
-        qrow.appendChild(bMinus);
-        qrow.appendChild(bPlus);
-        wrap.appendChild(qrow);
-      }
-      grid.appendChild(wrap);
+      bPlus.addEventListener("click", function (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        bump(1);
+      });
+      qrow.appendChild(bMinus);
+      qrow.appendChild(bPlus);
+      wrap.appendChild(qrow);
     }
+    return wrap;
+  }
+
+  function syncVirtualCardGridWindow(force) {
+    const scroll = el("card-grid-scroll");
+    const topSp = el("card-grid-top-spacer");
+    const botSp = el("card-grid-bottom-spacer");
+    const grid = el("card-grid");
+    if (!scroll || !topSp || !botSp || !grid || !cardGridVirtual.active) return;
+    const list = cardGridVirtual.list;
+    const N = list.length;
+    if (!N) {
+      topSp.style.height = "0px";
+      botSp.style.height = "0px";
+      grid.innerHTML = "";
+      return;
+    }
+    const cols = estimateCardGridCols(scroll);
+    const rowH = cardGridVirtual.rowH;
+    const totalRows = Math.ceil(N / cols);
+    const overscan = 3;
+    const st = scroll.scrollTop;
+    let firstRow = Math.floor(st / rowH) - overscan;
+    if (firstRow < 0) firstRow = 0;
+    const visRows = Math.ceil(scroll.clientHeight / rowH) + overscan * 2 + 2;
+    const startIdx = firstRow * cols;
+    const endIdx = Math.min(N, startIdx + visRows * cols);
+    if (!force && startIdx === cardGridVirtual.w0 && endIdx === cardGridVirtual.w1 && cols === cardGridVirtual.cols)
+      return;
+    cardGridVirtual.cols = cols;
+    cardGridVirtual.w0 = startIdx;
+    cardGridVirtual.w1 = endIdx;
+
+    topSp.style.height = firstRow * rowH + "px";
+    const sliceCount = endIdx - startIdx;
+    const renderedRows = sliceCount > 0 ? Math.ceil(sliceCount / cols) : 0;
+    const bottomRows = Math.max(0, totalRows - firstRow - renderedRows);
+    botSp.style.height = bottomRows * rowH + "px";
+
+    grid.innerHTML = "";
+    for (let i = startIdx; i < endIdx; i++) grid.appendChild(createCardGridItemWrap(list[i]));
+
+    requestAnimationFrame(function () {
+      if (!cardGridVirtual.active) return;
+      const nh = measureVirtualRowHeightFromGrid(grid, cols);
+      if (nh > 0 && Math.abs(nh - cardGridVirtual.rowH) > 8 && cardGridVirtualMeasureGuard < 5) {
+        cardGridVirtualMeasureGuard++;
+        cardGridVirtual.rowH = nh;
+        cardGridVirtual.w0 = -1;
+        syncVirtualCardGridWindow(true);
+      }
+    });
   }
 
   function scheduleRenderCardGrid() {
@@ -1843,6 +1975,10 @@ export function initDeckBuilder(root, { onStartGame }) {
       showToast("「新規で保存」か、一覧でプリセットを選んでから「上書き保存」してください");
       return;
     }
+    if (isBuiltInStarterDeckId(id)) {
+      showToast("共通の初期デッキは上書きできません。「別名で保存」で自分用のコピーを作れます。");
+      return;
+    }
     const slot = library.slots.find((x) => x.id === id);
     if (!slot) {
       showToast("一覧がずれました。読み込み直ししてください");
@@ -1912,6 +2048,10 @@ export function initDeckBuilder(root, { onStartGame }) {
     const id = sel && sel.value;
     if (!id) {
       showToast("一覧から削除したいプリセットを選んでください");
+      return;
+    }
+    if (isBuiltInStarterDeckId(id)) {
+      showToast("共通の初期デッキは削除できません。");
       return;
     }
     const slot = library.slots.find((x) => x.id === id);
@@ -2044,6 +2184,10 @@ export function initDeckBuilder(root, { onStartGame }) {
     const thumbSel = el("deck-preset-thumb-select");
     const id = presetSel && presetSel.value;
     if (!id || !thumbSel || thumbSel.disabled) return;
+    if (isBuiltInStarterDeckId(id)) {
+      showToast("共通の初期デッキのサムネは変更できません。");
+      return;
+    }
     const slot = library.slots.find((x) => x.id === id);
     if (!slot) return;
     const raw = thumbSel.value;
@@ -2140,6 +2284,31 @@ export function initDeckBuilder(root, { onStartGame }) {
   el("btn-card-panel-deck")?.addEventListener("click", function () {
     setCardPanelMode("deck");
   });
+
+  const cardGridScrollEl = el("card-grid-scroll");
+  if (cardGridScrollEl && !cardGridScrollEl.dataset.vwin) {
+    cardGridScrollEl.dataset.vwin = "1";
+    cardGridScrollEl.addEventListener(
+      "scroll",
+      function () {
+        if (!cardGridVirtual.active) return;
+        if (cardGridVirtualRaf) cancelAnimationFrame(cardGridVirtualRaf);
+        cardGridVirtualRaf = requestAnimationFrame(function () {
+          cardGridVirtualRaf = 0;
+          syncVirtualCardGridWindow(false);
+        });
+      },
+      { passive: true },
+    );
+    if (typeof ResizeObserver !== "undefined") {
+      const ro = new ResizeObserver(function () {
+        if (!cardGridVirtual.active) return;
+        cardGridVirtual.w0 = -1;
+        syncVirtualCardGridWindow(true);
+      });
+      ro.observe(cardGridScrollEl);
+    }
+  }
 
   fillSelects();
   wirePeekListRoleEditorOnce();

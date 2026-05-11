@@ -879,6 +879,9 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
   /** @type {object | null} */
   let dragUndoSnap = null;
 
+  /** Sortable onChoose で掴んだ要素の dataset.id（ステージ上で「どれが今置いたメンバーか」を DOM 順に頼らず決める） */
+  let lastDraggedDomId = "";
+
   /** メンバー H/B 追加ダイアログの対象（盤面上の実体オブジェクトへの参照） */
   let memberHbDialogTarget = null;
 
@@ -2400,7 +2403,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
           tgt.playBonusBlade = sanitizeNonNegativeInt(pack.blade);
           ensureCardBoardFields(tgt);
           closeHb();
-          render();
+          // microtask ベースの render() が別操作で潰れるケースがあるため同期レンダーで確実反映
+          renderSynchronouslyOnce();
           showToast("メンバーに追加の所持H／ブレードを適用しました（非公式調整・Undo可）");
         } catch (err) {
           console.error(err);
@@ -3003,6 +3007,11 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
       }
       img.title = String(c.card_no ? c.card_no + " · " + c.name : c.name || "");
       img.draggable = false;
+      img.decoding = "async";
+      if (!opts.hideFaceBehindBack && !opts.deckFaceHidden) {
+        img.loading = "lazy";
+        img.fetchPriority = "low";
+      }
       img.className = "card-img";
       if (opts.forceLiveHorizontal) img.classList.add("rotated");
       else if (c.isRotated) img.classList.add("rotated");
@@ -3250,22 +3259,120 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
     fill("live-right", state.liveArea.right);
   }
 
-  function normalizeAfterDrop() {
-    ["left", "center", "right"].forEach((k) => {
-      const slot = state.stage[k];
-      const members = slot.filter((c) => c.type === T_MEMBER);
-      if (members.length > 1) {
-        members.slice(0, -1).forEach((m) => {
+  function normalizeAfterDrop(snapBeforeDrag, draggedDomId) {
+    const cols = ["left", "center", "right"];
+
+    // snapBeforeDrag から「そのメンバーが居た列（置換元）」を引く
+    const prevStageMemberIdsByCol = {};
+    cols.forEach(function (k) {
+      prevStageMemberIdsByCol[k] = new Set();
+      const arr = snapBeforeDrag && snapBeforeDrag.stage && snapBeforeDrag.stage[k];
+      if (!Array.isArray(arr)) return;
+      arr.forEach(function (c) {
+        if (!c || c.type !== T_MEMBER) return;
+        if (!c.id) return;
+        prevStageMemberIdsByCol[k].add(String(c.id));
+      });
+    });
+
+    function findPrevStageColByMemberId(mid) {
+      const s = String(mid || "");
+      if (!s) return null;
+      for (let i = 0; i < cols.length; i++) {
+        const k = cols[i];
+        if (prevStageMemberIdsByCol[k] && prevStageMemberIdsByCol[k].has(s)) return k;
+      }
+      return null;
+    }
+
+    // 現在の stage スロットから「members / energies」を分離して解決する
+    const membersByCol = {};
+    const energiesByCol = {};
+    cols.forEach(function (k) {
+      const slot = state.stage[k] || [];
+      membersByCol[k] = slot.filter(function (c) {
+        return c && c.type === T_MEMBER;
+      });
+      energiesByCol[k] = slot.filter(function (c) {
+        return c && c.type === T_ENERGY;
+      });
+    });
+
+    const membersResolved = { left: [], center: [], right: [] };
+    const energiesResolved = { left: [], center: [], right: [] };
+
+    // 置換（stage-stag）: 入ってきたメンバーが snap に居たなら入れ替え、それ以外なら baton touch とみなし控えへ
+    cols.forEach(function (k) {
+      const members = membersByCol[k];
+      const energies = energiesByCol[k];
+      if (!members.length) {
+        if (!membersResolved[k].length) {
+          membersResolved[k] = [];
+          energiesResolved[k] = energies;
+        }
+        return;
+      }
+      if (members.length === 1) {
+        if (!membersResolved[k].length) {
+          membersResolved[k] = [members[0]];
+          energiesResolved[k] = energies;
+        }
+        return;
+      }
+
+      // members.length >= 2: Sortable の DOM 順は列・ドロップ位置で末尾＝新着とは限らない
+      const dragId = draggedDomId != null ? String(draggedDomId || "") : "";
+      let newMember = null;
+      if (dragId) {
+        for (let mi = 0; mi < members.length; mi++) {
+          const m = members[mi];
+          if (m && m.id != null && String(m.id) === dragId) {
+            newMember = m;
+            break;
+          }
+        }
+      }
+      if (!newMember) {
+        newMember = members[members.length - 1];
+      }
+      const displaced = members.filter(function (m) {
+        return !newMember || String((m && m.id) || "") !== String((newMember && newMember.id) || "");
+      });
+
+      const prevCol = newMember && newMember.id ? findPrevStageColByMemberId(newMember.id) : null;
+      if (prevCol && prevCol !== k) {
+        // stage-stag 入れ替え（追い出し側は “置換元の列” へ）
+        const mainDisplaced = displaced[0] || null;
+        const extraDisplaced = displaced.slice(1);
+        extraDisplaced.forEach(function (m) {
           state.waitingRoom.push(m);
-          const i = slot.indexOf(m);
-          if (i >= 0) slot.splice(i, 1);
         });
+
+        membersResolved[k] = [newMember];
+        membersResolved[prevCol] = mainDisplaced ? [mainDisplaced] : [];
+
+        // 付随エネルギーも下に付くものとして入れ替え
+        energiesResolved[k] = energiesByCol[prevCol] || [];
+        energiesResolved[prevCol] = energies || [];
+      } else {
+        // baton touch（手からの配置 / snap に無い新規）: 追い出し側メンバーは控えへ、列下エネは破棄（消える）
+        displaced.forEach(function (m) {
+          state.waitingRoom.push(m);
+        });
+        membersResolved[k] = [newMember];
+        energiesResolved[k] = [];
       }
-      const en = slot.filter((c) => c.type === T_ENERGY);
-      const mem = slot.find((c) => c.type === T_MEMBER);
-      if (en.length && mem) {
-        state.stage[k] = [...en, mem];
+    });
+
+    // 最終整形: 「メンバーが無い列の energies は破棄」
+    cols.forEach(function (k) {
+      const mem = membersResolved[k] && membersResolved[k][0] ? membersResolved[k][0] : null;
+      if (!mem) {
+        state.stage[k] = [];
+        return;
       }
+      const en = energiesResolved[k] || [];
+      state.stage[k] = [...en, mem];
     });
 
     ["left", "center", "right"].forEach(function (k) {
@@ -3374,6 +3481,10 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
       onChoose: function (evt) {
         dragUndoSnap = snapshotBoard();
         const dragElItem = evt.item;
+        lastDraggedDomId =
+          dragElItem && dragElItem.dataset && dragElItem.dataset.id != null
+            ? String(dragElItem.dataset.id)
+            : "";
         showCardBackWhileDragging(dragElItem);
         if (dragElItem && dragElItem.dataset && dragElItem.dataset.type === T_ENERGY) {
           refreshEnergyDropHints(dragElItem);
@@ -3392,7 +3503,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
           var fpSel = $("select-first-player");
           if (fpSel) fpSel.value = "先攻";
         }
-        normalizeAfterDrop();
+        normalizeAfterDrop(dragUndoSnap, lastDraggedDomId);
+        lastDraggedDomId = "";
         maybeAutoDrawHandAfterLiveMemberSet(evt);
         maybeRotateEnergyCostForMembersNewOnStage(dragUndoSnap);
         stampNewStageMembersForGlow(dragUndoSnap);
@@ -3958,6 +4070,43 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
       });
     }
 
+    function resolveEnergyIdentity(cn) {
+      var cat = cn ? getCard(cn) : null;
+      if (cat && cat.card_no && cat.name && cat.img) {
+        return {
+          card_no: String(cat.card_no),
+          name: String(cat.name),
+          img: String(cat.img),
+        };
+      }
+      return {
+        card_no: DEFAULT_ENERGY_CARD_NO,
+        name: DEFAULT_ENERGY_NAME,
+        img: DEFAULT_ENERGY_IMG,
+      };
+    }
+
+    function applyEnergyIdentityToAllEnergies(nextCn) {
+      var ident = resolveEnergyIdentity(nextCn || "");
+      var changed = false;
+      allZonesFlat().forEach(function (c) {
+        if (!c || c.type !== T_ENERGY) return;
+        if (String(c.card_no || "") !== ident.card_no) changed = true;
+        if (String(c.name || "") !== ident.name) changed = true;
+        if (String(c.img || "") !== ident.img) changed = true;
+      });
+      if (!changed) return;
+
+      pushHistoryBefore("energy-card-select");
+      allZonesFlat().forEach(function (c) {
+        if (!c || c.type !== T_ENERGY) return;
+        c.card_no = ident.card_no;
+        c.name = ident.name;
+        c.img = ident.img;
+      });
+      renderSynchronouslyOnce();
+    }
+
     var allEn = getAllCards().filter(function (c) {
       return c && c.type === T_ENERGY && c.card_no && c.name;
     });
@@ -3993,6 +4142,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
           highlightEnergyStripChip();
           persistSessionTexts();
           if (detailsWrap && detailsWrap.open) detailsWrap.open = false;
+          applyEnergyIdentityToAllEnergies(no);
         });
         stripHost.appendChild(b);
       }
@@ -4021,6 +4171,29 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
       highlightEnergyStripChip();
       persistSessionTexts();
       if (detailsWrap && detailsWrap.open) detailsWrap.open = false;
+      applyEnergyIdentityToAllEnergies(selectedEnergyCardNo);
+    });
+  })();
+
+  (function initLayout16_9() {
+    const btn = $("btn-layout-16-9");
+    if (!btn) return;
+    const STORAGE_LAYOUT_16_9_MODE = "llocg_layout_16_9";
+
+    function sync() {
+      const on = sessionStorage.getItem(STORAGE_LAYOUT_16_9_MODE) === "1";
+      document.body.classList.toggle("layout-16-9-mode", on);
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+    }
+
+    sync();
+    btn.addEventListener("click", function () {
+      const on = !document.body.classList.contains("layout-16-9-mode");
+      sessionStorage.setItem(STORAGE_LAYOUT_16_9_MODE, on ? "1" : "0");
+      document.body.classList.toggle("layout-16-9-mode", on);
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+      // サイズ変更でレイアウトが変わるので、山札の自動レイアウトなども再計算
+      renderSynchronouslyOnce();
     });
   })();
 
@@ -4722,9 +4895,16 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
     updateWaitingZoneOverlapMode();
   }
 
-  $("waiting-head-expand")?.addEventListener("click", toggleWaitingRailExpanded);
-  $("waiting-head-expand")?.addEventListener("keydown", function (ev) {
-    if (ev.key !== "Enter" && ev.key !== " ") return;
+  // render / DOM差し替えで直接バインドが外れることがあるため委譲に切り替え
+  root?.addEventListener("click", function (ev) {
+    const head = ev?.target?.closest ? ev.target.closest("#waiting-head-expand") : null;
+    if (!head) return;
+    toggleWaitingRailExpanded(ev);
+  });
+  root?.addEventListener("keydown", function (ev) {
+    if (ev?.key !== "Enter" && ev?.key !== " ") return;
+    const head = ev?.target?.closest ? ev.target.closest("#waiting-head-expand") : null;
+    if (!head) return;
     ev.preventDefault();
     toggleWaitingRailExpanded(ev);
   });

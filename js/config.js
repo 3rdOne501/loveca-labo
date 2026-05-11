@@ -68,6 +68,31 @@ export const HISTORY_MAX_STEPS = 35;
 /** 書き出し JSON の判別用（将来拡張） */
 export const DECK_EXPORT_VERSION = 1;
 
+/**
+ * 組み込みプリセット・初回メインデッキ用（cards.js が注入するテストカードのみ使用。公式 DB と衝突しにくい）
+ */
+export const BUILTIN_STARTER_PRESET_ID = "llocg-builtin-starter";
+export const BUILTIN_STARTER_PRESET_NAME = "初期デッキ（共通・サンプル60）";
+
+function buildDefaultStarterDeckMap() {
+  /** @type {Record<string, number>} */
+  const map = {};
+  for (let i = 1; i <= 12; i++) {
+    map["LL-TA-" + String(i).padStart(2, "0")] = 4;
+  }
+  for (let i = 1; i <= 3; i++) {
+    map["LL-TL-" + String(i).padStart(2, "0")] = 4;
+  }
+  return map;
+}
+
+/** メンバー48＋ライブ12＝60（常にカタログに存在するテスト枠） */
+export const DEFAULT_STARTER_DECK_MAP = buildDefaultStarterDeckMap();
+export const DEFAULT_STARTER_KEY_CARD_NOS = ["LL-TA-01", "LL-TA-02", "LL-TA-03"];
+export const DEFAULT_STARTER_KEY2_CARD_NOS = ["LL-TL-01"];
+export const DEFAULT_STARTER_KEY3_CARD_NOS = [];
+export const DEFAULT_STARTER_MIDDLE_CARD_NOS = ["LL-TA-04", "LL-TA-05"];
+
 /** 初期エネルギートークン（公式サイトの SD エネ画像） */
 export const DEFAULT_ENERGY_CARD_NO = "LL-E-001-SD";
 export const DEFAULT_ENERGY_NAME = "エネルギー";

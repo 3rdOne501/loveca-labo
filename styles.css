@@ -176,7 +176,7 @@ a:hover { color: #ccefff; text-decoration-thickness: 2px; }
     flex: 1 1 0%;
     min-height: 0;
     overflow-y: auto;
-    overscroll-behavior-y: contain;
+    overscroll-behavior-y: auto;
   }
   #view-deck .builder {
     grid-template-rows: none;
@@ -188,7 +188,7 @@ a:hover { color: #ccefff; text-decoration-thickness: 2px; }
 #view-deck .deck-panel {
   min-height: 0;
   overflow-y: auto;
-  overscroll-behavior-y: contain;
+  overscroll-behavior-y: auto;
   -webkit-overflow-scrolling: touch;
 }
 @media (max-width: 1100px) {
@@ -211,7 +211,7 @@ a:hover { color: #ccefff; text-decoration-thickness: 2px; }
   max-height: min(40dvh, 440px);
   overflow-x: hidden;
   overflow-y: auto;
-  overscroll-behavior-y: contain;
+  overscroll-behavior-y: auto;
   -webkit-overflow-scrolling: touch;
   margin-top: 0.35rem;
   padding: 0.25rem 0.35rem;
@@ -354,6 +354,8 @@ a:hover { color: #ccefff; text-decoration-thickness: 2px; }
 
 /* 検索一覧はラップのみ縦スクロール（親パネルを伸ばさない） */
 #view-deck .card-grid-scroll {
+  display: flex;
+  flex-direction: column;
   /* flex-basis 0 で兄弟（panel-title-row/panel-lead）の高さに引きずられず、残り領域を素直に取る */
   flex: 1 1 0;
   align-self: stretch;
@@ -362,7 +364,7 @@ a:hover { color: #ccefff; text-decoration-thickness: 2px; }
   max-height: min(calc(100dvh - 8.5rem), 78dvh, 980px);
   overflow-x: hidden;
   overflow-y: auto;
-  overscroll-behavior-y: contain;
+  overscroll-behavior-y: auto;
   -webkit-overflow-scrolling: touch;
   margin-top: 0.35rem;
   padding: 0.3rem 0.38rem;
@@ -371,8 +373,14 @@ a:hover { color: #ccefff; text-decoration-thickness: 2px; }
   background: rgba(8, 4, 14, 0.22);
 }
 
+#view-deck .card-grid-virtual-spacer {
+  width: 100%;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
 #view-deck .card-grid-scroll .card-grid {
-  flex: none;
+  flex: 0 0 auto;
   max-height: none;
   overflow: visible;
 }
@@ -456,7 +464,7 @@ a:hover { color: #ccefff; text-decoration-thickness: 2px; }
   max-height: none;
   overflow-x: hidden;
   overflow-y: auto;
-  overscroll-behavior-y: contain;
+  overscroll-behavior-y: auto;
   -webkit-overflow-scrolling: touch;
   padding: 0.35rem;
   scrollbar-color: rgba(255, 100, 150, 0.35) rgba(0, 0, 0, 0.2);
@@ -1374,6 +1382,14 @@ body.play-mode {
   --loveca-play-w: min(86px, 10.8vw);
   --loveca-play-h: calc(var(--loveca-play-w) * var(--loveca-mm-h) / var(--loveca-mm-w));
   --card-h: var(--loveca-play-h);
+}
+
+/* 16:9 ワイド向け: 中央を狭めつつ全体カードサイズも軽く縮めて、見切れを減らす */
+body.play-mode.layout-16-9-mode {
+  --loveca-play-w: min(78px, 9.6vw);
+}
+body.play-mode.layout-16-9-mode .game-board {
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1.1fr);
 }
 
 body.play-mode .game-bar {

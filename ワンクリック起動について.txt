@@ -20,3 +20,27 @@
 
 ■ 開発元のオンライン版を開きたい場合
 ブラウザのブックマークで https://loveca-solo.pages.dev/ を登録すると同様にワンクリックで開けます。.app は「手元の最新ファイル」をローカルで見る用です。
+
+────────────────────────────────────
+GitHub に最新版を一発で送る（macOS）
+
+■ 用意したもの
+- Sync-to-GitHub.command … Finder でダブルクリック。ターミナルが開き、コミット＋push まで実行します。
+- scripts/sync-github.sh … ターミナルから次のどちらでも実行可:
+    ./scripts/sync-github.sh
+    bash scripts/sync-github.sh
+
+■ 動き
+1. 未コミットの変更があれば git add -A（追跡外も含むので、載せたくないファイルは .gitignore に入れてください）
+2. 差分があればコミット（メッセージは時刻付きの chore: sync ...）
+3. git push origin（現在のブランチ名）
+
+■ 前提
+- このリポジトリで一度も push できていない場合は、GitHub の認証（PAT や gh auth login）を先に済ませてください。
+- リモート名が origin でない場合は環境変数で変更できます:
+    LL_OCG_GIT_REMOTE=myremote ./scripts/sync-github.sh
+
+■ キーボードの「ショートカット」にしたい場合（任意）
+- Automator で「シェルスクリプトを実行」クイックアクションを作り、中身を次の1行にする:
+    /bin/bash "/Users/あなたのパス/ll-ocg-tools/scripts/sync-github.sh"
+  保存後、システム設定 → キーボード → キーボードショートカット → サービス（または App Shortcuts）からキーを割り当てます。

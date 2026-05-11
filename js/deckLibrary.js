@@ -1,7 +1,18 @@
 /**
  * メインデッキとは別ストレージの「名前付きプリセット」（複数保存）
  */
-import { MAX_COPIES_PER_CARD, MAX_SAVED_DECKS, STORAGE_DECK_LIBRARY } from "./config.js";
+import {
+  BUILTIN_STARTER_PRESET_ID,
+  BUILTIN_STARTER_PRESET_NAME,
+  DEFAULT_STARTER_DECK_MAP,
+  DEFAULT_STARTER_KEY2_CARD_NOS,
+  DEFAULT_STARTER_KEY3_CARD_NOS,
+  DEFAULT_STARTER_KEY_CARD_NOS,
+  DEFAULT_STARTER_MIDDLE_CARD_NOS,
+  MAX_COPIES_PER_CARD,
+  MAX_SAVED_DECKS,
+  STORAGE_DECK_LIBRARY,
+} from "./config.js";
 import { showToast } from "./ui.js";
 
 function safeParse(raw) {
@@ -12,12 +23,45 @@ function safeParse(raw) {
   }
 }
 
+/** @param {string} id */
+export function isBuiltInStarterDeckId(id) {
+  return String(id || "") === BUILTIN_STARTER_PRESET_ID;
+}
+
+/** ストレージには書かない・一覧先頭に常に出す共通プリセット */
+export function getBuiltInStarterSlot() {
+  return {
+    id: BUILTIN_STARTER_PRESET_ID,
+    name: BUILTIN_STARTER_PRESET_NAME,
+    deck: cloneDeckMap(DEFAULT_STARTER_DECK_MAP),
+    keyCardNos: sanitizeCardNoList(DEFAULT_STARTER_KEY_CARD_NOS),
+    keyCard2Nos: sanitizeCardNoList(DEFAULT_STARTER_KEY2_CARD_NOS),
+    keyCard3Nos: sanitizeCardNoList(DEFAULT_STARTER_KEY3_CARD_NOS),
+    middleCardNos: sanitizeCardNoList(DEFAULT_STARTER_MIDDLE_CARD_NOS),
+    thumbnailCardNo: "LL-TA-01",
+    updatedAt: "1970-01-01T00:00:00.000Z",
+  };
+}
+
+/** @param {{ slots: unknown[] }} lib */
+function userSlotsOnly(lib) {
+  if (!lib || !Array.isArray(lib.slots)) return [];
+  return lib.slots.filter((s) => s && typeof s === "object" && !isBuiltInStarterDeckId(/** @type {{id?:string}} */ (s).id));
+}
+
 export function loadDeckLibrary() {
+  const starter = getBuiltInStarterSlot();
   const parsed = safeParse(localStorage.getItem(STORAGE_DECK_LIBRARY));
-  if (!parsed || !Array.isArray(parsed.slots)) return { slots: [] };
+  if (!parsed || !Array.isArray(parsed.slots)) return { slots: [starter] };
   const slots = parsed.slots
     .filter(
-      (s) => s && typeof s.id === "string" && typeof s.name === "string" && s.deck && typeof s.deck === "object",
+      (s) =>
+        s &&
+        typeof s.id === "string" &&
+        !isBuiltInStarterDeckId(s.id) &&
+        typeof s.name === "string" &&
+        s.deck &&
+        typeof s.deck === "object",
     )
     .map((s) => ({
       ...s,
@@ -26,12 +70,13 @@ export function loadDeckLibrary() {
           ? s.thumbnailCardNo.trim()
           : "",
     }));
-  return { slots };
+  return { slots: [starter, ...slots] };
 }
 
 export function persistDeckLibrary(data) {
   try {
-    localStorage.setItem(STORAGE_DECK_LIBRARY, JSON.stringify({ v: 1, slots: data.slots }));
+    const slots = userSlotsOnly(data);
+    localStorage.setItem(STORAGE_DECK_LIBRARY, JSON.stringify({ v: 1, slots }));
   } catch (err) {
     console.error(err);
     showToast(
@@ -101,13 +146,14 @@ export function newSlotId() {
  * @param {{ keyCardNos?: string[] | undefined, keyCard2Nos?: string[] | undefined, keyCard3Nos?: string[] | undefined, middleCardNos?: string[] | undefined }} [roleLabels]
  */
 export function addDeckSlot(lib, name, deckMap, roleLabels) {
+  const starter = getBuiltInStarterSlot();
   const nm = String(name || "").trim() || "無題のデッキ";
   const k = roleLabels ? sanitizeCardNoList(roleLabels.keyCardNos) : [];
   const k2 = roleLabels ? sanitizeCardNoList(roleLabels.keyCard2Nos) : [];
   const k3 = roleLabels ? sanitizeCardNoList(roleLabels.keyCard3Nos) : [];
   const m = roleLabels ? sanitizeCardNoList(roleLabels.middleCardNos) : [];
   const slots = [
-    ...lib.slots,
+    ...userSlotsOnly(lib),
     {
       id: newSlotId(),
       name: nm,
@@ -120,7 +166,7 @@ export function addDeckSlot(lib, name, deckMap, roleLabels) {
     },
   ];
   while (slots.length > MAX_SAVED_DECKS) slots.shift();
-  return { slots };
+  return { slots: [starter, ...slots] };
 }
 
 /**
@@ -133,6 +179,7 @@ function thumbnailValidForDeck(th, map) {
 }
 
 export function updateDeckSlot(lib, id, deckMap, roleLabels) {
+  if (isBuiltInStarterDeckId(id)) return lib;
   const k = roleLabels ? sanitizeCardNoList(roleLabels.keyCardNos) : [];
   const k2 = roleLabels ? sanitizeCardNoList(roleLabels.keyCard2Nos) : [];
   const k3 = roleLabels ? sanitizeCardNoList(roleLabels.keyCard3Nos) : [];
@@ -143,7 +190,7 @@ export function updateDeckSlot(lib, id, deckMap, roleLabels) {
     Object.prototype.hasOwnProperty.call(roleLabels, "thumbnailCardNo");
   const thumbInput = hasThumbPick ? String(roleLabels.thumbnailCardNo ?? "").trim() : "";
   const nextDeck = cloneDeckMap(deckMap);
-  const slots = lib.slots.map((s) => {
+  const slots = userSlotsOnly(lib).map((s) => {
     if (s.id !== id) return s;
     let nextThumb;
     if (hasThumbPick) {
@@ -162,17 +209,19 @@ export function updateDeckSlot(lib, id, deckMap, roleLabels) {
       updatedAt: new Date().toISOString(),
     };
   });
-  return { slots };
+  return { slots: [getBuiltInStarterSlot(), ...slots] };
 }
 
 export function removeDeckSlot(lib, id) {
-  return { slots: lib.slots.filter((s) => s.id !== id) };
+  if (isBuiltInStarterDeckId(id)) return lib;
+  return { slots: [getBuiltInStarterSlot(), ...userSlotsOnly(lib).filter((s) => s.id !== id)] };
 }
 
 /** 選択中プリセットを別 ID で複製して末尾に追加 */
 export function duplicateDeckSlot(lib, id) {
   const s = lib.slots.find((x) => x.id === id);
   if (!s) return lib;
+  const starter = getBuiltInStarterSlot();
   const nm = String(s.name || "無題のデッキ").trim();
   const copy = {
     id: newSlotId(),
@@ -188,7 +237,7 @@ export function duplicateDeckSlot(lib, id) {
         : "",
     updatedAt: new Date().toISOString(),
   };
-  const slots = [...lib.slots, copy];
+  const slots = [...userSlotsOnly(lib), copy];
   while (slots.length > MAX_SAVED_DECKS) slots.shift();
-  return { slots };
+  return { slots: [starter, ...slots] };
 }

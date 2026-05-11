@@ -8,8 +8,15 @@
     />
     <meta name="theme-color" content="#1a1018" />
     <meta name="description" content="Loveca Labo — ラブカの非公式デッキ構築・ソロツール。" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Loveca Labo" />
     <title>Loveca Labo</title>
-    <link rel="icon" href="https://loveca-solo.pages.dev/icon_blade.png" />
+    <link rel="manifest" href="site.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="icons/app-icon.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -172,7 +179,9 @@ python3 -m http.server 8080</pre>
           </p>
           <div id="card-deck-summary" class="card-deck-summary" hidden></div>
           <div id="card-grid-scroll" class="card-grid-scroll">
+            <div id="card-grid-top-spacer" class="card-grid-virtual-spacer" aria-hidden="true"></div>
             <div id="card-grid" class="card-grid"></div>
+            <div id="card-grid-bottom-spacer" class="card-grid-virtual-spacer" aria-hidden="true"></div>
           </div>
         </section>
 
@@ -316,6 +325,9 @@ python3 -m http.server 8080</pre>
             </div>
           </details>
           <button type="button" class="btn sm secondary" id="btn-coin">コイン</button>
+          <button type="button" class="btn sm secondary" id="btn-layout-16-9" aria-pressed="false" title="16:9 対応レイアウトに切り替えます">
+            16:9 サイズ
+          </button>
           <button type="button" class="btn sm secondary" id="btn-export-replay">ログ JSON 書き出し</button>
         </div>
         <div class="game-bar-row game-hud" role="status" aria-label="ゾーン枚数">
