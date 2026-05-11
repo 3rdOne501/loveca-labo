@@ -21,16 +21,22 @@ git push -u origin main
 
 初回 `git push` で GitHub のログインやトークンを聞かれたら、画面の指示に従ってください。
 
+**トークン（Classic）で push するとき:** **`repo`** にチェックがあれば十分です。  
+`.github/workflows` を push で更新したい場合だけ **`workflow`** も必要になります（このリポジトリは **Actions ではなくブランチ公開**にしているので `repo` のみで OK）。
+
 ### 2. GitHub Pages を有効にする（初回だけ）
 
 1. GitHub 上のそのリポジトリを開く。
 2. **Settings** → 左メニュー **Pages**。
-3. **Build and deployment** の **Source** で **GitHub Actions** を選ぶ（「Deploy from a branch」ではなく **Actions**）。
+3. **Build and deployment** の **Source** で **Deploy from a branch** を選ぶ。
+4. **Branch** を **`main`**、フォルダを **`/ (root)`** にして **Save**。
 
-### 3. サイトが出るまで待つ
+（**GitHub Actions** は、トークンに `workflow` 権限がないと `git push` でワークフローを送れないため、**ブランチ公開**の方がトークン設定が簡単です。）
 
-- `main` に push すると、**Actions** タブで「Deploy to GitHub Pages」が走ります。
-- 緑のチェックになったら、同じ **Settings → Pages** に **Visit site** のような URL（`https://あなた.github.io/リポジトリ名/`）が表示されます。
+### 3. サイトの URL
+
+1〜2分待つと、同じ **Settings → Pages** に **サイトの URL**（例: `https://3rdOne501.github.io/loveca-labo/`）が表示されます。  
+あとから `main` に **push するたび**、その URL の内容が更新されます。
 
 ## ローカルで試す（開発用）
 
