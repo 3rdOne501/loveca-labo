@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 変更があれば git add -A → 時刻付きコミット → git push（ワンショットで GitHub へ）
+# 変更があれば git add -A → 時刻付きコミット → pull --rebase → push（ワンショットで GitHub へ）
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
@@ -34,7 +34,21 @@ if [[ -n "$(git status --porcelain 2>/dev/null)" ]]; then
     git commit -m "$MSG"
   fi
 else
-  echo "未コミットの変更はありません（そのまま push のみ）。"
+  echo "未コミットの変更はありません。"
+fi
+
+echo
+echo "リモートの最新を取り込みます (git fetch && git pull --rebase) ..."
+if ! git fetch "$REMOTE" 2>/dev/null; then
+  echo "警告: git fetch に失敗しました。ネットワークと認証を確認してください。"
+  exit 1
+fi
+if ! git pull --rebase "$REMOTE" "$BRANCH"; then
+  echo
+  echo "エラー: git pull --rebase に失敗しました（コンフリクトの可能性）。"
+  echo "  手元で解決する例: 該当ファイルを直す → git add ... → git rebase --continue"
+  echo "  取りやめる例: git rebase --abort"
+  exit 1
 fi
 
 echo

@@ -33,7 +33,8 @@ GitHub に最新版を一発で送る（macOS）
 ■ 動き
 1. 未コミットの変更があれば git add -A（追跡外も含むので、載せたくないファイルは .gitignore に入れてください）
 2. 差分があればコミット（メッセージは時刻付きの chore: sync ...）
-3. git push origin（現在のブランチ名）
+3. git fetch && git pull --rebase（GitHub 側に先に入っている変更を取り込んでから push するため。コンフリクト時はスクリプトが止まります）
+4. git push origin（現在のブランチ名）
 
 ■ 前提
 - このリポジトリで一度も push できていない場合は、GitHub の認証（PAT や gh auth login）を先に済ませてください。
