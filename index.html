@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5"
+    />
+    <meta name="theme-color" content="#1a1018" />
+    <meta name="description" content="Loveca Labo — ラブカの非公式デッキ構築・ソロツール。" />
+    <title>Loveca Labo</title>
+    <link rel="icon" href="https://loveca-solo.pages.dev/icon_blade.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,700;1,9..40,500&family=M+PLUS+Rounded+1c:wght@500;700&family=Noto+Sans+JP:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div
+      id="file-open-hint"
+      style="
+        display: none;
+        margin: 0.75rem 1rem;
+        padding: 1rem 1.25rem;
+        max-width: 52rem;
+        background: #3a2030;
+        border: 1px solid rgba(255, 120, 160, 0.45);
+        border-radius: 10px;
+        font-size: 0.95rem;
+        line-height: 1.55;
+      "
+    >
+      <p style="margin: 0 0 0.75rem">
+        <strong>このページは「ファイルを直接開く」（アドレスが <code>file:///...</code>）では動きません。</strong>
+        下の手順で <strong>http://localhost:…</strong> から開いてください。
+      </p>
+      <p style="margin: 0 0 0.5rem">
+        <strong>Windows:</strong> フォルダ内の <code>start.bat</code> をダブルクリックするか、コマンドプロンプトでフォルダへ移動してから次のいずれか。
+      </p>
+      <pre style="margin: 0 0 0.75rem; padding: 0.75rem; background: rgba(0, 0, 0, 0.25); border-radius: 8px; overflow: auto">cd C:\Users\あなた\...\ll-ocg-tools
+py -m http.server 8080
+REM だめなら: python -m http.server 8080
+REM Node.js あり: npm start</pre>
+      <p style="margin: 0 0 0.5rem"><strong>Mac / Linux:</strong> ターミナルでフォルダへ移動してから:</p>
+      <pre style="margin: 0 0 0.75rem; padding: 0.75rem; background: rgba(0, 0, 0, 0.25); border-radius: 8px; overflow: auto">cd /path/to/ll-ocg-tools
+python3 -m http.server 8080</pre>
+      <p style="margin: 0">
+        どの OS も、ブラウザで <code>http://127.0.0.1:8080/</code> を開く。止めるときはそのウィンドウで Ctrl+C（Mac は同じ）。
+      </p>
+    </div>
+    <script>
+      (function () {
+        if (location.protocol === "file:") {
+          var el = document.getElementById("file-open-hint");
+          if (el) el.style.display = "block";
+        }
+      })();
+    </script>
+    <div id="toast-stack" class="toast-stack" aria-live="polite"></div>
+    <div id="load-status" class="load-status" role="status"></div>
+
+    <div id="boot-toolbar" class="boot-toolbar" hidden>
+      <p class="boot-toolbar-lead">
+        カード DB の取得に失敗しました。オフライン用の <code>cards.json</code> をホストしている URL を指定するか、ネットワークを確認して再試行してください。
+      </p>
+      <label class="field boot-url-field">
+        <span>カード DB URL（上書き保存）</span>
+        <input type="url" id="boot-cards-url" placeholder="https://…/cards.json" autocomplete="off" />
+      </label>
+      <div class="boot-toolbar-actions">
+        <button type="button" class="btn secondary" id="boot-retry">再試行</button>
+        <button type="button" class="btn primary" id="boot-apply-reload">URL を保存して再読込</button>
+      </div>
+    </div>
+
+    <div id="view-deck" class="view">
+      <header class="app-header">
+        <h1>Loveca Labo</h1>
+      </header>
+
+      <div class="builder">
+        <aside class="search-panel">
+          <div class="search-panel-tools">
+            <h2 class="panel-h2-plain">検索・絞り込み</h2>
+            <div class="search-quick-tools">
+              <button type="button" class="btn sm secondary" id="btn-search-clear">検索だけクリア</button>
+              <button type="button" class="btn sm secondary" id="btn-reset-filters">絞り込み全リセット</button>
+            </div>
+          </div>
+          <label class="field">
+            <span>カード名・能力</span>
+            <input type="search" id="search-text" placeholder="キーワード" autocomplete="off" />
+          </label>
+          <label class="field">
+            <span>一覧に出すカード種別</span>
+            <select id="filter-card-kind" class="filter-card-kind-select">
+              <option value="both">メンバー＋ライブ（両方）</option>
+              <option value="member">メンバーカードのみ</option>
+              <option value="live">ライブカードのみ</option>
+            </select>
+          </label>
+          <p class="hint search-hint-muted">サムネ左上の色でも区別しています（メンバー＝青系・ライブ＝ピンク系）。</p>
+          <label class="field">
+            <span>商品</span>
+            <select id="filter-product"></select>
+          </label>
+          <label class="field">
+            <span>シリーズ</span>
+            <select id="filter-series"></select>
+          </label>
+          <label class="field">
+            <span>ユニット</span>
+            <select id="filter-unit"></select>
+          </label>
+          <div class="field">
+            <span>コスト</span>
+            <div id="filter-costs" class="cost-grid"></div>
+            <div class="cost-actions">
+              <button type="button" class="btn sm" id="cost-all-on">全選択</button>
+              <button type="button" class="btn sm" id="cost-all-off">全解除</button>
+            </div>
+          </div>
+          <div class="field">
+            <span>ブレードハート種別（色）</span>
+            <p class="hint search-hint-muted" style="margin: 0 0 0.35rem">DB の blade_heart が該当する色のいずれかを含むカードだけ表示。</p>
+            <div id="filter-bh-slots" class="heart-bh-filter-strip">
+              <label class="chk bh-filter-chk"><input type="checkbox" data-bh-slot="1" /> 桃</label>
+              <label class="chk bh-filter-chk"><input type="checkbox" data-bh-slot="2" /> 赤</label>
+              <label class="chk bh-filter-chk"><input type="checkbox" data-bh-slot="3" /> 黄</label>
+              <label class="chk bh-filter-chk"><input type="checkbox" data-bh-slot="4" /> 緑</label>
+              <label class="chk bh-filter-chk"><input type="checkbox" data-bh-slot="5" /> 青</label>
+              <label class="chk bh-filter-chk"><input type="checkbox" data-bh-slot="6" /> 紫</label>
+              <label class="chk bh-filter-chk"><input type="checkbox" data-bh-slot="7" /> ALL</label>
+            </div>
+          </div>
+          <div class="field">
+            <span>ハート色（所持／必要）</span>
+            <p class="hint search-hint-muted" style="margin: 0 0 0.35rem">メンバーの base_heart またはライブの need_heart にその色が出るカード。</p>
+            <div id="filter-heart-slots" class="heart-bh-filter-strip">
+              <label class="chk bh-filter-chk"><input type="checkbox" data-heart-slot="1" /> 桃</label>
+              <label class="chk bh-filter-chk"><input type="checkbox" data-heart-slot="2" /> 赤</label>
+              <label class="chk bh-filter-chk"><input type="checkbox" data-heart-slot="3" /> 黄</label>
+              <label class="chk bh-filter-chk"><input type="checkbox" data-heart-slot="4" /> 緑</label>
+              <label class="chk bh-filter-chk"><input type="checkbox" data-heart-slot="5" /> 青</label>
+              <label class="chk bh-filter-chk"><input type="checkbox" data-heart-slot="6" /> 紫</label>
+            </div>
+            <div class="cost-actions" style="margin-top: 0.35rem">
+              <button type="button" class="btn sm secondary" id="btn-filter-bh-heart-clear">BH・ハート絞り込み解除</button>
+            </div>
+          </div>
+        </aside>
+
+        <section class="card-panel">
+          <div class="panel-title-row">
+            <h2 id="card-panel-heading">カード一覧</h2>
+            <span class="hit-badge" id="card-hit-count"></span>
+            <div class="card-panel-mode-row">
+              <button type="button" class="btn sm primary" id="btn-card-panel-catalog" aria-pressed="true">
+                カード一覧
+              </button>
+              <button type="button" class="btn sm secondary" id="btn-card-panel-deck" aria-pressed="false">
+                登録デッキ
+              </button>
+            </div>
+          </div>
+          <p class="panel-lead">
+            メンバーは下の「−」「＋」またはカード本体クリックで追加。画像クリックで拡大。<kbd>/</kbd> 検索 · プレイ中 <kbd>U</kbd> / <kbd>R</kbd> ·
+            <kbd>?</kbd>
+          </p>
+          <div id="card-deck-summary" class="card-deck-summary" hidden></div>
+          <div id="card-grid-scroll" class="card-grid-scroll">
+            <div id="card-grid" class="card-grid"></div>
+          </div>
+        </section>
+
+        <aside class="deck-panel">
+          <div class="deck-panel-sticky-head">
+            <h2>メインデッキ</h2>
+            <button type="button" class="btn primary btn-start-game-sticky" id="btn-start-game" disabled>ソロプレイ開始</button>
+            <div id="deck-validation-banner" class="deck-validation-banner" role="status" hidden></div>
+            <p class="count-line deck-count-line">
+              メンバー <strong id="deck-count-member">0</strong>
+              <span class="muted deck-count-ref">（目安 48）</span> · ライブ <strong id="deck-count-live">0</strong>
+              <span class="muted deck-count-ref">（目安 12）</span> · 合計 <strong id="deck-count-total">0</strong>
+              <span class="muted deck-count-ref">（目安 60）</span>
+            </p>
+          </div>
+
+          <details class="deck-panel-section" id="deck-section-preset">
+            <summary class="deck-panel-summary">保存デッキの読み込み・保存</summary>
+            <div class="deck-panel-section-body">
+              <p class="hint search-hint-muted">いまの編集中デッキをブラウザ保存し、後で呼び出せます。まずは「新規で保存」がおすすめです。</p>
+              <div class="deck-preset-panel">
+                <p class="deck-preset-counts-compact" id="deck-preset-counts-compact" aria-live="polite">
+                  編集中: メン <strong id="deck-count-member-compact">0</strong> · ライブ
+                  <strong id="deck-count-live-compact">0</strong> · 計 <strong id="deck-count-total-compact">0</strong>
+                </p>
+                <div class="deck-preset-select-row">
+                  <img
+                    id="deck-preset-thumb"
+                    class="deck-preset-thumb"
+                    alt=""
+                    width="52"
+                    height="73"
+                    decoding="async"
+                    hidden
+                  />
+                  <div class="deck-preset-select-meta">
+                    <label class="field deck-preset-select-label">
+                      <span>保存デッキ（このブラウザに保存）</span>
+                      <select id="deck-preset-select"></select>
+                    </label>
+                    <label class="field deck-preset-thumb-pick-field">
+                      <span>サムネイル（リスト用）</span>
+                      <select id="deck-preset-thumb-select" disabled aria-label="保存デッキのサムネイル">
+                        <option value="">一覧でデッキを選んでください</option>
+                      </select>
+                    </label>
+                  </div>
+                </div>
+                <div class="preset-btn-grid">
+                  <button type="button" class="btn sm" id="btn-preset-load">読み込み</button>
+                  <button type="button" class="btn sm secondary" id="btn-preset-peek" title="エディタには反映しません">
+                    デッキ確認
+                  </button>
+                  <button type="button" class="btn sm primary" id="btn-preset-save">上書き保存</button>
+                  <button type="button" class="btn sm secondary" id="btn-preset-save-as">新規で保存</button>
+                  <button type="button" class="btn sm secondary" id="btn-preset-duplicate">複製</button>
+                  <button type="button" class="btn sm secondary" id="btn-preset-delete">削除</button>
+                </div>
+              </div>
+              <p class="deck-preset-note">
+                「新規で保存」で名前を付けるとリストに増えます。上限 <strong>24</strong> 件まで（超えると古い順に消えます）。
+              </p>
+            </div>
+          </details>
+
+          <details class="deck-panel-section" id="deck-section-cards-db">
+            <summary class="deck-panel-summary">カードデータ URL（任意）</summary>
+            <div class="deck-panel-section-body">
+              <p class="hint search-hint-muted">通常は変更不要です。独自 cards.json を使うときだけ URL を指定してください。</p>
+              <label class="field">
+                <span>cards.json を別 URL から読む（空で保存すると既定）</span>
+                <input type="url" id="builder-cards-json-url" placeholder="https://…/cards.json" autocomplete="off" />
+              </label>
+              <div class="btn-row mb-sm">
+                <button type="button" class="btn sm secondary" id="btn-builder-cards-reload">URL を保存して再読込</button>
+              </div>
+            </div>
+          </details>
+
+          <details class="deck-panel-section" id="deck-section-json-io">
+            <summary class="deck-panel-summary">JSON 入出力</summary>
+            <div class="deck-panel-section-body">
+              <p class="hint search-hint-muted">デッキをファイルでバックアップ／共有するときに使います。</p>
+              <div class="deck-io-row">
+                <button type="button" class="btn sm secondary" id="btn-deck-export">JSON 書き出し</button>
+                <label class="btn sm secondary deck-import-label">
+                  JSON 読み込み
+                  <input type="file" id="deck-import-file" accept="application/json,.json" class="sr-only" />
+                </label>
+              </div>
+            </div>
+          </details>
+
+          <details class="deck-panel-section" id="deck-section-text-import">
+            <summary class="deck-panel-summary">テキストから読み込む（DECK LOG 貼り付け）</summary>
+            <div class="deck-panel-section-body">
+              <div class="deck-recipe-panel">
+                <p class="hint deck-recipe-hint">
+                  ブラウザから DECK LOG を直接取得する機能はありません（CORS のため）。<strong>デッキコードだけから一覧を作りたい場合</strong>は外部ツール
+                  <a href="https://ws4696.xyz/decklog/" rel="noopener noreferrer" target="_blank">デッキログ解析くん（しろくろ速報）</a>
+                  などでテキスト化してから、ここに貼り付けてください。公式のデッキ画面で表示されている一覧をコピーしても構いません。
+                  <code>4 x PL!N-bp1-002-R＋</code> 形式（行ごとに「枚数 x カード番号」）で貼り付けてください。
+                </p>
+                <label class="field">
+                  <span>レシピテキスト</span>
+                  <textarea
+                    id="deck-text-import"
+                    class="textarea-regulation"
+                    rows="8"
+                    maxlength="20000"
+                    placeholder="4 x PL!N-bp1-002-R＋&#10;3 x …"
+                  ></textarea>
+                </label>
+                <button type="button" class="btn sm primary" id="btn-deck-text-import">テキストをデッキに反映</button>
+              </div>
+            </div>
+          </details>
+
+        </aside>
+      </div>
+    </div>
+
+    <div id="view-game" class="view" hidden>
+      <header class="game-bar">
+        <div class="game-bar-row game-bar-actions">
+          <button type="button" class="btn primary" id="btn-back-builder">デッキ編集に戻る</button>
+          <button type="button" class="btn secondary" id="btn-help" title="? キー">ヘルプ</button>
+        </div>
+        <div class="game-bar-row game-tools-row">
+          <details class="energy-card-details">
+            <summary class="energy-card-details-summary">エネルギー画像の選択</summary>
+            <div class="energy-card-picker-wrap energy-card-picker-wrap--expanded">
+              <label class="tools-label tools-label-energy">
+                エネルギーカード
+                <select id="select-energy-card" aria-label="側面エネルギーカード">
+                  <option value="">既定（SD）</option>
+                </select>
+              </label>
+              <img id="energy-card-preview" class="energy-card-preview" alt="" hidden width="46" height="64" decoding="async" />
+              <div id="energy-card-thumb-strip" class="energy-card-thumb-strip" role="group" aria-label="エネルギー画像一覧"></div>
+            </div>
+          </details>
+          <button type="button" class="btn sm secondary" id="btn-coin">コイン</button>
+          <button type="button" class="btn sm secondary" id="btn-export-replay">ログ JSON 書き出し</button>
+        </div>
+        <div class="game-bar-row game-hud" role="status" aria-label="ゾーン枚数">
+          <span class="hud-chip" title="成功したライブの枚数（目安）">
+            成功ライブ <strong id="hud-slive">0</strong> /
+            <span id="hud-slive-max">3</span>
+          </span>
+          <span class="hud-chip">プレビュー <strong id="hud-preview">0</strong></span>
+          <span class="hud-chip">手札 <strong id="hud-hand">0</strong></span>
+          <span class="hud-chip">控室 <strong id="hud-waiting">0</strong></span>
+          <span class="hud-chip">解決 <strong id="hud-resolution">0</strong></span>
+          <span class="hud-chip" title="ターンカウント（0T 開始。「ターン開始」で増加）">ターン <strong id="hud-turn">0T</strong></span>
+          <span class="hud-chip muted-chip"><kbd>U</kbd> Undo · <kbd>R</kbd> Redo · <kbd>?</kbd> ヘルプ</span>
+          <button type="button" class="btn sm secondary" id="btn-zone-hints" aria-pressed="false">
+            ゾーン説明を表示
+          </button>
+        </div>
+        <p class="play-disclaimer" role="note">
+          非公式ツールです。オンライン対戦は未対応。権利・ルール・レギュは公式・大会運営を確認してください。
+        </p>
+      </header>
+
+      <div class="game-board">
+        <div class="col col-left">
+          <section class="zone-block zone-block-deck-live-sim">
+            <h3>ライブ成功確率（山札シミュ）</h3>
+            <div class="deck-flip-k-row deck-flip-k-readout">
+              <p class="muted deck-flip-k-line-short">
+                <span>残りランダムめくり（ブレード − 解決枚数）</span>
+                <strong id="deck-flip-k-display" class="deck-flip-k-display" aria-live="polite">0</strong>
+              </p>
+              <p id="deck-flip-blade-note" class="muted deck-flip-blade-note" aria-live="polite"></p>
+            </div>
+            <div class="deck-live-sim-controls zone-inline-help deck-prob-explain-hide">
+              <label class="field deck-live-sim-mode-field">
+                <span>シミュレートモード</span>
+                <select id="deck-live-sim-mode">
+                  <option value="board">盤面B（解決で減算）</option>
+                  <option value="whole">デッキ全体</option>
+                </select>
+              </label>
+            </div>
+
+            <div id="deck-live-sim-block" class="deck-live-sim-block">
+              <p id="deck-live-sim-summary" class="deck-live-sim-summary deck-draw-odds-visible"></p>
+              <details id="deck-live-sim-breakdown" class="deck-live-sim-breakdown">
+                <summary class="deck-live-sim-breakdown-summary">計算の内訳</summary>
+                <pre id="deck-live-sim-breakdown-body" class="deck-live-sim-breakdown-body"></pre>
+              </details>
+              <pre id="deck-live-sim-stats" class="deck-live-sim-stats deck-draw-odds-visible" hidden></pre>
+              <p id="deck-live-sim-note" class="hint zone-inline-help deck-live-sim-note deck-prob-explain-hide">
+                モードは盤面B（k=B−R）／デッキ全体。めくりで増えるのは BH のみ。
+              </p>
+            </div>
+          </section>
+
+          <section class="zone-block zone-block-resolution-priority">
+            <p id="resolution-over-blade-banner" class="resolution-over-blade-banner" role="status" hidden></p>
+            <div class="zone-head">
+              <h3>解決</h3>
+              <div class="btn-row">
+                <button type="button" class="btn sm primary" id="btn-res-draw-one" title="山札の先頭を1枚解決ゾーンへ（Undo可）">
+                  1枚ドロー（解決）
+                </button>
+                <button type="button" class="btn sm" id="btn-res-top">デッキ上に戻す</button>
+                <button type="button" class="btn sm" id="btn-res-shuf">戻してシャッフル</button>
+                <button type="button" class="btn sm" id="btn-res-wait">控室へ</button>
+              </div>
+            </div>
+            <div id="zone-resolution" class="card-strip zone-drop tall resolution-zone-strip"></div>
+          </section>
+
+          <section class="zone-block zone-block-success-split">
+            <div class="success-live-split-head">
+              <h3 class="success-live-split-title">成功したライブ</h3>
+              <h3 class="success-live-split-title">デッキの確率（参考）</h3>
+            </div>
+            <div class="success-live-split-grid">
+              <div class="success-live-split-col">
+                <div id="success-live-zone-shell" class="success-live-zone-shell">
+                  <div id="success-live-chrome-row" class="success-live-chrome-row" aria-live="polite">
+                    <span id="success-live-msg-youwin" class="success-live-msg success-live-msg--youwin" hidden>
+                      YOU WIN!
+                    </span>
+                    <span id="success-live-msg-snsyuraku" class="success-live-msg success-live-msg--snsyuraku" hidden>
+                      千秋楽
+                    </span>
+                  </div>
+                  <div id="zone-success-live" class="card-strip zone-drop success-live-strip"></div>
+                </div>
+                <p class="hint zone-inline-help">
+                  ライブカードのみ（ドラッグ可）。通常の縦向き表示です。
+                </p>
+              </div>
+              <div class="success-live-split-col success-live-split-col--prob">
+                <div id="live-deck-odds-panel" class="live-deck-odds-panel" aria-live="polite">
+                  <div id="deck-odds-role-visuals" class="deck-odds-role-visuals" hidden aria-label="デッキ役割カードの見た目">
+                    <div class="deck-odds-role-block" id="deck-odds-role-key-wrap" hidden>
+                      <p class="deck-odds-role-title">キー</p>
+                      <div id="deck-odds-key-stack" class="deck-odds-key-stack"></div>
+                    </div>
+                    <div class="deck-odds-role-block" id="deck-odds-role-key2-wrap" hidden>
+                      <p class="deck-odds-role-title">キー②</p>
+                      <div id="deck-odds-key2-stack" class="deck-odds-key-stack"></div>
+                    </div>
+                    <div class="deck-odds-role-block" id="deck-odds-role-key3-wrap" hidden>
+                      <p class="deck-odds-role-title">キー③</p>
+                      <div id="deck-odds-key3-stack" class="deck-odds-key-stack"></div>
+                    </div>
+                    <div class="deck-odds-role-block" id="deck-odds-role-mid-wrap" hidden>
+                      <p class="deck-odds-role-title">中間</p>
+                      <div id="deck-odds-mid-stack" class="deck-odds-key-stack"></div>
+                    </div>
+                    <div class="deck-odds-role-block" id="deck-odds-role-pick-wrap" hidden>
+                      <p class="deck-odds-role-title">指定</p>
+                      <div id="deck-odds-pick-stack" class="deck-odds-key-stack"></div>
+                    </div>
+                  </div>
+                  <div class="deck-odds-k-control">
+                    <label class="deck-odds-k-label" for="deck-odds-k"
+                      >捲る枚数 <span class="muted">k</span></label
+                    >
+                    <input
+                      type="number"
+                      id="deck-odds-k"
+                      class="deck-odds-k-input"
+                      min="1"
+                      max="99"
+                      step="1"
+                      value="1"
+                      inputmode="numeric"
+                      autocomplete="off"
+                      aria-describedby="deck-odds-k-hint"
+                    />
+                    <span id="deck-odds-k-hint" class="deck-odds-k-hint muted"></span>
+                    <div class="deck-odds-skill-chk-row">
+                      <label class="chk deck-odds-skill-chk">
+                        <input type="checkbox" id="chk-deck-2koi" />
+                        2恋
+                      </label>
+                      <label class="chk deck-odds-skill-chk">
+                        <input type="checkbox" id="chk-deck-2kasumi" />
+                        2かすみ
+                      </label>
+                      <label class="chk deck-odds-skill-chk">
+                        <input type="checkbox" id="chk-deck-13you" />
+                        13曜
+                      </label>
+                    </div>
+                    <details class="deck-odds-cat-stash" data-deck-odds-stash>
+                      <summary class="deck-odds-cat-stash__summary" title="表示する項目を選ぶ">
+                        <span class="deck-odds-cat-stash__label">表示項目</span>
+                      </summary>
+                      <ul class="deck-odds-cat-stash__list" data-stash-list></ul>
+                    </details>
+                  </div>
+                  <div class="deck-odds-skill-explain-row deck-prob-explain-hide">
+                    <p class="deck-odds-skill-explain">
+                      <strong>2恋</strong>
+                      上から5枚を見て1枚を手札に加える前提で、<strong>手札に加わる側の確率</strong>としていまの k に
+                      <strong>+5</strong> して計算します。
+                    </p>
+                    <p class="deck-odds-skill-explain">
+                      <strong>2かすみ</strong>
+                      上から3枚を見て、好きな枚数を山札の上か控え室へ。山札上に残した枚は
+                      <strong>次のターン（1T後）</strong>に手札へ入る想定で、グリッドの<strong>1T後</strong>の k に
+                      <strong>+3</strong>（見た3枚分）だけ反映します（今の行には足しません）。
+                    </p>
+                    <p class="deck-odds-skill-explain">
+                      <strong>13曜</strong>
+                      上から7枚を見て3枚を手札に回収する前提で、いまの k に見た分として<strong>+7</strong>して確率を計算します（2恋・指定枚数の k と合算し、山札枚数で打ち切り）。
+                    </p>
+                  </div>
+                  <details class="deck-odds-turn-details" aria-label="ターン別の見える枚数">
+                    <summary class="deck-odds-turn-details__summary">1T後〜の見える枚数（ターン別）</summary>
+                    <div class="deck-odds-turn-details__body">
+                    <p class="deck-odds-turn-controls__lead muted deck-prob-explain-hide">
+                      各ターンの追加枚数（2〜4）を足して累積 k。4T・5T 行は下のボタンで表に追加。
+                    </p>
+                    <div class="deck-odds-tstep-row">
+                      <label class="deck-odds-tstep-label"
+                        >1T後
+                        <input
+                          type="number"
+                          id="deck-odds-tstep-1"
+                          class="deck-odds-tstep-input"
+                          min="2"
+                          max="4"
+                          step="1"
+                          value="4"
+                          inputmode="numeric"
+                          autocomplete="off"
+                      /></label>
+                      <label class="deck-odds-tstep-label"
+                        >2T後
+                        <input
+                          type="number"
+                          id="deck-odds-tstep-2"
+                          class="deck-odds-tstep-input"
+                          min="2"
+                          max="4"
+                          step="1"
+                          value="4"
+                          inputmode="numeric"
+                          autocomplete="off"
+                      /></label>
+                      <label class="deck-odds-tstep-label"
+                        >3T後
+                        <input
+                          type="number"
+                          id="deck-odds-tstep-3"
+                          class="deck-odds-tstep-input"
+                          min="2"
+                          max="4"
+                          step="1"
+                          value="4"
+                          inputmode="numeric"
+                          autocomplete="off"
+                      /></label>
+                      <label class="deck-odds-tstep-label" id="deck-odds-tstep-wrap-4" hidden
+                        >4T後
+                        <input
+                          type="number"
+                          id="deck-odds-tstep-4"
+                          class="deck-odds-tstep-input"
+                          min="2"
+                          max="4"
+                          step="1"
+                          value="4"
+                          inputmode="numeric"
+                          autocomplete="off"
+                      /></label>
+                      <label class="deck-odds-tstep-label" id="deck-odds-tstep-wrap-5" hidden
+                        >5T後
+                        <input
+                          type="number"
+                          id="deck-odds-tstep-5"
+                          class="deck-odds-tstep-input"
+                          min="2"
+                          max="4"
+                          step="1"
+                          value="4"
+                          inputmode="numeric"
+                          autocomplete="off"
+                      /></label>
+                    </div>
+                    <div class="deck-odds-t45-btns btn-row wrap">
+                      <button type="button" class="btn sm secondary" id="btn-deck-odds-show-t4" aria-pressed="false">
+                        4T後を表示
+                      </button>
+                      <button type="button" class="btn sm secondary" id="btn-deck-odds-show-t5" aria-pressed="false">
+                        5T後を表示
+                      </button>
+                    </div>
+                    </div>
+                  </details>
+                  <div id="live-deck-odds-grid" class="deck-odds-grid-host" aria-live="polite"></div>
+                </div>
+                <p class="hint zone-inline-help live-prob-footnote deck-prob-explain-hide">
+                  キー／中間・ライブ・指定を<strong>k 枚</strong>で引く確率（下の k と同じ。マリガン・ライブ手札は自動）。1T〜列は左の数の累積 k。
+                </p>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="col col-center">
+          <section class="zone-block zone-block-snapshots zone-block-snapshots--above-live">
+            <h3>ライブエリア</h3>
+            <div class="snapshots-row btn-row wrap">
+              <span class="snap-label muted">記録:</span>
+              <button type="button" class="btn sm secondary" id="btn-snap-save-1">保存1</button>
+              <button type="button" class="btn sm secondary" id="btn-snap-save-2">保存2</button>
+              <button type="button" class="btn sm secondary" id="btn-snap-save-3">保存3</button>
+              <button type="button" class="btn sm" id="btn-snap-load-1">復元1</button>
+              <button type="button" class="btn sm" id="btn-snap-load-2">復元2</button>
+              <button type="button" class="btn sm" id="btn-snap-load-3">復元3</button>
+            </div>
+            <p class="hint zone-inline-help">スナップショットは sessionStorage に保存されます（タブ単位／閉じると消える場合があります）。</p>
+          </section>
+
+          <div class="zone-head zone-head--live-with-turn">
+            <div id="play-turn-badge" class="play-turn-badge" title="ターン数（ターン開始で増加）" aria-live="polite">
+              <span class="play-turn-badge__q">ターン</span>
+              <span id="play-turn-display" class="play-turn-badge__n">0</span>
+            </div>
+            <div id="first-player-badge" class="first-player-badge">
+              <span class="first-player-badge__q">先後</span>
+              <select id="select-first-player" class="first-player-badge__sel" aria-label="先攻の目安">
+                <option value="—">—</option>
+                <option value="先攻">先攻</option>
+                <option value="後攻">後攻</option>
+              </select>
+            </div>
+            <button type="button" class="btn sm secondary" id="btn-undo" title="U キー">
+              操作を戻す
+            </button>
+            <button type="button" class="btn sm secondary" id="btn-redo" title="R キー">
+              やり直す
+            </button>
+            <button type="button" class="btn sm" id="toggle-live">ライブエリアを隠す</button>
+          </div>
+          <div id="live-row" class="three-cols">
+            <div class="slot-wrap">
+              <span class="slot-label">左</span>
+              <div id="live-left" class="card-strip zone-drop live-slot"></div>
+            </div>
+            <div class="slot-wrap">
+              <span class="slot-label">中央</span>
+              <div id="live-center" class="card-strip zone-drop live-slot"></div>
+            </div>
+            <div class="slot-wrap">
+              <span class="slot-label">右</span>
+              <div id="live-right" class="card-strip zone-drop live-slot"></div>
+            </div>
+          </div>
+          <p class="hint live-area-hint zone-inline-help">
+            <strong>ライブターン中</strong>の配置は、3枠とも<strong>横向き・表面非表示（裏）</strong>です。<strong>ライブ開始</strong>後は残るライブカードが<strong>縦向きで表面表示</strong>になります（手札のライブカードもメンバーと同じく縦）。<strong>メンバーはライブターン以外はこの3枠に置けません</strong>（通常はライブカードのみ）。通常時に枠へ置いたカードも<strong>メンバーと同サイズの縦</strong>です。ドラッグでメンバーが枠<strong>へ入った</strong>ときだけ山札から<strong>手札に1ドロー</strong>します（自動）。この3枠には<strong>W／A（ウェイト／アクティブ）は表示されません。</strong><strong>ライブ開始</strong>でライブカード以外は<strong>控え室</strong>へ送ります。
+          </p>
+
+          <div id="live-turn-stats-wrap" class="live-turn-stats-wrap" hidden>
+            <details class="live-turn-stats-details" open>
+              <summary class="live-turn-stats-summary">
+                ライブの計算
+                <span class="live-turn-stats-summary-hint muted">（開閉）</span>
+              </summary>
+              <div id="live-turn-stats-panel" class="live-turn-stats-panel">
+                <p id="live-stats-overview" class="live-stats-overview" aria-live="polite"></p>
+                <dl class="live-turn-stats-grid">
+                  <dt>ライブの必要ハート</dt>
+                  <dd>
+                    <span id="live-need-heart-detail" class="live-stats-detail">—</span>
+                    <span class="live-need-suffix"> ／ 計 <strong id="live-need-heart-total">0</strong></span>
+                  </dd>
+                  <dt title="ステージ上メンバーの色ごとの所持H − ライブ need_heart（残り／不足）">要求色</dt>
+                  <dd id="live-required-colors" class="muted live-stats-colors">—</dd>
+                  <dt title="盤面ブレード合計（ステージ・ライブ枠）＋盤面所持H計 − need_heart 合計">非BH許容数</dt>
+                  <dd id="live-nonbh-tolerance" class="muted live-stats-detail">—</dd>
+                  <dt title="ステージ上メンバーの blade（ブレード）合計のみ">ステB合計</dt>
+                  <dd><strong id="live-total-blade">0</strong></dd>
+                  <dt>所持総H</dt>
+                  <dd><strong id="live-board-h-total">0</strong></dd>
+                  <dt title="ステージ上メンバーの所持ハート内訳">ステH色</dt>
+                  <dd id="live-stage-h-colors" class="muted live-stats-colors">—</dd>
+                  <dt>解決 BH</dt>
+                  <dd id="live-resolution-bh-ref" class="muted live-stats-colors">—</dd>
+                  <dt>判定</dt>
+                  <dd id="live-success-verdict-line" class="live-success-verdict-line">—</dd>
+                </dl>
+              </div>
+            </details>
+          </div>
+
+          <h3 class="mt">ステージ</h3>
+          <div class="three-cols">
+            <div class="slot-wrap">
+              <span class="slot-label">左</span>
+              <div id="stage-left" class="card-strip zone-drop stage-slot"></div>
+            </div>
+            <div class="slot-wrap">
+              <span class="slot-label">中央</span>
+              <div id="stage-center" class="card-strip zone-drop stage-slot"></div>
+            </div>
+            <div class="slot-wrap">
+              <span class="slot-label">右</span>
+              <div id="stage-right" class="card-strip zone-drop stage-slot"></div>
+            </div>
+          </div>
+          <p class="hint stage-area-hint zone-inline-help">
+            メンバーカードの表示はカードの短辺／長辺比（63∶88）を目安にスロットを詰めています。画像クリックで向きを変えられます（ステージ載せの場合）。ステージにメンバーがいる列だけ、その列へエネをドラッグで載せられます。<strong>いずれかの列に既にメンバーがいるところへ別のメンバーを載せた場合は「バトンタッチ」</strong>になり、側面エネへの支払いは<strong>新しく載せる側の印刷コストから、控えへ送る側のメンバーのコストを引いた分差分</strong>ですが、<strong>縦エネが差分に足りなくても登場はできます</strong>（足りる分だけウェイトへ）。元いたメンバーは<strong>控え室</strong>へ送られます。<strong>ステージへ載せたターンメンバー同士でのバトンタッチはできません。</strong><strong>W</strong><strong>A</strong>はメンバーについてウェイト／アクティブ表示（非公式）。
+          </p>
+
+          <section class="zone-block energy-under-stage mt">
+            <div class="zone-head">
+              <h3>エネルギー <span class="muted">／ 側面エネ・最大12</span></h3>
+              <div>
+                <button type="button" class="btn sm" id="btn-energy-minus">−</button>
+                <button type="button" class="btn sm" id="btn-energy-plus">+</button>
+              </div>
+            </div>
+            <div id="zone-energy" class="card-strip zone-drop energy-zone"></div>
+            <p class="hint zone-inline-help">
+              ステージの<strong>直下</strong>にある側面エネ用ゾーンです。<strong>＋／− を長押し</strong>で枚数ダイアログ。画像クリックで横向き（ウェイト見た目）の切替。
+            </p>
+          </section>
+
+        </div>
+
+        <div class="col col-right">
+          <section class="zone-block deck-block">
+            <h3>デッキ <span id="deck-count-num" class="badge">0</span></h3>
+            <div id="deck-pile-host" class="deck-pile-host" aria-expanded="false">
+              <div id="zone-deck" class="deck-pile zone-drop"></div>
+              <button type="button" id="btn-deck-toggle" class="btn-deck-toggle">
+                <span id="deck-toggle-label">0枚 — クリックで山札を表示</span>
+              </button>
+            </div>
+            <p class="hint deck-pile-hint zone-inline-help">
+              山札は<strong>左から</strong>並べ、<strong>見えている領域</strong>に合わせて横
+              <strong id="deck-row-hint">—</strong> 枚・おおよそ <strong id="deck-visible-rows-hint">—</strong>
+              行が一度に見えるサイズへ自動調整します（折り返し・スクロール）。<strong>シャッフル</strong>で上の並びを混ぜ、<strong>山札一覧: 裏向き</strong>で一覧のみ裏見えにできます。
+            </p>
+            <div class="btn-row deck-toolbar-row wrap">
+              <button type="button" class="btn sm" id="btn-deck-shuffle" title="現在のデッキ上の並びをシャッフル（Undo可能）">
+                シャッフル
+              </button>
+              <button
+                type="button"
+                class="btn sm secondary"
+                id="btn-deck-face"
+                aria-pressed="false"
+                title="山札ゾーンの一覧を共通裏面表示にする（ドラッグ・ダブルクリック拡大は表面確認可）"
+              >
+                山札一覧: 裏向き
+              </button>
+            </div>
+            <div class="btn-row draw-row wrap">
+              <button type="button" class="btn" id="btn-draw-hand">1枚ドロー（手札）</button>
+              <button type="button" class="btn" id="btn-draw-waiting">1枚ドロー（控室）</button>
+              <button type="button" class="btn" id="btn-draw-resolution">1枚ドロー（解決）</button>
+              <button type="button" class="btn primary" id="btn-turn-start" title="解決・ライブ枠を控え室へ送る／手札に山札から 1 枚ドロー／側面エネのウェイト解除・メンバーを縦・アクティブにし側面エネを1枚加算（上限12）">
+                ターン開始
+              </button>
+            </div>
+          </section>
+
+          <section class="zone-block zone-block-waiting">
+            <div
+              id="waiting-head-expand"
+              class="waiting-rail-head zone-head-waiting-expand"
+              role="button"
+              tabindex="0"
+              aria-expanded="false"
+              aria-controls="waiting-row"
+            >
+              <h3 class="waiting-rail-title">
+                控え室 <span id="waiting-rail-count" class="badge">0</span>
+              </h3>
+              <span class="muted waiting-rail-teaser" id="waiting-rail-teaser">クリックで一覧を表示</span>
+            </div>
+            <div id="waiting-row" class="waiting-row waiting-row--collapsed" aria-hidden="true">
+              <div id="zone-waiting" class="card-strip zone-drop waiting-zone-strip"></div>
+            </div>
+            <p class="hint zone-inline-help">
+              先入れは列の<strong>左側が先</strong>です。普段は一覧を閉じています。<strong>ヘッダをクリック</strong>で並びを確認できます。
+            </p>
+          </section>
+
+          <section class="zone-block zone-block-preview">
+            <div
+              id="preview-head-expand"
+              class="preview-rail-head zone-head-preview-expand"
+              role="button"
+              tabindex="0"
+              aria-expanded="false"
+              aria-controls="preview-row"
+            >
+              <h3 class="preview-rail-title">
+                プレビュー <span id="preview-rail-count" class="badge">0</span>
+                <span class="muted" style="font-weight: 400; font-size: 0.72rem">／公式ゾーン外の駒置き場</span>
+              </h3>
+              <span class="muted preview-rail-teaser" id="preview-rail-teaser">クリックで一覧を表示</span>
+            </div>
+            <div id="preview-row" class="preview-row preview-row--collapsed" aria-hidden="true">
+              <p class="hint preview-zone-explainer zone-inline-help">
+                ルールに含めない<strong>自分用のワークスペース</strong>です。カードを一時退避したり、配信・対面では「公開してよい状態だけ手札とは別に置く」「組み換え途中の束」などに使えます。
+              </p>
+              <div
+                id="zone-preview"
+                class="card-strip zone-drop preview-zone tall"
+                aria-label="公式の処理ゾーンではない一時領域"
+              ></div>
+            </div>
+          </section>
+
+          <section class="zone-block">
+            <div class="zone-head zone-head--hand">
+              <h3>手札</h3>
+              <div class="hand-zone-actions">
+                <button type="button" class="btn sm primary" id="btn-live-turn-primary" disabled>
+                  ライブターン開始
+                </button>
+                <button type="button" class="btn sm primary" id="btn-live-turn-begin" disabled>
+                  ライブ開始
+                </button>
+                <button type="button" class="btn sm" id="btn-mulligan-execute" disabled>
+                  マリガン実行
+                </button>
+                <button type="button" class="btn sm secondary" id="toggle-hand-mask">手札を隠す</button>
+                <button type="button" class="btn sm danger" id="btn-reset-game" title="キー山札から初手／Undo 消去">
+                  盤面リセット
+                </button>
+              </div>
+            </div>
+            <p id="hand-live-turn-hint" class="hint zone-inline-help" hidden>
+              <strong>ライブターン中:</strong>
+              カードを選び、続けて<strong>ライブエリアへ</strong>と表示されているボタンで<strong>左→中央→右</strong>の空き枠へ移します（枠では<strong>裏・横向き</strong>）。<strong>置いた枚数だけ</strong>山札からドローします。「<strong>ライブ開始</strong>」で<strong>ライブカード以外</strong>が<strong>控え室</strong>へ送られ、残りは<strong>表面の縦向き</strong>になり、このモードを終了します。
+            </p>
+            <p id="hand-mulligan-hint" class="hint zone-inline-help">
+              <strong>ターン開始まで:</strong>
+              戻したいカードに<strong>チェック</strong>、「<strong>マリガン実行</strong>」で選択枚を山札に戻しシャッフルして同じ枚数をドローします。<strong>0枚チェックでも実行できます</strong>（そのときはシャッフル・追加ドローはしません）。
+            </p>
+            <div id="hand-row">
+              <div id="zone-hand" class="card-strip zone-drop hand-zone"></div>
+            </div>
+          </section>
+
+          <section class="zone-block play-tools-block">
+            <div class="deck-tools-split">
+              <div class="deck-tools-split__pick">
+                <div class="deck-pick-block">
+                  <div class="deck-pick-head-row">
+                    <h4 class="deck-pick-odds-section-title">指定カード検索</h4>
+                    <label class="field deck-pick-k-field">
+                      <span>めくり枚数</span>
+                      <input type="number" id="deck-pick-k" min="1" max="99" step="1" value="1" />
+                    </label>
+                  </div>
+                  <p id="deck-pick-odds" class="hint zone-inline-help deck-pick-odds-line deck-draw-odds-visible"></p>
+                  <div id="deck-pick-list" class="deck-pick-list" role="group" aria-label="山札に残っているカード"></div>
+                  <div class="btn-row deck-pick-actions">
+                    <button type="button" class="btn sm secondary" id="btn-deck-pick-clear">選択をクリア</button>
+                  </div>
+                </div>
+              </div>
+              <div class="deck-tools-split__odds">
+                <div id="deck-remain-bh-panel" class="deck-remain-bh-panel" aria-live="polite">
+                  <h4 class="deck-pick-odds-section-title">デッキの残色</h4>
+                  <p id="deck-remain-nonbh-line" class="deck-remain-line muted"></p>
+                  <div id="deck-remain-bh-colors" class="deck-remain-bh-colors"></div>
+                </div>
+                <div class="play-deck-preset-panel">
+                  <h4 class="deck-pick-odds-section-title">保存デッキ</h4>
+                  <p class="hint muted play-deck-preset-lead">
+                    登録デッキタブのプリセットから<strong>山札だけ</strong>差し替え（キー／中間もプリセットに合わせます）。手札・盤面はそのまま。Undo で戻せます。
+                  </p>
+                  <div class="play-deck-preset-row">
+                    <select id="play-deck-preset-select" class="play-deck-preset-select" aria-label="保存デッキを選択"></select>
+                    <button type="button" class="btn sm primary" id="btn-play-deck-preset-apply">適用</button>
+                  </div>
+                  <button type="button" class="btn sm secondary play-deck-preset-refresh" id="btn-play-deck-preset-refresh">
+                    一覧を再読込
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <footer class="site-footer" role="contentinfo">
+      <p>
+        本アプリは非公式ツールであり、コンテンツの著作権・商標権は各権利者に帰属します。公式ルールおよび禁止・制限リストは公式サイト・大会運営発表を常に確認してください。
+      </p>
+    </footer>
+
+    <dialog id="dlg-energy-qty" class="app-dialog dlg-energy-qty" aria-labelledby="dlg-energy-qty-title">
+      <h2 id="dlg-energy-qty-title">側面エネルギーの枚数</h2>
+      <p class="muted energy-qty-lead">
+        現在 <strong id="energy-qty-current">0</strong> 枚 → <strong id="energy-qty-after">0</strong> 枚（最大 12）
+      </p>
+      <div class="energy-qty-controls">
+        <input type="range" id="energy-qty-range" min="0" max="12" value="0" step="1" />
+        <label class="field energy-qty-field">
+          <span>数値で指定</span>
+          <input type="number" id="energy-qty-input" min="0" max="12" step="1" value="0" />
+        </label>
+      </div>
+      <p class="hint">短いタップでの ±1 は従来どおり。<strong>長押しでこの画面</strong>を出しています。</p>
+      <div class="btn-row">
+        <button type="button" class="btn secondary" id="btn-energy-qty-cancel">キャンセル</button>
+        <button type="button" class="btn primary" id="btn-energy-qty-apply">適用</button>
+      </div>
+    </dialog>
+
+    <dialog id="dlg-waiting-refresh" class="app-dialog dlg-waiting-refresh" aria-labelledby="dlg-waiting-refresh-title">
+      <h2 id="dlg-waiting-refresh-title">リフレッシュが入りました</h2>
+      <p class="muted">控え室のカードをシャッフルして山札に戻しました。</p>
+      <div id="dlg-waiting-refresh-body" class="dlg-waiting-refresh-body"></div>
+      <form method="dialog" class="btn-row" style="justify-content: flex-end; margin-top: 0.75rem">
+        <button type="submit" class="btn primary">閉じる</button>
+      </form>
+    </dialog>
+
+    <dialog id="dlg-help" class="app-dialog" aria-labelledby="dlg-help-title">
+      <h2 id="dlg-help-title">ヘルプ</h2>
+      <div class="help-body">
+        <p>
+          ソロプレイ開始時、山札から<strong>初手 6 枚</strong>がランダムで手札に置かれます。「盤面リセット」でも同様に再シャッフルされます。山札一覧は<strong>最初は折りたたみ</strong>で、枚数行をクリックすると開閉できます。
+        </p>
+        <p>
+          「<strong>ターン開始</strong>」を押すまでマリガンできます。手札カード左上の<strong>チェック</strong>で複数選択、「<strong>マリガン実行</strong>」で選んだ枚数を山札に戻してシャッフルし、同じ枚数をドローします。<strong>1枚も選ばずに実行可能</strong>（そのときはシャッフル・ドローはしません）。リセット後も「ターン開始」までこのモードになります。
+        </p>
+        <p>
+          手札欄の<strong>ライブ進行ボタン</strong>では、まず「<strong>ライブターン開始</strong>」で<strong>成功したライブ</strong>のカードがすべて<strong>控え室</strong>へ送られ、手札<strong>右上のチェック</strong>で複数選び、同じボタンが「<strong>ライブエリアへ</strong>」に変わってからそれを押すと左→中央→右の<strong>空き枠に順に配置</strong>できます。配置した<strong>メンバー／ライブ</strong>1枚につき<strong>山札から手札へ1ドロー</strong>します。<strong>ライブターン中のみ、3枠は横向き・裏見えです。</strong>「<strong>ライブ開始</strong>」で<strong>ライブカード以外</strong>を<strong>控え室</strong>へ送ってモード終了すると、ライブカードが<strong>表面の縦向き</strong>になり、このタイミングで中央に<strong>ライブの計算</strong>パネル（概要と必要ハート・ステB・所持総H・ステH色・解決 BH・判定）が出ます。<strong>解決ゾーンの所持H・BH も成否判定に含まれます</strong>（所持Hの色内訳はパネルには出しません）（ターン開始前はマリガン中のみのため、これらは無効になります）。
+        </p>
+        <p>
+          PC でもタブレットでも、ドラッグでカードを移動します。ドラッグ開始時点から取り消し対象になります。<strong>U</strong> で
+          Undo、<strong>R</strong> で Redo、<strong>?</strong> でこのダイアログです。
+        </p>
+        <p>
+          メンバーまたはライブカードでは、ステージ等でカード下の <strong>W</strong>／<strong>A</strong> と（ステージまたはライブ枠に<strong>いて</strong><strong>表面が見える</strong>メンバーだけ）<strong>+H／B</strong> が使えます。<strong>+H／B</strong> では所持ハート（6色・ALL）・ブレードを<strong>DB値に加算してライブ計算へ反映</strong>します（非公式）。<strong>画像クリック</strong>は向きの切替です（所定ゾーンでは無効）。<strong>通常時はライブの3枠にメンバーを置けず、ライブターンだけ置けます</strong>（非ライブターはライブカードのみドラッグ可）。ライブエリアは<strong>ライブターン中だけ</strong>裏・横向きにし、その後は<strong>メンバーと同じ縦・同サイズ</strong>です。<strong>メンバーが枠へ入った</strong>ときだけ<strong>ライブセット相当として手札へ 1 枚自動ドロー</strong>します。「成功したライブ」は<strong>通常の縦向きレイアウト</strong>です（W／A の補助表示あり）。各ライブスロットは<strong>カード合計 1 枚まで</strong>です。
+        </p>
+        <p>
+          ドラッグ中はカードを<strong>汎用の裏面イラスト（SVG）</strong>に差し替えて表示します（対面での操作イメージ用・公式イラストではありません）。
+        </p>
+        <p>
+          「<strong>ターン開始</strong>」はデッキ欄の 1枚ドロー行にあります。そのタイミングで<strong>解決エリア・ライブ枠のカードはすべて控え室</strong>へ移動します。続いて山札から<strong>手札に 1 枚ドロー</strong>し、ウェイト状態の側面エネ・メンバーを縦に立て、側面エネを <strong>1 枚増やします</strong>（上限 12）。画面上部の<strong>ゲーム情報</strong>行の「ゾーン説明を表示」で各ゾーン下の短文ヘルプの表示を切り替えできます。
+        </p>
+        <p>
+          <strong>エネルギー</strong>（側面エネ）は中央列の<strong>ステージ直下</strong>にあります。<strong>＋／−</strong> は短タップ、長押しで枚数ダイアログ。開始時・盤リセット後は横向き<strong>ウェイト</strong>から始まり、「ターン開始」で縦に立てられます。
+        </p>
+        <p>控え室は<strong>ヘッダをクリック</strong>で一覧の開閉ができます（先に控えへ入れたカードが左）。デッキが尽きると控えが山札へリフレッシュされ、詳細がダイアログに出ます。</p>
+        <p>ステージでもメンバーは画像クリックで横向きにできます。メンバーが<strong>空の列へ</strong>載る場合は<strong>バトンタッチ以外の登場</strong>であり、カードDBの<strong>コスト</strong>に応じて<strong>縦の側面エネが足りないと載せられません</strong>。すでにメンバーがいる列への<strong>バトンタッチ</strong>では、支払いは<strong>新メンバーのコストから元メンバーのコストを引いた差分</strong>で、側面エネが差分に足りなくても登場できます（詳細はステージ直下の短文ヘルプ）。<strong>ステージへ載せたターン</strong>のメンバー同士では<strong>バトンタッチはできません</strong>。</p>
+        <p>
+          <strong>プレビュー</strong>は公式のゾーンではない<strong>任意の駒置き場</strong>です（<strong>ヘッダクリックで一覧の開閉</strong>）。ルール計算から外したいカードを一時置きしたり、手札と分けて「見せてよい束」を置く・配信向けに整理するなどの用途向けです（Undo の対象にはなります）。<strong>プレビューのカードはライブ目安パネルや解決の統計には載りません。「ライブ開始」後</strong>に目安パネルが開きます。
+        </p>
+        <p><strong>HUD のターンカウント</strong>は <strong>0T</strong> から始まり、デッキ欄の「<strong>ターン開始</strong>」ごとに 1 ずつ増えます。ステージにいるメンバーは載せたターンよりカウントが進むと少し<strong>発光した見え方</strong>になります（補助用）。</p>
+        <p>オンライン対戦・自動同期は<strong>未対応</strong>です。</p>
+        <p>スナップショット 1〜3 は<strong>ブラウザのこのタブのセッション内</strong>にのみ保存され、ページを閉じると消える場合があります。</p>
+      </div>
+      <form method="dialog">
+        <button type="submit" class="btn primary wide">閉じる</button>
+      </form>
+    </dialog>
+
+    <dialog id="dlg-member-hb" class="app-dialog dlg-member-hb" aria-labelledby="dlg-member-hb-title">
+      <h2 id="dlg-member-hb-title">所持H／ブレードを追加</h2>
+      <p id="dlg-member-hb-lead" class="muted dlg-member-hb-lead"></p>
+      <p class="hint">
+        メンバーDBの<code>base_heart</code>・<code>blade</code>に<strong>加算</strong>して集計します（Undo 可能）。「ALL」追加分はライブ<code>need_heart</code>の<strong>任意</strong>点数の支払いにのみ使われます。
+        右の数値は<strong>クリックで +1</strong>（<kbd>Shift</kbd>+クリックで −1、上限 999）。
+      </p>
+      <div class="dlg-member-hb-fields" role="group" aria-label="追加する所持ハートとブレード">
+        <div class="member-hb-row">
+          <span class="member-hb-lab">桃 H</span>
+          <button type="button" class="member-hb-step" data-member-hb-slot="1" aria-label="桃H 追加分（クリックで増加）">0</button>
+        </div>
+        <div class="member-hb-row">
+          <span class="member-hb-lab">赤 H</span>
+          <button type="button" class="member-hb-step" data-member-hb-slot="2" aria-label="赤H 追加分（クリックで増加）">0</button>
+        </div>
+        <div class="member-hb-row">
+          <span class="member-hb-lab">黄 H</span>
+          <button type="button" class="member-hb-step" data-member-hb-slot="3" aria-label="黄H 追加分（クリックで増加）">0</button>
+        </div>
+        <div class="member-hb-row">
+          <span class="member-hb-lab">緑 H</span>
+          <button type="button" class="member-hb-step" data-member-hb-slot="4" aria-label="緑H 追加分（クリックで増加）">0</button>
+        </div>
+        <div class="member-hb-row">
+          <span class="member-hb-lab">青 H</span>
+          <button type="button" class="member-hb-step" data-member-hb-slot="5" aria-label="青H 追加分（クリックで増加）">0</button>
+        </div>
+        <div class="member-hb-row">
+          <span class="member-hb-lab">紫 H</span>
+          <button type="button" class="member-hb-step" data-member-hb-slot="6" aria-label="紫H 追加分（クリックで増加）">0</button>
+        </div>
+        <div class="member-hb-row">
+          <span class="member-hb-lab">ALL（任意用）</span>
+          <button type="button" class="member-hb-step" data-member-hb-slot="7" aria-label="ALL 追加分（クリックで増加）">0</button>
+        </div>
+        <div class="member-hb-row member-hb-row--blade">
+          <span class="member-hb-lab">ブレード追加</span>
+          <button type="button" class="member-hb-step" data-member-hb-blade aria-label="ブレード追加分（クリックで増加）">0</button>
+        </div>
+      </div>
+      <div class="btn-row dlg-member-hb-actions">
+        <button type="button" class="btn secondary" id="btn-member-hb-reset">入力をクリア</button>
+        <button type="button" class="btn secondary" id="btn-member-hb-cancel">キャンセル</button>
+        <button type="button" class="btn primary" id="btn-member-hb-apply">適用</button>
+      </div>
+    </dialog>
+
+    <dialog id="dlg-card-zoom" class="app-dialog dlg-card-zoom" aria-label="カード拡大プレビュー">
+      <div class="dlg-zoom-top">
+        <p id="dlg-zoom-caption" class="dlg-zoom-caption muted"></p>
+        <div id="dlg-zoom-deck-controls" class="dlg-zoom-deck-controls" hidden>
+          <button type="button" class="btn sm card-zoom-qty" id="dlg-zoom-qty-minus" aria-label="デッキから1枚減らす">
+            −
+          </button>
+          <button type="button" class="btn sm primary card-zoom-qty card-zoom-qty--plus" id="dlg-zoom-qty-plus" aria-label="デッキに1枚追加">
+            +
+          </button>
+        </div>
+      </div>
+      <img id="dlg-zoom-img" class="dlg-zoom-img" alt="" />
+      <form method="dialog" class="dlg-zoom-actions">
+        <button type="submit" class="btn primary">閉じる</button>
+      </form>
+    </dialog>
+
+    <dialog id="dlg-deck-peek" class="app-dialog dlg-deck-peek" aria-labelledby="dlg-deck-peek-title">
+      <h2 id="dlg-deck-peek-title">デッキ確認</h2>
+      <div class="deck-peek-body">
+        <p id="deck-peek-lead" class="deck-peek-lead muted"></p>
+        <div class="deck-peek-main">
+          <div class="deck-peek-col deck-peek-col-summaries">
+            <div id="deck-peek-stats" class="deck-peek-stats" role="status"></div>
+            <div class="deck-peek-chart-section">
+              <h3 class="deck-peek-section-h">メンバー コスト別（BH ありも含む）</h3>
+              <div id="deck-peek-chart" class="deck-peek-chart" role="img" aria-label="メンバーBHありを含むコスト別枚数の棒グラフ"></div>
+              <p id="deck-peek-chart-empty" class="deck-peek-chart-empty muted" hidden>このデッキに該当メンバーはありません。</p>
+            </div>
+          </div>
+          <div class="deck-peek-col deck-peek-col-list">
+            <h3 id="deck-peek-list-heading" class="deck-peek-section-h deck-peek-list-heading">カード一覧</h3>
+            <ul id="deck-peek-list" class="deck-list deck-peek-list"></ul>
+          </div>
+        </div>
+      </div>
+      <form method="dialog">
+        <button type="submit" class="btn primary wide">閉じる</button>
+      </form>
+    </dialog>
+
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>

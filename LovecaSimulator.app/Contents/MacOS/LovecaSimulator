@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+HERE="$( cd "$( dirname "${BASH_SOURCE[0]:-$0}" )" && pwd )"
+SCRIPT="$( cd "$HERE/../../../scripts" && pwd )/start-oneclick.sh"
+
+if [[ ! -x "$SCRIPT" ]]; then
+  chmod +x "$SCRIPT" 2>/dev/null || true
+fi
+
+exec /usr/bin/env bash "$SCRIPT"

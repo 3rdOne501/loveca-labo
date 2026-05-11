@@ -1,0 +1,12 @@
+# 依存（npm で入るとファイル数が数千になる）
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# エディタ
+.idea/
+.vscode/
+*.swp
+*.swo
