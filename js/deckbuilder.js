@@ -48,6 +48,8 @@ import {
   compareBladeHeartDbKeys,
 } from "./bladeHeart.js";
 
+let deckBuilderStorageFlushHooked = false;
+
 /**
  * デッキ内の blade_heart について、キーごとに「カード DB の値 × 収録枚数」を足します。
  * byKeyAdditive は<strong>ライブカード</strong>（種別がライブかつ blade_heart あり）貢献分のみ。
@@ -352,7 +354,7 @@ export function initDeckBuilder(root, { onStartGame }) {
   let deckGridFlushRaf = 0;
   let cardGridVirtualRaf = 0;
   let cardGridVirtualMeasureGuard = 0;
-  /** @type {{ active: boolean, list: typeof cards, cols: number, rowH: number, w0: number, w1: number, lastPanel: string, lastCount: number }} */
+  /** @type {{ active: boolean, list: typeof cards, cols: number, rowH: number, w0: number, w1: number, lastPanel: string, lastCount: number, lastOrderedSig: string }} */
   let cardGridVirtual = {
     active: false,
     list: [],
@@ -362,8 +364,18 @@ export function initDeckBuilder(root, { onStartGame }) {
     w1: -1,
     lastPanel: "",
     lastCount: -1,
+    lastOrderedSig: "",
   };
-  const CARD_GRID_VIRTUAL_MIN = 80;
+  /** これ未満だと仮想化しないが、フル描画は重いので低めに保つ */
+  const CARD_GRID_VIRTUAL_MIN = 36;
+  let catalogFilterCacheKey = "";
+  /** @type {typeof cards | null} */
+  let catalogFilterCached = null;
+  let persistDeckTimer = 0;
+  let deckListFlushRaf = 0;
+  let deckSummaryDebounceTimer = 0;
+  /** @type {{ deckSummary: boolean }} */
+  let pendingRenderCardGridOpts = { deckSummary: true };
   /** @type {"catalog"|"deck"} */
   let cardPanelMode = "catalog";
   const cards = getAllCards();
@@ -433,9 +445,9 @@ export function initDeckBuilder(root, { onStartGame }) {
     }
   }
 
-  function persistDeckState() {
+  function flushPersistDeckToStorage() {
+    persistDeckTimer = 0;
     try {
-      pruneOrphanRoleLabels();
       saveDeckBundleToStorage({
         map: deckMap,
         keyCardNos: [...keyCardNos],
@@ -451,6 +463,96 @@ export function initDeckBuilder(root, { onStartGame }) {
           : "デッキの自動保存に失敗しました（ブラウザのサイトデータ設定を確認してください）。",
       );
     }
+  }
+
+  function schedulePersistDeckFlush() {
+    if (persistDeckTimer) clearTimeout(persistDeckTimer);
+    persistDeckTimer = setTimeout(flushPersistDeckToStorage, 100);
+  }
+
+  function persistDeckState() {
+    pruneOrphanRoleLabels();
+    schedulePersistDeckFlush();
+  }
+
+  function invalidateCatalogFilterCache() {
+    catalogFilterCacheKey = "";
+    catalogFilterCached = null;
+  }
+
+  function buildCatalogFilterCacheKey() {
+    const bh = readBhSlotFilters();
+    const hs = readHeartSlotFilters();
+    const costParts = Object.keys(filterCosts)
+      .map(function (k) {
+        return k + "=" + (filterCosts[k] ? "1" : "0");
+      })
+      .sort();
+    return [
+      searchText,
+      filterProduct,
+      filterSeries,
+      filterUnit,
+      filterCardKind,
+      JSON.stringify(filterTypes),
+      [...bh].sort().join(","),
+      [...hs].sort().join(","),
+      costParts.join(","),
+    ].join("|");
+  }
+
+  /** カード一覧グリッド用のフィルタ済み配列（カタログ条件が変わらない限り filterCards を使い回す） */
+  function computeFilteredCardListForGrid() {
+    if (cardPanelMode === "deck") {
+      const filtered = [];
+      for (const no of Object.keys(deckMap)) {
+        if (!((deckMap[no] || 0) > 0)) continue;
+        const c = getCard(no);
+        if (c) filtered.push(c);
+      }
+      return sortRegisteredDeckCards(filtered);
+    }
+    const key = buildCatalogFilterCacheKey();
+    if (key === catalogFilterCacheKey && catalogFilterCached !== null) {
+      return catalogFilterCached;
+    }
+    const filtered = filterCards(cards, {
+      search: searchText,
+      types: filterTypes,
+      product: filterProduct || null,
+      series: filterSeries || null,
+      unit: filterUnit || null,
+      costs: filterCosts,
+      bhSlots: readBhSlotFilters(),
+      heartSlots: readHeartSlotFilters(),
+    });
+    catalogFilterCacheKey = key;
+    catalogFilterCached = filtered;
+    return filtered;
+  }
+
+  function scheduleRenderDeckList() {
+    if (deckListFlushRaf) return;
+    deckListFlushRaf = requestAnimationFrame(function () {
+      deckListFlushRaf = 0;
+      renderDeckList();
+    });
+  }
+
+  function flushDeckSummaryDebouncedNow() {
+    if (deckSummaryDebounceTimer) {
+      clearTimeout(deckSummaryDebounceTimer);
+      deckSummaryDebounceTimer = 0;
+    }
+    writeDeckSummaryDom();
+  }
+
+  function scheduleDeckSummaryDebounced() {
+    if (deckSummaryDebounceTimer) clearTimeout(deckSummaryDebounceTimer);
+    deckSummaryDebounceTimer = setTimeout(function () {
+      deckSummaryDebounceTimer = 0;
+      writeDeckSummaryDom();
+    }, 160);
   }
 
   function deckTotal() {
@@ -615,7 +717,7 @@ export function initDeckBuilder(root, { onStartGame }) {
     localStorage.removeItem(STORAGE_ACTIVE_PRESET_ID);
     renderPresetSelect();
     renderCounts();
-    renderDeckList();
+    scheduleRenderDeckList();
     scheduleRenderCardGrid();
   }
 
@@ -764,9 +866,7 @@ export function initDeckBuilder(root, { onStartGame }) {
           if (t.checked) middleCardNos.add(no);
           else middleCardNos.delete(no);
         }
-        persistDeckState();
-        renderDeckList();
-        scheduleRenderCardGrid();
+        afterDeckRoleLabelsChange(no);
       });
     }
     ul.innerHTML = "";
@@ -922,10 +1022,7 @@ export function initDeckBuilder(root, { onStartGame }) {
           deckMap[no] = (deckMap[no] || 0) - 1;
           if (deckMap[no] <= 0) delete deckMap[no];
         }
-        persistDeckState();
-        renderCounts();
-        renderDeckList();
-        scheduleRenderCardGrid();
+        afterDeckMapQuickChange(no);
       });
     });
   }
@@ -1260,9 +1357,7 @@ export function initDeckBuilder(root, { onStartGame }) {
           if (t.checked) middleCardNos.add(no);
           else middleCardNos.delete(no);
         }
-        persistDeckState();
-        renderDeckList();
-        scheduleRenderCardGrid();
+        afterDeckRoleLabelsChange(no);
         var pseudo = {
           name: "現在のメインデッキ",
           deck: deckMap,
@@ -1328,38 +1423,112 @@ export function initDeckBuilder(root, { onStartGame }) {
     });
   }
 
-  function renderCardGrid() {
-    const grid = el("card-grid");
-    if (!grid) return;
-    const heading = el("card-panel-heading");
+  function writeDeckSummaryDom() {
     const deckSummary = el("card-deck-summary");
-    if (heading) {
-      heading.textContent = cardPanelMode === "deck" ? "登録中のデッキ" : "カード一覧";
-    }
-
-    /** @type {typeof cards} */
-    let filtered;
-    if (cardPanelMode === "deck") {
-      filtered = [];
-      for (const no of Object.keys(deckMap)) {
-        if (!((deckMap[no] || 0) > 0)) continue;
-        const c = getCard(no);
-        if (c) filtered.push(c);
+    if (!deckSummary || cardPanelMode !== "deck") return;
+    const costCount = {};
+    let memTotal = 0;
+    let liveTotal = 0;
+    let unknown = 0;
+    for (const [no, n] of Object.entries(deckMap)) {
+      const qty = Number(n) || 0;
+      if (qty <= 0) continue;
+      const c = getCard(no);
+      if (!c) {
+        unknown += qty;
+        continue;
       }
-      filtered = sortRegisteredDeckCards(filtered);
-    } else {
-      filtered = filterCards(cards, {
-        search: searchText,
-        types: filterTypes,
-        product: filterProduct || null,
-        series: filterSeries || null,
-        unit: filterUnit || null,
-        costs: filterCosts,
-        bhSlots: readBhSlotFilters(),
-        heartSlots: readHeartSlotFilters(),
-      });
+      if (effectiveMainDeckCategory(c) === T_MEMBER) {
+        memTotal += qty;
+        const ck = Number(c.cost);
+        if (Number.isFinite(ck)) costCount[String(Math.floor(ck))] = (costCount[String(Math.floor(ck))] || 0) + qty;
+      } else if (effectiveMainDeckCategory(c) === T_LIVE) {
+        liveTotal += qty;
+      }
     }
+    const bhAgg = accumulateBladeHeartWeighted(deckMap);
+    const chartCols = Object.keys(costCount)
+      .map(function (k) {
+        return { k: Number(k), n: Number(costCount[k]) || 0 };
+      })
+      .filter(function (x) {
+        return Number.isFinite(x.k) && x.n > 0;
+      })
+      .sort(function (a, b) {
+        return a.k - b.k;
+      });
+    let chartHtml = '<p class="deck-peek-chart-empty">メンバーのコスト分布はありません。</p>';
+    let memBhCount = 0;
+    let memNonBhCount = 0;
+    let liveBhCount = 0;
+    let liveNonBhCount = 0;
+    for (const [no, n] of Object.entries(deckMap)) {
+      const qty = Number(n) || 0;
+      if (qty <= 0) continue;
+      const c = getCard(no);
+      if (!c) continue;
+      if (effectiveMainDeckCategory(c) === T_MEMBER) {
+        if (cardHasBladeHeart(c)) memBhCount += qty;
+        else memNonBhCount += qty;
+      } else if (effectiveMainDeckCategory(c) === T_LIVE) {
+        if (cardHasBladeHeart(c)) liveBhCount += qty;
+        else liveNonBhCount += qty;
+      }
+    }
+    if (chartCols.length) {
+      const max = chartCols.reduce(function (m, x) {
+        return Math.max(m, x.n);
+      }, 1);
+      chartHtml =
+        '<div class="deck-peek-chart">' +
+        chartCols
+          .map(function (x) {
+            const h = Math.max(8, Math.round((x.n / max) * 92));
+            return (
+              '<div class="deck-peek-bar-col"><div class="deck-peek-bar-wrap"><span class="deck-peek-bar-val">' +
+              x.n +
+              '</span><div class="deck-peek-bar" style="height:' +
+              h +
+              'px" title="コスト' +
+              x.k +
+              ": " +
+              x.n +
+              '枚"></div></div><span class="deck-peek-bar-cost">' +
+              x.k +
+              "</span></div>"
+            );
+          })
+          .join("") +
+        "</div>";
+    }
+    deckSummary.hidden = false;
+    deckSummary.innerHTML =
+      '<div class="card-deck-summary-grid"><div class="deck-peek-stats"><div class="deck-peek-stat-grid compact">' +
+      '<div><strong>メンバー</strong> <span class="deck-peek-accent">' +
+      memTotal +
+      '</span>枚</div><div><strong>ライブ</strong> <span class="deck-peek-accent">' +
+      liveTotal +
+      "</span>枚" +
+      (unknown > 0 ? ' <span class="deck-peek-warn">DB未登録 <strong>' + unknown + "</strong>枚</span>" : "") +
+      "</div></div>" +
+      formatBladeHeartBlockHtml(
+        bhAgg.byKey,
+        bhAgg.totalWeighted,
+        memBhCount,
+        liveBhCount,
+        memNonBhCount,
+        liveNonBhCount,
+        bhAgg.byKeyAdditive,
+      ) +
+      "</div>" +
+      '<div class="deck-peek-chart-section compact"><h4 class="deck-peek-section-h">コスト分布</h4>' +
+      chartHtml +
+      "</div></div>" +
+      '<p class="hint search-hint-muted card-deck-summary-help">登録デッキタブで枚数調整・役割指定（キー/中間）・BH確認をまとめて操作できます。</p>' +
+      "";
+  }
 
+  function updateCardHitCountFromFiltered(filtered) {
     let hitMember = 0;
     let hitLive = 0;
     for (const card of filtered) {
@@ -1394,111 +1563,30 @@ export function initDeckBuilder(root, { onStartGame }) {
               "）";
       }
     }
+  }
+
+  function renderCardGrid(opts) {
+    opts = opts || { deckSummary: true };
+    if (typeof opts.deckSummary === "undefined") opts.deckSummary = true;
+    const grid = el("card-grid");
+    if (!grid) return;
+    const heading = el("card-panel-heading");
+    const deckSummary = el("card-deck-summary");
+    if (heading) {
+      heading.textContent = cardPanelMode === "deck" ? "登録中のデッキ" : "カード一覧";
+    }
+
+    /** @type {typeof cards} */
+    const filtered = computeFilteredCardListForGrid();
+    updateCardHitCountFromFiltered(filtered);
     if (deckSummary) {
       if (cardPanelMode !== "deck") {
         deckSummary.hidden = true;
         deckSummary.innerHTML = "";
+      } else if (opts.deckSummary) {
+        flushDeckSummaryDebouncedNow();
       } else {
-        const costCount = {};
-        let memTotal = 0;
-        let liveTotal = 0;
-        let unknown = 0;
-        for (const [no, n] of Object.entries(deckMap)) {
-          const qty = Number(n) || 0;
-          if (qty <= 0) continue;
-          const c = getCard(no);
-          if (!c) {
-            unknown += qty;
-            continue;
-          }
-          if (effectiveMainDeckCategory(c) === T_MEMBER) {
-            memTotal += qty;
-            const ck = Number(c.cost);
-            if (Number.isFinite(ck)) costCount[String(Math.floor(ck))] = (costCount[String(Math.floor(ck))] || 0) + qty;
-          } else if (effectiveMainDeckCategory(c) === T_LIVE) {
-            liveTotal += qty;
-          }
-        }
-        const bhAgg = accumulateBladeHeartWeighted(deckMap);
-        const chartCols = Object.keys(costCount)
-          .map(function (k) {
-            return { k: Number(k), n: Number(costCount[k]) || 0 };
-          })
-          .filter(function (x) {
-            return Number.isFinite(x.k) && x.n > 0;
-          })
-          .sort(function (a, b) {
-            return a.k - b.k;
-          });
-        let chartHtml = '<p class="deck-peek-chart-empty">メンバーのコスト分布はありません。</p>';
-        let memBhCount = 0;
-        let memNonBhCount = 0;
-        let liveBhCount = 0;
-        let liveNonBhCount = 0;
-        for (const [no, n] of Object.entries(deckMap)) {
-          const qty = Number(n) || 0;
-          if (qty <= 0) continue;
-          const c = getCard(no);
-          if (!c) continue;
-          if (effectiveMainDeckCategory(c) === T_MEMBER) {
-            if (cardHasBladeHeart(c)) memBhCount += qty;
-            else memNonBhCount += qty;
-          } else if (effectiveMainDeckCategory(c) === T_LIVE) {
-            if (cardHasBladeHeart(c)) liveBhCount += qty;
-            else liveNonBhCount += qty;
-          }
-        }
-        if (chartCols.length) {
-          const max = chartCols.reduce(function (m, x) {
-            return Math.max(m, x.n);
-          }, 1);
-          chartHtml =
-            '<div class="deck-peek-chart">' +
-            chartCols
-              .map(function (x) {
-                const h = Math.max(8, Math.round((x.n / max) * 92));
-                return (
-                  '<div class="deck-peek-bar-col"><div class="deck-peek-bar-wrap"><span class="deck-peek-bar-val">' +
-                  x.n +
-                  '</span><div class="deck-peek-bar" style="height:' +
-                  h +
-                  'px" title="コスト' +
-                  x.k +
-                  ": " +
-                  x.n +
-                  '枚"></div></div><span class="deck-peek-bar-cost">' +
-                  x.k +
-                  "</span></div>"
-                );
-              })
-              .join("") +
-            "</div>";
-        }
-        deckSummary.hidden = false;
-        deckSummary.innerHTML =
-          '<div class="card-deck-summary-grid"><div class="deck-peek-stats"><div class="deck-peek-stat-grid compact">' +
-          '<div><strong>メンバー</strong> <span class="deck-peek-accent">' +
-          memTotal +
-          '</span>枚</div><div><strong>ライブ</strong> <span class="deck-peek-accent">' +
-          liveTotal +
-          "</span>枚" +
-          (unknown > 0 ? ' <span class="deck-peek-warn">DB未登録 <strong>' + unknown + "</strong>枚</span>" : "") +
-          "</div></div>" +
-          formatBladeHeartBlockHtml(
-            bhAgg.byKey,
-            bhAgg.totalWeighted,
-            memBhCount,
-            liveBhCount,
-            memNonBhCount,
-            liveNonBhCount,
-            bhAgg.byKeyAdditive,
-          ) +
-          "</div>" +
-          '<div class="deck-peek-chart-section compact"><h4 class="deck-peek-section-h">コスト分布</h4>' +
-          chartHtml +
-          "</div></div>" +
-          '<p class="hint search-hint-muted card-deck-summary-help">登録デッキタブで枚数調整・役割指定（キー/中間）・BH確認をまとめて操作できます。</p>' +
-          "";
+        scheduleDeckSummaryDebounced();
       }
     }
     const scrollEl = el("card-grid-scroll");
@@ -1512,6 +1600,9 @@ export function initDeckBuilder(root, { onStartGame }) {
       if (botSp) botSp.style.height = "0px";
       grid.innerHTML = "";
       for (const card of filtered) grid.appendChild(createCardGridItemWrap(card));
+      cardGridVirtual.lastOrderedSig = filtered.map(function (c) {
+        return c.card_no;
+      }).join("\u0001");
       return;
     }
 
@@ -1530,6 +1621,9 @@ export function initDeckBuilder(root, { onStartGame }) {
     cardGridVirtual.w0 = -1;
     cardGridVirtual.rowH = cardPanelMode === "deck" ? 268 : 234;
     syncVirtualCardGridWindow(true);
+    cardGridVirtual.lastOrderedSig = filtered.map(function (c) {
+      return c.card_no;
+    }).join("\u0001");
   }
 
   function estimateCardGridCols(scrollEl) {
@@ -1553,6 +1647,7 @@ export function initDeckBuilder(root, { onStartGame }) {
   function createCardGridItemWrap(card) {
     const wrap = document.createElement("div");
     wrap.className = "card-grid-item";
+    wrap.dataset.cardNo = String(card.card_no);
     const div = document.createElement("div");
     div.className =
       "card-thumb card-thumb--" + (card.type === T_LIVE ? "live" : card.type === T_MEMBER ? "member" : "misc");
@@ -1575,7 +1670,7 @@ export function initDeckBuilder(root, { onStartGame }) {
     div.innerHTML =
       rolesHtml +
       qtyBadge +
-      `<span class="thumb-type">${escapeHtml(tlab)}</span><img src="${escapeAttr(card.img)}" alt="" class="deck-builder-card-thumb" loading="lazy" fetchpriority="low" decoding="async" /><span class="thumb-cap">${escapeHtml(card.name)}${thumbExtraHtml(card)}</span>`;
+      `<span class="thumb-type">${escapeHtml(tlab)}</span><img src="${escapeAttr(card.img)}" alt="" class="deck-builder-card-thumb" loading="eager" fetchpriority="low" decoding="async" /><span class="thumb-cap">${escapeHtml(card.name)}${thumbExtraHtml(card)}</span>`;
     div.addEventListener("click", function (ev) {
       if (
         ev.target &&
@@ -1591,10 +1686,7 @@ export function initDeckBuilder(root, { onStartGame }) {
       if (!addNo) return;
       if (!canAddNo(addNo, 1)) return;
       deckMap[addNo] = (deckMap[addNo] || 0) + 1;
-      persistDeckState();
-      renderCounts();
-      renderDeckList();
-      scheduleRenderCardGrid();
+      afterDeckMapQuickChange(addNo);
     });
     wrap.appendChild(div);
     if (cardPanelMode === "deck") {
@@ -1639,9 +1731,7 @@ export function initDeckBuilder(root, { onStartGame }) {
             if (inp.checked) middleCardNos.add(no);
             else middleCardNos.delete(no);
           }
-          persistDeckState();
-          renderDeckList();
-          scheduleRenderCardGrid();
+          afterDeckRoleLabelsChange(no);
         });
       });
       wrap.appendChild(roleRow);
@@ -1670,10 +1760,9 @@ export function initDeckBuilder(root, { onStartGame }) {
         if (delta > 0 && !canAddNo(no, 1)) return;
         deckMap[no] = Math.max(0, cur + delta);
         if (!(deckMap[no] > 0)) delete deckMap[no];
-        persistDeckState();
-        renderCounts();
-        renderDeckList();
-        scheduleRenderCardGrid();
+        const changed = [String(no)];
+        if (String(card.card_no) !== String(no)) changed.unshift(String(card.card_no));
+        afterDeckMapQuickChange(changed);
       }
       bMinus.addEventListener("click", function (ev) {
         ev.preventDefault();
@@ -1743,12 +1832,116 @@ export function initDeckBuilder(root, { onStartGame }) {
     });
   }
 
-  function scheduleRenderCardGrid() {
+  function roleDeckPillsInnerHtml(cardNo) {
+    const no = String(cardNo || "");
+    const inDeck = (deckMap[no] || 0) > 0;
+    const pills = [];
+    if (inDeck && keyCardNos.has(no)) pills.push('<span class="card-thumb-role card-thumb-role--key">キー</span>');
+    if (inDeck && keyCard2Nos.has(no)) pills.push('<span class="card-thumb-role card-thumb-role--key2">キ②</span>');
+    if (inDeck && keyCard3Nos.has(no)) pills.push('<span class="card-thumb-role card-thumb-role--key3">キ③</span>');
+    if (inDeck && middleCardNos.has(no)) pills.push('<span class="card-thumb-role card-thumb-role--mid">中間</span>');
+    return pills.length ? '<div class="card-thumb-roles">' + pills.join("") + "</div>" : "";
+  }
+
+  function patchVisibleGridThumbsForNos(changedNos) {
+    const grid = el("card-grid");
+    if (!grid || !changedNos || !changedNos.length) return;
+    const esc =
+      typeof CSS !== "undefined" && typeof CSS.escape === "function"
+        ? function (s) {
+            return CSS.escape(String(s));
+          }
+        : function (s) {
+            return String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+          };
+    for (let i = 0; i < changedNos.length; i++) {
+      const no = String(changedNos[i] || "");
+      if (!no) continue;
+      const wrap = grid.querySelector('.card-grid-item[data-card-no="' + esc(no) + '"]');
+      if (!wrap) continue;
+      const thumb = wrap.querySelector(".card-thumb");
+      if (!thumb) continue;
+      const rolesHtml = roleDeckPillsInnerHtml(no);
+      const er = thumb.querySelector(".card-thumb-roles");
+      if (rolesHtml) {
+        if (er) er.outerHTML = rolesHtml;
+        else thumb.insertAdjacentHTML("afterbegin", rolesHtml);
+      } else if (er) {
+        er.remove();
+      }
+      if (cardPanelMode === "deck") {
+        const qn = deckMap[no] || 0;
+        const qtyText = qn + " 枚";
+        let badge = thumb.querySelector(".thumb-deck-qty");
+        if (badge) badge.textContent = qtyText;
+        else {
+          const typeSpan = thumb.querySelector(".thumb-type");
+          if (typeSpan)
+            typeSpan.insertAdjacentHTML("beforebegin", '<span class="thumb-deck-qty">' + qtyText + "</span>");
+        }
+      }
+    }
+  }
+
+  function afterDeckMapQuickChange(changedNos) {
+    const list = Array.isArray(changedNos)
+      ? changedNos
+      : changedNos != null && changedNos !== ""
+        ? [changedNos]
+        : [];
+    persistDeckState();
+    renderCounts();
+    scheduleRenderDeckList();
+    const filtered = computeFilteredCardListForGrid();
+    updateCardHitCountFromFiltered(filtered);
+    if (cardPanelMode === "deck") scheduleDeckSummaryDebounced();
+    const newSig = filtered
+      .map(function (c) {
+        return c.card_no;
+      })
+      .join("\u0001");
+    if (cardGridVirtual.active && newSig === cardGridVirtual.lastOrderedSig) {
+      patchVisibleGridThumbsForNos(list);
+      return;
+    }
+    pendingRenderCardGridOpts.deckSummary = false;
+    scheduleRenderCardGridOpts({ deckSummary: false });
+  }
+
+  function afterDeckRoleLabelsChange(changedNo) {
+    const no = String(changedNo || "");
+    persistDeckState();
+    renderCounts();
+    scheduleRenderDeckList();
+    const filtered = computeFilteredCardListForGrid();
+    updateCardHitCountFromFiltered(filtered);
+    if (cardPanelMode === "deck") scheduleDeckSummaryDebounced();
+    const newSig = filtered
+      .map(function (c) {
+        return c.card_no;
+      })
+      .join("\u0001");
+    if (cardGridVirtual.active && newSig === cardGridVirtual.lastOrderedSig) {
+      patchVisibleGridThumbsForNos(no ? [no] : []);
+      return;
+    }
+    pendingRenderCardGridOpts.deckSummary = false;
+    scheduleRenderCardGridOpts({ deckSummary: false });
+  }
+
+  function scheduleRenderCardGridOpts(passOpts) {
+    if (passOpts && passOpts.deckSummary === false) pendingRenderCardGridOpts.deckSummary = false;
     if (deckGridFlushRaf) cancelAnimationFrame(deckGridFlushRaf);
     deckGridFlushRaf = requestAnimationFrame(function () {
       deckGridFlushRaf = 0;
-      renderCardGrid();
+      const o = { deckSummary: pendingRenderCardGridOpts.deckSummary !== false };
+      pendingRenderCardGridOpts.deckSummary = true;
+      renderCardGrid(o);
     });
+  }
+
+  function scheduleRenderCardGrid() {
+    scheduleRenderCardGridOpts(null);
   }
 
   function fillSelects() {
@@ -1921,7 +2114,7 @@ export function initDeckBuilder(root, { onStartGame }) {
     persistDeckState();
     localStorage.setItem(STORAGE_ACTIVE_PRESET_ID, id);
     renderCounts();
-    renderDeckList();
+    scheduleRenderDeckList();
     scheduleRenderCardGrid();
     showToast(`「${slot.name}」を読み込みました`);
   });
@@ -2086,7 +2279,7 @@ export function initDeckBuilder(root, { onStartGame }) {
       middleCardNos.clear();
       persistDeckState();
       renderCounts();
-      renderDeckList();
+      scheduleRenderDeckList();
       scheduleRenderCardGrid();
     }
   });
@@ -2097,7 +2290,12 @@ export function initDeckBuilder(root, { onStartGame }) {
       alert("メインデッキにカードを 1 枚以上入れてください。");
       return;
     }
-    persistDeckState();
+    pruneOrphanRoleLabels();
+    if (persistDeckTimer) {
+      clearTimeout(persistDeckTimer);
+      persistDeckTimer = 0;
+    }
+    flushPersistDeckToStorage();
     onStartGame(deckMap);
   });
 
@@ -2152,7 +2350,7 @@ export function initDeckBuilder(root, { onStartGame }) {
         localStorage.removeItem(STORAGE_ACTIVE_PRESET_ID);
         renderPresetSelect();
         renderCounts();
-        renderDeckList();
+        scheduleRenderDeckList();
         scheduleRenderCardGrid();
         showToast("デッキを読み込みました（JSON・プリセット一覧とは未紐付け）");
       } catch {
@@ -2206,7 +2404,7 @@ export function initDeckBuilder(root, { onStartGame }) {
 
   el("deck-list-sort")?.addEventListener("change", (ev) => {
     deckListSort = ev.target.value || "name";
-    renderDeckList();
+    scheduleRenderDeckList();
   });
 
   el("filter-bh-slots")?.addEventListener("change", scheduleRenderCardGrid);
@@ -2232,10 +2430,7 @@ export function initDeckBuilder(root, { onStartGame }) {
     if (cur <= 0) return;
     deckMap[no] = cur - 1;
     if (!(deckMap[no] > 0)) delete deckMap[no];
-    persistDeckState();
-    renderCounts();
-    renderDeckList();
-    scheduleRenderCardGrid();
+    afterDeckMapQuickChange(no);
   });
   document.getElementById("dlg-zoom-qty-plus")?.addEventListener("click", function (ev) {
     ev.preventDefault();
@@ -2245,10 +2440,7 @@ export function initDeckBuilder(root, { onStartGame }) {
     if (em !== T_MEMBER && em !== T_LIVE) return;
     if (!canAdd(c, 1)) return;
     deckMap[c.card_no] = (deckMap[c.card_no] || 0) + 1;
-    persistDeckState();
-    renderCounts();
-    renderDeckList();
-    scheduleRenderCardGrid();
+    afterDeckMapQuickChange(c.card_no);
   });
 
   var cardsUrlEl = el("builder-cards-json-url");
@@ -2264,6 +2456,7 @@ export function initDeckBuilder(root, { onStartGame }) {
 
   function setCardPanelMode(mode) {
     if (mode !== "catalog" && mode !== "deck") return;
+    invalidateCatalogFilterCache();
     cardPanelMode = mode;
     const bc = el("btn-card-panel-catalog");
     const bd = el("btn-card-panel-deck");
@@ -2308,6 +2501,17 @@ export function initDeckBuilder(root, { onStartGame }) {
       });
       ro.observe(cardGridScrollEl);
     }
+  }
+
+  if (!deckBuilderStorageFlushHooked) {
+    deckBuilderStorageFlushHooked = true;
+    window.addEventListener("pagehide", function () {
+      if (persistDeckTimer) {
+        clearTimeout(persistDeckTimer);
+        persistDeckTimer = 0;
+        flushPersistDeckToStorage();
+      }
+    });
   }
 
   fillSelects();
