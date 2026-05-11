@@ -33,6 +33,7 @@ import {
   getCard,
   getCardCatalogSnapshot,
   getEffectiveCardsJsonUrl,
+  catalogListThumbnailUrl,
   setCardsJsonUrlOverride,
   uniqueCosts,
   uniqueProducts,
@@ -389,6 +390,8 @@ export function initDeckBuilder(root, { onStartGame }) {
 
   const el = (id) => root.querySelector("#" + id) || document.getElementById(id);
 
+  wireTestCardVariantDialogOnce();
+
   function readBhSlotFilters() {
     const panel = root.querySelector("#filter-bh-slots");
     /** @type {Set<number>} */
@@ -629,85 +632,172 @@ export function initDeckBuilder(root, { onStartGame }) {
     return true;
   }
 
-  function pickTestBhSlot(card) {
-    if (!card || card.product !== UNSET_PLACEHOLDER_PRODUCT) return 0;
-    const raw = window.prompt(
-      "テストカードの BH 色を選択: 0=そのまま(未指定) / 1=桃 / 2=赤 / 3=黄 / 4=緑 / 5=青 / 6=紫 / 7=ALL",
-      "0",
-    );
-    if (raw == null) return 0;
-    const n = Number(raw);
-    if (!Number.isFinite(n)) return 0;
-    return Math.max(0, Math.min(7, Math.floor(n)));
+  function heartKeyForTestSlot(slot) {
+    return slot === 0 ? "heart0" : "heart" + String(slot).padStart(2, "0");
   }
 
-  function promptInt(message, initialValue, minValue, maxValue) {
-    const raw = window.prompt(message, String(initialValue == null ? 0 : initialValue));
-    if (raw == null) return null;
-    const n = Number(raw);
-    if (!Number.isFinite(n)) return null;
-    return Math.max(minValue, Math.min(maxValue, Math.floor(n)));
+  function fillTestHeartSheet(host, idPrefix, srcMap) {
+    if (!host) return;
+    const labels = ["汎用", "桃", "赤", "黄", "緑", "青", "紫"];
+    let html = '<table class="dlg-test-heart-table"><thead><tr><th>色</th><th>枚数</th></tr></thead><tbody>';
+    for (let slot = 0; slot <= 6; slot++) {
+      const key = heartKeyForTestSlot(slot);
+      const raw = srcMap && (srcMap[key] !== undefined ? srcMap[key] : srcMap[String(slot)]);
+      const v = Math.max(0, Math.min(99, Math.floor(Number(raw) || 0)));
+      html +=
+        "<tr><td>" +
+        escapeHtml(labels[slot] || "") +
+        '</td><td><input type="number" min="0" max="99" step="1" id="' +
+        escapeAttr(idPrefix + String(slot)) +
+        '" value="' +
+        String(v) +
+        '" /></td></tr>';
+    }
+    html += "</tbody></table>";
+    host.innerHTML = html;
   }
 
-  function promptHeartMap(title, base) {
-    const src = base && typeof base === "object" ? base : {};
-    const labels = [
-      { key: "heart0", label: "汎用" },
-      { key: "heart01", label: "桃" },
-      { key: "heart02", label: "赤" },
-      { key: "heart03", label: "黄" },
-      { key: "heart04", label: "緑" },
-      { key: "heart05", label: "青" },
-      { key: "heart06", label: "紫" },
-    ];
+  function readTestHeartSheet(idPrefix) {
     const out = {};
-    for (const x of labels) {
-      const got = promptInt(title + " " + x.label + "（0以上の整数）", Number(src[x.key] || 0), 0, 99);
-      if (got == null) return null;
-      if (got > 0) out[x.key] = got;
+    for (let slot = 0; slot <= 6; slot++) {
+      const el = document.getElementById(idPrefix + String(slot));
+      const raw = el ? Number(el.value) : 0;
+      const n = Number.isFinite(raw) ? Math.max(0, Math.min(99, Math.floor(raw))) : 0;
+      if (n > 0) out[heartKeyForTestSlot(slot)] = n;
     }
     return out;
   }
 
-  function resolvedCardNoForAdd(card) {
+  /** @type {{ resolve: ((v: string) => void) | null, card: object | null }} */
+  let testCardVariantWait = null;
+
+  function wireTestCardVariantDialogOnce() {
+    const dlg = document.getElementById("dlg-test-card-variant");
+    if (!dlg || dlg.dataset.llocgWired === "1") return;
+    dlg.dataset.llocgWired = "1";
+    const btnOk = document.getElementById("btn-test-card-ok");
+    const btnCancel = document.getElementById("btn-test-card-cancel");
+    function finish(no) {
+      const fn = testCardVariantWait && testCardVariantWait.resolve;
+      testCardVariantWait = null;
+      if (typeof fn === "function") fn(no != null ? String(no) : "");
+      try {
+        dlg.close();
+      } catch (_) {
+        /* noop */
+      }
+    }
+    dlg.addEventListener("cancel", function (ev) {
+      if (!testCardVariantWait) return;
+      ev.preventDefault();
+      const base = testCardVariantWait.card && testCardVariantWait.card.card_no;
+      finish(base || "");
+    });
+    if (btnCancel) {
+      btnCancel.addEventListener("click", function (ev) {
+        ev.preventDefault();
+        const base = testCardVariantWait && testCardVariantWait.card && testCardVariantWait.card.card_no;
+        finish(base || "");
+      });
+    }
+    if (btnOk) {
+      btnOk.addEventListener("click", function (ev) {
+        ev.preventDefault();
+        const pending = testCardVariantWait && testCardVariantWait.card;
+        if (!pending) {
+          finish("");
+          return;
+        }
+        const slotSel = document.getElementById("dlg-test-bh-slot");
+        const slot = slotSel ? Math.max(0, Math.min(7, Math.floor(Number(slotSel.value) || 0))) : 0;
+        const nameInp = document.getElementById("dlg-test-card-name");
+        const customName = nameInp ? String(nameInp.value || "").trim() : "";
+        const emCat = effectiveMainDeckCategory(pending);
+        let blade;
+        let baseHeart;
+        let liveScore;
+        let needHeart;
+        if (emCat === T_MEMBER) {
+          const bInp = document.getElementById("dlg-test-blade");
+          const b = bInp ? Math.max(0, Math.min(99, Math.floor(Number(bInp.value) || 0))) : 0;
+          blade = b;
+          baseHeart = readTestHeartSheet("dlg-test-mh-");
+        } else if (emCat === T_LIVE) {
+          const sInp = document.getElementById("dlg-test-live-score");
+          const s = sInp ? Math.max(0, Math.min(99, Math.floor(Number(sInp.value) || 0))) : 0;
+          liveScore = s;
+          needHeart = readTestHeartSheet("dlg-test-nh-");
+        }
+        const out =
+          ensureTestCardVariant(pending.card_no, {
+            slot,
+            customName,
+            blade,
+            baseHeart,
+            liveScore,
+            needHeart,
+          }) || pending.card_no;
+        finish(out);
+      });
+    }
+  }
+
+  function openTestCardVariantDialog(card) {
+    wireTestCardVariantDialogOnce();
+    return new Promise(function (resolve) {
+      const dlg = document.getElementById("dlg-test-card-variant");
+      if (!dlg || typeof dlg.showModal !== "function") {
+        resolve(card.card_no);
+        return;
+      }
+      testCardVariantWait = { resolve: resolve, card: card };
+      const lead = document.getElementById("dlg-test-card-variant-lead");
+      if (lead) {
+        lead.textContent =
+          (card.card_no ? String(card.card_no) + " · " : "") +
+          (card.name || "テストカード") +
+          " をメインデッキに入れるための派生設定です。";
+      }
+      const slotSel = document.getElementById("dlg-test-bh-slot");
+      if (slotSel) slotSel.value = "0";
+      const nameInp = document.getElementById("dlg-test-card-name");
+      if (nameInp) nameInp.value = String(card.name || "").trim();
+      const emCat = effectiveMainDeckCategory(card);
+      const mb = document.getElementById("dlg-test-member-block");
+      const lb = document.getElementById("dlg-test-live-block");
+      if (mb) mb.hidden = emCat !== T_MEMBER;
+      if (lb) lb.hidden = emCat !== T_LIVE;
+      if (emCat === T_MEMBER) {
+        const bInp = document.getElementById("dlg-test-blade");
+        if (bInp) bInp.value = String(Math.max(0, Math.floor(Number(card.blade) || 0)));
+        fillTestHeartSheet(document.getElementById("dlg-test-mh-sheet"), "dlg-test-mh-", card.base_heart || {});
+      } else if (emCat === T_LIVE) {
+        const sInp = document.getElementById("dlg-test-live-score");
+        if (sInp) sInp.value = String(Math.max(0, Math.floor(Number(card.score) || 0)));
+        fillTestHeartSheet(document.getElementById("dlg-test-nh-sheet"), "dlg-test-nh-", card.need_heart || {});
+      }
+      dlg.showModal();
+    });
+  }
+
+  async function resolvedCardNoForAdd(card) {
     if (!card || !card.card_no) return card && card.card_no;
     if (card.product !== UNSET_PLACEHOLDER_PRODUCT) return card.card_no;
-    const slot = pickTestBhSlot(card);
-    const baseName = String(card.name || "").trim();
-    const ask = window.prompt(
-      "テストカード名（任意）を入力。空欄なら既存名のまま。",
-      baseName,
-    );
-    const customName = ask == null ? "" : String(ask || "").trim();
-    const emCat = effectiveMainDeckCategory(card);
-    let blade = undefined;
-    let baseHeart = undefined;
-    let liveScore = undefined;
-    let needHeart = undefined;
-    if (emCat === T_MEMBER) {
-      const b = promptInt("テストメンバー: 持ちブレード数（0以上）", Number(card.blade || 0), 0, 99);
-      if (b == null) return card.card_no;
-      const h = promptHeartMap("テストメンバー: 持ちハート", card.base_heart || {});
-      if (h == null) return card.card_no;
-      blade = b;
-      baseHeart = h;
-    } else if (emCat === T_LIVE) {
-      const s = promptInt("テストライブ: ライブ打点（0以上）", Number(card.score || 0), 0, 99);
-      if (s == null) return card.card_no;
-      const h = promptHeartMap("テストライブ: 要求ハート", card.need_heart || {});
-      if (h == null) return card.card_no;
-      liveScore = s;
-      needHeart = h;
-    }
+    return await openTestCardVariantDialog(card);
+  }
+
+  function builderCatalogThumbImgHtml(url, className) {
+    if (!url) return "";
+    const low = catalogListThumbnailUrl(url);
+    const cls = className || "deck-builder-card-thumb";
     return (
-      ensureTestCardVariant(card.card_no, {
-        slot,
-        customName,
-        blade,
-        baseHeart,
-        liveScore,
-        needHeart,
-      }) || card.card_no
+      '<img class="' +
+      escapeAttr(cls) +
+      '" src="' +
+      escapeAttr(low) +
+      '" data-full-src="' +
+      escapeAttr(url) +
+      '" alt="" loading="lazy" fetchpriority="low" decoding="async" onerror="this.onerror=null;this.src=this.dataset.fullSrc||this.src" />'
     );
   }
 
@@ -974,9 +1064,7 @@ export function initDeckBuilder(root, { onStartGame }) {
       const titleName = card && card.name ? card.name : "未登録 " + no;
       const thumbHtml =
         card && card.img
-          ? '<img class="deck-thumb deck-builder-card-thumb" src="' +
-            escapeAttr(card.img) +
-            '" alt="" loading="lazy" fetchpriority="low" decoding="async" />'
+          ? builderCatalogThumbImgHtml(card.img, "deck-thumb deck-builder-card-thumb")
           : '<span class="deck-thumb deck-thumb-missing" title="カードデータなし"></span>';
       const isKey = keyCardNos.has(no);
       const isKey2 = keyCard2Nos.has(no);
@@ -1710,7 +1798,7 @@ export function initDeckBuilder(root, { onStartGame }) {
     div.innerHTML =
       rolesHtml +
       qtyBadge +
-      `<span class="thumb-type">${escapeHtml(tlab)}</span><img src="${escapeAttr(card.img)}" alt="" class="deck-builder-card-thumb" loading="lazy" fetchpriority="low" decoding="async" /><span class="thumb-cap">${escapeHtml(card.name)}${thumbExtraHtml(card)}</span>`;
+      `<span class="thumb-type">${escapeHtml(tlab)}</span>${builderCatalogThumbImgHtml(card.img, "deck-builder-card-thumb")}<span class="thumb-cap">${escapeHtml(card.name)}${thumbExtraHtml(card)}</span>`;
     div.addEventListener("click", function (ev) {
       if (
         ev.target &&
@@ -1722,11 +1810,13 @@ export function initDeckBuilder(root, { onStartGame }) {
         openDeckBuilderCardZoom(card);
         return;
       }
-      const addNo = resolvedCardNoForAdd(card);
-      if (!addNo) return;
-      if (!canAddNo(addNo, 1)) return;
-      deckMap[addNo] = (deckMap[addNo] || 0) + 1;
-      afterDeckMapQuickChange(addNo);
+      void (async function () {
+        const addNo = await resolvedCardNoForAdd(card);
+        if (!addNo) return;
+        if (!canAddNo(addNo, 1)) return;
+        deckMap[addNo] = (deckMap[addNo] || 0) + 1;
+        afterDeckMapQuickChange(addNo);
+      })();
     });
     wrap.appendChild(div);
     if (cardPanelMode === "deck") {
@@ -1791,18 +1881,20 @@ export function initDeckBuilder(root, { onStartGame }) {
       bPlus.textContent = "+";
       bPlus.setAttribute("aria-label", "メインデッキへ1枚追加");
       function bump(delta) {
-        var no = card.card_no;
-        if (delta > 0) {
-          no = resolvedCardNoForAdd(card) || card.card_no;
-        }
-        var cur = deckMap[no] || 0;
-        if (delta < 0 && cur <= 0) return;
-        if (delta > 0 && !canAddNo(no, 1)) return;
-        deckMap[no] = Math.max(0, cur + delta);
-        if (!(deckMap[no] > 0)) delete deckMap[no];
-        const changed = [String(no)];
-        if (String(card.card_no) !== String(no)) changed.unshift(String(card.card_no));
-        afterDeckMapQuickChange(changed);
+        void (async function () {
+          var no = card.card_no;
+          if (delta > 0) {
+            no = (await resolvedCardNoForAdd(card)) || card.card_no;
+          }
+          var cur = deckMap[no] || 0;
+          if (delta < 0 && cur <= 0) return;
+          if (delta > 0 && !canAddNo(no, 1)) return;
+          deckMap[no] = Math.max(0, cur + delta);
+          if (!(deckMap[no] > 0)) delete deckMap[no];
+          const changed = [String(no)];
+          if (String(card.card_no) !== String(no)) changed.unshift(String(card.card_no));
+          afterDeckMapQuickChange(changed);
+        })();
       }
       bMinus.addEventListener("click", function (ev) {
         ev.preventDefault();
@@ -2483,9 +2575,13 @@ export function initDeckBuilder(root, { onStartGame }) {
     if (!c) return;
     var em = effectiveMainDeckCategory(c);
     if (em !== T_MEMBER && em !== T_LIVE) return;
-    if (!canAdd(c, 1)) return;
-    deckMap[c.card_no] = (deckMap[c.card_no] || 0) + 1;
-    afterDeckMapQuickChange(c.card_no);
+    void (async function () {
+      var addNo = await resolvedCardNoForAdd(c);
+      if (!addNo) return;
+      if (!canAddNo(addNo, 1)) return;
+      deckMap[addNo] = (deckMap[addNo] || 0) + 1;
+      afterDeckMapQuickChange(addNo);
+    })();
   });
 
   var cardsUrlEl = el("builder-cards-json-url");

@@ -352,37 +352,61 @@ python3 -m http.server 8080</pre>
 
       <div class="game-board">
         <div class="col col-left">
-          <section class="zone-block zone-block-deck-live-sim">
-            <h3>ライブ成功確率（山札シミュ）</h3>
-            <div class="deck-flip-k-row deck-flip-k-readout">
-              <p class="muted deck-flip-k-line-short">
-                <span>残りランダムめくり（ブレード − 解決枚数）</span>
-                <strong id="deck-flip-k-display" class="deck-flip-k-display" aria-live="polite">0</strong>
-              </p>
-              <p id="deck-flip-blade-note" class="muted deck-flip-blade-note" aria-live="polite"></p>
-            </div>
-            <div class="deck-live-sim-controls zone-inline-help deck-prob-explain-hide">
-              <label class="field deck-live-sim-mode-field">
-                <span>シミュレートモード</span>
-                <select id="deck-live-sim-mode">
-                  <option value="board">盤面B（解決で減算）</option>
-                  <option value="whole">デッキ全体</option>
-                </select>
-              </label>
-            </div>
+          <div class="zone-sim-success-row">
+            <section class="zone-block zone-block-deck-live-sim">
+              <h3>ライブ成功確率（山札シミュ）</h3>
+              <div class="deck-flip-k-row deck-flip-k-readout">
+                <p class="muted deck-flip-k-line-short">
+                  <span>残りランダムめくり（ブレード − 解決枚数）</span>
+                  <strong id="deck-flip-k-display" class="deck-flip-k-display" aria-live="polite">0</strong>
+                </p>
+              </div>
+              <p
+                id="deck-flip-blade-note"
+                class="muted deck-flip-blade-note hint zone-inline-help deck-prob-explain-hide"
+                aria-live="polite"
+              ></p>
+              <div class="deck-live-sim-controls zone-inline-help deck-prob-explain-hide">
+                <label class="field deck-live-sim-mode-field">
+                  <span>シミュレートモード</span>
+                  <select id="deck-live-sim-mode">
+                    <option value="board">盤面B（解決で減算）</option>
+                    <option value="whole">デッキ全体</option>
+                  </select>
+                </label>
+              </div>
 
-            <div id="deck-live-sim-block" class="deck-live-sim-block">
-              <p id="deck-live-sim-summary" class="deck-live-sim-summary deck-draw-odds-visible"></p>
-              <details id="deck-live-sim-breakdown" class="deck-live-sim-breakdown">
-                <summary class="deck-live-sim-breakdown-summary">計算の内訳</summary>
-                <pre id="deck-live-sim-breakdown-body" class="deck-live-sim-breakdown-body"></pre>
-              </details>
-              <pre id="deck-live-sim-stats" class="deck-live-sim-stats deck-draw-odds-visible" hidden></pre>
-              <p id="deck-live-sim-note" class="hint zone-inline-help deck-live-sim-note deck-prob-explain-hide">
-                モードは盤面B（k=B−R）／デッキ全体。めくりで増えるのは BH のみ。
+              <div id="deck-live-sim-block" class="deck-live-sim-block">
+                <p id="deck-live-sim-summary" class="deck-live-sim-summary deck-draw-odds-visible"></p>
+                <details id="deck-live-sim-breakdown" class="deck-live-sim-breakdown deck-prob-explain-hide">
+                  <summary class="deck-live-sim-breakdown-summary">計算の内訳</summary>
+                  <pre id="deck-live-sim-breakdown-body" class="deck-live-sim-breakdown-body"></pre>
+                </details>
+                <pre id="deck-live-sim-stats" class="deck-live-sim-stats deck-draw-odds-visible" hidden></pre>
+                <p id="deck-live-sim-note" class="hint zone-inline-help deck-live-sim-note deck-prob-explain-hide">
+                  モードは盤面B（k=B−R）／デッキ全体。めくりで増えるのは BH のみ。
+                </p>
+              </div>
+            </section>
+
+            <section class="zone-block zone-block-success-live-only">
+              <h3 class="success-live-only-title">成功したライブ</h3>
+              <div id="success-live-zone-shell" class="success-live-zone-shell">
+                <div id="success-live-chrome-row" class="success-live-chrome-row" aria-live="polite">
+                  <span id="success-live-msg-youwin" class="success-live-msg success-live-msg--youwin" hidden>
+                    YOU WIN!
+                  </span>
+                  <span id="success-live-msg-snsyuraku" class="success-live-msg success-live-msg--snsyuraku" hidden>
+                    千秋楽
+                  </span>
+                </div>
+                <div id="zone-success-live" class="card-strip zone-drop success-live-strip"></div>
+              </div>
+              <p class="hint zone-inline-help deck-prob-explain-hide">
+                ライブカードのみ（ドラッグ可）。通常の縦向き表示です。
               </p>
-            </div>
-          </section>
+            </section>
+          </div>
 
           <section class="zone-block zone-block-resolution-priority">
             <p id="resolution-over-blade-banner" class="resolution-over-blade-banner" role="status" hidden></p>
@@ -400,30 +424,9 @@ python3 -m http.server 8080</pre>
             <div id="zone-resolution" class="card-strip zone-drop tall resolution-zone-strip"></div>
           </section>
 
-          <section class="zone-block zone-block-success-split">
-            <div class="success-live-split-head">
-              <h3 class="success-live-split-title">成功したライブ</h3>
-              <h3 class="success-live-split-title">デッキの確率（参考）</h3>
-            </div>
-            <div class="success-live-split-grid">
-              <div class="success-live-split-col">
-                <div id="success-live-zone-shell" class="success-live-zone-shell">
-                  <div id="success-live-chrome-row" class="success-live-chrome-row" aria-live="polite">
-                    <span id="success-live-msg-youwin" class="success-live-msg success-live-msg--youwin" hidden>
-                      YOU WIN!
-                    </span>
-                    <span id="success-live-msg-snsyuraku" class="success-live-msg success-live-msg--snsyuraku" hidden>
-                      千秋楽
-                    </span>
-                  </div>
-                  <div id="zone-success-live" class="card-strip zone-drop success-live-strip"></div>
-                </div>
-                <p class="hint zone-inline-help">
-                  ライブカードのみ（ドラッグ可）。通常の縦向き表示です。
-                </p>
-              </div>
-              <div class="success-live-split-col success-live-split-col--prob">
-                <div id="live-deck-odds-panel" class="live-deck-odds-panel" aria-live="polite">
+          <section class="zone-block zone-block-deck-odds-wide">
+            <h3>デッキの確率（参考）</h3>
+            <div id="live-deck-odds-panel" class="live-deck-odds-panel" aria-live="polite">
                   <div id="deck-odds-role-visuals" class="deck-odds-role-visuals" hidden aria-label="デッキ役割カードの見た目">
                     <div class="deck-odds-role-block" id="deck-odds-role-key-wrap" hidden>
                       <p class="deck-odds-role-title">キー</p>
@@ -585,12 +588,10 @@ python3 -m http.server 8080</pre>
                     </div>
                   </details>
                   <div id="live-deck-odds-grid" class="deck-odds-grid-host" aria-live="polite"></div>
-                </div>
-                <p class="hint zone-inline-help live-prob-footnote deck-prob-explain-hide">
-                  キー／中間・ライブ・指定を<strong>k 枚</strong>で引く確率（下の k と同じ。マリガン・ライブ手札は自動）。1T〜列は左の数の累積 k。
-                </p>
-              </div>
             </div>
+            <p class="hint zone-inline-help live-prob-footnote deck-prob-explain-hide">
+              キー／中間・ライブ・指定を<strong>k 枚</strong>で引く確率（下の k と同じ。マリガン・ライブ手札は自動）。1T〜列は左の数の累積 k。
+            </p>
           </section>
         </div>
 
@@ -677,6 +678,10 @@ python3 -m http.server 8080</pre>
                   <dt>判定</dt>
                   <dd id="live-success-verdict-line" class="live-success-verdict-line">—</dd>
                 </dl>
+                <div id="live-stats-zone-hint-block" class="live-stats-zone-hint-block hint zone-inline-help deck-prob-explain-hide">
+                  <p id="live-zone-hint-nonbh" class="live-zone-hint-line"></p>
+                  <p id="live-zone-hint-resolution-bh" class="live-zone-hint-line"></p>
+                </div>
               </div>
             </details>
           </div>
@@ -858,10 +863,11 @@ python3 -m http.server 8080</pre>
                   <h4 class="deck-pick-odds-section-title">デッキの残色</h4>
                   <p id="deck-remain-nonbh-line" class="deck-remain-line muted"></p>
                   <div id="deck-remain-bh-colors" class="deck-remain-bh-colors"></div>
+                  <p id="deck-remain-zone-hint" class="hint zone-inline-help deck-prob-explain-hide"></p>
                 </div>
                 <div class="play-deck-preset-panel">
                   <h4 class="deck-pick-odds-section-title">保存デッキ</h4>
-                  <p class="hint muted play-deck-preset-lead">
+                  <p class="hint muted play-deck-preset-lead deck-prob-explain-hide">
                     登録デッキタブのプリセットから<strong>山札だけ</strong>差し替え（キー／中間もプリセットに合わせます）。手札・盤面はそのまま。Undo で戻せます。
                   </p>
                   <div class="play-deck-preset-row">
@@ -1000,6 +1006,52 @@ python3 -m http.server 8080</pre>
         <button type="button" class="btn secondary" id="btn-member-hb-reset">入力をクリア</button>
         <button type="button" class="btn secondary" id="btn-member-hb-cancel">キャンセル</button>
         <button type="button" class="btn primary" id="btn-member-hb-apply">適用</button>
+      </div>
+    </dialog>
+
+    <dialog id="dlg-test-card-variant" class="app-dialog dlg-test-card-variant" aria-labelledby="dlg-test-card-variant-title">
+      <h2 id="dlg-test-card-variant-title">テストカードの採用設定</h2>
+      <p id="dlg-test-card-variant-lead" class="muted"></p>
+      <div class="dlg-test-card-grid">
+        <label class="field">
+          <span>BH 色スロット（0=未指定）</span>
+          <select id="dlg-test-bh-slot">
+            <option value="0">0 — そのまま</option>
+            <option value="1">1 — 桃</option>
+            <option value="2">2 — 赤</option>
+            <option value="3">3 — 黄</option>
+            <option value="4">4 — 緑</option>
+            <option value="5">5 — 青</option>
+            <option value="6">6 — 紫</option>
+            <option value="7">7 — ALL</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>表示名（空なら既定）</span>
+          <input type="text" id="dlg-test-card-name" maxlength="40" autocomplete="off" />
+        </label>
+      </div>
+      <div id="dlg-test-member-block" class="dlg-test-card-extra" hidden>
+        <h3 class="dlg-test-card-subh">メンバー</h3>
+        <label class="field">
+          <span>持ちブレード</span>
+          <input type="number" id="dlg-test-blade" min="0" max="99" step="1" value="0" />
+        </label>
+        <p class="hint">持ちハート（0〜99）</p>
+        <div class="dlg-test-heart-sheet" id="dlg-test-mh-sheet"></div>
+      </div>
+      <div id="dlg-test-live-block" class="dlg-test-card-extra" hidden>
+        <h3 class="dlg-test-card-subh">ライブ</h3>
+        <label class="field">
+          <span>ライブ打点</span>
+          <input type="number" id="dlg-test-live-score" min="0" max="99" step="1" value="0" />
+        </label>
+        <p class="hint">要求ハート（0〜99）</p>
+        <div class="dlg-test-heart-sheet" id="dlg-test-nh-sheet"></div>
+      </div>
+      <div class="btn-row dlg-test-card-actions">
+        <button type="button" class="btn secondary" id="btn-test-card-cancel">キャンセル</button>
+        <button type="button" class="btn primary" id="btn-test-card-ok">デッキに採用</button>
       </div>
     </dialog>
 

@@ -451,6 +451,64 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
   /** レンダーごとの山札ライブ成功シミュ（重い）を遅延実行するためのハンドル */
   var deckLiveSimIdleHandle = null;
 
+  function cancelDeckLiveSimDeferred() {
+    if (deckLiveSimIdleHandle == null) return;
+    if (typeof cancelIdleCallback === "function") {
+      cancelIdleCallback(deckLiveSimIdleHandle);
+    } else {
+      clearTimeout(deckLiveSimIdleHandle);
+    }
+    deckLiveSimIdleHandle = null;
+  }
+
+  function runDeckLiveSimHeavy() {
+    deckLiveSimIdleHandle = null;
+    if (!$("deck-live-sim-summary")) return;
+    var disp2 = $("deck-flip-k-display");
+    var sumEl2 = $("deck-live-sim-summary");
+    var stEl2 = $("deck-live-sim-stats");
+    var bdBody = $("deck-live-sim-breakdown-body");
+    if (!sumEl2) return;
+    var n2 = state.deck.length;
+    var w2 = state.waitingRoom.length;
+    var bladeK2 = Math.max(0, Math.floor(sumBoardMemberBlades()));
+    var resR2 = Array.isArray(state.resolutionArea) ? state.resolutionArea.length : 0;
+    var kRem2 = deckLiveSimMode === "whole" ? n2 + w2 : Math.max(0, bladeK2 - resR2);
+    if (disp2) disp2.textContent = String(kRem2);
+    var bNote2 = $("deck-flip-blade-note");
+    if (bNote2) {
+      if (deckLiveSimMode === "whole") {
+        bNote2.textContent = "全体モード: 山札 " + n2 + " + 控え室 " + w2 + " の全カードを参照して成否を判定します。";
+      } else {
+        bNote2.textContent =
+          "盤面Bモード: ブレード計 " + bladeK2 + " 枚 · 解決 " + resR2 + " 枚 · 残り山札 " + n2 + " 枚（R = B で成否確定）";
+      }
+    }
+
+    var bundleForBreakdown = evaluateLiveMechanicalFulfillmentBundle();
+    var sim = computeDeckDrawLiveSuccessSimulation(deckLiveSimMode);
+    sumEl2.textContent = deckLiveSimSuccessLine(sim);
+    sumEl2.classList.remove("is-ok", "is-warn", "is-muted");
+    if (sim.kind === "ok" || (sim.kind === "verdict" && sim.ok)) sumEl2.classList.add("is-ok");
+    else if (
+      sim.kind === "resolution_over_blade" ||
+      sim.kind === "remFlip_over_deck" ||
+      (sim.kind === "verdict" && !sim.ok)
+    ) {
+      sumEl2.classList.add("is-warn");
+    } else if (sim.kind === "warn" || sim.kind === "skip") sumEl2.classList.add("is-muted");
+    else if (sim.kind === "sim" && sim.pct != null && sim.pct < 45) sumEl2.classList.add("is-warn");
+
+    if (bdBody) {
+      bdBody.textContent = buildLiveSimBreakdownBody(bundleForBreakdown, sim);
+    }
+
+    if (stEl2) {
+      stEl2.hidden = true;
+      stEl2.textContent = "";
+    }
+  }
+
   function deckPickNoSort(a, b) {
     var na = Number(a);
     var nb = Number(b);
@@ -1653,63 +1711,6 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
           "盤面Bモード: ブレード計 " + bladeK + " 枚 · 解決 " + resR + " 枚 · 残り山札 " + n + " 枚（R = B で成否確定）";
       }
     }
-    function cancelDeckLiveSimDeferred() {
-      if (deckLiveSimIdleHandle == null) return;
-      if (typeof cancelIdleCallback === "function") {
-        cancelIdleCallback(deckLiveSimIdleHandle);
-      } else {
-        clearTimeout(deckLiveSimIdleHandle);
-      }
-      deckLiveSimIdleHandle = null;
-    }
-
-    function runDeckLiveSimHeavy() {
-      deckLiveSimIdleHandle = null;
-      if (!$("deck-live-sim-summary")) return;
-      var disp2 = $("deck-flip-k-display");
-      var sumEl2 = $("deck-live-sim-summary");
-      var stEl2 = $("deck-live-sim-stats");
-      var bdBody = $("deck-live-sim-breakdown-body");
-      if (!sumEl2) return;
-      var n2 = state.deck.length;
-      var w2 = state.waitingRoom.length;
-      var bladeK2 = Math.max(0, Math.floor(sumBoardMemberBlades()));
-      var resR2 = Array.isArray(state.resolutionArea) ? state.resolutionArea.length : 0;
-      var kRem2 = deckLiveSimMode === "whole" ? n2 + w2 : Math.max(0, bladeK2 - resR2);
-      if (disp2) disp2.textContent = String(kRem2);
-      var bNote2 = $("deck-flip-blade-note");
-      if (bNote2) {
-        if (deckLiveSimMode === "whole") {
-          bNote2.textContent = "全体モード: 山札 " + n2 + " + 控え室 " + w2 + " の全カードを参照して成否を判定します。";
-        } else {
-          bNote2.textContent =
-            "盤面Bモード: ブレード計 " + bladeK2 + " 枚 · 解決 " + resR2 + " 枚 · 残り山札 " + n2 + " 枚（R = B で成否確定）";
-        }
-      }
-
-      var bundleForBreakdown = evaluateLiveMechanicalFulfillmentBundle();
-      var sim = computeDeckDrawLiveSuccessSimulation(deckLiveSimMode);
-      sumEl2.textContent = deckLiveSimSuccessLine(sim);
-      sumEl2.classList.remove("is-ok", "is-warn", "is-muted");
-      if (sim.kind === "ok" || (sim.kind === "verdict" && sim.ok)) sumEl2.classList.add("is-ok");
-      else if (
-        sim.kind === "resolution_over_blade" ||
-        sim.kind === "remFlip_over_deck" ||
-        (sim.kind === "verdict" && !sim.ok)
-      ) {
-        sumEl2.classList.add("is-warn");
-      } else if (sim.kind === "warn" || sim.kind === "skip") sumEl2.classList.add("is-muted");
-      else if (sim.kind === "sim" && sim.pct != null && sim.pct < 45) sumEl2.classList.add("is-warn");
-
-      if (bdBody) {
-        bdBody.textContent = buildLiveSimBreakdownBody(bundleForBreakdown, sim);
-      }
-
-      if (stEl2) {
-        stEl2.hidden = true;
-        stEl2.textContent = "";
-      }
-    }
 
     cancelDeckLiveSimDeferred();
     if (typeof requestIdleCallback === "function") {
@@ -2087,15 +2088,27 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
     if (reqCol) reqCol.textContent = formatStageHeartMinusNeedRemainderLine(b.stageHAcc, needAccum);
 
     var tolEl = $("live-nonbh-tolerance");
+    var tolHint = $("live-zone-hint-nonbh");
     if (tolEl) {
       if (!b.liveCt || !(needSum > 0)) {
         tolEl.textContent = "—";
+        if (tolHint) tolHint.textContent = "";
       } else {
         var bladesAll = sumBoardMemberBlades();
         var heartBoard = b.boardHSum;
         var tolN = bladesAll + heartBoard - needSum;
-        tolEl.textContent =
-          String(tolN) + "（ブレード " + bladesAll + "＋盤面H計 " + heartBoard + "−必要計 " + needSum + "）";
+        tolEl.textContent = String(tolN);
+        if (tolHint) {
+          tolHint.textContent =
+            "非BH許容の内訳: ブレード盤面計 " +
+            bladesAll +
+            " ＋ 盤面所持H計 " +
+            heartBoard +
+            " − 必要ハート計 " +
+            needSum +
+            " ＝ " +
+            tolN;
+        }
       }
     }
 
@@ -2107,8 +2120,17 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
     var stLine = formatHeartSlotAccumBreakdown(b.stageHAcc);
     $("live-stage-h-colors").textContent = stLine && stLine !== "—" ? stLine : "—";
 
-    $("live-resolution-bh-ref").textContent =
-      rsBh.totalBh ? String(rsBh.totalBh) + "（" + formatBladeHeartSlotBreakdown(rsBh.slots) + "）" : "—";
+    var resBhEl = $("live-resolution-bh-ref");
+    var resBhHint = $("live-zone-hint-resolution-bh");
+    if (resBhEl) {
+      resBhEl.textContent = rsBh.totalBh ? String(rsBh.totalBh) : "—";
+    }
+    if (resBhHint) {
+      resBhHint.textContent =
+        rsBh.totalBh && rsBh.slots && Object.keys(rsBh.slots).length
+          ? "解決ゾーン BH 内訳: " + formatBladeHeartSlotBreakdown(rsBh.slots)
+          : "";
+    }
 
     var verdict = $("live-success-verdict-line");
     if (!verdict) return;
@@ -2144,6 +2166,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
     if (n <= 0) {
       nonEl.textContent = "山札がありません。";
       colorsHost.innerHTML = "";
+      var deckRemHint0 = $("deck-remain-zone-hint");
+      if (deckRemHint0) deckRemHint0.textContent = "";
       return;
     }
     var nonBh = 0;
@@ -2188,7 +2212,12 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
       escapeHtmlPlain(String(nonBh)) +
       "</strong></span>";
     var bodyRow = '<div class="deck-remain-bh-pill-row">' + nonBhPill + parts.join("") + "</div>";
-    colorsHost.innerHTML = bodyRow + '<p class="muted deck-remain-bh-note">山札合計 ' + n + " 枚（BH 色はカード1枚につき複数色を持てます）。</p>";
+    colorsHost.innerHTML = bodyRow;
+    var deckRemHint = $("deck-remain-zone-hint");
+    if (deckRemHint) {
+      deckRemHint.textContent =
+        "山札合計 " + n + " 枚。BH 色のピルはカード1枚につき複数色を持てる集計です（非BH は BH 記載のないカード枚数）。";
+    }
   }
 
   /** 右上ミラー廃止: 左グリッド用ロジックのみ残す */
@@ -2310,8 +2339,14 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
     if (v7) {
       has = true;
       var sp3 = document.createElement("span");
-      sp3.className = "card-member-bonus-chip";
-      sp3.appendChild(document.createTextNode("\u2728+" + v7));
+      sp3.className = "card-member-bonus-chip card-member-bonus-chip--all";
+      sp3.title = "ALL ハート（任意支払い）";
+      var ic = document.createElement("span");
+      ic.className = "card-member-bonus-all-heart";
+      ic.setAttribute("aria-hidden", "true");
+      ic.textContent = "\u2665";
+      sp3.appendChild(ic);
+      sp3.appendChild(document.createTextNode("+" + v7));
       frag.appendChild(sp3);
     }
     return has ? frag : null;
@@ -2399,12 +2434,23 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
         try {
           var pack = readMemberHbInputsFromDom();
           pushHistoryBefore("member-hb-adjust");
-          tgt.playBonusHeartSlots = Object.assign({}, pack.slots);
-          tgt.playBonusBlade = sanitizeNonNegativeInt(pack.blade);
-          ensureCardBoardFields(tgt);
+          var id = tgt && tgt.id;
+          var real = tgt;
+          if (id != null) {
+            var found = allZonesFlat().find(function (c) {
+              return c && c.id === id;
+            });
+            if (found) real = found;
+          }
+          real.playBonusHeartSlots = Object.assign({}, pack.slots);
+          real.playBonusBlade = sanitizeNonNegativeInt(pack.blade);
+          ensureCardBoardFields(real);
           closeHb();
           // microtask ベースの render() が別操作で潰れるケースがあるため同期レンダーで確実反映
           renderSynchronouslyOnce();
+          cancelDeckLiveSimDeferred();
+          runDeckLiveSimHeavy();
+          syncLiveTurnStatsPanel();
           showToast("メンバーに追加の所持H／ブレードを適用しました（非公式調整・Undo可）");
         } catch (err) {
           console.error(err);
@@ -4184,6 +4230,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
       const on = sessionStorage.getItem(STORAGE_LAYOUT_16_9_MODE) === "1";
       document.body.classList.toggle("layout-16-9-mode", on);
       btn.setAttribute("aria-pressed", on ? "true" : "false");
+      btn.classList.toggle("btn--layout-16-9-on", on);
     }
 
     sync();
@@ -4192,6 +4239,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels }) 
       sessionStorage.setItem(STORAGE_LAYOUT_16_9_MODE, on ? "1" : "0");
       document.body.classList.toggle("layout-16-9-mode", on);
       btn.setAttribute("aria-pressed", on ? "true" : "false");
+      btn.classList.toggle("btn--layout-16-9-on", on);
       // サイズ変更でレイアウトが変わるので、山札の自動レイアウトなども再計算
       renderSynchronouslyOnce();
     });

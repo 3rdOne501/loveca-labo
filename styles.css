@@ -1278,6 +1278,51 @@ body.play-mode .card-item .live-turn-pick {
 .dlg-member-hb-actions.btn-row {
   flex-wrap: wrap;
 }
+
+.dlg-test-card-variant {
+  max-width: min(100vw - 2rem, 28rem);
+  width: 100%;
+}
+.dlg-test-card-variant .dlg-test-card-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0.5rem 0;
+}
+.dlg-test-card-subh {
+  margin: 0.35rem 0 0.25rem;
+  font-size: 0.85rem;
+  color: rgba(250, 220, 240, 0.95);
+}
+.dlg-test-card-extra {
+  margin-top: 0.35rem;
+}
+.dlg-test-heart-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  margin: 0.25rem 0 0.5rem;
+}
+.dlg-test-heart-table th,
+.dlg-test-heart-table td {
+  border: 1px solid rgba(255, 180, 220, 0.18);
+  padding: 0.28rem 0.4rem;
+}
+.dlg-test-heart-table th {
+  background: rgba(40, 24, 48, 0.55);
+  text-align: left;
+}
+.dlg-test-heart-table input {
+  width: 100%;
+  max-width: 5rem;
+  box-sizing: border-box;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+.dlg-test-card-actions {
+  margin-top: 0.65rem;
+}
+
 .stance-wait.is-on {
   background: linear-gradient(135deg, rgba(255, 170, 70, 0.45), rgba(255, 90, 130, 0.25));
   border-color: rgba(255, 200, 140, 0.45);
@@ -1390,6 +1435,83 @@ body.play-mode.layout-16-9-mode {
 }
 body.play-mode.layout-16-9-mode .game-board {
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1.1fr);
+}
+
+body.play-mode #btn-layout-16-9 {
+  font-size: 0.72rem;
+  padding: 0.3rem 0.5rem;
+}
+body.play-mode #btn-layout-16-9.btn--layout-16-9-on {
+  background: linear-gradient(135deg, #ff7ab8, #ff4a96);
+  border-color: rgba(255, 200, 230, 0.9);
+  color: #fff;
+  font-weight: 800;
+  box-shadow: 0 0 0 1px rgba(255, 160, 210, 0.35);
+}
+
+body.play-mode .deck-toolbar-row .btn,
+body.play-mode .deck-toolbar-row .btn.sm {
+  padding: 0.28rem 0.45rem;
+  font-size: 0.72rem;
+}
+
+body.play-mode .draw-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: stretch;
+}
+body.play-mode .draw-row #btn-turn-start {
+  flex: 1 1 11rem;
+  min-width: min(100%, 11rem);
+  font-weight: 800;
+}
+body.play-mode.layout-16-9-mode .draw-row {
+  flex-wrap: nowrap;
+}
+body.play-mode.layout-16-9-mode .draw-row #btn-turn-start {
+  flex: 2 1 12rem;
+  min-width: 9.5rem;
+}
+
+body.play-mode.layout-16-9-mode .deck-tools-split {
+  min-width: 0;
+}
+body.play-mode .deck-remain-bh-panel,
+body.play-mode .play-deck-preset-panel {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+body.play-mode .live-stats-zone-hint-block {
+  margin-top: 0.45rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid rgba(255, 180, 220, 0.15);
+}
+body.play-mode .live-zone-hint-line {
+  margin: 0.25rem 0 0;
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+
+body.play-mode .card-member-bonus-chip--all {
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  padding: 0.06em 0.28em 0.06em 0.22em;
+  border-radius: 6px;
+  background: rgba(30, 18, 40, 0.55);
+}
+body.play-mode .card-member-bonus-all-heart {
+  display: inline-block;
+  margin-right: 0.12em;
+  font-weight: 900;
+  background: linear-gradient(120deg, #ff6b9d, #ffd56f, #7cf7c4, #6ec8ff, #c78bff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.45));
 }
 
 body.play-mode .game-bar {
@@ -1563,31 +1685,34 @@ body.play-mode .success-live-zone-shell--win .success-live-strip.card-strip {
   box-shadow: 0 0 20px rgba(255, 120, 180, 0.25);
 }
 
-.zone-block-success-split .success-live-split-head {
+/* 左列: ライブ成功シミュと「成功したライブ」を横並び（下段で確率グリッドを全幅） */
+.zone-sim-success-row {
   display: grid;
-  grid-template-columns: minmax(0, 0.62fr) minmax(18rem, 1.7fr);
-  gap: 0.5rem 0.4rem;
-  align-items: baseline;
-  margin-bottom: 0.35rem;
+  grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.82fr);
+  gap: 0.45rem 0.5rem;
+  align-items: stretch;
 }
-.zone-block-success-split .success-live-split-title {
-  margin: 0;
+.zone-block-success-live-only {
+  min-width: 0;
+}
+.success-live-only-title {
+  margin: 0 0 0.35rem;
   font-size: 0.92rem;
   font-family: var(--font-display);
   color: #fcdcec;
 }
-.success-live-split-grid {
-  display: grid;
-  /* 確率列を左に寄せる：成功ライブ列を狭め、確率列を広めに取り、左の余白を詰める */
-  grid-template-columns: minmax(0, 0.62fr) minmax(18rem, 1.7fr);
-  gap: 0.5rem 0.4rem;
-  align-items: stretch;
+.zone-block-deck-odds-wide {
+  min-width: 0;
 }
-.success-live-split-col--prob {
-  min-width: min(30vw, 22rem);
-  margin-left: -0.25rem;
+.zone-block-deck-odds-wide > h3 {
+  margin: 0 0 0.35rem;
+  font-size: 0.92rem;
+  font-family: var(--font-display);
+  color: #fcdcec;
 }
 .live-deck-odds-panel {
+  width: 100%;
+  max-width: 100%;
   font-size: 0.74rem;
   line-height: 1.42;
   color: var(--text);
@@ -1595,8 +1720,11 @@ body.play-mode .success-live-zone-shell--win .success-live-strip.card-strip {
   border-radius: var(--radius-sm);
   border: 1px solid rgba(255, 150, 200, 0.22);
   background: rgba(0, 0, 0, 0.18);
-  min-height: calc(var(--loveca-play-h) + 30px);
+  min-height: max(calc(var(--loveca-play-h) + 30px), min(200px, 30vh));
   box-sizing: border-box;
+}
+.zone-block-deck-odds-wide .live-deck-odds-panel {
+  min-height: min(240px, 34vh);
 }
 .deck-odds-role-visuals {
   margin: 0 0 0.45rem;
@@ -2283,12 +2411,8 @@ table.deck-odds-grid {
 }
 
 @media (max-width: 1200px) {
-  .zone-block-success-split .success-live-split-head,
-  .success-live-split-grid {
+  .zone-sim-success-row {
     grid-template-columns: 1fr;
-  }
-  .success-live-split-col--prob {
-    min-width: 0;
   }
   .live-deck-odds-panel {
     min-height: min(160px, 28vh);

@@ -26,6 +26,27 @@ export function getEffectiveCardsJsonUrl() {
   return CARDS_JSON_URL;
 }
 
+/**
+ * デッキ構築のカード一覧サムネ用に軽量 URL を返す（一覧は wsrv.nl 経由の縮小 JPEG、拡大プレビューは元 URL）。
+ * @param {string} originalUrl
+ * @returns {string}
+ */
+export function catalogListThumbnailUrl(originalUrl) {
+  if (!originalUrl || typeof originalUrl !== "string") return originalUrl;
+  if (originalUrl.startsWith("data:") || originalUrl.includes("wsrv.nl")) return originalUrl;
+  try {
+    const u = new URL(originalUrl, typeof location !== "undefined" ? location.href : "https://local.invalid/");
+    if (u.protocol !== "http:" && u.protocol !== "https:") return originalUrl;
+    return (
+      "https://wsrv.nl/?url=" +
+      encodeURIComponent(u.href) +
+      "&w=112&h=158&fit=cover&q=65&output=jpg&n=-1"
+    );
+  } catch (_) {
+    return originalUrl;
+  }
+}
+
 /** 空文字なら上書き解除 */
 export function setCardsJsonUrlOverride(urlOrEmpty) {
   const t = urlOrEmpty == null ? "" : String(urlOrEmpty).trim();
@@ -309,7 +330,9 @@ export function ensureTestCardVariant(baseCardNo, options) {
   const seedNo = src._testBhVariantOf ? String(src._testBhVariantOf) : baseNo;
   const base = getCard(seedNo) || src;
   if (!base || base.product !== UNSET_PLACEHOLDER_PRODUCT) return baseNo;
-  if (!customName && slotN > 0) return ensureTestBhVariant(seedNo, slotN);
+  if (slotN > 0 && !customName && !hasBlade && !hasLiveScore && !hasBaseHeart && !hasNeedHeart) {
+    return ensureTestBhVariant(seedNo, slotN);
+  }
   const nameKey = customName
     ? customName
         .normalize("NFKC")
@@ -320,11 +343,14 @@ export function ensureTestCardVariant(baseCardNo, options) {
     : "noname";
   const bladeKey = hasBlade ? "b" + String(Math.max(0, Math.floor(bladeN))) : "b_";
   const scoreKey = hasLiveScore ? "s" + String(Math.max(0, Math.floor(liveScoreN))) : "s_";
+  function heartKeyForVariantSlot(slot) {
+    return slot === 0 ? "heart0" : "heart" + String(slot).padStart(2, "0");
+  }
   const baseHeartKey = hasBaseHeart
     ? "bh" +
       [0, 1, 2, 3, 4, 5, 6]
         .map(function (slot) {
-          var k = "heart0" + String(slot);
+          var k = heartKeyForVariantSlot(slot);
           return String(Math.max(0, Math.floor(Number(baseHeartMap[k] || 0))));
         })
         .join("")
@@ -333,7 +359,7 @@ export function ensureTestCardVariant(baseCardNo, options) {
     ? "nh" +
       [0, 1, 2, 3, 4, 5, 6]
         .map(function (slot) {
-          var k = "heart0" + String(slot);
+          var k = heartKeyForVariantSlot(slot);
           return String(Math.max(0, Math.floor(Number(needHeartMap[k] || 0))));
         })
         .join("")
@@ -377,7 +403,7 @@ export function ensureTestCardVariant(baseCardNo, options) {
   if (hasBaseHeart) {
     const next = {};
     [0, 1, 2, 3, 4, 5, 6].forEach(function (slot) {
-      const key = "heart0" + String(slot);
+      const key = heartKeyForVariantSlot(slot);
       const val = Math.max(0, Math.floor(Number(baseHeartMap[key] || 0)));
       if (val > 0) next[key] = val;
     });
@@ -386,7 +412,7 @@ export function ensureTestCardVariant(baseCardNo, options) {
   if (hasNeedHeart) {
     const next = {};
     [0, 1, 2, 3, 4, 5, 6].forEach(function (slot) {
-      const key = "heart0" + String(slot);
+      const key = heartKeyForVariantSlot(slot);
       const val = Math.max(0, Math.floor(Number(needHeartMap[key] || 0)));
       if (val > 0) next[key] = val;
     });
