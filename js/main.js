@@ -1,4 +1,4 @@
-import { loadCardDatabase } from "./cards.js";
+import { loadCardDatabase, prefetchDeckCardImagesFromMap, getCard } from "./cards.js";
 import { STORAGE_PLAY_RESUME } from "./config.js";
 import { normalizeDeckMapCounts } from "./deckLibrary.js";
 import { initDeckBuilder, loadDeckBundleFromStorage } from "./deckbuilder.js";
@@ -121,6 +121,11 @@ function startApp(viewDeck, viewGame, statusEl) {
     appStarted = true;
     initDeckBuilder(viewDeck, {
       onStartGame: (deckMap) => {
+        try {
+          prefetchDeckCardImagesFromMap(deckMap || {}, getCard);
+        } catch (_) {
+          /* noop */
+        }
         const bundle = loadDeckBundleFromStorage();
         clearPlayResumeStorage();
         viewDeck.hidden = true;
@@ -169,7 +174,15 @@ function startApp(viewDeck, viewGame, statusEl) {
 function tryLoadDatabase(viewDeck, viewGame, statusEl) {
   showAppBootLoading();
   loadCardDatabase(statusEl)
-    .then(() => startApp(viewDeck, viewGame, statusEl))
+    .then(() => {
+      try {
+        const b = loadDeckBundleFromStorage();
+        prefetchDeckCardImagesFromMap(b.map || {}, getCard);
+      } catch (_) {
+        /* noop */
+      }
+      startApp(viewDeck, viewGame, statusEl);
+    })
     .catch((e) => {
       const msg = String(e.message || e);
       hideAppBootLoading();

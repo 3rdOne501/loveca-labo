@@ -24,7 +24,7 @@ import {
   T_LIVE,
   T_MEMBER,
 } from "./config.js";
-import { getAllCards, getCard, effectiveMainDeckCategory, bladeHeartSlotsOnCard } from "./cards.js";
+import { getAllCards, getCard, effectiveMainDeckCategory, bladeHeartSlotsOnCard, isHandDependentCost20Member } from "./cards.js";
 import { loadDeckLibrary, normalizeDeckMapCounts } from "./deckLibrary.js";
 import {
   addBaseHeartToSlotAccum,
@@ -1069,9 +1069,29 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   }
 
   /** メンバー登場時の印刷コスト（側面エネ・バトン差分計算に使用） */
+  function memberInstanceIsInHand(inst) {
+    if (!inst || inst.id == null) return false;
+    var sid = String(inst.id);
+    for (var hi = 0; hi < state.hand.length; hi++) {
+      var hc = state.hand[hi];
+      if (hc && String(hc.id) === sid) return true;
+    }
+    return false;
+  }
+
   function memberFlooredPrintedCost(memberInstOrNull) {
     if (!memberInstOrNull || memberInstOrNull.type !== T_MEMBER) return 0;
     var merged = mergedCatalogCard(memberInstOrNull);
+    var no = String(memberInstOrNull.card_no || merged.card_no || "");
+    if (isHandDependentCost20Member(no) && memberInstanceIsInHand(memberInstOrNull)) {
+      var selfId = String(memberInstOrNull.id);
+      var others = 0;
+      for (var i = 0; i < state.hand.length; i++) {
+        var h = state.hand[i];
+        if (h && String(h.id) !== selfId) others++;
+      }
+      return Math.max(0, 20 - others);
+    }
     var costNum = Number(merged.cost);
     if (Number.isFinite(costNum) && costNum >= 1) return Math.min(Math.floor(costNum), 99);
     if (merged.cost != null && String(merged.cost).trim() !== "") {
@@ -4883,6 +4903,10 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       b.textContent = on ? "ゾーン説明を隠す" : "ゾーン説明を表示";
       b.setAttribute("aria-pressed", on ? "true" : "false");
     }
+  });
+  $("btn-tutorial-game")?.addEventListener("click", function () {
+    var d = document.getElementById("dlg-tutorial");
+    if (d && typeof d.showModal === "function") d.showModal();
   });
   (function syncZoneHintDefaultClosed() {
     document.body.classList.remove("zone-hints-visible");

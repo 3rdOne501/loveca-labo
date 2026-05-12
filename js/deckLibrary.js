@@ -2,8 +2,16 @@
  * メインデッキとは別ストレージの「名前付きプリセット」（複数保存）
  */
 import {
+  BUILTIN_LOVE_ORANGE_2611_PRESET_ID,
+  BUILTIN_LOVE_ORANGE_2611_PRESET_NAME,
   BUILTIN_STARTER_PRESET_ID,
   BUILTIN_STARTER_PRESET_NAME,
+  DEFAULT_LOVE_ORANGE_2611_DECK_MAP,
+  DEFAULT_LOVE_ORANGE_2611_KEY2_CARD_NOS,
+  DEFAULT_LOVE_ORANGE_2611_KEY3_CARD_NOS,
+  DEFAULT_LOVE_ORANGE_2611_KEY_CARD_NOS,
+  DEFAULT_LOVE_ORANGE_2611_MIDDLE_CARD_NOS,
+  DEFAULT_LOVE_ORANGE_2611_THUMBNAIL_CARD_NO,
   DEFAULT_STARTER_DECK_MAP,
   DEFAULT_STARTER_KEY2_CARD_NOS,
   DEFAULT_STARTER_KEY3_CARD_NOS,
@@ -26,7 +34,8 @@ function safeParse(raw) {
 
 /** @param {string} id */
 export function isBuiltInStarterDeckId(id) {
-  return String(id || "") === BUILTIN_STARTER_PRESET_ID;
+  const s = String(id || "");
+  return s === BUILTIN_STARTER_PRESET_ID || s === BUILTIN_LOVE_ORANGE_2611_PRESET_ID;
 }
 
 /** ストレージには書かない・一覧先頭に常に出す共通プリセット */
@@ -44,6 +53,26 @@ export function getBuiltInStarterSlot() {
   };
 }
 
+/** 組み込みプリセット2（ラブユーランジュ2611） */
+export function getBuiltInLoveOrange2611Slot() {
+  return {
+    id: BUILTIN_LOVE_ORANGE_2611_PRESET_ID,
+    name: BUILTIN_LOVE_ORANGE_2611_PRESET_NAME,
+    deck: cloneDeckMap(DEFAULT_LOVE_ORANGE_2611_DECK_MAP),
+    keyCardNos: sanitizeCardNoList(DEFAULT_LOVE_ORANGE_2611_KEY_CARD_NOS),
+    keyCard2Nos: sanitizeCardNoList(DEFAULT_LOVE_ORANGE_2611_KEY2_CARD_NOS),
+    keyCard3Nos: sanitizeCardNoList(DEFAULT_LOVE_ORANGE_2611_KEY3_CARD_NOS),
+    middleCardNos: sanitizeCardNoList(DEFAULT_LOVE_ORANGE_2611_MIDDLE_CARD_NOS),
+    thumbnailCardNo: DEFAULT_LOVE_ORANGE_2611_THUMBNAIL_CARD_NO,
+    updatedAt: "1970-01-01T00:00:00.000Z",
+  };
+}
+
+/** 組み込みプリセットを定義順ですべて返す（一覧先頭・保存対象外） */
+export function getBuiltInPresetSlots() {
+  return [getBuiltInStarterSlot(), getBuiltInLoveOrange2611Slot()];
+}
+
 /** @param {{ slots: unknown[] }} lib */
 function userSlotsOnly(lib) {
   if (!lib || !Array.isArray(lib.slots)) return [];
@@ -51,9 +80,9 @@ function userSlotsOnly(lib) {
 }
 
 export function loadDeckLibrary() {
-  const starter = getBuiltInStarterSlot();
+  const builtins = getBuiltInPresetSlots();
   const parsed = safeParse(localStorage.getItem(STORAGE_DECK_LIBRARY));
-  if (!parsed || !Array.isArray(parsed.slots)) return { slots: [starter] };
+  if (!parsed || !Array.isArray(parsed.slots)) return { slots: [...builtins] };
   const slots = parsed.slots
     .filter(
       (s) =>
@@ -71,7 +100,7 @@ export function loadDeckLibrary() {
           ? s.thumbnailCardNo.trim()
           : "",
     }));
-  return { slots: [starter, ...slots] };
+  return { slots: [...builtins, ...slots] };
 }
 
 export function persistDeckLibrary(data) {
@@ -147,7 +176,7 @@ export function newSlotId() {
  * @param {{ keyCardNos?: string[] | undefined, keyCard2Nos?: string[] | undefined, keyCard3Nos?: string[] | undefined, middleCardNos?: string[] | undefined }} [roleLabels]
  */
 export function addDeckSlot(lib, name, deckMap, roleLabels) {
-  const starter = getBuiltInStarterSlot();
+  const builtins = getBuiltInPresetSlots();
   const nm = String(name || "").trim() || "無題のデッキ";
   const k = roleLabels ? sanitizeCardNoList(roleLabels.keyCardNos) : [];
   const k2 = roleLabels ? sanitizeCardNoList(roleLabels.keyCard2Nos) : [];
@@ -167,7 +196,7 @@ export function addDeckSlot(lib, name, deckMap, roleLabels) {
     },
   ];
   while (slots.length > MAX_SAVED_DECKS) slots.shift();
-  return { slots: [starter, ...slots] };
+  return { slots: [...builtins, ...slots] };
 }
 
 /**
@@ -210,19 +239,19 @@ export function updateDeckSlot(lib, id, deckMap, roleLabels) {
       updatedAt: new Date().toISOString(),
     };
   });
-  return { slots: [getBuiltInStarterSlot(), ...slots] };
+  return { slots: [...getBuiltInPresetSlots(), ...slots] };
 }
 
 export function removeDeckSlot(lib, id) {
   if (isBuiltInStarterDeckId(id)) return lib;
-  return { slots: [getBuiltInStarterSlot(), ...userSlotsOnly(lib).filter((s) => s.id !== id)] };
+  return { slots: [...getBuiltInPresetSlots(), ...userSlotsOnly(lib).filter((s) => s.id !== id)] };
 }
 
 /** 選択中プリセットを別 ID で複製して末尾に追加 */
 export function duplicateDeckSlot(lib, id) {
   const s = lib.slots.find((x) => x.id === id);
   if (!s) return lib;
-  const starter = getBuiltInStarterSlot();
+  const builtins = getBuiltInPresetSlots();
   const nm = String(s.name || "無題のデッキ").trim();
   const copy = {
     id: newSlotId(),
@@ -240,5 +269,5 @@ export function duplicateDeckSlot(lib, id) {
   };
   const slots = [...userSlotsOnly(lib), copy];
   while (slots.length > MAX_SAVED_DECKS) slots.shift();
-  return { slots: [starter, ...slots] };
+  return { slots: [...builtins, ...slots] };
 }

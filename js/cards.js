@@ -1,5 +1,5 @@
 import { CARDS_JSON_URL, STORAGE_CARDS_JSON_OVERRIDE, T_MEMBER, T_LIVE } from "./config.js";
-import { parseBladeHeartSlotFromKey, parseHeartColorSlotFromKey } from "./bladeHeart.js";
+import { cardHasBladeHeart, parseBladeHeartSlotFromKey, parseHeartColorSlotFromKey } from "./bladeHeart.js";
 
 let catalog = {};
 let list = [];
@@ -46,6 +46,47 @@ export function catalogListThumbnailUrl(originalUrl) {
     );
   } catch (_) {
     return originalUrl;
+  }
+}
+
+/**
+ * 渡辺 曜＆鬼塚夏美＆大沢瑠璃乃（LL-bp2-001-R＋系）: 手札にいる間、印刷コストが 20 から「自身以外の手札枚数」ぶん減る扱い。
+ * @param {string} cardNo
+ */
+export function isHandDependentCost20Member(cardNo) {
+  const s = normalizeCardCatalogLookupKey(String(cardNo || ""))
+    .replace(/＋/g, "+")
+    .toLowerCase();
+  if (!s.includes("bp2-001")) return false;
+  return /bp2-001-r\+?$/.test(s);
+}
+
+/**
+ * メインデッキに含まれるカード画像を、一覧表示より先にブラウザキャッシュへ載せる。
+ * @param {Record<string, number>} deckMap
+ * @param {(no: string) => unknown} getCardFn
+ */
+export function prefetchDeckCardImagesFromMap(deckMap, getCardFn) {
+  if (!deckMap || typeof deckMap !== "object") return;
+  const urls = new Set();
+  for (const k of Object.keys(deckMap)) {
+    const n = deckMap[k];
+    if (!(Number(n) > 0)) continue;
+    const c = getCardFn(k);
+    if (!c || typeof c !== "object" || !c.img) continue;
+    urls.add(String(c.img));
+    const thumb = catalogListThumbnailUrl(c.img);
+    if (thumb && thumb !== c.img) urls.add(thumb);
+  }
+  for (const u of urls) {
+    try {
+      const im = new Image();
+      im.decoding = "async";
+      if ("fetchPriority" in im) im.fetchPriority = "high";
+      im.src = u;
+    } catch (_) {
+      /* noop */
+    }
   }
 }
 
@@ -516,6 +557,8 @@ export function printedHeartSlotsOnCard(card) {
 export function filterCards(cards, opts) {
   const q = (opts.search || "").trim().toLowerCase();
   const bhSel = opts.bhSlots instanceof Set ? opts.bhSlots : null;
+  const bhNonBh = !!opts.bhNonBh;
+  const bhNoteLive = !!opts.bhNoteLive;
   const heartSel = opts.heartSlots instanceof Set ? opts.heartSlots : null;
   return cards.filter((c) => {
     if (opts.types[T_MEMBER] === false && c.type === T_MEMBER) return false;
@@ -531,12 +574,19 @@ export function filterCards(cards, opts) {
       const co = Number(c.cost);
       if (!opts.costs[co]) return false;
     }
-    if (bhSel && bhSel.size > 0) {
+    const bhAny =
+      (bhSel && bhSel.size > 0) || bhNonBh || bhNoteLive;
+    if (bhAny) {
       const bs = bladeHeartSlotsOnCard(c);
+      const hasBh = cardHasBladeHeart(c);
       let hit = false;
-      bhSel.forEach(function (s) {
-        if (bs.has(s)) hit = true;
-      });
+      if (bhSel && bhSel.size > 0) {
+        bhSel.forEach(function (s) {
+          if (bs.has(s)) hit = true;
+        });
+      }
+      if (bhNonBh && !hasBh) hit = true;
+      if (bhNoteLive && c.type === T_LIVE && hasBh) hit = true;
       if (!hit) return false;
     }
     if (heartSel && heartSel.size > 0) {

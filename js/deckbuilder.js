@@ -38,6 +38,7 @@ import {
   uniqueProducts,
   uniqueSeries,
   uniqueUnits,
+  isHandDependentCost20Member,
 } from "./cards.js";
 import { parseDeckTextRecipe } from "./decklogImport.js";
 import { showToast } from "./ui.js";
@@ -306,6 +307,9 @@ function isValidDeckMap(o) {
 
 function thumbExtraHtml(card) {
   if (card.type === T_MEMBER && card.cost != null && String(card.cost).trim() !== "") {
+    if (isHandDependentCost20Member(card.card_no)) {
+      return `<span class="thumb-sub" title="手札にいる間の印刷コスト目安: 20 から「自身以外の手札枚数」ぶん減少（ツール上の計算）">コスト 20〜0※</span>`;
+    }
     return `<span class="thumb-sub">コスト ${escapeHtml(String(card.cost))}</span>`;
   }
   if (card.type === T_LIVE) {
@@ -405,6 +409,15 @@ export function initDeckBuilder(root, { onStartGame }) {
     return s;
   }
 
+  function readBhFilterExtras() {
+    const panel = root.querySelector("#filter-bh-slots");
+    if (!panel) return { nonBh: false, noteLive: false };
+    return {
+      nonBh: !!panel.querySelector("input[data-bh-filter='non-bh']:checked"),
+      noteLive: !!panel.querySelector("input[data-bh-filter='note-live']:checked"),
+    };
+  }
+
   function readHeartSlotFilters() {
     const panel = root.querySelector("#filter-heart-slots");
     /** @type {Set<number>} */
@@ -488,6 +501,7 @@ export function initDeckBuilder(root, { onStartGame }) {
 
   function buildCatalogFilterCacheKey() {
     const bh = readBhSlotFilters();
+    const bx = readBhFilterExtras();
     const hs = readHeartSlotFilters();
     const costParts = Object.keys(filterCosts)
       .map(function (k) {
@@ -502,6 +516,8 @@ export function initDeckBuilder(root, { onStartGame }) {
       filterCardKind,
       JSON.stringify(filterTypes),
       [...bh].sort().join(","),
+      bx.nonBh ? "1" : "0",
+      bx.noteLive ? "1" : "0",
       [...hs].sort().join(","),
       costParts.join(","),
     ].join("|");
@@ -522,6 +538,7 @@ export function initDeckBuilder(root, { onStartGame }) {
     if (key === catalogFilterCacheKey && catalogFilterCached !== null) {
       return catalogFilterCached;
     }
+    const bx = readBhFilterExtras();
     const filtered = filterCards(cards, {
       search: searchText,
       types: filterTypes,
@@ -530,6 +547,8 @@ export function initDeckBuilder(root, { onStartGame }) {
       unit: filterUnit || null,
       costs: filterCosts,
       bhSlots: readBhSlotFilters(),
+      bhNonBh: bx.nonBh,
+      bhNoteLive: bx.noteLive,
       heartSlots: readHeartSlotFilters(),
     });
     catalogFilterCacheKey = key;
@@ -1377,8 +1396,9 @@ export function initDeckBuilder(root, { onStartGame }) {
           card && cardHasBladeHeart(card) ? bladeHeartRowIconsHtml(card) : "";
         var costPill = "";
         if (card && card.type === T_MEMBER && card.cost != null && String(card.cost).trim() !== "") {
-          costPill =
-            '<span class="deck-peek-cost-pill">コスト' + escapeHtml(String(card.cost)) + "</span>";
+          costPill = isHandDependentCost20Member(card.card_no)
+            ? '<span class="deck-peek-cost-pill" title="手札にいる間の印刷コスト目安">コスト20〜0※</span>'
+            : '<span class="deck-peek-cost-pill">コスト' + escapeHtml(String(card.cost)) + "</span>";
         }
         var imgHtml = card
           ? '<img class="deck-thumb deck-builder-card-thumb" src="' +
@@ -2068,7 +2088,7 @@ export function initDeckBuilder(root, { onStartGame }) {
         return c.card_no;
       })
       .join("\u0001");
-    if (cardGridVirtual.active && newSig === cardGridVirtual.lastOrderedSig) {
+    if (newSig === cardGridVirtual.lastOrderedSig && newSig !== "") {
       patchVisibleGridThumbsForNos(no ? [no] : []);
       return;
     }
@@ -2564,6 +2584,11 @@ export function initDeckBuilder(root, { onStartGame }) {
       x.checked = false;
     });
     scheduleRenderCardGrid();
+  });
+
+  el("btn-tutorial-builder")?.addEventListener("click", function () {
+    var d = document.getElementById("dlg-tutorial");
+    if (d && typeof d.showModal === "function") d.showModal();
   });
 
   document.getElementById("dlg-zoom-qty-minus")?.addEventListener("click", function (ev) {
