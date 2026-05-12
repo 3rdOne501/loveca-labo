@@ -40,6 +40,11 @@ export const STORAGE_ACTIVE_PRESET_ID = "llocg_active_preset_id";
 /** カードDB の URL 上書き（UI からは変更不可。未設定・空なら既定 URL） */
 export const STORAGE_CARDS_JSON_OVERRIDE = "llocg_cards_json_override";
 
+/** 初回のみ「商品」絞り込みを適用したか（一覧の初回負荷軽減） */
+export const STORAGE_CATALOG_INITIAL_FILTER_APPLIED = "llocg_catalog_initial_filter_done";
+/** 初回に一致させる商品名（DB の product と同一。無ければ「スタートデッキ」＋「ラブライブ」を含む商品を採用） */
+export const FIRST_VISIT_CATALOG_PRODUCT_EXACT = "スタートデッキラブライブ！";
+
 /** レギュ・禁止メモ（デッキ構築用・任意） */
 export const STORAGE_REGULATION_NOTE = "llocg_regulation_note";
 /** プレイ時メモ / カウンタ（後方互換・未使用） */

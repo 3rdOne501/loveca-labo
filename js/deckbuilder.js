@@ -5,11 +5,13 @@ import {
   DEFAULT_STARTER_KEY3_CARD_NOS,
   DEFAULT_STARTER_KEY_CARD_NOS,
   DEFAULT_STARTER_MIDDLE_CARD_NOS,
+  FIRST_VISIT_CATALOG_PRODUCT_EXACT,
   MAX_COPIES_PER_CARD,
   MAX_LIVE_IN_MAIN,
   MAX_MEMBER_IN_MAIN,
   MAIN_SIZE,
   STORAGE_ACTIVE_PRESET_ID,
+  STORAGE_CATALOG_INITIAL_FILTER_APPLIED,
   STORAGE_DECK,
   T_LIVE,
   T_MEMBER,
@@ -2661,7 +2663,42 @@ export function initDeckBuilder(root, { onStartGame }) {
     });
   }
 
+  function tryApplyFirstVisitCatalogProductFilter() {
+    try {
+      if (localStorage.getItem(STORAGE_CATALOG_INITIAL_FILTER_APPLIED)) return;
+      const want = FIRST_VISIT_CATALOG_PRODUCT_EXACT;
+      /** @type {Set<string>} */
+      const products = new Set();
+      cards.forEach(function (c) {
+        if (c && c.product) products.add(String(c.product));
+      });
+      var pick = "";
+      if (products.has(want)) pick = want;
+      else {
+        products.forEach(function (p) {
+          if (pick) return;
+          if (p.indexOf("スタートデッキ") >= 0 && p.indexOf("ラブライブ") >= 0) pick = p;
+        });
+      }
+      const sel = el("filter-product");
+      if (pick && sel) {
+        var ok = Array.prototype.some.call(sel.options, function (o) {
+          return o.value === pick;
+        });
+        if (ok) {
+          filterProduct = pick;
+          sel.value = pick;
+          invalidateCatalogFilterCache();
+        }
+      }
+      localStorage.setItem(STORAGE_CATALOG_INITIAL_FILTER_APPLIED, "1");
+    } catch (_e) {
+      /* ストレージ不可時は毎回試みるが致命ではない */
+    }
+  }
+
   fillSelects();
+  tryApplyFirstVisitCatalogProductFilter();
   wirePeekListRoleEditorOnce();
   renderPresetSelect();
   renderCounts();

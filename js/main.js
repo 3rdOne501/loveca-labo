@@ -91,8 +91,31 @@ function showBootToolbar(msg) {
   if (st && msg) st.textContent = msg;
 }
 
+function showAppBootLoading() {
+  const ov = document.getElementById("app-boot-overlay");
+  if (ov) {
+    ov.hidden = false;
+    ov.setAttribute("aria-busy", "true");
+  }
+  const line = document.getElementById("app-boot-message");
+  if (line) line.textContent = "カードデータベースを読み込んでいます・・・";
+  document.body.classList.add("app-boot-loading");
+}
+
+function hideAppBootLoading() {
+  const ov = document.getElementById("app-boot-overlay");
+  if (ov) {
+    ov.hidden = true;
+    ov.removeAttribute("aria-busy");
+  }
+  const det = document.getElementById("app-boot-detail");
+  if (det) det.textContent = "";
+  document.body.classList.remove("app-boot-loading");
+}
+
 function startApp(viewDeck, viewGame, statusEl) {
   if (statusEl) statusEl.textContent = "";
+  hideAppBootLoading();
   hideBootToolbar();
   if (!appStarted) {
     appStarted = true;
@@ -144,10 +167,12 @@ function startApp(viewDeck, viewGame, statusEl) {
 }
 
 function tryLoadDatabase(viewDeck, viewGame, statusEl) {
+  showAppBootLoading();
   loadCardDatabase(statusEl)
     .then(() => startApp(viewDeck, viewGame, statusEl))
     .catch((e) => {
       const msg = String(e.message || e);
+      hideAppBootLoading();
       if (statusEl) statusEl.textContent = msg;
       showBootToolbar(msg);
     });

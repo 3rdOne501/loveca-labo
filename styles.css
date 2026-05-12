@@ -112,6 +112,68 @@ a:hover { color: #ccefff; text-decoration-thickness: 2px; }
 
 .load-status { text-align: center; padding: 1rem; color: var(--muted); }
 
+/* 起動時: カードDB 取得まで */
+.app-boot-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  box-sizing: border-box;
+  background: radial-gradient(ellipse 120% 80% at 50% 40%, rgba(45, 22, 38, 0.97), rgba(12, 8, 16, 0.98));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.app-boot-overlay[hidden] {
+  display: none !important;
+}
+.app-boot-card {
+  max-width: 22rem;
+  width: 100%;
+  text-align: center;
+  padding: 1.75rem 1.5rem 1.5rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 140, 200, 0.35);
+  background: rgba(18, 10, 22, 0.92);
+  box-shadow: 0 0 40px rgba(255, 100, 160, 0.15), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+.app-boot-brand {
+  margin: 0 0 0.65rem;
+  font-family: var(--font-display, system-ui);
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #ffd6ef;
+}
+.app-boot-message {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.45;
+  color: #f0e8f4;
+}
+.app-boot-detail {
+  margin: 0 0 1.1rem;
+  font-size: 0.68rem;
+  line-height: 1.35;
+  word-break: break-all;
+  opacity: 0.85;
+}
+.app-boot-spinner {
+  width: 2.25rem;
+  height: 2.25rem;
+  margin: 0 auto;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 160, 210, 0.25);
+  border-top-color: #ff8ec8;
+  animation: app-boot-spin 0.75s linear infinite;
+}
+body.app-boot-loading {
+  overflow: hidden;
+}
+
 .app-header {
   padding: 1.25rem 1.35rem 0;
   max-width: 1400px;

@@ -51,7 +51,9 @@ export function catalogListThumbnailUrl(originalUrl) {
 
 export async function loadCardDatabase(statusEl) {
   const url = getEffectiveCardsJsonUrl();
-  if (statusEl) statusEl.textContent = "カードデータベースを読み込んでいます…（" + url + "）";
+  if (statusEl) statusEl.textContent = "";
+  const detail = typeof document !== "undefined" ? document.getElementById("app-boot-detail") : null;
+  if (detail) detail.textContent = url;
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error("カードデータの取得に失敗しました: " + res.status);
   catalog = await res.json();
@@ -67,7 +69,7 @@ export async function loadCardDatabase(statusEl) {
     .map(([, v]) => v)
     .filter(Boolean);
   injectUnsetPlaceholderCards();
-  if (statusEl) statusEl.textContent = "";
+  if (detail) detail.textContent = "";
   return list;
 }
 

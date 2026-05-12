@@ -67,6 +67,20 @@ python3 -m http.server 8080</pre>
       })();
     </script>
     <div id="toast-stack" class="toast-stack" aria-live="polite"></div>
+    <div
+      id="app-boot-overlay"
+      class="app-boot-overlay"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <div class="app-boot-card">
+        <p class="app-boot-brand">Loveca Labo</p>
+        <p id="app-boot-message" class="app-boot-message">カードデータベースを読み込んでいます・・・</p>
+        <p id="app-boot-detail" class="app-boot-detail muted" lang="en"></p>
+        <div class="app-boot-spinner" aria-hidden="true"></div>
+      </div>
+    </div>
     <div id="load-status" class="load-status" role="status"></div>
 
     <div id="boot-toolbar" class="boot-toolbar" hidden>

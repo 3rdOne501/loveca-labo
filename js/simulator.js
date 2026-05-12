@@ -3476,6 +3476,9 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     el.innerHTML = "";
     arr.forEach(function (c) {
       ensureCardBoardFields(c);
+      if (zoneId === "zone-hand" && (c.type === T_MEMBER || c.type === T_LIVE)) {
+        c.lcWait = false;
+      }
 
       if (isLiveBoard && (c.type === T_LIVE || c.type === T_MEMBER)) {
         if (state.liveTurnPickMode) c.isRotated = true;
@@ -3486,8 +3489,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         function () {
           pushHistoryBefore(rotateLabel);
           c.isRotated = !c.isRotated;
-          /** 横置き＝非公式 W（ウェイト）、縦なら W オフ（A はターン開始で揃える） */
-          if (c.type === T_MEMBER || c.type === T_LIVE) {
+          /** 横置き＝非公式 W（ウェイト）、縦なら W オフ（手札ではウェイトにしない） */
+          if (zoneId !== "zone-hand" && (c.type === T_MEMBER || c.type === T_LIVE)) {
             c.lcWait = c.isRotated === true;
           }
           render();
