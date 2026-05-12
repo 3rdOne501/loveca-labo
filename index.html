@@ -317,7 +317,27 @@ python3 -m http.server 8080</pre>
           <button type="button" class="btn primary" id="btn-back-builder">デッキ編集に戻る</button>
           <button type="button" class="btn secondary" id="btn-help" title="? キー">ヘルプ</button>
           <button type="button" class="btn sm secondary" id="btn-tutorial-game" title="チュートリアル・画面別ガイド">ガイド</button>
-          <button type="button" class="btn sm secondary" id="toggle-hand-mask">手札を隠す</button>
+          <button
+            type="button"
+            class="btn sm secondary"
+            id="toggle-hand-mask"
+            title="手札とプレビューを配信向けに隠す（濃さは右のスライダー）"
+          >
+            手札を隠す
+          </button>
+          <label class="tools-label stream-mask-density-label" for="stream-mask-density" title="配信隠しのグレー濃さ">
+            <span class="muted">隠し濃さ</span>
+            <input
+              type="range"
+              id="stream-mask-density"
+              class="stream-mask-density-range"
+              min="5"
+              max="98"
+              step="1"
+              value="85"
+              aria-label="手札・プレビュー配信隠しの濃さ"
+            />
+          </label>
           <button type="button" class="btn btn-reload-page btn-reload-page--play" id="btn-reload-play" title="ページを再読み込み">
             再読込
           </button>
@@ -663,7 +683,7 @@ python3 -m http.server 8080</pre>
             </div>
           </div>
           <p class="hint live-area-hint zone-inline-help">
-            <strong>ライブターン中</strong>の配置は、3枠とも<strong>横向き・表面非表示（裏）</strong>です。<strong>ライブ開始</strong>後は残るライブカードが<strong>縦向きで表面表示</strong>になります（手札のライブも<strong>メンバーと同じ枠・画像クリックで向き切替</strong>）。<strong>メンバーはライブターン以外はこの3枠に置けません</strong>（通常はライブカードのみ）。通常時に枠へ置いたカードも<strong>メンバーと同サイズの縦</strong>です。ドラッグでメンバーが枠<strong>へ入った</strong>ときだけ山札から<strong>手札に1ドロー</strong>します（自動）。この3枠には<strong>W／A（ウェイト／アクティブ）は表示されません。</strong><strong>ライブ開始</strong>でライブカード以外は<strong>控え室</strong>へ送ります。
+            <strong>ライブターン中</strong>の配置は、3枠とも<strong>横向き・表面非表示（裏）</strong>です。<strong>ライブ開始</strong>後は残るライブカードが<strong>縦向きで表面表示</strong>になります（手札のライブも<strong>メンバーと同じ枠</strong>で、手札では画像クリックで向きは変えません）。<strong>メンバーはライブターン以外はこの3枠に置けません</strong>（通常はライブカードのみ）。通常時に枠へ置いたカードも<strong>メンバーと同サイズの縦</strong>です。ドラッグでメンバーが枠<strong>へ入った</strong>ときだけ山札から<strong>手札に1ドロー</strong>します（自動）。この3枠には<strong>W／A（ウェイト／アクティブ）は表示されません。</strong><strong>ライブ開始</strong>でライブカード以外は<strong>控え室</strong>へ送ります。
             <strong>操作のコツ：</strong>手札で複数選んでからボタンを押すと左→中央→右の<strong>空き</strong>から順に置かれます。取り消しは <kbd>U</kbd>。迷ったらヘルプ（<kbd>?</kbd>）のライブ段落を開いてください。
           </p>
 
@@ -708,7 +728,18 @@ python3 -m http.server 8080</pre>
             </details>
           </div>
 
-          <h3 class="mt">ステージ</h3>
+          <div class="stage-title-bar mt">
+            <h3 class="stage-title-bar__h">ステージ</h3>
+            <button
+              type="button"
+              class="btn-stage-member-emphasis"
+              id="btn-stage-member-emphasis"
+              aria-pressed="false"
+              title="メンバーカードを大きく表示（ライブ枠・側面エネをやや縮小）"
+            >
+              メンバー拡大
+            </button>
+          </div>
           <div class="three-cols">
             <div class="slot-wrap">
               <span class="slot-label">左</span>
@@ -844,7 +875,10 @@ python3 -m http.server 8080</pre>
 
           <section class="zone-block">
             <div class="zone-head zone-head--hand">
-              <h3>手札</h3>
+              <h3 class="hand-zone-title">
+                手札
+                <span id="hand-inline-count" class="badge hand-inline-count" aria-live="polite">0</span>
+              </h3>
               <div class="hand-zone-actions">
                 <button type="button" class="btn sm primary" id="btn-live-turn-primary" disabled>
                   ライブターン開始
@@ -1045,13 +1079,13 @@ python3 -m http.server 8080</pre>
           「<strong>ターン開始</strong>」を押すまでマリガンできます。手札カード中央付近の<strong>チェック</strong>で複数選択、「<strong>マリガン実行</strong>」で選んだ枚数を山札に戻してシャッフルし、同じ枚数をドローします。<strong>1枚も選ばずに実行可能</strong>（そのときはシャッフル・ドローはしません）。リセット後も「ターン開始」までこのモードになります。
         </p>
         <p>
-          手札欄の<strong>ライブ進行ボタン</strong>では、まず「<strong>ライブターン開始</strong>」で<strong>成功したライブ</strong>のカードがすべて<strong>控え室</strong>へ送られ、手札<strong>中央のチェック</strong>で複数選び、同じボタンが「<strong>ライブエリアへ</strong>」に変わってからそれを押すと左→中央→右の<strong>空き枠に順に配置</strong>できます。配置した<strong>メンバー／ライブ</strong>1枚につき<strong>山札から手札へ1ドロー</strong>します。<strong>ライブターン中のみ、3枠は横向き・裏見えです。</strong>「<strong>ライブ開始</strong>」で<strong>ライブカード以外</strong>を<strong>控え室</strong>へ送ってモード終了すると、ライブカードが<strong>表面の縦向き</strong>になり、このタイミングで中央に<strong>ライブの計算</strong>パネル（概要と必要ハート・ステB・場メンバーH計・要求色・ステH色・解決 BH・判定）が出ます。<strong>ライブ成功判定</strong>は、ライブの need_heart に対し<strong>場にいるメンバーの所持ハート（ステージ＋ライブ枠）</strong>と<strong>ブレード枚数で捲れた解決カードの BH（blade_heart）</strong>を足し合わせた供給で照合します（ターン開始前はマリガン中のみのため、これらは無効になります）。
+          手札欄の<strong>ライブ進行ボタン</strong>では、まず「<strong>ライブターン開始</strong>」でライブターンモードに入ります（<strong>成功したライブ</strong>置き場のカードはそのまま残ります）。手札<strong>中央のチェック</strong>で複数選び、同じボタンが「<strong>ライブエリアへ</strong>」に変わってからそれを押すと左→中央→右の<strong>空き枠に順に配置</strong>できます。配置した<strong>メンバー／ライブ</strong>1枚につき<strong>山札から手札へ1ドロー</strong>します。<strong>ライブターン中のみ、3枠は横向き・裏見えです。</strong>「<strong>ライブ開始</strong>」で<strong>ライブカード以外</strong>を<strong>控え室</strong>へ送ってモード終了すると、ライブカードが<strong>表面の縦向き</strong>になり、このタイミングで中央に<strong>ライブの計算</strong>パネル（概要と必要ハート・ステB・場メンバーH計・要求色・ステH色・解決 BH・判定）が出ます。左の<strong>ライブ成功確率</strong>も、表面が見えるこのタイミングから再計算されます。<strong>ライブ成功判定</strong>は、ライブの need_heart に対し<strong>場にいるメンバーの所持ハート（ステージ＋ライブ枠）</strong>と<strong>ブレード枚数で捲れた解決カードの BH（blade_heart）</strong>を足し合わせた供給で照合します（ターン開始前はマリガン中のみのため、これらは無効になります）。
         </p>
         <p>
           PC でもタブレットでも、ドラッグでカードを移動します。ドラッグ開始時点から取り消し対象になります。<strong>U</strong> でひとつ戻す、<strong>R</strong> でひとつ進む、<strong>?</strong> でこのダイアログです。
         </p>
         <p>
-          メンバーまたはライブカードでは、ステージ等でカード下の <strong>W</strong>／<strong>A</strong> と（ステージまたはライブ枠に<strong>いて</strong><strong>表面が見える</strong>メンバーだけ）<strong>+H／B</strong> が使えます。<strong>+H／B</strong> では所持ハート（6色・ALL）・ブレードを<strong>DB値に加算してライブ計算へ反映</strong>します（非公式）。<strong>画像クリック</strong>は向きの切替です（所定ゾーンでは無効）。<strong>通常時はライブの3枠にメンバーを置けず、ライブターンだけ置けます</strong>（非ライブターはライブカードのみドラッグ可）。ライブエリアは<strong>ライブターン中だけ</strong>裏・横向きにし、その後は<strong>メンバーと同じ縦・同サイズ</strong>です。<strong>メンバーが枠へ入った</strong>ときだけ<strong>ライブセット相当として手札へ 1 枚自動ドロー</strong>します。「成功したライブ」は<strong>通常の縦向きレイアウト</strong>です（W／A の補助表示あり）。各ライブスロットは<strong>カード合計 1 枚まで</strong>です。
+          メンバーまたはライブカードでは、ステージ等でカード下の <strong>W</strong>／<strong>A</strong> と（ステージまたはライブ枠に<strong>いて</strong><strong>表面が見える</strong>メンバーだけ）<strong>+H／B</strong> が使えます。<strong>+H／B</strong> では所持ハート（6色・ALL）・ブレードを<strong>DB値に加算してライブ計算へ反映</strong>します（非公式）。<strong>画像クリック</strong>は多くのゾーンで向きの切替です（<strong>手札・プレビュー</strong>では向きは変えません）。カード画像は<strong>ダブルクリック</strong>で拡大できます。<strong>通常時はライブの3枠にメンバーを置けず、ライブターンだけ置けます</strong>（非ライブターはライブカードのみドラッグ可）。ライブエリアは<strong>ライブターン中だけ</strong>裏・横向きにし、その後は<strong>メンバーと同じ縦・同サイズ</strong>です。<strong>メンバーが枠へ入った</strong>ときだけ<strong>ライブセット相当として手札へ 1 枚自動ドロー</strong>します。「成功したライブ」は<strong>通常の縦向きレイアウト</strong>です（W／A の補助表示あり）。各ライブスロットは<strong>カード合計 1 枚まで</strong>です。
         </p>
         <p>
           ドラッグ中はカードを<strong>汎用の裏面イラスト（SVG）</strong>に差し替えて表示します（対面での操作イメージ用・公式イラストではありません）。

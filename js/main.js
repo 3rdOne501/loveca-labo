@@ -53,6 +53,7 @@ function tryResumePlaySession(viewDeck, viewGame) {
               document.body.classList.remove("play-mode");
               document.body.classList.remove("live-turn-pick-mode");
               document.body.classList.remove("zone-hints-visible");
+              document.body.classList.remove("stage-member-emphasis");
             },
             deckRoleLabels: {
               keyCardNos: Array.isArray(dm.keyCardNos) ? dm.keyCardNos : [],
@@ -67,6 +68,7 @@ function tryResumePlaySession(viewDeck, viewGame) {
           teardownDeckPileLayoutWatchers();
           clearPlayResumeStorage();
           document.body.classList.remove("play-mode");
+          document.body.classList.remove("stage-member-emphasis");
           viewGame.hidden = true;
           viewDeck.hidden = false;
           showToast("前回の盤面の復元に失敗しました。デッキ画面からやり直してください。");
@@ -143,6 +145,7 @@ function startApp(viewDeck, viewGame, statusEl) {
                   document.body.classList.remove("play-mode");
                   document.body.classList.remove("live-turn-pick-mode");
                   document.body.classList.remove("zone-hints-visible");
+                  document.body.classList.remove("stage-member-emphasis");
                 },
                 deckRoleLabels: {
                   keyCardNos: bundle.keyCardNos,
@@ -157,6 +160,7 @@ function startApp(viewDeck, viewGame, statusEl) {
               document.body.classList.remove("play-mode");
               document.body.classList.remove("live-turn-pick-mode");
               document.body.classList.remove("zone-hints-visible");
+              document.body.classList.remove("stage-member-emphasis");
               viewGame.hidden = true;
               viewDeck.hidden = false;
               showToast("プレイ画面の初期化に失敗しました。ページを再読み込みしてお試しください。");
@@ -248,11 +252,24 @@ document.getElementById("boot-retry")?.addEventListener("click", () => {
   tryLoadDatabase(viewDeck, viewGame, status);
 });
 
-document.getElementById("btn-reload-builder")?.addEventListener("click", () => {
-  location.reload();
-});
-document.getElementById("btn-reload-play")?.addEventListener("click", () => {
-  location.reload();
-});
+function wirePageReloadButtons() {
+  const hardReload = (ev) => {
+    if (ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+    }
+    window.setTimeout(() => {
+      window.location.reload();
+    }, 0);
+  };
+  document.getElementById("btn-reload-builder")?.addEventListener("click", hardReload);
+  document.getElementById("btn-reload-play")?.addEventListener("click", hardReload);
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", wirePageReloadButtons);
+} else {
+  wirePageReloadButtons();
+}
 
 tryLoadDatabase(viewDeck, viewGame, status);

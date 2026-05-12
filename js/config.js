@@ -66,6 +66,8 @@ export const STORAGE_PLAY_ENERGY_CARD_NO = "llocg_play_energy_card_no";
 export const STORAGE_SNAPSHOT_PREFIX = "llocg_snapshot_";
 /** プレイ画面: 再読み込み時に盤面・Undo 等を復元するセッション用バッファ */
 export const STORAGE_PLAY_RESUME = "llocg_play_resume_v1";
+/** プレイ画面: 手札・プレビュー配信隠しの濃さ 0〜1（sessionStorage 文字列） */
+export const STORAGE_STREAM_MASK_STRENGTH = "llocg_stream_mask_strength";
 
 /** Undo 履歴の最大長 */
 export const HISTORY_MAX_STEPS = 35;

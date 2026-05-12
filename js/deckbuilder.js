@@ -608,7 +608,8 @@ export function initDeckBuilder(root, { onStartGame }) {
       const no = String(changedNos[i] || "");
       if (!no) continue;
       const qty = deckMap[no] || 0;
-      if (!(qty > 0)) continue;
+      /** 0 枚になった行は一覧から消す必要があるので部分パッチ不可 */
+      if (!(qty > 0)) return false;
       const btn = ul.querySelector('button[data-act="plus"][data-no="' + esc(no) + '"]');
       if (!btn || !btn.parentElement) return false;
       const span = btn.parentElement.querySelector("span.deck-qty");
@@ -2142,13 +2143,17 @@ export function initDeckBuilder(root, { onStartGame }) {
       }
       if (cardPanelMode === "deck") {
         const qn = deckMap[no] || 0;
-        const qtyText = qn + " 枚";
         let badge = thumb.querySelector(".thumb-deck-qty");
-        if (badge) badge.textContent = qtyText;
-        else {
-          const typeSpan = thumb.querySelector(".thumb-type");
-          if (typeSpan)
-            typeSpan.insertAdjacentHTML("beforebegin", '<span class="thumb-deck-qty">' + qtyText + "</span>");
+        if (qn > 0) {
+          const qtyText = qn + " 枚";
+          if (badge) badge.textContent = qtyText;
+          else {
+            const typeSpan = thumb.querySelector(".thumb-type");
+            if (typeSpan)
+              typeSpan.insertAdjacentHTML("beforebegin", '<span class="thumb-deck-qty">' + qtyText + "</span>");
+          }
+        } else if (badge) {
+          badge.remove();
         }
       }
     }

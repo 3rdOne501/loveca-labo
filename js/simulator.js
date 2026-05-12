@@ -20,6 +20,7 @@ import {
   STORAGE_SNAPSHOT_PREFIX,
   STORAGE_PLAY_ENERGY_CARD_NO,
   STORAGE_PLAY_RESUME,
+  STORAGE_STREAM_MASK_STRENGTH,
   T_ENERGY,
   T_LIVE,
   T_MEMBER,
@@ -245,6 +246,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   var deckPickListSig = "";
   /** 山札確率の「捲る枚数」手動値 1〜10（マリガンで戻す枚数／ライブ手札チェック時は自動優先） */
   var deckOddsKManual = 1;
+  /** 捲る枚数スライダー操作中は sync による value 上書きを抑止（タッチで端だけ選べる不具合対策） */
+  var deckOddsKPointerActive = false;
   /** 指定カード検索のめくり枚数（手動） */
   var deckPickKManual = 1;
   /** 2恋（上5枚確認→1枚手札）を使った前提 */
@@ -627,9 +630,9 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     var ro = n <= 0 ? true : !!autoLock;
     function applyOne(el) {
       if (!el) return;
-      if (el.type === "range") {
+        if (el.type === "range") {
         el.disabled = ro;
-        if (document.activeElement !== el) {
+        if (document.activeElement !== el && !deckOddsKPointerActive) {
           if (!ro) {
             var mk = Math.max(1, Math.min(10, Math.floor(Number(deckOddsKManual) || 1)));
             el.value = String(mk);
@@ -1175,7 +1178,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     return w;
   }
 
-  /** ライブ枠にあるライブの need_heart を色情報スロット別に足し合わせ */
+  /** ライブ枠＋プレビューにあるライブの need_heart を色情報スロット別に足し合わせ（成功確率と同一モデル） */
   function aggregateNeedHeartSlotsFromLiveArea() {
     var acc = {};
     ["left", "center", "right"].forEach(function (k) {
@@ -1183,6 +1186,10 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         if (inst.type !== T_LIVE) return;
         addNeedHeartToSlotAccum(mergedCatalogCard(inst), acc);
       });
+    });
+    (state.previewScratch || []).forEach(function (inst) {
+      if (!inst || inst.type !== T_LIVE) return;
+      addNeedHeartToSlotAccum(mergedCatalogCard(inst), acc);
     });
     return acc;
   }
@@ -1338,6 +1345,9 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       state.liveArea[k].forEach(function (c) {
         if (c.type === T_LIVE) n++;
       });
+    });
+    (state.previewScratch || []).forEach(function (c) {
+      if (c && c.type === T_LIVE) n++;
     });
     return n;
   }
@@ -1889,6 +1899,23 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     }
 
     cancelDeckLiveSimDeferred();
+    if (state.liveTurnPickMode === true) {
+      sumEl.classList.remove("is-ok", "is-warn");
+      sumEl.classList.add("is-muted");
+      setOddsRichText(
+        sumEl,
+        "成功確率：—（ライブターン中は裏向きのため、ライブ開始で表面が見えてから計算します）",
+        { heroLiveSim: true },
+      );
+      var bdHold = $("deck-live-sim-breakdown-body");
+      if (bdHold) bdHold.textContent = "";
+      if (stEl) {
+        stEl.hidden = true;
+        stEl.textContent = "";
+      }
+      return;
+    }
+
     if (typeof requestIdleCallback === "function") {
       deckLiveSimIdleHandle = requestIdleCallback(runDeckLiveSimHeavy, { timeout: 600 });
     } else {
@@ -3398,6 +3425,20 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     });
   }
 
+  function openCardZoomFromImg(img) {
+    if (!img) return;
+    var dlg = document.getElementById("dlg-card-zoom");
+    var zi = document.getElementById("dlg-zoom-img");
+    var cap = document.getElementById("dlg-zoom-caption");
+    if (!dlg || !zi) return;
+    var faceSrc = img.getAttribute("data-ll-real-face-src");
+    zi.src = faceSrc || img.src;
+    zi.alt = img.alt || "";
+    if (cap) cap.textContent = img.title || img.alt || "";
+    if (dlg.showModal) dlg.showModal();
+    logReplay("card-zoom-open");
+  }
+
   function cardEl(c, opts) {
     opts = opts || {};
     ensureCardBoardFields(c);
@@ -3440,6 +3481,13 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         img.addEventListener("click", (e) => {
           e.stopPropagation();
           opts.onRotate();
+        });
+      } else if (opts.zoomClick) {
+        img.style.cursor = "zoom-in";
+        img.addEventListener("click", function (e) {
+          e.stopPropagation();
+          e.preventDefault();
+          openCardZoomFromImg(img);
         });
       }
       div.appendChild(img);
@@ -3558,6 +3606,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   function fillZone(zoneId, arr, rotateOrOpts) {
     const opts = typeof rotateOrOpts === "string" ? { rotateLabel: rotateOrOpts } : rotateOrOpts || {};
     const rotateLabel = opts.rotateLabel;
+    const zoomClick = opts.zoomClick === true;
     const el = $(zoneId);
     if (!el) return;
 
@@ -3613,6 +3662,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
 
       const cardOpts = {
         onRotate: onRotate || undefined,
+        zoomClick: zoomClick,
         forceLiveHorizontal: !!(liveSlotFaceDown && (c.type === T_LIVE || c.type === T_MEMBER)),
         stanceBar: showStance,
         hideFaceBehindBack:
@@ -3912,7 +3962,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         },
       },
       draggable: ".card-item",
-      filter: ".stance-chip, .card-no-drag",
+      filter: ".stance-chip, .card-no-drag, .card-stance-bar, .card-member-hb-bar",
       preventOnFilter: false,
       animation: 0,
       delay: 120,
@@ -4035,6 +4085,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       if (n) n.textContent = String(val);
     }
     set("hud-hand", state.hand.length);
+    set("hand-inline-count", state.hand.length);
     set("hud-waiting", state.waitingRoom.length);
     set("hud-resolution", state.resolutionArea.length);
     set("hud-slive", state.successfulLiveArea.length);
@@ -4141,6 +4192,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (!row) return;
     row.classList.toggle("preview-row--collapsed");
     syncPreviewRailAria();
+    renderSynchronouslyOnce();
   }
 
   function pruneLiveTurnSelection() {
@@ -4409,7 +4461,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     fillZone("live-left", state.liveArea.left, "rotate-live");
     fillZone("live-center", state.liveArea.center, "rotate-live");
     fillZone("live-right", state.liveArea.right, "rotate-live");
-    fillZone("zone-preview", state.previewScratch, "rotate-preview");
+    fillZone("zone-preview", state.previewScratch, {});
 
     const dc = $("deck-count-num");
     if (dc) dc.textContent = String(state.deck.length);
@@ -4522,6 +4574,22 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   $("deck-odds-k")?.addEventListener("input", function () {
     onDeckOddsKManualInput($("deck-odds-k"));
   });
+  (function bindDeckOddsKPointerGuard() {
+    function arm(el) {
+      if (!el) return;
+      el.addEventListener("pointerdown", function () {
+        deckOddsKPointerActive = true;
+      });
+      function release() {
+        deckOddsKPointerActive = false;
+        syncDeckOddsKInput();
+      }
+      el.addEventListener("pointerup", release);
+      el.addEventListener("pointercancel", release);
+    }
+    arm($("deck-odds-k"));
+    arm($("deck-odds-k-mirror"));
+  })();
   $("deck-pick-k")?.addEventListener("input", function () {
     var inp = $("deck-pick-k");
     if (!inp) return;
@@ -4920,9 +4988,6 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (state.liveTurnPickMode) return;
     pushHistoryBefore("live-turn-start");
     liveTurnStartGlowArmed = false;
-    var fromSlive = state.successfulLiveArea.slice();
-    state.successfulLiveArea.length = 0;
-    if (fromSlive.length) state.waitingRoom.push.apply(state.waitingRoom, fromSlive);
     state.liveTurnPickMode = true;
     state.liveTurnSelectedIds = [];
     state.liveTurnHandSpreadPick = state.hand.length >= LIVE_TURN_HAND_SPREAD_MIN;
@@ -4931,11 +4996,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       ? " 手札が多いため、選択中はカードを重ねずに並べます。"
       : "";
     showToast(
-      (fromSlive.length
-        ? "成功ライブ置き場から " + fromSlive.length + " 枚を控え室へ送りました。"
-        : "") +
-        "ライブターン: 手札で選び、表示が「ライブエリアへ」になったボタンで配置（「ライブ開始」で終了）" +
-        spreadNote,
+      "ライブターン: 手札で選び、表示が「ライブエリアへ」になったボタンで配置（「ライブ開始」で終了）" + spreadNote,
     );
     render();
   }
@@ -5434,6 +5495,37 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (typeof onBackToDeck === "function") onBackToDeck();
   });
 
+  var stageMemberEmphStorageKey = "llocg_stage_member_emphasis";
+  function syncStageMemberEmphasisUi() {
+    var on = document.body.classList.contains("stage-member-emphasis");
+    var btn = $("btn-stage-member-emphasis");
+    if (btn) {
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+      btn.classList.toggle("btn-stage-member-emphasis--on", on);
+    }
+  }
+  try {
+    if (sessionStorage.getItem(stageMemberEmphStorageKey) === "1") {
+      document.body.classList.add("stage-member-emphasis");
+    }
+  } catch (_) {}
+  syncStageMemberEmphasisUi();
+  $("btn-stage-member-emphasis")?.addEventListener("click", function (ev) {
+    ev.preventDefault();
+    var on = !document.body.classList.contains("stage-member-emphasis");
+    document.body.classList.toggle("stage-member-emphasis", on);
+    try {
+      sessionStorage.setItem(stageMemberEmphStorageKey, on ? "1" : "0");
+    } catch (_) {}
+    syncStageMemberEmphasisUi();
+    if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(function () {
+        updateHandZoneLayoutMode();
+        deckPileScheduleLayoutRef();
+      });
+    }
+  });
+
   function toggleWaitingRailExpanded(ev) {
     if (ev && ev.type === "click" && ev.target.closest) {
       const ign = ev.target.closest("button, a, label, input");
@@ -5443,7 +5535,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (!row) return;
     row.classList.toggle("waiting-row--collapsed");
     syncWaitingRailAria();
-    render();
+    renderSynchronouslyOnce();
   }
 
   // render / DOM差し替えで直接バインドが外れることがあるため委譲に切り替え
@@ -5487,6 +5579,48 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     });
   }
 
+  function clampStreamMaskStrength01(x) {
+    if (!Number.isFinite(x)) return 0.85;
+    return Math.max(0.05, Math.min(0.98, x));
+  }
+  function loadStreamMaskStrength01() {
+    try {
+      var raw = sessionStorage.getItem(STORAGE_STREAM_MASK_STRENGTH);
+      if (raw != null && raw !== "") {
+        var n = Number(raw);
+        if (Number.isFinite(n)) {
+          if (n > 1) return clampStreamMaskStrength01(n / 100);
+          return clampStreamMaskStrength01(n);
+        }
+      }
+    } catch (_) {}
+    return 0.85;
+  }
+  function persistStreamMaskStrength01(s01) {
+    try {
+      sessionStorage.setItem(STORAGE_STREAM_MASK_STRENGTH, String(clampStreamMaskStrength01(s01)));
+    } catch (_) {}
+  }
+  function applyStreamMaskStrengthToBody(s01) {
+    var s = clampStreamMaskStrength01(s01);
+    document.body.style.setProperty("--stream-mask-strength", String(s));
+    var rng = $("stream-mask-density");
+    if (rng && document.activeElement !== rng) {
+      rng.value = String(Math.round(s * 100));
+    }
+  }
+  applyStreamMaskStrengthToBody(loadStreamMaskStrength01());
+  var streamMaskDensityEl = $("stream-mask-density");
+  if (streamMaskDensityEl) {
+    streamMaskDensityEl.addEventListener("input", function () {
+      var v = Number(streamMaskDensityEl.value);
+      if (!Number.isFinite(v)) v = 85;
+      var s01 = clampStreamMaskStrength01(v / 100);
+      persistStreamMaskStrength01(s01);
+      applyStreamMaskStrengthToBody(s01);
+    });
+  }
+
   deckPileWindowResizeHandler = function () {
     if (deckPileLayoutDebounce) clearTimeout(deckPileLayoutDebounce);
     deckPileLayoutDebounce = window.setTimeout(function () {
@@ -5499,23 +5633,14 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   };
   window.addEventListener("resize", deckPileWindowResizeHandler, { passive: true });
 
-  /** カード拡大 */
+  /** カード拡大（ダブルクリック） */
   root.addEventListener(
     "dblclick",
     function (ev) {
       var img = ev.target.closest(".card-img");
       if (!img || !root.contains(img)) return;
       ev.preventDefault();
-      var dlg = document.getElementById("dlg-card-zoom");
-      var zi = document.getElementById("dlg-zoom-img");
-      var cap = document.getElementById("dlg-zoom-caption");
-      if (!dlg || !zi) return;
-      var faceSrc = img.getAttribute("data-ll-real-face-src");
-      zi.src = faceSrc || img.src;
-      zi.alt = img.alt || "";
-      if (cap) cap.textContent = img.title || img.alt || "";
-      if (dlg.showModal) dlg.showModal();
-      logReplay("card-zoom-open");
+      openCardZoomFromImg(img);
     },
     false,
   );
@@ -5530,14 +5655,14 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     persistSessionTexts();
   })();
   refreshPlayDeckPresetSelect();
-  /** 初回レンダーが重く長タスクになり、直後のクリックが無視されるのを防ぐため 1 フレーム遅延 */
+  /** 同期レンダーで盤面・Sortable・+H/B を確実に有効化（初回のみ遅延すると操作が死ぬ） */
+  renderSynchronouslyOnce();
   if (typeof requestAnimationFrame === "function") {
     requestAnimationFrame(function () {
-      renderSynchronouslyOnce();
+      updateHandZoneLayoutMode();
+      updateWaitingZoneOverlapMode();
+      updateResolutionZoneOverlapMode();
+      deckPileScheduleLayoutRef();
     });
-  } else {
-    setTimeout(function () {
-      renderSynchronouslyOnce();
-    }, 0);
   }
 }
