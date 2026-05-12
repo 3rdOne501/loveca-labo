@@ -449,20 +449,24 @@ python3 -m http.server 8080</pre>
                   </div>
                   <div class="deck-odds-k-control">
                     <label class="deck-odds-k-label" for="deck-odds-k"
-                      >捲る枚数 <span class="muted">k</span></label
+                      >捲る枚数 <span class="muted">k</span>（1〜10）</label
                     >
-                    <input
-                      type="number"
-                      id="deck-odds-k"
-                      class="deck-odds-k-input"
-                      min="0"
-                      max="99"
-                      step="1"
-                      value="0"
-                      inputmode="numeric"
-                      autocomplete="off"
-                      aria-describedby="deck-odds-k-hint"
-                    />
+                    <div class="deck-odds-k-slider-row">
+                      <input
+                        type="range"
+                        id="deck-odds-k"
+                        class="deck-odds-k-range"
+                        min="1"
+                        max="10"
+                        step="1"
+                        value="1"
+                        aria-valuemin="1"
+                        aria-valuemax="10"
+                        aria-valuenow="1"
+                        aria-describedby="deck-odds-k-hint"
+                      />
+                      <span id="deck-odds-k-readout" class="deck-odds-k-readout" aria-live="polite">1</span>
+                    </div>
                     <span id="deck-odds-k-hint" class="deck-odds-k-hint muted"></span>
                     <div class="deck-odds-skill-chk-row">
                       <label class="chk deck-odds-skill-chk">

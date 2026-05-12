@@ -243,8 +243,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   /** 山札残り一覧での多枚選択（次の1枚の確率用） */
   var deckPickSelectedNos = new Set();
   var deckPickListSig = "";
-  /** 山札確率の「捲る枚数」手動値（マリガンで戻す枚数／ライブ手札チェック時は自動優先） */
-  var deckOddsKManual = 0;
+  /** 山札確率の「捲る枚数」手動値 1〜10（マリガンで戻す枚数／ライブ手札チェック時は自動優先） */
+  var deckOddsKManual = 1;
   /** 指定カード検索のめくり枚数（手動） */
   var deckPickKManual = 1;
   /** 2恋（上5枚確認→1枚手札）を使った前提 */
@@ -600,8 +600,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       return 0;
     }
     var manual = deckOddsKManual;
-    if (!Number.isFinite(manual)) manual = 0;
-    manual = Math.max(0, Math.min(99, Math.floor(manual)));
+    if (!Number.isFinite(manual)) manual = 1;
+    manual = Math.max(1, Math.min(10, Math.floor(manual)));
     return Math.min(manual, n);
   }
 
@@ -622,21 +622,29 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     var n = state.deck.length;
     var m = Array.isArray(state.mulliganSelectedIds) ? state.mulliganSelectedIds.length : 0;
     var c = liveTurnHandCheckCount();
-    var maxAttr = String(Math.max(1, Math.min(99, n || 1)));
-    if (inp) inp.setAttribute("max", maxAttr);
-    if (inpMirror) inpMirror.setAttribute("max", maxAttr);
     var eff = computeEffectiveDeckOddsK();
     var autoLock = (state.awaitingTurnStart && m > 0) || (state.liveTurnPickMode === true && c > 0);
     var ro = n <= 0 ? true : !!autoLock;
     function applyOne(el) {
       if (!el) return;
-      el.readOnly = ro;
-      if (document.activeElement !== el) {
-        el.value = n <= 0 ? "0" : String(Math.max(0, eff));
+      if (el.type === "range") {
+        el.disabled = ro;
+        if (document.activeElement !== el) {
+          if (!ro) {
+            var mk = Math.max(1, Math.min(10, Math.floor(Number(deckOddsKManual) || 1)));
+            el.value = String(mk);
+          } else {
+            var show = Math.min(10, Math.max(1, eff));
+            el.value = String(show);
+          }
+        }
+        el.setAttribute("aria-valuenow", el.value);
       }
     }
     applyOne(inp);
     applyOne(inpMirror);
+    var readout = $("deck-odds-k-readout");
+    if (readout) readout.textContent = n <= 0 ? "—" : String(eff);
     function hintText() {
       if (state.awaitingTurnStart) {
         return m > 0
@@ -648,7 +656,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
           ? "ライブ: 手札チェック " + c + " 枚に連動（編集不可）"
           : "ライブ: チェックで連動（0 枚のあいだ k=0 参考）";
       }
-      return "通常: 手動。マリガン／ライブ選択中は上記のとおり自動";
+      return "通常: スライダーで 1〜10。マリガン／ライブ選択中は上記のとおり自動";
     }
     var ht = hintText();
     var h = $("deck-odds-k-hint");
@@ -716,7 +724,9 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       var sv = sessionStorage.getItem(STORAGE_DECK_ODDS_K);
       if (sv != null && sv !== "") {
         var x = Number(sv);
-        if (Number.isFinite(x) && x >= 0) deckOddsKManual = Math.min(99, Math.floor(x));
+        if (Number.isFinite(x)) {
+          deckOddsKManual = Math.min(10, Math.max(1, Math.floor(x)));
+        }
       }
     } catch (_) {
       /* noop */
@@ -4483,14 +4493,15 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   $("select-first-player")?.addEventListener("change", persistSessionTexts);
 
   function onDeckOddsKManualInput(inp) {
-    if (!inp || inp.readOnly) return;
-    var v = sanitizeNonNegativeInt(inp.value);
-    deckOddsKManual = Math.max(0, Math.min(99, v));
-    if (state.deck.length > 0) deckOddsKManual = Math.min(deckOddsKManual, state.deck.length);
+    if (!inp || inp.disabled) return;
+    var v = Number(inp.value);
+    if (!Number.isFinite(v)) v = 1;
+    deckOddsKManual = Math.max(1, Math.min(10, Math.floor(v)));
     persistDeckOddsKManual();
-    var val = String(deckOddsKManual);
     var a = $("deck-odds-k");
-    if (a && document.activeElement !== a) a.value = val;
+    if (a && document.activeElement !== a) a.value = String(deckOddsKManual);
+    if (a) a.setAttribute("aria-valuenow", String(deckOddsKManual));
+    syncDeckOddsKInput();
     syncLeftDeckOddsPanel();
   }
 

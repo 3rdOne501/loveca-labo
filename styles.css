@@ -1697,7 +1697,7 @@ body.play-mode .deck-remain-bh-panel,
 body.play-mode #waiting-remain-bh-panel,
 body.play-mode .play-deck-preset-panel {
   min-width: 0;
-  max-width: 100%;
+  max-width: min(100%, 21rem);
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -1807,7 +1807,8 @@ body.play-mode .stage-slot.card-strip {
 body.play-mode .stage-slot .card-item[data-type="エネルギー"] {
   position: relative;
   z-index: 1;
-  margin-right: calc(var(--loveca-play-w) * -0.58);
+  /* メンバー下のエネ帯: 約 80% まで重なりを許容（左から積み、メンバーが手前） */
+  margin-right: calc(var(--loveca-play-w) * -0.8);
 }
 body.play-mode .stage-slot .card-item[data-type="メンバー"] {
   position: relative;
@@ -2029,6 +2030,32 @@ body.play-mode .success-live-zone-shell--win .success-live-strip.card-strip {
 .deck-odds-k-input:read-only {
   opacity: 0.85;
   cursor: not-allowed;
+}
+.deck-odds-k-slider-row {
+  display: flex;
+  flex: 1 1 100%;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+}
+.deck-odds-k-range {
+  flex: 1;
+  min-width: 0;
+  height: 1.35rem;
+  accent-color: #ff8ac4;
+}
+.deck-odds-k-range:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.deck-odds-k-readout {
+  flex: 0 0 auto;
+  min-width: 2.25rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  font-size: 0.88rem;
+  color: rgba(255, 230, 245, 0.95);
 }
 .deck-odds-k-hint {
   font-size: 0.65rem !important;
@@ -2405,7 +2432,7 @@ table.deck-odds-grid {
 }
 .deck-tools-split {
   display: grid;
-  grid-template-columns: minmax(13.5rem, 0.72fr) minmax(15rem, 1.28fr);
+  grid-template-columns: minmax(13.5rem, 0.78fr) minmax(10.5rem, 0.92fr);
   gap: 0.55rem 0.75rem;
   align-items: start;
   margin-top: 0.35rem;
@@ -2418,6 +2445,8 @@ table.deck-odds-grid {
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
+  max-width: min(100%, 22.5rem);
+  width: 100%;
 }
 .deck-pick-odds-section-title {
   margin: 0 0 0.42rem;
@@ -2446,7 +2475,7 @@ table.deck-odds-grid {
   border: 1px solid rgba(255, 150, 200, 0.22);
   background: rgba(0, 0, 0, 0.18);
   box-sizing: border-box;
-  max-width: none;
+  max-width: min(100%, 21rem);
 }
 .deck-remain-line {
   margin: 0 0 0.45rem;
@@ -2495,9 +2524,9 @@ table.deck-odds-grid {
   padding: 0.4rem 0.45rem;
   border-radius: var(--radius-sm);
   border: 1px solid rgba(140, 200, 255, 0.28);
+  max-width: min(100%, 21rem);
   background: rgba(12, 22, 40, 0.4);
   box-sizing: border-box;
-  max-width: 20rem;
 }
 .play-deck-preset-lead {
   margin: 0 0 0.42rem !important;
@@ -2658,7 +2687,7 @@ table.deck-odds-grid {
   .deck-remain-bh-panel,
   #waiting-remain-bh-panel,
   .play-deck-preset-panel {
-    max-width: none;
+    max-width: min(100%, 21rem);
     width: 100%;
     min-height: min(140px, 26vh);
     box-sizing: border-box;
