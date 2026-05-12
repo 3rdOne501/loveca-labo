@@ -95,9 +95,6 @@ python3 -m http.server 8080</pre>
     <div id="view-deck" class="view">
       <header class="app-header">
         <h1>Loveca Labo</h1>
-        <button type="button" class="btn btn-reload-page btn-reload-page--deck" id="btn-reload-builder" title="ページを再読み込み">
-          再読込
-        </button>
       </header>
 
       <div class="builder">
@@ -105,23 +102,44 @@ python3 -m http.server 8080</pre>
           <div class="search-panel-tools">
             <h2 class="panel-h2-plain">検索・絞り込み</h2>
             <div class="search-quick-tools">
+              <button
+                type="button"
+                class="btn sm secondary btn-reload-page btn-reload-page--deck"
+                id="btn-reload-builder"
+                title="ページを再読み込み"
+              >
+                再読込
+              </button>
               <button type="button" class="btn sm secondary" id="btn-search-clear">検索だけクリア</button>
               <button type="button" class="btn sm secondary" id="btn-reset-filters">絞り込み全リセット</button>
             </div>
           </div>
-          <label class="field">
-            <span>カード名・能力</span>
-            <input type="search" id="search-text" placeholder="キーワード" autocomplete="off" />
-          </label>
-          <label class="field">
+          <div class="field">
             <span>一覧に出すカード種別</span>
-            <select id="filter-card-kind" class="filter-card-kind-select">
-              <option value="both">メンバー＋ライブ（両方）</option>
-              <option value="member">メンバーカードのみ</option>
-              <option value="live">ライブカードのみ</option>
+            <div class="filter-type-chk-row" id="filter-type-chk-row">
+              <label class="chk filter-type-chk"
+                ><input type="checkbox" id="filter-show-member" checked /> メンバー</label
+              >
+              <label class="chk filter-type-chk"
+                ><input type="checkbox" id="filter-show-live" checked /> ライブ</label
+              >
+            </div>
+          </div>
+          <label class="field">
+            <span>一覧の並べ替え</span>
+            <select id="catalog-sort-order" class="filter-card-kind-select" aria-label="カード一覧の並べ替え">
+              <option value="default">既定（DB順）</option>
+              <option value="fav-first">お気に入り優先</option>
+              <option value="name">名前（あいうえお）</option>
+              <option value="cost-asc">コストの低い順</option>
+              <option value="card-no">カード番号順</option>
             </select>
           </label>
-          <p class="hint search-hint-muted">サムネ左上の色でも区別しています（メンバー＝青系・ライブ＝ピンク系）。</p>
+          <label class="chk filter-fav-only-row">
+            <input type="checkbox" id="filter-favorites-only" />
+            お気に入りのみ表示
+          </label>
+          <p class="hint search-hint-muted">サムネ左上の色でも区別しています（メンバー＝青系・ライブ＝ピンク系）。星はイラスト右下でお気に入り。</p>
           <label class="field">
             <span>商品</span>
             <select id="filter-product"></select>
@@ -145,7 +163,7 @@ python3 -m http.server 8080</pre>
           <div class="field">
             <span>ブレードハート種別（色）</span>
             <p class="hint search-hint-muted" style="margin: 0 0 0.35rem">
-              上段は DB の blade_heart が該当する色のいずれかを含むカード。下段は<strong>色チェックと併用可</strong>（いずれかに合致すれば表示）。<strong>非BH</strong>は BH を持たないカード、<strong>音符ライブ</strong>はライブかつ BH ありのカードです。
+              上段は DB の blade_heart が該当する色のいずれかを含むカード。下段は<strong>色チェックと併用可</strong>（いずれかに合致すれば表示）。<strong>非BH</strong>は BH を持たないカード、<strong>音符ライブ</strong>はエール（ライブ開始時の解決めくり）でスコアが増える系のライブ（ALL ブレードハート b_all のみのライブは除く）です。
             </p>
             <div id="filter-bh-slots" class="heart-bh-filter-strip">
               <label class="chk bh-filter-chk"><input type="checkbox" data-bh-slot="1" /> 桃</label>
@@ -180,6 +198,17 @@ python3 -m http.server 8080</pre>
           <div class="panel-title-row">
             <h2 id="card-panel-heading">カード一覧</h2>
             <span class="hit-badge" id="card-hit-count"></span>
+            <label class="field card-panel-search-field">
+              <span class="sr-only">カード名・能力</span>
+              <input
+                type="search"
+                id="search-text"
+                class="card-panel-search-input"
+                placeholder="カード名・能力で検索"
+                autocomplete="off"
+                aria-label="カード名・能力で検索"
+              />
+            </label>
             <div class="card-panel-mode-row">
               <button type="button" class="btn sm primary" id="btn-card-panel-catalog" aria-pressed="true">
                 カード一覧
@@ -338,9 +367,6 @@ python3 -m http.server 8080</pre>
               aria-label="手札・プレビュー配信隠しの濃さ"
             />
           </label>
-          <button type="button" class="btn btn-reload-page btn-reload-page--play" id="btn-reload-play" title="ページを再読み込み">
-            再読込
-          </button>
         </div>
         <div class="game-bar-row game-tools-row">
           <details class="energy-card-details">
@@ -376,6 +402,14 @@ python3 -m http.server 8080</pre>
           <button type="button" class="btn sm secondary" id="btn-zone-hints" aria-pressed="false">
             ゾーン説明を表示
           </button>
+          <button
+            type="button"
+            class="btn sm secondary btn-reload-page btn-reload-page--play"
+            id="btn-reload-play"
+            title="ページを再読み込み"
+          >
+            再読込
+          </button>
         </div>
         <p class="play-disclaimer" role="note">
           非公式ツールです。オンライン対戦は未対応。権利・ルール・レギュは公式・大会運営を確認してください。
@@ -410,7 +444,7 @@ python3 -m http.server 8080</pre>
 
               <div id="deck-live-sim-block" class="deck-live-sim-block">
                 <p id="deck-live-sim-summary" class="deck-live-sim-summary deck-draw-odds-visible"></p>
-                <details id="deck-live-sim-breakdown" class="deck-live-sim-breakdown deck-prob-explain-hide">
+                <details id="deck-live-sim-breakdown" class="deck-live-sim-breakdown">
                   <summary class="deck-live-sim-breakdown-summary">計算の内訳</summary>
                   <pre id="deck-live-sim-breakdown-body" class="deck-live-sim-breakdown-body"></pre>
                 </details>
@@ -483,25 +517,30 @@ python3 -m http.server 8080</pre>
                   </div>
                   <div class="deck-odds-k-control">
                     <label class="deck-odds-k-label" for="deck-odds-k"
-                      >捲る枚数 <span class="muted">k</span>（1〜10）</label
+                      >捲る枚数 <span class="muted">k</span>（0〜15）</label
                     >
                     <div class="deck-odds-k-slider-row">
+                      <button type="button" class="btn sm secondary deck-odds-k-step" id="deck-odds-k-minus" aria-label="k を1減らす">
+                        −
+                      </button>
                       <input
                         type="range"
                         id="deck-odds-k"
                         class="deck-odds-k-range"
-                        min="1"
-                        max="10"
+                        min="0"
+                        max="15"
                         step="1"
                         value="1"
-                        aria-valuemin="1"
-                        aria-valuemax="10"
+                        aria-valuemin="0"
+                        aria-valuemax="15"
                         aria-valuenow="1"
-                        aria-describedby="deck-odds-k-hint"
+                        aria-describedby="deck-odds-k-zone-hint"
                       />
+                      <button type="button" class="btn sm secondary deck-odds-k-step" id="deck-odds-k-plus" aria-label="k を1増やす">
+                        +
+                      </button>
                       <span id="deck-odds-k-readout" class="deck-odds-k-readout" aria-live="polite">1</span>
                     </div>
-                    <span id="deck-odds-k-hint" class="deck-odds-k-hint muted"></span>
                     <div class="deck-odds-skill-chk-row">
                       <label class="chk deck-odds-skill-chk">
                         <input type="checkbox" id="chk-deck-2koi" />
@@ -522,23 +561,6 @@ python3 -m http.server 8080</pre>
                       </summary>
                       <ul class="deck-odds-cat-stash__list" data-stash-list></ul>
                     </details>
-                  </div>
-                  <div class="deck-odds-skill-explain-row deck-prob-explain-hide">
-                    <p class="deck-odds-skill-explain">
-                      <strong>2恋</strong>
-                      上から5枚を見て1枚を手札に加える前提で、<strong>手札に加わる側の確率</strong>としていまの k に
-                      <strong>+5</strong> して計算します。
-                    </p>
-                    <p class="deck-odds-skill-explain">
-                      <strong>2かすみ</strong>
-                      上から3枚を見て、好きな枚数を山札の上か控え室へ。山札上に残した枚は
-                      <strong>次のターン（1T後）</strong>に手札へ入る想定で、グリッドの<strong>1T後</strong>の k に
-                      <strong>+3</strong>（見た3枚分）だけ反映します（今の行には足しません）。
-                    </p>
-                    <p class="deck-odds-skill-explain">
-                      <strong>13曜</strong>
-                      上から7枚を見て3枚を手札に回収する前提で、いまの k に見た分として<strong>+7</strong>して確率を計算します（2恋・指定枚数の k と合算し、山札枚数で打ち切り）。
-                    </p>
                   </div>
                   <details class="deck-odds-turn-details" aria-label="ターン別の見える枚数">
                     <summary class="deck-odds-turn-details__summary">1T後〜の見える枚数（ターン別）</summary>
@@ -624,6 +646,24 @@ python3 -m http.server 8080</pre>
                     </div>
                   </details>
                   <div id="live-deck-odds-grid" class="deck-odds-grid-host" aria-live="polite"></div>
+                  <div class="deck-odds-prob-zone-hints hint zone-inline-help deck-prob-explain-hide">
+                    <p id="deck-odds-k-zone-hint" class="live-zone-hint-line"></p>
+                    <p class="deck-odds-skill-explain">
+                      <strong>2恋</strong>
+                      上から5枚を見て1枚を手札に加える前提で、<strong>手札に加わる側の確率</strong>としていまの k に
+                      <strong>+5</strong> して計算します。
+                    </p>
+                    <p class="deck-odds-skill-explain">
+                      <strong>2かすみ</strong>
+                      上から3枚を見て、好きな枚数を山札の上か控え室へ。山札上に残した枚は
+                      <strong>次のターン（1T後）</strong>に手札へ入る想定で、グリッドの<strong>1T後</strong>の k に
+                      <strong>+3</strong>（見た3枚分）だけ反映します（今の行には足しません）。
+                    </p>
+                    <p class="deck-odds-skill-explain">
+                      <strong>13曜</strong>
+                      上から7枚を見て3枚を手札に回収する前提で、いまの k に見た分として<strong>+7</strong>して確率を計算します（2恋・指定枚数の k と合算し、山札枚数で打ち切り）。
+                    </p>
+                  </div>
             </div>
             <p class="hint zone-inline-help live-prob-footnote deck-prob-explain-hide">
               キー／中間・ライブ・指定を<strong>k 枚</strong>で引く確率（下の k と同じ。マリガン・ライブ手札は自動）。1T〜列は左の数の累積 k。
@@ -632,20 +672,7 @@ python3 -m http.server 8080</pre>
         </div>
 
         <div class="col col-center">
-          <section class="zone-block zone-block-snapshots zone-block-snapshots--above-live">
-            <h3>ライブエリア</h3>
-            <div class="snapshots-row btn-row wrap">
-              <span class="snap-label muted">記録:</span>
-              <button type="button" class="btn sm secondary" id="btn-snap-save-1">保存1</button>
-              <button type="button" class="btn sm secondary" id="btn-snap-save-2">保存2</button>
-              <button type="button" class="btn sm secondary" id="btn-snap-save-3">保存3</button>
-              <button type="button" class="btn sm" id="btn-snap-load-1">復元1</button>
-              <button type="button" class="btn sm" id="btn-snap-load-2">復元2</button>
-              <button type="button" class="btn sm" id="btn-snap-load-3">復元3</button>
-            </div>
-            <p class="hint zone-inline-help">スナップショットは sessionStorage に保存されます（タブ単位／閉じると消える場合があります）。</p>
-          </section>
-
+          <h3 class="live-area-col-heading">ライブエリア</h3>
           <div class="zone-head zone-head--live-with-turn">
             <div id="play-turn-badge" class="play-turn-badge" title="ターン数（ターン開始で増加）" aria-live="polite">
               <span class="play-turn-badge__q">ターン</span>
@@ -673,16 +700,30 @@ python3 -m http.server 8080</pre>
               <span class="slot-label">左</span>
               <div id="live-left" class="card-strip zone-drop live-slot"></div>
             </div>
-            <div class="slot-wrap">
+            <div class="slot-wrap slot-wrap--live-center">
               <span class="slot-label">中央</span>
               <div id="live-center" class="card-strip zone-drop live-slot"></div>
+              <div id="live-center-score-bar" class="live-score-center-bar live-score-center-bar--placeholder" aria-live="polite">
+                <span class="live-score-center-bar__label">ライブスコア</span>
+                <span class="live-score-center-bar__main">
+                  <span id="live-center-score-num" class="live-score-center-bar__num live-score-num--placeholder">−</span>
+                  <span class="live-score-center-bar__unit">点</span>
+                </span>
+                <span id="live-center-score-note-wrap" class="live-score-center-bar__note-wrap" hidden>
+                  <span
+                    class="live-score-center-bar__note live-score-note-pink"
+                    id="live-center-score-note-suffix"
+                    title="エールで山札から解決にめくった音符ライブの枚数（成功時のみ打点に反映）"
+                  ></span>
+                </span>
+              </div>
             </div>
             <div class="slot-wrap">
               <span class="slot-label">右</span>
               <div id="live-right" class="card-strip zone-drop live-slot"></div>
             </div>
           </div>
-          <p class="hint live-area-hint zone-inline-help">
+          <p class="hint live-area-hint zone-inline-help deck-prob-explain-hide">
             <strong>ライブターン中</strong>の配置は、3枠とも<strong>横向き・表面非表示（裏）</strong>です。<strong>ライブ開始</strong>後は残るライブカードが<strong>縦向きで表面表示</strong>になります（手札のライブも<strong>メンバーと同じ枠</strong>で、手札では画像クリックで向きは変えません）。<strong>メンバーはライブターン以外はこの3枠に置けません</strong>（通常はライブカードのみ）。通常時に枠へ置いたカードも<strong>メンバーと同サイズの縦</strong>です。ドラッグでメンバーが枠<strong>へ入った</strong>ときだけ山札から<strong>手札に1ドロー</strong>します（自動）。この3枠には<strong>W／A（ウェイト／アクティブ）は表示されません。</strong><strong>ライブ開始</strong>でライブカード以外は<strong>控え室</strong>へ送ります。
             <strong>操作のコツ：</strong>手札で複数選んでからボタンを押すと左→中央→右の<strong>空き</strong>から順に置かれます。取り消しは <kbd>U</kbd>。迷ったらヘルプ（<kbd>?</kbd>）のライブ段落を開いてください。
           </p>
@@ -702,27 +743,53 @@ python3 -m http.server 8080</pre>
                     <span class="live-need-suffix"> ／ 計 <strong id="live-need-heart-total">0</strong></span>
                   </dd>
                   <dt title="（場メンバー所持H＋解決BH）とライブ need_heart の差（残り／不足）">要求色</dt>
-                  <dd id="live-required-colors" class="muted live-stats-colors">—</dd>
-                  <dt
-                    title="盤面ブレード合計（ステージ＋ライブ枠のメンバー blade）＋盤面ハート合計（場メンバー所持H計の表示値）−ライブ合計要求値（need_heart の合計）"
-                  >
-                    非BH許容数
-                  </dt>
-                  <dd id="live-nonbh-tolerance" class="muted live-stats-detail">—</dd>
-                  <dt title="ステージ上メンバーの blade（ブレード）合計のみ">ステB合計</dt>
-                  <dd><strong id="live-total-blade">0</strong></dd>
-                  <dt title="ステージ＋ライブ枠のメンバー所持H合計（play ボーナス ALL の分を含む表示）">場メンバーH計</dt>
-                  <dd><strong id="live-board-h-total">0</strong></dd>
-                  <dt title="ステージ上メンバーの所持ハート内訳">ステH色</dt>
-                  <dd id="live-stage-h-colors" class="muted live-stats-colors">—</dd>
-                  <dt>解決 BH</dt>
-                  <dd id="live-resolution-bh-ref" class="muted live-stats-colors">—</dd>
+                  <dd id="live-required-colors" class="live-stats-colors live-stats-dd-heart">—</dd>
+                  <dt title="ステージ上メンバーの所持ハート内訳">ステージハート</dt>
+                  <dd id="live-stage-h-colors" class="live-stats-colors live-stats-dd-heart">—</dd>
+                  <dt class="live-stats-visually-hidden">非BH許容・ステB・場メンバーH・解決BH</dt>
+                  <dd class="live-stats-metric-strip">
+                    <div
+                      class="live-stats-metric-cell"
+                      title="盤面ブレード合計（ステージ＋ライブ枠のメンバー blade）＋盤面ハート合計（場メンバー所持H計の表示値）−ライブ合計要求値（need_heart の合計）"
+                    >
+                      <span class="live-stats-metric-label live-stats-metric-label--white">非BH許容数</span>
+                      <span id="live-nonbh-tolerance" class="live-stats-metric-answer">—</span>
+                    </div>
+                    <div class="live-stats-metric-cell" title="ステージ上メンバーの blade（ブレード）合計のみ">
+                      <span class="live-stats-metric-label live-stats-metric-label--white">ステB合計</span>
+                      <span id="live-total-blade" class="live-stats-metric-answer">0</span>
+                    </div>
+                    <div class="live-stats-metric-cell" title="ステージ＋ライブ枠のメンバー所持H合計（play ボーナス ALL の分を含む表示）">
+                      <span class="live-stats-metric-label live-stats-metric-label--white">場メンバーH計</span>
+                      <span id="live-board-h-total" class="live-stats-metric-answer">0</span>
+                    </div>
+                    <div class="live-stats-metric-cell" title="解決ゾーンのブレードハート内訳（色ごと）">
+                      <span class="live-stats-metric-label live-stats-metric-label--bh-rainbow">解決 BH</span>
+                      <span id="live-resolution-bh-ref" class="live-stats-metric-answer live-stats-metric-answer--bh">—</span>
+                    </div>
+                  </dd>
                   <dt>判定</dt>
                   <dd id="live-success-verdict-line" class="live-success-verdict-line">—</dd>
+                  <dt title="ライブ効果の固有達成など、打点に手動で足す分（Undo 可）">固有ボーナス点</dt>
+                  <dd class="live-score-bonus-dd">
+                    <span class="live-score-bonus-controls">
+                      <button type="button" class="btn sm secondary" id="btn-live-score-bonus-minus" aria-label="固有ボーナスを1減らす">
+                        −
+                      </button>
+                      <strong id="live-score-effect-bonus-display" class="live-score-bonus-num">0</strong>
+                      <button type="button" class="btn sm secondary" id="btn-live-score-bonus-plus" aria-label="固有ボーナスを1増やす">
+                        ＋
+                      </button>
+                    </span>
+                  </dd>
                 </dl>
                 <div id="live-stats-zone-hint-block" class="live-stats-zone-hint-block hint zone-inline-help deck-prob-explain-hide">
                   <p id="live-zone-hint-nonbh" class="live-zone-hint-line"></p>
                   <p id="live-zone-hint-resolution-bh" class="live-zone-hint-line"></p>
+                  <p id="live-zone-hint-bonus" class="live-zone-hint-line">
+                    <strong>固有ボーナス点</strong>：ライブ効果の固有達成など、打点に手動で足す分です（Undo
+                    可）。ライブ開始後に表示される ± で変更します。
+                  </p>
                 </div>
               </div>
             </details>
@@ -761,13 +828,29 @@ python3 -m http.server 8080</pre>
 
           <section class="zone-block energy-under-stage mt">
             <div class="zone-head">
-              <h3>エネルギー <span class="muted">／ 側面エネ・最大12</span></h3>
+              <h3>
+                エネルギー <span class="muted">／ 側面エネ・最大12</span>
+                <span id="energy-area-count" class="badge energy-area-count-badge" title="現在の側面エネの枚数">0</span>
+              </h3>
               <div>
                 <button type="button" class="btn sm" id="btn-energy-minus">−</button>
                 <button type="button" class="btn sm" id="btn-energy-plus">+</button>
               </div>
             </div>
             <div id="zone-energy" class="card-strip zone-drop energy-zone"></div>
+            <section class="zone-block zone-block-snapshots zone-block-snapshots--under-energy">
+              <h4 class="snapshots-under-energy-title">スナップショット</h4>
+              <div class="snapshots-row btn-row wrap">
+                <span class="snap-label muted">記録:</span>
+                <button type="button" class="btn sm secondary" id="btn-snap-save-1">保存1</button>
+                <button type="button" class="btn sm secondary" id="btn-snap-save-2">保存2</button>
+                <button type="button" class="btn sm secondary" id="btn-snap-save-3">保存3</button>
+                <button type="button" class="btn sm" id="btn-snap-load-1">復元1</button>
+                <button type="button" class="btn sm" id="btn-snap-load-2">復元2</button>
+                <button type="button" class="btn sm" id="btn-snap-load-3">復元3</button>
+              </div>
+              <p class="hint zone-inline-help">スナップショットは sessionStorage に保存されます（タブ単位／閉じると消える場合があります）。</p>
+            </section>
             <p class="hint zone-inline-help">
               ステージの<strong>直下</strong>にある側面エネ用ゾーンです。<strong>＋／− を長押し</strong>で枚数ダイアログ。画像クリックで横向き（ウェイト見た目）の切替。
               ターン開始時にウェイトの分が縦に立ち、枚数が1増える<strong>目安動作</strong>になっています（上限12）。メンバーをステージに載せる前に、ここを確認するとスムーズです。
@@ -860,9 +943,17 @@ python3 -m http.server 8080</pre>
               </h3>
               <span class="muted preview-rail-teaser" id="preview-rail-teaser">クリックで一覧を表示</span>
             </div>
+            <div
+              id="zone-preview-drop-catcher"
+              class="card-strip zone-drop preview-zone preview-zone-strip zone-preview-drop-catcher"
+              aria-label="プレビューへドロップ（一覧が閉じているとき）"
+            ></div>
+            <p class="hint preview-zone-footnote zone-inline-help">
+              ルールに含めない<strong>自分用のワークスペース</strong>です。一覧を閉じたまま、カードを<strong>この欄のあたりまで上げてドロップ</strong>するとプレビューに入ります（控え室と同様）。一覧は<strong>タイトル付近をクリック</strong>で開けます。
+            </p>
             <div id="preview-row" class="preview-row preview-row--collapsed" aria-hidden="true">
               <p class="hint preview-zone-explainer zone-inline-help">
-                ルールに含めない<strong>自分用のワークスペース</strong>です。カードを一時退避したり、配信・対面では「公開してよい状態だけ手札とは別に置く」「組み換え途中の束」などに使えます。
+                カードを一時退避したり、配信・対面では「公開してよい状態だけ手札とは別に置く」「組み換え途中の束」などに使えます。
                 ライブ計算・解決の統計には<strong>含まれません</strong>。Undo の対象にはなるので、試行錯誤の置き場としても使えます。
               </p>
               <div
@@ -1013,7 +1104,7 @@ python3 -m http.server 8080</pre>
           <details open>
             <summary><strong>左：検索・絞り込み</strong></summary>
             <p>
-              商品・シリーズ・ユニット・コスト・種別（メンバー／ライブ）・ブレードハート色・ハート色でカード一覧を絞り込めます。<strong>ブレードハート種別</strong>の「非BH」「音符ライブ」は、色チェックと<strong>どちらか一方でも合えば</strong>表示されます（複数色にチェックが付いている場合も同様に OR です）。
+              商品・シリーズ・ユニット・コスト・種別（メンバー／ライブ）・ブレードハート色・ハート色でカード一覧を絞り込めます。<strong>ブレードハート種別</strong>の「非BH」「音符ライブ」は、色チェックと<strong>どちらか一方でも合えば</strong>表示されます（複数色にチェックが付いている場合も同様に OR です）。音符ライブはエールでスコアが増える系のライブ（b_all のみのライブは除く）です。
             </p>
           </details>
           <details>
@@ -1079,7 +1170,7 @@ python3 -m http.server 8080</pre>
           「<strong>ターン開始</strong>」を押すまでマリガンできます。手札カード中央付近の<strong>チェック</strong>で複数選択、「<strong>マリガン実行</strong>」で選んだ枚数を山札に戻してシャッフルし、同じ枚数をドローします。<strong>1枚も選ばずに実行可能</strong>（そのときはシャッフル・ドローはしません）。リセット後も「ターン開始」までこのモードになります。
         </p>
         <p>
-          手札欄の<strong>ライブ進行ボタン</strong>では、まず「<strong>ライブターン開始</strong>」でライブターンモードに入ります（<strong>成功したライブ</strong>置き場のカードはそのまま残ります）。手札<strong>中央のチェック</strong>で複数選び、同じボタンが「<strong>ライブエリアへ</strong>」に変わってからそれを押すと左→中央→右の<strong>空き枠に順に配置</strong>できます。配置した<strong>メンバー／ライブ</strong>1枚につき<strong>山札から手札へ1ドロー</strong>します。<strong>ライブターン中のみ、3枠は横向き・裏見えです。</strong>「<strong>ライブ開始</strong>」で<strong>ライブカード以外</strong>を<strong>控え室</strong>へ送ってモード終了すると、ライブカードが<strong>表面の縦向き</strong>になり、このタイミングで中央に<strong>ライブの計算</strong>パネル（概要と必要ハート・ステB・場メンバーH計・要求色・ステH色・解決 BH・判定）が出ます。左の<strong>ライブ成功確率</strong>も、表面が見えるこのタイミングから再計算されます。<strong>ライブ成功判定</strong>は、ライブの need_heart に対し<strong>場にいるメンバーの所持ハート（ステージ＋ライブ枠）</strong>と<strong>ブレード枚数で捲れた解決カードの BH（blade_heart）</strong>を足し合わせた供給で照合します（ターン開始前はマリガン中のみのため、これらは無効になります）。
+          手札欄の<strong>ライブ進行ボタン</strong>では、まず「<strong>ライブターン開始</strong>」でライブターンモードに入ります（<strong>成功したライブ</strong>置き場のカードはそのまま残ります）。手札<strong>中央のチェック</strong>で複数選び、同じボタンが「<strong>ライブエリアへ</strong>」に変わってからそれを押すと左→中央→右の<strong>空き枠に順に配置</strong>できます。配置した<strong>メンバー／ライブ</strong>1枚につき<strong>山札から手札へ1ドロー</strong>します。<strong>ライブターン中のみ、3枠は横向き・裏見えです。</strong>「<strong>ライブ開始</strong>」で<strong>ライブカード以外</strong>を<strong>控え室</strong>へ送ってモード終了すると、ライブカードが<strong>表面の縦向き</strong>になり、このタイミングで中央に<strong>ライブの計算</strong>パネル（概要と必要ハート・ステB・場メンバーH計・要求色・ステージハート・解決 BH・判定）が出ます。左の<strong>ライブ成功確率</strong>も、表面が見えるこのタイミングから再計算されます。<strong>ライブ成功判定</strong>は、ライブの need_heart に対し<strong>場にいるメンバーの所持ハート（ステージ＋ライブ枠）</strong>と<strong>ブレード枚数で捲れた解決カードの BH（blade_heart）</strong>を足し合わせた供給で照合します（ターン開始前はマリガン中のみのため、これらは無効になります）。
         </p>
         <p>
           PC でもタブレットでも、ドラッグでカードを移動します。ドラッグ開始時点から取り消し対象になります。<strong>U</strong> でひとつ戻す、<strong>R</strong> でひとつ進む、<strong>?</strong> でこのダイアログです。
@@ -1114,41 +1205,54 @@ python3 -m http.server 8080</pre>
       <h2 id="dlg-member-hb-title">所持H／ブレードを追加</h2>
       <p id="dlg-member-hb-lead" class="muted dlg-member-hb-lead"></p>
       <p class="hint">
-        メンバーDBの<code>base_heart</code>・<code>blade</code>に<strong>加算</strong>して集計します（Undo 可能）。<strong>場にいるメンバー</strong>への所持H加算は<strong>ライブ成功判定の「場メンバー所持H」に反映</strong>されます。ブレード加算は捲り枚数の目安などに影響します。
-        右の数値は<strong>クリックで +1</strong>（<kbd>Shift</kbd>+クリックで −1、上限 999）。
+        メンバーDBの<code>base_heart</code>・<code>blade</code>に<strong>加算</strong>して集計します（Undo 可能）。<strong>常時</strong>はターンをまたいで残り、<strong>登場／起動／開始時</strong>はライブ終了（ライブターンを終了）で消えます。<strong>場にいるメンバー</strong>への所持H加算は<strong>ライブ成功判定の「場メンバー所持H」に反映</strong>されます。
+        数値は<strong>クリックで +1</strong>（<kbd>Shift</kbd>+クリックで −1、上限 999）。
       </p>
       <div class="dlg-member-hb-fields" role="group" aria-label="追加する所持ハートとブレード">
+        <div class="member-hb-row member-hb-row--head" aria-hidden="true">
+          <span class="member-hb-lab"></span>
+          <span class="member-hb-colhead">常時</span>
+          <span class="member-hb-colhead">登場／起動／開始時</span>
+        </div>
         <div class="member-hb-row">
           <span class="member-hb-lab">桃 H</span>
-          <button type="button" class="member-hb-step" data-member-hb-slot="1" aria-label="桃H 追加分（クリックで増加）">0</button>
+          <button type="button" class="member-hb-step" data-member-hb-slot="1" data-member-hb-scope="always" aria-label="桃H 常時">0</button>
+          <button type="button" class="member-hb-step" data-member-hb-slot="1" data-member-hb-scope="turn" aria-label="桃H 登場など">0</button>
         </div>
         <div class="member-hb-row">
           <span class="member-hb-lab">赤 H</span>
-          <button type="button" class="member-hb-step" data-member-hb-slot="2" aria-label="赤H 追加分（クリックで増加）">0</button>
+          <button type="button" class="member-hb-step" data-member-hb-slot="2" data-member-hb-scope="always" aria-label="赤H 常時">0</button>
+          <button type="button" class="member-hb-step" data-member-hb-slot="2" data-member-hb-scope="turn" aria-label="赤H 登場など">0</button>
         </div>
         <div class="member-hb-row">
           <span class="member-hb-lab">黄 H</span>
-          <button type="button" class="member-hb-step" data-member-hb-slot="3" aria-label="黄H 追加分（クリックで増加）">0</button>
+          <button type="button" class="member-hb-step" data-member-hb-slot="3" data-member-hb-scope="always" aria-label="黄H 常時">0</button>
+          <button type="button" class="member-hb-step" data-member-hb-slot="3" data-member-hb-scope="turn" aria-label="黄H 登場など">0</button>
         </div>
         <div class="member-hb-row">
           <span class="member-hb-lab">緑 H</span>
-          <button type="button" class="member-hb-step" data-member-hb-slot="4" aria-label="緑H 追加分（クリックで増加）">0</button>
+          <button type="button" class="member-hb-step" data-member-hb-slot="4" data-member-hb-scope="always" aria-label="緑H 常時">0</button>
+          <button type="button" class="member-hb-step" data-member-hb-slot="4" data-member-hb-scope="turn" aria-label="緑H 登場など">0</button>
         </div>
         <div class="member-hb-row">
           <span class="member-hb-lab">青 H</span>
-          <button type="button" class="member-hb-step" data-member-hb-slot="5" aria-label="青H 追加分（クリックで増加）">0</button>
+          <button type="button" class="member-hb-step" data-member-hb-slot="5" data-member-hb-scope="always" aria-label="青H 常時">0</button>
+          <button type="button" class="member-hb-step" data-member-hb-slot="5" data-member-hb-scope="turn" aria-label="青H 登場など">0</button>
         </div>
         <div class="member-hb-row">
           <span class="member-hb-lab">紫 H</span>
-          <button type="button" class="member-hb-step" data-member-hb-slot="6" aria-label="紫H 追加分（クリックで増加）">0</button>
+          <button type="button" class="member-hb-step" data-member-hb-slot="6" data-member-hb-scope="always" aria-label="紫H 常時">0</button>
+          <button type="button" class="member-hb-step" data-member-hb-slot="6" data-member-hb-scope="turn" aria-label="紫H 登場など">0</button>
         </div>
         <div class="member-hb-row">
           <span class="member-hb-lab">ALL（任意用）</span>
-          <button type="button" class="member-hb-step" data-member-hb-slot="7" aria-label="ALL 追加分（クリックで増加）">0</button>
+          <button type="button" class="member-hb-step" data-member-hb-slot="7" data-member-hb-scope="always" aria-label="ALL 常時">0</button>
+          <button type="button" class="member-hb-step" data-member-hb-slot="7" data-member-hb-scope="turn" aria-label="ALL 登場など">0</button>
         </div>
         <div class="member-hb-row member-hb-row--blade">
           <span class="member-hb-lab">ブレード追加</span>
-          <button type="button" class="member-hb-step" data-member-hb-blade aria-label="ブレード追加分（クリックで増加）">0</button>
+          <button type="button" class="member-hb-step" data-member-hb-blade data-member-hb-scope="always" aria-label="ブレード 常時">0</button>
+          <button type="button" class="member-hb-step" data-member-hb-blade data-member-hb-scope="turn" aria-label="ブレード 登場など">0</button>
         </div>
       </div>
       <div class="btn-row dlg-member-hb-actions">

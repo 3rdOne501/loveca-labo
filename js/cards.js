@@ -543,6 +543,41 @@ export function uniqueCosts(cards) {
   return [...s].sort((a, b) => a - b);
 }
 
+/** 音符ライブ判定から除外: blade_heart に b_all（ALL ブレード）を持つライブ */
+export function liveCardHasExcludedAllBladeHeart(card) {
+  const bh = card && card.blade_heart;
+  if (!bh || typeof bh !== "object" || Array.isArray(bh)) return false;
+  const v = Number(bh.b_all);
+  return Number.isFinite(v) && v > 0;
+}
+
+const LIVE_START_FOR_NOTE_LIVE = "{{live_start.png|ライブ開始時}}";
+const LIVE_SUCCESS_SPLIT = "{{live_success.png|ライブ成功時}}";
+
+/** 能力文だけでは判定しづらい代表的な音符ライブ（表記ゆれは normalize に合わせる） */
+const NOTE_LIVE_EXPLICIT_CARD_NOS = new Set(
+  ["PL!-sd1-019-SD", "PL!S-bp2-024-L", "PL!S-bp5-023-L"].map((x) => normalizeCardCatalogLookupKey(x)),
+);
+
+/**
+ * 音符ライブ: エール（ライブ開始時の解決めくり）でスコアが増える系のライブの総称。
+ * ALL ブレードハート（b_all）を持つライブは音符に含めない。
+ * 「ライブ開始時」〜「ライブ成功時」手前の文中にスコア加算が書かれているか、明示リストに一致。
+ */
+export function cardIsNoteLiveCatalog(card) {
+  if (!card || card.type !== T_LIVE) return false;
+  if (liveCardHasExcludedAllBladeHeart(card)) return false;
+  const no = normalizeCardCatalogLookupKey(card.card_no || "");
+  if (NOTE_LIVE_EXPLICIT_CARD_NOS.has(no)) return true;
+  const ab = String(card.ability || "");
+  if (!ab.includes(LIVE_START_FOR_NOTE_LIVE)) return false;
+  const tail = ab.split(LIVE_START_FOR_NOTE_LIVE)[1];
+  if (!tail) return false;
+  const seg = tail.split(LIVE_SUCCESS_SPLIT)[0];
+  if (!/スコア/.test(seg)) return false;
+  return /[＋+]/.test(seg) || /プラス/.test(seg);
+}
+
 /** @returns {Set<number>} blade_heart が寄与する表示スロット 1〜7（b_all は 7） */
 export function bladeHeartSlotsOnCard(card) {
   /** @type {Set<number>} */
@@ -605,7 +640,7 @@ export function filterCards(cards, opts) {
         });
       }
       if (bhNonBh && !hasBh) hit = true;
-      if (bhNoteLive && c.type === T_LIVE && hasBh) hit = true;
+      if (bhNoteLive && cardIsNoteLiveCatalog(c)) hit = true;
       if (!hit) return false;
     }
     if (heartSel && heartSel.size > 0) {

@@ -5,6 +5,20 @@ import { initDeckBuilder, loadDeckBundleFromStorage } from "./deckbuilder.js";
 import { mountSimulator, teardownDeckPileLayoutWatchers } from "./simulator.js";
 import { showToast } from "./ui.js";
 
+/** 強制リロード用の一時クエリをアドレスバーから外す（ブックマーク汚染防止） */
+function stripHardReloadQueryFromUrl() {
+  try {
+    const u = new URL(window.location.href);
+    if (!u.searchParams.has("_reload")) return;
+    u.searchParams.delete("_reload");
+    const q = u.searchParams.toString();
+    history.replaceState({}, "", u.pathname + (q ? "?" + q : "") + u.hash);
+  } catch (_) {
+    /* noop */
+  }
+}
+stripHardReloadQueryFromUrl();
+
 let appStarted = false;
 
 function clearPlayResumeStorage() {
@@ -253,17 +267,32 @@ document.getElementById("boot-retry")?.addEventListener("click", () => {
 });
 
 function wirePageReloadButtons() {
-  const hardReload = (ev) => {
+  if (typeof window !== "undefined" && window.__llocgPageReloadDelegated === "1") return;
+  if (typeof window !== "undefined") window.__llocgPageReloadDelegated = "1";
+
+  const doHardReload = (ev) => {
     if (ev) {
       ev.preventDefault();
       ev.stopPropagation();
     }
-    window.setTimeout(() => {
-      window.location.reload();
-    }, 0);
+    const u = new URL(window.location.href);
+    u.searchParams.set("_reload", String(Date.now()));
+    window.location.replace(u.toString());
   };
-  document.getElementById("btn-reload-builder")?.addEventListener("click", hardReload);
-  document.getElementById("btn-reload-play")?.addEventListener("click", hardReload);
+
+  // プレイ画面初期化で DOM が差し替わると直接バインドが死ぬため document に委譲する
+  document.addEventListener(
+    "click",
+    function (ev) {
+      const t = ev.target;
+      const el = t instanceof Element ? t : t && /** @type {Node} */ (t).parentElement;
+      if (!el || typeof el.closest !== "function") return;
+      const hit = el.closest("#btn-reload-builder, #btn-reload-play");
+      if (!hit) return;
+      doHardReload(ev);
+    },
+    { capture: true },
+  );
 }
 
 if (document.readyState === "loading") {

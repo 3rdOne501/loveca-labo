@@ -661,6 +661,24 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
   background: rgba(10, 6, 16, 0.65);
   color: var(--text);
 }
+.filter-type-chk-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1rem;
+  margin-top: 0.25rem;
+}
+.filter-type-chk {
+  font-size: 0.85rem;
+}
+.filter-fav-only-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.35rem 0 0.15rem;
+  font-size: 0.85rem;
+  color: var(--text);
+}
 .deck-panel-section {
   border: 1px solid rgba(255, 140, 190, 0.15);
   border-radius: var(--radius-sm);
@@ -714,6 +732,34 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
   font-size: 0.78em;
 }
 .card-thumb img { width: 100%; height: auto; display: block; vertical-align: middle; }
+.card-thumb-fav {
+  position: absolute;
+  right: 4px;
+  bottom: calc(2.15rem + 4px);
+  z-index: 6;
+  width: 1.65rem;
+  height: 1.65rem;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 999px;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  color: rgba(255, 240, 160, 0.55);
+  background: rgba(8, 4, 14, 0.55);
+  box-shadow: 0 0 0 1px rgba(255, 200, 120, 0.25);
+  transition: color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+.card-thumb-fav:hover {
+  color: #ffe566;
+  transform: scale(1.06);
+  box-shadow: 0 0 0 1px rgba(255, 220, 140, 0.5), 0 0 12px rgba(255, 200, 80, 0.25);
+}
+.card-thumb-fav.is-on {
+  color: #ffd54a;
+  text-shadow: 0 0 8px rgba(255, 210, 90, 0.75);
+}
 .deck-builder-card-thumb { cursor: zoom-in; }
 .card-thumb .thumb-cap {
   display: block; font-size: 0.62rem; padding: 0.2rem 0.25rem; line-height: 1.15;
@@ -996,6 +1042,35 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
 .zone-block-preview .preview-row--collapsed #zone-preview {
   display: none;
 }
+.zone-block-preview:has(.preview-row:not(.preview-row--collapsed)) #zone-preview-drop-catcher {
+  display: none !important;
+}
+.zone-preview-drop-catcher {
+  min-height: min(9.5rem, 28vh);
+  align-items: center;
+  justify-content: center;
+}
+.zone-preview-drop-catcher:empty {
+  position: relative;
+}
+.zone-preview-drop-catcher:empty::before {
+  content: "一覧が閉じているとき：ここへドロップでプレビューへ";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(180, 220, 255, 0.72);
+  pointer-events: none;
+  line-height: 1.35;
+}
+.zone-block-preview .preview-zone-footnote {
+  margin-top: 0.28rem;
+}
 
 .live-turn-stats-wrap {
   margin: 0.5rem 0 0.85rem;
@@ -1062,10 +1137,127 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
 }
 .live-turn-stats-grid {
   display: grid;
-  grid-template-columns: minmax(6.5rem, 9.2rem) 1fr;
-  gap: 0.25rem 0.65rem;
+  grid-template-columns: minmax(5.5rem, 8.5rem) 1fr;
+  gap: 0.32rem 0.55rem;
   margin: 0;
   font-size: 0.8rem;
+  align-items: start;
+}
+.live-stats-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.live-stats-metric-strip {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, auto);
+  gap: 0.4rem 0.55rem;
+  padding: 0.4rem 0.45rem;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(120, 200, 255, 0.14);
+  width: fit-content;
+  max-width: 100%;
+  margin-right: auto;
+  margin-left: 0;
+  justify-items: start;
+}
+@media (max-width: 720px) {
+  .live-stats-metric-strip {
+    grid-template-columns: repeat(2, auto);
+  }
+}
+.live-stats-metric-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+  min-width: 0;
+}
+.live-stats-metric-label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+.live-stats-metric-label--white {
+  color: rgba(252, 252, 255, 0.96);
+}
+.live-stats-metric-label--bh-rainbow {
+  font-weight: 800;
+  background: linear-gradient(90deg, #ff9eb5, #e53935, #fbc02d, #43a047, #1e88e5, #8e24aa);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.live-stats-metric-answer {
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #ff7eb8;
+  line-height: 1.15;
+  letter-spacing: 0.03em;
+  text-shadow: 0 0 14px rgba(255, 120, 200, 0.35);
+  word-break: break-word;
+}
+.live-stats-metric-answer--rich {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: rgba(255, 230, 245, 0.92);
+  text-shadow: none;
+}
+.live-turn-stats-panel .live-stats-dd-heart,
+.live-turn-stats-panel .live-stats-colors.live-stats-dd-heart {
+  font-size: 0.88rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
+.live-turn-stats-panel .live-stats-heart-sep {
+  color: rgba(200, 215, 235, 0.55);
+  font-weight: 600;
+  font-size: 0.78em;
+  margin: 0 0.06em;
+}
+.live-stats-heart-seg--s1 {
+  color: #ff9eb5;
+}
+.live-stats-heart-seg--s2 {
+  color: #ff6b6b;
+}
+.live-stats-heart-seg--s3 {
+  color: #ffe066;
+}
+.live-stats-heart-seg--s4 {
+  color: #69db7c;
+}
+.live-stats-heart-seg--s5 {
+  color: #74c0fc;
+}
+.live-stats-heart-seg--s6 {
+  color: #da77f2;
+}
+.live-stats-heart-seg--s7 {
+  background: linear-gradient(90deg, #ff9eb5, #e53935, #fbc02d, #43a047, #1e88e5, #8e24aa);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 800;
+}
+.live-stats-heart-seg--s0 {
+  color: #c8d4e8;
+}
+.live-stats-heart-seg--s99 {
+  color: #b8c4d8;
+}
+.live-stats-heart-seg--plain {
+  color: #f0d4e8;
+  font-weight: 600;
 }
 .live-turn-stats-panel dt {
   margin: 0;
@@ -1099,6 +1291,13 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
 }
 .live-verdict--success {
   color: #7ee0b8;
+  padding: 0.2rem 0.35rem;
+  border-radius: 8px;
+  background: rgba(40, 120, 90, 0.22);
+  border: 1px solid rgba(120, 230, 190, 0.45);
+  box-shadow:
+    0 0 12px rgba(100, 220, 170, 0.45),
+    0 0 28px rgba(80, 200, 160, 0.2);
 }
 .live-verdict--fail {
   color: #ff9a8a;
@@ -1206,6 +1405,9 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
    * --hand-overlap-frac は負の係数（幅に対する重なり）。密集時は overlap-strong／overlap-heavy を併用。
    */
   --hand-overlap-frac: -0.36;
+}
+.hand-zone.hand-zone--overlap.hand-zone--overlap-light {
+  --hand-overlap-frac: -0.1;
 }
 .hand-zone.hand-zone--overlap.hand-zone--overlap-strong {
   --hand-overlap-frac: -0.56;
@@ -1350,7 +1552,7 @@ body.play-mode .card-item .live-turn-pick {
   filter: drop-shadow(0 0 2px rgba(255, 200, 140, 0.45));
 }
 .dlg-member-hb {
-  max-width: 22rem;
+  max-width: 28rem;
 }
 .dlg-member-hb-lead {
   margin: 0 0 0.4rem;
@@ -1364,19 +1566,31 @@ body.play-mode .card-item .live-turn-pick {
   margin: 0.55rem 0 0.75rem;
 }
 .member-hb-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(5.5rem, 1fr) minmax(3.25rem, 1fr) minmax(3.25rem, 1fr);
   align-items: center;
-  justify-content: space-between;
-  gap: 0.65rem;
+  gap: 0.45rem;
   font-size: 0.82rem;
+}
+.member-hb-row--head {
+  opacity: 0.92;
+  margin-bottom: 0.1rem;
+}
+.member-hb-colhead {
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-align: center;
+  font-weight: 700;
+  line-height: 1.2;
 }
 .member-hb-lab {
   color: var(--muted);
   flex-shrink: 0;
 }
 .dlg-member-hb-fields .member-hb-step {
-  width: 4.25rem;
-  flex-shrink: 0;
+  width: 100%;
+  max-width: 5rem;
+  justify-self: center;
   box-sizing: border-box;
   font: inherit;
   font-variant-numeric: tabular-nums;
@@ -1499,6 +1713,13 @@ body.play-mode .card-item .live-turn-pick {
 .card-item--lc-inactive .card-img {
   opacity: 0.7;
   filter: grayscale(0.2) brightness(0.9);
+}
+
+/* 側面エネ: ウェイト（横向き）でも画像を薄くしない */
+body.play-mode .energy-zone .card-item--lc-wait .card-img,
+body.play-mode .energy-zone .card-item--lc-wait.card-item--lc-inactive .card-img {
+  opacity: 1;
+  filter: none;
 }
 
 /** ステージ: HUD のターンカウントが載せターンより進んだメンバーを薄く発光 */
@@ -1918,37 +2139,222 @@ body.play-mode .stage-slot .card-item[data-type="メンバー"] {
 
 /** メンバー拡大: ライブ行・側面エネ帯をやや縮小しステージのカードを大きく */
 body.play-mode.stage-member-emphasis #live-row.three-cols {
-  transform: scale(0.93);
+  transform: scale(0.84);
   transform-origin: top center;
 }
 body.play-mode.stage-member-emphasis .energy-under-stage {
-  transform: scale(0.94);
+  transform: scale(0.82);
   transform-origin: top center;
 }
 body.play-mode.stage-member-emphasis .stage-slot.card-strip .card-item {
-  width: calc(var(--loveca-play-w) * 1.1);
+  width: calc(var(--loveca-play-w) * 1.26);
 }
 body.play-mode.stage-member-emphasis .stage-slot.card-strip .card-img {
-  width: calc(var(--loveca-play-w) * 1.1);
+  width: calc(var(--loveca-play-w) * 1.26);
   height: auto;
 }
 body.play-mode.stage-member-emphasis .stage-slot.card-strip .card-img.rotated {
-  width: calc(var(--loveca-play-w) * 1.1);
+  width: calc(var(--loveca-play-w) * 1.26);
 }
 
 body.play-mode .card-strip.tall {
   min-height: min(132px, 22vh);
 }
 
-/* ウェイト状態メンバー（縦コンテナで90°回転）と同程度の縦確保 — ステージスロットに近い */
+/* ライブ置き場：1枚をスロットの中央（縦横）に配置 */
 body.play-mode .live-slot.card-strip {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  align-content: center;
   min-height: calc(var(--loveca-play-h) + 30px);
   max-height: none;
   padding: 8px 6px;
   gap: 6px;
-  align-items: center;
+  box-sizing: border-box;
+}
+/* ラベル下のドロップ枠いっぱいに広げ、その中でカードを中央へ */
+body.play-mode #live-row .slot-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-height: 0;
+}
+body.play-mode #live-row .slot-wrap--live-center {
+  align-items: stretch;
+}
+
+/* ライブ中央列: スコア表示（ライブ開始後） */
+body.play-mode .live-score-center-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
   justify-content: center;
-  flex-wrap: nowrap;
+  gap: 0.25rem 0.55rem;
+  margin-top: 0.32rem;
+  padding: 0.32rem 0.42rem 0.38rem;
+  border-radius: 10px;
+  background: rgba(18, 12, 28, 0.62);
+  border: 1px solid rgba(255, 190, 230, 0.14);
+  box-sizing: border-box;
+}
+body.play-mode .live-score-center-bar__label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+}
+body.play-mode .live-score-center-bar__main {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.06em;
+}
+body.play-mode .live-score-center-bar__num {
+  font-family: var(--font-display);
+  font-size: clamp(1.45rem, 3.4vw, 2.05rem);
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  line-height: 1;
+}
+body.play-mode .live-score-center-bar__unit {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--muted);
+}
+body.play-mode .live-score-center-bar--placeholder {
+  border-color: rgba(120, 140, 160, 0.22);
+  background: rgba(14, 18, 28, 0.55);
+}
+body.play-mode .live-score-center-bar--placeholder .live-score-center-bar__num.live-score-num--placeholder {
+  color: rgba(170, 182, 202, 0.88);
+  text-shadow: none;
+  font-weight: 800;
+}
+body.play-mode .live-score-center-bar--fail .live-score-center-bar__num {
+  color: #94a3b8;
+  text-shadow: none;
+}
+body.play-mode .live-score-center-bar--muted .live-score-center-bar__num {
+  color: #7c8494;
+  text-shadow: none;
+}
+body.play-mode .live-score-center-bar__note-wrap {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+body.play-mode .live-score-center-bar__note.live-score-note-pink {
+  color: #ff6eb4;
+  text-shadow: 0 0 10px rgba(255, 110, 200, 0.55);
+}
+
+/* 成功ライブスコア: 2 点ごとに色を強め、22 点以上は白 */
+body.play-mode .live-score-center-bar__num.live-score-num--tier-0 {
+  color: #c8e6ff;
+  text-shadow: 0 0 8px rgba(160, 210, 255, 0.35);
+}
+body.play-mode .live-score-center-bar__num.live-score-num--tier-1 {
+  color: #a8d8ff;
+  text-shadow: 0 0 10px rgba(130, 200, 255, 0.45);
+}
+body.play-mode .live-score-center-bar__num.live-score-num--tier-2 {
+  color: #9af0e8;
+  text-shadow: 0 0 12px rgba(100, 230, 220, 0.5);
+}
+body.play-mode .live-score-center-bar__num.live-score-num--tier-3 {
+  color: #b8f5c8;
+  text-shadow: 0 0 12px rgba(120, 255, 180, 0.5);
+}
+body.play-mode .live-score-center-bar__num.live-score-num--tier-4 {
+  color: #d4f88a;
+  text-shadow: 0 0 14px rgba(200, 255, 120, 0.55);
+}
+body.play-mode .live-score-center-bar__num.live-score-num--tier-5 {
+  color: #ffe88a;
+  text-shadow: 0 0 14px rgba(255, 230, 130, 0.6);
+}
+body.play-mode .live-score-center-bar__num.live-score-num--tier-6 {
+  color: #ffd48a;
+  text-shadow: 0 0 16px rgba(255, 200, 120, 0.65);
+}
+body.play-mode .live-score-center-bar__num.live-score-num--tier-7 {
+  color: #ffb86a;
+  text-shadow: 0 0 16px rgba(255, 180, 100, 0.65);
+}
+body.play-mode .live-score-center-bar__num.live-score-num--tier-8 {
+  color: #ff9cf0;
+  text-shadow: 0 0 18px rgba(255, 150, 240, 0.65);
+}
+body.play-mode .live-score-center-bar__num.live-score-num--tier-9 {
+  color: #e8b4ff;
+  text-shadow: 0 0 18px rgba(220, 160, 255, 0.7);
+}
+body.play-mode .live-score-center-bar__num.live-score-num--tier-10 {
+  color: #ffd4ff;
+  text-shadow:
+    0 0 20px rgba(255, 200, 255, 0.75),
+    0 0 36px rgba(180, 220, 255, 0.35);
+}
+/* 14〜21 点: 従来 21 点付近の強いグローをここから適用（22 点以上は ge22 で白） */
+body.play-mode .live-score-center-bar__num.live-score-num--glow-14plus {
+  color: #ffd4ff;
+  text-shadow:
+    0 0 20px rgba(255, 200, 255, 0.75),
+    0 0 36px rgba(180, 220, 255, 0.35),
+    0 0 48px rgba(255, 180, 240, 0.25);
+}
+body.play-mode .live-score-center-bar__num.live-score-num--ge22 {
+  color: #f2f4f8 !important;
+  text-shadow: none !important;
+}
+
+.live-area-col-heading {
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+.zone-block-snapshots--under-energy {
+  margin-top: 0.55rem;
+  margin-bottom: 0;
+  padding-top: 0.45rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.snapshots-under-energy-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+.energy-area-count-badge {
+  margin-left: 0.35rem;
+  vertical-align: middle;
+}
+.live-score-bonus-dd {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: flex-start;
+}
+.live-score-bonus-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.live-score-bonus-num {
+  min-width: 1.5rem;
+  text-align: center;
+  font-size: 1rem;
+}
+.live-score-bonus-hint {
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+body.play-mode #live-row .live-slot.card-strip {
+  flex: 1 1 auto;
 }
 
 /** デッキ確率の補足文など: ゾーン説明オフ時は非表示（オンのときだけ見える） */
@@ -1969,6 +2375,24 @@ body.play-mode .success-live-strip.card-strip {
 }
 body.play-mode .success-live-strip.card-strip .card-item + .card-item {
   margin-left: calc(var(--loveca-play-w) * -0.55);
+}
+
+body.play-mode .success-live-strip .card-item--success-live-glow .card-img {
+  filter: drop-shadow(0 0 8px rgba(255, 220, 140, 0.9)) drop-shadow(0 0 20px rgba(255, 140, 200, 0.45));
+  border-radius: 6px;
+}
+
+body.play-mode .live-slot .card-item.card-item--live-venue-boost {
+  overflow: visible;
+  z-index: 2;
+}
+body.play-mode .live-slot .card-item--live-venue-boost .card-img {
+  transform: scale(2);
+  transform-origin: center center;
+}
+body.play-mode .live-slot .card-item.card-item--live-h.card-item--live-venue-boost .card-img.rotated {
+  transform: rotate(90deg) scale(2);
+  transform-origin: center center;
 }
 
 body.play-mode .success-live-zone-shell {
@@ -2467,18 +2891,95 @@ table.deck-odds-grid {
   color: rgba(255, 230, 245, 0.95);
   min-width: 3.85rem;
 }
-.deck-odds-cell--high {
-  color: rgba(168, 255, 210, 0.98);
-  text-shadow: 0 0 12px rgba(120, 255, 180, 0.32);
+/* 確率帯（5% 刻み p0〜p20）：30%=赤黒、50%=真っ赤、中央はマイルド化、85% 前後から発光、95%=最大 */
+.deck-odds-cell--pct {
+  font-weight: 650;
 }
-.deck-odds-cell--mid {
-  color: rgba(255, 230, 145, 0.96);
-}
-.deck-odds-cell--low {
-  color: rgba(255, 180, 180, 0.55);
+.deck-odds-cell--p0,
+.deck-odds-cell--p1,
+.deck-odds-cell--p2,
+.deck-odds-cell--p3,
+.deck-odds-cell--p4,
+.deck-odds-cell--p5 {
+  color: rgba(150, 165, 190, 0.72);
   font-weight: 500;
 }
-
+.deck-odds-cell--p6 {
+  color: #3d1818;
+  background: rgba(40, 10, 14, 0.45);
+  border-radius: 4px;
+  font-weight: 700;
+}
+.deck-odds-cell--p7 {
+  color: #6b1518;
+  font-weight: 700;
+}
+.deck-odds-cell--p8 {
+  color: #9a121c;
+  font-weight: 700;
+}
+.deck-odds-cell--p9 {
+  color: #c40a14;
+  font-weight: 800;
+}
+.deck-odds-cell--p10 {
+  color: #ff1520;
+  font-weight: 800;
+  text-shadow: 0 0 8px rgba(255, 30, 40, 0.45);
+}
+.deck-odds-cell--p11 {
+  color: #ff6a4d;
+  font-weight: 700;
+}
+.deck-odds-cell--p12 {
+  color: #ff9f6e;
+  font-weight: 700;
+}
+.deck-odds-cell--p13 {
+  color: #f0c86a;
+  font-weight: 700;
+}
+.deck-odds-cell--p14 {
+  color: #c8e085;
+  font-weight: 680;
+}
+.deck-odds-cell--p15 {
+  color: #9ee0a8;
+  font-weight: 670;
+}
+.deck-odds-cell--p16 {
+  color: #7adccd;
+  font-weight: 660;
+}
+.deck-odds-cell--p17 {
+  color: #8af0ff;
+  font-weight: 700;
+  text-shadow:
+    0 0 10px rgba(120, 230, 255, 0.55),
+    0 0 22px rgba(100, 200, 255, 0.25);
+}
+.deck-odds-cell--p18 {
+  color: #b8f6ff;
+  font-weight: 700;
+  text-shadow:
+    0 0 12px rgba(150, 240, 255, 0.65),
+    0 0 28px rgba(120, 220, 255, 0.35);
+}
+.deck-odds-cell--p19 {
+  color: #e8fbff;
+  font-weight: 800;
+  text-shadow:
+    0 0 14px rgba(180, 255, 255, 0.75),
+    0 0 36px rgba(140, 230, 255, 0.45);
+}
+.deck-odds-cell--p20 {
+  color: #ffffff;
+  font-weight: 900;
+  text-shadow:
+    0 0 16px rgba(200, 255, 255, 0.95),
+    0 0 40px rgba(160, 240, 255, 0.55),
+    0 0 56px rgba(255, 200, 255, 0.35);
+}
 /* 到達ターン要約 */
 .deck-odds-grid-summary-wrap {
   margin: 0.6rem 0 0;
@@ -2547,9 +3048,114 @@ table.deck-odds-grid {
   padding: 0.06em 0.12em;
   border-radius: 0.4rem;
 }
+.deck-odds-pct--p0,
+.deck-odds-pct--p1,
+.deck-odds-pct--p2,
+.deck-odds-pct--p3,
+.deck-odds-pct--p4,
+.deck-odds-pct--p5 {
+  color: rgba(155, 170, 198, 0.9);
+  text-shadow: none;
+  font-weight: 700;
+}
+.deck-odds-pct--p6 {
+  color: #4a1518;
+  text-shadow: 0 0 6px rgba(60, 10, 20, 0.5);
+  font-weight: 800;
+}
+.deck-odds-pct--p7 {
+  color: #7a1218;
+  text-shadow: 0 0 8px rgba(120, 20, 30, 0.45);
+  font-weight: 800;
+}
+.deck-odds-pct--p8 {
+  color: #b00812;
+  text-shadow: 0 0 10px rgba(200, 20, 40, 0.5);
+  font-weight: 800;
+}
+.deck-odds-pct--p9 {
+  color: #e0000c;
+  text-shadow: 0 0 12px rgba(255, 20, 40, 0.55);
+  font-weight: 800;
+}
+.deck-odds-pct--p10 {
+  color: #ff0a14;
+  text-shadow: 0 0 14px rgba(255, 40, 50, 0.65);
+  font-weight: 900;
+}
+.deck-odds-pct--p11 {
+  color: #ff6a45;
+  text-shadow: none;
+  font-weight: 820;
+}
+.deck-odds-pct--p12 {
+  color: #ff9f62;
+  text-shadow: none;
+  font-weight: 800;
+}
+.deck-odds-pct--p13 {
+  color: #f0c870;
+  text-shadow: none;
+  font-weight: 700;
+}
+.deck-odds-pct--p14 {
+  color: #c8e888;
+  text-shadow: none;
+  font-weight: 700;
+}
+.deck-odds-pct--p15 {
+  color: #9ee8a8;
+  text-shadow: none;
+  font-weight: 700;
+}
+.deck-odds-pct--p16 {
+  color: #7ee8d8;
+  text-shadow: none;
+  font-weight: 700;
+}
+.deck-odds-pct--p17 {
+  color: #8cf6ff;
+  text-shadow:
+    0 0 12px rgba(120, 240, 255, 0.55),
+    0 0 26px rgba(100, 210, 255, 0.3);
+  font-weight: 800;
+}
+.deck-odds-pct--p18 {
+  color: #c8fbff;
+  text-shadow:
+    0 0 14px rgba(160, 250, 255, 0.7),
+    0 0 34px rgba(120, 220, 255, 0.4);
+  font-weight: 800;
+}
+.deck-odds-pct--p19 {
+  color: #f2feff;
+  text-shadow:
+    0 0 16px rgba(200, 255, 255, 0.85),
+    0 0 42px rgba(150, 240, 255, 0.5);
+  font-weight: 800;
+}
+.deck-odds-pct--p20 {
+  color: #ffffff;
+  text-shadow:
+    0 0 18px rgba(220, 255, 255, 1),
+    0 0 48px rgba(160, 240, 255, 0.65),
+    0 0 72px rgba(255, 210, 255, 0.45);
+  font-weight: 900;
+}
 .live-deck-odds-panel .deck-odds-pct,
 .deck-pick-odds-line .deck-odds-pct {
   font-weight: 800;
+}
+.deck-odds-prob-zone-hints {
+  margin-top: 0.55rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid rgba(255, 200, 230, 0.1);
+}
+.deck-odds-prob-zone-hints .deck-odds-skill-explain {
+  margin: 0.35rem 0 0;
+}
+.deck-odds-prob-zone-hints .deck-odds-skill-explain:first-of-type {
+  margin-top: 0.25rem;
 }
 .deck-tools-split {
   display: grid;
@@ -2883,7 +3489,7 @@ body.play-mode .live-slot .card-item.card-item--live-h {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 2px;
 }
 
@@ -3035,11 +3641,27 @@ body.play-mode .deck-pile {
 /* --- 理想の趣味レーション: 追加 UI --- */
 .panel-title-row {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
   flex-wrap: wrap;
   margin: 0 0 0.35rem;
+}
+.card-panel-search-field {
+  flex: 1 1 12rem;
+  min-width: 8rem;
+  max-width: 24rem;
+  margin: 0;
+}
+.card-panel-search-field .card-panel-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  padding: 0.38rem 0.55rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 140, 190, 0.28);
+  background: rgba(10, 6, 16, 0.65);
+  color: var(--text);
 }
 .panel-title-row h2 {
   margin: 0;
@@ -3634,11 +4256,13 @@ dialog.app-dialog:not([open]) {
   accent-color: #ff8ac4;
 }
 body.play-mode.hide-hand-stream #zone-hand .card-img,
-body.play-mode.hide-hand-stream #zone-preview .card-img {
+body.play-mode.hide-hand-stream #zone-preview .card-img,
+body.play-mode.hide-hand-stream #zone-preview-drop-catcher .card-img {
   filter: brightness(calc(0.04 + (1 - var(--stream-mask-strength, 0.85)) * 0.28)) blur(1px);
 }
 body.play-mode.hide-hand-stream #zone-hand .card-item::after,
-body.play-mode.hide-hand-stream #zone-preview .card-item::after {
+body.play-mode.hide-hand-stream #zone-preview .card-item::after,
+body.play-mode.hide-hand-stream #zone-preview-drop-catcher .card-item::after {
   content: "HIDDEN";
   position: absolute;
   inset: auto 4px 4px;

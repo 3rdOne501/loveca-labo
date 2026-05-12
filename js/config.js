@@ -68,6 +68,13 @@ export const STORAGE_SNAPSHOT_PREFIX = "llocg_snapshot_";
 export const STORAGE_PLAY_RESUME = "llocg_play_resume_v1";
 /** プレイ画面: 手札・プレビュー配信隠しの濃さ 0〜1（sessionStorage 文字列） */
 export const STORAGE_STREAM_MASK_STRENGTH = "llocg_stream_mask_strength";
+/** デッキ構築: お気に入りカード番号（JSON 配列） */
+export const STORAGE_CARD_FAVORITES = "llocg_card_favorites";
+
+/** ミア・テイラー pb1-011 系（R / SEC 等同一扱い・下のエネ1枚につき常時ブレード） */
+export function cardNoIsMiaTaylorPb1011(cardNo) {
+  return /^PL!N-pb1-011-/i.test(String(cardNo || "").trim());
+}
 
 /** Undo 履歴の最大長 */
 export const HISTORY_MAX_STEPS = 35;

@@ -11,6 +11,7 @@ import {
   MAX_MEMBER_IN_MAIN,
   MAIN_SIZE,
   STORAGE_ACTIVE_PRESET_ID,
+  STORAGE_CARD_FAVORITES,
   STORAGE_DECK,
   T_LIVE,
   T_MEMBER,
@@ -342,15 +343,42 @@ export function initDeckBuilder(root, { onStartGame }) {
   let deckListOpen = false;
   let deckListSort = "name";
   let filterTypes = { [T_MEMBER]: true, [T_LIVE]: true };
-  /** @type {"both"|"member"|"live"} */
-  let filterCardKind = "both";
+  /** @type {"default"|"fav-first"|"name"|"cost-asc"|"card-no"} */
+  let catalogSortOrder = "default";
+  let filterFavoritesOnly = false;
+  /** @type {Set<string>} */
+  let cardFavorites = (function loadCardFavoritesFromStorage() {
+    try {
+      const raw = localStorage.getItem(STORAGE_CARD_FAVORITES);
+      if (!raw) return new Set();
+      const p = JSON.parse(raw);
+      return new Set(Array.isArray(p) ? p.map(String) : []);
+    } catch (_) {
+      return new Set();
+    }
+  })();
 
-  function syncFilterTypesFromKind() {
-    if (filterCardKind === "member") filterTypes = { [T_MEMBER]: true, [T_LIVE]: false };
-    else if (filterCardKind === "live") filterTypes = { [T_MEMBER]: false, [T_LIVE]: true };
-    else filterTypes = { [T_MEMBER]: true, [T_LIVE]: true };
+  function persistCardFavorites() {
+    try {
+      localStorage.setItem(STORAGE_CARD_FAVORITES, JSON.stringify([...cardFavorites]));
+    } catch (_) {
+      /* noop */
+    }
   }
-  syncFilterTypesFromKind();
+
+  function syncFilterTypesFromCheckboxes() {
+    const m = el("filter-show-member");
+    const lv = el("filter-show-live");
+    filterTypes[T_MEMBER] = m ? !!m.checked : true;
+    filterTypes[T_LIVE] = lv ? !!lv.checked : true;
+  }
+
+  function syncCheckboxesFromFilterTypes() {
+    const m = el("filter-show-member");
+    const lv = el("filter-show-live");
+    if (m) m.checked = !!filterTypes[T_MEMBER];
+    if (lv) lv.checked = !!filterTypes[T_LIVE];
+  }
   let searchText = "";
   let filterProduct = "";
   let filterSeries = "";
@@ -394,6 +422,8 @@ export function initDeckBuilder(root, { onStartGame }) {
   });
 
   const el = (id) => root.querySelector("#" + id) || document.getElementById(id);
+
+  syncCheckboxesFromFilterTypes();
 
   wireTestCardVariantDialogOnce();
 
@@ -513,7 +543,8 @@ export function initDeckBuilder(root, { onStartGame }) {
       filterProduct,
       filterSeries,
       filterUnit,
-      filterCardKind,
+      catalogSortOrder,
+      filterFavoritesOnly ? "1" : "0",
       JSON.stringify(filterTypes),
       [...bh].sort().join(","),
       bx.nonBh ? "1" : "0",
@@ -521,6 +552,52 @@ export function initDeckBuilder(root, { onStartGame }) {
       [...hs].sort().join(","),
       costParts.join(","),
     ].join("|");
+  }
+
+  function catalogDefaultOrderIndex(c) {
+    if (!c) return 999999;
+    const want = String(c.card_no);
+    for (let i = 0; i < cards.length; i++) {
+      if (cards[i] && String(cards[i].card_no) === want) return i;
+    }
+    return 999999;
+  }
+
+  function applyCatalogSortToList(list) {
+    if (!list || !list.length) return list ? list.slice() : [];
+    const order = catalogSortOrder || "default";
+    if (order === "default") return list.slice();
+    const out = list.slice();
+    function favRank(x) {
+      return cardFavorites.has(String(x.card_no)) ? 1 : 0;
+    }
+    out.sort(function (a, b) {
+      if (order === "fav-first") {
+        const df = favRank(b) - favRank(a);
+        if (df) return df;
+        return catalogDefaultOrderIndex(a) - catalogDefaultOrderIndex(b);
+      }
+      if (order === "name") {
+        const cmp = String(a.name || "").localeCompare(String(b.name || ""), "ja");
+        if (cmp) return cmp;
+        return catalogDefaultOrderIndex(a) - catalogDefaultOrderIndex(b);
+      }
+      if (order === "cost-asc") {
+        const ca = Number(a.cost);
+        const cb = Number(b.cost);
+        const na = Number.isFinite(ca) ? ca : 99;
+        const nb = Number.isFinite(cb) ? cb : 99;
+        if (na !== nb) return na - nb;
+        return catalogDefaultOrderIndex(a) - catalogDefaultOrderIndex(b);
+      }
+      if (order === "card-no") {
+        const cmp = String(a.card_no || "").localeCompare(String(b.card_no || ""));
+        if (cmp) return cmp;
+        return catalogDefaultOrderIndex(a) - catalogDefaultOrderIndex(b);
+      }
+      return catalogDefaultOrderIndex(a) - catalogDefaultOrderIndex(b);
+    });
+    return out;
   }
 
   /** カード一覧グリッド用のフィルタ済み配列（カタログ条件が変わらない限り filterCards を使い回す） */
@@ -532,14 +609,14 @@ export function initDeckBuilder(root, { onStartGame }) {
         const c = getCard(no);
         if (c) filtered.push(c);
       }
-      return sortRegisteredDeckCards(filtered);
+      return applyCatalogSortToList(sortRegisteredDeckCards(filtered));
     }
     const key = buildCatalogFilterCacheKey();
     if (key === catalogFilterCacheKey && catalogFilterCached !== null) {
       return catalogFilterCached;
     }
     const bx = readBhFilterExtras();
-    const filtered = filterCards(cards, {
+    let filtered = filterCards(cards, {
       search: searchText,
       types: filterTypes,
       product: filterProduct || null,
@@ -551,6 +628,12 @@ export function initDeckBuilder(root, { onStartGame }) {
       bhNoteLive: bx.noteLive,
       heartSlots: readHeartSlotFilters(),
     });
+    if (filterFavoritesOnly) {
+      filtered = filtered.filter(function (c) {
+        return c && cardFavorites.has(String(c.card_no));
+      });
+    }
+    filtered = applyCatalogSortToList(filtered);
     catalogFilterCacheKey = key;
     catalogFilterCached = filtered;
     return filtered;
@@ -1831,6 +1914,44 @@ export function initDeckBuilder(root, { onStartGame }) {
     }
   }
 
+  function syncThumbFavOnWrap(wrap, cardNo) {
+    const no = String(cardNo || "");
+    const thumb = wrap && wrap.querySelector(".card-thumb");
+    if (!thumb) return;
+    const fav = thumb.querySelector(".card-thumb-fav");
+    if (!fav) return;
+    const on = cardFavorites.has(no);
+    fav.classList.toggle("is-on", on);
+    fav.setAttribute("aria-pressed", on ? "true" : "false");
+  }
+
+  function reuseOrCreateCardGridItems(grid, filtered) {
+    if (!filtered.length) {
+      grid.innerHTML = "";
+      return;
+    }
+    const pool = new Map(
+      [...grid.children].map(function (w) {
+        return [String(w.dataset.cardNo || ""), w];
+      }),
+    );
+    filtered.forEach(function (card) {
+      const no = String(card.card_no);
+      var wrap = pool.get(no);
+      pool.delete(no);
+      if (!wrap) {
+        wrap = createCardGridItemWrap(card);
+      } else {
+        patchVisibleGridThumbsForNos([no]);
+        syncThumbFavOnWrap(wrap, no);
+      }
+      grid.appendChild(wrap);
+    });
+    pool.forEach(function (w) {
+      w.remove();
+    });
+  }
+
   function renderCardGrid(opts) {
     opts = opts || { deckSummary: true };
     if (typeof opts.deckSummary === "undefined") opts.deckSummary = true;
@@ -1864,27 +1985,37 @@ export function initDeckBuilder(root, { onStartGame }) {
       cardGridVirtual.active = false;
       if (topSp) topSp.style.height = "0px";
       if (botSp) botSp.style.height = "0px";
-      grid.innerHTML = "";
-      for (const card of filtered) grid.appendChild(createCardGridItemWrap(card));
-      cardGridVirtual.lastOrderedSig = filtered.map(function (c) {
-        return c.card_no;
-      }).join("\u0001");
+      if (cardGridVirtual.lastPanel !== cardPanelMode) {
+        grid.innerHTML = "";
+      }
+      reuseOrCreateCardGridItems(grid, filtered);
+      cardGridVirtual.lastPanel = cardPanelMode;
+      cardGridVirtual.lastOrderedSig = filtered
+        .map(function (c) {
+          return c.card_no;
+        })
+        .join("\u0001");
       return;
     }
 
+    const prevPanel = cardGridVirtual.lastPanel;
     const needScrollReset =
       !cardGridVirtual.active ||
-      cardGridVirtual.lastPanel !== cardPanelMode ||
+      prevPanel !== cardPanelMode ||
       cardGridVirtual.lastCount !== filtered.length;
-    cardGridVirtual.lastPanel = cardPanelMode;
-    cardGridVirtual.lastCount = filtered.length;
     if (needScrollReset && scrollEl) {
       scrollEl.scrollTop = 0;
       cardGridVirtualMeasureGuard = 0;
     }
+    if (prevPanel !== cardPanelMode) {
+      grid.innerHTML = "";
+      cardGridVirtual.w0 = -1;
+    }
+    cardGridVirtual.lastPanel = cardPanelMode;
+    cardGridVirtual.lastCount = filtered.length;
     cardGridVirtual.active = true;
     cardGridVirtual.list = filtered;
-    cardGridVirtual.w0 = -1;
+    if (prevPanel === cardPanelMode) cardGridVirtual.w0 = -1;
     cardGridVirtual.rowH = cardPanelMode === "deck" ? 268 : 234;
     syncVirtualCardGridWindow(true);
     cardGridVirtual.lastOrderedSig = filtered.map(function (c) {
@@ -1939,7 +2070,33 @@ export function initDeckBuilder(root, { onStartGame }) {
       `<span class="thumb-type">${escapeHtml(tlab)}</span>${builderCatalogThumbImgHtml(card.img, "deck-builder-card-thumb", {
         eager: cardGridVirtual.active,
       })}<span class="thumb-cap">${escapeHtml(card.name)}${thumbExtraHtml(card)}</span>`;
+    const fav = document.createElement("button");
+    fav.type = "button";
+    fav.className = "card-thumb-fav" + (cardFavorites.has(String(card.card_no)) ? " is-on" : "");
+    fav.textContent = "\u2606";
+    fav.title = "お気に入り";
+    fav.setAttribute("aria-label", "お気に入り");
+    fav.setAttribute("aria-pressed", cardFavorites.has(String(card.card_no)) ? "true" : "false");
+    fav.addEventListener("click", function (ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const k = String(card.card_no);
+      if (cardFavorites.has(k)) cardFavorites.delete(k);
+      else cardFavorites.add(k);
+      persistCardFavorites();
+      invalidateCatalogFilterCache();
+      const lostFavFilter =
+        el("filter-favorites-only") && el("filter-favorites-only").checked && !cardFavorites.has(k);
+      if (lostFavFilter || catalogSortOrder === "fav-first") {
+        scheduleRenderCardGrid();
+        return;
+      }
+      fav.classList.toggle("is-on", cardFavorites.has(k));
+      fav.setAttribute("aria-pressed", cardFavorites.has(k) ? "true" : "false");
+    });
+    div.appendChild(fav);
     div.addEventListener("click", function (ev) {
+      if (ev.target && ev.target.closest && ev.target.closest(".card-thumb-fav")) return;
       if (
         ev.target &&
         ev.target.closest &&
@@ -2089,8 +2246,7 @@ export function initDeckBuilder(root, { onStartGame }) {
     const bottomRows = Math.max(0, totalRows - firstRow - renderedRows);
     botSp.style.height = bottomRows * rowH + "px";
 
-    grid.innerHTML = "";
-    for (let i = startIdx; i < endIdx; i++) grid.appendChild(createCardGridItemWrap(list[i]));
+    reuseOrCreateCardGridItems(grid, list.slice(startIdx, endIdx));
 
     requestAnimationFrame(function () {
       if (!cardGridVirtual.active || cardGridVirtualIsScrolling) return;
@@ -2279,9 +2435,24 @@ export function initDeckBuilder(root, { onStartGame }) {
     searchText = e.target.value;
     renderCardGrid();
   });
-  el("filter-card-kind")?.addEventListener("change", (e) => {
-    filterCardKind = /** @type {{ value: string }} */ (e.target).value || "both";
-    syncFilterTypesFromKind();
+  el("filter-show-member")?.addEventListener("change", () => {
+    syncFilterTypesFromCheckboxes();
+    invalidateCatalogFilterCache();
+    renderCardGrid();
+  });
+  el("filter-show-live")?.addEventListener("change", () => {
+    syncFilterTypesFromCheckboxes();
+    invalidateCatalogFilterCache();
+    renderCardGrid();
+  });
+  el("catalog-sort-order")?.addEventListener("change", (e) => {
+    catalogSortOrder = /** @type {{ value: string }} */ (e.target).value || "default";
+    invalidateCatalogFilterCache();
+    renderCardGrid();
+  });
+  el("filter-favorites-only")?.addEventListener("change", (e) => {
+    filterFavoritesOnly = !!(/** @type {HTMLInputElement} */ (e.target).checked);
+    invalidateCatalogFilterCache();
     renderCardGrid();
   });
   el("filter-product")?.addEventListener("change", (e) => {
@@ -2323,10 +2494,13 @@ export function initDeckBuilder(root, { onStartGame }) {
     filterSeries = "";
     filterUnit = "";
     filterTypes = { [T_MEMBER]: true, [T_LIVE]: true };
-    filterCardKind = "both";
-    const fk = el("filter-card-kind");
-    if (fk) fk.value = "both";
-    syncFilterTypesFromKind();
+    syncCheckboxesFromFilterTypes();
+    catalogSortOrder = "default";
+    const sortEl = el("catalog-sort-order");
+    if (sortEl) sortEl.value = "default";
+    filterFavoritesOnly = false;
+    const fo = el("filter-favorites-only");
+    if (fo) fo.checked = false;
     el("filter-product") && (el("filter-product").value = "");
     el("filter-series") && (el("filter-series").value = "");
     el("filter-unit") && (el("filter-unit").value = "");
