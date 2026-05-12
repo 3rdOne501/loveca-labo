@@ -4262,33 +4262,6 @@ kbd {
   color: #aed6ff;
 }
 
-/* プレイ画面: ゾーン詳細ガイド（既定は折りたたみ） */
-.play-zone-deep-guide {
-  margin: 0.35rem 0 0.25rem;
-  padding: 0.35rem 0.55rem;
-  border-radius: var(--radius-sm);
-  background: rgba(20, 14, 32, 0.55);
-  border: 1px solid rgba(140, 180, 255, 0.12);
-  font-size: 0.78rem;
-}
-.play-zone-deep-guide > summary {
-  cursor: pointer;
-  font-weight: 600;
-  color: #c8d8ff;
-}
-.play-zone-deep-guide-body {
-  margin-top: 0.45rem;
-  padding-top: 0.35rem;
-  border-top: 1px solid rgba(120, 140, 200, 0.15);
-}
-.play-zone-deep-guide-body p {
-  margin: 0 0 0.5rem;
-  line-height: 1.45;
-}
-.play-zone-deep-guide-body p:last-child {
-  margin-bottom: 0;
-}
-
 /* チュートリアルダイアログ */
 .dlg-tutorial .tutorial-dialog-body,
 .tutorial-dialog-body {
