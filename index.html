@@ -669,11 +669,6 @@ python3 -m http.server 8080</pre>
                   <p id="live-zone-hint-nonbh" class="live-zone-hint-line"></p>
                   <p id="live-zone-hint-resolution-bh" class="live-zone-hint-line"></p>
                 </div>
-                <div id="live-next-turn-row" class="live-next-turn-row" hidden>
-                  <button type="button" class="btn btn-next-turn-from-live" id="btn-next-turn-from-live">
-                    次のターンへ
-                  </button>
-                </div>
               </div>
             </details>
           </div>
@@ -747,8 +742,8 @@ python3 -m http.server 8080</pre>
               <button type="button" class="btn" id="btn-draw-resolution">1枚ドロー（解決）</button>
             </div>
             <div class="btn-row draw-row draw-row--turn wrap">
-              <button type="button" class="btn primary" id="btn-turn-start" title="解決・ライブ枠を控え室へ送る／手札に山札から 1 枚ドロー／側面エネのウェイト解除・メンバーを縦・アクティブにし側面エネを1枚加算（上限12）">
-                ターン開始
+              <button type="button" class="btn primary" id="btn-turn-start" title="解決・ライブ枠を控え室へ送る／手札に山札から 1 枚ドロー／側面エネのウェイト解除・メンバーを縦・アクティブにし側面エネを1枚加算（上限12）。ライブフェーズ終了後は次のターンへもここから。">
+                ターン開始/次のターンへ
               </button>
             </div>
           </section>

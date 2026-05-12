@@ -2290,18 +2290,6 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     return parts.length ? parts.join(" · ") : "—";
   }
 
-  function syncLiveNextTurnFromLiveRow() {
-    var row = $("live-next-turn-row");
-    var v = $("live-success-verdict-line");
-    if (!row || !v) return;
-    var fin =
-      v.classList.contains("live-verdict--success") || v.classList.contains("live-verdict--fail");
-    var bladeN = Math.max(0, Math.floor(sumBoardMemberBlades()));
-    var resN = Array.isArray(state.resolutionArea) ? state.resolutionArea.length : 0;
-    var resMeetsBlade = bladeN > 0 && resN >= bladeN;
-    row.hidden = !(fin && resMeetsBlade);
-  }
-
   function syncLiveTurnStatsPanel() {
     var wrap = $("live-turn-stats-wrap");
     if (!wrap) return;
@@ -2312,8 +2300,6 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         ov0.textContent = "";
         ov0.classList.remove("is-ok", "is-fail", "is-muted");
       }
-      var ntr0 = $("live-next-turn-row");
-      if (ntr0) ntr0.hidden = true;
       return;
     }
     wrap.hidden = false;
@@ -2390,8 +2376,6 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
 
     var verdict = $("live-success-verdict-line");
     if (!verdict) {
-      var ntrNv = $("live-next-turn-row");
-      if (ntrNv) ntrNv.hidden = true;
       return;
     }
     verdict.classList.remove("live-verdict--success", "live-verdict--fail", "live-verdict--muted");
@@ -2399,13 +2383,11 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (!b.liveCt) {
       verdict.textContent = "ライブエリアにライブカードがありません。";
       verdict.classList.add("live-verdict--muted");
-      syncLiveNextTurnFromLiveRow();
       return;
     }
     if (needSum <= 0) {
       verdict.textContent = "必要ハート（need_heart）が定義されていません。";
       verdict.classList.add("live-verdict--muted");
-      syncLiveNextTurnFromLiveRow();
       return;
     }
 
@@ -2417,7 +2399,6 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       verdict.textContent = "ライブ成功";
       verdict.classList.add("live-verdict--success");
     }
-    syncLiveNextTurnFromLiveRow();
   }
 
   /** 右下: 山札残りの非BH枚数と BH 色ごとの枚数 */
@@ -2504,6 +2485,15 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       wrap.hidden = true;
       return false;
     }
+    var liveFirst = [];
+    var otherNos = [];
+    for (var oi = 0; oi < ordered.length; oi++) {
+      var ono = ordered[oi];
+      var oc = getCard(ono);
+      if (oc && oc.type === T_LIVE) liveFirst.push(ono);
+      else otherNos.push(ono);
+    }
+    ordered = liveFirst.concat(otherNos);
     wrap.hidden = false;
     host.innerHTML = "";
     host.classList.remove("deck-odds-key-stack--fan-right");
@@ -4102,10 +4092,6 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     var bladeN = Math.max(0, Math.floor(sumBoardMemberBlades()));
     var resN = Array.isArray(state.resolutionArea) ? state.resolutionArea.length : 0;
     var ealeDone = bladeN > 0 && resN >= bladeN;
-    var upEn = countUprightEnergyInArea(state.energyArea);
-    var hasEn = state.energyArea.some(function (e) {
-      return e && e.type === T_ENERGY;
-    });
     var bPrim = $("btn-live-turn-primary");
     var primaryIsToArea = !!(bPrim && bPrim.textContent && bPrim.textContent.indexOf("ライブエリア") >= 0);
     var bBegin = $("btn-live-turn-begin");
@@ -4127,8 +4113,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       body.classList.add("flow-hint--live-to-area");
       return;
     }
-    if (!mull && !ltp && !lsb && hasEn && upEn === 0) {
-      if (liveTurnStartGlowArmed) body.classList.add("flow-hint--live-turn-start");
+    if (!mull && !ltp && !lsb && liveTurnStartGlowArmed) {
+      body.classList.add("flow-hint--live-turn-start");
       return;
     }
     if (!mull && !ltp && !lsb && ealeDone && !liveSlotsHaveCard()) {
@@ -4782,7 +4768,6 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   }
 
   $("btn-turn-start")?.addEventListener("click", doTurnPhaseStart);
-  $("btn-next-turn-from-live")?.addEventListener("click", doTurnPhaseStart);
 
   $("btn-zone-hints")?.addEventListener("click", function () {
     document.body.classList.toggle("zone-hints-visible");
