@@ -488,7 +488,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
 
     var bundleForBreakdown = evaluateLiveMechanicalFulfillmentBundle();
     var sim = computeDeckDrawLiveSuccessSimulation(deckLiveSimMode);
-    sumEl2.textContent = deckLiveSimSuccessLine(sim);
+    setOddsRichText(sumEl2, deckLiveSimSuccessLine(sim), { heroLiveSim: true });
     sumEl2.classList.remove("is-ok", "is-warn", "is-muted");
     if (sim.kind === "ok" || (sim.kind === "verdict" && sim.ok)) sumEl2.classList.add("is-ok");
     else if (
@@ -545,17 +545,19 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       .replace(/"/g, "&quot;");
   }
 
-  /** 確率の % 表示を強調（テキストはエスケープしてから置換） */
-  function htmlWithEmphasizedPercents(text) {
-    return escapeHtmlPlain(text).replace(
-      /(\d+(?:\.\d+)?)(%)/g,
-      '<strong class="deck-odds-pct">$1$2</strong>',
-    );
+  /** 確率の % 表示を強調（テキストはエスケープしてから置換）。opts.heroLiveSim でライブ成功シミュ行を特大表示。 */
+  function htmlWithEmphasizedPercents(text, opts) {
+    opts = opts || {};
+    var hero = !!opts.heroLiveSim;
+    return escapeHtmlPlain(text).replace(/(\d+(?:\.\d+)?)([%％])/g, function (_m, num, pctSym) {
+      var cls = hero ? "deck-odds-pct deck-odds-pct--hero" : "deck-odds-pct";
+      return '<strong class="' + cls + '">' + num + pctSym + "</strong>";
+    });
   }
 
-  function setOddsRichText(el, plainText) {
+  function setOddsRichText(el, plainText, opts) {
     if (!el) return;
-    el.innerHTML = htmlWithEmphasizedPercents(plainText);
+    el.innerHTML = htmlWithEmphasizedPercents(plainText, opts || {});
   }
 
   /**
@@ -2248,9 +2250,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       cellsRow.forEach(function (rate) {
         var tier = deckOddsCellTierClass(rate);
         var cls = "deck-odds-cell" + (tier ? " " + tier : "");
-        html.push(
-          '<td class="' + cls + '">' + formatPctFromRate(rate) + "%</td>",
-        );
+        html.push('<td class="' + cls + '">' + formatPctFromRate(rate) + "%</td>");
       });
       html.push("</tr>");
     });
@@ -2464,9 +2464,72 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     }
   }
 
+  function syncWaitingRemainBhPanel() {
+    var nonEl = $("waiting-remain-nonbh-line");
+    var colorsHost = $("waiting-remain-bh-colors");
+    if (!nonEl || !colorsHost) return;
+    var n = state.waitingRoom.length;
+    if (n <= 0) {
+      nonEl.textContent = "控え室にカードがありません。";
+      colorsHost.innerHTML = "";
+      var wh0 = $("waiting-remain-zone-hint");
+      if (wh0) wh0.textContent = "";
+      return;
+    }
+    var nonBh = 0;
+    /** @type {Record<number, number>} */
+    var slotCount = {};
+    for (var wi = 0; wi < n; wi++) {
+      var instW = state.waitingRoom[wi];
+      var catW = getCard(instW && instW.card_no);
+      if (!catW) {
+        nonBh++;
+        continue;
+      }
+      if (!cardHasBladeHeart(catW)) {
+        nonBh++;
+        continue;
+      }
+      var slotsW = bladeHeartSlotsOnCard(catW);
+      slotsW.forEach(function (s) {
+        slotCount[s] = (slotCount[s] || 0) + 1;
+      });
+    }
+    nonEl.textContent = "";
+    var partsW = [];
+    var orderedSlotsW = [1, 2, 3, 4, 7, 5, 6];
+    for (var oj = 0; oj < orderedSlotsW.length; oj++) {
+      var sj = orderedSlotsW[oj];
+      var cntW = slotCount[sj] || 0;
+      if (cntW <= 0) continue;
+      partsW.push(
+        '<span class="deck-remain-bh-pill" data-bh-slot="' +
+          sj +
+          '"><span class="deck-remain-bh-pill__lab">' +
+          escapeHtmlPlain(bladeHeartDisplaySlotLabel(sj)) +
+          '</span><strong class="deck-remain-bh-pill__n">' +
+          escapeHtmlPlain(String(cntW)) +
+          "</strong></span>",
+      );
+    }
+    var nonBhPillW =
+      '<span class="deck-remain-bh-pill deck-remain-bh-pill--nonbh" data-bh-slot="non">' +
+      '<span class="deck-remain-bh-pill__lab">非BH</span><strong class="deck-remain-bh-pill__n">' +
+      escapeHtmlPlain(String(nonBh)) +
+      "</strong></span>";
+    var bodyRowW = '<div class="deck-remain-bh-pill-row">' + nonBhPillW + partsW.join("") + "</div>";
+    colorsHost.innerHTML = bodyRowW;
+    var wh = $("waiting-remain-zone-hint");
+    if (wh) {
+      wh.textContent =
+        "控え室合計 " + n + " 枚。BH 色のピルはカード1枚につき複数色を持てる集計です（非BH は BH 記載のないカード枚数）。";
+    }
+  }
+
   /** 右上ミラー廃止: 左グリッド用ロジックのみ残す */
   function syncDeckPickClassicOddsPanel() {
     syncDeckRemainBhPanel();
+    syncWaitingRemainBhPanel();
   }
 
   function renderDeckRoleCardStack(host, wrap, cardNos) {
@@ -3557,6 +3620,11 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     });
   }
 
+  function waitingRailIsCollapsed() {
+    const row = $("waiting-row");
+    return !!(row && row.classList.contains("waiting-row--collapsed"));
+  }
+
   function readAllFromDom() {
     const oldMap = new Map(allZonesFlat().map((c) => [c.id, c]));
     function fill(zoneId, arr) {
@@ -3570,7 +3638,28 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     }
     fill("zone-deck", state.deck);
     fill("zone-hand", state.hand);
-    fill("zone-waiting", state.waitingRoom);
+    (function fillWaitingFromDom() {
+      const collapsed = waitingRailIsCollapsed();
+      const wa = $("zone-waiting");
+      const ct = $("zone-waiting-drop-catcher");
+      state.waitingRoom.length = 0;
+      if (collapsed) {
+        if (wa) {
+          [...wa.children].forEach(function (n) {
+            const c = oldMap.get(n.dataset.id);
+            if (c) state.waitingRoom.push(c);
+          });
+        }
+        if (ct) {
+          [...ct.children].forEach(function (n) {
+            const c = oldMap.get(n.dataset.id);
+            if (c) state.waitingRoom.push(c);
+          });
+        }
+      } else if (wa) {
+        fill("zone-waiting", state.waitingRoom);
+      }
+    })();
     fill("zone-resolution", state.resolutionArea);
     fill("zone-success-live", state.successfulLiveArea);
     fill("zone-energy", state.energyArea);
@@ -3878,6 +3967,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     "zone-deck",
     "zone-hand",
     "zone-waiting",
+    "zone-waiting-drop-catcher",
     "zone-resolution",
     "zone-success-live",
     "zone-energy",
@@ -4284,6 +4374,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     fillZone("zone-deck", state.deck, null);
     fillZone("zone-hand", state.hand, "rotate-hand");
     fillZone("zone-waiting", state.waitingRoom, "rotate-waiting");
+    var wCatch = $("zone-waiting-drop-catcher");
+    if (wCatch) wCatch.innerHTML = "";
     fillZone("zone-resolution", state.resolutionArea, "rotate-resolution");
     fillZone("zone-success-live", state.successfulLiveArea, null);
     fillZone("zone-energy", state.energyArea, "rotate-energy");
@@ -5322,7 +5414,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (!row) return;
     row.classList.toggle("waiting-row--collapsed");
     syncWaitingRailAria();
-    updateWaitingZoneOverlapMode();
+    render();
   }
 
   // render / DOM差し替えで直接バインドが外れることがあるため委譲に切り替え

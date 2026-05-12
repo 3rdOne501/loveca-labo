@@ -40,9 +40,7 @@ export const STORAGE_ACTIVE_PRESET_ID = "llocg_active_preset_id";
 /** カードDB の URL 上書き（UI からは変更不可。未設定・空なら既定 URL） */
 export const STORAGE_CARDS_JSON_OVERRIDE = "llocg_cards_json_override";
 
-/** 初回のみ「商品」絞り込みを適用したか（一覧の初回負荷軽減） */
-export const STORAGE_CATALOG_INITIAL_FILTER_APPLIED = "llocg_catalog_initial_filter_done";
-/** 初回に一致させる商品名（DB の product と同一。無ければ「スタートデッキ」＋「ラブライブ」を含む商品を採用） */
+/** カード一覧の「商品」絞り込み既定（DB の product と同一。無ければ「スタートデッキ」＋「ラブライブ」を含む商品。ページを開くたびに適用） */
 export const FIRST_VISIT_CATALOG_PRODUCT_EXACT = "スタートデッキラブライブ！";
 
 /** レギュ・禁止メモ（デッキ構築用・任意） */
@@ -107,16 +105,16 @@ export const DEFAULT_STARTER_DECK_MAP = {
   "PL!N-bp4-030-L": 4,
   "PL!N-bp5-027-L": 3,
 };
-/** キーライブ（枚数は deck 側。ここは識別用の card_no のみ） */
+/** キーライブ（枚数は deck 側。ここは識別用の card_no のみ） — Daydream Mermaid */
 export const DEFAULT_STARTER_KEY_CARD_NOS = ["PL!N-bp4-030-L"];
-/** 15ミア（メンバー） */
+/** ミラクル STAY TUNE！ */
 export const DEFAULT_STARTER_KEY2_CARD_NOS = ["PL!N-bp5-027-L"];
-/** ミラステ（キーライブと同番号で識別） */
-export const DEFAULT_STARTER_KEY3_CARD_NOS = ["PL!N-bp4-030-L"];
-/** 中間（メンバー） */
-export const DEFAULT_STARTER_MIDDLE_CARD_NOS = ["PL!SP-bp5-001-R＋", "PL!N-bp1-003-R＋"];
+/** １５コスト ミア・テイラー */
+export const DEFAULT_STARTER_KEY3_CARD_NOS = ["PL!N-pb1-011-R"];
+/** 中間（メンバー／ライブ）— Daydream Mermaid、１０コスト澁谷かのん、１０コスト桜坂しずく */
+export const DEFAULT_STARTER_MIDDLE_CARD_NOS = ["PL!N-bp4-030-L", "PL!SP-bp5-001-R＋", "PL!N-bp1-003-R＋"];
 /** プリセット一覧サムネ（デッキに収録されている番号） */
-export const DEFAULT_STARTER_THUMBNAIL_CARD_NO = "PL!N-bp4-030-L";
+export const DEFAULT_STARTER_THUMBNAIL_CARD_NO = "PL!N-bp5-027-L";
 
 /** 初期エネルギートークン（公式サイトの SD エネ画像） */
 export const DEFAULT_ENERGY_CARD_NO = "LL-E-001-SD";

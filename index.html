@@ -196,8 +196,10 @@ python3 -m http.server 8080</pre>
 
         <aside class="deck-panel">
           <div class="deck-panel-sticky-head">
-            <h2>メインデッキ</h2>
-            <button type="button" class="btn primary btn-start-game-sticky" id="btn-start-game" disabled>ソロプレイ開始</button>
+            <div class="deck-panel-head-row">
+              <h2>メインデッキ</h2>
+              <button type="button" class="btn primary btn-start-game-sticky" id="btn-start-game" disabled>ソロプレイ開始</button>
+            </div>
             <div id="deck-validation-banner" class="deck-validation-banner" role="status" hidden></div>
             <p class="count-line deck-count-line">
               メンバー <strong id="deck-count-member">0</strong>
@@ -776,11 +778,16 @@ python3 -m http.server 8080</pre>
               </h3>
               <span class="muted waiting-rail-teaser" id="waiting-rail-teaser">クリックで一覧を表示</span>
             </div>
+            <div
+              id="zone-waiting-drop-catcher"
+              class="card-strip zone-drop waiting-zone-strip zone-waiting-drop-catcher"
+              aria-label="控え室へドロップ（一覧が閉じているとき）"
+            ></div>
             <div id="waiting-row" class="waiting-row waiting-row--collapsed" aria-hidden="true">
               <div id="zone-waiting" class="card-strip zone-drop waiting-zone-strip"></div>
             </div>
             <p class="hint zone-inline-help">
-              先入れは列の<strong>左側が先</strong>です。普段は一覧を閉じています。<strong>ヘッダをクリック</strong>で並びを確認できます。
+              先入れは列の<strong>左側が先</strong>です。一覧を閉じたまま、カードを<strong>この欄のあたりまで上げてドロップ</strong>すると控え室に入ります（開かなくても可）。一覧は<strong>タイトル付近をクリック</strong>で開けます。
             </p>
           </section>
 
@@ -866,6 +873,12 @@ python3 -m http.server 8080</pre>
                   <p id="deck-remain-nonbh-line" class="deck-remain-line muted"></p>
                   <div id="deck-remain-bh-colors" class="deck-remain-bh-colors"></div>
                   <p id="deck-remain-zone-hint" class="hint zone-inline-help deck-prob-explain-hide"></p>
+                </div>
+                <div id="waiting-remain-bh-panel" class="deck-remain-bh-panel" aria-live="polite">
+                  <h4 class="deck-pick-odds-section-title">控えの残色</h4>
+                  <p id="waiting-remain-nonbh-line" class="deck-remain-line muted"></p>
+                  <div id="waiting-remain-bh-colors" class="deck-remain-bh-colors"></div>
+                  <p id="waiting-remain-zone-hint" class="hint zone-inline-help deck-prob-explain-hide"></p>
                 </div>
                 <div class="play-deck-preset-panel">
                   <h4 class="deck-pick-odds-section-title">保存デッキ</h4>

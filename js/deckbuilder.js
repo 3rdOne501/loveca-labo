@@ -11,7 +11,6 @@ import {
   MAX_MEMBER_IN_MAIN,
   MAIN_SIZE,
   STORAGE_ACTIVE_PRESET_ID,
-  STORAGE_CATALOG_INITIAL_FILTER_APPLIED,
   STORAGE_DECK,
   T_LIVE,
   T_MEMBER,
@@ -2663,42 +2662,36 @@ export function initDeckBuilder(root, { onStartGame }) {
     });
   }
 
-  function tryApplyFirstVisitCatalogProductFilter() {
-    try {
-      if (localStorage.getItem(STORAGE_CATALOG_INITIAL_FILTER_APPLIED)) return;
-      const want = FIRST_VISIT_CATALOG_PRODUCT_EXACT;
-      /** @type {Set<string>} */
-      const products = new Set();
-      cards.forEach(function (c) {
-        if (c && c.product) products.add(String(c.product));
+  function applyStartupCatalogProductFilter() {
+    const want = FIRST_VISIT_CATALOG_PRODUCT_EXACT;
+    /** @type {Set<string>} */
+    const products = new Set();
+    cards.forEach(function (c) {
+      if (c && c.product) products.add(String(c.product));
+    });
+    var pick = "";
+    if (products.has(want)) pick = want;
+    else {
+      products.forEach(function (p) {
+        if (pick) return;
+        if (p.indexOf("スタートデッキ") >= 0 && p.indexOf("ラブライブ") >= 0) pick = p;
       });
-      var pick = "";
-      if (products.has(want)) pick = want;
-      else {
-        products.forEach(function (p) {
-          if (pick) return;
-          if (p.indexOf("スタートデッキ") >= 0 && p.indexOf("ラブライブ") >= 0) pick = p;
-        });
+    }
+    const sel = el("filter-product");
+    if (pick && sel) {
+      var ok = Array.prototype.some.call(sel.options, function (o) {
+        return o.value === pick;
+      });
+      if (ok) {
+        filterProduct = pick;
+        sel.value = pick;
+        invalidateCatalogFilterCache();
       }
-      const sel = el("filter-product");
-      if (pick && sel) {
-        var ok = Array.prototype.some.call(sel.options, function (o) {
-          return o.value === pick;
-        });
-        if (ok) {
-          filterProduct = pick;
-          sel.value = pick;
-          invalidateCatalogFilterCache();
-        }
-      }
-      localStorage.setItem(STORAGE_CATALOG_INITIAL_FILTER_APPLIED, "1");
-    } catch (_e) {
-      /* ストレージ不可時は毎回試みるが致命ではない */
     }
   }
 
   fillSelects();
-  tryApplyFirstVisitCatalogProductFilter();
+  applyStartupCatalogProductFilter();
   wirePeekListRoleEditorOnce();
   renderPresetSelect();
   renderCounts();
