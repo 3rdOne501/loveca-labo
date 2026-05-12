@@ -1527,18 +1527,19 @@ body.play-mode {
   --card-h: var(--loveca-play-h);
 }
 
-/* 16:9 ワイド向け: 中央を狭めつつ全体カードサイズも軽く縮めて、見切れを減らす */
-body.play-mode.layout-16-9-mode {
-  --loveca-play-w: min(78px, 9.6vw);
+/* 16:9 ボタン ON: 通常表示に対しプレイ画面全体を約 85%（ブラウザの表示倍率に相当）に縮小 */
+@supports (zoom: 1) {
+  body.play-mode.layout-16-9-mode #view-game {
+    zoom: 0.85;
+  }
 }
-body.play-mode.layout-16-9-mode .game-board {
-  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.72fr) minmax(0, 0.92fr);
+@supports not (zoom: 1) {
+  body.play-mode.layout-16-9-mode #view-game {
+    transform: scale(0.85);
+    transform-origin: top center;
+  }
 }
 
-body.play-mode #btn-layout-16-9 {
-  font-size: 0.72rem;
-  padding: 0.3rem 0.5rem;
-}
 body.play-mode #btn-layout-16-9.btn--layout-16-9-on {
   background: linear-gradient(135deg, #ff7ab8, #ff4a96);
   border-color: rgba(255, 200, 230, 0.9);
@@ -1575,14 +1576,6 @@ body.play-mode .draw-row.draw-row--top .btn {
   flex: 1 1 8.5rem;
   min-width: min(100%, 7.5rem);
 }
-body.play-mode.layout-16-9-mode .draw-row.draw-row--top {
-  flex-wrap: nowrap;
-}
-
-body.play-mode.layout-16-9-mode .deck-tools-split {
-  min-width: 0;
-}
-
 @keyframes mulligan-execute-glow {
   0%,
   100% {

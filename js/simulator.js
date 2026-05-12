@@ -4685,7 +4685,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       document.body.classList.toggle("layout-16-9-mode", on);
       btn.setAttribute("aria-pressed", on ? "true" : "false");
       btn.classList.toggle("btn--layout-16-9-on", on);
-      // サイズ変更でレイアウトが変わるので、山札の自動レイアウトなども再計算
+      // 表示倍率が変わるので、山札の自動レイアウトなどを再計算
       renderSynchronouslyOnce();
     });
   })();
