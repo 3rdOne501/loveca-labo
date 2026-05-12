@@ -32,9 +32,7 @@ import {
   getAllCards,
   getCard,
   getCardCatalogSnapshot,
-  getEffectiveCardsJsonUrl,
   catalogListThumbnailUrl,
-  setCardsJsonUrlOverride,
   uniqueCosts,
   uniqueProducts,
   uniqueSeries,
@@ -1150,7 +1148,7 @@ export function initDeckBuilder(root, { onStartGame }) {
         var act = b.getAttribute("data-act");
         if (act === "plus") {
           if (!cardNow) {
-            showToast("この番号はカードデータがありません。「＋」は追加できません。URL・DBを確認するか一覧から選んでください。");
+            showToast("この番号はカードデータがありません。「＋」は追加できません。カードDBを確認するか一覧から選んでください。");
             return;
           }
           if (canAdd(cardNow, 1)) deckMap[no] = (deckMap[no] || 0) + 1;
@@ -2048,7 +2046,7 @@ export function initDeckBuilder(root, { onStartGame }) {
         return c.card_no;
       })
       .join("\u0001");
-    if (cardGridVirtual.active && newSig === cardGridVirtual.lastOrderedSig) {
+    if (newSig === cardGridVirtual.lastOrderedSig && newSig !== "") {
       patchVisibleGridThumbsForNos(list);
       return;
     }
@@ -2593,17 +2591,6 @@ export function initDeckBuilder(root, { onStartGame }) {
       deckMap[addNo] = (deckMap[addNo] || 0) + 1;
       afterDeckMapQuickChange(addNo);
     })();
-  });
-
-  var cardsUrlEl = el("builder-cards-json-url");
-  if (cardsUrlEl && !cardsUrlEl.dataset.bound) {
-    cardsUrlEl.dataset.bound = "1";
-    cardsUrlEl.value = getEffectiveCardsJsonUrl();
-  }
-  el("btn-builder-cards-reload")?.addEventListener("click", () => {
-    var u = el("builder-cards-json-url");
-    setCardsJsonUrlOverride((u && u.value) || "");
-    location.reload();
   });
 
   function setCardPanelMode(mode) {

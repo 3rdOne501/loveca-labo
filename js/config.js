@@ -24,8 +24,7 @@ export const T_ENERGY = "エネルギー";
 /**
  * 公開カードDB
  * llofficial-cardgame.com から自動スクレイピング・日次コミットされる wlt233/llocg_db を既定にしている。
- * loveca-solo.pages.dev/data/cards.json に戻したいときは
- * 設定の「カードDB URL 上書き」で変更可能（STORAGE_CARDS_JSON_OVERRIDE）。
+ * 画面上の「カードデータ URL」項目は廃止したが、次のキーに保存された URL は引き続き読み込みに使う（手動で localStorage を触った場合など）。
  */
 export const CARDS_JSON_URL = "https://raw.githubusercontent.com/wlt233/llocg_db/master/json/cards.json";
 
@@ -38,8 +37,9 @@ export const MAX_SAVED_DECKS = 24;
 /** 最後に触ったプリセット slot id（読み込み選択の復元用） */
 export const STORAGE_ACTIVE_PRESET_ID = "llocg_active_preset_id";
 
-/** カードDB の URL を上書き（空なら既定） */
+/** カードDB の URL 上書き（UI からは変更不可。未設定・空なら既定 URL） */
 export const STORAGE_CARDS_JSON_OVERRIDE = "llocg_cards_json_override";
+
 /** レギュ・禁止メモ（デッキ構築用・任意） */
 export const STORAGE_REGULATION_NOTE = "llocg_regulation_note";
 /** プレイ時メモ / カウンタ（後方互換・未使用） */
@@ -104,8 +104,10 @@ export const DEFAULT_STARTER_DECK_MAP = {
 };
 /** キーライブ（枚数は deck 側。ここは識別用の card_no のみ） */
 export const DEFAULT_STARTER_KEY_CARD_NOS = ["PL!N-bp4-030-L"];
-export const DEFAULT_STARTER_KEY2_CARD_NOS = [];
-export const DEFAULT_STARTER_KEY3_CARD_NOS = [];
+/** 15ミア（メンバー） */
+export const DEFAULT_STARTER_KEY2_CARD_NOS = ["PL!N-bp5-027-L"];
+/** ミラステ（キーライブと同番号で識別） */
+export const DEFAULT_STARTER_KEY3_CARD_NOS = ["PL!N-bp4-030-L"];
 /** 中間（メンバー） */
 export const DEFAULT_STARTER_MIDDLE_CARD_NOS = ["PL!SP-bp5-001-R＋", "PL!N-bp1-003-R＋"];
 /** プリセット一覧サムネ（デッキに収録されている番号） */

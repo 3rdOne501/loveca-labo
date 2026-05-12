@@ -1,9 +1,4 @@
-import {
-  CARDS_JSON_URL,
-  STORAGE_CARDS_JSON_OVERRIDE,
-  T_MEMBER,
-  T_LIVE,
-} from "./config.js";
+import { CARDS_JSON_URL, STORAGE_CARDS_JSON_OVERRIDE, T_MEMBER, T_LIVE } from "./config.js";
 import { parseBladeHeartSlotFromKey, parseHeartColorSlotFromKey } from "./bladeHeart.js";
 
 let catalog = {};
@@ -19,11 +14,18 @@ function normalizeCardCatalogLookupKey(s) {
     .trim();
 }
 
-/** 上書きが無ければ既定の公開 URL */
+/** 上書きが無ければ既定の公開 URL（`localStorage` の llocg_cards_json_override があれば優先） */
 export function getEffectiveCardsJsonUrl() {
   const o = localStorage.getItem(STORAGE_CARDS_JSON_OVERRIDE);
   if (o != null && String(o).trim() !== "") return String(o).trim();
   return CARDS_JSON_URL;
+}
+
+/** 空文字で上書き解除（画面からは呼ばない。コンソール・手動復旧用に残す） */
+export function setCardsJsonUrlOverride(urlOrEmpty) {
+  const t = urlOrEmpty == null ? "" : String(urlOrEmpty).trim();
+  if (t) localStorage.setItem(STORAGE_CARDS_JSON_OVERRIDE, t);
+  else localStorage.removeItem(STORAGE_CARDS_JSON_OVERRIDE);
 }
 
 /**
@@ -45,13 +47,6 @@ export function catalogListThumbnailUrl(originalUrl) {
   } catch (_) {
     return originalUrl;
   }
-}
-
-/** 空文字なら上書き解除 */
-export function setCardsJsonUrlOverride(urlOrEmpty) {
-  const t = urlOrEmpty == null ? "" : String(urlOrEmpty).trim();
-  if (t) localStorage.setItem(STORAGE_CARDS_JSON_OVERRIDE, t);
-  else localStorage.removeItem(STORAGE_CARDS_JSON_OVERRIDE);
 }
 
 export async function loadCardDatabase(statusEl) {

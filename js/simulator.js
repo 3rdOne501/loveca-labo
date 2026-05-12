@@ -244,7 +244,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   var deckPickSelectedNos = new Set();
   var deckPickListSig = "";
   /** 山札確率の「捲る枚数」手動値（マリガンで戻す枚数／ライブ手札チェック時は自動優先） */
-  var deckOddsKManual = 1;
+  var deckOddsKManual = 0;
   /** 指定カード検索のめくり枚数（手動） */
   var deckPickKManual = 1;
   /** 2恋（上5枚確認→1枚手札）を使った前提 */
@@ -590,16 +590,16 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (state.awaitingTurnStart) {
       var m = Array.isArray(state.mulliganSelectedIds) ? state.mulliganSelectedIds.length : 0;
       if (m > 0) return Math.min(m, n);
-      return 1;
+      return 0;
     }
     if (state.liveTurnPickMode === true) {
       var c = liveTurnHandCheckCount();
       if (c > 0) return Math.min(c, n);
-      return 1;
+      return 0;
     }
     var manual = deckOddsKManual;
-    if (!Number.isFinite(manual)) manual = 1;
-    manual = Math.max(1, Math.min(99, Math.floor(manual)));
+    if (!Number.isFinite(manual)) manual = 0;
+    manual = Math.max(0, Math.min(99, Math.floor(manual)));
     return Math.min(manual, n);
   }
 
@@ -630,7 +630,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       if (!el) return;
       el.readOnly = ro;
       if (document.activeElement !== el) {
-        el.value = n <= 0 ? "0" : String(Math.max(1, eff));
+        el.value = n <= 0 ? "0" : String(Math.max(0, eff));
       }
     }
     applyOne(inp);
@@ -639,12 +639,12 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       if (state.awaitingTurnStart) {
         return m > 0
           ? "マリガン: 戻し " + m + " 枚＝このあと引く枚数に連動（編集不可）"
-          : "マリガン: 戻す枚を選ぶと連動（未選択は k=1 の参考）";
+          : "マリガン: 戻す枚を選ぶと連動（未選択は k=0 の参考）";
       }
       if (state.liveTurnPickMode === true) {
         return c > 0
           ? "ライブ: 手札チェック " + c + " 枚に連動（編集不可）"
-          : "ライブ: チェックで連動（0 枚のあいだ k=1 参考）";
+          : "ライブ: チェックで連動（0 枚のあいだ k=0 参考）";
       }
       return "通常: 手動。マリガン／ライブ選択中は上記のとおり自動";
     }
@@ -714,7 +714,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       var sv = sessionStorage.getItem(STORAGE_DECK_ODDS_K);
       if (sv != null && sv !== "") {
         var x = Number(sv);
-        if (Number.isFinite(x) && x >= 1) deckOddsKManual = Math.min(99, Math.floor(x));
+        if (Number.isFinite(x) && x >= 0) deckOddsKManual = Math.min(99, Math.floor(x));
       }
     } catch (_) {
       /* noop */
@@ -970,6 +970,11 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
 
   /** @type {object | null} */
   let dragUndoSnap = null;
+
+  /** マリガン実行を一度でも押したら true。初手のみ「マリガン実行」を強調 */
+  let openingMulliganExecuteUsed = false;
+  /** ターン開始ドロー完了後にのみ true。ライブターン開始を押すと false（次のターン開始まで再び光らない） */
+  let liveTurnStartGlowArmed = false;
 
   /** Sortable onChoose で掴んだ要素の dataset.id（ステージ上で「どれが今置いたメンバーか」を DOM 順に頼らず決める） */
   let lastDraggedDomId = "";
@@ -2125,7 +2130,6 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     }
 
     var dynK = applyDeckOddsPeekBonuses(computeEffectiveDeckOddsK(), n);
-    if (dynK < 1) dynK = 1;
     var dynLabel = "";
     if (state.awaitingTurnStart) {
       var mm = Array.isArray(state.mulliganSelectedIds) ? state.mulliganSelectedIds.length : 0;
@@ -2286,6 +2290,18 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     return parts.length ? parts.join(" · ") : "—";
   }
 
+  function syncLiveNextTurnFromLiveRow() {
+    var row = $("live-next-turn-row");
+    var v = $("live-success-verdict-line");
+    if (!row || !v) return;
+    var fin =
+      v.classList.contains("live-verdict--success") || v.classList.contains("live-verdict--fail");
+    var bladeN = Math.max(0, Math.floor(sumBoardMemberBlades()));
+    var resN = Array.isArray(state.resolutionArea) ? state.resolutionArea.length : 0;
+    var resMeetsBlade = bladeN > 0 && resN >= bladeN;
+    row.hidden = !(fin && resMeetsBlade);
+  }
+
   function syncLiveTurnStatsPanel() {
     var wrap = $("live-turn-stats-wrap");
     if (!wrap) return;
@@ -2296,6 +2312,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         ov0.textContent = "";
         ov0.classList.remove("is-ok", "is-fail", "is-muted");
       }
+      var ntr0 = $("live-next-turn-row");
+      if (ntr0) ntr0.hidden = true;
       return;
     }
     wrap.hidden = false;
@@ -2330,24 +2348,22 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         tolEl.textContent = "—";
         if (tolHint) tolHint.textContent = "";
       } else {
-        var bladesAll = sumBoardMemberBlades();
-        var fieldH = b.boardHSum != null ? b.boardHSum : 0;
-        var resBhW = b.resolutionBhWeightedSum != null ? b.resolutionBhWeightedSum : 0;
-        var tolN = bladesAll + fieldH + resBhW - needSum;
+        var bladeBoard = sumBoardMemberBlades();
+        var heartBoard = Math.round(
+          (b.boardHSum != null ? b.boardHSum : 0) + (b.boardWild != null ? b.boardWild : 0),
+        );
+        var tolN = bladeBoard + heartBoard - needSum;
         tolEl.textContent = String(tolN);
         if (tolHint) {
           tolHint.textContent =
-            "参考（目安）: ブレード盤面計 " +
-            bladesAll +
-            " ＋ 場メンバー所持H計 " +
-            fieldH +
-            " ＋ 解決BH計 " +
-            resBhW +
-            " − 必要ハート計 " +
+            "盤面ブレード合計 " +
+            bladeBoard +
+            " ＋ 盤面ハート合計 " +
+            heartBoard +
+            " − ライブ合計要求値 " +
             needSum +
             " ＝ " +
-            tolN +
-            "（公式の非BH許容とは異なる場合があります）";
+            tolN;
         }
       }
     }
@@ -2373,17 +2389,23 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     }
 
     var verdict = $("live-success-verdict-line");
-    if (!verdict) return;
+    if (!verdict) {
+      var ntrNv = $("live-next-turn-row");
+      if (ntrNv) ntrNv.hidden = true;
+      return;
+    }
     verdict.classList.remove("live-verdict--success", "live-verdict--fail", "live-verdict--muted");
 
     if (!b.liveCt) {
       verdict.textContent = "ライブエリアにライブカードがありません。";
       verdict.classList.add("live-verdict--muted");
+      syncLiveNextTurnFromLiveRow();
       return;
     }
     if (needSum <= 0) {
       verdict.textContent = "必要ハート（need_heart）が定義されていません。";
       verdict.classList.add("live-verdict--muted");
+      syncLiveNextTurnFromLiveRow();
       return;
     }
 
@@ -2395,6 +2417,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       verdict.textContent = "ライブ成功";
       verdict.classList.add("live-verdict--success");
     }
+    syncLiveNextTurnFromLiveRow();
   }
 
   /** 右下: 山札残りの非BH枚数と BH 色ごとの枚数 */
@@ -2477,18 +2500,21 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     }
     if (!ordered.length) {
       host.innerHTML = "";
+      host.classList.remove("deck-odds-key-stack--fan-right");
       wrap.hidden = true;
       return false;
     }
     wrap.hidden = false;
     host.innerHTML = "";
+    host.classList.remove("deck-odds-key-stack--fan-right");
     ordered.forEach(function (no, idx) {
       var cat = getCard(no);
-      var wrap = document.createElement("span");
-      wrap.className = "deck-odds-key-stack__item";
-      wrap.style.zIndex = String(ordered.length - idx);
-      wrap.style.transform = "translate(" + idx * 19 + "px, " + idx * -4 + "px)";
-      wrap.title = (cat && cat.name) || no;
+      var item = document.createElement("span");
+      item.className = "deck-odds-key-stack__item";
+      item.style.zIndex = String(ordered.length - idx);
+      var tx = idx * 19;
+      item.style.transform = "translate(" + tx + "px, " + idx * -4 + "px)";
+      item.title = (cat && cat.name) || no;
       if (cat && cat.img) {
         var img = document.createElement("img");
         img.className = "deck-odds-key-stack__img";
@@ -2497,12 +2523,12 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         img.width = 46;
         img.height = 64;
         img.decoding = "async";
-        wrap.appendChild(img);
+        item.appendChild(img);
       } else {
-        wrap.classList.add("deck-odds-key-stack__item--text");
-        wrap.textContent = no;
+        item.classList.add("deck-odds-key-stack__item--text");
+        item.textContent = no;
       }
-      host.appendChild(wrap);
+      host.appendChild(item);
     });
     return true;
   }
@@ -4045,7 +4071,16 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       "flow-hint--live-begin",
       "flow-hint--turn-start",
       "flow-hint--live-success",
+      "flow-hint--mulligan-execute",
     );
+    if (state.awaitingTurnStart === true && !openingMulliganExecuteUsed) {
+      body.classList.add("flow-hint--mulligan-execute");
+      return;
+    }
+    if (state.awaitingTurnStart === true && openingMulliganExecuteUsed) {
+      body.classList.add("flow-hint--turn-start");
+      return;
+    }
     var mull = state.awaitingTurnStart === true;
     var ltp = state.liveTurnPickMode === true;
     var lsb = state.liveStatsAfterBegin === true;
@@ -4080,6 +4115,10 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       body.classList.add("flow-hint--turn-start");
       return;
     }
+    if (lsb && ealeDone) {
+      body.classList.add("flow-hint--turn-start");
+      return;
+    }
     if (ltp && bBegin && !bBegin.disabled && liveSlotsHaveCard()) {
       body.classList.add("flow-hint--live-begin");
       return;
@@ -4089,7 +4128,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       return;
     }
     if (!mull && !ltp && !lsb && hasEn && upEn === 0) {
-      body.classList.add("flow-hint--live-turn-start");
+      if (liveTurnStartGlowArmed) body.classList.add("flow-hint--live-turn-start");
       return;
     }
     if (!mull && !ltp && !lsb && ealeDone && !liveSlotsHaveCard()) {
@@ -4109,7 +4148,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       bPrim.disabled = mulliganPhase || (inPick && state.liveTurnSelectedIds.length === 0);
       bPrim.title = inPick
         ? state.liveTurnSelectedIds.length === 0
-          ? "手札右上のチェックでカードを選んでください"
+          ? "手札中央のチェックでカードを選んでください"
           : "選んだカードをライブの空き枠へ左から順に配置し、ドローします"
         : "成功ライブを控え室に送ってライブ準備へ";
     }
@@ -4307,7 +4346,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
 
   function doUndo() {
     if (!undoHistory.length) {
-      showToast("取り消せる操作がありません");
+      showToast("ひとつ戻せる操作がありません");
       return;
     }
     redoHistory.push(snapshotBoard());
@@ -4316,12 +4355,12 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     persistSessionTexts();
     logReplay("undo");
     render();
-    showToast("操作を取り消しました");
+    showToast("ひとつ戻しました");
   }
 
   function doRedo() {
     if (!redoHistory.length) {
-      showToast("やり直す操作がありません");
+      showToast("ひとつ進める操作がありません");
       return;
     }
     undoHistory.push(snapshotBoard());
@@ -4330,7 +4369,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     persistSessionTexts();
     logReplay("redo");
     render();
-    showToast("やり直しました");
+    showToast("ひとつ進めました");
   }
 
   function persistSessionTexts() {
@@ -4365,7 +4404,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   function onDeckOddsKManualInput(inp) {
     if (!inp || inp.readOnly) return;
     var v = sanitizeNonNegativeInt(inp.value);
-    deckOddsKManual = Math.max(1, Math.min(99, v || 1));
+    deckOddsKManual = Math.max(0, Math.min(99, v));
     if (state.deck.length > 0) deckOddsKManual = Math.min(deckOddsKManual, state.deck.length);
     persistDeckOddsKManual();
     var val = String(deckOddsKManual);
@@ -4636,6 +4675,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       flushedResolutionAndLiveToWaiting: flushedCt,
       turn: state.turnCount,
     });
+    liveTurnStartGlowArmed = true;
     render();
   }
 
@@ -4702,6 +4742,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       showToast("マリガンは「ターン開始」の前のみ使えます");
       return;
     }
+    openingMulliganExecuteUsed = true;
     var pickSet = new Set(state.mulliganSelectedIds || []);
     var toReturn = state.hand.filter(function (c) {
       return pickSet.has(c.id);
@@ -4741,6 +4782,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   }
 
   $("btn-turn-start")?.addEventListener("click", doTurnPhaseStart);
+  $("btn-next-turn-from-live")?.addEventListener("click", doTurnPhaseStart);
 
   $("btn-zone-hints")?.addEventListener("click", function () {
     document.body.classList.toggle("zone-hints-visible");
@@ -4768,6 +4810,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     }
     if (state.liveTurnPickMode) return;
     pushHistoryBefore("live-turn-start");
+    liveTurnStartGlowArmed = false;
     var fromSlive = state.successfulLiveArea.slice();
     state.successfulLiveArea.length = 0;
     if (fromSlive.length) state.waitingRoom.push.apply(state.waitingRoom, fromSlive);
@@ -5272,20 +5315,14 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     }
     uid = Math.max(uid, 999);
     logReplay("reset-board");
+    openingMulliganExecuteUsed = false;
+    liveTurnStartGlowArmed = false;
     render();
     showToast("盤面を初期化しました");
   });
 
   $("btn-back-builder")?.addEventListener("click", () => {
     if (typeof onBackToDeck === "function") onBackToDeck();
-  });
-
-  $("toggle-live")?.addEventListener("click", () => {
-    const row = $("live-row");
-    const btn = $("toggle-live");
-    if (!row || !btn) return;
-    const on = row.classList.toggle("hidden");
-    btn.textContent = on ? "ライブエリアを表示" : "ライブエリアを隠す";
   });
 
   function toggleWaitingRailExpanded(ev) {
@@ -5330,6 +5367,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       const on = document.body.classList.contains("hide-hand-stream");
       btnHandMask.textContent = on ? "手札を表示" : "手札を隠す";
       btnHandMask.setAttribute("aria-pressed", on ? "true" : "false");
+      btnHandMask.classList.toggle("toggle-hand-mask--on", on);
     };
     syncHandMaskBtn();
     btnHandMask.addEventListener("click", function () {

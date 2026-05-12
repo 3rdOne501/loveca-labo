@@ -71,15 +71,10 @@ python3 -m http.server 8080</pre>
 
     <div id="boot-toolbar" class="boot-toolbar" hidden>
       <p class="boot-toolbar-lead">
-        カード DB の取得に失敗しました。オフライン用の <code>cards.json</code> をホストしている URL を指定するか、ネットワークを確認して再試行してください。
+        カード DB の取得に失敗しました。ネットワークを確認して再試行するか、しばらく時間をおいてからページを再読み込みしてください。
       </p>
-      <label class="field boot-url-field">
-        <span>カード DB URL（上書き保存）</span>
-        <input type="url" id="boot-cards-url" placeholder="https://…/cards.json" autocomplete="off" />
-      </label>
       <div class="boot-toolbar-actions">
-        <button type="button" class="btn secondary" id="boot-retry">再試行</button>
-        <button type="button" class="btn primary" id="boot-apply-reload">URL を保存して再読込</button>
+        <button type="button" class="btn primary" id="boot-retry">再試行</button>
       </div>
     </div>
 
@@ -247,20 +242,6 @@ python3 -m http.server 8080</pre>
             </div>
           </details>
 
-          <details class="deck-panel-section" id="deck-section-cards-db">
-            <summary class="deck-panel-summary">カードデータ URL（任意）</summary>
-            <div class="deck-panel-section-body">
-              <p class="hint search-hint-muted">通常は変更不要です。独自 cards.json を使うときだけ URL を指定してください。</p>
-              <label class="field">
-                <span>cards.json を別 URL から読む（空で保存すると既定）</span>
-                <input type="url" id="builder-cards-json-url" placeholder="https://…/cards.json" autocomplete="off" />
-              </label>
-              <div class="btn-row mb-sm">
-                <button type="button" class="btn sm secondary" id="btn-builder-cards-reload">URL を保存して再読込</button>
-              </div>
-            </div>
-          </details>
-
           <details class="deck-panel-section" id="deck-section-json-io">
             <summary class="deck-panel-summary">JSON 入出力</summary>
             <div class="deck-panel-section-body">
@@ -341,7 +322,7 @@ python3 -m http.server 8080</pre>
           <span class="hud-chip">控室 <strong id="hud-waiting">0</strong></span>
           <span class="hud-chip">解決 <strong id="hud-resolution">0</strong></span>
           <span class="hud-chip" title="ターンカウント（0T 開始。「ターン開始」で増加）">ターン <strong id="hud-turn">0T</strong></span>
-          <span class="hud-chip muted-chip"><kbd>U</kbd> Undo · <kbd>R</kbd> Redo · <kbd>?</kbd> ヘルプ</span>
+          <span class="hud-chip muted-chip"><kbd>U</kbd> ひとつ戻す · <kbd>R</kbd> ひとつ進む · <kbd>?</kbd> ヘルプ</span>
           <button type="button" class="btn sm secondary" id="btn-zone-hints" aria-pressed="false">
             ゾーン説明を表示
           </button>
@@ -458,10 +439,10 @@ python3 -m http.server 8080</pre>
                       type="number"
                       id="deck-odds-k"
                       class="deck-odds-k-input"
-                      min="1"
+                      min="0"
                       max="99"
                       step="1"
-                      value="1"
+                      value="0"
                       inputmode="numeric"
                       autocomplete="off"
                       aria-describedby="deck-odds-k-hint"
@@ -624,13 +605,14 @@ python3 -m http.server 8080</pre>
                 <option value="後攻">後攻</option>
               </select>
             </div>
-            <button type="button" class="btn sm secondary" id="btn-undo" title="U キー">
-              操作を戻す
-            </button>
-            <button type="button" class="btn sm secondary" id="btn-redo" title="R キー">
-              やり直す
-            </button>
-            <button type="button" class="btn sm" id="toggle-live">ライブエリアを隠す</button>
+            <div class="play-undo-redo-cluster">
+              <button type="button" class="btn play-undo-redo play-undo-redo--undo" id="btn-undo" title="U キー">
+                ひとつ戻す
+              </button>
+              <button type="button" class="btn play-undo-redo play-undo-redo--redo" id="btn-redo" title="R キー">
+                ひとつ進む
+              </button>
+            </div>
           </div>
           <div id="live-row" class="three-cols">
             <div class="slot-wrap">
@@ -666,7 +648,11 @@ python3 -m http.server 8080</pre>
                   </dd>
                   <dt title="（場メンバー所持H＋解決BH）とライブ need_heart の差（残り／不足）">要求色</dt>
                   <dd id="live-required-colors" class="muted live-stats-colors">—</dd>
-                  <dt title="ブレード盤面計＋場メンバー所持H計＋解決BH計− need 合計（公式の非BH許容とは異なる場合あり）">目安（B+H+解決BH−need）</dt>
+                  <dt
+                    title="盤面ブレード合計（ステージ＋ライブ枠のメンバー blade）＋盤面ハート合計（場メンバー所持H計の表示値）−ライブ合計要求値（need_heart の合計）"
+                  >
+                    非BH許容数
+                  </dt>
                   <dd id="live-nonbh-tolerance" class="muted live-stats-detail">—</dd>
                   <dt title="ステージ上メンバーの blade（ブレード）合計のみ">ステB合計</dt>
                   <dd><strong id="live-total-blade">0</strong></dd>
@@ -682,6 +668,11 @@ python3 -m http.server 8080</pre>
                 <div id="live-stats-zone-hint-block" class="live-stats-zone-hint-block hint zone-inline-help deck-prob-explain-hide">
                   <p id="live-zone-hint-nonbh" class="live-zone-hint-line"></p>
                   <p id="live-zone-hint-resolution-bh" class="live-zone-hint-line"></p>
+                </div>
+                <div id="live-next-turn-row" class="live-next-turn-row" hidden>
+                  <button type="button" class="btn btn-next-turn-from-live" id="btn-next-turn-from-live">
+                    次のターンへ
+                  </button>
                 </div>
               </div>
             </details>
@@ -928,14 +919,14 @@ python3 -m http.server 8080</pre>
           ソロプレイ開始時、山札から<strong>初手 6 枚</strong>がランダムで手札に置かれます。「盤面リセット」でも同様に再シャッフルされます。山札一覧は<strong>最初は折りたたみ</strong>で、枚数行をクリックすると開閉できます。
         </p>
         <p>
-          「<strong>ターン開始</strong>」を押すまでマリガンできます。手札カード左上の<strong>チェック</strong>で複数選択、「<strong>マリガン実行</strong>」で選んだ枚数を山札に戻してシャッフルし、同じ枚数をドローします。<strong>1枚も選ばずに実行可能</strong>（そのときはシャッフル・ドローはしません）。リセット後も「ターン開始」までこのモードになります。
+          「<strong>ターン開始</strong>」を押すまでマリガンできます。手札カード中央付近の<strong>チェック</strong>で複数選択、「<strong>マリガン実行</strong>」で選んだ枚数を山札に戻してシャッフルし、同じ枚数をドローします。<strong>1枚も選ばずに実行可能</strong>（そのときはシャッフル・ドローはしません）。リセット後も「ターン開始」までこのモードになります。
         </p>
         <p>
-          手札欄の<strong>ライブ進行ボタン</strong>では、まず「<strong>ライブターン開始</strong>」で<strong>成功したライブ</strong>のカードがすべて<strong>控え室</strong>へ送られ、手札<strong>右上のチェック</strong>で複数選び、同じボタンが「<strong>ライブエリアへ</strong>」に変わってからそれを押すと左→中央→右の<strong>空き枠に順に配置</strong>できます。配置した<strong>メンバー／ライブ</strong>1枚につき<strong>山札から手札へ1ドロー</strong>します。<strong>ライブターン中のみ、3枠は横向き・裏見えです。</strong>「<strong>ライブ開始</strong>」で<strong>ライブカード以外</strong>を<strong>控え室</strong>へ送ってモード終了すると、ライブカードが<strong>表面の縦向き</strong>になり、このタイミングで中央に<strong>ライブの計算</strong>パネル（概要と必要ハート・ステB・場メンバーH計・要求色・ステH色・解決 BH・判定）が出ます。<strong>ライブ成功判定</strong>は、ライブの need_heart に対し<strong>場にいるメンバーの所持ハート（ステージ＋ライブ枠）</strong>と<strong>ブレード枚数で捲れた解決カードの BH（blade_heart）</strong>を足し合わせた供給で照合します（ターン開始前はマリガン中のみのため、これらは無効になります）。
+          手札欄の<strong>ライブ進行ボタン</strong>では、まず「<strong>ライブターン開始</strong>」で<strong>成功したライブ</strong>のカードがすべて<strong>控え室</strong>へ送られ、手札<strong>中央のチェック</strong>で複数選び、同じボタンが「<strong>ライブエリアへ</strong>」に変わってからそれを押すと左→中央→右の<strong>空き枠に順に配置</strong>できます。配置した<strong>メンバー／ライブ</strong>1枚につき<strong>山札から手札へ1ドロー</strong>します。<strong>ライブターン中のみ、3枠は横向き・裏見えです。</strong>「<strong>ライブ開始</strong>」で<strong>ライブカード以外</strong>を<strong>控え室</strong>へ送ってモード終了すると、ライブカードが<strong>表面の縦向き</strong>になり、このタイミングで中央に<strong>ライブの計算</strong>パネル（概要と必要ハート・ステB・場メンバーH計・要求色・ステH色・解決 BH・判定）が出ます。<strong>ライブ成功判定</strong>は、ライブの need_heart に対し<strong>場にいるメンバーの所持ハート（ステージ＋ライブ枠）</strong>と<strong>ブレード枚数で捲れた解決カードの BH（blade_heart）</strong>を足し合わせた供給で照合します（ターン開始前はマリガン中のみのため、これらは無効になります）。
         </p>
         <p>
           PC でもタブレットでも、ドラッグでカードを移動します。ドラッグ開始時点から取り消し対象になります。<strong>U</strong> で
-          Undo、<strong>R</strong> で Redo、<strong>?</strong> でこのダイアログです。
+          <strong>U</strong> でひとつ戻す、<strong>R</strong> でひとつ進む、<strong>?</strong> でこのダイアログです。
         </p>
         <p>
           メンバーまたはライブカードでは、ステージ等でカード下の <strong>W</strong>／<strong>A</strong> と（ステージまたはライブ枠に<strong>いて</strong><strong>表面が見える</strong>メンバーだけ）<strong>+H／B</strong> が使えます。<strong>+H／B</strong> では所持ハート（6色・ALL）・ブレードを<strong>DB値に加算してライブ計算へ反映</strong>します（非公式）。<strong>画像クリック</strong>は向きの切替です（所定ゾーンでは無効）。<strong>通常時はライブの3枠にメンバーを置けず、ライブターンだけ置けます</strong>（非ライブターはライブカードのみドラッグ可）。ライブエリアは<strong>ライブターン中だけ</strong>裏・横向きにし、その後は<strong>メンバーと同じ縦・同サイズ</strong>です。<strong>メンバーが枠へ入った</strong>ときだけ<strong>ライブセット相当として手札へ 1 枚自動ドロー</strong>します。「成功したライブ」は<strong>通常の縦向きレイアウト</strong>です（W／A の補助表示あり）。各ライブスロットは<strong>カード合計 1 枚まで</strong>です。

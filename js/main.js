@@ -1,8 +1,4 @@
-import {
-  getEffectiveCardsJsonUrl,
-  loadCardDatabase,
-  setCardsJsonUrlOverride,
-} from "./cards.js";
+import { loadCardDatabase } from "./cards.js";
 import { STORAGE_PLAY_RESUME } from "./config.js";
 import { normalizeDeckMapCounts } from "./deckLibrary.js";
 import { initDeckBuilder, loadDeckBundleFromStorage } from "./deckbuilder.js";
@@ -90,8 +86,6 @@ function hideBootToolbar() {
 
 function showBootToolbar(msg) {
   const b = document.getElementById("boot-toolbar");
-  const inp = document.getElementById("boot-cards-url");
-  if (inp && !inp.value) inp.value = getEffectiveCardsJsonUrl();
   if (b) b.hidden = false;
   const st = document.getElementById("load-status");
   if (st && msg) st.textContent = msg;
@@ -214,13 +208,6 @@ const viewGame = document.getElementById("view-game");
 
 document.getElementById("boot-retry")?.addEventListener("click", () => {
   tryLoadDatabase(viewDeck, viewGame, status);
-});
-
-document.getElementById("boot-apply-reload")?.addEventListener("click", () => {
-  const inp = document.getElementById("boot-cards-url");
-  const v = inp ? inp.value : "";
-  setCardsJsonUrlOverride(v.trim());
-  location.reload();
 });
 
 tryLoadDatabase(viewDeck, viewGame, status);
