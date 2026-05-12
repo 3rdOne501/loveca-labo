@@ -343,7 +343,8 @@ export function ensureTestBhVariant(baseCardNo, slot) {
  *   blade?: number,
  *   baseHeart?: Record<string, number>,
  *   liveScore?: number,
- *   needHeart?: Record<string, number>
+ *   needHeart?: Record<string, number>,
+ *   customImg?: string
  * }} options
  * @returns {string}
  */
@@ -354,6 +355,10 @@ export function ensureTestCardVariant(baseCardNo, options) {
   const slotRaw = Number(opts.slot || 0);
   const slotN = Number.isFinite(slotRaw) ? Math.max(0, Math.min(7, Math.floor(slotRaw))) : 0;
   const customName = String(opts.customName || "").trim().slice(0, 40);
+  const customImgRaw = opts.customImg != null ? String(opts.customImg).trim() : "";
+  const hasCustomImg =
+    customImgRaw.length > 0 &&
+    (customImgRaw.startsWith("data:image/") || /^https?:\/\//i.test(customImgRaw));
   const src = getCard(baseNo);
   if (!src || src.product !== UNSET_PLACEHOLDER_PRODUCT) return baseNo;
   const bladeN = Number(opts.blade);
@@ -364,11 +369,12 @@ export function ensureTestCardVariant(baseCardNo, options) {
   const needHeartMap = opts.needHeart && typeof opts.needHeart === "object" ? opts.needHeart : null;
   const hasBaseHeart = !!(baseHeartMap && Object.keys(baseHeartMap).length);
   const hasNeedHeart = !!(needHeartMap && Object.keys(needHeartMap).length);
-  if (!(slotN > 0) && !customName && !hasBlade && !hasLiveScore && !hasBaseHeart && !hasNeedHeart) return baseNo;
+  if (!(slotN > 0) && !customName && !hasBlade && !hasLiveScore && !hasBaseHeart && !hasNeedHeart && !hasCustomImg)
+    return baseNo;
   const seedNo = src._testBhVariantOf ? String(src._testBhVariantOf) : baseNo;
   const base = getCard(seedNo) || src;
   if (!base || base.product !== UNSET_PLACEHOLDER_PRODUCT) return baseNo;
-  if (slotN > 0 && !customName && !hasBlade && !hasLiveScore && !hasBaseHeart && !hasNeedHeart) {
+  if (slotN > 0 && !customName && !hasBlade && !hasLiveScore && !hasBaseHeart && !hasNeedHeart && !hasCustomImg) {
     return ensureTestBhVariant(seedNo, slotN);
   }
   const nameKey = customName
@@ -402,6 +408,16 @@ export function ensureTestCardVariant(baseCardNo, options) {
         })
         .join("")
     : "nh_";
+  function hashVariantChunk(str) {
+    var h = 2166136261 >>> 0;
+    var lim = Math.min(8000, str.length);
+    for (var i = 0; i < lim; i++) {
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 16777619) >>> 0;
+    }
+    return (h >>> 0).toString(36);
+  }
+  const imgKey = hasCustomImg ? "im" + String(customImgRaw.length) + "h" + hashVariantChunk(customImgRaw) : "im_";
   const variantNo =
     seedNo +
     TEST_BH_VARIANT_SEP +
@@ -417,7 +433,9 @@ export function ensureTestCardVariant(baseCardNo, options) {
     TEST_BH_VARIANT_SEP +
     baseHeartKey +
     TEST_BH_VARIANT_SEP +
-    needHeartKey;
+    needHeartKey +
+    TEST_BH_VARIANT_SEP +
+    imgKey;
   if (catalog[variantNo]) return variantNo;
   const bh = {};
   if (slotN > 0) {
@@ -456,6 +474,7 @@ export function ensureTestCardVariant(baseCardNo, options) {
     });
     variant.need_heart = next;
   }
+  if (hasCustomImg) variant.img = customImgRaw;
   catalog[variantNo] = variant;
   const nk = normalizeCardCatalogLookupKey(variantNo);
   if (nk && !catalogKeyByNormalized.has(nk)) catalogKeyByNormalized.set(nk, variantNo);

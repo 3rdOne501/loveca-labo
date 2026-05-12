@@ -93,6 +93,19 @@ body::before {
 }
 #view-deck .app-header {
   flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.55rem 1rem;
+}
+#view-deck .app-header h1 {
+  margin-bottom: 0.35rem;
+}
+#view-deck .app-header::after {
+  flex: 0 0 100%;
+  order: 10;
+  margin-top: 0.45rem;
 }
 
 a { color: #9ee0ff; }
@@ -201,6 +214,30 @@ body.app-boot-loading {
   background-clip: text;
   color: transparent;
   filter: drop-shadow(0 2px 12px rgba(255, 80, 140, 0.25));
+}
+button.btn.btn-reload-page {
+  font-weight: 800;
+  font-size: 0.82rem;
+  padding: 0.42rem 0.95rem;
+  border-radius: 999px;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.35);
+  flex-shrink: 0;
+}
+button.btn.btn-reload-page.btn-reload-page--deck {
+  background: linear-gradient(155deg, #2a9f72 0%, #1a6b4d 55%, #0f4a36 100%);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #f2fff9;
+}
+button.btn.btn-reload-page.btn-reload-page--deck:hover {
+  filter: brightness(1.09);
+}
+button.btn.btn-reload-page.btn-reload-page--play {
+  background: linear-gradient(155deg, #d85a8a 0%, #9a3e9e 50%, #6a2a78 100%);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #fff5fb;
+}
+button.btn.btn-reload-page.btn-reload-page--play:hover {
+  filter: brightness(1.09);
 }
 .lead {
   margin: 0;
@@ -1061,25 +1098,6 @@ body.app-boot-loading {
   font-weight: 600;
 }
 
-#zone-waiting.waiting-zone-strip.waiting-zone--t1,
-#zone-waiting.waiting-zone-strip.waiting-zone--t2,
-#zone-waiting.waiting-zone-strip.waiting-zone--t3 {
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  overflow-y: visible;
-  -webkit-overflow-scrolling: touch;
-  align-items: flex-start;
-}
-#zone-waiting.waiting-zone-strip.waiting-zone--t1 .card-item + .card-item {
-  margin-left: calc(var(--loveca-play-w, 82px) * -0.5);
-}
-#zone-waiting.waiting-zone-strip.waiting-zone--t2 .card-item + .card-item {
-  margin-left: calc(var(--loveca-play-w, 82px) * -0.65);
-}
-#zone-waiting.waiting-zone-strip.waiting-zone--t3 .card-item + .card-item {
-  margin-left: calc(var(--loveca-play-w, 82px) * -0.78);
-}
-
 /* 解決領域: 枚数が増えたら控え室に近い重なりで 1 行に収める */
 #zone-resolution.resolution-zone-strip.resolution-zone--t1,
 #zone-resolution.resolution-zone-strip.resolution-zone--t2,
@@ -1419,6 +1437,39 @@ body.play-mode .card-item .live-turn-pick {
   box-sizing: border-box;
   font: inherit;
   font-variant-numeric: tabular-nums;
+}
+.dlg-test-card-img-block {
+  margin-top: 0.25rem;
+  padding: 0.45rem 0.5rem;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 180, 220, 0.12);
+}
+.dlg-test-card-img-label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(250, 220, 240, 0.95);
+  margin-bottom: 0.2rem;
+}
+.dlg-test-card-img-hint {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+}
+.dlg-test-card-img-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.35rem;
+}
+.dlg-test-card-img-preview {
+  display: block;
+  max-width: min(160px, 40vw);
+  height: auto;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  object-fit: contain;
+  background: rgba(20, 12, 28, 0.6);
 }
 .dlg-test-card-actions {
   margin-top: 0.65rem;
@@ -2722,14 +2773,17 @@ body.play-mode #zone-hand .card-item[data-type="ライブ"] .card-img.rotated {
   object-fit: contain;
 }
 
-body.play-mode #zone-waiting.waiting-zone-strip.waiting-zone--t1 .card-item + .card-item {
-  margin-left: calc(var(--loveca-play-w) * -0.5);
+/* 控え室: 10 枚ごとに自動で折り返し（グリッド 10 列） */
+body.play-mode #zone-waiting.waiting-zone-strip {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, var(--loveca-play-w, 82px)));
+  gap: 0.42rem 0.32rem;
+  align-content: flex-start;
+  justify-content: start;
+  align-items: start;
 }
-body.play-mode #zone-waiting.waiting-zone-strip.waiting-zone--t2 .card-item + .card-item {
-  margin-left: calc(var(--loveca-play-w) * -0.65);
-}
-body.play-mode #zone-waiting.waiting-zone-strip.waiting-zone--t3 .card-item + .card-item {
-  margin-left: calc(var(--loveca-play-w) * -0.78);
+body.play-mode #zone-waiting.waiting-zone-strip .card-item + .card-item {
+  margin-left: 0;
 }
 
 body.play-mode #zone-resolution.resolution-zone-strip.resolution-zone--t1 .card-item + .card-item {

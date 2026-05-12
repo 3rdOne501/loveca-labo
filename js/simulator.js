@@ -4091,17 +4091,11 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     }
   }
 
-  /** 控え室一覧表示時: 5〜10 半分重ね、11〜20 より重ね、21+ さらに圧縮 */
+  /** 控え室は CSS グリッドで 10 枚／行（クラスは後方互換のため掃除のみ） */
   function updateWaitingZoneOverlapMode() {
     const zone = $("zone-waiting");
-    const row = $("waiting-row");
-    if (!zone || !row) return;
+    if (!zone) return;
     zone.classList.remove("waiting-zone--t1", "waiting-zone--t2", "waiting-zone--t3");
-    if (row.classList.contains("waiting-row--collapsed")) return;
-    const n = state.waitingRoom.length;
-    if (n >= 21) zone.classList.add("waiting-zone--t3");
-    else if (n >= 11) zone.classList.add("waiting-zone--t2");
-    else if (n >= 5) zone.classList.add("waiting-zone--t1");
   }
 
   /** 解決領域: 5〜10 は半重ね、11〜20 はより重ね、21+ はさらに圧縮（控え室と同様） */
@@ -4402,7 +4396,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     pruneLiveTurnSelection();
 
     fillZone("zone-deck", state.deck, null);
-    fillZone("zone-hand", state.hand, "rotate-hand");
+    fillZone("zone-hand", state.hand, {});
     fillZone("zone-waiting", state.waitingRoom, "rotate-waiting");
     var wCatch = $("zone-waiting-drop-catcher");
     if (wCatch) wCatch.innerHTML = "";

@@ -95,6 +95,9 @@ python3 -m http.server 8080</pre>
     <div id="view-deck" class="view">
       <header class="app-header">
         <h1>Loveca Labo</h1>
+        <button type="button" class="btn btn-reload-page btn-reload-page--deck" id="btn-reload-builder" title="ページを再読み込み">
+          再読込
+        </button>
       </header>
 
       <div class="builder">
@@ -315,6 +318,9 @@ python3 -m http.server 8080</pre>
           <button type="button" class="btn secondary" id="btn-help" title="? キー">ヘルプ</button>
           <button type="button" class="btn sm secondary" id="btn-tutorial-game" title="チュートリアル・画面別ガイド">ガイド</button>
           <button type="button" class="btn sm secondary" id="toggle-hand-mask">手札を隠す</button>
+          <button type="button" class="btn btn-reload-page btn-reload-page--play" id="btn-reload-play" title="ページを再読み込み">
+            再読込
+          </button>
         </div>
         <div class="game-bar-row game-tools-row">
           <details class="energy-card-details">
@@ -1139,6 +1145,16 @@ python3 -m http.server 8080</pre>
           <span>表示名（空なら既定）</span>
           <input type="text" id="dlg-test-card-name" maxlength="40" autocomplete="off" />
         </label>
+        <div class="dlg-test-card-img-block">
+          <span class="dlg-test-card-img-label">カード画像</span>
+          <p class="hint dlg-test-card-img-hint">カメラ・写真ライブラリ・ファイルから選べます（容量が大きいと自動で縮小します）。</p>
+          <div class="dlg-test-card-img-actions">
+            <button type="button" class="btn sm secondary" id="btn-test-card-img-pick">画像を選ぶ</button>
+            <button type="button" class="btn sm secondary" id="btn-test-card-img-clear">画像クリア</button>
+          </div>
+          <input type="file" id="dlg-test-card-img-file" accept="image/*" hidden />
+          <img id="dlg-test-card-img-preview" class="dlg-test-card-img-preview" alt="" width="112" height="158" hidden decoding="async" />
+        </div>
       </div>
       <div id="dlg-test-member-block" class="dlg-test-card-extra" hidden>
         <h3 class="dlg-test-card-subh">メンバー</h3>

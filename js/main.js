@@ -248,4 +248,11 @@ document.getElementById("boot-retry")?.addEventListener("click", () => {
   tryLoadDatabase(viewDeck, viewGame, status);
 });
 
+document.getElementById("btn-reload-builder")?.addEventListener("click", () => {
+  location.reload();
+});
+document.getElementById("btn-reload-play")?.addEventListener("click", () => {
+  location.reload();
+});
+
 tryLoadDatabase(viewDeck, viewGame, status);

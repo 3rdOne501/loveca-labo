@@ -691,6 +691,48 @@ export function initDeckBuilder(root, { onStartGame }) {
 
   /** @type {{ resolve: ((v: string) => void) | null, card: object | null }} */
   let testCardVariantWait = null;
+  /** @type {string | null} */
+  let testCardCustomImgDataUrl = null;
+
+  function shrinkTestCardImageDataUrl(dataUrl, maxBytes, done) {
+    const raw = String(dataUrl || "");
+    if (!raw.startsWith("data:image/") || raw.length <= maxBytes) {
+      done(raw);
+      return;
+    }
+    const im = new Image();
+    im.onload = function () {
+      try {
+        var w0 = im.naturalWidth || im.width || 1;
+        var h0 = im.naturalHeight || im.height || 1;
+        var scale = Math.min(1, 480 / w0);
+        var w = Math.max(1, Math.round(w0 * scale));
+        var h = Math.max(1, Math.round(h0 * scale));
+        var cv = document.createElement("canvas");
+        cv.width = w;
+        cv.height = h;
+        var ctx = cv.getContext("2d");
+        if (!ctx) {
+          done(raw);
+          return;
+        }
+        ctx.drawImage(im, 0, 0, w, h);
+        var q = 0.82;
+        var out = cv.toDataURL("image/jpeg", q);
+        while (out.length > maxBytes && q > 0.36) {
+          q -= 0.07;
+          out = cv.toDataURL("image/jpeg", q);
+        }
+        done(out.length < raw.length ? out : raw);
+      } catch (_) {
+        done(raw);
+      }
+    };
+    im.onerror = function () {
+      done(raw);
+    };
+    im.src = raw;
+  }
 
   function wireTestCardVariantDialogOnce() {
     const dlg = document.getElementById("dlg-test-card-variant");
@@ -698,6 +740,64 @@ export function initDeckBuilder(root, { onStartGame }) {
     dlg.dataset.llocgWired = "1";
     const btnOk = document.getElementById("btn-test-card-ok");
     const btnCancel = document.getElementById("btn-test-card-cancel");
+    const btnImgPick = document.getElementById("btn-test-card-img-pick");
+    const btnImgClear = document.getElementById("btn-test-card-img-clear");
+    const inpImg = document.getElementById("dlg-test-card-img-file");
+    if (btnImgPick && inpImg) {
+      btnImgPick.addEventListener("click", function (ev) {
+        ev.preventDefault();
+        inpImg.click();
+      });
+    }
+    if (btnImgClear) {
+      btnImgClear.addEventListener("click", function (ev) {
+        ev.preventDefault();
+        testCardCustomImgDataUrl = null;
+        if (inpImg) inpImg.value = "";
+        const pv = document.getElementById("dlg-test-card-img-preview");
+        if (pv) {
+          pv.hidden = true;
+          pv.removeAttribute("src");
+        }
+      });
+    }
+    if (inpImg) {
+      inpImg.addEventListener("change", function () {
+        const f = inpImg.files && inpImg.files[0];
+        if (!f || !/^image\//.test(f.type)) {
+          showToast("画像ファイルを選んでください。");
+          return;
+        }
+        if (f.size > 12 * 1024 * 1024) {
+          showToast("12MB 以下の画像にしてください。");
+          inpImg.value = "";
+          return;
+        }
+        const fr = new FileReader();
+        fr.onload = function () {
+          const url = String(fr.result || "");
+          if (!url.startsWith("data:image/")) {
+            showToast("画像の読み込みに失敗しました。");
+            return;
+          }
+          shrinkTestCardImageDataUrl(url, 420000, function (out) {
+            testCardCustomImgDataUrl = out;
+            const pv = document.getElementById("dlg-test-card-img-preview");
+            if (pv) {
+              pv.src = out;
+              pv.hidden = false;
+            }
+            if (out.length > 550000) {
+              showToast("画像が大きいため保存時に失敗することがあります。より小さい写真を試してください。");
+            }
+          });
+        };
+        fr.onerror = function () {
+          showToast("画像の読み込みに失敗しました。");
+        };
+        fr.readAsDataURL(f);
+      });
+    }
     function finish(no) {
       const fn = testCardVariantWait && testCardVariantWait.resolve;
       testCardVariantWait = null;
@@ -757,6 +857,7 @@ export function initDeckBuilder(root, { onStartGame }) {
             baseHeart,
             liveScore,
             needHeart,
+            customImg: testCardCustomImgDataUrl || undefined,
           }) || pending.card_no;
         finish(out);
       });
@@ -772,6 +873,14 @@ export function initDeckBuilder(root, { onStartGame }) {
         return;
       }
       testCardVariantWait = { resolve: resolve, card: card };
+      testCardCustomImgDataUrl = null;
+      const inpImg = document.getElementById("dlg-test-card-img-file");
+      if (inpImg) inpImg.value = "";
+      const pv = document.getElementById("dlg-test-card-img-preview");
+      if (pv) {
+        pv.hidden = true;
+        pv.removeAttribute("src");
+      }
       const lead = document.getElementById("dlg-test-card-variant-lead");
       if (lead) {
         lead.textContent =
