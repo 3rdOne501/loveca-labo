@@ -474,51 +474,24 @@ python3 -m http.server 8080</pre>
             </section>
           </div>
 
-          <details
-            id="resolution-stick-fold"
-            class="zone-block zone-block-resolution-priority resolution-stick-fold"
-            open
-          >
-            <summary class="resolution-stick-fold__summary">
-              解決
-              <span class="resolution-stick-fold__hint muted">タップで開閉</span>
-            </summary>
-            <div class="resolution-stick-fold__body">
-              <p id="resolution-over-blade-banner" class="resolution-over-blade-banner" role="status" hidden></p>
-              <div class="zone-head">
-                <h3>解決</h3>
-                <div class="btn-row">
-                  <button type="button" class="btn sm primary" id="btn-res-draw-one" title="山札の先頭を1枚解決ゾーンへ（Undo可）">
-                    1枚ドロー（解決）
-                  </button>
-                  <button type="button" class="btn sm" id="btn-res-top">デッキ上に戻す</button>
-                  <button type="button" class="btn sm" id="btn-res-shuf">戻してシャッフル</button>
-                  <button type="button" class="btn sm" id="btn-res-wait">控室へ</button>
-                </div>
+          <section class="zone-block zone-block-resolution-priority">
+            <p id="resolution-over-blade-banner" class="resolution-over-blade-banner" role="status" hidden></p>
+            <div class="zone-head">
+              <h3>解決</h3>
+              <div class="btn-row">
+                <button type="button" class="btn sm primary" id="btn-res-draw-one" title="山札の先頭を1枚解決ゾーンへ（Undo可）">
+                  1枚ドロー（解決）
+                </button>
+                <button type="button" class="btn sm" id="btn-res-top">デッキ上に戻す</button>
+                <button type="button" class="btn sm" id="btn-res-shuf">戻してシャッフル</button>
+                <button type="button" class="btn sm" id="btn-res-wait">控室へ</button>
               </div>
-              <div id="zone-resolution" class="card-strip zone-drop tall resolution-zone-strip"></div>
             </div>
-          </details>
+            <div id="zone-resolution" class="card-strip zone-drop tall resolution-zone-strip"></div>
+          </section>
 
-          <details
-            id="deck-odds-fold"
-            class="zone-block zone-block-deck-odds-wide deck-odds-foldable"
-          >
-            <script>
-              (function () {
-                try {
-                  if (window.matchMedia && window.matchMedia("(min-width: 901px)").matches) {
-                    var el = document.currentScript && document.currentScript.parentNode;
-                    if (el && el.tagName === "DETAILS") el.setAttribute("open", "");
-                  }
-                } catch (e) {}
-              })();
-            </script>
-            <summary class="deck-odds-fold__summary">
-              デッキの確率（参考）
-              <span class="deck-odds-fold__hint muted">タップで開く</span>
-            </summary>
-            <div class="deck-odds-fold__body">
+          <section id="deck-odds-fold" class="zone-block zone-block-deck-odds-wide">
+            <h3>デッキの確率（参考）</h3>
             <div id="live-deck-odds-panel" class="live-deck-odds-panel" aria-live="polite">
                   <div id="deck-odds-role-visuals" class="deck-odds-role-visuals" hidden aria-label="デッキ役割カードの見た目">
                     <div class="deck-odds-role-block" id="deck-odds-role-key-wrap" hidden>
@@ -709,8 +682,7 @@ python3 -m http.server 8080</pre>
             <p class="hint zone-inline-help live-prob-footnote deck-prob-explain-hide">
               キー／中間・ライブ・指定を<strong>k 枚</strong>で引く確率（下の k と同じ。マリガン・ライブ手札は自動）。1T〜列は左の数の累積 k。
             </p>
-            </div>
-          </details>
+          </section>
         </div>
 
         <div class="col col-center">
@@ -1006,85 +978,59 @@ python3 -m http.server 8080</pre>
             </div>
           </section>
 
-          <details id="hand-stick-fold" class="zone-block hand-stick-fold" open>
-            <summary class="hand-stick-fold__summary">
-              手札
-              <span id="hand-inline-count-sticky" class="badge hand-inline-count" aria-live="polite">0</span>
-              <span class="hand-stick-fold__hint muted">タップで開閉</span>
-            </summary>
-            <div class="hand-stick-fold__body">
-              <div class="zone-head zone-head--hand">
-                <h3 class="hand-zone-title">
-                  手札
-                  <span id="hand-inline-count" class="badge hand-inline-count" aria-live="polite">0</span>
-                </h3>
-                <div class="hand-zone-actions">
-                  <button type="button" class="btn sm primary" id="btn-live-turn-primary" disabled>
-                    ライブターン開始
-                  </button>
-                  <button type="button" class="btn sm primary" id="btn-live-turn-begin" disabled>
-                    ライブ開始
-                  </button>
-                  <button type="button" class="btn sm" id="btn-mulligan-execute" disabled>
-                    マリガン実行
-                  </button>
-                  <button type="button" class="btn sm danger" id="btn-reset-game" title="キー山札から初手／Undo 消去">
-                    盤面リセット
-                  </button>
-                </div>
-              </div>
-              <p id="hand-live-turn-hint" class="hint zone-inline-help" hidden>
-                <strong>ライブターン中:</strong>
-                カードを選び、続けて<strong>ライブエリアへ</strong>と表示されているボタンで<strong>左→中央→右</strong>の空き枠へ移します（枠では<strong>裏・横向き</strong>）。<strong>置いた枚数だけ</strong>山札からドローします。「<strong>ライブ開始</strong>」で<strong>ライブカード以外</strong>が<strong>控え室</strong>へ送られ、残りは<strong>表面の縦向き</strong>になり、このモードを終了します。
-              </p>
-              <p id="hand-mulligan-hint" class="hint zone-inline-help">
-                <strong>ターン開始まで:</strong>
-                戻したいカードに<strong>チェック</strong>、「<strong>マリガン実行</strong>」で選択枚を山札に戻しシャッフルして同じ枚数をドローします。<strong>0枚チェックでも実行できます</strong>（そのときはシャッフル・追加ドローはしません）。
-                チェックはカード中央付近の小さな操作域です。タップしづらいときはカードを少し上下に動かしてから再度タップしてください。
-              </p>
-              <div id="hand-row">
-                <div id="zone-hand" class="card-strip zone-drop hand-zone"></div>
+          <section class="zone-block">
+            <div class="zone-head zone-head--hand">
+              <h3 class="hand-zone-title">
+                手札
+                <span id="hand-inline-count" class="badge hand-inline-count" aria-live="polite">0</span>
+              </h3>
+              <div class="hand-zone-actions">
+                <button type="button" class="btn sm primary" id="btn-live-turn-primary" disabled>
+                  ライブターン開始
+                </button>
+                <button type="button" class="btn sm primary" id="btn-live-turn-begin" disabled>
+                  ライブ開始
+                </button>
+                <button type="button" class="btn sm" id="btn-mulligan-execute" disabled>
+                  マリガン実行
+                </button>
+                <button type="button" class="btn sm danger" id="btn-reset-game" title="キー山札から初手／Undo 消去">
+                  盤面リセット
+                </button>
               </div>
             </div>
-          </details>
+            <p id="hand-live-turn-hint" class="hint zone-inline-help" hidden>
+              <strong>ライブターン中:</strong>
+              カードを選び、続けて<strong>ライブエリアへ</strong>と表示されているボタンで<strong>左→中央→右</strong>の空き枠へ移します（枠では<strong>裏・横向き</strong>）。<strong>置いた枚数だけ</strong>山札からドローします。「<strong>ライブ開始</strong>」で<strong>ライブカード以外</strong>が<strong>控え室</strong>へ送られ、残りは<strong>表面の縦向き</strong>になり、このモードを終了します。
+            </p>
+            <p id="hand-mulligan-hint" class="hint zone-inline-help">
+              <strong>ターン開始まで:</strong>
+              戻したいカードに<strong>チェック</strong>、「<strong>マリガン実行</strong>」で選択枚を山札に戻しシャッフルして同じ枚数をドローします。<strong>0枚チェックでも実行できます</strong>（そのときはシャッフル・追加ドローはしません）。
+              チェックはカード中央付近の小さな操作域です。タップしづらいときはカードを少し上下に動かしてから再度タップしてください。
+            </p>
+            <div id="hand-row">
+              <div id="zone-hand" class="card-strip zone-drop hand-zone"></div>
+            </div>
+          </section>
 
           <section class="zone-block play-tools-block">
             <div class="deck-tools-split">
-              <details
-                id="deck-pick-fold"
-                class="deck-tools-split__pick deck-pick-fold"
-              >
-                <script>
-                  (function () {
-                    try {
-                      if (window.matchMedia && window.matchMedia("(min-width: 901px)").matches) {
-                        var el = document.currentScript && document.currentScript.parentNode;
-                        if (el && el.tagName === "DETAILS") el.setAttribute("open", "");
-                      }
-                    } catch (e) {}
-                  })();
-                </script>
-                <summary class="deck-pick-fold__summary">
-                  指定カード検索
-                  <span class="deck-pick-fold__hint muted">タップで開く</span>
-                </summary>
-                <div class="deck-pick-fold__body">
-                  <div class="deck-pick-block">
-                    <div class="deck-pick-head-row">
-                      <h4 class="deck-pick-odds-section-title">指定カード検索</h4>
-                      <label class="field deck-pick-k-field">
-                        <span>めくり枚数</span>
-                        <input type="number" id="deck-pick-k" min="1" max="99" step="1" value="1" />
-                      </label>
-                    </div>
-                    <p id="deck-pick-odds" class="hint zone-inline-help deck-pick-odds-line deck-draw-odds-visible"></p>
-                    <div id="deck-pick-list" class="deck-pick-list" role="group" aria-label="山札に残っているカード"></div>
-                    <div class="btn-row deck-pick-actions">
-                      <button type="button" class="btn sm secondary" id="btn-deck-pick-clear">選択をクリア</button>
-                    </div>
+              <div class="deck-tools-split__pick">
+                <div class="deck-pick-block">
+                  <div class="deck-pick-head-row">
+                    <h4 class="deck-pick-odds-section-title">指定カード検索</h4>
+                    <label class="field deck-pick-k-field">
+                      <span>めくり枚数</span>
+                      <input type="number" id="deck-pick-k" min="1" max="99" step="1" value="1" />
+                    </label>
+                  </div>
+                  <p id="deck-pick-odds" class="hint zone-inline-help deck-pick-odds-line deck-draw-odds-visible"></p>
+                  <div id="deck-pick-list" class="deck-pick-list" role="group" aria-label="山札に残っているカード"></div>
+                  <div class="btn-row deck-pick-actions">
+                    <button type="button" class="btn sm secondary" id="btn-deck-pick-clear">選択をクリア</button>
                   </div>
                 </div>
-              </details>
+              </div>
               <div class="deck-tools-split__odds">
                 <div id="deck-remain-bh-panel" class="deck-remain-bh-panel" aria-live="polite">
                   <h4 class="deck-pick-odds-section-title">デッキの残色</h4>

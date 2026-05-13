@@ -2467,150 +2467,15 @@ body.play-mode .success-live-zone-shell--win .success-live-strip.card-strip {
 .zone-block-deck-odds-wide {
   min-width: 0;
 }
-details.deck-odds-foldable.zone-block-deck-odds-wide {
-  border: none;
-  padding: 0;
-}
-.deck-odds-foldable > summary.deck-odds-fold__summary {
-  list-style: none;
-}
-.deck-odds-foldable > summary.deck-odds-fold__summary::-webkit-details-marker {
-  display: none;
-}
-.deck-odds-fold__summary {
+.zone-block-deck-odds-wide > h3 {
   margin: 0 0 0.35rem;
   font-size: 0.92rem;
   font-family: var(--font-display);
   color: #fcdcec;
-  cursor: pointer;
-  user-select: none;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.3rem 0.55rem;
-  padding: 0.28rem 0.4rem;
-  border-radius: var(--radius-sm);
-  border: 1px dashed rgba(255, 160, 200, 0.28);
-  background: rgba(8, 5, 14, 0.35);
-  box-sizing: border-box;
-}
-.deck-odds-foldable[open] > .deck-odds-fold__summary {
-  margin-bottom: 0.4rem;
-  border-style: solid;
-  border-color: rgba(255, 160, 200, 0.38);
-}
-.deck-odds-fold__body {
-  min-width: 0;
-}
-@media (min-width: 901px) {
-  .deck-odds-fold__hint {
-    display: none;
-  }
-  .deck-pick-fold > summary.deck-pick-fold__summary {
-    display: none;
-  }
-  .deck-pick-fold > summary.deck-pick-fold__summary::-webkit-details-marker {
-    display: none;
-  }
-  .deck-pick-fold__hint {
-    display: none;
-  }
-  .resolution-stick-fold > summary.resolution-stick-fold__summary,
-  .hand-stick-fold > summary.hand-stick-fold__summary {
-    display: none;
-  }
-  .resolution-stick-fold > summary.resolution-stick-fold__summary::-webkit-details-marker,
-  .hand-stick-fold > summary.hand-stick-fold__summary::-webkit-details-marker {
-    display: none;
-  }
-  .resolution-stick-fold__hint,
-  .hand-stick-fold__hint {
-    display: none;
-  }
 }
 
-details.deck-pick-fold.deck-tools-split__pick {
-  border: none;
-  padding: 0;
-  min-width: 0;
-}
-.deck-pick-fold > summary.deck-pick-fold__summary {
-  list-style: none;
-}
-.deck-pick-fold > summary.deck-pick-fold__summary::-webkit-details-marker {
-  display: none;
-}
-.deck-pick-fold__summary {
-  cursor: pointer;
-  user-select: none;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.2rem;
-  padding: 0.32rem 0.38rem;
-  border-radius: var(--radius-sm);
-  border: 1px dashed rgba(255, 160, 200, 0.32);
-  background: rgba(8, 5, 14, 0.38);
-  font-size: 0.78rem;
-  font-weight: 700;
-  font-family: var(--font-display);
-  color: #fcdcec;
-  box-sizing: border-box;
-}
-.deck-pick-fold[open] > .deck-pick-fold__summary {
-  margin-bottom: 0.35rem;
-  border-style: solid;
-  border-color: rgba(255, 160, 200, 0.38);
-}
-.deck-pick-fold__body {
-  min-width: 0;
-}
-
-details.resolution-stick-fold.zone-block-resolution-priority,
-details.hand-stick-fold.zone-block {
-  border: none;
-  padding: 0;
-  min-width: 0;
-}
-.resolution-stick-fold > summary.resolution-stick-fold__summary,
-.hand-stick-fold > summary.hand-stick-fold__summary {
-  list-style: none;
-}
-.resolution-stick-fold > summary.resolution-stick-fold__summary::-webkit-details-marker,
-.hand-stick-fold > summary.hand-stick-fold__summary::-webkit-details-marker {
-  display: none;
-}
-.resolution-stick-fold__summary,
-.hand-stick-fold__summary {
-  cursor: pointer;
-  user-select: none;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.3rem 0.45rem;
-  padding: 0.32rem 0.42rem;
-  border-radius: var(--radius-sm);
-  border: 1px dashed rgba(255, 160, 200, 0.32);
-  background: rgba(8, 5, 14, 0.4);
-  font-size: 0.82rem;
-  font-weight: 800;
-  font-family: var(--font-display);
-  color: #fcdcec;
-  box-sizing: border-box;
-}
-.resolution-stick-fold[open] > .resolution-stick-fold__summary,
-.hand-stick-fold[open] > .hand-stick-fold__summary {
-  margin-bottom: 0.38rem;
-  border-style: solid;
-  border-color: rgba(255, 160, 200, 0.38);
-}
-.resolution-stick-fold__body,
-.hand-stick-fold__body {
-  min-width: 0;
-}
-
-/* プレイ画面・幅狭いスマホ: 文字の重なりを避け、確率まわりの折り返しを強化 */
-@media (max-width: 900px) {
+/* プレイ画面・スマホ縦のみ: 文字の重なり・確率まわりの折り返し等 */
+@media (max-width: 900px) and (orientation: portrait) {
   body.play-mode .deck-odds-pct--hero {
     font-size: clamp(1rem, 4.5vw, 1.55rem);
     line-height: 1.35;
@@ -2656,13 +2521,6 @@ details.hand-stick-fold.zone-block {
   body.play-mode .deck-odds-k-label {
     flex: 1 1 100%;
   }
-  body.play-mode .deck-odds-fold__hint {
-    font-size: 0.7rem;
-    font-weight: 400;
-  }
-  body.play-mode .deck-pick-fold .deck-pick-head-row .deck-pick-odds-section-title {
-    display: none;
-  }
   body.play-mode .zone-block-snapshots--under-energy {
     display: none;
   }
@@ -2702,54 +2560,13 @@ details.hand-stick-fold.zone-block {
   }
   body.play-mode .deck-tools-split__odds > .deck-remain-bh-panel,
   body.play-mode .deck-tools-split__odds > .play-deck-preset-panel,
-  body.play-mode .deck-tools-split__odds > .deck-odds-foldable {
+  body.play-mode .deck-tools-split__odds > #deck-odds-fold {
     min-width: 0;
     max-width: 100%;
   }
-
-  body.play-mode .resolution-stick-fold {
-    position: sticky;
-    top: 0;
-    z-index: 9;
-    padding-top: 0.15rem;
-    margin-top: -0.15rem;
-    background: linear-gradient(
-      180deg,
-      rgba(10, 7, 18, 0.97) 0%,
-      rgba(10, 7, 18, 0.92) 70%,
-      rgba(10, 7, 18, 0) 100%
-    );
-  }
-  body.play-mode .hand-stick-fold {
-    position: sticky;
-    bottom: 0;
-    z-index: 8;
-    padding-bottom: max(0.2rem, env(safe-area-inset-bottom, 0px));
-    margin-bottom: -0.1rem;
-    background: linear-gradient(
-      180deg,
-      rgba(14, 10, 22, 0.2) 0%,
-      rgba(10, 7, 18, 0.94) 28%,
-      rgba(7, 5, 14, 0.99) 100%
-    );
-    border-top: 1px solid rgba(255, 160, 200, 0.22);
-    box-shadow: 0 -10px 36px rgba(0, 0, 0, 0.35);
-  }
-  body.play-mode .resolution-stick-fold .resolution-stick-fold__body .zone-head > h3,
-  body.play-mode .hand-stick-fold .hand-zone-title {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-  }
 }
 
-@media (max-width: 700px) {
+@media (max-width: 900px) and (orientation: portrait) and (max-width: 700px) {
   body.play-mode .deck-tools-split {
     grid-template-columns: minmax(4.25rem, 5.75rem) minmax(0, 1fr);
     gap: 0.35rem 0.42rem;
@@ -2759,7 +2576,7 @@ details.hand-stick-fold.zone-block {
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 900px) and (orientation: portrait) and (max-width: 480px) {
   body.play-mode .deck-tools-split__odds {
     grid-template-columns: 1fr;
   }
@@ -2952,7 +2769,7 @@ details.hand-stick-fold.zone-block {
   border: 1px solid rgba(255, 150, 200, 0.22);
   background: rgba(255, 255, 255, 0.04);
 }
-@media (max-width: 900px) {
+@media (max-width: 900px) and (orientation: portrait) {
   .deck-odds-skill-explain-row {
     grid-template-columns: 1fr;
   }
@@ -3789,7 +3606,7 @@ body.play-mode .deck-pile {
 }
 
 /*
- * スマホ縦持ち（プレイのみ）: ステージを先に、手札を列末＋下端 sticky で常に操作しやすく。
+ * スマホ縦持ち（プレイのみ）: ステージを先に、手札を列末にまとめて操作しやすく。
  * landscape や幅広タブレット縦では従来の 1 列／3 列のまま。
  */
 @media (max-width: 900px) and (orientation: portrait) {
@@ -3855,12 +3672,12 @@ body.play-mode .deck-pile {
   body.play-mode .col.col-right section.play-tools-block {
     order: 60;
   }
-  body.play-mode .col.col-right details#hand-stick-fold.hand-stick-fold {
+  body.play-mode .col.col-right section.zone-block:has(#zone-hand) {
     order: 100;
     margin-top: 0.45rem;
   }
 
-  body.play-mode .col.col-right details#hand-stick-fold.hand-stick-fold .zone-head--hand {
+  body.play-mode .col.col-right section.zone-block:has(#zone-hand) .zone-head--hand {
     flex-wrap: wrap;
     gap: 0.35rem;
   }
@@ -3896,15 +3713,15 @@ body.play-mode .deck-pile {
   body.play-mode .game-board .col {
     overflow-x: hidden;
   }
-  body.play-mode .col.col-left > :is(section, details).zone-block,
-  body.play-mode .col.col-center > :is(section, details).zone-block,
-  body.play-mode .col.col-right > :is(section, details).zone-block {
+  body.play-mode .col.col-left > section.zone-block,
+  body.play-mode .col.col-center > section.zone-block,
+  body.play-mode .col.col-right > section.zone-block {
     isolation: isolate;
     margin-bottom: 0.55rem;
   }
-  body.play-mode .col.col-left > :is(section, details).zone-block:last-child,
-  body.play-mode .col.col-center > :is(section, details).zone-block:last-child,
-  body.play-mode .col.col-right > :is(section, details).zone-block:last-child {
+  body.play-mode .col.col-left > section.zone-block:last-child,
+  body.play-mode .col.col-center > section.zone-block:last-child,
+  body.play-mode .col.col-right > section.zone-block:last-child {
     margin-bottom: 0;
   }
   body.play-mode .zone-sim-success-row > .zone-block {
@@ -4200,7 +4017,7 @@ html {
     padding: 5px;
   }
 }
-@media (max-width: 900px) {
+@media (max-width: 900px) and (orientation: portrait) {
   :root {
     --deck-cards-per-row: 10;
     --deck-thumb-w-pile: 52px;
