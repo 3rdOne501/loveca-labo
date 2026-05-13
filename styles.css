@@ -3696,18 +3696,6 @@ body.play-mode .deck-pile {
   }
 }
 
-@media (max-width: 1024px) and (orientation: landscape) {
-  body.play-mode .zone-head .hand-zone-actions {
-    gap: 0.45rem;
-  }
-  body.play-mode .zone-head .hand-zone-actions .btn {
-    min-height: 50px;
-    font-size: 0.82rem;
-    padding-left: 0.9rem;
-    padding-right: 0.9rem;
-  }
-}
-
 /* --- 理想の趣味レーション: 追加 UI --- */
 .panel-title-row {
   display: flex;
