@@ -490,8 +490,25 @@ python3 -m http.server 8080</pre>
             <div id="zone-resolution" class="card-strip zone-drop tall resolution-zone-strip"></div>
           </section>
 
-          <section class="zone-block zone-block-deck-odds-wide">
-            <h3>デッキの確率（参考）</h3>
+          <details
+            id="deck-odds-fold"
+            class="zone-block zone-block-deck-odds-wide deck-odds-foldable"
+          >
+            <script>
+              (function () {
+                try {
+                  if (window.matchMedia && window.matchMedia("(min-width: 901px)").matches) {
+                    var el = document.currentScript && document.currentScript.parentNode;
+                    if (el && el.tagName === "DETAILS") el.setAttribute("open", "");
+                  }
+                } catch (e) {}
+              })();
+            </script>
+            <summary class="deck-odds-fold__summary">
+              デッキの確率（参考）
+              <span class="deck-odds-fold__hint muted">タップで開く</span>
+            </summary>
+            <div class="deck-odds-fold__body">
             <div id="live-deck-odds-panel" class="live-deck-odds-panel" aria-live="polite">
                   <div id="deck-odds-role-visuals" class="deck-odds-role-visuals" hidden aria-label="デッキ役割カードの見た目">
                     <div class="deck-odds-role-block" id="deck-odds-role-key-wrap" hidden>
@@ -682,7 +699,8 @@ python3 -m http.server 8080</pre>
             <p class="hint zone-inline-help live-prob-footnote deck-prob-explain-hide">
               キー／中間・ライブ・指定を<strong>k 枚</strong>で引く確率（下の k と同じ。マリガン・ライブ手札は自動）。1T〜列は左の数の累積 k。
             </p>
-          </section>
+            </div>
+          </details>
         </div>
 
         <div class="col col-center">

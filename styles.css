@@ -2467,11 +2467,98 @@ body.play-mode .success-live-zone-shell--win .success-live-strip.card-strip {
 .zone-block-deck-odds-wide {
   min-width: 0;
 }
-.zone-block-deck-odds-wide > h3 {
+details.deck-odds-foldable.zone-block-deck-odds-wide {
+  border: none;
+  padding: 0;
+}
+.deck-odds-foldable > summary.deck-odds-fold__summary {
+  list-style: none;
+}
+.deck-odds-foldable > summary.deck-odds-fold__summary::-webkit-details-marker {
+  display: none;
+}
+.deck-odds-fold__summary {
   margin: 0 0 0.35rem;
   font-size: 0.92rem;
   font-family: var(--font-display);
   color: #fcdcec;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.3rem 0.55rem;
+  padding: 0.28rem 0.4rem;
+  border-radius: var(--radius-sm);
+  border: 1px dashed rgba(255, 160, 200, 0.28);
+  background: rgba(8, 5, 14, 0.35);
+  box-sizing: border-box;
+}
+.deck-odds-foldable[open] > .deck-odds-fold__summary {
+  margin-bottom: 0.4rem;
+  border-style: solid;
+  border-color: rgba(255, 160, 200, 0.38);
+}
+.deck-odds-fold__body {
+  min-width: 0;
+}
+@media (min-width: 901px) {
+  .deck-odds-fold__hint {
+    display: none;
+  }
+}
+
+/* プレイ画面・幅狭いスマホ: 文字の重なりを避け、確率まわりの折り返しを強化 */
+@media (max-width: 900px) {
+  body.play-mode .deck-odds-pct--hero {
+    font-size: clamp(1rem, 4.5vw, 1.55rem);
+    line-height: 1.35;
+    margin: 0.35rem 0;
+    max-width: 100%;
+  }
+  body.play-mode .deck-live-sim-summary {
+    font-size: 0.76rem !important;
+    line-height: 1.5 !important;
+    text-align: left !important;
+    padding: 0.42rem 0.48rem !important;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  body.play-mode .zone-head.zone-head--hand {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.35rem;
+  }
+  body.play-mode .zone-head .hand-zone-actions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    overflow: visible;
+    width: 100%;
+    max-width: 100%;
+  }
+  body.play-mode .deck-odds-grid-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+  }
+  body.play-mode table.deck-odds-grid {
+    font-size: 0.72rem;
+  }
+  body.play-mode .live-deck-odds-panel {
+    line-height: 1.5;
+  }
+  body.play-mode .deck-odds-tstep-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.4rem 0.35rem;
+  }
+  body.play-mode .deck-odds-k-label {
+    flex: 1 1 100%;
+  }
+  body.play-mode .deck-odds-fold__hint {
+    font-size: 0.7rem;
+    font-weight: 400;
+  }
 }
 .live-deck-odds-panel {
   width: 100%;
