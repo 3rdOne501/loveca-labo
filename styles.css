@@ -3635,6 +3635,8 @@ body.play-mode .deck-pile {
     -webkit-overflow-scrolling: touch;
     align-content: stretch;
     gap: 0.45rem;
+    touch-action: pan-y;
+    overscroll-behavior-y: contain;
   }
 
   body.play-mode .game-board .col {
@@ -3726,7 +3728,7 @@ body.play-mode .deck-pile {
   body.play-mode .col.col-center section.zone-block {
     position: relative;
     z-index: 0;
-    overflow: hidden;
+    overflow: visible;
   }
 }
 
