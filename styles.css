@@ -1962,7 +1962,7 @@ body.play-mode #btn-layout-16-9.btn--layout-16-9-on {
 body.play-mode #btn-play-hand-dock {
   display: none;
 }
-@media (max-width: 900px) and (orientation: landscape) {
+@media (max-width: 1200px) and (orientation: landscape) {
   body.play-mode #btn-play-hand-dock {
     display: inline-flex;
     align-items: center;
@@ -3936,12 +3936,12 @@ body.play-mode .deck-pile {
 }
 
 /*
- * スマホ縦／スマホ横（プレイのみ）: ステージを先に、手札を列末で sticky 固定して操作しやすく。
- * 横は「狭い縦幅」の端末のみ自動適用（タブレット横などは除外）。
- * 任意 ON は body.play-hand-bottom-dock-force（スマホ横のみのボタン・sessionStorage）。
+ * スマホ縦／スマホ横（プレイのみ）: ステージを先に、手札を列末で sticky 固定。
+ * 縦は狭い画面のみ。横は max-height に依存しない（高い論理ピクセルの端末でも sticky が効くように幅だけ緩め）。
+ * 任意 ON は body.play-hand-bottom-dock-force（横のみボタン・sessionStorage）。
  */
 @media (max-width: 900px) and (orientation: portrait),
-  (max-width: 900px) and (orientation: landscape) and (max-height: 520px) {
+  (max-width: 1200px) and (orientation: landscape) {
   body.play-mode .game-board {
     display: flex;
     flex-direction: column;
@@ -4171,8 +4171,8 @@ body.play-mode .deck-pile {
   }
 }
 
-/* スマホ横: 縦幅が足りないので vh を混ぜて手札サムネをやや大きめに */
-@media (max-width: 900px) and (orientation: landscape) and (max-height: 520px) {
+/* スマホ横: vh を混ぜて手札サムネをやや大きめに（論理幅広めまで適用） */
+@media (max-width: 1200px) and (orientation: landscape) {
   body.play-mode #zone-hand {
     --loveca-hand-w: min(128px, min(30vw, 38vh));
     --loveca-hand-h: calc(var(--loveca-hand-w) * var(--loveca-mm-h) / var(--loveca-mm-w));
@@ -4180,7 +4180,7 @@ body.play-mode .deck-pile {
 }
 
 /* スマホ横のみ：ボタンで手札下端ドックを強制（縦や広い画面では無効・自動レイアウトに任せる） */
-@media (max-width: 900px) and (orientation: landscape) {
+@media (max-width: 1200px) and (orientation: landscape) {
   body.play-mode.play-hand-bottom-dock-force .game-board {
     display: flex;
     flex-direction: column;
