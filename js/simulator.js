@@ -5945,8 +5945,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       dockBtn.setAttribute("aria-pressed", on ? "true" : "false");
       dockBtn.classList.toggle("btn--hand-dock-on", on);
       dockBtn.title = on
-        ? "手札下端固定をオフにします（レイアウトを通常に戻します）"
-        : "狭い画面やスマホ横で手札を画面下に固定して大きく表示します（設定はタブ単位で記憶）";
+        ? "横・手札下端固定をオフにします"
+        : "スマホ横持ち：手札を画面下に固定して大きく表示します（このタブでのみ記憶）";
     }
 
     syncPlayHandDockForceUi();

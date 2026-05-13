@@ -1958,11 +1958,11 @@ body.play-mode #btn-layout-16-9.btn--layout-16-9-on {
   box-shadow: 0 0 0 1px rgba(255, 160, 210, 0.35);
 }
 
-/* 手札下端ドック強制は狭い画面向け（広いディスプレイではボタンを隠す） */
+/* スマホ横のみ：手札を下端に固定するトグル（縦は自動レイアウトのためボタン非表示） */
 body.play-mode #btn-play-hand-dock {
   display: none;
 }
-@media (max-width: 900px) {
+@media (max-width: 900px) and (orientation: landscape) {
   body.play-mode #btn-play-hand-dock {
     display: inline-flex;
     align-items: center;
@@ -3938,7 +3938,7 @@ body.play-mode .deck-pile {
 /*
  * スマホ縦／スマホ横（プレイのみ）: ステージを先に、手札を列末で sticky 固定して操作しやすく。
  * 横は「狭い縦幅」の端末のみ自動適用（タブレット横などは除外）。
- * 任意 ON は body.play-hand-bottom-dock-force（ボタン・sessionStorage）。
+ * 任意 ON は body.play-hand-bottom-dock-force（スマホ横のみのボタン・sessionStorage）。
  */
 @media (max-width: 900px) and (orientation: portrait),
   (max-width: 900px) and (orientation: landscape) and (max-height: 520px) {
@@ -4179,8 +4179,8 @@ body.play-mode .deck-pile {
   }
 }
 
-/* ボタンで手札下端ドックを強制（自動判定できない端末・タブレット等） */
-@media (max-width: 900px) {
+/* スマホ横のみ：ボタンで手札下端ドックを強制（縦や広い画面では無効・自動レイアウトに任せる） */
+@media (max-width: 900px) and (orientation: landscape) {
   body.play-mode.play-hand-bottom-dock-force .game-board {
     display: flex;
     flex-direction: column;
