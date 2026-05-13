@@ -22,11 +22,19 @@ import {
   STORAGE_PLAY_RESUME,
   STORAGE_STREAM_MASK_STRENGTH,
   cardNoIsMiaTaylorPb1011,
+  cardNoIsZhongLanzhuBp1012,
   T_ENERGY,
   T_LIVE,
   T_MEMBER,
 } from "./config.js";
-import { getAllCards, getCard, effectiveMainDeckCategory, bladeHeartSlotsOnCard, isHandDependentCost20Member, cardIsNoteLiveCatalog } from "./cards.js";
+import {
+  getAllCards,
+  getCard,
+  effectiveMainDeckCategory,
+  bladeHeartSlotsOnCard,
+  isHandDependentCost20Member,
+  cardIsNoteLiveCatalog,
+} from "./cards.js";
 import { loadDeckLibrary, normalizeDeckMapCounts } from "./deckLibrary.js";
 import {
   addBaseHeartToSlotAccum,
@@ -43,6 +51,42 @@ import {
   sumSlotAccumValues,
 } from "./bladeHeart.js";
 import { showToast } from "./ui.js";
+
+/** 開幕マリガン／確率モデル用 sessionStorage キー（config 未同期のときの named import 失敗を避ける）。 */
+const STORAGE_OPENING_MULLIGAN_K = "llocg_opening_mulligan_k";
+const STORAGE_DECK_ODDS_OPENING_MULL_MODEL = "llocg_deck_odds_open_mull_model";
+
+const LIVE_START_FOR_DRAW_YELL = "{{live_start.png|ライブ開始時}}";
+const LIVE_SUCCESS_SPLIT_FOR_DRAW_YELL = "{{live_success.png|ライブ成功時}}";
+
+function normalizeCatalogKeyForDrawYell(s) {
+  return String(s == null ? "" : s)
+    .replace(/\ufeff/g, "")
+    .normalize("NFKC")
+    .trim();
+}
+
+const DRAW_YELL_BLADE_HEART_CARD_NOS = new Set(
+  ["PL!N-bp1-029-L", "PL!N-bp5-027-L", "PL!HS-bp1-022-L"].map(normalizeCatalogKeyForDrawYell),
+);
+
+/** ドローエール（BH）：エールでめくれると追加ドローが出るライブ。cards.js と独立（古いキャッシュ環境での import 不整合対策）。 */
+function catalogLiveCardIsDrawYellBladeHeart(card) {
+  if (!card || card.type !== T_LIVE) return false;
+  if (!cardHasBladeHeart(card)) return false;
+  const no = normalizeCatalogKeyForDrawYell(card.card_no || "");
+  if (DRAW_YELL_BLADE_HEART_CARD_NOS.has(no)) return true;
+  const ab = String(card.ability || "");
+  if (!ab.includes(LIVE_START_FOR_DRAW_YELL)) return false;
+  const tail = ab.split(LIVE_START_FOR_DRAW_YELL)[1];
+  if (!tail) return false;
+  const seg = tail.split(LIVE_SUCCESS_SPLIT_FOR_DRAW_YELL)[0];
+  if (!seg) return false;
+  if (/ドロー/.test(seg)) return true;
+  if (/引く/.test(seg) && /山札(?:から)?/.test(seg)) return true;
+  if (/見る/.test(seg) && /(?:山札|手札)/.test(seg) && /\d\s*枚/.test(seg)) return true;
+  return false;
+}
 
 /** @type {{ t: string, act: string, meta?: object }[]} */
 let replayLog = [];
@@ -237,8 +281,10 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   /** 盤面リセット・保存デッキ適用で参照する現在のメイン構成（Undo 用に snapshot にも載せる） */
   var activePlayDeckMap = normalizeDeckMapCounts(deckMap);
 
-  /** 1T〜5T それぞれ「そのターンで追加で見える／引く前提の枚数」（2〜4、既定 4）。sessionStorage で保持 */
-  var deckOddsTurnSteps = [4, 4, 4, 4, 4];
+  /** nT開始時グリッド行の前提（sessionStorage と同期）。t1開始の連続めくり・ライブで出す枚数・次ターン開始ドロー */
+  var deckOddsTimelineT1K = 1;
+  var deckOddsTimelineLivePlay = 3;
+  var deckOddsTimelineTurnDraw = 1;
   var deckOddsShowT4 = false;
   var deckOddsShowT5 = false;
 
@@ -250,11 +296,19 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   var DECK_ODDS_K_MANUAL_MAX = 15;
   /** 捲る枚数スライダー操作中は sync による value 上書きを抑止（タッチで端だけ選べる不具合対策） */
   var deckOddsKPointerActive = false;
+  /** 実行済み初手マリガンの戻し枚数（このマウント内・sessionStorage と同期）。未実行時は null */
+  var openingMulliganRememberedK = null;
+  /** 「今 k」を開幕マリガンの記憶枚数で固定する（ライブ手札チェック連動時は自動優先） */
+  var deckOddsOpeningMullBaselineOn = false;
+  /** マリガン実行を一度でも押したら true。初手のみ「マリガン実行」を強調 */
+  var openingMulliganExecuteUsed = false;
+  /** ターン開始ドロー完了後にのみ true。ライブターン開始を押すと false（次のターン開始まで再び光らない） */
+  var liveTurnStartGlowArmed = false;
   /** 指定カード検索のめくり枚数（手動） */
   var deckPickKManual = 1;
   /** 2恋（上5枚確認→1枚手札）を使った前提 */
   var deckTwoKoiEnabled = false;
-  /** 2かすみ: 上3枚を見て送る。手札に入るタイミングは 1T 後として、確率グリッドの 1T後行の k に +3 */
+  /** 2かすみ: 上3枚を見て送る。見た分は次ターン手札想定で「2T開始時」以降のグリッド行ベースに +3 */
   var deckTwoKasumiEnabled = false;
   /** 13曜: 上7枚見て3枚回収。見た7枚をいまの k に +7 して確率を計算 */
   var deck13YouEnabled = false;
@@ -349,37 +403,49 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   }
   wireDeckOddsCatStashOnce();
 
-  function clampDeckOddsTurnStep(v) {
+  function clampDeckOddsTimelineInt(v, lo, hi, fallback) {
     var n = Number(v);
-    if (!Number.isFinite(n)) return 4;
-    return Math.max(2, Math.min(4, Math.floor(n)));
+    if (!Number.isFinite(n)) return fallback;
+    return Math.max(lo, Math.min(hi, Math.floor(n)));
   }
 
   function loadDeckOddsTurnSteps() {
     try {
       var raw = sessionStorage.getItem(STORAGE_DECK_ODDS_TURN_STEPS);
       if (!raw) {
-        deckOddsTurnSteps = [4, 4, 4, 4, 4];
+        deckOddsTimelineT1K = 1;
+        deckOddsTimelineLivePlay = 3;
+        deckOddsTimelineTurnDraw = 1;
         deckOddsShowT4 = false;
         deckOddsShowT5 = false;
         return;
       }
       var o = JSON.parse(raw);
       if (o && typeof o === "object") {
-        if (Array.isArray(o.steps) && o.steps.length >= 5) {
-          deckOddsTurnSteps = o.steps.slice(0, 5).map(clampDeckOddsTurnStep);
-        } else {
-          deckOddsTurnSteps = [4, 4, 4, 4, 4];
-        }
         deckOddsShowT4 = !!o.showT4;
         deckOddsShowT5 = !!o.showT5;
         if (deckOddsShowT5 && !deckOddsShowT4) deckOddsShowT4 = true;
+        if (
+          o.t1StartK != null ||
+          o.livePlayPerTurn != null ||
+          o.turnDrawAfterLive != null
+        ) {
+          deckOddsTimelineT1K = clampDeckOddsTimelineInt(o.t1StartK, 0, 15, 1);
+          deckOddsTimelineLivePlay = clampDeckOddsTimelineInt(o.livePlayPerTurn, 0, 15, 3);
+          deckOddsTimelineTurnDraw = clampDeckOddsTimelineInt(o.turnDrawAfterLive, 0, 6, 1);
+        } else {
+          deckOddsTimelineT1K = 1;
+          deckOddsTimelineLivePlay = 3;
+          deckOddsTimelineTurnDraw = 1;
+        }
         return;
       }
     } catch (_) {
       /* noop */
     }
-    deckOddsTurnSteps = [4, 4, 4, 4, 4];
+    deckOddsTimelineT1K = 1;
+    deckOddsTimelineLivePlay = 3;
+    deckOddsTimelineTurnDraw = 1;
     deckOddsShowT4 = false;
     deckOddsShowT5 = false;
   }
@@ -388,7 +454,13 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     try {
       sessionStorage.setItem(
         STORAGE_DECK_ODDS_TURN_STEPS,
-        JSON.stringify({ steps: deckOddsTurnSteps, showT4: deckOddsShowT4, showT5: deckOddsShowT5 }),
+        JSON.stringify({
+          showT4: deckOddsShowT4,
+          showT5: deckOddsShowT5,
+          t1StartK: deckOddsTimelineT1K,
+          livePlayPerTurn: deckOddsTimelineLivePlay,
+          turnDrawAfterLive: deckOddsTimelineTurnDraw,
+        }),
       );
     } catch (_) {
       /* noop */
@@ -396,62 +468,73 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   }
 
   function syncDeckOddsTurnStepDom() {
-    for (var ti = 1; ti <= 5; ti++) {
-      var el = $("deck-odds-tstep-" + ti);
-      if (!el) continue;
-      if (document.activeElement !== el) el.value = String(deckOddsTurnSteps[ti - 1]);
-    }
-    var w4 = $("deck-odds-tstep-wrap-4");
-    var w5 = $("deck-odds-tstep-wrap-5");
-    if (w4) w4.hidden = !deckOddsShowT4;
-    if (w5) w5.hidden = !deckOddsShowT5;
-    var b4 = $("btn-deck-odds-show-t4");
-    var b5 = $("btn-deck-odds-show-t5");
+    var elT1 = document.getElementById("deck-odds-model-t1-k");
+    var elLp = document.getElementById("deck-odds-model-live-play");
+    var elTd = document.getElementById("deck-odds-model-turn-draw");
+    if (elT1 && document.activeElement !== elT1) elT1.value = String(deckOddsTimelineT1K);
+    if (elLp && document.activeElement !== elLp) elLp.value = String(deckOddsTimelineLivePlay);
+    if (elTd && document.activeElement !== elTd) elTd.value = String(deckOddsTimelineTurnDraw);
+    var b4 = document.getElementById("btn-deck-odds-show-t4");
+    var b5 = document.getElementById("btn-deck-odds-show-t5");
     if (b4) {
       b4.setAttribute("aria-pressed", deckOddsShowT4 ? "true" : "false");
-      b4.textContent = deckOddsShowT4 ? "4T後を隠す" : "4T後を表示";
+      b4.textContent = deckOddsShowT4 ? "4T開始時を隠す" : "4T開始時を表示";
     }
     if (b5) {
       b5.setAttribute("aria-pressed", deckOddsShowT5 ? "true" : "false");
-      b5.textContent = deckOddsShowT5 ? "5T後を隠す" : "5T後を表示";
+      b5.textContent = deckOddsShowT5 ? "5T開始時を隠す" : "5T開始時を表示";
     }
   }
 
   function wireDeckOddsTurnStepsOnce() {
     if (root.dataset.deckOddsTurnWired === "1") return;
     root.dataset.deckOddsTurnWired = "1";
-    root.addEventListener("change", function (ev) {
-      var t = ev.target;
-      if (!(t instanceof HTMLInputElement) || !t.id || !root.contains(t)) return;
-      var m = /^deck-odds-tstep-(\d)$/.exec(t.id);
-      if (!m) return;
-      var idx = Number(m[1]) - 1;
-      if (idx < 0 || idx > 4) return;
-      deckOddsTurnSteps[idx] = clampDeckOddsTurnStep(t.value);
-      t.value = String(deckOddsTurnSteps[idx]);
-      persistDeckOddsTurnSteps();
-      syncLeftDeckOddsPanel();
-    });
-    root.addEventListener("click", function (ev) {
-      var btn = ev.target && ev.target.closest ? ev.target.closest("#btn-deck-odds-show-t4, #btn-deck-odds-show-t5") : null;
-      if (!btn || !root.contains(btn)) return;
-      if (btn.id === "btn-deck-odds-show-t4") {
-        deckOddsShowT4 = !deckOddsShowT4;
-        if (!deckOddsShowT4) deckOddsShowT5 = false;
-      } else if (btn.id === "btn-deck-odds-show-t5") {
-        if (!deckOddsShowT5) {
-          deckOddsShowT5 = true;
-          deckOddsShowT4 = true;
+    document.addEventListener(
+      "change",
+      function (ev) {
+        var t = ev.target;
+        if (!(t instanceof HTMLInputElement) || !t.id) return;
+        if (t.id === "deck-odds-model-t1-k") {
+          deckOddsTimelineT1K = clampDeckOddsTimelineInt(t.value, 0, 15, deckOddsTimelineT1K);
+          t.value = String(deckOddsTimelineT1K);
+        } else if (t.id === "deck-odds-model-live-play") {
+          deckOddsTimelineLivePlay = clampDeckOddsTimelineInt(t.value, 0, 15, deckOddsTimelineLivePlay);
+          t.value = String(deckOddsTimelineLivePlay);
+        } else if (t.id === "deck-odds-model-turn-draw") {
+          deckOddsTimelineTurnDraw = clampDeckOddsTimelineInt(t.value, 0, 6, deckOddsTimelineTurnDraw);
+          t.value = String(deckOddsTimelineTurnDraw);
         } else {
-          deckOddsShowT5 = false;
+          return;
         }
-      } else {
-        return;
-      }
-      persistDeckOddsTurnSteps();
-      syncDeckOddsTurnStepDom();
-      syncLeftDeckOddsPanel();
-    });
+        persistDeckOddsTurnSteps();
+        syncLeftDeckOddsPanel();
+      },
+      true,
+    );
+    document.addEventListener(
+      "click",
+      function (ev) {
+        var btn = ev.target && ev.target.closest ? ev.target.closest("#btn-deck-odds-show-t4, #btn-deck-odds-show-t5") : null;
+        if (!btn) return;
+        if (btn.id === "btn-deck-odds-show-t4") {
+          deckOddsShowT4 = !deckOddsShowT4;
+          if (!deckOddsShowT4) deckOddsShowT5 = false;
+        } else if (btn.id === "btn-deck-odds-show-t5") {
+          if (!deckOddsShowT5) {
+            deckOddsShowT5 = true;
+            deckOddsShowT4 = true;
+          } else {
+            deckOddsShowT5 = false;
+          }
+        } else {
+          return;
+        }
+        persistDeckOddsTurnSteps();
+        syncDeckOddsTurnStepDom();
+        syncLeftDeckOddsPanel();
+      },
+      true,
+    );
   }
 
   /** レンダーごとの山札ライブ成功シミュ（重い）を遅延実行するためのハンドル */
@@ -697,13 +780,13 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     el.classList.add("has-prob-color");
   }
 
-  /** 確率（％）→ グリッドセル用クラス（従来の控えめな段階） */
+  /** 確率（％）→ グリッドセル用クラス（10％ごとに色相／75％以上は発光） */
   function deckOddsCellTierClass(rate) {
     if (!Number.isFinite(rate)) return "";
-    if (rate >= 80) return "deck-odds-cell--high";
-    if (rate >= 50) return "deck-odds-cell--mid";
-    if (rate < 20) return "deck-odds-cell--low";
-    return "";
+    var b = Math.max(0, Math.min(9, Math.floor(rate / 10)));
+    var cls = "deck-odds-cell--b" + b;
+    if (rate >= 75) cls += " deck-odds-cell--hot-glow";
+    return cls;
   }
 
   /**
@@ -879,6 +962,26 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (k13 && document.activeElement !== k13) k13.checked = deck13YouEnabled;
   }
 
+  function syncDeckOddsOpeningMullBaselineBtn() {
+    var btn = $("btn-deck-odds-opening-mull-baseline");
+    if (!btn) return;
+    var hasMem = openingMulliganRememberedK != null;
+    btn.disabled = !hasMem;
+    btn.setAttribute("aria-pressed", deckOddsOpeningMullBaselineOn ? "true" : "false");
+    btn.title = hasMem
+      ? deckOddsOpeningMullBaselineOn
+        ? "ON: 「今」は開幕マリガン戻し " +
+          openingMulliganRememberedK +
+          " 枚をベースに 2恋／13曜 を加算。各「nT開始時」行はターン別モデルに加えて同じ枚数を累計 k に足します（ライブ手札チェック連動中は「今」だけ連動優先）。"
+        : "OFF: 「今」は手動 k・マリガン選択など通常どおり。"
+      : "マリガンで「実行」するか、マリガンなしで「ターン開始」すると有効になります（戻し0枚として記憶）。";
+    btn.textContent = hasMem
+      ? deckOddsOpeningMullBaselineOn
+        ? "開幕マリガン " + openingMulliganRememberedK + " 枚ベース・ON"
+        : "開幕マリガン " + openingMulliganRememberedK + " 枚ベース・OFF"
+      : "開幕マリガン込み（マリガン確定後）";
+  }
+
   function loadDeckOddsKManual() {
     try {
       var sv = sessionStorage.getItem(STORAGE_DECK_ODDS_K);
@@ -896,6 +999,40 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   function persistDeckOddsKManual() {
     try {
       sessionStorage.setItem(STORAGE_DECK_ODDS_K, String(deckOddsKManual));
+    } catch (_) {
+      /* noop */
+    }
+  }
+
+  function persistOpeningMulliganRememberedK(k) {
+    var kk = Math.max(0, Math.min(OPENING_HAND_SIZE, Math.floor(Number(k)) || 0));
+    openingMulliganRememberedK = kk;
+    try {
+      sessionStorage.setItem(STORAGE_OPENING_MULLIGAN_K, String(kk));
+    } catch (_) {
+      /* noop */
+    }
+  }
+
+  function loadDeckOddsOpeningMullBaseline() {
+    openingMulliganRememberedK = null;
+    deckOddsOpeningMullBaselineOn = false;
+    try {
+      var raw = sessionStorage.getItem(STORAGE_OPENING_MULLIGAN_K);
+      if (raw != null && raw !== "") {
+        var nk = parseInt(raw, 10);
+        if (Number.isFinite(nk) && nk >= 0 && nk <= OPENING_HAND_SIZE) openingMulliganRememberedK = nk;
+      }
+      deckOddsOpeningMullBaselineOn =
+        sessionStorage.getItem(STORAGE_DECK_ODDS_OPENING_MULL_MODEL) === "1";
+    } catch (_) {
+      /* noop */
+    }
+  }
+
+  function persistDeckOddsOpeningMullBaseline() {
+    try {
+      sessionStorage.setItem(STORAGE_DECK_ODDS_OPENING_MULL_MODEL, deckOddsOpeningMullBaselineOn ? "1" : "0");
     } catch (_) {
       /* noop */
     }
@@ -1103,6 +1240,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     liveScoreEffectBonus: 0,
     /** エールで山札→解決にめくった音符ライブの実体 id（成功時のみ打点に＋1／枚） */
     ealeNoteLiveHitIds: [],
+    /** ドローエールを解決にめくった回数ぶん、ブレード捲り上限到達後に手札へ入るドロー（Undo 対象） */
+    pendingDrawYellHandDraws: 0,
     liveTurnSelectedIds: [],
   };
   var resumedFromStorage = false;
@@ -1130,6 +1269,14 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   if (!resumedFromStorage) {
     state.deck = buildMainDeckInstances(activePlayDeckMap);
     dealOpeningHand(state.deck, state.hand, OPENING_HAND_SIZE);
+    openingMulliganRememberedK = null;
+    deckOddsOpeningMullBaselineOn = false;
+    try {
+      sessionStorage.removeItem(STORAGE_OPENING_MULLIGAN_K);
+      sessionStorage.removeItem(STORAGE_DECK_ODDS_OPENING_MULL_MODEL);
+    } catch (_) {
+      /* noop */
+    }
   }
 
   if (
@@ -1146,11 +1293,6 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
 
   /** @type {object | null} */
   let dragUndoSnap = null;
-
-  /** マリガン実行を一度でも押したら true。初手のみ「マリガン実行」を強調 */
-  let openingMulliganExecuteUsed = false;
-  /** ターン開始ドロー完了後にのみ true。ライブターン開始を押すと false（次のターン開始まで再び光らない） */
-  let liveTurnStartGlowArmed = false;
 
   /** Sortable onChoose で掴んだ要素の dataset.id（ステージ上で「どれが今置いたメンバーか」を DOM 順に頼らず決める） */
   let lastDraggedDomId = "";
@@ -1169,33 +1311,13 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   const FLASH_LABEL_PLUS_DRAW = "+1ドロー";
   /** ライブ進行中「山札→解決」や旧「エール+1」を解決へ置いた場合のフラッシュ文言 */
   const FLASH_LABEL_PLUS_DRAW_RESOLUTION = "+１ドロー";
+  /** ドローエール（BH）で解決にめくった／遅延ドローで手札に入ったカードのフラッシュ（ピンク） */
+  const FLASH_LABEL_DRAW_YELL_PLUS_ONE = "ドローエール+1";
   const FLASH_LABEL_LIVE_YELL_RESOLUTION_OLD = "エール+1";
   function markCardFlashDraw(c, label) {
     if (!c || typeof c !== "object") return;
     c._flashDrawAt = Date.now();
     c._flashDrawLabel = typeof label === "string" && label ? label : null;
-  }
-
-  /** ドラッグで解決ゾーンに入れたカードについて、過去データの「エール+1」フラッシュなら画面上は「+1ドロー」に差し替え。 */
-  function maybeUpgradeLiveYellFlashOnResolutionDrop(evt, snapBeforeDrag) {
-    if (!evt || !evt.from || !evt.to || !snapBeforeDrag) return;
-    if (evt.to.id !== "zone-resolution") return;
-    if (evt.from.id === "zone-resolution") return;
-    if (state.liveStatsAfterBegin !== true && state.liveTurnPickMode !== true) return;
-    var idStr = lastDraggedDomId ? String(lastDraggedDomId) : "";
-    if (!idStr) return;
-    if (!Array.isArray(snapBeforeDrag.resolutionArea)) return;
-    var wasAlreadyInRes = snapBeforeDrag.resolutionArea.some(function (c) {
-      return c && String(c.id) === idStr;
-    });
-    if (wasAlreadyInRes) return;
-    var moved = state.resolutionArea.find(function (c) {
-      return c && String(c.id) === idStr;
-    });
-    if (!moved) return;
-    if (moved._flashDrawLabel === FLASH_LABEL_LIVE_YELL_RESOLUTION_OLD) {
-      markCardFlashDraw(moved, FLASH_LABEL_PLUS_DRAW_RESOLUTION);
-    }
   }
 
   normalizeAllCardFields();
@@ -1230,6 +1352,65 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   function mergedCatalogCard(c) {
     const cat = getCard(c && c.card_no);
     return cat && typeof cat === "object" ? Object.assign({}, cat, c) : c;
+  }
+
+  /** エール進行中に山札→解決へドローエール BH を置いたときのフラッシュ／待機ドロー計上。（ドロップ／旧フラグ）。 */
+  function maybeFlashDrawYellOnResolutionDrop(evt, snapBeforeDrag) {
+    if (!evt || !evt.from || !evt.to || !snapBeforeDrag) return;
+    if (evt.to.id !== "zone-resolution") return;
+    if (evt.from.id !== "zone-deck") return;
+    if (state.liveStatsAfterBegin !== true && state.liveTurnPickMode !== true) return;
+    var idStr = lastDraggedDomId ? String(lastDraggedDomId) : "";
+    if (!idStr) return;
+    if (!Array.isArray(snapBeforeDrag.resolutionArea)) return;
+    var wasAlreadyInRes = snapBeforeDrag.resolutionArea.some(function (c) {
+      return c && String(c.id) === idStr;
+    });
+    if (wasAlreadyInRes) return;
+    var moved = state.resolutionArea.find(function (c) {
+      return c && String(c.id) === idStr;
+    });
+    if (!moved) return;
+    var drawYell = catalogLiveCardIsDrawYellBladeHeart(mergedCatalogCard(moved));
+    if (drawYell) {
+      markCardFlashDraw(moved, FLASH_LABEL_DRAW_YELL_PLUS_ONE);
+      state.pendingDrawYellHandDraws = Math.max(0, Math.floor(Number(state.pendingDrawYellHandDraws) || 0)) + 1;
+    } else if (moved._flashDrawLabel === FLASH_LABEL_LIVE_YELL_RESOLUTION_OLD) {
+      markCardFlashDraw(moved, FLASH_LABEL_PLUS_DRAW_RESOLUTION);
+    }
+  }
+
+  /** ブレードで捲れる枚数が尽きたタイミング（解決枚数が bladeK に到達）で、ドローエール待ちドローを手札へ */
+  function maybeFlushPendingDrawYellHandDraws(prevResolutionLen) {
+    var bladeK = Math.max(0, Math.floor(sumBoardMemberBlades()));
+    var resNow = Array.isArray(state.resolutionArea) ? state.resolutionArea.length : 0;
+    var prev =
+      typeof prevResolutionLen === "number" && Number.isFinite(prevResolutionLen)
+        ? Math.max(0, Math.floor(prevResolutionLen))
+        : resNow;
+    if (bladeK <= 0) return;
+    if (!(prev < bladeK && resNow >= bladeK)) return;
+    var n = Math.max(0, Math.floor(Number(state.pendingDrawYellHandDraws) || 0));
+    if (n <= 0) return;
+    var drew = 0;
+    for (var i = 0; i < n; i++) {
+      tryReplenishDeckFromWaitingLoop();
+      if (!state.deck.length) break;
+      var card = state.deck.shift();
+      markCardFlashDraw(card, FLASH_LABEL_DRAW_YELL_PLUS_ONE);
+      state.hand.push(card);
+      drew++;
+    }
+    state.pendingDrawYellHandDraws = Math.max(0, n - drew);
+    if (drew > 0) {
+      showToast(
+        "ドローエール — 手札に " +
+          drew +
+          " 枚ドローしました" +
+          (drew < n ? "（山札が足りず " + (n - drew) + " 枚は待機のまま）" : ""),
+      );
+      logReplay("draw-yell-hand-flush", { drew: drew, remainingPending: state.pendingDrawYellHandDraws });
+    }
   }
 
   function sanitizeNonNegativeInt(v) {
@@ -1276,7 +1457,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
 
   /** slot7 は need_heart の「任意」支払いプールのみに加算し、同色表示には載せない */
   function memberPlayBonusAllWildcardBump(inst) {
-    return bonusHeartSlotRead(inst, 7);
+    return bonusHeartSlotRead(inst, 7) + countBp1012LanzhuBonusAllHeart(inst);
   }
 
   function countMiaTaylorEnergyBladeBelow(inst) {
@@ -1312,7 +1493,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     var base = sanitizeNonNegativeInt(mc.blade);
     var extra = sumPlayBonusBlade(inst);
     var mia = countMiaTaylorEnergyBladeBelow(inst);
-    return base + extra + mia;
+    var lzBlade = countBp1012LanzhuBonusBlade(inst);
+    return base + extra + mia + lzBlade;
   }
 
   function clearMemberManualPlayBonuses(inst) {
@@ -1422,6 +1604,71 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     return null;
   }
 
+  /** メンバー実体がライブ枠（左・中央・右）に載っている列キー — 無ければ null */
+  function liveSlotColumnKeyHostingMember(cardId) {
+    if (!cardId) return null;
+    var keyStr = String(cardId);
+    for (var li = 0; li < 3; li++) {
+      var lk = ["left", "center", "right"][li];
+      var slot = state.liveArea[lk] || [];
+      for (var lj = 0; lj < slot.length; lj++) {
+        var m = slot[lj];
+        if (m && m.type === T_MEMBER && String(m.id) === keyStr) return lk;
+      }
+    }
+    return null;
+  }
+
+  function memberIsOnStageOrLiveSlot(memberInst) {
+    return !!(
+      memberInst &&
+      memberInst.type === T_MEMBER &&
+      memberInst.id != null &&
+      (stageColumnKeyHostingMember(memberInst.id) != null || liveSlotColumnKeyHostingMember(memberInst.id) != null)
+    );
+  }
+
+  /** DB の series に「虹ヶ咲」を含むライブ（公式テキストの「虹ヶ咲ライブ」と対応） */
+  function catalogLiveSeriesIsNijigasaki(seriesStr) {
+    return String(seriesStr || "").includes("虹ヶ咲");
+  }
+
+  /**
+   * 鐘 嵐珠 bp1-012: ライブ枠にライブが3枚以上かつ、そのうち虹ヶ咲シリーズのライブが1枚以上あるときのみ true。
+   * （ライブ枠のみ数える。プレビュー・解決は含めない）
+   */
+  function bp1012LanzhuSynergyBoardConditionMet() {
+    var lives = [];
+    ["left", "center", "right"].forEach(function (k) {
+      (state.liveArea[k] || []).forEach(function (c) {
+        if (c && c.type === T_LIVE) lives.push(c);
+      });
+    });
+    if (lives.length < 3) return false;
+    for (var i = 0; i < lives.length; i++) {
+      var mc = mergedCatalogCard(lives[i]);
+      if (catalogLiveSeriesIsNijigasaki(mc.series)) return true;
+    }
+    return false;
+  }
+
+  function countBp1012LanzhuBonusBlade(inst) {
+    if (!inst || inst.type !== T_MEMBER) return 0;
+    if (!memberIsOnStageOrLiveSlot(inst)) return 0;
+    if (!cardNoIsZhongLanzhuBp1012(mergedCatalogCard(inst).card_no)) return 0;
+    if (!bp1012LanzhuSynergyBoardConditionMet()) return 0;
+    return 2;
+  }
+
+  /** ALL ハート（slot7・任意プール）の動的加算分のみ（所持Hダイアログの値とは別） */
+  function countBp1012LanzhuBonusAllHeart(inst) {
+    if (!inst || inst.type !== T_MEMBER) return 0;
+    if (!memberIsOnStageOrLiveSlot(inst)) return 0;
+    if (!cardNoIsZhongLanzhuBp1012(mergedCatalogCard(inst).card_no)) return 0;
+    if (!bp1012LanzhuSynergyBoardConditionMet()) return 0;
+    return 2;
+  }
+
   /** このターンステージへ載せたばかりか（同日バトン注意に利用） */
   function memberIsStageFreshThisTurn(memberInstOrNull) {
     return !!(
@@ -1457,6 +1704,19 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       if (inst.type !== T_MEMBER) return;
       ensureCardBoardFields(inst);
       w += memberPlayBonusAllWildcardBump(inst);
+    });
+    return w;
+  }
+
+  /** ステージにいるメンバーの ALL（slot7）ボーナスのみ — ステージハート表示に solid と合算 */
+  function wildcardBumpFromStageMembersOnly() {
+    var w = 0;
+    ["left", "center", "right"].forEach(function (k) {
+      state.stage[k].forEach(function (inst) {
+        if (inst.type !== T_MEMBER) return;
+        ensureCardBoardFields(inst);
+        w += memberPlayBonusAllWildcardBump(inst);
+      });
     });
     return w;
   }
@@ -1792,7 +2052,10 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
 
     var boardHAcc = fieldMemberHeartAcc;
     var resHAcc = resolutionHeldHeartSlotAccum();
-    var stageHAcc = stageHeldHeartSlotAccum();
+    var stageSolid = stageHeldHeartSlotAccum();
+    var stageWildSt = wildcardBumpFromStageMembersOnly();
+    var stageHAcc = Object.assign({}, stageSolid);
+    if (stageWildSt > 0) stageHAcc[7] = (stageHAcc[7] || 0) + stageWildSt;
     var liveHAcc = liveHeldHeartSlotAccumOnly();
     var boardWild = wildcardBoardBumpFromMembers();
     var resWild = wildcardResolutionBumpFromMembers();
@@ -2547,10 +2810,11 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   }
 
   /**
-   * デッキ確率グリッド（キー/キ②/キ③/中間/ライブ/指定 × 動的 k／1T〜5T）の表示モデルを構築。
-   * 各ターンの「追加で見える枚数」は deckOddsTurnSteps（2〜4）の累積で k を伸ばす。
-   * 2かすみオン時は「手札に入るのが 1T 後」として、1T後行の k だけ +3（上3枚を見た前提）。
-   * 13曜オン時は上7枚見て3枚回収の前提で、いまの k に +7（applyDeckOddsPeekBonuses）。
+   * デッキ確率グリッド（キー/キ②/キ③/中間/ライブ/指定 × 「今」の手動 k／各ターン開始時の累積モデル）。
+   * 「nT開始時」行のベースはターン詳細の 3 数値：1T開始時の連続めくり k（既定1）、ライブで出す枚数（既定3）、次ターン開始のドロー（既定1）。
+   * 「開幕マリガン込み」ON 時は、その戻し／ドロー枚数を「nT開始時」各行の累計 k にも加えます（開幕で山札から引いた分まで含めた目安）。
+   * 2かすみオン時は見た3枚が次ターン手札へ入る想定で、2T開始時以降の行のベースに +3。
+   * 2恋／13曜は applyDeckOddsPeekBonuses で各「ターン開始」行にも反映。
    * @returns {null | {
    *   deckTotal: number,
    *   dynLabel: string,
@@ -2596,7 +2860,14 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       });
     }
 
-    var dynK = applyDeckOddsPeekBonuses(computeEffectiveDeckOddsK(), n);
+    var useOpenMullBase =
+      deckOddsOpeningMullBaselineOn &&
+      openingMulliganRememberedK != null &&
+      state.liveTurnPickMode !== true &&
+      (!state.awaitingTurnStart || openingMulliganExecuteUsed);
+    var baseKBeforePeek = computeEffectiveDeckOddsK();
+    if (useOpenMullBase) baseKBeforePeek = openingMulliganRememberedK;
+    var dynK = applyDeckOddsPeekBonuses(baseKBeforePeek, n);
     var dynLabel = "";
     if (state.awaitingTurnStart) {
       var mm = Array.isArray(state.mulliganSelectedIds) ? state.mulliganSelectedIds.length : 0;
@@ -2606,6 +2877,14 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       dynLabel = ch > 0 ? "ライブ手札 " + ch + "枚" : "ライブ参考";
     } else {
       dynLabel = "手動 k";
+    }
+    if (deckOddsOpeningMullBaselineOn && openingMulliganRememberedK != null) {
+      dynLabel +=
+        "／開幕マリガン " +
+        openingMulliganRememberedK +
+        " 枚込み：" +
+        (useOpenMullBase ? "「今」はその枚数ベース・" : "") +
+        "「nT開始時」は開幕で引いた枚数を累計 k に加算";
     }
 
     var hasKey = deckKeyCardNos.length > 0;
@@ -2630,12 +2909,30 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (deckOddsShowT5) maxTurn = 5;
     else if (deckOddsShowT4) maxTurn = 4;
 
-    var cumK = dynK;
-    var rows = [{ id: "dyn", label: "今 k=" + dynK, k: Math.min(cumK, n), isDyn: true }];
+    function rawDeckOddsTurnStartPeel(ti) {
+      var t1 = Math.max(0, Math.floor(Number(deckOddsTimelineT1K)) || 0);
+      var lp = Math.max(0, Math.floor(Number(deckOddsTimelineLivePlay)) || 0);
+      var td = Math.max(0, Math.floor(Number(deckOddsTimelineTurnDraw)) || 0);
+      var cum = t1;
+      if (ti <= 1) return cum;
+      for (var j = 2; j <= ti; j++) {
+        cum += lp + td;
+      }
+      return cum;
+    }
+
+    var openingMullAddToTurnRows =
+      deckOddsOpeningMullBaselineOn &&
+      openingMulliganRememberedK != null &&
+      Number.isFinite(Number(openingMulliganRememberedK));
+
+    var rows = [{ id: "dyn", label: "今 k=" + dynK, k: Math.min(dynK, n), isDyn: true }];
     for (var ti = 1; ti <= maxTurn; ti++) {
-      cumK += deckOddsTurnSteps[ti - 1] || 4;
-      if (ti === 1 && deckTwoKasumiEnabled) cumK += 3;
-      rows.push({ id: "t" + ti, label: ti + "T後", k: Math.min(cumK, n) });
+      var rawTs = rawDeckOddsTurnStartPeel(ti);
+      if (openingMullAddToTurnRows) rawTs += openingMulliganRememberedK;
+      if (deckTwoKasumiEnabled && ti >= 2) rawTs += 3;
+      var kTurn = applyDeckOddsPeekBonuses(rawTs, n);
+      rows.push({ id: "t" + ti, label: ti + "T開始時", k: Math.min(kTurn, n) });
     }
 
     var cells = rows.map(function (r) {
@@ -2716,34 +3013,33 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   }
 
   /**
-   * 要求色: 充足に使う BH（色スロット）とライブ need_heart（色ごと）の差（残り／不足）
+   * 要求色: 供給と need の差のうち、足りない色だけを列挙（充足している色は表示しない）
    */
   function formatStageHeartMinusNeedRemainderLine(stageHAcc, needAccum) {
     if (!needAccum || sumSlotAccumValues(needAccum) <= 0) return "—";
     var stAcc = stageHAcc || {};
     var parts = [];
     for (var s = 1; s <= 6; s++) {
-      var st = stAcc[s] || 0;
       var nd = needAccum[s] || 0;
-      if (st === 0 && nd === 0) continue;
+      if (nd <= 0) continue;
+      var st = stAcc[s] || 0;
       var rem = st - nd;
-      parts.push(
-        bladeHeartDisplaySlotLabel(s) + " " + (rem >= 0 ? "残り " + rem : "不足 " + Math.abs(rem)),
-      );
+      if (rem >= 0) continue;
+      parts.push(bladeHeartDisplaySlotLabel(s) + " 不足 " + Math.abs(rem));
     }
-    var st0 = stAcc[0] || 0;
     var nd0 = needAccum[0] || 0;
-    if (st0 > 0 || nd0 > 0) {
+    if (nd0 > 0) {
+      var st0 = stAcc[0] || 0;
       var rem0 = st0 - nd0;
-      parts.push("任意 " + (rem0 >= 0 ? "残り " + rem0 : "不足 " + Math.abs(rem0)));
+      if (rem0 < 0) parts.push("任意 不足 " + Math.abs(rem0));
     }
-    var st99 = stAcc[99] || 0;
     var nd99 = needAccum[99] || 0;
-    if (st99 > 0 || nd99 > 0) {
+    if (nd99 > 0) {
+      var st99 = stAcc[99] || 0;
       var rem99 = st99 - nd99;
-      parts.push("その他キー " + (rem99 >= 0 ? "残り " + rem99 : "不足 " + Math.abs(rem99)));
+      if (rem99 < 0) parts.push("その他キー 不足 " + Math.abs(rem99));
     }
-    return parts.length ? parts.join(" · ") : "—";
+    return parts.length ? parts.join(" · ") : "充足（不足なし）";
   }
 
   function syncLiveTurnStatsPanel() {
@@ -3082,6 +3378,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   function syncLeftDeckOddsPanel() {
     syncDeckOddsKeyStackVisual();
     syncDeckOddsSkillChks();
+    syncDeckOddsOpeningMullBaselineBtn();
     syncDeckOddsTurnStepDom();
     var gridHost = $("live-deck-odds-grid");
     var model = buildDeckOddsGridModel();
@@ -3103,6 +3400,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     var has = false;
     var bladeExtra = sumPlayBonusBlade(c);
     var miaBlade = countMiaTaylorEnergyBladeBelow(c);
+    var lzBlade = countBp1012LanzhuBonusBlade(c);
+    var lzAllHeart = countBp1012LanzhuBonusAllHeart(c);
     if (bladeExtra > 0) {
       has = true;
       var sp = document.createElement("span");
@@ -3134,6 +3433,23 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       spM.appendChild(document.createTextNode("常時+" + miaBlade));
       frag.appendChild(spM);
     }
+    if (lzBlade > 0) {
+      has = true;
+      var spLzB = document.createElement("span");
+      spLzB.className = "card-member-bonus-chip card-member-bonus-chip--lanzhu";
+      spLzB.title =
+        "鐘 嵐珠（bp1-012）: ライブ枠にライブが3枚以上かつ虹ヶ咲シリーズのライブが1枚以上あるとき、常時ブレード+2";
+      var imLz = document.createElement("img");
+      imLz.className = "card-member-bonus-blade-ico";
+      imLz.src = MEMBER_BONUS_BLADE_IMG;
+      imLz.alt = "ブレード";
+      imLz.width = 14;
+      imLz.height = 14;
+      imLz.decoding = "async";
+      spLzB.appendChild(imLz);
+      spLzB.appendChild(document.createTextNode("条件+" + lzBlade));
+      frag.appendChild(spLzB);
+    }
     for (var si = 1; si <= 6; si++) {
       var v = bonusHeartSlotRead(c, si);
       if (!v) continue;
@@ -3156,6 +3472,20 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       sp3.appendChild(ic);
       sp3.appendChild(document.createTextNode("+" + v7));
       frag.appendChild(sp3);
+    }
+    if (lzAllHeart > 0) {
+      has = true;
+      var spLzA = document.createElement("span");
+      spLzA.className = "card-member-bonus-chip card-member-bonus-chip--all card-member-bonus-chip--lanzhu";
+      spLzA.title =
+        "鐘 嵐珠（bp1-012）: ライブ枠にライブが3枚以上かつ虹ヶ咲シリーズのライブが1枚以上あるとき、ALLハート+2（任意プール）";
+      var icLz = document.createElement("span");
+      icLz.className = "card-member-bonus-all-heart";
+      icLz.setAttribute("aria-hidden", "true");
+      icLz.textContent = "\u2665";
+      spLzA.appendChild(icLz);
+      spLzA.appendChild(document.createTextNode("条件+" + lzAllHeart));
+      frag.appendChild(spLzA);
     }
     return has ? frag : null;
   }
@@ -3501,6 +3831,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       liveTurnSelectedIds: Array.isArray(state.liveTurnSelectedIds)
         ? [...state.liveTurnSelectedIds]
         : [],
+      pendingDrawYellHandDraws: Math.max(0, Math.floor(Number(state.pendingDrawYellHandDraws) || 0)),
       deckMeta: {
         activePlayDeckMap: normalizeDeckMapCounts(activePlayDeckMap),
         keyCardNos: deckKeyCardNos.slice(),
@@ -3592,6 +3923,9 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
             .join(",")
         : "",
       liveSel,
+      typeof snap.pendingDrawYellHandDraws === "number" && Number.isFinite(snap.pendingDrawYellHandDraws)
+        ? String(Math.max(0, Math.floor(snap.pendingDrawYellHandDraws)))
+        : "0",
       snap.deckPileOpen ? "1" : "0",
       snap.deckPileFacesDown === true ? "1" : "0",
       typeof snap.turnCount === "number" ? String(Math.floor(snap.turnCount)) : "0",
@@ -3622,6 +3956,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       liveScoreEffectBonus: state.liveScoreEffectBonus,
       ealeNoteLiveHitIds: state.ealeNoteLiveHitIds,
       liveTurnSelectedIds: state.liveTurnSelectedIds,
+      pendingDrawYellHandDraws: state.pendingDrawYellHandDraws,
       deckPileOpen: state.deckPileOpen,
       deckPileFacesDown: state.deckPileFacesDown === true,
       turnCount: state.turnCount,
@@ -3682,6 +4017,10 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     state.liveTurnSelectedIds = Array.isArray(s.liveTurnSelectedIds)
       ? s.liveTurnSelectedIds.slice()
       : [];
+    state.pendingDrawYellHandDraws =
+      typeof s.pendingDrawYellHandDraws === "number" && Number.isFinite(s.pendingDrawYellHandDraws)
+        ? Math.max(0, Math.floor(s.pendingDrawYellHandDraws))
+        : 0;
     if (s.deckMeta && typeof s.deckMeta === "object") {
       var dm = s.deckMeta;
       if (dm.activePlayDeckMap && typeof dm.activePlayDeckMap === "object") {
@@ -4176,7 +4515,9 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (flashUntil > nowMs) {
       var remainMs = Math.max(120, flashUntil - nowMs);
       var flash = document.createElement("div");
-      flash.className = "card-flash-plus-one";
+      flash.className =
+        "card-flash-plus-one" +
+        (c._flashDrawLabel === FLASH_LABEL_DRAW_YELL_PLUS_ONE ? " card-flash-plus-one--draw-yell" : "");
       flash.setAttribute("aria-hidden", "true");
       flash.textContent = c._flashDrawLabel || FLASH_LABEL_PLUS_DRAW;
       flash.style.animationDuration = remainMs + "ms";
@@ -4229,6 +4570,11 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         c.lcWait = c.isRotated === true;
         c.lcActive = c.lcWait !== true;
       }
+      /** ステージ下のエネは常にアクティブ表示（横向きでも薄くしない） */
+      if (isStage && c.type === T_ENERGY) {
+        c.lcWait = false;
+        c.lcActive = true;
+      }
       var onRotate =
         isStage &&
         rotateLabel &&
@@ -4237,6 +4583,10 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
           c.isRotated = !c.isRotated;
           if (c.type === T_MEMBER || c.type === T_LIVE) {
             c.lcWait = c.isRotated === true;
+          }
+          if (c.type === T_ENERGY) {
+            c.lcWait = false;
+            c.lcActive = true;
           }
           render();
         };
@@ -4639,7 +4989,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         restoreCardFaceAfterDragging(evt.item);
         var droppedToSuccessLive = evt.to && evt.to.id === "zone-success-live";
         readAllFromDom();
-        maybeUpgradeLiveYellFlashOnResolutionDrop(evt, dragUndoSnap);
+        maybeFlashDrawYellOnResolutionDrop(evt, dragUndoSnap);
         if (droppedToSuccessLive) {
           var fpSel = $("select-first-player");
           if (fpSel) fpSel.value = "先攻";
@@ -4673,6 +5023,9 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         dragUndoSnap = null;
         persistSessionTexts();
         maybeAnnounceLiveTurnEaleToResolution(evt, snapBeforeDrag);
+        if (snapBeforeDrag && Array.isArray(snapBeforeDrag.resolutionArea)) {
+          maybeFlushPendingDrawYellHandDraws(snapBeforeDrag.resolutionArea.length);
+        }
         renderSynchronouslyOnce();
         /* プレビューが閉じていた状態でドラッグが始まったなら、ドロップで勝手に開かないようにする。
          * 何らかのイベント経路（クリックの取り違え等）で開いてしまった場合を保険として閉じ直す。 */
@@ -4820,11 +5173,12 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     }
   }
 
-  /** ライブ開始（liveStatsAfterBegin）中は「1枚ドロー（解決）」を「1枚エール（解決）」に切り替え、
-   *  ボタン自体を発光させる。ライブ終了で元に戻す。
+  /** liveStatsAfterBegin かつライブ枠にライブが1枚でもあるとき、「1枚ドロー（解決）」を「1枚エール（解決）」へ。
+   * 開始直後で枠が空のときはドローラベルのままにする。
    *  対象ボタン: btn-res-draw-one（解決ゾーン横）/ btn-draw-resolution（山札の下のドロー行） */
   function syncLiveYellDrawButtons() {
-    var inLive = state.liveStatsAfterBegin === true;
+    var inLive =
+      state.liveStatsAfterBegin === true && liveLiveCardsInFramesOnly() > 0;
     var ids = ["btn-res-draw-one", "btn-draw-resolution"];
     ids.forEach(function (id) {
       var b = $(id);
@@ -5270,6 +5624,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       loadDeckOddsTurnSteps();
       loadDeckOdds2Kasumi();
       loadDeckOdds13You();
+      loadDeckOddsOpeningMullBaseline();
     } catch (_) {}
   }
 
@@ -5402,6 +5757,13 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     var chk = $("chk-deck-13you");
     deck13YouEnabled = !!(chk && chk.checked);
     persistDeckOdds13You();
+    syncLeftDeckOddsPanel();
+  });
+  $("btn-deck-odds-opening-mull-baseline")?.addEventListener("click", function () {
+    if (openingMulliganRememberedK == null) return;
+    deckOddsOpeningMullBaselineOn = !deckOddsOpeningMullBaselineOn;
+    persistDeckOddsOpeningMullBaseline();
+    syncDeckOddsOpeningMullBaselineBtn();
     syncLeftDeckOddsPanel();
   });
 
@@ -5571,6 +5933,31 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     });
   })();
 
+  /** 狭い画面で手札を下端 sticky に強制（CSS と body.play-hand-bottom-dock-force・メディアクエリ連動） */
+  (function initPlayHandBottomDockForce() {
+    var dockBtn = $("btn-play-hand-dock");
+    if (!dockBtn) return;
+    var STORAGE_PLAY_HAND_BOTTOM_DOCK_FORCE = "llocg_play_hand_bottom_dock_force";
+
+    function syncPlayHandDockForceUi() {
+      var on = sessionStorage.getItem(STORAGE_PLAY_HAND_BOTTOM_DOCK_FORCE) === "1";
+      document.body.classList.toggle("play-hand-bottom-dock-force", on);
+      dockBtn.setAttribute("aria-pressed", on ? "true" : "false");
+      dockBtn.classList.toggle("btn--hand-dock-on", on);
+      dockBtn.title = on
+        ? "手札下端固定をオフにします（レイアウトを通常に戻します）"
+        : "狭い画面やスマホ横で手札を画面下に固定して大きく表示します（設定はタブ単位で記憶）";
+    }
+
+    syncPlayHandDockForceUi();
+    dockBtn.addEventListener("click", function () {
+      var nextOn = !document.body.classList.contains("play-hand-bottom-dock-force");
+      sessionStorage.setItem(STORAGE_PLAY_HAND_BOTTOM_DOCK_FORCE, nextOn ? "1" : "0");
+      syncPlayHandDockForceUi();
+      renderSynchronouslyOnce();
+    });
+  })();
+
   $("btn-coin")?.addEventListener("click", () => {
     const head = Math.random() < 0.5 ? "コインは表になりました（先攻側は自由に運用してください）" : "コインは裏になりました（先攻側は自由に運用してください）";
     showToast(head);
@@ -5578,6 +5965,10 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   });
 
   function runTurnPhaseStartAfterSuccessLivePrompt() {
+    /* 「マリガン実行」を一度も押していないがターン開始した場合＝戻し0枚として記憶（確率ボタンを有効化） */
+    if (openingMulliganRememberedK == null && state.turnCount === 1) {
+      persistOpeningMulliganRememberedK(0);
+    }
     state.awaitingTurnStart = false;
     state.mulliganSelectedIds = [];
     state.liveTurnPickMode = false;
@@ -5586,6 +5977,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     state.liveStatsAfterBegin = false;
     state.liveScoreEffectBonus = 0;
     state.ealeNoteLiveHitIds = [];
+    state.pendingDrawYellHandDraws = 0;
     /** マリガン終了タイミングで解決／ライブ枠は控えへ（ルール自動処理ではなく補助用の一括移動） */
     var flushed = [];
     if (state.resolutionArea.length) {
@@ -5717,6 +6109,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       pushHistoryBefore("mulligan-commit-zero");
       state.mulliganSelectedIds = [];
       logReplay("mulligan-commit-zero");
+      persistOpeningMulliganRememberedK(0);
       showToast("マリガン: 0枚処理（シャッフル・ドローなしで確定しました）");
       render();
       return;
@@ -5737,6 +6130,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     }
     state.mulliganSelectedIds = [];
     logReplay("mulligan", { returned: k, drawn });
+    persistOpeningMulliganRememberedK(k);
     if (drawn === k) {
       showToast("マリガン: " + k + " 枚を山札に戻してシャッフルし、" + drawn + " 枚ドローしました");
     } else {
@@ -5798,6 +6192,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     state.liveTurnHandSpreadPick = state.hand.length >= LIVE_TURN_HAND_SPREAD_MIN;
     state.liveStatsAfterBegin = false;
     state.liveScoreEffectBonus = 0;
+    state.pendingDrawYellHandDraws = 0;
     var spreadNote = state.liveTurnHandSpreadPick
       ? " 手札が多いため、選択中はカードを重ねずに並べます。"
       : "";
@@ -5889,6 +6284,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     state.liveTurnHandSpreadPick = false;
     state.liveScoreEffectBonus = 0;
     state.ealeNoteLiveHitIds = [];
+    state.pendingDrawYellHandDraws = 0;
     state.liveStatsAfterBegin = true;
     logReplay("live-turn-begin", { nonLiveMoved: movedNonLive });
     showToast(
@@ -5946,11 +6342,19 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       return;
     }
     pushHistoryBefore("draw-res");
+    var prevResLen = state.resolutionArea.length;
     var drawnR = state.deck.shift();
-    /* ライブ中の「山札から解決へ」はエール動作だが、解決領域上ではフラッシュを「+1ドロー」で統一する。 */
+    /* ドローエール BH のライブのみ、エール進行中に解決へめくったとき「ドローエール+1」（ピンク）と待機ドロー計上。 */
     var inLive = state.liveStatsAfterBegin === true || state.liveTurnPickMode === true;
-    markCardFlashDraw(drawnR, inLive ? FLASH_LABEL_PLUS_DRAW_RESOLUTION : null);
+    var drawYellBh = catalogLiveCardIsDrawYellBladeHeart(mergedCatalogCard(drawnR));
+    if (inLive && drawYellBh) {
+      markCardFlashDraw(drawnR, FLASH_LABEL_DRAW_YELL_PLUS_ONE);
+      state.pendingDrawYellHandDraws = Math.max(0, Math.floor(Number(state.pendingDrawYellHandDraws) || 0)) + 1;
+    } else if (!inLive) {
+      markCardFlashDraw(drawnR);
+    }
     state.resolutionArea.push(drawnR);
+    maybeFlushPendingDrawYellHandDraws(prevResLen);
     showToast(inLive ? "解決に 1 枚エールしました" : "解決に 1 枚ドローしました");
     render();
   }
@@ -6296,6 +6700,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       liveStatsAfterBegin: false,
       liveScoreEffectBonus: 0,
       ealeNoteLiveHitIds: [],
+      pendingDrawYellHandDraws: 0,
     });
     var fpR = $("select-first-player");
     if (fpR) {
@@ -6305,6 +6710,14 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     uid = Math.max(uid, 999);
     logReplay("reset-board");
     openingMulliganExecuteUsed = false;
+    openingMulliganRememberedK = null;
+    deckOddsOpeningMullBaselineOn = false;
+    try {
+      sessionStorage.removeItem(STORAGE_OPENING_MULLIGAN_K);
+      sessionStorage.removeItem(STORAGE_DECK_ODDS_OPENING_MULL_MODEL);
+    } catch (_) {
+      /* noop */
+    }
     liveTurnStartGlowArmed = false;
     render();
     showToast("盤面を初期化しました");

@@ -386,6 +386,15 @@ python3 -m http.server 8080</pre>
           <button type="button" class="btn sm secondary" id="btn-layout-16-9" aria-pressed="false" title="プレイ画面全体を通常の約 85% の表示倍率に縮小します（再押しで解除）">
             16:9
           </button>
+          <button
+            type="button"
+            class="btn sm secondary"
+            id="btn-play-hand-dock"
+            aria-pressed="false"
+            title="狭い画面やスマホ横持ちで手札を画面下に固定して大きく表示します（再押しで解除・設定はタブ単位で記憶）"
+          >
+            手札固定
+          </button>
           <button type="button" class="btn sm secondary" id="btn-export-replay">ログ書き出し</button>
           <button type="button" class="btn sm secondary" id="btn-zone-hints" aria-pressed="false">
             ゾーン説明を表示
@@ -554,6 +563,17 @@ python3 -m http.server 8080</pre>
                         13曜
                       </label>
                     </div>
+                    <div class="deck-odds-opening-mull-row btn-row wrap">
+                      <button
+                        type="button"
+                        class="btn sm secondary"
+                        id="btn-deck-odds-opening-mull-baseline"
+                        disabled
+                        aria-pressed="false"
+                      >
+                        開幕マリガン込み（マリガン確定後）
+                      </button>
+                    </div>
                     <details class="deck-odds-cat-stash" data-deck-odds-stash>
                       <summary class="deck-odds-cat-stash__summary" title="表示する項目を選ぶ">
                         <span class="deck-odds-cat-stash__label">表示項目</span>
@@ -561,85 +581,62 @@ python3 -m http.server 8080</pre>
                       <ul class="deck-odds-cat-stash__list" data-stash-list></ul>
                     </details>
                   </div>
-                  <details class="deck-odds-turn-details" aria-label="ターン別の見える枚数">
-                    <summary class="deck-odds-turn-details__summary">1T後〜の見える枚数（ターン別）</summary>
+                  <details class="deck-odds-turn-details" aria-label="ターン開始ごとの見える枚数モデル">
+                    <summary class="deck-odds-turn-details__summary">1T開始時〜の見える枚数（ターン別モデル）</summary>
                     <div class="deck-odds-turn-details__body">
                     <p class="deck-odds-turn-controls__lead muted deck-prob-explain-hide">
-                      各ターンの追加枚数（2〜4）を足して累積 k。4T・5T 行は下のボタンで表に追加。
+                      「nT開始時」の累積 k は次の 3 つの既定から計算します（変更すると保存されます）。4・5 ターン行は下のボタンで追加。
                     </p>
-                    <div class="deck-odds-tstep-row">
+                    <div class="deck-odds-tstep-row deck-odds-timeline-model-row">
                       <label class="deck-odds-tstep-label"
-                        >1T後
+                        >1T開始時の k
                         <input
                           type="number"
-                          id="deck-odds-tstep-1"
+                          id="deck-odds-model-t1-k"
                           class="deck-odds-tstep-input"
-                          min="2"
-                          max="4"
+                          min="0"
+                          max="15"
                           step="1"
-                          value="4"
+                          value="1"
                           inputmode="numeric"
                           autocomplete="off"
-                      /></label>
-                      <label class="deck-odds-tstep-label"
-                        >2T後
-                        <input
-                          type="number"
-                          id="deck-odds-tstep-2"
-                          class="deck-odds-tstep-input"
-                          min="2"
-                          max="4"
-                          step="1"
-                          value="4"
-                          inputmode="numeric"
-                          autocomplete="off"
+                          title="ターン1開始までに山札上から続けて見る前提枚数（既定 1）"
                       /></label>
                       <label class="deck-odds-tstep-label"
-                        >3T後
+                        >ライブで出す枚数／ターン
                         <input
                           type="number"
-                          id="deck-odds-tstep-3"
+                          id="deck-odds-model-live-play"
                           class="deck-odds-tstep-input"
-                          min="2"
-                          max="4"
+                          min="0"
+                          max="15"
                           step="1"
-                          value="4"
+                          value="3"
                           inputmode="numeric"
                           autocomplete="off"
+                          title="各ライブターンに場へ出すカード枚数の前提（既定 3）"
                       /></label>
-                      <label class="deck-odds-tstep-label" id="deck-odds-tstep-wrap-4" hidden
-                        >4T後
+                      <label class="deck-odds-tstep-label"
+                        >次ターン開始ドロー
                         <input
                           type="number"
-                          id="deck-odds-tstep-4"
+                          id="deck-odds-model-turn-draw"
                           class="deck-odds-tstep-input"
-                          min="2"
-                          max="4"
+                          min="0"
+                          max="6"
                           step="1"
-                          value="4"
+                          value="1"
                           inputmode="numeric"
                           autocomplete="off"
-                      /></label>
-                      <label class="deck-odds-tstep-label" id="deck-odds-tstep-wrap-5" hidden
-                        >5T後
-                        <input
-                          type="number"
-                          id="deck-odds-tstep-5"
-                          class="deck-odds-tstep-input"
-                          min="2"
-                          max="4"
-                          step="1"
-                          value="4"
-                          inputmode="numeric"
-                          autocomplete="off"
+                          title="ライブ後〜次ターン開始までに増えるターン開始ドロー枚数の前提（既定 1）"
                       /></label>
                     </div>
                     <div class="deck-odds-t45-btns btn-row wrap">
                       <button type="button" class="btn sm secondary" id="btn-deck-odds-show-t4" aria-pressed="false">
-                        4T後を表示
+                        4T開始時を表示
                       </button>
                       <button type="button" class="btn sm secondary" id="btn-deck-odds-show-t5" aria-pressed="false">
-                        5T後を表示
+                        5T開始時を表示
                       </button>
                     </div>
                     </div>
@@ -655,8 +652,8 @@ python3 -m http.server 8080</pre>
                     <p class="deck-odds-skill-explain">
                       <strong>2かすみ</strong>
                       上から3枚を見て、好きな枚数を山札の上か控え室へ。山札上に残した枚は
-                      <strong>次のターン（1T後）</strong>に手札へ入る想定で、グリッドの<strong>1T後</strong>の k に
-                      <strong>+3</strong>（見た3枚分）だけ反映します（今の行には足しません）。
+                      <strong>次のターン開始時に手札へ入る</strong>想定で、グリッドの<strong>2T開始時</strong>以降の k に
+                      <strong>+3</strong>（見た3枚分）だけ反映します（「今」の行には足しません）。
                     </p>
                     <p class="deck-odds-skill-explain">
                       <strong>13曜</strong>
@@ -665,7 +662,7 @@ python3 -m http.server 8080</pre>
                   </div>
             </div>
             <p class="hint zone-inline-help live-prob-footnote deck-prob-explain-hide">
-              キー／中間・ライブ・指定を<strong>k 枚</strong>で引く確率（下の k と同じ。マリガン・ライブ手札は自動）。1T〜列は左の数の累積 k。
+              キー／中間・ライブ・指定を<strong>k 枚</strong>で引く確率。「今」は下のスライダー／マリガン連動。「nT開始時」は折りたたみのターン別モデルで累積した k。
             </p>
           </section>
         </div>
@@ -741,9 +738,9 @@ python3 -m http.server 8080</pre>
                     <span id="live-need-heart-detail" class="live-stats-detail">—</span>
                     <span class="live-need-suffix"> ／ 計 <strong id="live-need-heart-total">0</strong></span>
                   </dd>
-                  <dt title="（場メンバー所持H＋解決BH）とライブ need_heart の差（残り／不足）">要求色</dt>
+                  <dt title="（場メンバー所持H＋解決BH）に対して need_heart が足りていない色だけを表示します">要求色</dt>
                   <dd id="live-required-colors" class="live-stats-colors live-stats-dd-heart">—</dd>
-                  <dt title="ステージ上メンバーの所持ハート内訳">ステージハート</dt>
+                  <dt title="ステージ上メンバーの所持ハート内訳（調整分の色ハートに加え、ALL＝任意プール分も含みます）">ステージハート</dt>
                   <dd id="live-stage-h-colors" class="live-stats-colors live-stats-dd-heart">—</dd>
                   <dt class="live-stats-visually-hidden">非BH許容・エール数・場メンバーH・解決BH</dt>
                   <dd class="live-stats-metric-strip">

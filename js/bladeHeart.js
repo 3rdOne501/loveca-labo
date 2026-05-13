@@ -359,6 +359,8 @@ export function formatHeartSlotAccumBreakdown(accum) {
     const v = accum[s];
     if (v && v > 0) parts.push(bladeHeartDisplaySlotLabel(s) + " " + v);
   }
+  const v7 = accum[7];
+  if (v7 && v7 > 0) parts.push(bladeHeartDisplaySlotLabel(7) + " " + v7);
   if (accum[99] && accum[99] > 0) parts.push("その他 " + accum[99]);
   return parts.length ? parts.join("／") : "—";
 }

@@ -58,6 +58,10 @@ export const STORAGE_DECK_ODDS_TURN_STEPS = "llocg_deck_odds_turn_steps";
 export const STORAGE_DECK_ODDS_2KASUMI = "llocg_deck_odds_2kasumi";
 /** 山札確率: 「13曜」前提（上7枚見て3枚回収＝見た7枚分をいまの k に加算） */
 export const STORAGE_DECK_ODDS_13YOU = "llocg_deck_odds_13you";
+/** 初手マリガン実行時の「山札へ戻した枚数」（同一タブセッション。新規対戦でクリア） */
+export const STORAGE_OPENING_MULLIGAN_K = "llocg_opening_mulligan_k";
+/** 確率グリッドのベース k を、その記憶したマリガン枚数に固定するモード ON/OFF（"1"/"0"） */
+export const STORAGE_DECK_ODDS_OPENING_MULL_MODEL = "llocg_deck_odds_open_mull_model";
 /** 確率グリッド／要約で「しまっている」カテゴリ ID 一覧（key/key2/key3/mid/either/live/pick） */
 export const STORAGE_DECK_ODDS_HIDDEN_CATS = "llocg_deck_odds_hidden_cats";
 export const STORAGE_FIRST_PLAYER = "llocg_first_player";
@@ -82,6 +86,11 @@ export const FILTER_PRODUCT_TEST_CARD_LOG = "__llocg_test_card_log__";
 /** ミア・テイラー pb1-011 系（R / SEC 等同一扱い・下のエネ1枚につき常時ブレード） */
 export function cardNoIsMiaTaylorPb1011(cardNo) {
   return /^PL!N-pb1-011-/i.test(String(cardNo || "").trim());
+}
+
+/** 鐘 嵐珠 bp1-012 系（R / P / SEC 等同一扱い・ライブ枠条件で ALLハートとブレード） */
+export function cardNoIsZhongLanzhuBp1012(cardNo) {
+  return /^PL!N-bp1-012-/i.test(String(cardNo || "").trim());
 }
 
 /** Undo 履歴の最大長 */

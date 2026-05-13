@@ -68,6 +68,7 @@ function tryResumePlaySession(viewDeck, viewGame) {
               document.body.classList.remove("live-turn-pick-mode");
               document.body.classList.remove("zone-hints-visible");
               document.body.classList.remove("stage-member-emphasis");
+              document.body.classList.remove("play-hand-bottom-dock-force");
             },
             deckRoleLabels: {
               keyCardNos: Array.isArray(dm.keyCardNos) ? dm.keyCardNos : [],
@@ -83,6 +84,7 @@ function tryResumePlaySession(viewDeck, viewGame) {
           clearPlayResumeStorage();
           document.body.classList.remove("play-mode");
           document.body.classList.remove("stage-member-emphasis");
+          document.body.classList.remove("play-hand-bottom-dock-force");
           viewGame.hidden = true;
           viewDeck.hidden = false;
           showToast("前回の盤面の復元に失敗しました。デッキ画面からやり直してください。");
@@ -160,6 +162,7 @@ function startApp(viewDeck, viewGame, statusEl) {
                   document.body.classList.remove("live-turn-pick-mode");
                   document.body.classList.remove("zone-hints-visible");
                   document.body.classList.remove("stage-member-emphasis");
+                  document.body.classList.remove("play-hand-bottom-dock-force");
                 },
                 deckRoleLabels: {
                   keyCardNos: bundle.keyCardNos,
@@ -175,6 +178,7 @@ function startApp(viewDeck, viewGame, statusEl) {
               document.body.classList.remove("live-turn-pick-mode");
               document.body.classList.remove("zone-hints-visible");
               document.body.classList.remove("stage-member-emphasis");
+              document.body.classList.remove("play-hand-bottom-dock-force");
               viewGame.hidden = true;
               viewDeck.hidden = false;
               showToast("プレイ画面の初期化に失敗しました。ページを再読み込みしてお試しください。");

@@ -1506,6 +1506,14 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
   animation-fill-mode: forwards;
   will-change: opacity, transform;
 }
+.card-flash-plus-one--draw-yell {
+  color: #ffb8e8;
+  text-shadow:
+    0 0 4px rgba(0, 0, 0, 0.92),
+    0 0 10px rgba(0, 0, 0, 0.82),
+    0 0 18px rgba(255, 105, 200, 0.95),
+    0 0 30px rgba(255, 140, 220, 0.72);
+}
 @keyframes cardFlashPlusOneFade {
   0% {
     opacity: 0;
@@ -1527,6 +1535,11 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
 @media (prefers-reduced-motion: reduce) {
   .card-flash-plus-one {
     animation: cardFlashPlusOneFadeQuick 700ms linear forwards;
+  }
+  .card-flash-plus-one--draw-yell {
+    text-shadow:
+      0 0 4px rgba(0, 0, 0, 0.85),
+      0 0 12px rgba(255, 120, 190, 0.85);
   }
   @keyframes cardFlashPlusOneFadeQuick {
     0% { opacity: 0.9; }
@@ -1945,6 +1958,24 @@ body.play-mode #btn-layout-16-9.btn--layout-16-9-on {
   box-shadow: 0 0 0 1px rgba(255, 160, 210, 0.35);
 }
 
+/* 手札下端ドック強制は狭い画面向け（広いディスプレイではボタンを隠す） */
+body.play-mode #btn-play-hand-dock {
+  display: none;
+}
+@media (max-width: 900px) {
+  body.play-mode #btn-play-hand-dock {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+body.play-mode #btn-play-hand-dock.btn--hand-dock-on {
+  background: linear-gradient(135deg, rgba(130, 210, 255, 0.45), rgba(255, 130, 200, 0.55));
+  border-color: rgba(200, 230, 255, 0.75);
+  color: #fffafd;
+  font-weight: 800;
+}
+
 body.play-mode .deck-toolbar-row .btn,
 body.play-mode .deck-toolbar-row .btn.sm {
   padding: 0.28rem 0.45rem;
@@ -2238,12 +2269,18 @@ body.play-mode .stage-slot.card-strip {
 body.play-mode .stage-slot .card-item[data-type="エネルギー"] {
   position: relative;
   z-index: 1;
-  /* メンバー下のエネ帯: 約 80% まで重なりを許容（左から積み、メンバーが手前） */
   margin-right: calc(var(--loveca-play-w) * -0.8);
 }
 body.play-mode .stage-slot .card-item[data-type="メンバー"] {
   position: relative;
   z-index: 2;
+}
+
+/* ステージに載せたエネは常に不透明・アクティブ相当の見え方（強制 lcActive と併用） */
+body.play-mode .stage-slot .card-item[data-type="エネルギー"].card-item--lc-inactive .card-img,
+body.play-mode .stage-slot .card-item[data-type="エネルギー"].card-item--lc-wait .card-img {
+  opacity: 1;
+  filter: none;
 }
 
 .stage-title-bar {
@@ -3293,16 +3330,46 @@ table.deck-odds-grid {
   color: rgba(255, 230, 245, 0.95);
   min-width: 3.85rem;
 }
-.deck-odds-cell--high {
-  color: rgba(168, 255, 210, 0.98);
-  text-shadow: 0 0 12px rgba(120, 255, 180, 0.32);
-}
-.deck-odds-cell--mid {
-  color: rgba(255, 230, 145, 0.96);
-}
-.deck-odds-cell--low {
-  color: rgba(255, 180, 180, 0.55);
+/* 10％刻みで色相・彩度・コントラストを段階的に変える（低確率は寒色系→高確率は暖色・ネオン寄り） */
+.deck-odds-cell--b0 {
+  color: rgba(175, 185, 215, 0.72);
   font-weight: 500;
+}
+.deck-odds-cell--b1 {
+  color: rgba(185, 175, 225, 0.78);
+}
+.deck-odds-cell--b2 {
+  color: rgba(210, 165, 235, 0.82);
+}
+.deck-odds-cell--b3 {
+  color: rgba(245, 155, 215, 0.88);
+}
+.deck-odds-cell--b4 {
+  color: rgba(255, 175, 165, 0.9);
+}
+.deck-odds-cell--b5 {
+  color: rgba(255, 205, 125, 0.93);
+}
+.deck-odds-cell--b6 {
+  color: rgba(215, 245, 135, 0.94);
+}
+.deck-odds-cell--b7 {
+  color: rgba(145, 245, 185, 0.96);
+  font-weight: 700;
+}
+.deck-odds-cell--b8 {
+  color: rgba(115, 252, 215, 0.98);
+  font-weight: 700;
+}
+.deck-odds-cell--b9 {
+  color: rgba(210, 255, 248, 1);
+  font-weight: 800;
+}
+.deck-odds-cell--hot-glow {
+  text-shadow:
+    0 0 5px rgba(255, 240, 200, 0.55),
+    0 0 12px rgba(130, 255, 210, 0.85),
+    0 0 22px rgba(95, 220, 255, 0.45);
 }
 /* 到達ターン要約 */
 .deck-odds-grid-summary-wrap {
@@ -3869,10 +3936,12 @@ body.play-mode .deck-pile {
 }
 
 /*
- * スマホ縦持ち（プレイのみ）: ステージを先に、手札を列末にまとめて操作しやすく。
- * landscape や幅広タブレット縦では従来の 1 列／3 列のまま。
+ * スマホ縦／スマホ横（プレイのみ）: ステージを先に、手札を列末で sticky 固定して操作しやすく。
+ * 横は「狭い縦幅」の端末のみ自動適用（タブレット横などは除外）。
+ * 任意 ON は body.play-hand-bottom-dock-force（ボタン・sessionStorage）。
  */
-@media (max-width: 900px) and (orientation: portrait) {
+@media (max-width: 900px) and (orientation: portrait),
+  (max-width: 900px) and (orientation: landscape) and (max-height: 520px) {
   body.play-mode .game-board {
     display: flex;
     flex-direction: column;
@@ -4102,6 +4171,183 @@ body.play-mode .deck-pile {
   }
 }
 
+/* スマホ横: 縦幅が足りないので vh を混ぜて手札サムネをやや大きめに */
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 520px) {
+  body.play-mode #zone-hand {
+    --loveca-hand-w: min(128px, min(30vw, 38vh));
+    --loveca-hand-h: calc(var(--loveca-hand-w) * var(--loveca-mm-h) / var(--loveca-mm-w));
+  }
+}
+
+/* ボタンで手札下端ドックを強制（自動判定できない端末・タブレット等） */
+@media (max-width: 900px) {
+  body.play-mode.play-hand-bottom-dock-force .game-board {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    align-content: stretch;
+    gap: 0.45rem;
+    touch-action: pan-y;
+    overscroll-behavior-y: contain;
+  }
+  body.play-mode.play-hand-bottom-dock-force .game-board .col {
+    overflow: visible;
+    min-width: 0;
+    width: 100%;
+  }
+  body.play-mode.play-hand-bottom-dock-force .game-board .col.col-left {
+    order: 1;
+    flex: 0 1 auto;
+    max-height: min(36vh, 380px);
+    max-height: min(36svh, 380px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    min-height: 0;
+  }
+  body.play-mode.play-hand-bottom-dock-force .game-board .col.col-center {
+    order: 2;
+    flex: 1 1 auto;
+    min-height: min(36vh, 410px);
+    min-height: min(36svh, 410px);
+    min-width: 0;
+  }
+  body.play-mode.play-hand-bottom-dock-force .game-board .col.col-right {
+    order: 3;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: min(44vh, 520px);
+    min-height: min(44svh, 520px);
+    max-height: none;
+    overflow-y: visible;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    width: 100%;
+  }
+  body.play-mode.play-hand-bottom-dock-force .zone-sim-success-row {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    gap: 0.38rem 0.42rem;
+    align-items: stretch;
+  }
+  body.play-mode.play-hand-bottom-dock-force .game-board .col.col-left,
+  body.play-mode.play-hand-bottom-dock-force .game-board .col.col-right {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+  }
+  body.play-mode.play-hand-bottom-dock-force .col.col-right section.play-tools-block {
+    order: 60;
+  }
+  body.play-mode.play-hand-bottom-dock-force
+    .col.col-right
+    :is(section, details).zone-block:has(#zone-hand) {
+    order: 100;
+    margin-top: 0.45rem;
+  }
+  body.play-mode.play-hand-bottom-dock-force
+    .col.col-right
+    :is(section, details).zone-block:has(#zone-hand)
+    .zone-head--hand {
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+  body.play-mode.play-hand-bottom-dock-force .col.col-right details#hand-stick-fold.hand-stick-fold {
+    position: sticky;
+    bottom: 0;
+    z-index: 8;
+    padding-top: 0.15rem;
+    padding-bottom: max(0.2rem, env(safe-area-inset-bottom, 0px));
+    margin-bottom: -0.1rem;
+    background: linear-gradient(
+      180deg,
+      rgba(14, 10, 22, 0.2) 0%,
+      rgba(10, 7, 18, 0.94) 28%,
+      rgba(7, 5, 14, 0.99) 100%
+    );
+    border-top: 1px solid rgba(255, 160, 200, 0.22);
+    box-shadow: 0 -10px 36px rgba(0, 0, 0, 0.35);
+  }
+  body.play-mode.play-hand-bottom-dock-force .hand-stick-fold > summary.hand-stick-fold__summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem 0.45rem;
+    cursor: pointer;
+    user-select: none;
+    padding: 0.32rem 0.42rem;
+    border-radius: var(--radius-sm);
+    border: 1px dashed rgba(255, 160, 200, 0.32);
+    background: rgba(8, 5, 14, 0.4);
+    font-size: 0.82rem;
+    font-weight: 800;
+    font-family: var(--font-display);
+    color: #fcdcec;
+    box-sizing: border-box;
+  }
+  body.play-mode.play-hand-bottom-dock-force .hand-stick-fold[open] > summary.hand-stick-fold__summary {
+    margin-bottom: 0.38rem;
+    border-style: solid;
+    border-color: rgba(255, 160, 200, 0.38);
+  }
+  body.play-mode.play-hand-bottom-dock-force .hand-stick-fold__hint {
+    font-size: 0.7rem;
+    font-weight: 400;
+  }
+  body.play-mode.play-hand-bottom-dock-force .hand-stick-fold .hand-stick-fold__body .hand-zone-title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  body.play-mode.play-hand-bottom-dock-force #hand-row {
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.2rem;
+  }
+  body.play-mode.play-hand-bottom-dock-force #zone-hand {
+    --loveca-hand-w: min(108px, min(26vw, 32vh));
+    --loveca-hand-h: calc(var(--loveca-hand-w) * var(--loveca-mm-h) / var(--loveca-mm-w));
+  }
+  body.play-mode.play-hand-bottom-dock-force #view-game #zone-hand .card-item {
+    width: var(--loveca-hand-w);
+  }
+  body.play-mode.play-hand-bottom-dock-force #zone-hand .card-item[data-type="ライブ"] {
+    width: var(--loveca-hand-w);
+  }
+  body.play-mode.play-hand-bottom-dock-force #zone-hand .card-item[data-type="ライブ"] .card-img:not(.rotated) {
+    width: 100%;
+    height: var(--loveca-hand-h);
+  }
+  body.play-mode.play-hand-bottom-dock-force #zone-hand.hand-zone--overlap .card-item + .card-item {
+    margin-left: calc(var(--loveca-hand-w) * var(--hand-overlap-frac));
+  }
+  body.play-mode.play-hand-bottom-dock-force .game-board .col {
+    overflow-x: hidden;
+  }
+  body.play-mode.play-hand-bottom-dock-force .col.col-left > :is(section, details).zone-block,
+  body.play-mode.play-hand-bottom-dock-force .col.col-center > :is(section, details).zone-block,
+  body.play-mode.play-hand-bottom-dock-force .col.col-right > :is(section, details).zone-block {
+    isolation: isolate;
+    margin-bottom: 0.55rem;
+  }
+  body.play-mode.play-hand-bottom-dock-force .col.col-left > :is(section, details).zone-block:last-child,
+  body.play-mode.play-hand-bottom-dock-force .col.col-center > :is(section, details).zone-block:last-child,
+  body.play-mode.play-hand-bottom-dock-force .col.col-right > :is(section, details).zone-block:last-child {
+    margin-bottom: 0;
+  }
+  body.play-mode.play-hand-bottom-dock-force .zone-sim-success-row > .zone-block {
+    min-width: 0;
+    overflow: hidden;
+  }
+}
+
 /* --- 理想の趣味レーション: 追加 UI --- */
 .panel-title-row {
   display: flex;
@@ -4184,6 +4430,9 @@ body.play-mode .deck-pile {
   min-height: 68px;
   padding: 0.2rem 0.15rem 0.2rem;
   gap: 0.2rem 0.3rem;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  overflow-x: auto;
 }
 .card-deck-summary .deck-peek-bar-wrap {
   min-height: 70px;
@@ -5295,8 +5544,8 @@ kbd {
 .deck-peek-chart {
   display: flex;
   align-items: flex-end;
-  justify-content: center;
-  flex-wrap: wrap;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
   gap: 0.3rem 0.45rem;
   min-height: 84px;
   padding: 0.25rem 0.2rem 0.35rem;
@@ -5304,6 +5553,9 @@ kbd {
   border-radius: var(--radius-sm);
   border: 1px dashed rgba(255, 140, 200, 0.22);
   background: rgba(8, 4, 14, 0.35);
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
 }
 .deck-peek-bar-col {
   display: flex;
