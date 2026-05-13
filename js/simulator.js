@@ -5933,31 +5933,6 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     });
   })();
 
-  /** 狭い画面で手札を下端 sticky に強制（CSS と body.play-hand-bottom-dock-force・メディアクエリ連動） */
-  (function initPlayHandBottomDockForce() {
-    var dockBtn = $("btn-play-hand-dock");
-    if (!dockBtn) return;
-    var STORAGE_PLAY_HAND_BOTTOM_DOCK_FORCE = "llocg_play_hand_bottom_dock_force";
-
-    function syncPlayHandDockForceUi() {
-      var on = sessionStorage.getItem(STORAGE_PLAY_HAND_BOTTOM_DOCK_FORCE) === "1";
-      document.body.classList.toggle("play-hand-bottom-dock-force", on);
-      dockBtn.setAttribute("aria-pressed", on ? "true" : "false");
-      dockBtn.classList.toggle("btn--hand-dock-on", on);
-      dockBtn.title = on
-        ? "横・手札下端固定をオフにします"
-        : "スマホ横持ち：手札を画面下に固定して大きく表示します（このタブでのみ記憶）";
-    }
-
-    syncPlayHandDockForceUi();
-    dockBtn.addEventListener("click", function () {
-      var nextOn = !document.body.classList.contains("play-hand-bottom-dock-force");
-      sessionStorage.setItem(STORAGE_PLAY_HAND_BOTTOM_DOCK_FORCE, nextOn ? "1" : "0");
-      syncPlayHandDockForceUi();
-      renderSynchronouslyOnce();
-    });
-  })();
-
   $("btn-coin")?.addEventListener("click", () => {
     const head = Math.random() < 0.5 ? "コインは表になりました（先攻側は自由に運用してください）" : "コインは裏になりました（先攻側は自由に運用してください）";
     showToast(head);
