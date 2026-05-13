@@ -1033,22 +1033,41 @@ python3 -m http.server 8080</pre>
 
           <section class="zone-block play-tools-block">
             <div class="deck-tools-split">
-              <div class="deck-tools-split__pick">
-                <div class="deck-pick-block">
-                  <div class="deck-pick-head-row">
-                    <h4 class="deck-pick-odds-section-title">指定カード検索</h4>
-                    <label class="field deck-pick-k-field">
-                      <span>めくり枚数</span>
-                      <input type="number" id="deck-pick-k" min="1" max="99" step="1" value="1" />
-                    </label>
-                  </div>
-                  <p id="deck-pick-odds" class="hint zone-inline-help deck-pick-odds-line deck-draw-odds-visible"></p>
-                  <div id="deck-pick-list" class="deck-pick-list" role="group" aria-label="山札に残っているカード"></div>
-                  <div class="btn-row deck-pick-actions">
-                    <button type="button" class="btn sm secondary" id="btn-deck-pick-clear">選択をクリア</button>
+              <details
+                id="deck-pick-fold"
+                class="deck-tools-split__pick deck-pick-fold"
+              >
+                <script>
+                  (function () {
+                    try {
+                      if (window.matchMedia && window.matchMedia("(min-width: 901px)").matches) {
+                        var el = document.currentScript && document.currentScript.parentNode;
+                        if (el && el.tagName === "DETAILS") el.setAttribute("open", "");
+                      }
+                    } catch (e) {}
+                  })();
+                </script>
+                <summary class="deck-pick-fold__summary">
+                  指定カード検索
+                  <span class="deck-pick-fold__hint muted">タップで開く</span>
+                </summary>
+                <div class="deck-pick-fold__body">
+                  <div class="deck-pick-block">
+                    <div class="deck-pick-head-row">
+                      <h4 class="deck-pick-odds-section-title">指定カード検索</h4>
+                      <label class="field deck-pick-k-field">
+                        <span>めくり枚数</span>
+                        <input type="number" id="deck-pick-k" min="1" max="99" step="1" value="1" />
+                      </label>
+                    </div>
+                    <p id="deck-pick-odds" class="hint zone-inline-help deck-pick-odds-line deck-draw-odds-visible"></p>
+                    <div id="deck-pick-list" class="deck-pick-list" role="group" aria-label="山札に残っているカード"></div>
+                    <div class="btn-row deck-pick-actions">
+                      <button type="button" class="btn sm secondary" id="btn-deck-pick-clear">選択をクリア</button>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </details>
               <div class="deck-tools-split__odds">
                 <div id="deck-remain-bh-panel" class="deck-remain-bh-panel" aria-live="polite">
                   <h4 class="deck-pick-odds-section-title">デッキの残色</h4>

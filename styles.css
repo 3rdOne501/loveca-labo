@@ -2506,6 +2506,52 @@ details.deck-odds-foldable.zone-block-deck-odds-wide {
   .deck-odds-fold__hint {
     display: none;
   }
+  .deck-pick-fold > summary.deck-pick-fold__summary {
+    display: none;
+  }
+  .deck-pick-fold > summary.deck-pick-fold__summary::-webkit-details-marker {
+    display: none;
+  }
+  .deck-pick-fold__hint {
+    display: none;
+  }
+}
+
+details.deck-pick-fold.deck-tools-split__pick {
+  border: none;
+  padding: 0;
+  min-width: 0;
+}
+.deck-pick-fold > summary.deck-pick-fold__summary {
+  list-style: none;
+}
+.deck-pick-fold > summary.deck-pick-fold__summary::-webkit-details-marker {
+  display: none;
+}
+.deck-pick-fold__summary {
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  padding: 0.32rem 0.38rem;
+  border-radius: var(--radius-sm);
+  border: 1px dashed rgba(255, 160, 200, 0.32);
+  background: rgba(8, 5, 14, 0.38);
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-family: var(--font-display);
+  color: #fcdcec;
+  box-sizing: border-box;
+}
+.deck-pick-fold[open] > .deck-pick-fold__summary {
+  margin-bottom: 0.35rem;
+  border-style: solid;
+  border-color: rgba(255, 160, 200, 0.38);
+}
+.deck-pick-fold__body {
+  min-width: 0;
 }
 
 /* プレイ画面・幅狭いスマホ: 文字の重なりを避け、確率まわりの折り返しを強化 */
@@ -2559,14 +2605,26 @@ details.deck-odds-foldable.zone-block-deck-odds-wide {
     font-size: 0.7rem;
     font-weight: 400;
   }
+  body.play-mode .deck-pick-fold .deck-pick-head-row .deck-pick-odds-section-title {
+    display: none;
+  }
   body.play-mode .zone-block-snapshots--under-energy {
     display: none;
   }
+  body.play-mode .deck-tools-split {
+    display: grid;
+    grid-template-columns: minmax(4.75rem, 6.75rem) minmax(0, 1fr);
+    gap: 0.4rem 0.5rem;
+    align-items: start;
+    margin-top: 0.28rem;
+  }
   body.play-mode .deck-tools-split__odds {
     display: grid;
-    grid-template-columns: minmax(13.5rem, 1fr) minmax(12rem, 1fr);
+    grid-template-columns: minmax(7.5rem, 0.34fr) minmax(10rem, 0.66fr);
     gap: 0.45rem 0.55rem;
     align-items: start;
+    max-width: none;
+    width: 100%;
   }
   body.play-mode .deck-tools-split__odds > #deck-remain-bh-panel {
     grid-column: 1;
@@ -2589,11 +2647,20 @@ details.deck-odds-foldable.zone-block-deck-odds-wide {
   body.play-mode .deck-tools-split__odds > .play-deck-preset-panel,
   body.play-mode .deck-tools-split__odds > .deck-odds-foldable {
     min-width: 0;
-    max-width: min(100%, 21rem);
+    max-width: 100%;
+  }
+
+@media (max-width: 700px) {
+  body.play-mode .deck-tools-split {
+    grid-template-columns: minmax(4.25rem, 5.75rem) minmax(0, 1fr);
+    gap: 0.35rem 0.42rem;
+  }
+  body.play-mode .deck-tools-split__odds {
+    grid-template-columns: minmax(6.5rem, 0.32fr) minmax(0, 0.68fr);
   }
 }
 
-@media (max-width: 700px) {
+@media (max-width: 480px) {
   body.play-mode .deck-tools-split__odds {
     grid-template-columns: 1fr;
   }
@@ -3645,16 +3712,26 @@ body.play-mode .deck-pile {
     width: 100%;
   }
 
-  body.play-mode .game-board .col.col-center {
-    order: 2;
-  }
   body.play-mode .game-board .col.col-left {
     order: 1;
+  }
+
+  body.play-mode .game-board .col.col-center {
+    order: 2;
+    flex: 1 1 auto;
+    margin-inline: -0.32rem;
+    padding-inline: 0.32rem;
+    width: calc(100% + 0.64rem);
+    min-height: 0;
   }
   body.play-mode .game-board .col.col-right {
     order: 3;
     display: flex;
     flex-direction: column;
+    flex: 0 1 auto;
+    max-width: min(100%, 24.5rem);
+    margin-inline: auto;
+    width: 100%;
   }
 
   body.play-mode .zone-sim-success-row {

@@ -5105,6 +5105,21 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       window.setTimeout(syncDeckOddsFoldOpen, 200);
     });
   })();
+  (function initDeckPickFoldViewport() {
+    var det = $("deck-pick-fold");
+    if (!det || det.tagName !== "DETAILS") return;
+    var mq = window.matchMedia("(max-width: 900px)");
+    function syncDeckPickFoldOpen() {
+      if (mq.matches) det.removeAttribute("open");
+      else det.setAttribute("open", "");
+    }
+    syncDeckPickFoldOpen();
+    if (mq.addEventListener) mq.addEventListener("change", syncDeckPickFoldOpen);
+    else if (mq.addListener) mq.addListener(syncDeckPickFoldOpen);
+    window.addEventListener("orientationchange", function () {
+      window.setTimeout(syncDeckPickFoldOpen, 200);
+    });
+  })();
   function bumpDeckOddsKManual(delta) {
     var n = state.deck.length;
     var m = Array.isArray(state.mulliganSelectedIds) ? state.mulliganSelectedIds.length : 0;
