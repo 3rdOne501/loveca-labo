@@ -2602,6 +2602,29 @@ body.play-mode .success-live-zone-shell--win .success-live-strip.card-strip {
   font-size: 0.88rem;
   color: rgba(255, 230, 245, 0.95);
 }
+.deck-odds-k-readout-wrap {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+}
+.deck-odds-k-num {
+  width: 3.25rem;
+  max-width: 100%;
+  padding: 0.2rem 0.28rem;
+  font-size: 0.86rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 160, 210, 0.35);
+  background: rgba(12, 10, 22, 0.55);
+  color: rgba(255, 230, 250, 0.98);
+  box-sizing: border-box;
+}
+.deck-odds-k-num:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
 .deck-odds-k-hint {
   font-size: 0.65rem !important;
   line-height: 1.35 !important;
@@ -2891,94 +2914,16 @@ table.deck-odds-grid {
   color: rgba(255, 230, 245, 0.95);
   min-width: 3.85rem;
 }
-/* 確率帯（5% 刻み p0〜p20）：30%=赤黒、50%=真っ赤、中央はマイルド化、85% 前後から発光、95%=最大 */
-.deck-odds-cell--pct {
-  font-weight: 650;
+.deck-odds-cell--high {
+  color: rgba(168, 255, 210, 0.98);
+  text-shadow: 0 0 12px rgba(120, 255, 180, 0.32);
 }
-.deck-odds-cell--p0,
-.deck-odds-cell--p1,
-.deck-odds-cell--p2,
-.deck-odds-cell--p3,
-.deck-odds-cell--p4,
-.deck-odds-cell--p5 {
-  color: rgba(150, 165, 190, 0.72);
+.deck-odds-cell--mid {
+  color: rgba(255, 230, 145, 0.96);
+}
+.deck-odds-cell--low {
+  color: rgba(255, 180, 180, 0.55);
   font-weight: 500;
-}
-.deck-odds-cell--p6 {
-  color: #3d1818;
-  background: rgba(40, 10, 14, 0.45);
-  border-radius: 4px;
-  font-weight: 700;
-}
-.deck-odds-cell--p7 {
-  color: #6b1518;
-  font-weight: 700;
-}
-.deck-odds-cell--p8 {
-  color: #9a121c;
-  font-weight: 700;
-}
-.deck-odds-cell--p9 {
-  color: #c40a14;
-  font-weight: 800;
-}
-.deck-odds-cell--p10 {
-  color: #ff1520;
-  font-weight: 800;
-  text-shadow: 0 0 8px rgba(255, 30, 40, 0.45);
-}
-.deck-odds-cell--p11 {
-  color: #ff6a4d;
-  font-weight: 700;
-}
-.deck-odds-cell--p12 {
-  color: #ff9f6e;
-  font-weight: 700;
-}
-.deck-odds-cell--p13 {
-  color: #f0c86a;
-  font-weight: 700;
-}
-.deck-odds-cell--p14 {
-  color: #c8e085;
-  font-weight: 680;
-}
-.deck-odds-cell--p15 {
-  color: #9ee0a8;
-  font-weight: 670;
-}
-.deck-odds-cell--p16 {
-  color: #7adccd;
-  font-weight: 660;
-}
-.deck-odds-cell--p17 {
-  color: #8af0ff;
-  font-weight: 700;
-  text-shadow:
-    0 0 10px rgba(120, 230, 255, 0.55),
-    0 0 22px rgba(100, 200, 255, 0.25);
-}
-.deck-odds-cell--p18 {
-  color: #b8f6ff;
-  font-weight: 700;
-  text-shadow:
-    0 0 12px rgba(150, 240, 255, 0.65),
-    0 0 28px rgba(120, 220, 255, 0.35);
-}
-.deck-odds-cell--p19 {
-  color: #e8fbff;
-  font-weight: 800;
-  text-shadow:
-    0 0 14px rgba(180, 255, 255, 0.75),
-    0 0 36px rgba(140, 230, 255, 0.45);
-}
-.deck-odds-cell--p20 {
-  color: #ffffff;
-  font-weight: 900;
-  text-shadow:
-    0 0 16px rgba(200, 255, 255, 0.95),
-    0 0 40px rgba(160, 240, 255, 0.55),
-    0 0 56px rgba(255, 200, 255, 0.35);
 }
 /* 到達ターン要約 */
 .deck-odds-grid-summary-wrap {
@@ -3047,100 +2992,6 @@ table.deck-odds-grid {
   margin: 0.25rem 0;
   padding: 0.06em 0.12em;
   border-radius: 0.4rem;
-}
-.deck-odds-pct--p0,
-.deck-odds-pct--p1,
-.deck-odds-pct--p2,
-.deck-odds-pct--p3,
-.deck-odds-pct--p4,
-.deck-odds-pct--p5 {
-  color: rgba(155, 170, 198, 0.9);
-  text-shadow: none;
-  font-weight: 700;
-}
-.deck-odds-pct--p6 {
-  color: #4a1518;
-  text-shadow: 0 0 6px rgba(60, 10, 20, 0.5);
-  font-weight: 800;
-}
-.deck-odds-pct--p7 {
-  color: #7a1218;
-  text-shadow: 0 0 8px rgba(120, 20, 30, 0.45);
-  font-weight: 800;
-}
-.deck-odds-pct--p8 {
-  color: #b00812;
-  text-shadow: 0 0 10px rgba(200, 20, 40, 0.5);
-  font-weight: 800;
-}
-.deck-odds-pct--p9 {
-  color: #e0000c;
-  text-shadow: 0 0 12px rgba(255, 20, 40, 0.55);
-  font-weight: 800;
-}
-.deck-odds-pct--p10 {
-  color: #ff0a14;
-  text-shadow: 0 0 14px rgba(255, 40, 50, 0.65);
-  font-weight: 900;
-}
-.deck-odds-pct--p11 {
-  color: #ff6a45;
-  text-shadow: none;
-  font-weight: 820;
-}
-.deck-odds-pct--p12 {
-  color: #ff9f62;
-  text-shadow: none;
-  font-weight: 800;
-}
-.deck-odds-pct--p13 {
-  color: #f0c870;
-  text-shadow: none;
-  font-weight: 700;
-}
-.deck-odds-pct--p14 {
-  color: #c8e888;
-  text-shadow: none;
-  font-weight: 700;
-}
-.deck-odds-pct--p15 {
-  color: #9ee8a8;
-  text-shadow: none;
-  font-weight: 700;
-}
-.deck-odds-pct--p16 {
-  color: #7ee8d8;
-  text-shadow: none;
-  font-weight: 700;
-}
-.deck-odds-pct--p17 {
-  color: #8cf6ff;
-  text-shadow:
-    0 0 12px rgba(120, 240, 255, 0.55),
-    0 0 26px rgba(100, 210, 255, 0.3);
-  font-weight: 800;
-}
-.deck-odds-pct--p18 {
-  color: #c8fbff;
-  text-shadow:
-    0 0 14px rgba(160, 250, 255, 0.7),
-    0 0 34px rgba(120, 220, 255, 0.4);
-  font-weight: 800;
-}
-.deck-odds-pct--p19 {
-  color: #f2feff;
-  text-shadow:
-    0 0 16px rgba(200, 255, 255, 0.85),
-    0 0 42px rgba(150, 240, 255, 0.5);
-  font-weight: 800;
-}
-.deck-odds-pct--p20 {
-  color: #ffffff;
-  text-shadow:
-    0 0 18px rgba(220, 255, 255, 1),
-    0 0 48px rgba(160, 240, 255, 0.65),
-    0 0 72px rgba(255, 210, 255, 0.45);
-  font-weight: 900;
 }
 .live-deck-odds-panel .deck-odds-pct,
 .deck-pick-odds-line .deck-odds-pct {
@@ -3635,6 +3486,101 @@ body.play-mode .deck-pile {
     grid-template-columns: 1fr;
     overflow-y: auto;
     align-content: start;
+  }
+}
+
+/*
+ * スマホ縦持ち（プレイのみ）: ステージを先に、手札を列末＋下端 sticky で常に操作しやすく。
+ * landscape や幅広タブレット縦では従来の 1 列／3 列のまま。
+ */
+@media (max-width: 900px) and (orientation: portrait) {
+  body.play-mode .game-board {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    align-content: stretch;
+    gap: 0.45rem;
+  }
+
+  body.play-mode .game-board .col {
+    overflow: visible;
+    min-width: 0;
+    width: 100%;
+  }
+
+  body.play-mode .game-board .col.col-center {
+    order: 1;
+  }
+  body.play-mode .game-board .col.col-left {
+    order: 2;
+  }
+  body.play-mode .game-board .col.col-right {
+    order: 3;
+    display: flex;
+    flex-direction: column;
+  }
+
+  body.play-mode .game-board .col.col-left,
+  body.play-mode .game-board .col.col-right {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  /* デッキ〜プレビュー → ツール類 → 最後に手札 */
+  body.play-mode .col.col-right section.play-tools-block {
+    order: 60;
+  }
+  body.play-mode .col.col-right section.zone-block:has(#zone-hand) {
+    order: 100;
+    position: sticky;
+    bottom: 0;
+    z-index: 8;
+    margin-top: 0.45rem;
+    padding-top: 0.35rem;
+    padding-bottom: max(0.35rem, env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(
+      180deg,
+      rgba(14, 10, 22, 0.45) 0%,
+      rgba(10, 7, 18, 0.92) 32%,
+      rgba(7, 5, 14, 0.99) 100%
+    );
+    border-top: 1px solid rgba(255, 160, 200, 0.22);
+    box-shadow: 0 -10px 36px rgba(0, 0, 0, 0.38);
+  }
+
+  body.play-mode .col.col-right section.zone-block:has(#zone-hand) .zone-head--hand {
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  body.play-mode #hand-row {
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.2rem;
+  }
+
+  body.play-mode #zone-hand {
+    --loveca-hand-w: min(100px, 26vw);
+    --loveca-hand-h: calc(var(--loveca-hand-w) * var(--loveca-mm-h) / var(--loveca-mm-w));
+  }
+
+  body.play-mode #view-game #zone-hand .card-item {
+    width: var(--loveca-hand-w);
+  }
+
+  body.play-mode #zone-hand .card-item[data-type="ライブ"] {
+    width: var(--loveca-hand-w);
+  }
+
+  body.play-mode #zone-hand .card-item[data-type="ライブ"] .card-img:not(.rotated) {
+    width: 100%;
+    height: var(--loveca-hand-h);
+  }
+
+  body.play-mode #zone-hand.hand-zone--overlap .card-item + .card-item {
+    margin-left: calc(var(--loveca-hand-w) * var(--hand-overlap-frac));
   }
 }
 

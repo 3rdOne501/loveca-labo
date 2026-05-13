@@ -6,6 +6,7 @@ import {
   DEFAULT_STARTER_KEY_CARD_NOS,
   DEFAULT_STARTER_MIDDLE_CARD_NOS,
   FIRST_VISIT_CATALOG_PRODUCT_EXACT,
+  FILTER_PRODUCT_TEST_CARD_LOG,
   MAX_COPIES_PER_CARD,
   MAX_LIVE_IN_MAIN,
   MAX_MEMBER_IN_MAIN,
@@ -42,6 +43,7 @@ import {
   isHandDependentCost20Member,
 } from "./cards.js";
 import { parseDeckTextRecipe } from "./decklogImport.js";
+import { appendTestCardLogEntry, getTestCardLogCacheSig, getTestCardLogEntries } from "./testCardLog.js";
 import { showToast } from "./ui.js";
 import {
   bladeHeartAggregatePillHtml,
@@ -551,6 +553,7 @@ export function initDeckBuilder(root, { onStartGame }) {
       bx.noteLive ? "1" : "0",
       [...hs].sort().join(","),
       costParts.join(","),
+      getTestCardLogCacheSig(),
     ].join("|");
   }
 
@@ -610,6 +613,40 @@ export function initDeckBuilder(root, { onStartGame }) {
         if (c) filtered.push(c);
       }
       return applyCatalogSortToList(sortRegisteredDeckCards(filtered));
+    }
+    if (filterProduct === FILTER_PRODUCT_TEST_CARD_LOG) {
+      const key = buildCatalogFilterCacheKey();
+      if (key === catalogFilterCacheKey && catalogFilterCached !== null) {
+        return catalogFilterCached;
+      }
+      const entries = getTestCardLogEntries();
+      const built = [];
+      const seen = new Set();
+      for (let i = entries.length - 1; i >= 0; i--) {
+        const e = entries[i];
+        if (!e || !e.baseCardNo) continue;
+        try {
+          const no = ensureTestCardVariant(e.baseCardNo, e.options || {});
+          if (!no || seen.has(no)) continue;
+          seen.add(no);
+          const c = getCard(no);
+          if (!c) continue;
+          if (filterTypes[T_MEMBER] === false && c.type === T_MEMBER) continue;
+          if (filterTypes[T_LIVE] === false && c.type === T_LIVE) continue;
+          built.push(c);
+        } catch (_) {
+          /* noop */
+        }
+      }
+      let filtered = applyCatalogSortToList(built);
+      if (filterFavoritesOnly) {
+        filtered = filtered.filter(function (c) {
+          return c && cardFavorites.has(String(c.card_no));
+        });
+      }
+      catalogFilterCacheKey = key;
+      catalogFilterCached = filtered;
+      return filtered;
     }
     const key = buildCatalogFilterCacheKey();
     if (key === catalogFilterCacheKey && catalogFilterCached !== null) {
@@ -943,6 +980,39 @@ export function initDeckBuilder(root, { onStartGame }) {
             needHeart,
             customImg: testCardCustomImgDataUrl || undefined,
           }) || pending.card_no;
+        const logOptions = { slot };
+        if (customName) logOptions.customName = customName;
+        if (testCardCustomImgDataUrl) logOptions.customImg = testCardCustomImgDataUrl;
+        if (emCat === T_MEMBER) {
+          logOptions.blade = blade;
+          if (baseHeart && Object.keys(baseHeart).length) logOptions.baseHeart = baseHeart;
+        } else if (emCat === T_LIVE) {
+          logOptions.liveScore = liveScore;
+          if (needHeart && Object.keys(needHeart).length) logOptions.needHeart = needHeart;
+        }
+        const hadCustomization =
+          slot > 0 ||
+          !!customName ||
+          (emCat === T_MEMBER && blade > 0) ||
+          (emCat === T_LIVE && liveScore > 0) ||
+          !!(baseHeart && Object.keys(baseHeart).length) ||
+          !!(needHeart && Object.keys(needHeart).length) ||
+          !!testCardCustomImgDataUrl ||
+          out !== pending.card_no;
+        if (
+          hadCustomization &&
+          typeof window !== "undefined" &&
+          window.confirm(
+            "このオリカの設定を「テストカードログ」に保存しますか？\n\n・あとからデッキ画面の「商品」から「テストカードログ」を選ぶと一覧で開けます\n・通常の検索や他の商品名では一覧に出ません（ログ専用です）",
+          )
+        ) {
+          if (appendTestCardLogEntry({ baseCardNo: pending.card_no, options: logOptions })) {
+            invalidateCatalogFilterCache();
+            showToast("テストカードログに保存しました");
+          } else {
+            showToast("ログへの保存に失敗しました（容量超過の可能性があります）");
+          }
+        }
         finish(out);
       });
     }
@@ -2385,6 +2455,10 @@ export function initDeckBuilder(root, { onStartGame }) {
     const ps = el("filter-product");
     if (ps) {
       ps.innerHTML = '<option value="">（全商品）</option>';
+      const logOpt = document.createElement("option");
+      logOpt.value = FILTER_PRODUCT_TEST_CARD_LOG;
+      logOpt.textContent = "テストカードログ";
+      ps.appendChild(logOpt);
       uniqueProducts(cards).forEach((p) => {
         const o = document.createElement("option");
         o.value = p;

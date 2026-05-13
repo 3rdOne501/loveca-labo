@@ -603,40 +603,28 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     return out || escapeHtmlPlain("—");
   }
 
-  /**
-   * 確率 0〜100 → セル／強調用の段階クラス（5% 刻みの 0〜20）。
-   * 30% 付近＝赤黒、50%＝真っ赤、そこからマイルド化、85% 前後から発光、95% から最大。
-   */
-  function deckOddsProbabilityStep(rate) {
-    if (!Number.isFinite(rate)) return 0;
-    var r = Math.max(0, Math.min(100, rate));
-    return Math.min(20, Math.round(r / 5));
-  }
-
-  function deckOddsCellTierClass(rate) {
-    if (!Number.isFinite(rate)) return "";
-    return "deck-odds-cell--pct deck-odds-cell--p" + String(deckOddsProbabilityStep(rate));
-  }
-
-  function deckOddsPctStrongClass(rate) {
-    return "deck-odds-pct--p" + String(deckOddsProbabilityStep(rate));
-  }
-
   /** 確率の % 表示を強調（テキストはエスケープしてから置換）。opts.heroLiveSim でライブ成功シミュ行を特大表示。 */
   function htmlWithEmphasizedPercents(text, opts) {
     opts = opts || {};
     var hero = !!opts.heroLiveSim;
     return escapeHtmlPlain(text).replace(/(\d+(?:\.\d+)?)([%％])/g, function (_m, num, pctSym) {
-      var v = parseFloat(num);
-      var tierCls = deckOddsPctStrongClass(v);
-      var cls = (hero ? "deck-odds-pct deck-odds-pct--hero " : "deck-odds-pct ") + tierCls;
-      return '<strong class="' + cls.trim() + '">' + num + pctSym + "</strong>";
+      var cls = hero ? "deck-odds-pct deck-odds-pct--hero" : "deck-odds-pct";
+      return '<strong class="' + cls + '">' + num + pctSym + "</strong>";
     });
   }
 
   function setOddsRichText(el, plainText, opts) {
     if (!el) return;
     el.innerHTML = htmlWithEmphasizedPercents(plainText, opts || {});
+  }
+
+  /** 確率（％）→ グリッドセル用クラス（従来の控えめな段階） */
+  function deckOddsCellTierClass(rate) {
+    if (!Number.isFinite(rate)) return "";
+    if (rate >= 80) return "deck-odds-cell--high";
+    if (rate >= 50) return "deck-odds-cell--mid";
+    if (rate < 20) return "deck-odds-cell--low";
+    return "";
   }
 
   /**
@@ -724,14 +712,16 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     }
     applyOne(inp);
     applyOne(inpMirror);
-    var readout = $("deck-odds-k-readout");
-    if (readout) {
-      if (n <= 0) readout.textContent = "—";
-      else if (ro) readout.textContent = String(Math.min(DECK_ODDS_K_MANUAL_MAX, Math.max(0, eff)));
-      else
-        readout.textContent = String(
-          Math.max(0, Math.min(DECK_ODDS_K_MANUAL_MAX, Math.floor(Number(deckOddsKManual) || 0))),
-        );
+    var numInp = $("deck-odds-k-num");
+    if (numInp) {
+      numInp.disabled = !!(ro || n <= 0);
+      numInp.setAttribute("min", "0");
+      numInp.setAttribute("max", String(DECK_ODDS_K_MANUAL_MAX));
+      if (document.activeElement !== numInp && !deckOddsKPointerActive) {
+        if (n <= 0) numInp.value = "0";
+        else if (ro) numInp.value = String(Math.min(DECK_ODDS_K_MANUAL_MAX, Math.max(0, eff)));
+        else numInp.value = String(Math.max(0, Math.min(DECK_ODDS_K_MANUAL_MAX, Math.floor(Number(deckOddsKManual) || 0))));
+      }
     }
     ;["deck-odds-k-minus", "deck-odds-k-plus"].forEach(function (bid) {
       var b = $(bid);
@@ -5053,19 +5043,29 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   function onDeckOddsKManualInput(inp) {
     if (!inp || inp.disabled) return;
     var v = Number(inp.value);
-    if (!Number.isFinite(v)) v = 1;
+    if (!Number.isFinite(v)) v = Math.floor(Number(deckOddsKManual) || 0);
     deckOddsKManual = Math.max(0, Math.min(DECK_ODDS_K_MANUAL_MAX, Math.floor(v)));
     persistDeckOddsKManual();
-    var a = $("deck-odds-k");
-    if (a && document.activeElement !== a) a.value = String(deckOddsKManual);
-    if (a) a.setAttribute("aria-valuenow", String(deckOddsKManual));
+    var rangeEl = $("deck-odds-k");
+    if (rangeEl && document.activeElement !== rangeEl) rangeEl.value = String(deckOddsKManual);
+    if (rangeEl) rangeEl.setAttribute("aria-valuenow", String(deckOddsKManual));
+    var numEl = $("deck-odds-k-num");
+    if (numEl && document.activeElement !== numEl) numEl.value = String(deckOddsKManual);
     syncDeckOddsKInput();
     syncLeftDeckOddsPanel();
   }
 
-  $("deck-odds-k")?.addEventListener("input", function () {
-    onDeckOddsKManualInput($("deck-odds-k"));
-  });
+  function bindDeckOddsKControlInput(el) {
+    if (!el) return;
+    el.addEventListener("input", function () {
+      onDeckOddsKManualInput(el);
+    });
+    el.addEventListener("change", function () {
+      onDeckOddsKManualInput(el);
+    });
+  }
+  bindDeckOddsKControlInput($("deck-odds-k"));
+  bindDeckOddsKControlInput($("deck-odds-k-num"));
   function bumpDeckOddsKManual(delta) {
     var n = state.deck.length;
     var m = Array.isArray(state.mulliganSelectedIds) ? state.mulliganSelectedIds.length : 0;
@@ -5102,6 +5102,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       el.addEventListener("pointercancel", release);
     }
     arm($("deck-odds-k"));
+    arm($("deck-odds-k-num"));
     arm($("deck-odds-k-mirror"));
   })();
   $("deck-pick-k")?.addEventListener("input", function () {

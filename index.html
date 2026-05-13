@@ -539,7 +539,21 @@ python3 -m http.server 8080</pre>
                       <button type="button" class="btn sm secondary deck-odds-k-step" id="deck-odds-k-plus" aria-label="k を1増やす">
                         +
                       </button>
-                      <span id="deck-odds-k-readout" class="deck-odds-k-readout" aria-live="polite">1</span>
+                      <span id="deck-odds-k-readout" class="deck-odds-k-readout-wrap" aria-live="polite">
+                        <input
+                          type="number"
+                          id="deck-odds-k-num"
+                          class="deck-odds-k-num"
+                          min="0"
+                          max="15"
+                          step="1"
+                          value="1"
+                          inputmode="numeric"
+                          autocomplete="off"
+                          title="捲る枚数 k（0〜15・スライダーと同期）"
+                          aria-label="捲る枚数 k を数字で指定（0〜15）"
+                        />
+                      </span>
                     </div>
                     <div class="deck-odds-skill-chk-row">
                       <label class="chk deck-odds-skill-chk">

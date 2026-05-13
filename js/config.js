@@ -71,6 +71,14 @@ export const STORAGE_STREAM_MASK_STRENGTH = "llocg_stream_mask_strength";
 /** デッキ構築: お気に入りカード番号（JSON 配列） */
 export const STORAGE_CARD_FAVORITES = "llocg_card_favorites";
 
+/** テストカード（オリカ）採用時に保存するログ（同一ブラウザの localStorage） */
+export const STORAGE_TEST_CARD_LOG = "llocg_test_card_log_v1";
+
+/**
+ * カード一覧「商品」プルダウン用の疑似商品キー（DB の product とは別。検索・通常一覧では出さず、この項目を選ぶとログだけ表示）
+ */
+export const FILTER_PRODUCT_TEST_CARD_LOG = "__llocg_test_card_log__";
+
 /** ミア・テイラー pb1-011 系（R / SEC 等同一扱い・下のエネ1枚につき常時ブレード） */
 export function cardNoIsMiaTaylorPb1011(cardNo) {
   return /^PL!N-pb1-011-/i.test(String(cardNo || "").trim());
