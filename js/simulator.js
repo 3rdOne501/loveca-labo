@@ -4568,7 +4568,17 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     const hp = $("hud-preview");
     if (hp) hp.textContent = String((state.previewScratch || []).length);
     const ec = $("energy-area-count");
-    if (ec) ec.textContent = String(state.energyArea.length);
+    const ew = $("energy-wait-count");
+    var energyActive = 0;
+    var energyWait = 0;
+    for (var ei = 0; ei < state.energyArea.length; ei++) {
+      var en = state.energyArea[ei];
+      if (!en) continue;
+      if (en.isRotated === true) energyWait++;
+      else energyActive++;
+    }
+    if (ec) ec.textContent = String(energyActive);
+    if (ew) ew.textContent = String(energyWait);
     const wr = $("waiting-rail-count");
     if (wr) wr.textContent = String(state.waitingRoom.length);
     const pr = $("preview-rail-count");

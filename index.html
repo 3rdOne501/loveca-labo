@@ -843,8 +843,18 @@ python3 -m http.server 8080</pre>
           <details id="energy-fold" class="zone-block energy-under-stage mt energy-fold" open>
             <summary class="energy-fold__summary">
               <h3 class="energy-fold__title">
-                エネルギー <span class="muted">／ 側面エネ・最大12</span>
-                <span id="energy-area-count" class="badge energy-area-count-badge" title="現在の側面エネの枚数">0</span>
+                エネルギー
+                <span class="energy-fold__counts">
+                  <span class="energy-fold__count-pair" title="アクティブエネルギー（縦向き）の枚数">
+                    <span class="energy-fold__count-label">Aエネ</span>
+                    <span id="energy-area-count" class="badge energy-area-count-badge">0</span>
+                  </span>
+                  <span class="energy-fold__count-sep" aria-hidden="true">／</span>
+                  <span class="energy-fold__count-pair" title="ウェイトエネルギー（横向き）の枚数">
+                    <span class="energy-fold__count-label">Wエネ</span>
+                    <span id="energy-wait-count" class="badge badge--wait energy-wait-count-badge">0</span>
+                  </span>
+                </span>
               </h3>
               <span class="energy-fold__hint muted">タップで開閉</span>
             </summary>
@@ -868,8 +878,9 @@ python3 -m http.server 8080</pre>
               <p class="hint zone-inline-help">スナップショットは sessionStorage に保存されます（タブ単位／閉じると消える場合があります）。</p>
             </section>
             <p class="hint zone-inline-help">
-              ステージの<strong>直下</strong>にある側面エネ用ゾーンです。<strong>＋／− を長押し</strong>で枚数ダイアログ。画像クリックで横向き（ウェイト見た目）の切替。
-              ターン開始時にウェイトの分が縦に立ち、枚数が1増える<strong>目安動作</strong>になっています（上限12）。メンバーをステージに載せる前に、ここを確認するとスムーズです。
+              ステージの<strong>直下</strong>にある<strong>側面エネ</strong>用ゾーンです（<strong>上限 12 枚</strong>）。<strong>＋／− を長押し</strong>で枚数ダイアログ。画像クリックで横向き（ウェイト見た目）の切替。
+              タイトル横の <strong>Aエネ</strong> は<strong>アクティブ（縦向き）</strong>、<strong>Wエネ</strong> は<strong>ウェイト（横向き）</strong>の枚数で、合算が側面エネの総数です。
+              ターン開始時にウェイトの分が縦に立ち、枚数が1増える<strong>目安動作</strong>になっています。メンバーをステージに載せる前に、ここを確認するとスムーズです。
             </p>
             </div>
           </details>

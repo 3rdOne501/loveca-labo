@@ -1424,6 +1424,11 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
 .mt { margin-top: 1rem; }
 
 .badge { display: inline-block; background: linear-gradient(135deg, var(--accent), var(--accent-deep)); color: #fff; padding: 0.12rem 0.52rem; border-radius: 999px; font-size: 0.76rem; font-weight: 800; box-shadow: 0 2px 10px rgba(255, 80, 130, 0.35); }
+/* ウェイト系（横向き）を示す青系バッジ */
+.badge.badge--wait {
+  background: linear-gradient(135deg, #4ca5ff, #2566c8);
+  box-shadow: 0 2px 10px rgba(74, 158, 255, 0.4);
+}
 
 .card-item { position: relative; width: 82px; flex-shrink: 0; cursor: grab; }
 .card-item:active { cursor: grabbing; }
@@ -2526,7 +2531,33 @@ details.energy-fold.zone-block {
   display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.32rem;
+  gap: 0.32rem 0.5rem;
+}
+.energy-fold__counts {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.18rem 0.32rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.energy-fold__count-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.22rem;
+  white-space: nowrap;
+}
+.energy-fold__count-label {
+  color: rgba(255, 230, 245, 0.85);
+  letter-spacing: 0.02em;
+}
+.energy-fold__count-sep {
+  color: rgba(255, 230, 245, 0.5);
+  font-weight: 400;
+}
+.energy-wait-count-badge {
+  margin-left: 0;
+  vertical-align: middle;
 }
 .energy-fold__hint {
   font-size: 0.7rem;
