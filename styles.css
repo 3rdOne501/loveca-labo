@@ -824,6 +824,47 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
   filter: brightness(1.08);
   box-shadow: 0 0 22px rgba(255, 110, 100, 0.5), 0 2px 0 rgba(120, 20, 30, 0.6);
 }
+/* ライブ開始中の「1枚エール（解決）」ボタンの発光スタイル。
+ * 通常のドローボタン (.btn / .btn.sm / .btn.primary) に上書きする想定。 */
+.btn.btn--live-yell-glow {
+  background: linear-gradient(135deg, #ffe7a3 0%, #ffb86b 45%, #ff7eb6 100%);
+  color: #2a1230;
+  border-color: rgba(255, 220, 150, 0.85);
+  text-shadow: 0 1px 1px rgba(255, 255, 230, 0.55);
+  box-shadow:
+    0 0 8px rgba(255, 220, 130, 0.85),
+    0 0 18px rgba(255, 170, 80, 0.65),
+    0 0 32px rgba(255, 140, 200, 0.55),
+    0 2px 0 rgba(170, 90, 30, 0.45);
+  animation: liveYellBtnPulse 1.6s ease-in-out infinite;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.btn.btn--live-yell-glow:hover {
+  filter: brightness(1.06);
+}
+@keyframes liveYellBtnPulse {
+  0%, 100% {
+    box-shadow:
+      0 0 8px rgba(255, 220, 130, 0.85),
+      0 0 18px rgba(255, 170, 80, 0.65),
+      0 0 32px rgba(255, 140, 200, 0.55),
+      0 2px 0 rgba(170, 90, 30, 0.45);
+  }
+  50% {
+    box-shadow:
+      0 0 14px rgba(255, 235, 160, 0.95),
+      0 0 28px rgba(255, 195, 110, 0.85),
+      0 0 48px rgba(255, 170, 220, 0.7),
+      0 2px 0 rgba(170, 90, 30, 0.5);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn.btn--live-yell-glow {
+    animation: none;
+  }
+}
+
 .btn.danger:focus-visible {
   outline: 2px solid rgba(255, 180, 180, 0.7);
   outline-offset: 2px;
@@ -1410,11 +1451,13 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
   /*
    * 横にはみ出しそうなとき、または枚数が多いときは重ね表示。
    * --hand-overlap-frac は負の係数（幅に対する重なり）。密集時は overlap-strong／overlap-heavy を併用。
+   * 既定は 36%（7〜10 枚）。
    */
   --hand-overlap-frac: -0.36;
 }
+/* 4〜6 枚および 11〜14 枚: 軽い重なり 20% */
 .hand-zone.hand-zone--overlap.hand-zone--overlap-light {
-  --hand-overlap-frac: -0.1;
+  --hand-overlap-frac: -0.2;
 }
 .hand-zone.hand-zone--overlap.hand-zone--overlap-strong {
   --hand-overlap-frac: -0.56;
@@ -1428,6 +1471,25 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
 .hand-zone.hand-zone--overlap .card-item + .card-item {
   margin-left: calc(var(--loveca-play-w, 82px) * var(--hand-overlap-frac));
 }
+/* 11 枚以上：折り返し許可。JS が 10 枚ごとに .hand-row-break を挿入する。 */
+.hand-zone.hand-zone--wrap {
+  flex-wrap: wrap;
+  overflow-x: visible;
+  row-gap: 0.35rem;
+}
+.hand-row-break {
+  flex-basis: 100%;
+  width: 100%;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
+}
+/* 行区切り直後（次行の先頭カード）は重なり用の負マージンを打ち消す。
+ * デスクトップ／モバイル両方の負マージン定義より優先するため !important で固定。 */
+.hand-zone.hand-zone--wrap .hand-row-break + .card-item {
+  margin-left: 0 !important;
+}
 .mt { margin-top: 1rem; }
 
 .badge { display: inline-block; background: linear-gradient(135deg, var(--accent), var(--accent-deep)); color: #fff; padding: 0.12rem 0.52rem; border-radius: 999px; font-size: 0.76rem; font-weight: 800; box-shadow: 0 2px 10px rgba(255, 80, 130, 0.35); }
@@ -1438,6 +1500,61 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
 }
 
 .card-item { position: relative; width: 82px; flex-shrink: 0; cursor: grab; }
+
+/* 1ドロー直後のフラッシュ表示。カード上に「+1ドロー」を約1秒、フェードインしてからフェードアウト。 */
+.card-flash-plus-one {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 30;
+  font-weight: 800;
+  font-size: 1.35em;
+  letter-spacing: 0.02em;
+  color: #fff3a6;
+  white-space: nowrap;
+  text-align: center;
+  text-shadow:
+    0 0 4px rgba(0, 0, 0, 0.92),
+    0 0 10px rgba(0, 0, 0, 0.85),
+    0 0 16px rgba(255, 175, 60, 0.92),
+    0 0 28px rgba(255, 220, 110, 0.6);
+  animation-name: cardFlashPlusOneFade;
+  animation-duration: 1000ms;
+  animation-timing-function: ease-out;
+  animation-fill-mode: forwards;
+  will-change: opacity, transform;
+}
+@keyframes cardFlashPlusOneFade {
+  0% {
+    opacity: 0;
+    transform: scale(0.7) translateY(0.35rem);
+  }
+  18% {
+    opacity: 1;
+    transform: scale(1.1) translateY(-0.05rem);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.04) translateY(-0.55rem);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-flash-plus-one {
+    animation: cardFlashPlusOneFadeQuick 700ms linear forwards;
+  }
+  @keyframes cardFlashPlusOneFadeQuick {
+    0% { opacity: 0.9; }
+    70% { opacity: 0.9; }
+    100% { opacity: 0; }
+  }
+}
 .card-item:active { cursor: grabbing; }
 /*
  * マリガン（左上）／ライブターンピック（右上）: ラベルでタップ領域を広げ、チェック本体も大きめに。
@@ -4792,9 +4909,10 @@ body.play-mode .play-disclaimer {
 }
 #deck-flip-k-display.deck-flip-k-display {
   display: inline-block;
-  margin-left: 0.25rem;
+  margin-left: 0.3rem;
   font-variant-numeric: tabular-nums;
-  font-size: 1.05em;
+  font-size: 1.35em;
+  font-weight: 700;
   color: var(--accent2);
 }
 .deck-flip-blade-note {
@@ -4884,7 +5002,7 @@ body.play-mode .play-disclaimer {
 .deck-live-sim-summary.is-warn {
   border-color: rgba(255, 200, 120, 0.45);
 }
-/* 確率 50% 以下：赤（warn 系よりはっきりした失敗色） */
+/* 確率 50% 以下：赤（warn 系よりはっきりした失敗色）— 旧設定。新グラデーション(.has-prob-color)が上書きする。 */
 .deck-live-sim-summary.is-fail {
   color: #ffc9bd;
   border-color: rgba(255, 120, 100, 0.5);
@@ -4894,6 +5012,33 @@ body.play-mode .play-disclaimer {
   color: var(--muted);
   border-style: dashed;
   background: transparent;
+}
+
+/* ============================================================
+ * ライブ成功確率の連続グラデーション色付け
+ * JS が --prob-color (RGB) と --prob-glow (0..1) を要素に注入する。
+ * .deck-odds-pct（強調された % 数字）の既定色も上書きする。
+ * ============================================================ */
+.deck-live-sim-summary.has-prob-color {
+  color: var(--prob-color, inherit);
+  text-shadow:
+    0 0 calc(var(--prob-glow, 0) * 4px) rgba(255, 210, 232, calc(var(--prob-glow, 0) * 0.85)),
+    0 0 calc(var(--prob-glow, 0) * 12px) rgba(255, 200, 224, calc(var(--prob-glow, 0) * 0.7)),
+    0 0 calc(var(--prob-glow, 0) * 22px) rgba(255, 196, 220, calc(var(--prob-glow, 0) * 0.45));
+  transition: color 240ms ease, text-shadow 240ms ease;
+}
+.deck-live-sim-summary.has-prob-color .deck-odds-pct,
+.deck-live-sim-summary.has-prob-color .deck-odds-pct--hero {
+  color: var(--prob-color, inherit);
+  text-shadow:
+    0 0 calc(var(--prob-glow, 0) * 6px) rgba(255, 210, 232, calc(var(--prob-glow, 0) * 0.9)),
+    0 0 calc(var(--prob-glow, 0) * 16px) rgba(255, 200, 224, calc(var(--prob-glow, 0) * 0.65)),
+    0 0 calc(var(--prob-glow, 0) * 30px) rgba(255, 196, 220, calc(var(--prob-glow, 0) * 0.4));
+}
+@media (prefers-reduced-motion: reduce) {
+  .deck-live-sim-summary.has-prob-color {
+    transition: none;
+  }
 }
 .deck-live-sim-stats {
   margin: 0 0 0.2rem !important;

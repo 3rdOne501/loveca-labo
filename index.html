@@ -342,7 +342,47 @@ python3 -m http.server 8080</pre>
 
     <div id="view-game" class="view" hidden>
       <header class="game-bar">
-        <div class="game-bar-row game-bar-tools">
+        <div class="game-bar-row game-bar-actions">
+          <button type="button" class="btn primary" id="btn-back-builder">デッキ編集に戻る</button>
+          <button type="button" class="btn secondary" id="btn-help" title="? キー">ヘルプ</button>
+          <button type="button" class="btn sm secondary" id="btn-tutorial-game" title="チュートリアル・画面別ガイド">ガイド</button>
+          <button
+            type="button"
+            class="btn sm secondary"
+            id="toggle-hand-mask"
+            title="手札とプレビューを配信向けに隠す（濃さは右のスライダー）"
+          >
+            手札を隠す
+          </button>
+          <label class="tools-label stream-mask-density-label" for="stream-mask-density" title="配信隠しのグレー濃さ">
+            <span class="muted">隠し濃さ</span>
+            <input
+              type="range"
+              id="stream-mask-density"
+              class="stream-mask-density-range"
+              min="5"
+              max="98"
+              step="1"
+              value="85"
+              aria-label="手札・プレビュー配信隠しの濃さ"
+            />
+          </label>
+        </div>
+        <div class="game-bar-row game-tools-row">
+          <details class="energy-card-details">
+            <summary class="energy-card-details-summary">エネルギー画像の選択</summary>
+            <div class="energy-card-picker-wrap energy-card-picker-wrap--expanded">
+              <label class="tools-label tools-label-energy">
+                エネルギーカード
+                <select id="select-energy-card" aria-label="側面エネルギーカード">
+                  <option value="">既定（SD）</option>
+                </select>
+              </label>
+              <img id="energy-card-preview" class="energy-card-preview" alt="" hidden width="46" height="64" decoding="async" />
+              <div id="energy-card-thumb-strip" class="energy-card-thumb-strip" role="group" aria-label="エネルギー画像一覧"></div>
+            </div>
+          </details>
+          <button type="button" class="btn sm secondary" id="btn-coin">コイン</button>
           <button type="button" class="btn sm secondary" id="btn-layout-16-9" aria-pressed="false" title="プレイ画面全体を通常の約 85% の表示倍率に縮小します（再押しで解除）">
             16:9
           </button>
@@ -368,7 +408,7 @@ python3 -m http.server 8080</pre>
               <h3>ライブ成功確率（山札シミュ）</h3>
               <div class="deck-flip-k-row deck-flip-k-readout">
                 <p class="muted deck-flip-k-line-short">
-                  <span>残りランダムめくり（ブレード − 解決枚数）</span>
+                  <span>残りエール数</span>
                   <strong id="deck-flip-k-display" class="deck-flip-k-display" aria-live="polite">0</strong>
                 </p>
               </div>
@@ -705,7 +745,7 @@ python3 -m http.server 8080</pre>
                   <dd id="live-required-colors" class="live-stats-colors live-stats-dd-heart">—</dd>
                   <dt title="ステージ上メンバーの所持ハート内訳">ステージハート</dt>
                   <dd id="live-stage-h-colors" class="live-stats-colors live-stats-dd-heart">—</dd>
-                  <dt class="live-stats-visually-hidden">非BH許容・ステB・場メンバーH・解決BH</dt>
+                  <dt class="live-stats-visually-hidden">非BH許容・エール数・場メンバーH・解決BH</dt>
                   <dd class="live-stats-metric-strip">
                     <div
                       class="live-stats-metric-cell"
@@ -714,8 +754,8 @@ python3 -m http.server 8080</pre>
                       <span class="live-stats-metric-label live-stats-metric-label--white">非BH許容数</span>
                       <span id="live-nonbh-tolerance" class="live-stats-metric-answer">—</span>
                     </div>
-                    <div class="live-stats-metric-cell" title="ステージ上メンバーの blade（ブレード）合計のみ">
-                      <span class="live-stats-metric-label live-stats-metric-label--white">ステB合計</span>
+                    <div class="live-stats-metric-cell" title="ステージ上メンバーの blade（ブレード）合計＝ライブ判定で解決ゾーンに送る「エール数」">
+                      <span class="live-stats-metric-label live-stats-metric-label--white">エール数</span>
                       <span id="live-total-blade" class="live-stats-metric-answer">0</span>
                     </div>
                     <div class="live-stats-metric-cell" title="ステージ＋ライブ枠のメンバー所持H合計（play ボーナス ALL の分を含む表示）">
@@ -1150,7 +1190,7 @@ python3 -m http.server 8080</pre>
           「<strong>ターン開始</strong>」を押すまでマリガンできます。手札カード中央付近の<strong>チェック</strong>で複数選択、「<strong>マリガン実行</strong>」で選んだ枚数を山札に戻してシャッフルし、同じ枚数をドローします。<strong>1枚も選ばずに実行可能</strong>（そのときはシャッフル・ドローはしません）。リセット後も「ターン開始」までこのモードになります。
         </p>
         <p>
-          手札欄の<strong>ライブ進行ボタン</strong>では、まず「<strong>ライブターン開始</strong>」でライブターンモードに入ります（<strong>成功したライブ</strong>置き場のカードはそのまま残ります）。手札<strong>中央のチェック</strong>で複数選び、同じボタンが「<strong>ライブエリアへ</strong>」に変わってからそれを押すと左→中央→右の<strong>空き枠に順に配置</strong>できます。配置した<strong>メンバー／ライブ</strong>1枚につき<strong>山札から手札へ1ドロー</strong>します。<strong>ライブターン中のみ、3枠は横向き・裏見えです。</strong>「<strong>ライブ開始</strong>」で<strong>ライブカード以外</strong>を<strong>控え室</strong>へ送ってモード終了すると、ライブカードが<strong>表面の縦向き</strong>になり、このタイミングで中央に<strong>ライブの計算</strong>パネル（概要と必要ハート・ステB・場メンバーH計・要求色・ステージハート・解決 BH・判定）が出ます。左の<strong>ライブ成功確率</strong>も、表面が見えるこのタイミングから再計算されます。<strong>ライブ成功判定</strong>は、ライブの need_heart に対し<strong>場にいるメンバーの所持ハート（ステージ＋ライブ枠）</strong>と<strong>ブレード枚数で捲れた解決カードの BH（blade_heart）</strong>を足し合わせた供給で照合します（ターン開始前はマリガン中のみのため、これらは無効になります）。
+          手札欄の<strong>ライブ進行ボタン</strong>では、まず「<strong>ライブターン開始</strong>」でライブターンモードに入ります（<strong>成功したライブ</strong>置き場のカードはそのまま残ります）。手札<strong>中央のチェック</strong>で複数選び、同じボタンが「<strong>ライブエリアへ</strong>」に変わってからそれを押すと左→中央→右の<strong>空き枠に順に配置</strong>できます。配置した<strong>メンバー／ライブ</strong>1枚につき<strong>山札から手札へ1ドロー</strong>します。<strong>ライブターン中のみ、3枠は横向き・裏見えです。</strong>「<strong>ライブ開始</strong>」で<strong>ライブカード以外</strong>を<strong>控え室</strong>へ送ってモード終了すると、ライブカードが<strong>表面の縦向き</strong>になり、このタイミングで中央に<strong>ライブの計算</strong>パネル（概要と必要ハート・エール数・場メンバーH計・要求色・ステージハート・解決 BH・判定）が出ます。左の<strong>ライブ成功確率</strong>も、表面が見えるこのタイミングから再計算されます。<strong>ライブ成功判定</strong>は、ライブの need_heart に対し<strong>場にいるメンバーの所持ハート（ステージ＋ライブ枠）</strong>と<strong>ブレード枚数で捲れた解決カードの BH（blade_heart）</strong>を足し合わせた供給で照合します（ターン開始前はマリガン中のみのため、これらは無効になります）。
         </p>
         <p>
           PC でもタブレットでも、ドラッグでカードを移動します。ドラッグ開始時点から取り消し対象になります。<strong>U</strong> でひとつ戻す、<strong>R</strong> でひとつ進む、<strong>?</strong> でこのダイアログです。

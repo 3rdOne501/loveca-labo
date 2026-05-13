@@ -495,16 +495,11 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     var sim = computeDeckDrawLiveSuccessSimulation(deckLiveSimMode);
     setOddsRichText(sumEl2, deckLiveSimSuccessLine(sim), { heroLiveSim: true });
     sumEl2.classList.remove("is-ok", "is-warn", "is-muted", "is-fail");
-    if (sim.kind === "ok" || (sim.kind === "verdict" && sim.ok)) sumEl2.classList.add("is-ok");
-    else if (
-      sim.kind === "resolution_over_blade" ||
-      sim.kind === "remFlip_over_deck" ||
-      (sim.kind === "verdict" && !sim.ok)
-    ) {
-      sumEl2.classList.add("is-warn");
-    } else if (sim.kind === "warn" || sim.kind === "skip") sumEl2.classList.add("is-muted");
-    /* 確率シミュ結果: 5 0 % 以下は赤（is-fail）に。他の確率はクラス無し（既定色）のまま。 */
-    else if (sim.kind === "sim" && sim.pct != null && sim.pct <= 50) sumEl2.classList.add("is-fail");
+    if (sim.kind === "warn" || sim.kind === "skip") {
+      sumEl2.classList.add("is-muted");
+    }
+    /* 確率に応じた連続グラデーション色付け（0% 茶 → 25% 暗青 → 40% 真っ赤 → 50% オレンジ → 70% 黄 → 85% 緑 → 90〜100% 薄ピンク発光） */
+    applyDeckLiveSimProbColor(sumEl2, sim);
 
     if (bdBody) {
       bdBody.textContent = buildLiveSimBreakdownBody(bundleForBreakdown, sim);
@@ -617,6 +612,89 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   function setOddsRichText(el, plainText, opts) {
     if (!el) return;
     el.innerHTML = htmlWithEmphasizedPercents(plainText, opts || {});
+  }
+
+  /** ライブ成功確率の文字色を 0〜100% の連続グラデーションで決定。
+   *  色見本:
+   *    0%   茶
+   *    25%  暗い青
+   *    40%  真っ赤
+   *    50%  オレンジ
+   *    70%  黄
+   *    85%  緑
+   *    90%  薄ピンク（淡い発光）
+   *    100% 薄ピンク（強い発光）
+   */
+  function computeDeckLiveSimProbColorStyle(pct) {
+    var stops = [
+      [0,   [122, 70, 38]],   // 茶
+      [25,  [40, 60, 130]],   // 暗い青
+      [40,  [240, 36, 36]],   // 真っ赤
+      [50,  [255, 138, 31]],  // オレンジ
+      [70,  [255, 210, 63]],  // 黄（成功味）
+      [85,  [120, 220, 130]], // 緑（成功）
+      [90,  [255, 196, 218]], // 薄ピンク（発光開始）
+      [100, [255, 218, 232]], // 薄ピンク（強発光）
+    ];
+    function lerp(a, b, t) { return a + (b - a) * t; }
+    function lerpRgb(c1, c2, t) {
+      return [
+        Math.max(0, Math.min(255, Math.round(lerp(c1[0], c2[0], t)))),
+        Math.max(0, Math.min(255, Math.round(lerp(c1[1], c2[1], t)))),
+        Math.max(0, Math.min(255, Math.round(lerp(c1[2], c2[2], t)))),
+      ];
+    }
+    var p = Math.max(0, Math.min(100, Number(pct)));
+    if (!Number.isFinite(p)) p = 0;
+    var rgb = stops[0][1];
+    for (var i = 1; i < stops.length; i++) {
+      if (p <= stops[i][0]) {
+        var lo = stops[i - 1];
+        var hi = stops[i];
+        var span = Math.max(0.0001, hi[0] - lo[0]);
+        var t = (p - lo[0]) / span;
+        rgb = lerpRgb(lo[1], hi[1], t);
+        break;
+      }
+      rgb = stops[i][1];
+    }
+    /* 発光は 90% から立ち上げ、100% で最大。 */
+    var glow = 0;
+    if (p >= 90) {
+      var u = Math.min(1, (p - 90) / 10);
+      glow = 0.35 + 0.65 * u;
+    }
+    return {
+      color: "rgb(" + rgb[0] + "," + rgb[1] + "," + rgb[2] + ")",
+      glow: glow,
+    };
+  }
+
+  /** 上記関数を sim 結果に応じて要素へ適用（kind に応じて 0% 扱い / 100% 扱い / 非適用を切替）。 */
+  function applyDeckLiveSimProbColor(el, sim) {
+    if (!el) return;
+    var pct = null;
+    if (sim) {
+      if (sim.kind === "sim" && sim.pct != null) pct = Number(sim.pct);
+      else if (sim.kind === "ok" || (sim.kind === "verdict" && sim.ok)) pct = 100;
+      else if (
+        sim.kind === "verdict" ||
+        sim.kind === "resolution_over_blade" ||
+        sim.kind === "remFlip_over_deck"
+      ) {
+        pct = 0;
+      }
+    }
+    if (pct == null || !Number.isFinite(pct)) {
+      el.classList.remove("has-prob-color");
+      el.style.removeProperty("--prob-color");
+      el.style.removeProperty("--prob-glow");
+      return;
+    }
+    var s = computeDeckLiveSimProbColorStyle(pct);
+    el.style.setProperty("--prob-color", s.color);
+    el.style.setProperty("--prob-glow", String(s.glow));
+    el.classList.add("has-prob-color");
   }
 
   /** 確率（％）→ グリッドセル用クラス（従来の控えめな段階） */
@@ -1079,6 +1157,20 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
 
   /** メンバー H/B 追加ダイアログの対象（盤面上の実体オブジェクトへの参照） */
   let memberHbDialogTarget = null;
+
+  /** ドラッグ開始時点のプレビュー開閉状態（true=折りたたみ）。
+   *  ドロップで意図せず展開してしまうのを防ぐためのスナップ。 */
+  let previewRowCollapsedAtDragStart = null;
+  /** 直近の Sortable onEnd 時刻（Date.now()）。直後の合成クリックを無視するために使う。 */
+  let lastDragEndAt = 0;
+
+  /** 1ドロー直後のフラッシュ表示の継続時間（ms） */
+  const FLASH_DRAW_DURATION_MS = 1000;
+  function markCardFlashDraw(c, label) {
+    if (!c || typeof c !== "object") return;
+    c._flashDrawAt = Date.now();
+    c._flashDrawLabel = typeof label === "string" && label ? label : null;
+  }
 
   normalizeAllCardFields();
 
@@ -2188,7 +2280,9 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
 
     cancelDeckLiveSimDeferred();
     if (state.liveTurnPickMode === true) {
-      sumEl.classList.remove("is-ok", "is-warn", "is-fail");
+      sumEl.classList.remove("is-ok", "is-warn", "is-fail", "has-prob-color");
+      sumEl.style.removeProperty("--prob-color");
+      sumEl.style.removeProperty("--prob-glow");
       sumEl.classList.add("is-muted");
       setOddsRichText(
         sumEl,
@@ -3795,7 +3889,9 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       logReplay("auto-draw-live-empty-deck");
       return;
     }
-    state.hand.push(state.deck.shift());
+    var drawnLm = state.deck.shift();
+    markCardFlashDraw(drawnLm);
+    state.hand.push(drawnLm);
     logReplay("auto-draw-live-member", { to: toEl.id });
     showToast("ライブエリアにメンバーを置いたので手札に 1 枚ドローしました");
   }
@@ -4046,6 +4142,25 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (c.type === T_MEMBER) {
       var bonFoot = memberPlayBonusFooterEl(c);
       if (bonFoot) div.appendChild(bonFoot);
+    }
+
+    // 1ドロー直後のフラッシュ（カード上に「+1ドロー」を1秒だけフェードイン→アウト。ラベルは markCardFlashDraw 時に上書き可）
+    var flashUntil = (Number(c._flashDrawAt) || 0) + FLASH_DRAW_DURATION_MS;
+    var nowMs = Date.now();
+    if (flashUntil > nowMs) {
+      var remainMs = Math.max(120, flashUntil - nowMs);
+      var flash = document.createElement("div");
+      flash.className = "card-flash-plus-one";
+      flash.setAttribute("aria-hidden", "true");
+      flash.textContent = c._flashDrawLabel || "+1ドロー";
+      flash.style.animationDuration = remainMs + "ms";
+      div.appendChild(flash);
+      setTimeout(function () {
+        if (flash && flash.parentNode) flash.parentNode.removeChild(flash);
+      }, remainMs + 60);
+    } else if (c._flashDrawAt) {
+      c._flashDrawAt = 0;
+      c._flashDrawLabel = null;
     }
 
     return div;
@@ -4481,6 +4596,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
           dragElItem && dragElItem.dataset && dragElItem.dataset.id != null
             ? String(dragElItem.dataset.id)
             : "";
+        /* ドラッグ開始時点のプレビュー開閉状態を覚えておき、ドロップ後に勝手に開かないようにする */
+        previewRowCollapsedAtDragStart = previewRailIsCollapsed();
         showCardBackWhileDragging(dragElItem);
         if (dragElItem && dragElItem.dataset && dragElItem.dataset.type === T_ENERGY) {
           refreshEnergyDropHints(dragElItem);
@@ -4492,6 +4609,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         restoreCardFaceAfterDragging(evt.item);
       },
       onEnd: function (evt) {
+        lastDragEndAt = Date.now();
         restoreCardFaceAfterDragging(evt.item);
         var droppedToSuccessLive = evt.to && evt.to.id === "zone-success-live";
         readAllFromDom();
@@ -4529,6 +4647,16 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         persistSessionTexts();
         maybeAnnounceLiveTurnEaleToResolution(evt, snapBeforeDrag);
         renderSynchronouslyOnce();
+        /* プレビューが閉じていた状態でドラッグが始まったなら、ドロップで勝手に開かないようにする。
+         * 何らかのイベント経路（クリックの取り違え等）で開いてしまった場合を保険として閉じ直す。 */
+        if (previewRowCollapsedAtDragStart === true) {
+          var pRow = $("preview-row");
+          if (pRow && !pRow.classList.contains("preview-row--collapsed")) {
+            pRow.classList.add("preview-row--collapsed");
+            syncPreviewRailAria();
+          }
+        }
+        previewRowCollapsedAtDragStart = null;
       },
     });
     sortables.push(s);
@@ -4620,41 +4748,89 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (turnBadge) turnBadge.textContent = String(state.turnCount);
   }
 
-  /** 手札は常に 1 行の重ね可能レイアウト（枚数が多いほど強めに重なる）。
-   * ライブターン選択中かつ開始時に手札が一定枚数以上なら重ねず折り返し（チェックとカードの対応を分かりやすくする） */
+  /** 手札のレイアウト切替。
+   * - 3 枚以下: 重なりなし（横並び）
+   * - 4 〜 6 枚: 軽い重なり（約 20%）
+   * - 7 〜 10 枚: 通常の重なり（約 36%）
+   * - 11 枚以上: 10 枚で改行して 2 行レイアウト（10 枚ごとに hand-row-break を挿入）
+   *   行内は 11〜14 枚は軽い重なり（20%）、15〜19 枚は通常、20 枚以上は強い重なり。
+   * - ライブターン選択中の spread モードでは重ねずに広げる（チェックとの対応を見やすく）。 */
   function updateHandZoneLayoutMode() {
     const zone = $("zone-hand");
     const row = $("hand-row");
     if (!zone || !row) return;
     if (row.classList.contains("hidden")) {
-      zone.classList.remove("hand-zone--overlap", "hand-zone--overlap-light", "hand-zone--overlap-strong", "hand-zone--overlap-heavy");
+      zone.classList.remove(
+        "hand-zone--overlap",
+        "hand-zone--overlap-light",
+        "hand-zone--overlap-strong",
+        "hand-zone--overlap-heavy",
+        "hand-zone--wrap",
+      );
       return;
     }
     const n = state.hand.length;
     var useOverlap = false;
     var overlapLight = false;
+    var overlapStrong = false;
+    var overlapHeavy = false;
+    var wrapRows = false;
     if (state.liveTurnPickMode && state.liveTurnHandSpreadPick) {
       useOverlap = false;
-    } else if (n >= 2 && n <= 5) {
+    } else if (n >= 4 && n <= 6) {
       useOverlap = true;
       overlapLight = true;
-    } else {
-      useOverlap = n >= 10;
-      if (!useOverlap && n > 5) {
-        const first = zone.querySelector(".card-item");
-        const W = first ? first.getBoundingClientRect().width : 82;
-        const cs = getComputedStyle(zone);
-        const gap = parseFloat(cs.gap) || 4;
-        const pad = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
-        const avail = Math.max(0, row.clientWidth - pad);
-        const needed = n * W + (n - 1) * gap;
-        useOverlap = needed > avail + 0.5;
+    } else if (n >= 7 && n <= 10) {
+      useOverlap = true;
+    } else if (n >= 11) {
+      useOverlap = true;
+      wrapRows = true;
+      if (n >= 20) {
+        overlapStrong = true;
+      } else if (n >= 15) {
+        /* default overlap (36%) */
+      } else {
+        overlapLight = true;
+      }
+    }
+    /* 4 枚未満は重ね不要だが、画面幅が極端に狭いときの安全策として従来の動的判定を保持する */
+    if (!useOverlap && n >= 4) {
+      const first = zone.querySelector(".card-item");
+      const W = first ? first.getBoundingClientRect().width : 82;
+      const cs = getComputedStyle(zone);
+      const gap = parseFloat(cs.gap) || 4;
+      const pad = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+      const avail = Math.max(0, row.clientWidth - pad);
+      const needed = n * W + (n - 1) * gap;
+      if (needed > avail + 0.5) {
+        useOverlap = true;
+        overlapLight = true;
       }
     }
     zone.classList.toggle("hand-zone--overlap", useOverlap);
     zone.classList.toggle("hand-zone--overlap-light", useOverlap && overlapLight);
-    zone.classList.toggle("hand-zone--overlap-strong", useOverlap && !overlapLight && n >= 8);
-    zone.classList.toggle("hand-zone--overlap-heavy", useOverlap && !overlapLight && n >= 12);
+    zone.classList.toggle("hand-zone--overlap-strong", useOverlap && overlapStrong);
+    zone.classList.toggle("hand-zone--overlap-heavy", useOverlap && overlapHeavy);
+    zone.classList.toggle("hand-zone--wrap", wrapRows);
+    /* 11 枚以上の場合、10 枚ごとに行区切りを挿入して必ず 2 行目以降に折り返す。
+     * Sortable の draggable は .card-item のみなのでこの区切り要素は無視される。
+     * readAllFromDom も dataset.id を持つ要素だけを採用するため副作用なし。 */
+    syncHandRowBreaks(zone, wrapRows ? n : 0);
+  }
+
+  /** 手札ゾーンに 10 枚ごとの行区切り（flex-break）を同期的に整える。 */
+  function syncHandRowBreaks(zone, totalCount) {
+    if (!zone) return;
+    const existing = zone.querySelectorAll(":scope > .hand-row-break");
+    existing.forEach(function (n) { n.remove(); });
+    if (!totalCount || totalCount <= 10) return;
+    const cards = zone.querySelectorAll(":scope > .card-item");
+    for (var i = 10; i < cards.length; i += 10) {
+      const br = document.createElement("div");
+      br.className = "hand-row-break";
+      br.setAttribute("aria-hidden", "true");
+      cards[i].parentNode.insertBefore(br, cards[i]);
+    }
   }
 
   function syncDeckToolbarButtons() {
@@ -4663,6 +4839,39 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       bf.textContent = state.deckPileFacesDown ? "山札一覧: 表面表示" : "山札一覧: 裏向き";
       bf.setAttribute("aria-pressed", state.deckPileFacesDown ? "true" : "false");
     }
+  }
+
+  /** ライブ開始（liveStatsAfterBegin）中は「1枚ドロー（解決）」を「1枚エール（解決）」に切り替え、
+   *  ボタン自体を発光させる。ライブ終了で元に戻す。
+   *  対象ボタン: btn-res-draw-one（解決ゾーン横）/ btn-draw-resolution（山札の下のドロー行） */
+  function syncLiveYellDrawButtons() {
+    var inLive = state.liveStatsAfterBegin === true;
+    var ids = ["btn-res-draw-one", "btn-draw-resolution"];
+    ids.forEach(function (id) {
+      var b = $(id);
+      if (!b) return;
+      if (inLive) {
+        if (b.dataset.llocgLabelOrig == null) b.dataset.llocgLabelOrig = b.textContent || "";
+        b.textContent = "1枚エール（解決）";
+        b.classList.add("btn--live-yell-glow");
+        b.setAttribute("aria-label", "1枚エール（解決）");
+        if (b.dataset.llocgTitleOrig == null && b.getAttribute("title") != null) {
+          b.dataset.llocgTitleOrig = b.getAttribute("title");
+        }
+        b.setAttribute("title", "ライブ中：山札の先頭1枚を解決ゾーンへ送ります（エール）");
+      } else {
+        if (b.dataset.llocgLabelOrig != null) {
+          b.textContent = b.dataset.llocgLabelOrig;
+          delete b.dataset.llocgLabelOrig;
+        }
+        b.classList.remove("btn--live-yell-glow");
+        b.removeAttribute("aria-label");
+        if (b.dataset.llocgTitleOrig != null) {
+          b.setAttribute("title", b.dataset.llocgTitleOrig);
+          delete b.dataset.llocgTitleOrig;
+        }
+      }
+    });
   }
 
   /** 控え室は CSS グリッドで 10 枚／行（クラスは後方互換のため掃除のみ） */
@@ -4711,6 +4920,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (ev && ev.type === "click" && ev.target.closest) {
       if (ev.target.closest("button, a, label, input")) return;
     }
+    /* ドラッグ直後の合成クリックや誤発火でプレビューが開いてしまうのを防ぐガード */
+    if (Date.now() - lastDragEndAt < 350) return;
     var row = $("preview-row");
     if (!row) return;
     row.classList.toggle("preview-row--collapsed");
@@ -4994,6 +5205,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     refreshHud();
     syncSuccessLiveZoneChrome();
     syncDeckToolbarButtons();
+    syncLiveYellDrawButtons();
     syncDeckPileUi();
     syncMulliganUi();
     syncLiveTurnHandUi();
@@ -5429,7 +5641,9 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     var drewOne = false;
     tryReplenishDeckFromWaitingLoop();
     if (state.deck.length) {
-      state.hand.push(state.deck.shift());
+      var drawnTs = state.deck.shift();
+      markCardFlashDraw(drawnTs);
+      state.hand.push(drawnTs);
       drewOne = true;
     }
     showToast(
@@ -5725,7 +5939,9 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       return;
     }
     pushHistoryBefore("draw-hand");
-    state.hand.push(state.deck.shift());
+    var drawnH = state.deck.shift();
+    markCardFlashDraw(drawnH);
+    state.hand.push(drawnH);
     showToast("手札に 1 枚ドローしました");
     render();
   });
@@ -5737,7 +5953,9 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       return;
     }
     pushHistoryBefore("draw-wait");
-    state.waitingRoom.push(state.deck.shift());
+    var drawnW = state.deck.shift();
+    markCardFlashDraw(drawnW);
+    state.waitingRoom.push(drawnW);
     showToast("控室に 1 枚ドローしました");
     render();
   });
@@ -5749,8 +5967,12 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       return;
     }
     pushHistoryBefore("draw-res");
-    state.resolutionArea.push(state.deck.shift());
-    showToast("解決に 1 枚ドローしました");
+    var drawnR = state.deck.shift();
+    /* ライブ開始中はこの操作は実質「エール」。フラッシュ表示も「エール+1」に切り替える。 */
+    var inLive = state.liveStatsAfterBegin === true || state.liveTurnPickMode === true;
+    markCardFlashDraw(drawnR, inLive ? "エール+1" : null);
+    state.resolutionArea.push(drawnR);
+    showToast(inLive ? "解決に 1 枚エールしました" : "解決に 1 枚ドローしました");
     render();
   }
 
@@ -6157,25 +6379,45 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   }
 
   // render / DOM差し替えで直接バインドが外れることがあるため委譲に切り替え
-  root?.addEventListener("click", function (ev) {
-    const head = ev?.target?.closest ? ev.target.closest("#waiting-head-expand") : null;
-    if (!head) return;
-    toggleWaitingRailExpanded(ev);
-  });
-  root?.addEventListener("keydown", function (ev) {
-    if (ev?.key !== "Enter" && ev?.key !== " ") return;
-    const head = ev?.target?.closest ? ev.target.closest("#waiting-head-expand") : null;
-    if (!head) return;
-    ev.preventDefault();
-    toggleWaitingRailExpanded(ev);
-  });
+  // ただし mountSimulator が複数回実行されると同じ root にリスナが積み上がり、
+  // 偶数回 classList.toggle() が走って「開かない」事象になる。前回ハンドラを必ず除去してから登録。
+  if (root) {
+    if (typeof root.__llocgWaitingClickHandler === "function") {
+      root.removeEventListener("click", root.__llocgWaitingClickHandler);
+    }
+    if (typeof root.__llocgWaitingKeydownHandler === "function") {
+      root.removeEventListener("keydown", root.__llocgWaitingKeydownHandler);
+    }
+    root.__llocgWaitingClickHandler = function (ev) {
+      const head = ev?.target?.closest ? ev.target.closest("#waiting-head-expand") : null;
+      if (!head) return;
+      toggleWaitingRailExpanded(ev);
+    };
+    root.__llocgWaitingKeydownHandler = function (ev) {
+      if (ev?.key !== "Enter" && ev?.key !== " ") return;
+      const head = ev?.target?.closest ? ev.target.closest("#waiting-head-expand") : null;
+      if (!head) return;
+      ev.preventDefault();
+      toggleWaitingRailExpanded(ev);
+    };
+    root.addEventListener("click", root.__llocgWaitingClickHandler);
+    root.addEventListener("keydown", root.__llocgWaitingKeydownHandler);
+  }
 
-  $("preview-head-expand")?.addEventListener("click", togglePreviewRailExpanded);
-  $("preview-head-expand")?.addEventListener("keydown", function (ev) {
-    if (ev.key !== "Enter" && ev.key !== " ") return;
-    ev.preventDefault();
-    togglePreviewRailExpanded(ev);
-  });
+  // プレビュー見出しは静的要素なので、再マウント時に古いリスナがそのまま残ると
+  // 偶数回 toggle が走って開閉が無効化される。古いリスナを除去するため要素を入れ替えて束縛し直す。
+  (function rewirePreviewHeadExpand() {
+    const old = document.getElementById("preview-head-expand");
+    if (!old) return;
+    const fresh = old.cloneNode(true);
+    old.parentNode.replaceChild(fresh, old);
+    fresh.addEventListener("click", togglePreviewRailExpanded);
+    fresh.addEventListener("keydown", function (ev) {
+      if (ev.key !== "Enter" && ev.key !== " ") return;
+      ev.preventDefault();
+      togglePreviewRailExpanded(ev);
+    });
+  })();
 
   const btnHandMask = $("toggle-hand-mask");
   if (sessionStorage.getItem("llocg_hide_hand_stream") === "1") {
