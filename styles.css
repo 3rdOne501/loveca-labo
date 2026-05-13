@@ -1962,7 +1962,8 @@ body.play-mode #btn-layout-16-9.btn--layout-16-9-on {
 body.play-mode #btn-play-hand-dock {
   display: none;
 }
-@media (max-width: 1200px) and (orientation: landscape) {
+/* 論理幅が広くても横の「薄い」ビューポートは max-height で拾う */
+@media (orientation: landscape) and ((max-width: 1366px) or (max-height: 520px)) {
   body.play-mode #btn-play-hand-dock {
     display: inline-flex;
     align-items: center;
@@ -3936,12 +3937,12 @@ body.play-mode .deck-pile {
 }
 
 /*
- * スマホ縦／スマホ横（プレイのみ）: ステージを先に、手札を列末で sticky 固定。
- * 縦は狭い画面のみ。横は max-height に依存しない（高い論理ピクセルの端末でも sticky が効くように幅だけ緩め）。
- * 任意 ON は body.play-hand-bottom-dock-force（横のみボタン・sessionStorage）。
+ * スマホ縦／スマホ横（プレイのみ）: ステージ優先の縦並びレイアウト。
+ * 縦: 手札は sticky（末尾カラム）。横: sticky が効きにくいため別ブロックで viewport fixed。
+ * body.play-hand-bottom-dock-force は横のみボタン・レイアウト補強。
  */
 @media (max-width: 900px) and (orientation: portrait),
-  (max-width: 1200px) and (orientation: landscape) {
+  (orientation: landscape) and ((max-width: 1366px) or (max-height: 520px)) {
   body.play-mode .game-board {
     display: flex;
     flex-direction: column;
@@ -4023,7 +4024,7 @@ body.play-mode .deck-pile {
     gap: 0.35rem;
   }
 
-  /* 手札を下端 sticky + 開閉できるサマリーを表示（スマホ縦のみ） */
+  /* 手札を下端 sticky + 開閉サマリー（このブロックは縦も横も共通。横は下のメディアで fixed が !important 上書き） */
   body.play-mode .col.col-right details#hand-stick-fold.hand-stick-fold {
     position: sticky;
     bottom: 0;
@@ -4171,16 +4172,61 @@ body.play-mode .deck-pile {
   }
 }
 
-/* スマホ横: vh を混ぜて手札サムネをやや大きめに（論理幅広めまで適用） */
-@media (max-width: 1200px) and (orientation: landscape) {
+/*
+ * スマホ横: sticky は #view-game の overflow:hidden・スクロール祖先の関係で効かないことが多いので、
+ * 手札 details を viewport 下端に fixed（縦は上記ブロックの sticky のまま）。
+ */
+@media (orientation: landscape) and ((max-width: 1366px) or (max-height: 520px)) {
+  /* .col.col-right … と同等の詳細度にして sticky 側の z-index:8 が勝ち続けないようにする */
+  body.play-mode .col.col-right details#hand-stick-fold.hand-stick-fold {
+    position: fixed !important;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: 0 !important;
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+    z-index: 70 !important;
+    padding-top: 0.15rem;
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    padding-bottom: max(0.2rem, env(safe-area-inset-bottom, 0px));
+    max-height: min(56vh, 430px);
+    max-height: min(56svh, 430px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    border-radius: 14px 14px 0 0;
+    background: linear-gradient(
+      180deg,
+      rgba(14, 10, 22, 0.2) 0%,
+      rgba(10, 7, 18, 0.94) 28%,
+      rgba(7, 5, 14, 0.99) 100%
+    );
+    border-top: 1px solid rgba(255, 160, 200, 0.22);
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.42);
+  }
+
+  body.play-mode .col.col-right details#hand-stick-fold.hand-stick-fold:not([open]) {
+    max-height: none;
+    overflow-y: visible;
+    overflow-x: hidden;
+  }
+
+  body.play-mode .game-board {
+    padding-bottom: clamp(88px, 24vh, 248px);
+    padding-bottom: clamp(88px, 24svh, 248px);
+    box-sizing: border-box;
+  }
+
   body.play-mode #zone-hand {
-    --loveca-hand-w: min(128px, min(30vw, 38vh));
+    --loveca-hand-w: min(132px, min(22vw, 42vh));
     --loveca-hand-h: calc(var(--loveca-hand-w) * var(--loveca-mm-h) / var(--loveca-mm-w));
   }
-}
 
-/* スマホ横のみ：ボタンで手札下端ドックを強制（縦や広い画面では無効・自動レイアウトに任せる） */
-@media (max-width: 1200px) and (orientation: landscape) {
+  /* —— 以下「横・手札固定」ボタン時のレイアウト（fixed は共通で上書きしない） —— */
   body.play-mode.play-hand-bottom-dock-force .game-board {
     display: flex;
     flex-direction: column;
@@ -4252,22 +4298,6 @@ body.play-mode .deck-pile {
     flex-wrap: wrap;
     gap: 0.35rem;
   }
-  body.play-mode.play-hand-bottom-dock-force .col.col-right details#hand-stick-fold.hand-stick-fold {
-    position: sticky;
-    bottom: 0;
-    z-index: 8;
-    padding-top: 0.15rem;
-    padding-bottom: max(0.2rem, env(safe-area-inset-bottom, 0px));
-    margin-bottom: -0.1rem;
-    background: linear-gradient(
-      180deg,
-      rgba(14, 10, 22, 0.2) 0%,
-      rgba(10, 7, 18, 0.94) 28%,
-      rgba(7, 5, 14, 0.99) 100%
-    );
-    border-top: 1px solid rgba(255, 160, 200, 0.22);
-    box-shadow: 0 -10px 36px rgba(0, 0, 0, 0.35);
-  }
   body.play-mode.play-hand-bottom-dock-force .hand-stick-fold > summary.hand-stick-fold__summary {
     display: flex;
     flex-wrap: wrap;
@@ -4312,7 +4342,7 @@ body.play-mode .deck-pile {
     padding-bottom: 0.2rem;
   }
   body.play-mode.play-hand-bottom-dock-force #zone-hand {
-    --loveca-hand-w: min(108px, min(26vw, 32vh));
+    --loveca-hand-w: min(116px, min(26vw, 34vh));
     --loveca-hand-h: calc(var(--loveca-hand-w) * var(--loveca-mm-h) / var(--loveca-mm-w));
   }
   body.play-mode.play-hand-bottom-dock-force #view-game #zone-hand .card-item {
