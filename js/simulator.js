@@ -494,7 +494,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     var bundleForBreakdown = evaluateLiveMechanicalFulfillmentBundle();
     var sim = computeDeckDrawLiveSuccessSimulation(deckLiveSimMode);
     setOddsRichText(sumEl2, deckLiveSimSuccessLine(sim), { heroLiveSim: true });
-    sumEl2.classList.remove("is-ok", "is-warn", "is-muted");
+    sumEl2.classList.remove("is-ok", "is-warn", "is-muted", "is-fail");
     if (sim.kind === "ok" || (sim.kind === "verdict" && sim.ok)) sumEl2.classList.add("is-ok");
     else if (
       sim.kind === "resolution_over_blade" ||
@@ -503,7 +503,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     ) {
       sumEl2.classList.add("is-warn");
     } else if (sim.kind === "warn" || sim.kind === "skip") sumEl2.classList.add("is-muted");
-    else if (sim.kind === "sim" && sim.pct != null && sim.pct < 45) sumEl2.classList.add("is-warn");
+    /* 確率シミュ結果: 5 0 % 以下は赤（is-fail）に。他の確率はクラス無し（既定色）のまま。 */
+    else if (sim.kind === "sim" && sim.pct != null && sim.pct <= 50) sumEl2.classList.add("is-fail");
 
     if (bdBody) {
       bdBody.textContent = buildLiveSimBreakdownBody(bundleForBreakdown, sim);
@@ -2187,7 +2188,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
 
     cancelDeckLiveSimDeferred();
     if (state.liveTurnPickMode === true) {
-      sumEl.classList.remove("is-ok", "is-warn");
+      sumEl.classList.remove("is-ok", "is-warn", "is-fail");
       sumEl.classList.add("is-muted");
       setOddsRichText(
         sumEl,
@@ -3105,13 +3106,38 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (dlg && typeof dlg.showModal === "function") dlg.showModal();
   }
 
-  (function wireMemberHbDialogStaticsOnce() {
+  (function wireMemberHbDialog() {
     var dlg = document.getElementById("dlg-member-hb");
-    if (!dlg || dlg.dataset.llocgMemberHbWired === "1") return;
-    dlg.dataset.llocgMemberHbWired = "1";
-    var applyBtn = document.getElementById("btn-member-hb-apply");
-    var cancelBtn = document.getElementById("btn-member-hb-cancel");
-    var resetBtn = document.getElementById("btn-member-hb-reset");
+    if (!dlg) return;
+
+    /* ステップカウンタ（純粋にDOMだけ操作）は state を参照しないので一度だけ束縛して問題ない */
+    if (dlg.dataset.llocgMemberHbStepWired !== "1") {
+      dlg.dataset.llocgMemberHbStepWired = "1";
+      dlg.addEventListener("click", function (ev) {
+        var t = ev.target;
+        var stepEl = t && typeof t.closest === "function" ? t.closest(".member-hb-step") : null;
+        if (!stepEl || !dlg.contains(stepEl)) return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        var cur = sanitizeNonNegativeInt(stepEl.textContent);
+        var nxt = ev.shiftKey ? Math.max(0, cur - 1) : Math.min(MEMBER_HB_STEP_MAX, cur + 1);
+        stepEl.textContent = String(nxt);
+      });
+    }
+
+    /* 適用／キャンセル／クリアは mountSimulator のクロージャ（state / memberHbDialogTarget / render など）を参照する。
+     * mountSimulator は「デッキ編集へ戻る」「再マウント」のたびに再実行されるため、毎回ボタンをクローンして
+     * 古いリスナを取り除き、現行クロージャで束縛し直さないと「適用しても反映されない」事象が起きる。 */
+    function replaceWithFreshClone(id) {
+      var el = document.getElementById(id);
+      if (!el) return null;
+      var n = el.cloneNode(true);
+      el.parentNode.replaceChild(n, el);
+      return n;
+    }
+    var applyBtn = replaceWithFreshClone("btn-member-hb-apply");
+    var cancelBtn = replaceWithFreshClone("btn-member-hb-cancel");
+    var resetBtn = replaceWithFreshClone("btn-member-hb-reset");
     function closeHb() {
       if (dlg) dlg.close();
       memberHbDialogTarget = null;
@@ -3121,16 +3147,6 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         el.textContent = "0";
       });
     }
-    dlg.addEventListener("click", function (ev) {
-      var t = ev.target;
-      var stepEl = t && typeof t.closest === "function" ? t.closest(".member-hb-step") : null;
-      if (!stepEl || !dlg.contains(stepEl)) return;
-      ev.preventDefault();
-      ev.stopPropagation();
-      var cur = sanitizeNonNegativeInt(stepEl.textContent);
-      var nxt = ev.shiftKey ? Math.max(0, cur - 1) : Math.min(MEMBER_HB_STEP_MAX, cur + 1);
-      stepEl.textContent = String(nxt);
-    });
     if (applyBtn) {
       applyBtn.addEventListener("click", function (ev) {
         ev.preventDefault();
@@ -3143,13 +3159,15 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
           var pack = readMemberHbInputsFromDom();
           pushHistoryBefore("member-hb-adjust");
           var id = tgt && tgt.id;
-          var real = tgt;
+          /* tgt がオーファン（state から差し替えられている）の場合、ミューテーションしても画面に出ない。
+           * 必ず allZonesFlat() の中の生きているインスタンスを優先する。 */
+          var live = null;
           if (id != null) {
-            var found = allZonesFlat().find(function (c) {
+            live = allZonesFlat().find(function (c) {
               return c && c.id === id;
-            });
-            if (found) real = found;
+            }) || null;
           }
+          var real = live || tgt;
           real.playBonusHeartSlotsAlways = Object.assign({}, pack.slotsAlways);
           real.playBonusHeartSlotsTurn = Object.assign({}, pack.slotsTurn);
           real.playBonusBladeAlways = sanitizeNonNegativeInt(pack.bladeAlways);
@@ -3157,6 +3175,21 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
           real.playBonusHeartSlots = {};
           real.playBonusBlade = 0;
           ensureCardBoardFields(real);
+          /* もし real が state 内のインスタンスではなかった場合（live がなかった場合）、
+           * 同じ id を持つ全インスタンスにも値を上書きして反映漏れを防ぐ */
+          if (!live && id != null) {
+            allZonesFlat().forEach(function (c) {
+              if (c && c.id === id) {
+                c.playBonusHeartSlotsAlways = Object.assign({}, pack.slotsAlways);
+                c.playBonusHeartSlotsTurn = Object.assign({}, pack.slotsTurn);
+                c.playBonusBladeAlways = sanitizeNonNegativeInt(pack.bladeAlways);
+                c.playBonusBladeTurn = sanitizeNonNegativeInt(pack.bladeTurn);
+                c.playBonusHeartSlots = {};
+                c.playBonusBlade = 0;
+                ensureCardBoardFields(c);
+              }
+            });
+          }
           closeHb();
           // microtask ベースの render() が別操作で潰れるケースがあるため同期レンダーで確実反映
           renderSynchronouslyOnce();

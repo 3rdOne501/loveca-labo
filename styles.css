@@ -41,7 +41,10 @@ html { color-scheme: dark; }
 
 body {
   margin: 0;
-  min-height: 100dvh;
+  /* Android Chrome は dvh が URL バー連動でガクガク動くため、svh を主に使う。
+     svh 未対応端末向けに vh を先に置いてフォールバック。 */
+  min-height: 100vh;
+  min-height: 100svh;
   font-family: var(--font);
   background-color: var(--bg-deep);
   background-image:
@@ -89,7 +92,8 @@ body::before {
 #view-deck.view:not([hidden]) {
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;
+  min-height: 100vh;
+  min-height: 100svh;
 }
 #view-deck .app-header {
   flex-shrink: 0;
@@ -307,7 +311,8 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
   flex: 1 1 auto;
   align-self: stretch;
   min-height: 0;
-  max-height: min(40dvh, 440px);
+  max-height: min(40vh, 440px);
+  max-height: min(40svh, 440px);
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior-y: auto;
@@ -474,7 +479,8 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
   align-self: stretch;
   /* グリッド列・dvh の組み合わせで縦が 0 に潰れる端末向けの保険 */
   min-height: 280px;
-  max-height: min(calc(100dvh - 8.5rem), 78dvh, 980px);
+  max-height: min(calc(100vh - 8.5rem), 78vh, 980px);
+  max-height: min(calc(100svh - 8.5rem), 78svh, 980px);
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior-y: auto;
@@ -585,7 +591,8 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
 
 @media (max-width: 1100px) {
   #view-deck .card-grid-scroll {
-    max-height: min(calc(100dvh - 7.5rem), 86dvh, 960px);
+    max-height: min(calc(100vh - 7.5rem), 86vh, 960px);
+    max-height: min(calc(100svh - 7.5rem), 86svh, 960px);
   }
 }
 
@@ -1806,8 +1813,11 @@ body.play-mode:not(.zone-hints-visible) #view-game p.hint.zone-inline-help:not(.
 
 /* ========= プレイ画面: ビューポート内に収める・ページは縦スクロールしない ========= */
 body.play-mode {
-  height: 100dvh;
-  max-height: 100dvh;
+  /* Android Chrome 対策で svh ベース。vh はフォールバック。 */
+  height: 100vh;
+  height: 100svh;
+  max-height: 100vh;
+  max-height: 100svh;
   overflow: hidden;
   /* ラブカ標準カード比 63×88mm（短辺=w / 長辺=h）※非公式の見た目目安 */
   --loveca-mm-w: 63;
@@ -2031,8 +2041,11 @@ body.play-mode .game-bar {
 #view-game.view:not([hidden]) {
   display: flex;
   flex-direction: column;
-  height: 100dvh;
-  max-height: 100dvh;
+  /* Android Chrome 対策で svh を採用（URL バー連動の dvh は使わない） */
+  height: 100vh;
+  height: 100svh;
+  max-height: 100vh;
+  max-height: 100svh;
   overflow: hidden;
 }
 
@@ -3754,7 +3767,9 @@ body.play-mode .deck-pile {
   body.play-mode .game-board .col.col-left {
     order: 1;
     flex: 0 1 auto;
-    max-height: min(36dvh, 380px);
+    /* Android で URL バー連動して跳ねないよう svh ベース。vh はフォールバック。 */
+    max-height: min(36vh, 380px);
+    max-height: min(36svh, 380px);
     overflow-y: auto;
     overflow-x: hidden;
     overscroll-behavior: contain;
@@ -3764,7 +3779,8 @@ body.play-mode .deck-pile {
   body.play-mode .game-board .col.col-center {
     order: 2;
     flex: 1 1 auto;
-    min-height: min(36dvh, 410px);
+    min-height: min(36vh, 410px);
+    min-height: min(36svh, 410px);
     min-width: 0;
   }
   /*
@@ -3777,7 +3793,8 @@ body.play-mode .deck-pile {
     display: flex;
     flex-direction: column;
     flex: 1 1 auto;
-    min-height: min(44dvh, 520px);
+    min-height: min(44vh, 520px);
+    min-height: min(44svh, 520px);
     max-height: none;
     overflow-y: visible;
     overflow-x: hidden;
@@ -4223,6 +4240,17 @@ body.play-mode .game-bar .btn {
 /* iPad / タブレット向け */
 html {
   -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+/* プレイ中だけ Android Chrome のページ全体プルダウン更新を抑える */
+body.play-mode {
+  overscroll-behavior-y: contain;
+}
+/* ボタン押下時の青／灰色ハイライトが Android Chrome で残らないように共通化 */
+button,
+.btn,
+summary {
+  -webkit-tap-highlight-color: transparent;
 }
 @media (min-width: 768px) and (max-width: 1366px) {
   :root {
@@ -4856,6 +4884,12 @@ body.play-mode .play-disclaimer {
 .deck-live-sim-summary.is-warn {
   border-color: rgba(255, 200, 120, 0.45);
 }
+/* 確率 50% 以下：赤（warn 系よりはっきりした失敗色） */
+.deck-live-sim-summary.is-fail {
+  color: #ffc9bd;
+  border-color: rgba(255, 120, 100, 0.5);
+  background: rgba(120, 30, 30, 0.18);
+}
 .deck-live-sim-summary.is-muted {
   color: var(--muted);
   border-style: dashed;
@@ -4979,8 +5013,10 @@ kbd {
 .dlg-deck-peek {
   width: min(96vw, 72rem);
   max-width: none;
-  max-height: calc(100dvh - 0.5rem);
-  height: min(calc(100dvh - 0.75rem), 860px);
+  max-height: calc(100vh - 0.5rem);
+  max-height: calc(100svh - 0.5rem);
+  height: min(calc(100vh - 0.75rem), 860px);
+  height: min(calc(100svh - 0.75rem), 860px);
   margin: auto;
   box-sizing: border-box;
   display: flex;
@@ -5027,7 +5063,8 @@ kbd {
 @media (max-width: 780px) {
   .dlg-deck-peek {
     width: min(98vw, 100%);
-    height: min(calc(100dvh - 0.75rem), 900px);
+    height: min(calc(100vh - 0.75rem), 900px);
+    height: min(calc(100svh - 0.75rem), 900px);
   }
   .deck-peek-main {
     grid-template-columns: 1fr;
@@ -5035,7 +5072,8 @@ kbd {
     overflow: hidden;
   }
   .deck-peek-col-summaries {
-    max-height: min(42dvh, 320px);
+    max-height: min(42vh, 320px);
+    max-height: min(42svh, 320px);
   }
 }
 .deck-peek-col {

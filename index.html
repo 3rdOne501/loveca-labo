@@ -342,63 +342,11 @@ python3 -m http.server 8080</pre>
 
     <div id="view-game" class="view" hidden>
       <header class="game-bar">
-        <div class="game-bar-row game-bar-actions">
-          <button type="button" class="btn primary" id="btn-back-builder">デッキ編集に戻る</button>
-          <button type="button" class="btn secondary" id="btn-help" title="? キー">ヘルプ</button>
-          <button type="button" class="btn sm secondary" id="btn-tutorial-game" title="チュートリアル・画面別ガイド">ガイド</button>
-          <button
-            type="button"
-            class="btn sm secondary"
-            id="toggle-hand-mask"
-            title="手札とプレビューを配信向けに隠す（濃さは右のスライダー）"
-          >
-            手札を隠す
-          </button>
-          <label class="tools-label stream-mask-density-label" for="stream-mask-density" title="配信隠しのグレー濃さ">
-            <span class="muted">隠し濃さ</span>
-            <input
-              type="range"
-              id="stream-mask-density"
-              class="stream-mask-density-range"
-              min="5"
-              max="98"
-              step="1"
-              value="85"
-              aria-label="手札・プレビュー配信隠しの濃さ"
-            />
-          </label>
-        </div>
-        <div class="game-bar-row game-tools-row">
-          <details class="energy-card-details">
-            <summary class="energy-card-details-summary">エネルギー画像の選択</summary>
-            <div class="energy-card-picker-wrap energy-card-picker-wrap--expanded">
-              <label class="tools-label tools-label-energy">
-                エネルギーカード
-                <select id="select-energy-card" aria-label="側面エネルギーカード">
-                  <option value="">既定（SD）</option>
-                </select>
-              </label>
-              <img id="energy-card-preview" class="energy-card-preview" alt="" hidden width="46" height="64" decoding="async" />
-              <div id="energy-card-thumb-strip" class="energy-card-thumb-strip" role="group" aria-label="エネルギー画像一覧"></div>
-            </div>
-          </details>
-          <button type="button" class="btn sm secondary" id="btn-coin">コイン</button>
+        <div class="game-bar-row game-bar-tools">
           <button type="button" class="btn sm secondary" id="btn-layout-16-9" aria-pressed="false" title="プレイ画面全体を通常の約 85% の表示倍率に縮小します（再押しで解除）">
-            16:9 サイズ
+            16:9
           </button>
-          <button type="button" class="btn sm secondary" id="btn-export-replay">ログ JSON 書き出し</button>
-        </div>
-        <div class="game-bar-row game-hud" role="status" aria-label="ゾーン枚数">
-          <span class="hud-chip" title="成功したライブの枚数（目安）">
-            成功ライブ <strong id="hud-slive">0</strong> /
-            <span id="hud-slive-max">3</span>
-          </span>
-          <span class="hud-chip">プレビュー <strong id="hud-preview">0</strong></span>
-          <span class="hud-chip">手札 <strong id="hud-hand">0</strong></span>
-          <span class="hud-chip">控室 <strong id="hud-waiting">0</strong></span>
-          <span class="hud-chip">解決 <strong id="hud-resolution">0</strong></span>
-          <span class="hud-chip" title="ターンカウント（0T 開始。「ターン開始」で増加）">ターン <strong id="hud-turn">0T</strong></span>
-          <span class="hud-chip muted-chip"><kbd>U</kbd> ひとつ戻す · <kbd>R</kbd> ひとつ進む · <kbd>?</kbd> ヘルプ</span>
+          <button type="button" class="btn sm secondary" id="btn-export-replay">ログ書き出し</button>
           <button type="button" class="btn sm secondary" id="btn-zone-hints" aria-pressed="false">
             ゾーン説明を表示
           </button>
@@ -411,9 +359,6 @@ python3 -m http.server 8080</pre>
             再読込
           </button>
         </div>
-        <p class="play-disclaimer" role="note">
-          非公式ツールです。オンライン対戦は未対応。権利・ルール・レギュは公式・大会運営を確認してください。
-        </p>
       </header>
 
       <div class="game-board">
