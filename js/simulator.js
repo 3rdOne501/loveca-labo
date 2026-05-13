@@ -4558,6 +4558,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     }
     set("hud-hand", state.hand.length);
     set("hand-inline-count", state.hand.length);
+    set("hand-inline-count-sticky", state.hand.length);
     set("hud-waiting", state.waitingRoom.length);
     set("hud-resolution", state.resolutionArea.length);
     set("hud-slive", state.successfulLiveArea.length);
