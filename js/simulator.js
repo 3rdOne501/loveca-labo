@@ -5066,6 +5066,30 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   }
   bindDeckOddsKControlInput($("deck-odds-k"));
   bindDeckOddsKControlInput($("deck-odds-k-num"));
+  (function relocateDeckOddsFoldForMobile() {
+    var fold = $("deck-odds-fold");
+    var mobileHost = document.querySelector(".deck-tools-split__odds");
+    if (!fold || !mobileHost) return;
+    var originParent = fold.parentNode;
+    var originNext = fold.nextElementSibling;
+    var mq = window.matchMedia("(max-width: 900px)");
+    function syncDeckOddsFoldHost() {
+      if (mq.matches) {
+        var firstRemain = $("deck-remain-bh-panel");
+        if (firstRemain && firstRemain.parentNode === mobileHost) {
+          mobileHost.insertBefore(fold, firstRemain.nextElementSibling);
+        } else {
+          mobileHost.prepend(fold);
+        }
+      } else if (fold.parentNode !== originParent) {
+        if (originNext && originNext.parentNode === originParent) originParent.insertBefore(fold, originNext);
+        else originParent.appendChild(fold);
+      }
+    }
+    syncDeckOddsFoldHost();
+    if (mq.addEventListener) mq.addEventListener("change", syncDeckOddsFoldHost);
+    else if (mq.addListener) mq.addListener(syncDeckOddsFoldHost);
+  })();
   (function initDeckOddsFoldViewport() {
     var det = $("deck-odds-fold");
     if (!det || det.tagName !== "DETAILS") return;
