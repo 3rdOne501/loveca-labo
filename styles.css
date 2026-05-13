@@ -1451,13 +1451,11 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
   /*
    * 横にはみ出しそうなとき、または枚数が多いときは重ね表示。
    * --hand-overlap-frac は負の係数（幅に対する重なり）。密集時は overlap-strong／overlap-heavy を併用。
-   * 既定は 36%（7〜10 枚）。
    */
   --hand-overlap-frac: -0.36;
 }
-/* 4〜6 枚および 11〜14 枚: 軽い重なり 20% */
 .hand-zone.hand-zone--overlap.hand-zone--overlap-light {
-  --hand-overlap-frac: -0.2;
+  --hand-overlap-frac: -0.1;
 }
 .hand-zone.hand-zone--overlap.hand-zone--overlap-strong {
   --hand-overlap-frac: -0.56;
@@ -1470,25 +1468,6 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
 }
 .hand-zone.hand-zone--overlap .card-item + .card-item {
   margin-left: calc(var(--loveca-play-w, 82px) * var(--hand-overlap-frac));
-}
-/* 11 枚以上：折り返し許可。JS が 10 枚ごとに .hand-row-break を挿入する。 */
-.hand-zone.hand-zone--wrap {
-  flex-wrap: wrap;
-  overflow-x: visible;
-  row-gap: 0.35rem;
-}
-.hand-row-break {
-  flex-basis: 100%;
-  width: 100%;
-  height: 0;
-  margin: 0;
-  padding: 0;
-  pointer-events: none;
-}
-/* 行区切り直後（次行の先頭カード）は重なり用の負マージンを打ち消す。
- * デスクトップ／モバイル両方の負マージン定義より優先するため !important で固定。 */
-.hand-zone.hand-zone--wrap .hand-row-break + .card-item {
-  margin-left: 0 !important;
 }
 .mt { margin-top: 1rem; }
 
@@ -2053,9 +2032,33 @@ body.play-mode #toggle-hand-mask.toggle-hand-mask--on {
     0 4px 18px rgba(255, 90, 150, 0.45);
 }
 
+/* ライブターン開始 → ライブエリアへ → ライブ開始 の誘導のみ。
+ * 色・ひかり方は「1枚エール」と同じ（.btn--live-yell-glow と liveYellBtnPulse）。
+ * それ以外の flow-hint（ターン開始・成功ライブ枠）は従来どおりピンク系 flow-btn-glow。 */
 body.play-mode.flow-hint--live-turn-start #btn-live-turn-primary:not(:disabled),
 body.play-mode.flow-hint--live-to-area #btn-live-turn-primary:not(:disabled),
-body.play-mode.flow-hint--live-begin #btn-live-turn-begin:not(:disabled),
+body.play-mode.flow-hint--live-begin #btn-live-turn-begin:not(:disabled) {
+  position: relative;
+  z-index: 2;
+  background: linear-gradient(135deg, #ffe7a3 0%, #ffb86b 45%, #ff7eb6 100%);
+  border-color: rgba(255, 220, 150, 0.85);
+  color: #2a1230;
+  text-shadow: 0 1px 1px rgba(255, 255, 230, 0.55);
+  box-shadow:
+    0 0 8px rgba(255, 220, 130, 0.85),
+    0 0 18px rgba(255, 170, 80, 0.65),
+    0 0 32px rgba(255, 140, 200, 0.55),
+    0 2px 0 rgba(170, 90, 30, 0.45);
+  animation: liveYellBtnPulse 1.6s ease-in-out infinite;
+  border-radius: var(--radius-sm, 10px);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+body.play-mode.flow-hint--live-turn-start #btn-live-turn-primary:not(:disabled):hover,
+body.play-mode.flow-hint--live-to-area #btn-live-turn-primary:not(:disabled):hover,
+body.play-mode.flow-hint--live-begin #btn-live-turn-begin:not(:disabled):hover {
+  filter: brightness(1.06);
+}
 body.play-mode.flow-hint--turn-start #btn-turn-start:not(:disabled) {
   position: relative;
   z-index: 1;
@@ -2067,6 +2070,13 @@ body.play-mode.flow-hint--live-success #success-live-zone-shell {
   outline: 2px solid rgba(255, 160, 210, 0.65);
   outline-offset: 2px;
   animation: flow-btn-glow 1.55s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  body.play-mode.flow-hint--live-turn-start #btn-live-turn-primary:not(:disabled),
+  body.play-mode.flow-hint--live-to-area #btn-live-turn-primary:not(:disabled),
+  body.play-mode.flow-hint--live-begin #btn-live-turn-begin:not(:disabled) {
+    animation: none;
+  }
 }
 
 body.play-mode .zone-head--live-with-turn .play-undo-redo-cluster {

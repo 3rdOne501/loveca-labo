@@ -1166,10 +1166,36 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
 
   /** 1ドロー直後のフラッシュ表示の継続時間（ms） */
   const FLASH_DRAW_DURATION_MS = 1000;
+  const FLASH_LABEL_PLUS_DRAW = "+1ドロー";
+  /** ライブ進行中「山札→解決」や旧「エール+1」を解決へ置いた場合のフラッシュ文言 */
+  const FLASH_LABEL_PLUS_DRAW_RESOLUTION = "+１ドロー";
+  const FLASH_LABEL_LIVE_YELL_RESOLUTION_OLD = "エール+1";
   function markCardFlashDraw(c, label) {
     if (!c || typeof c !== "object") return;
     c._flashDrawAt = Date.now();
     c._flashDrawLabel = typeof label === "string" && label ? label : null;
+  }
+
+  /** ドラッグで解決ゾーンに入れたカードについて、過去データの「エール+1」フラッシュなら画面上は「+1ドロー」に差し替え。 */
+  function maybeUpgradeLiveYellFlashOnResolutionDrop(evt, snapBeforeDrag) {
+    if (!evt || !evt.from || !evt.to || !snapBeforeDrag) return;
+    if (evt.to.id !== "zone-resolution") return;
+    if (evt.from.id === "zone-resolution") return;
+    if (state.liveStatsAfterBegin !== true && state.liveTurnPickMode !== true) return;
+    var idStr = lastDraggedDomId ? String(lastDraggedDomId) : "";
+    if (!idStr) return;
+    if (!Array.isArray(snapBeforeDrag.resolutionArea)) return;
+    var wasAlreadyInRes = snapBeforeDrag.resolutionArea.some(function (c) {
+      return c && String(c.id) === idStr;
+    });
+    if (wasAlreadyInRes) return;
+    var moved = state.resolutionArea.find(function (c) {
+      return c && String(c.id) === idStr;
+    });
+    if (!moved) return;
+    if (moved._flashDrawLabel === FLASH_LABEL_LIVE_YELL_RESOLUTION_OLD) {
+      markCardFlashDraw(moved, FLASH_LABEL_PLUS_DRAW_RESOLUTION);
+    }
   }
 
   normalizeAllCardFields();
@@ -4152,7 +4178,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       var flash = document.createElement("div");
       flash.className = "card-flash-plus-one";
       flash.setAttribute("aria-hidden", "true");
-      flash.textContent = c._flashDrawLabel || "+1ドロー";
+      flash.textContent = c._flashDrawLabel || FLASH_LABEL_PLUS_DRAW;
       flash.style.animationDuration = remainMs + "ms";
       div.appendChild(flash);
       setTimeout(function () {
@@ -4613,6 +4639,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         restoreCardFaceAfterDragging(evt.item);
         var droppedToSuccessLive = evt.to && evt.to.id === "zone-success-live";
         readAllFromDom();
+        maybeUpgradeLiveYellFlashOnResolutionDrop(evt, dragUndoSnap);
         if (droppedToSuccessLive) {
           var fpSel = $("select-first-player");
           if (fpSel) fpSel.value = "先攻";
@@ -4748,89 +4775,41 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (turnBadge) turnBadge.textContent = String(state.turnCount);
   }
 
-  /** 手札のレイアウト切替。
-   * - 3 枚以下: 重なりなし（横並び）
-   * - 4 〜 6 枚: 軽い重なり（約 20%）
-   * - 7 〜 10 枚: 通常の重なり（約 36%）
-   * - 11 枚以上: 10 枚で改行して 2 行レイアウト（10 枚ごとに hand-row-break を挿入）
-   *   行内は 11〜14 枚は軽い重なり（20%）、15〜19 枚は通常、20 枚以上は強い重なり。
-   * - ライブターン選択中の spread モードでは重ねずに広げる（チェックとの対応を見やすく）。 */
+  /** 手札は常に 1 行の重ね可能レイアウト（枚数が多いほど強めに重なる）。
+   * ライブターン選択中かつ開始時に手札が一定枚数以上なら重ねず折り返し（チェックとカードの対応を分かりやすくする） */
   function updateHandZoneLayoutMode() {
     const zone = $("zone-hand");
     const row = $("hand-row");
     if (!zone || !row) return;
     if (row.classList.contains("hidden")) {
-      zone.classList.remove(
-        "hand-zone--overlap",
-        "hand-zone--overlap-light",
-        "hand-zone--overlap-strong",
-        "hand-zone--overlap-heavy",
-        "hand-zone--wrap",
-      );
+      zone.classList.remove("hand-zone--overlap", "hand-zone--overlap-light", "hand-zone--overlap-strong", "hand-zone--overlap-heavy");
       return;
     }
     const n = state.hand.length;
     var useOverlap = false;
     var overlapLight = false;
-    var overlapStrong = false;
-    var overlapHeavy = false;
-    var wrapRows = false;
     if (state.liveTurnPickMode && state.liveTurnHandSpreadPick) {
       useOverlap = false;
-    } else if (n >= 4 && n <= 6) {
+    } else if (n >= 2 && n <= 5) {
       useOverlap = true;
       overlapLight = true;
-    } else if (n >= 7 && n <= 10) {
-      useOverlap = true;
-    } else if (n >= 11) {
-      useOverlap = true;
-      wrapRows = true;
-      if (n >= 20) {
-        overlapStrong = true;
-      } else if (n >= 15) {
-        /* default overlap (36%) */
-      } else {
-        overlapLight = true;
-      }
-    }
-    /* 4 枚未満は重ね不要だが、画面幅が極端に狭いときの安全策として従来の動的判定を保持する */
-    if (!useOverlap && n >= 4) {
-      const first = zone.querySelector(".card-item");
-      const W = first ? first.getBoundingClientRect().width : 82;
-      const cs = getComputedStyle(zone);
-      const gap = parseFloat(cs.gap) || 4;
-      const pad = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
-      const avail = Math.max(0, row.clientWidth - pad);
-      const needed = n * W + (n - 1) * gap;
-      if (needed > avail + 0.5) {
-        useOverlap = true;
-        overlapLight = true;
+    } else {
+      useOverlap = n >= 10;
+      if (!useOverlap && n > 5) {
+        const first = zone.querySelector(".card-item");
+        const W = first ? first.getBoundingClientRect().width : 82;
+        const cs = getComputedStyle(zone);
+        const gap = parseFloat(cs.gap) || 4;
+        const pad = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+        const avail = Math.max(0, row.clientWidth - pad);
+        const needed = n * W + (n - 1) * gap;
+        useOverlap = needed > avail + 0.5;
       }
     }
     zone.classList.toggle("hand-zone--overlap", useOverlap);
     zone.classList.toggle("hand-zone--overlap-light", useOverlap && overlapLight);
-    zone.classList.toggle("hand-zone--overlap-strong", useOverlap && overlapStrong);
-    zone.classList.toggle("hand-zone--overlap-heavy", useOverlap && overlapHeavy);
-    zone.classList.toggle("hand-zone--wrap", wrapRows);
-    /* 11 枚以上の場合、10 枚ごとに行区切りを挿入して必ず 2 行目以降に折り返す。
-     * Sortable の draggable は .card-item のみなのでこの区切り要素は無視される。
-     * readAllFromDom も dataset.id を持つ要素だけを採用するため副作用なし。 */
-    syncHandRowBreaks(zone, wrapRows ? n : 0);
-  }
-
-  /** 手札ゾーンに 10 枚ごとの行区切り（flex-break）を同期的に整える。 */
-  function syncHandRowBreaks(zone, totalCount) {
-    if (!zone) return;
-    const existing = zone.querySelectorAll(":scope > .hand-row-break");
-    existing.forEach(function (n) { n.remove(); });
-    if (!totalCount || totalCount <= 10) return;
-    const cards = zone.querySelectorAll(":scope > .card-item");
-    for (var i = 10; i < cards.length; i += 10) {
-      const br = document.createElement("div");
-      br.className = "hand-row-break";
-      br.setAttribute("aria-hidden", "true");
-      cards[i].parentNode.insertBefore(br, cards[i]);
-    }
+    zone.classList.toggle("hand-zone--overlap-strong", useOverlap && !overlapLight && n >= 8);
+    zone.classList.toggle("hand-zone--overlap-heavy", useOverlap && !overlapLight && n >= 12);
   }
 
   function syncDeckToolbarButtons() {
@@ -5968,9 +5947,9 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     }
     pushHistoryBefore("draw-res");
     var drawnR = state.deck.shift();
-    /* ライブ開始中はこの操作は実質「エール」。フラッシュ表示も「エール+1」に切り替える。 */
+    /* ライブ中の「山札から解決へ」はエール動作だが、解決領域上ではフラッシュを「+1ドロー」で統一する。 */
     var inLive = state.liveStatsAfterBegin === true || state.liveTurnPickMode === true;
-    markCardFlashDraw(drawnR, inLive ? "エール+1" : null);
+    markCardFlashDraw(drawnR, inLive ? FLASH_LABEL_PLUS_DRAW_RESOLUTION : null);
     state.resolutionArea.push(drawnR);
     showToast(inLive ? "解決に 1 枚エールしました" : "解決に 1 枚ドローしました");
     render();
