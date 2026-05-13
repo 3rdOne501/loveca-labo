@@ -978,40 +978,47 @@ python3 -m http.server 8080</pre>
             </div>
           </section>
 
-          <section class="zone-block">
-            <div class="zone-head zone-head--hand">
-              <h3 class="hand-zone-title">
-                手札
-                <span id="hand-inline-count" class="badge hand-inline-count" aria-live="polite">0</span>
-              </h3>
-              <div class="hand-zone-actions">
-                <button type="button" class="btn sm primary" id="btn-live-turn-primary" disabled>
-                  ライブターン開始
-                </button>
-                <button type="button" class="btn sm primary" id="btn-live-turn-begin" disabled>
-                  ライブ開始
-                </button>
-                <button type="button" class="btn sm" id="btn-mulligan-execute" disabled>
-                  マリガン実行
-                </button>
-                <button type="button" class="btn sm danger" id="btn-reset-game" title="キー山札から初手／Undo 消去">
-                  盤面リセット
-                </button>
+          <details id="hand-stick-fold" class="zone-block hand-stick-fold" open>
+            <summary class="hand-stick-fold__summary">
+              <span class="hand-stick-fold__label">手札</span>
+              <span id="hand-inline-count-sticky" class="badge hand-inline-count" aria-live="polite">0</span>
+              <span class="hand-stick-fold__hint muted">タップで開閉</span>
+            </summary>
+            <div class="hand-stick-fold__body">
+              <div class="zone-head zone-head--hand">
+                <h3 class="hand-zone-title">
+                  手札
+                  <span id="hand-inline-count" class="badge hand-inline-count" aria-live="polite">0</span>
+                </h3>
+                <div class="hand-zone-actions">
+                  <button type="button" class="btn sm primary" id="btn-live-turn-primary" disabled>
+                    ライブターン開始
+                  </button>
+                  <button type="button" class="btn sm primary" id="btn-live-turn-begin" disabled>
+                    ライブ開始
+                  </button>
+                  <button type="button" class="btn sm" id="btn-mulligan-execute" disabled>
+                    マリガン実行
+                  </button>
+                  <button type="button" class="btn sm danger" id="btn-reset-game" title="キー山札から初手／Undo 消去">
+                    盤面リセット
+                  </button>
+                </div>
+              </div>
+              <p id="hand-live-turn-hint" class="hint zone-inline-help" hidden>
+                <strong>ライブターン中:</strong>
+                カードを選び、続けて<strong>ライブエリアへ</strong>と表示されているボタンで<strong>左→中央→右</strong>の空き枠へ移します（枠では<strong>裏・横向き</strong>）。<strong>置いた枚数だけ</strong>山札からドローします。「<strong>ライブ開始</strong>」で<strong>ライブカード以外</strong>が<strong>控え室</strong>へ送られ、残りは<strong>表面の縦向き</strong>になり、このモードを終了します。
+              </p>
+              <p id="hand-mulligan-hint" class="hint zone-inline-help">
+                <strong>ターン開始まで:</strong>
+                戻したいカードに<strong>チェック</strong>、「<strong>マリガン実行</strong>」で選択枚を山札に戻しシャッフルして同じ枚数をドローします。<strong>0枚チェックでも実行できます</strong>（そのときはシャッフル・追加ドローはしません）。
+                チェックはカード中央付近の小さな操作域です。タップしづらいときはカードを少し上下に動かしてから再度タップしてください。
+              </p>
+              <div id="hand-row">
+                <div id="zone-hand" class="card-strip zone-drop hand-zone"></div>
               </div>
             </div>
-            <p id="hand-live-turn-hint" class="hint zone-inline-help" hidden>
-              <strong>ライブターン中:</strong>
-              カードを選び、続けて<strong>ライブエリアへ</strong>と表示されているボタンで<strong>左→中央→右</strong>の空き枠へ移します（枠では<strong>裏・横向き</strong>）。<strong>置いた枚数だけ</strong>山札からドローします。「<strong>ライブ開始</strong>」で<strong>ライブカード以外</strong>が<strong>控え室</strong>へ送られ、残りは<strong>表面の縦向き</strong>になり、このモードを終了します。
-            </p>
-            <p id="hand-mulligan-hint" class="hint zone-inline-help">
-              <strong>ターン開始まで:</strong>
-              戻したいカードに<strong>チェック</strong>、「<strong>マリガン実行</strong>」で選択枚を山札に戻しシャッフルして同じ枚数をドローします。<strong>0枚チェックでも実行できます</strong>（そのときはシャッフル・追加ドローはしません）。
-              チェックはカード中央付近の小さな操作域です。タップしづらいときはカードを少し上下に動かしてから再度タップしてください。
-            </p>
-            <div id="hand-row">
-              <div id="zone-hand" class="card-strip zone-drop hand-zone"></div>
-            </div>
-          </section>
+          </details>
 
           <section class="zone-block play-tools-block">
             <div class="deck-tools-split">

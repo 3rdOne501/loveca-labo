@@ -4558,6 +4558,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     }
     set("hud-hand", state.hand.length);
     set("hand-inline-count", state.hand.length);
+    set("hand-inline-count-sticky", state.hand.length);
     set("hud-waiting", state.waitingRoom.length);
     set("hud-resolution", state.resolutionArea.length);
     set("hud-slive", state.successfulLiveArea.length);
@@ -5089,6 +5090,20 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     syncDeckOddsFoldHost();
     if (mq.addEventListener) mq.addEventListener("change", syncDeckOddsFoldHost);
     else if (mq.addListener) mq.addListener(syncDeckOddsFoldHost);
+  })();
+  (function initHandStickFoldViewport() {
+    var det = $("hand-stick-fold");
+    if (!det || det.tagName !== "DETAILS") return;
+    var mq = window.matchMedia("(max-width: 900px) and (orientation: portrait)");
+    function syncOpen() {
+      if (!mq.matches) det.setAttribute("open", "");
+    }
+    syncOpen();
+    if (mq.addEventListener) mq.addEventListener("change", syncOpen);
+    else if (mq.addListener) mq.addListener(syncOpen);
+    window.addEventListener("orientationchange", function () {
+      window.setTimeout(syncOpen, 200);
+    });
   })();
   function bumpDeckOddsKManual(delta) {
     var n = state.deck.length;
