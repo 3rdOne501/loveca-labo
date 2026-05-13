@@ -2156,6 +2156,27 @@ body.play-mode.stage-member-emphasis .stage-slot.card-strip .card-img {
 body.play-mode.stage-member-emphasis .stage-slot.card-strip .card-img.rotated {
   width: calc(var(--loveca-play-w) * 1.26);
 }
+/* メンバー拡大時：W／A／+H/B のチップ列もカードサイズに合わせて拡大 */
+body.play-mode.stage-member-emphasis .stage-slot.card-strip .card-stance-bar,
+body.play-mode.stage-member-emphasis .stage-slot.card-strip .card-member-hb-bar {
+  gap: 4px;
+}
+body.play-mode.stage-member-emphasis .stage-slot.card-strip .stance-chip {
+  font-size: 0.74rem;
+  padding: 0.16rem 0.42rem;
+  border-radius: 6px;
+}
+/* メンバー拡大時：所持ハート／ブレード等の表示フッターも追従させる */
+body.play-mode.stage-member-emphasis .stage-slot.card-strip .card-member-bonus-footer {
+  font-size: 0.92rem;
+  padding: 5px 7px;
+  gap: 5px 8px;
+  border-radius: 8px;
+}
+body.play-mode.stage-member-emphasis .stage-slot.card-strip .card-member-bonus-blade-ico {
+  width: 20px;
+  height: 20px;
+}
 
 body.play-mode .card-strip.tall {
   min-height: min(132px, 22vh);
@@ -2472,6 +2493,59 @@ body.play-mode .success-live-zone-shell--win .success-live-strip.card-strip {
   font-size: 0.92rem;
   font-family: var(--font-display);
   color: #fcdcec;
+}
+
+/*
+ * エネルギー置き場（ステージ下）: 開閉可能な details に変更。
+ * デスクトップ・スマホ共通で、サマリーをタップで開閉できる。
+ * サマリーの中身は元の zone-head と同じ見た目に近づける。
+ */
+details.energy-fold.zone-block {
+  min-width: 0;
+}
+.energy-fold > summary.energy-fold__summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem 0.55rem;
+  padding: 0;
+  margin-bottom: 0.45rem;
+}
+.energy-fold > summary.energy-fold__summary::-webkit-details-marker {
+  display: none;
+}
+.energy-fold__title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-family: var(--font-display);
+  color: #fcdcec;
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.32rem;
+}
+.energy-fold__hint {
+  font-size: 0.7rem;
+  font-weight: 400;
+  opacity: 0.7;
+}
+/* 折りたたみ時：右側の開閉ヒントを「閉じてます」風に */
+.energy-fold:not([open]) > .energy-fold__summary .energy-fold__hint::after {
+  content: "（閉）";
+  margin-left: 0.2rem;
+}
+.energy-fold__body {
+  min-width: 0;
+}
+.energy-fold__controls {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.32rem;
+  margin-bottom: 0.4rem;
 }
 
 /*
@@ -3659,19 +3733,24 @@ body.play-mode .deck-pile {
   body.play-mode .game-board .col.col-center {
     order: 2;
     flex: 1 1 auto;
-    min-height: min(42dvh, 470px);
+    min-height: min(36dvh, 410px);
     min-width: 0;
   }
+  /*
+   * col-right はスマホ縦のみ「内部スクロールをやめて自然に伸ばす」。
+   * これによって手札 details#hand-stick-fold の position: sticky; bottom: 0 が
+   * game-board のスクロールに対して効くようになる（＝下端に常時固定）。
+   */
   body.play-mode .game-board .col.col-right {
     order: 3;
     display: flex;
     flex-direction: column;
-    flex: 0 1 auto;
-    max-height: min(32dvh, 400px);
-    overflow-y: auto;
+    flex: 1 1 auto;
+    min-height: min(44dvh, 520px);
+    max-height: none;
+    overflow-y: visible;
     overflow-x: hidden;
     overscroll-behavior: contain;
-    min-height: 0;
     width: 100%;
   }
 
@@ -3801,6 +3880,50 @@ body.play-mode .deck-pile {
   body.play-mode .zone-sim-success-row > .zone-block {
     min-width: 0;
     overflow: hidden;
+  }
+
+  /*
+   * 指定カード検索（スマホ縦のみ）:
+   * タイトル「指定カード検索」とカード名を非表示にし、
+   * チェック・サムネ・枚数だけのコンパクト表示にする。
+   * 「めくり枚数」と「確率」表示はそのまま残す。
+   */
+  body.play-mode .play-tools-block .deck-pick-block .deck-pick-odds-section-title {
+    display: none;
+  }
+  body.play-mode .play-tools-block .deck-pick-list .deck-pick-name {
+    display: none;
+  }
+  body.play-mode .play-tools-block .deck-pick-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(54px, 1fr));
+    gap: 0.32rem 0.32rem;
+    max-height: min(46vh, 300px);
+    padding: 0.34rem 0.34rem;
+  }
+  body.play-mode .play-tools-block .deck-pick-list .deck-pick-row {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.18rem;
+    padding: 0.22rem 0.18rem;
+    background: rgba(255, 255, 255, 0.02);
+  }
+  body.play-mode .play-tools-block .deck-pick-list .deck-pick-row input[type="checkbox"] {
+    margin: 0;
+  }
+  body.play-mode .play-tools-block .deck-pick-list .deck-pick-thumb {
+    width: 100%;
+    max-width: 54px;
+    max-height: 76px;
+  }
+  body.play-mode .play-tools-block .deck-pick-list .deck-pick-meta {
+    align-items: center;
+    width: 100%;
+  }
+  body.play-mode .play-tools-block .deck-pick-list .deck-pick-count {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: rgba(255, 230, 245, 0.95);
   }
 }
 
@@ -4096,9 +4219,22 @@ html {
     --deck-cards-per-row: 10;
     --deck-thumb-w-pile: 52px;
   }
+  /*
+   * スマホ縦（PWA／Safari）: 3行が横並びだと上端／右端の項目がはみ出して
+   * タップしづらいので縦に並べ直し、上のセーフエリアぶん下げる。
+   */
   body.play-mode .game-bar {
-    gap: 0.38rem;
-    padding: 0.34rem 0.45rem;
+    flex-wrap: wrap;
+    overflow-x: hidden;
+    gap: 0.32rem;
+    padding-top: max(0.34rem, env(safe-area-inset-top, 0px));
+    padding-right: max(0.45rem, env(safe-area-inset-right, 0px));
+    padding-bottom: 0.34rem;
+    padding-left: max(0.45rem, env(safe-area-inset-left, 0px));
+  }
+  body.play-mode .game-bar-row {
+    flex: 1 1 100%;
+    width: 100%;
   }
   body.play-mode .game-bar-row.game-bar-actions .btn,
   body.play-mode .game-bar-row.game-tools-row .btn {

@@ -840,16 +840,18 @@ python3 -m http.server 8080</pre>
             <strong>空の列へ載せるとき</strong>は印刷コストぶんの縦エネが必要です（一部特殊カードはツール上で手札枚数に応じて減算表示）。<strong>エネが足りない</strong>とドロップが弾かれるので、足りない枚数を＋ボタンやドラッグで補ってから載せ直してください。
           </p>
 
-          <section class="zone-block energy-under-stage mt">
-            <div class="zone-head">
-              <h3>
+          <details id="energy-fold" class="zone-block energy-under-stage mt energy-fold" open>
+            <summary class="energy-fold__summary">
+              <h3 class="energy-fold__title">
                 エネルギー <span class="muted">／ 側面エネ・最大12</span>
                 <span id="energy-area-count" class="badge energy-area-count-badge" title="現在の側面エネの枚数">0</span>
               </h3>
-              <div>
-                <button type="button" class="btn sm" id="btn-energy-minus">−</button>
-                <button type="button" class="btn sm" id="btn-energy-plus">+</button>
-              </div>
+              <span class="energy-fold__hint muted">タップで開閉</span>
+            </summary>
+            <div class="energy-fold__body">
+            <div class="energy-fold__controls btn-row">
+              <button type="button" class="btn sm" id="btn-energy-minus">−</button>
+              <button type="button" class="btn sm" id="btn-energy-plus">+</button>
             </div>
             <div id="zone-energy" class="card-strip zone-drop energy-zone"></div>
             <section class="zone-block zone-block-snapshots zone-block-snapshots--under-energy">
@@ -869,7 +871,8 @@ python3 -m http.server 8080</pre>
               ステージの<strong>直下</strong>にある側面エネ用ゾーンです。<strong>＋／− を長押し</strong>で枚数ダイアログ。画像クリックで横向き（ウェイト見た目）の切替。
               ターン開始時にウェイトの分が縦に立ち、枚数が1増える<strong>目安動作</strong>になっています（上限12）。メンバーをステージに載せる前に、ここを確認するとスムーズです。
             </p>
-          </section>
+            </div>
+          </details>
 
         </div>
 
