@@ -1423,6 +1423,49 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   }
 
   /** ブレードで捲れる枚数が尽きたタイミング（解決枚数が bladeK に到達）で、ドローエール待ちドローを手札へ */
+  function flashDrawYellBeamsFromResolutionToHand(n) {
+    n = Math.max(0, Math.floor(Number(n) || 0));
+    if (n <= 0) return;
+    var resEl = $("zone-resolution");
+    var handEl = $("zone-hand");
+    if (!resEl || !handEl) return;
+    var r0 = resEl.getBoundingClientRect();
+    var r1 = handEl.getBoundingClientRect();
+    var x0 = r0.left + r0.width * 0.5;
+    var y0 = r0.top + r0.height * 0.45;
+    var x1 = r1.left + r1.width * 0.45;
+    var y1 = r1.top + r1.height * 0.5;
+    var layer = document.createElement("div");
+    layer.className = "draw-yell-beam-overlay";
+    layer.setAttribute("aria-hidden", "true");
+    document.body.appendChild(layer);
+    var dx = x1 - x0;
+    var dy = y1 - y0;
+    var len = Math.hypot(dx, dy) || 1;
+    var ang = (Math.atan2(dy, dx) * 180) / Math.PI;
+    var ux = (-dy / len) * 14;
+    var uy = (dx / len) * 14;
+    for (var i = 0; i < n; i++) {
+      var seg = (n - 1) / 2;
+      var oi = i - seg;
+      var bx = x0 + oi * ux * 0.95;
+      var by = y0 + oi * uy * 0.95;
+      var beam = document.createElement("div");
+      beam.className = "draw-yell-beam";
+      beam.style.left = bx + "px";
+      beam.style.top = by + "px";
+      beam.style.width = len + "px";
+      beam.style.transform = "rotate(" + ang + "deg)";
+      beam.style.transformOrigin = "0 50%";
+      layer.appendChild(beam);
+    }
+    window.setTimeout(function () {
+      try {
+        layer.remove();
+      } catch (_) {}
+    }, 820);
+  }
+
   function maybeFlushPendingDrawYellHandDraws(prevResolutionLen) {
     var bladeK = Math.max(0, Math.floor(sumBoardMemberBlades()));
     var resNow = Array.isArray(state.resolutionArea) ? state.resolutionArea.length : 0;
@@ -1431,9 +1474,11 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         ? Math.max(0, Math.floor(prevResolutionLen))
         : resNow;
     if (bladeK <= 0) return;
+    if (resNow > bladeK) return;
     if (!(prev < bladeK && resNow >= bladeK)) return;
     var n = Math.max(0, Math.floor(Number(state.pendingDrawYellHandDraws) || 0));
     if (n <= 0) return;
+    flashDrawYellBeamsFromResolutionToHand(n);
     var drew = 0;
     for (var i = 0; i < n; i++) {
       tryReplenishDeckFromWaitingLoop();
@@ -1557,6 +1602,30 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       c.playBonusHeartSlotsTurn = {};
       c.playBonusBladeTurn = 0;
     });
+  }
+
+  function dragSourceIsLiveFrameZone(fromEl) {
+    if (!fromEl || !fromEl.id) return false;
+    var id = fromEl.id;
+    return id === "live-left" || id === "live-center" || id === "live-right";
+  }
+
+  /** 成否表示が確定しているライブを控え／成功ライブ置き場へ動かしたとき、解決領域をすべて控え室へ */
+  function maybeFlushResolutionToWaitingOnVerdictLiveMove(evt) {
+    if (!liveSimResolutionVerdictLocked()) return;
+    var toEl = evt.to;
+    if (!toEl || !toEl.id) return;
+    var tid = toEl.id;
+    if (tid !== "zone-waiting" && tid !== "zone-waiting-drop-catcher" && tid !== "zone-success-live") return;
+    var item = evt.item;
+    if (!item || item.dataset.type !== T_LIVE) return;
+    if (!dragSourceIsLiveFrameZone(evt.from)) return;
+    if (!state.resolutionArea || !state.resolutionArea.length) return;
+    var flushed = state.resolutionArea.slice();
+    state.resolutionArea.length = 0;
+    state.waitingRoom.push.apply(state.waitingRoom, flushed);
+    showToast("ライブを移動したため、解決の " + flushed.length + " 枚を控え室へ送りました");
+    logReplay("resolution-flush-with-verdict-live-move", { count: flushed.length, toZone: tid });
   }
 
   function syncPlayBonusesAfterStageMembershipChange(snapBefore) {
@@ -2714,6 +2783,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       });
       state.liveArea[k] = kept;
     });
+    if (moved) clearTurnScopedPlayBonusesEverywhere();
     return moved;
   }
 
@@ -2736,6 +2806,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         }
       }
     });
+    if (moved) clearTurnScopedPlayBonusesEverywhere();
     return moved;
   }
 
@@ -5053,8 +5124,10 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         restoreCardFaceAfterDragging(evt.item);
         var droppedToSuccessLive = evt.to && evt.to.id === "zone-success-live";
         readAllFromDom();
+        maybeFlushResolutionToWaitingOnVerdictLiveMove(evt);
         maybeFlashDrawYellOnResolutionDrop(evt, dragUndoSnap);
         if (droppedToSuccessLive) {
+          clearTurnScopedPlayBonusesEverywhere();
           var fpSel = $("select-first-player");
           if (fpSel) fpSel.value = "先攻";
         }
@@ -5166,6 +5239,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     set("hand-inline-count-sticky", state.hand.length);
     set("hud-waiting", state.waitingRoom.length);
     set("hud-resolution", state.resolutionArea.length);
+    set("resolution-zone-head-count", state.resolutionArea.length);
     set("hud-slive", state.successfulLiveArea.length);
     set("hud-turn", state.turnCount + "T");
     const mx = $("hud-slive-max");
@@ -6049,6 +6123,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     state.liveScoreEffectBonus = 0;
     state.ealeNoteLiveHitIds = [];
     state.pendingDrawYellHandDraws = 0;
+    /** 登場／起動／開始時行の H／B（ターン側）はターン開始でクリア（常時側は残す） */
+    clearTurnScopedPlayBonusesEverywhere();
     /** マリガン終了タイミングで解決／ライブ枠は控えへ（ルール自動処理ではなく補助用の一括移動） */
     var flushed = [];
     if (state.resolutionArea.length) {
@@ -6129,9 +6205,9 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       if (pend.length > 1) {
         if (
           !window.confirm(
-            "ライブ判定は成功ですが、「成功したライブ」エリアに該当のライブカードが載っていません。\n「" +
+            "ライブ判定は成功ですが、「成功ライブ置き場」に該当のライブカードが載っていません。\n「" +
               nameLine +
-              "」のうち 1 枚だけ成功したライブ置き場へ移しますか？\n（OK でカードを選びます。キャンセルでは移しません）",
+              "」のうち 1 枚だけ成功ライブ置き場へ移しますか？\n（OK でカードを選びます。キャンセルでは移しません）",
           )
         ) {
           runTurnPhaseStartAfterSuccessLivePrompt();
@@ -6141,7 +6217,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
           if (chosenId != null) {
             var m = migrateOneLiveCardToSuccessfulAreaById(chosenId);
             if (m) {
-              showToast("選んだライブカードを成功したライブ置き場へ移しました");
+              showToast("選んだライブカードを成功ライブ置き場へ移しました");
               logReplay("turn-phase-auto-move-success-live", { liveCards: m, pickOne: true });
             }
           }
@@ -6151,14 +6227,14 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       }
       if (
         window.confirm(
-          "ライブ判定は成功ですが、「成功したライブ」エリアに該当のライブカードが載っていません。\n「" +
+          "ライブ判定は成功ですが、「成功ライブ置き場」に該当のライブカードが載っていません。\n「" +
             nameLine +
-            "」を成功したライブ置き場へ移しますか？\n（OK で移動。キャンセルでは自動移動せず、このあとも解決・ライブ枠は控え室へ送られます）",
+            "」を成功ライブ置き場へ移しますか？\n（OK で移動。キャンセルでは自動移動せず、このあとも解決・ライブ枠は控え室へ送られます）",
         )
       ) {
         var movedN = migratePendingLiveCardsToSuccessfulArea();
         if (movedN) {
-          showToast(movedN + " 枚のライブカードを成功したライブ置き場へ移しました");
+          showToast(movedN + " 枚のライブカードを成功ライブ置き場へ移しました");
           logReplay("turn-phase-auto-move-success-live", { liveCards: movedN });
         }
       }
@@ -6456,6 +6532,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       return;
     }
     pushHistoryBefore("res-to-deck-top");
+    state.pendingDrawYellHandDraws = 0;
     const nu = state.resolutionArea.length;
     state.deck.unshift(...state.resolutionArea);
     state.resolutionArea = [];
@@ -6469,6 +6546,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       return;
     }
     pushHistoryBefore("res-shuffle-in");
+    state.pendingDrawYellHandDraws = 0;
     state.deck.push(...state.resolutionArea);
     state.resolutionArea = [];
     state.deck = shuffle(state.deck);

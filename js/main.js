@@ -2,6 +2,7 @@ import { loadCardDatabase, prefetchDeckCardImagesFromMap, getCard } from "./card
 import { STORAGE_PLAY_RESUME } from "./config.js";
 import { normalizeDeckMapCounts } from "./deckLibrary.js";
 import { initDeckBuilder, loadDeckBundleFromStorage } from "./deckbuilder.js";
+import { initPublishedSampleRecipes } from "./sampleDeckRecipes.js";
 import { mountSimulator, teardownDeckPileLayoutWatchers } from "./simulator.js";
 import { showToast } from "./ui.js";
 
@@ -192,6 +193,7 @@ function startApp(viewDeck, viewGame, statusEl) {
 function tryLoadDatabase(viewDeck, viewGame, statusEl) {
   showAppBootLoading();
   loadCardDatabase(statusEl)
+    .then(() => initPublishedSampleRecipes())
     .then(() => {
       try {
         const b = loadDeckBundleFromStorage();

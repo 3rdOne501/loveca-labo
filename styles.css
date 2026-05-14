@@ -512,6 +512,18 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
   background: rgba(8, 4, 14, 0.22);
 }
 
+/* サンプルタブでないときはサンプル領域が flex で高さを奪わないようにする */
+#view-deck:not(.view-deck--samples-tab) .sample-recipes-scroll[hidden] {
+  display: none !important;
+  flex: 0 0 0 !important;
+  min-height: 0 !important;
+  max-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  overflow: hidden !important;
+}
+
 .sample-recipes-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(156px, 1fr));
@@ -2716,7 +2728,7 @@ body.play-mode:not(.zone-hints-visible) .deck-prob-explain-hide {
   display: none !important;
 }
 
-/* 成功したライブ置き場：縦向きで「重ね」レイアウト（最大 3 枚想定・はみ出しは横スクロール） */
+/* 成功ライブ置き場：縦向きで「重ね」レイアウト（最大 3 枚想定・はみ出しは横スクロール） */
 body.play-mode .success-live-strip.card-strip {
   min-height: calc(var(--loveca-play-h) + 22px);
   flex-wrap: nowrap;
@@ -2802,7 +2814,7 @@ body.play-mode .success-live-zone-shell--win .success-live-strip.card-strip {
   box-shadow: 0 0 20px rgba(255, 120, 180, 0.25);
 }
 
-/* 左列: ライブ成功シミュと「成功したライブ」を横並び（下段で確率グリッドを全幅） */
+/* 左列: ライブ成功シミュと「成功ライブ置き場」を横並び（下段で確率グリッドを全幅） */
 .zone-sim-success-row {
   display: grid;
   grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.82fr);
@@ -5974,4 +5986,57 @@ kbd {
 }
 .tutorial-section details p {
   margin: 0.4rem 0 0;
+}
+
+/* ドローエールが手札へ流れ込むとき: 解決 → 手札へのビーム */
+.draw-yell-beam-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 13000;
+  pointer-events: none;
+}
+.draw-yell-beam {
+  position: absolute;
+  height: 5px;
+  margin-top: -2.5px;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 150, 210, 0.98),
+    rgba(130, 210, 255, 0.55),
+    rgba(255, 200, 120, 0.35)
+  );
+  box-shadow: 0 0 16px rgba(255, 110, 180, 0.65);
+  animation: llocg-draw-yell-beam-fade 0.78s ease-out forwards;
+}
+@keyframes llocg-draw-yell-beam-fade {
+  0% {
+    opacity: 0;
+    filter: blur(5px);
+  }
+  28% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    opacity: 0;
+    filter: blur(1px);
+  }
+}
+
+.deck-dev-sample-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.55rem;
+  margin: 0 0 0.55rem;
+}
+.deck-dev-publish-hint {
+  margin: 0 0 0.85rem;
+  font-size: 0.76rem;
+}
+.sample-recipe-actions--dev {
+  margin-top: 0.38rem;
+  padding-top: 0.38rem;
+  border-top: 1px solid rgba(255, 140, 190, 0.14);
 }

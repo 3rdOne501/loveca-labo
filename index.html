@@ -321,39 +321,19 @@ python3 -m http.server 8080</pre>
             </div>
           </details>
 
-          <details class="deck-panel-section" id="deck-section-sample-recipes-editor">
-            <summary class="deck-panel-summary">サンプルレシピ上書き（制作者・この端末のみ）</summary>
-            <div class="deck-panel-section-body">
-              <p class="hint search-hint-muted">
-                左の「サンプルリスト」に載せる構成を <strong>このブラウザの localStorage だけ</strong>で差し替えます（一般ユーザー向けではありません）。JSON
-                はオブジェクトの<strong>配列</strong>・最大 <strong>20</strong> 件・各要素は
-                <code>id</code> / <code>name</code> / <code>deck</code>（番号→枚数）必須。
-                <code>keyCardNos</code> 等は配列、<code>noteLines</code> は任意。<code>thumbnailCardNo</code> は画像用のカード番号。
-              </p>
-              <label class="field">
-                <span>上書き JSON</span>
-                <textarea
-                  id="sample-recipes-override-json"
-                  class="textarea-regulation sample-recipes-override-textarea"
-                  rows="14"
-                  maxlength="250000"
-                  spellcheck="false"
-                  aria-label="サンプルレシピ上書き用 JSON"
-                ></textarea>
-              </label>
-              <div class="btn-row wrap sample-recipes-override-actions">
-                <button type="button" class="btn sm primary" id="btn-sample-recipes-override-save">
-                  保存して反映
-                </button>
-                <button type="button" class="btn sm secondary" id="btn-sample-recipes-override-reload">
-                  欄を再読込
-                </button>
-                <button type="button" class="btn sm secondary" id="btn-sample-recipes-override-clear">
-                  上書きを削除（リポジトリ既定へ）
-                </button>
-              </div>
-            </div>
-          </details>
+          <div class="deck-dev-sample-toolbar">
+            <button type="button" class="btn sm secondary" id="btn-sample-dev-toggle">
+              開発者モード（サンプル編集）…
+            </button>
+            <button type="button" class="btn sm secondary" id="btn-add-current-deck-to-samples" hidden>
+              サンプルに追加
+            </button>
+          </div>
+          <p class="hint muted deck-dev-publish-hint" id="deck-dev-publish-hint" hidden>
+            一覧をサイト全体に反映するには、ダウンロードされた
+            <code>sample-deck-recipes.public.json</code>
+            を index と同じフォルダに置いて再デプロイしてください。
+          </p>
 
           <details class="deck-panel-section" id="deck-section-text-import">
             <summary class="deck-panel-summary">テキストから読み込む（DECK LOG 貼り付け）</summary>
@@ -488,7 +468,7 @@ python3 -m http.server 8080</pre>
             </section>
 
             <section class="zone-block zone-block-success-live-only">
-              <h3 class="success-live-only-title">成功したライブ</h3>
+              <h3 class="success-live-only-title">成功ライブ置き場</h3>
               <div id="success-live-zone-shell" class="success-live-zone-shell">
                 <div id="success-live-chrome-row" class="success-live-chrome-row" aria-live="polite">
                   <span id="success-live-msg-youwin" class="success-live-msg success-live-msg--youwin" hidden>
@@ -509,7 +489,7 @@ python3 -m http.server 8080</pre>
           <section class="zone-block zone-block-resolution-priority">
             <p id="resolution-over-blade-banner" class="resolution-over-blade-banner" role="status" hidden></p>
             <div class="zone-head">
-              <h3>解決</h3>
+              <h3>解決 <span id="resolution-zone-head-count" class="badge zone-resolution-head-count" aria-live="polite">0</span></h3>
               <div class="btn-row">
                 <button type="button" class="btn sm primary" id="btn-res-draw-one" title="山札の先頭を1枚解決ゾーンへ（Undo可）">
                   1枚ドロー（解決）
@@ -1229,13 +1209,13 @@ python3 -m http.server 8080</pre>
           「<strong>ターン開始</strong>」を押すまでマリガンできます。手札カード中央付近の<strong>チェック</strong>で複数選択、「<strong>マリガン実行</strong>」で選んだ枚数を山札に戻してシャッフルし、同じ枚数をドローします。<strong>1枚も選ばずに実行可能</strong>（そのときはシャッフル・ドローはしません）。リセット後も「ターン開始」までこのモードになります。
         </p>
         <p>
-          手札欄の<strong>ライブ進行ボタン</strong>では、まず「<strong>ライブターン開始</strong>」でライブターンモードに入ります（<strong>成功したライブ</strong>置き場のカードはそのまま残ります）。手札<strong>中央のチェック</strong>で複数選び、同じボタンが「<strong>ライブエリアへ</strong>」に変わってからそれを押すと左→中央→右の<strong>空き枠に順に配置</strong>できます。配置した<strong>メンバー／ライブ</strong>1枚につき<strong>山札から手札へ1ドロー</strong>します。<strong>ライブターン中のみ、3枠は横向き・裏見えです。</strong>「<strong>ライブ開始</strong>」で<strong>ライブカード以外</strong>を<strong>控え室</strong>へ送ってモード終了すると、ライブカードが<strong>表面の縦向き</strong>になり、このタイミングで中央に<strong>ライブの計算</strong>パネル（概要と必要ハート・エール数・場メンバーH計・要求色・ステージハート・解決 BH・判定）が出ます。左の<strong>ライブ成功確率</strong>も、表面が見えるこのタイミングから再計算されます。<strong>ライブ成功判定</strong>は、ライブの need_heart に対し<strong>場にいるメンバーの所持ハート（ステージ＋ライブ枠）</strong>と<strong>ブレード枚数で捲れた解決カードの BH（blade_heart）</strong>を足し合わせた供給で照合します（ターン開始前はマリガン中のみのため、これらは無効になります）。
+          手札欄の<strong>ライブ進行ボタン</strong>では、まず「<strong>ライブターン開始</strong>」でライブターンモードに入ります（<strong>成功ライブ置き場</strong>のカードはそのまま残ります）。手札<strong>中央のチェック</strong>で複数選び、同じボタンが「<strong>ライブエリアへ</strong>」に変わってからそれを押すと左→中央→右の<strong>空き枠に順に配置</strong>できます。配置した<strong>メンバー／ライブ</strong>1枚につき<strong>山札から手札へ1ドロー</strong>します。<strong>ライブターン中のみ、3枠は横向き・裏見えです。</strong>「<strong>ライブ開始</strong>」で<strong>ライブカード以外</strong>を<strong>控え室</strong>へ送ってモード終了すると、ライブカードが<strong>表面の縦向き</strong>になり、このタイミングで中央に<strong>ライブの計算</strong>パネル（概要と必要ハート・エール数・場メンバーH計・要求色・ステージハート・解決 BH・判定）が出ます。左の<strong>ライブ成功確率</strong>も、表面が見えるこのタイミングから再計算されます。<strong>ライブ成功判定</strong>は、ライブの need_heart に対し<strong>場にいるメンバーの所持ハート（ステージ＋ライブ枠）</strong>と<strong>ブレード枚数で捲れた解決カードの BH（blade_heart）</strong>を足し合わせた供給で照合します（ターン開始前はマリガン中のみのため、これらは無効になります）。
         </p>
         <p>
           PC でもタブレットでも、ドラッグでカードを移動します。ドラッグ開始時点から取り消し対象になります。<strong>U</strong> でひとつ戻す、<strong>R</strong> でひとつ進む、<strong>?</strong> でこのダイアログです。
         </p>
         <p>
-          メンバーまたはライブカードでは、ステージ等でカード下の <strong>W</strong>／<strong>A</strong> と（ステージまたはライブ枠に<strong>いて</strong><strong>表面が見える</strong>メンバーだけ）<strong>+H／B</strong> が使えます。<strong>+H／B</strong> では所持ハート（6色・ALL）・ブレードを<strong>DB値に加算してライブ計算へ反映</strong>します（非公式）。<strong>画像クリック</strong>は多くのゾーンで向きの切替です（<strong>手札・プレビュー</strong>では向きは変えません）。カード画像は<strong>ダブルクリック</strong>で拡大できます。<strong>通常時はライブの3枠にメンバーを置けず、ライブターンだけ置けます</strong>（非ライブターはライブカードのみドラッグ可）。ライブエリアは<strong>ライブターン中だけ</strong>裏・横向きにし、その後は<strong>メンバーと同じ縦・同サイズ</strong>です。<strong>メンバーが枠へ入った</strong>ときだけ<strong>ライブセット相当として手札へ 1 枚自動ドロー</strong>します。「成功したライブ」は<strong>通常の縦向きレイアウト</strong>です（W／A の補助表示あり）。各ライブスロットは<strong>カード合計 1 枚まで</strong>です。
+          メンバーまたはライブカードでは、ステージ等でカード下の <strong>W</strong>／<strong>A</strong> と（ステージまたはライブ枠に<strong>いて</strong><strong>表面が見える</strong>メンバーだけ）<strong>+H／B</strong> が使えます。<strong>+H／B</strong> では所持ハート（6色・ALL）・ブレードを<strong>DB値に加算してライブ計算へ反映</strong>します（非公式）。<strong>画像クリック</strong>は多くのゾーンで向きの切替です（<strong>手札・プレビュー</strong>では向きは変えません）。カード画像は<strong>ダブルクリック</strong>で拡大できます。<strong>通常時はライブの3枠にメンバーを置けず、ライブターンだけ置けます</strong>（非ライブターはライブカードのみドラッグ可）。ライブエリアは<strong>ライブターン中だけ</strong>裏・横向きにし、その後は<strong>メンバーと同じ縦・同サイズ</strong>です。<strong>メンバーが枠へ入った</strong>ときだけ<strong>ライブセット相当として手札へ 1 枚自動ドロー</strong>します。「<strong>成功ライブ置き場</strong>」は<strong>通常の縦向きレイアウト</strong>です（W／A の補助表示あり）。各ライブスロットは<strong>カード合計 1 枚まで</strong>です。
         </p>
         <p>
           ドラッグ中はカードを<strong>汎用の裏面イラスト（SVG）</strong>に差し替えて表示します（対面での操作イメージ用・公式イラストではありません）。
@@ -1420,7 +1400,7 @@ python3 -m http.server 8080</pre>
     </dialog>
 
     <dialog id="dlg-pick-success-live" class="app-dialog dlg-pick-success-live" aria-labelledby="dlg-pick-success-live-title">
-      <h2 id="dlg-pick-success-live-title" class="app-dialog__title">成功したライブを1枚選ぶ</h2>
+      <h2 id="dlg-pick-success-live-title" class="app-dialog__title">成功ライブ置き場へ置くライブを1枚選ぶ</h2>
       <p class="hint zone-inline-help">
         成功置き場へ移すライブカードを 1 枚だけ選んでください。
       </p>

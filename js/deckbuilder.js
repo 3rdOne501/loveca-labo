@@ -43,7 +43,14 @@ import {
   isHandDependentCost20Member,
 } from "./cards.js";
 import { parseDeckTextRecipe } from "./decklogImport.js";
-import { getSampleDeckRecipes, SAMPLE_DECK_RECIPES_MAX, formatSampleRecipesForEditor, parseAndSaveSampleRecipesOverride, clearSampleRecipesOverride } from "./sampleDeckRecipes.js";
+import {
+  downloadPublishedSampleRecipesJson,
+  getSampleDeckRecipes,
+  normalizeSampleRecipesArray,
+  SAMPLE_DECK_RECIPES_MAX,
+  SAMPLE_DEVELOPER_PASSCODE,
+  setPublishedSampleRecipesCache,
+} from "./sampleDeckRecipes.js";
 import {
   appendTestCardLogEntry,
   getTestCardLogCacheSig,
@@ -431,6 +438,78 @@ export function initDeckBuilder(root, { onStartGame }) {
   });
 
   const el = (id) => root.querySelector("#" + id) || document.getElementById(id);
+
+  const SESSION_SAMPLE_DEV_KEY = "llocg_sample_dev_mode_v1";
+
+  function isSampleDevMode() {
+    try {
+      return sessionStorage.getItem(SESSION_SAMPLE_DEV_KEY) === "1";
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function setSampleDevMode(on) {
+    try {
+      if (on) sessionStorage.setItem(SESSION_SAMPLE_DEV_KEY, "1");
+      else sessionStorage.removeItem(SESSION_SAMPLE_DEV_KEY);
+    } catch (_) {}
+  }
+
+  function syncSampleDeveloperToolbar() {
+    var dev = isSampleDevMode();
+    var toggleBtn = el("btn-sample-dev-toggle");
+    var addBtn = el("btn-add-current-deck-to-samples");
+    var hint = el("deck-dev-publish-hint");
+    if (toggleBtn) {
+      toggleBtn.textContent = dev ? "開発者モードを終了" : "開発者モード（サンプル編集）…";
+      toggleBtn.setAttribute("aria-pressed", dev ? "true" : "false");
+      toggleBtn.classList.toggle("primary", dev);
+      toggleBtn.classList.toggle("secondary", !dev);
+    }
+    if (addBtn) addBtn.hidden = !dev;
+    if (hint) hint.hidden = !dev;
+  }
+
+  function devPublishSampleRecipeList(nextRaw) {
+    var norm = normalizeSampleRecipesArray(nextRaw);
+    if (!norm.length) {
+      showToast("サンプルは1件以上必要です");
+      return;
+    }
+    setPublishedSampleRecipesCache(norm);
+    downloadPublishedSampleRecipesJson(norm);
+    showToast(
+      "一覧を更新しました。ダウンロードした sample-deck-recipes.public.json をサイト直下に置いて再デプロイすると、誰が開いても同じ一覧になります。",
+    );
+    if (cardPanelMode === "samples") scheduleRenderCardGrid();
+  }
+
+  function sampleRecipeDraftFromEditor(nameStr, idStr) {
+    var thumbSel = el("deck-preset-thumb-select");
+    var thumbNo = "";
+    if (thumbSel && thumbSel.value) thumbNo = String(thumbSel.value).trim();
+    if (!thumbNo) {
+      var k1 = Array.from(keyCardNos);
+      if (k1.length) thumbNo = k1[0];
+    }
+    if (!thumbNo) {
+      var ns = Object.keys(deckMap || {}).filter(function (k) {
+        return (deckMap[k] || 0) > 0;
+      });
+      if (ns.length) thumbNo = ns.sort()[0];
+    }
+    return {
+      id: idStr,
+      name: nameStr,
+      deck: cloneDeckMap(deckMap),
+      keyCardNos: sanitizeCardNoList(Array.from(keyCardNos)),
+      keyCard2Nos: sanitizeCardNoList(Array.from(keyCard2Nos)),
+      keyCard3Nos: sanitizeCardNoList(Array.from(keyCard3Nos)),
+      middleCardNos: sanitizeCardNoList(Array.from(middleCardNos)),
+      thumbnailCardNo: thumbNo,
+    };
+  }
 
   syncCheckboxesFromFilterTypes();
 
@@ -3066,6 +3145,14 @@ export function initDeckBuilder(root, { onStartGame }) {
           })
         : '<div class="sample-recipe-thumb-fallback" aria-hidden="true">?</div>';
       var t = totalsFromDeckMapForSample(r.deck);
+      var devActs = "";
+      if (isSampleDevMode()) {
+        devActs =
+          '<div class="sample-recipe-actions sample-recipe-actions--dev">' +
+          '<button type="button" class="btn sm danger" data-sample-act="dev-delete">サンプルを削除</button>' +
+          '<button type="button" class="btn sm secondary" data-sample-act="dev-overwrite">サンプルを上書き</button>' +
+          "</div>";
+      }
       parts.push(
         '<article class="sample-recipe-tile" role="listitem" data-sample-id="' +
           escapeAttr(r.id) +
@@ -3091,7 +3178,9 @@ export function initDeckBuilder(root, { onStartGame }) {
           '<div class="sample-recipe-actions">' +
           '<button type="button" class="btn sm primary" data-sample-act="play">ソロプレイ</button>' +
           '<button type="button" class="btn sm secondary" data-sample-act="copy">コピーして保存</button>' +
-          "</div></div></article>",
+          "</div>" +
+          devActs +
+          "</div></article>",
       );
     }
     host.innerHTML = parts.join("");
@@ -3198,6 +3287,33 @@ export function initDeckBuilder(root, { onStartGame }) {
         showToast("「" + copyName + "」を登録一覧に追加し、登録中のデッキに反映しました");
         return;
       }
+      if (act === "dev-delete") {
+        if (!isSampleDevMode()) return;
+        if (!window.confirm("このサンプルを削除しますか？")) return;
+        var curDel = getSampleDeckRecipes().slice();
+        var filtered = curDel.filter(function (x) {
+          return x.id !== sid;
+        });
+        if (filtered.length === curDel.length) return;
+        if (!filtered.length) {
+          showToast("最後の1件は削除できません");
+          return;
+        }
+        devPublishSampleRecipeList(filtered);
+        return;
+      }
+      if (act === "dev-overwrite") {
+        if (!isSampleDevMode()) return;
+        if (!window.confirm("「" + recipe.name + "」を、いまの登録デッキの内容で上書きしますか？")) return;
+        var draft = sampleRecipeDraftFromEditor(recipe.name, recipe.id);
+        if (recipe.noteLines && recipe.noteLines.length) draft.noteLines = recipe.noteLines.slice();
+        var curOw = getSampleDeckRecipes().slice();
+        var replaced = curOw.map(function (x) {
+          return x.id === sid ? draft : x;
+        });
+        devPublishSampleRecipeList(replaced);
+        return;
+      }
     });
   }
 
@@ -3205,6 +3321,7 @@ export function initDeckBuilder(root, { onStartGame }) {
     if (mode !== "catalog" && mode !== "deck" && mode !== "samples") return;
     invalidateCatalogFilterCache();
     cardPanelMode = mode;
+    root.classList.toggle("view-deck--samples-tab", mode === "samples");
     const bc = el("btn-card-panel-catalog");
     const bd = el("btn-card-panel-deck");
     const bs = el("btn-card-panel-samples");
@@ -3226,16 +3343,60 @@ export function initDeckBuilder(root, { onStartGame }) {
     scheduleRenderCardGrid();
   }
 
-  el("btn-card-panel-catalog")?.addEventListener("click", function () {
-    setCardPanelMode("catalog");
+  if (root.dataset.cardPanelToggleWired !== "1") {
+    root.dataset.cardPanelToggleWired = "1";
+    el("btn-card-panel-catalog")?.addEventListener("click", function () {
+      setCardPanelMode("catalog");
+    });
+    el("btn-card-panel-samples")?.addEventListener("click", function () {
+      if (cardPanelMode === "samples") setCardPanelMode("catalog");
+      else setCardPanelMode("samples");
+    });
+    el("btn-card-panel-deck")?.addEventListener("click", function () {
+      if (cardPanelMode === "deck") setCardPanelMode("catalog");
+      else setCardPanelMode("deck");
+    });
+  }
+
+  syncSampleDeveloperToolbar();
+  el("btn-sample-dev-toggle")?.addEventListener("click", function () {
+    if (isSampleDevMode()) {
+      setSampleDevMode(false);
+      syncSampleDeveloperToolbar();
+      if (cardPanelMode === "samples") scheduleRenderCardGrid();
+      showToast("開発者モードを終了しました");
+      return;
+    }
+    var typed = window.prompt("開発者モードのパスコードを入力してください");
+    if (typed == null) return;
+    if (String(typed) !== SAMPLE_DEVELOPER_PASSCODE) {
+      showToast("パスコードが違います");
+      return;
+    }
+    setSampleDevMode(true);
+    syncSampleDeveloperToolbar();
+    if (cardPanelMode === "samples") scheduleRenderCardGrid();
+    showToast("開発者モード: サンプル一覧を編集できます（終了ボタンで閉じます）");
   });
-  el("btn-card-panel-samples")?.addEventListener("click", function () {
-    if (cardPanelMode === "samples") setCardPanelMode("catalog");
-    else setCardPanelMode("samples");
-  });
-  el("btn-card-panel-deck")?.addEventListener("click", function () {
-    if (cardPanelMode === "deck") setCardPanelMode("catalog");
-    else setCardPanelMode("deck");
+
+  el("btn-add-current-deck-to-samples")?.addEventListener("click", function () {
+    if (!isSampleDevMode()) return;
+    var cur = getSampleDeckRecipes().slice();
+    if (cur.length >= SAMPLE_DECK_RECIPES_MAX) {
+      showToast("サンプルは最大 " + SAMPLE_DECK_RECIPES_MAX + " 件までです");
+      return;
+    }
+    var nameIn = window.prompt("新しいサンプルの名前", "新規サンプル");
+    if (nameIn == null) return;
+    var nm = String(nameIn).trim();
+    if (!nm) {
+      showToast("名前を入力してください");
+      return;
+    }
+    var id = "sample-dev-" + Date.now();
+    var draft = sampleRecipeDraftFromEditor(nm, id);
+    cur.push(draft);
+    devPublishSampleRecipeList(cur);
   });
 
   const cardGridScrollEl = el("card-grid-scroll");
@@ -3309,38 +3470,6 @@ export function initDeckBuilder(root, { onStartGame }) {
       }
     }
   }
-
-  function refreshSampleRecipesOverrideTextarea() {
-    var ta = el("sample-recipes-override-json");
-    if (ta) ta.value = formatSampleRecipesForEditor();
-  }
-
-  document.getElementById("deck-section-sample-recipes-editor")?.addEventListener("toggle", function () {
-    var det = /** @type {HTMLDetailsElement} */ (this);
-    if (det.open) refreshSampleRecipesOverrideTextarea();
-  });
-
-  el("btn-sample-recipes-override-save")?.addEventListener("click", function () {
-    var ta = el("sample-recipes-override-json");
-    if (!ta) return;
-    var saved = parseAndSaveSampleRecipesOverride(ta.value);
-    if (!saved.ok) {
-      showToast(saved.error || "保存に失敗しました");
-      return;
-    }
-    showToast("サンプルレシピを保存しました（このブラウザのみ反映）");
-    if (cardPanelMode === "samples") scheduleRenderCardGrid();
-  });
-
-  el("btn-sample-recipes-override-reload")?.addEventListener("click", refreshSampleRecipesOverrideTextarea);
-
-  el("btn-sample-recipes-override-clear")?.addEventListener("click", function () {
-    if (!confirm("サンプル上書きを削除し、リポジトリ既定に戻しますか？")) return;
-    clearSampleRecipesOverride();
-    refreshSampleRecipesOverrideTextarea();
-    showToast("サンプル上書きを削除しました");
-    if (cardPanelMode === "samples") scheduleRenderCardGrid();
-  });
 
   fillSelects();
   applyStartupCatalogProductFilter();

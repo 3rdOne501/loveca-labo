@@ -1,10 +1,7 @@
 /**
- * デッキ構築画面「サンプルリスト」用レシピ（10〜20件程度を想定。現状は試験公開2件）。
- * 公開カードDBに依存するため、環境によっては未登録番号警告が出ます。
- *
- * 制作者: `STORAGE_SAMPLE_RECIPES_OVERRIDE`（UI の「サンプルレシピ上書き」または
- * `localStorage.setItem('llocg_sample_recipes_override_v1', JSON.stringify([...]))`）で
- * このブラウザのみ既定サンプルを差し替えられます。
+ * デッキ構築画面「サンプルリスト」用レシピ。
+ * 既定: `getBuiltInSampleDeckRecipes()`。サイト直下に `sample-deck-recipes.public.json`
+ * を置いて fetch すると全員がその一覧を読みます（開発者モードで編集後は JSON をダウンロードして同ファイルをデプロイ）。
  */
 import {
   BUILTIN_LOVE_ORANGE_2611_PRESET_NAME,
@@ -22,9 +19,12 @@ import {
   DEFAULT_STARTER_MIDDLE_CARD_NOS,
   DEFAULT_STARTER_THUMBNAIL_CARD_NO,
   MAX_COPIES_PER_CARD,
-  STORAGE_SAMPLE_RECIPES_OVERRIDE,
+  SAMPLE_DECK_RECIPES_PUBLIC_FILENAME,
 } from "./config.js";
 import { cloneDeckMap } from "./deckLibrary.js";
+
+/** 開発者モード用（UI プロンプトと照合） */
+export const SAMPLE_DEVELOPER_PASSCODE = "nira1102";
 
 /** UI・説明文用の上限（実データはこの件数まで増やせます） */
 export const SAMPLE_DECK_RECIPES_MAX = 20;
@@ -32,6 +32,9 @@ export const SAMPLE_DECK_RECIPES_MAX = 20;
 /**
  * @typedef {{ id: string, name: string, deck: Record<string, number>, keyCardNos: string[], keyCard2Nos: string[], keyCard3Nos: string[], middleCardNos: string[], thumbnailCardNo: string, noteLines?: string[] }} SampleDeckRecipe
  */
+
+/** fetch 済み一覧。null は「未設定＝組み込みにフォールバック」 */
+let publishedRecipesCache = /** @type {SampleDeckRecipe[] | null} */ (null);
 
 /** @returns {SampleDeckRecipe[]} */
 export function getBuiltInSampleDeckRecipes() {
@@ -98,7 +101,7 @@ function normalizeStringList(arr) {
 }
 
 /** @param {unknown} parsed */
-function normalizeSampleRecipesArray(parsed) {
+export function normalizeSampleRecipesArray(parsed) {
   if (!Array.isArray(parsed) || parsed.length === 0) return [];
   /** @type {SampleDeckRecipe[]} */
   const out = [];
@@ -135,66 +138,55 @@ function normalizeSampleRecipesArray(parsed) {
   return out;
 }
 
+/**
+ * ページ読込時に呼ぶ。`sample-deck-recipes.public.json` があれば全員共通の一覧として採用。
+ * @returns {Promise<void>}
+ */
+export function initPublishedSampleRecipes() {
+  return (async function () {
+    publishedRecipesCache = null;
+    try {
+      var u = new URL(SAMPLE_DECK_RECIPES_PUBLIC_FILENAME, window.location.href);
+      var r = await fetch(u.toString(), { cache: "no-store" });
+      if (!r.ok) return;
+      var data = await r.json();
+      var v = normalizeSampleRecipesArray(data);
+      if (v.length) publishedRecipesCache = v;
+    } catch (_) {
+      publishedRecipesCache = null;
+    }
+  })();
+}
+
+/** 開発者モードで一覧を更新した直後にメモリへ反映（fetch より優先される） */
+export function setPublishedSampleRecipesCache(recipes) {
+  publishedRecipesCache = recipes && recipes.length ? recipes.slice() : null;
+}
+
 /** @returns {SampleDeckRecipe[]} */
 export function getSampleDeckRecipes() {
-  try {
-    var raw = localStorage.getItem(STORAGE_SAMPLE_RECIPES_OVERRIDE);
-    if (raw && raw.trim()) {
-      const parsed = JSON.parse(raw);
-      const v = normalizeSampleRecipesArray(parsed);
-      if (v.length) return v;
-    }
-  } catch (_) {
-    /* noop */
+  if (publishedRecipesCache != null && publishedRecipesCache.length > 0) {
+    return publishedRecipesCache;
   }
   return getBuiltInSampleDeckRecipes();
 }
 
-/** 編集テキスト欄用: 上書きがあればその内容、無ければリポジトリ既定の整形 JSON */
-export function formatSampleRecipesForEditor() {
-  try {
-    const raw = localStorage.getItem(STORAGE_SAMPLE_RECIPES_OVERRIDE);
-    if (raw && raw.trim()) {
-      const parsed = JSON.parse(raw);
-      return JSON.stringify(parsed, null, 2);
-    }
-  } catch (_) {
-    /* fall through */
-  }
-  return JSON.stringify(getBuiltInSampleDeckRecipes(), null, 2);
-}
-
 /**
- * @param {string} jsonText
- * @returns {{ ok: true } | { ok: false, error: string }}
+ * @param {SampleDeckRecipe[]} recipes
  */
-export function parseAndSaveSampleRecipesOverride(jsonText) {
-  let parsed;
+export function downloadPublishedSampleRecipesJson(recipes) {
   try {
-    parsed = JSON.parse(jsonText);
-  } catch {
-    return { ok: false, error: "JSON の構文が正しくありません" };
-  }
-  const norm = normalizeSampleRecipesArray(parsed);
-  if (!norm.length) return { ok: false, error: "有効なレシピが1件以上必要です（id・name・deck を確認）" };
-  try {
-    localStorage.setItem(STORAGE_SAMPLE_RECIPES_OVERRIDE, JSON.stringify(norm));
+    var json = JSON.stringify(recipes, null, 2);
+    var blob = new Blob([json], { type: "application/json;charset=utf-8" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = SAMPLE_DECK_RECIPES_PUBLIC_FILENAME;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
   } catch (e) {
-    return {
-      ok: false,
-      error:
-        e && /** @type {{ name?: string }} */ (e).name === "QuotaExceededError"
-          ? "保存容量が足りません。"
-          : "localStorage への保存に失敗しました。",
-    };
-  }
-  return { ok: true };
-}
-
-export function clearSampleRecipesOverride() {
-  try {
-    localStorage.removeItem(STORAGE_SAMPLE_RECIPES_OVERRIDE);
-  } catch (_) {
-    /* noop */
+    console.error(e);
   }
 }

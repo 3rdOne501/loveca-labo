@@ -36,9 +36,8 @@ export const STORAGE_DECK_LIBRARY = "llocg_deck_library";
 export const MAX_SAVED_DECKS = 24;
 /** 最後に触ったプリセット slot id（読み込み選択の復元用） */
 export const STORAGE_ACTIVE_PRESET_ID = "llocg_active_preset_id";
-/** サンプルリスト: 制作者用ローカル上書き（JSON 配列。このブラウザのみ） */
-export const STORAGE_SAMPLE_RECIPES_OVERRIDE = "llocg_sample_recipes_override_v1";
-
+/** サンプル一覧の公開 JSON（index と同じ階層に置くファイル名）。無ければ組み込みサンプルを使用 */
+export const SAMPLE_DECK_RECIPES_PUBLIC_FILENAME = "sample-deck-recipes.public.json";
 /** カードDB の URL 上書き（UI からは変更不可。未設定・空なら既定 URL） */
 export const STORAGE_CARDS_JSON_OVERRIDE = "llocg_cards_json_override";
 
