@@ -406,37 +406,40 @@ python3 -m http.server 8080</pre>
           <div class="zone-sim-success-row">
             <section class="zone-block zone-block-deck-live-sim">
               <h3>ライブ成功確率（山札シミュ）</h3>
-              <div class="deck-flip-k-row deck-flip-k-readout">
-                <p class="muted deck-flip-k-line-short">
-                  <span>残りエール数</span>
-                  <strong id="deck-flip-k-display" class="deck-flip-k-display" aria-live="polite">0</strong>
-                </p>
-              </div>
-              <p
-                id="deck-flip-blade-note"
-                class="muted deck-flip-blade-note hint zone-inline-help deck-prob-explain-hide"
-                aria-live="polite"
-              ></p>
-              <div class="deck-live-sim-controls zone-inline-help deck-prob-explain-hide">
-                <label class="field deck-live-sim-mode-field">
-                  <span>シミュレートモード</span>
-                  <select id="deck-live-sim-mode">
-                    <option value="board">盤面B（解決で減算）</option>
-                    <option value="whole">デッキ全体</option>
-                  </select>
-                </label>
-              </div>
-
-              <div id="deck-live-sim-block" class="deck-live-sim-block">
-                <p id="deck-live-sim-summary" class="deck-live-sim-summary deck-draw-odds-visible"></p>
-                <details id="deck-live-sim-breakdown" class="deck-live-sim-breakdown">
-                  <summary class="deck-live-sim-breakdown-summary">計算の内訳</summary>
-                  <pre id="deck-live-sim-breakdown-body" class="deck-live-sim-breakdown-body"></pre>
-                </details>
-                <pre id="deck-live-sim-stats" class="deck-live-sim-stats deck-draw-odds-visible" hidden></pre>
-                <p id="deck-live-sim-note" class="hint zone-inline-help deck-live-sim-note deck-prob-explain-hide">
-                  モードは盤面B（k=B−R）／デッキ全体。めくりで増えるのは BH のみ。BH の ALL（b_all）は有色 need にも充当されます。
-                </p>
+              <div class="deck-live-sim-shell">
+                <div class="deck-live-sim-toolbar">
+                  <div class="deck-flip-k-row deck-flip-k-readout">
+                    <p class="muted deck-flip-k-line-short">
+                      <span>残りエール数</span>
+                      <strong id="deck-flip-k-display" class="deck-flip-k-display" aria-live="polite">0</strong>
+                    </p>
+                  </div>
+                  <div class="deck-live-sim-controls zone-inline-help deck-prob-explain-hide">
+                    <label class="field deck-live-sim-mode-field">
+                      <span>シミュレートモード</span>
+                      <select id="deck-live-sim-mode">
+                        <option value="board">盤面B（解決で減算）</option>
+                        <option value="whole">デッキ全体</option>
+                      </select>
+                    </label>
+                  </div>
+                </div>
+                <p
+                  id="deck-flip-blade-note"
+                  class="muted deck-flip-blade-note hint zone-inline-help deck-prob-explain-hide"
+                  aria-live="polite"
+                ></p>
+                <div id="deck-live-sim-block" class="deck-live-sim-block">
+                  <p id="deck-live-sim-summary" class="deck-live-sim-summary deck-draw-odds-visible"></p>
+                  <details id="deck-live-sim-breakdown" class="deck-live-sim-breakdown">
+                    <summary class="deck-live-sim-breakdown-summary">計算の内訳</summary>
+                    <pre id="deck-live-sim-breakdown-body" class="deck-live-sim-breakdown-body"></pre>
+                  </details>
+                  <pre id="deck-live-sim-stats" class="deck-live-sim-stats deck-draw-odds-visible" hidden></pre>
+                  <p id="deck-live-sim-note" class="hint zone-inline-help deck-live-sim-note deck-prob-explain-hide">
+                    モードは盤面B（k=B−R）／デッキ全体。めくりで増えるのは BH のみ。BH の ALL（b_all）は有色 need にも充当されます。
+                  </p>
+                </div>
               </div>
             </section>
 
@@ -729,7 +732,11 @@ python3 -m http.server 8080</pre>
                     <span id="live-need-heart-detail" class="live-stats-detail">—</span>
                     <span class="live-need-suffix"> ／ 計 <strong id="live-need-heart-total">0</strong></span>
                   </dd>
-                  <dt title="（場メンバー所持H＋解決BH）に対して need_heart が足りていない色だけを表示します">要求色</dt>
+                  <dt
+                    title="heart01〜06 とその他キー（99）の不足のみ。heart0（任意色相）は対象外。（場メンバー所持H＋解決BH）と need の差で不足色だけ表示します"
+                  >
+                    要求色
+                  </dt>
                   <dd id="live-required-colors" class="live-stats-colors live-stats-dd-heart">—</dd>
                   <dt title="ステージ上メンバーの所持ハート内訳（調整分の色ハートに加え、ALL＝任意プール分も含みます）">ステージハート</dt>
                   <dd id="live-stage-h-colors" class="live-stats-colors live-stats-dd-heart">—</dd>

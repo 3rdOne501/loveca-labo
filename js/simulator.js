@@ -576,7 +576,13 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
 
     var bundleForBreakdown = evaluateLiveMechanicalFulfillmentBundle();
     var sim = computeDeckDrawLiveSuccessSimulation(deckLiveSimMode);
-    setOddsRichText(sumEl2, deckLiveSimSuccessLine(sim), { heroLiveSim: true });
+    sumEl2.classList.toggle("deck-live-sim-summary--verdict", sim.kind === "verdict");
+    if (sim.kind === "verdict") {
+      sumEl2.innerHTML = deckLiveSimVerdictHtml(sim);
+    } else {
+      setOddsRichText(sumEl2, deckLiveSimSuccessLine(sim), { heroLiveSim: true });
+    }
+    syncDeckLiveSimSummaryPctEmphasisClass(sumEl2);
     sumEl2.classList.remove("is-ok", "is-warn", "is-muted", "is-fail");
     if (sim.kind === "warn" || sim.kind === "skip") {
       sumEl2.classList.add("is-muted");
@@ -686,15 +692,45 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   function htmlWithEmphasizedPercents(text, opts) {
     opts = opts || {};
     var hero = !!opts.heroLiveSim;
-    return escapeHtmlPlain(text).replace(/(\d+(?:\.\d+)?)([%％])/g, function (_m, num, pctSym) {
-      var cls = hero ? "deck-odds-pct deck-odds-pct--hero" : "deck-odds-pct";
-      return '<strong class="' + cls + '">' + num + pctSym + "</strong>";
-    });
+    var clsHero = hero ? "deck-odds-pct deck-odds-pct--hero" : "deck-odds-pct";
+    var s = escapeHtmlPlain(text);
+    var re = /(\d+(?:\.\d+)?)([%％])/g;
+    var parts = [];
+    var last = 0;
+    var m;
+    while ((m = re.exec(s)) !== null) {
+      if (m.index > last) {
+        var chunk = s.slice(last, m.index);
+        if (chunk) parts.push('<span class="deck-live-sim-line-caption">' + chunk + "</span>");
+      }
+      parts.push('<strong class="' + clsHero + '">' + m[1] + m[2] + "</strong>");
+      last = re.lastIndex;
+    }
+    if (!parts.length) {
+      return '<span class="deck-live-sim-line-caption">' + s + "</span>";
+    }
+    if (last < s.length) {
+      var tail = s.slice(last);
+      if (tail) parts.push('<span class="deck-live-sim-line-caption">' + tail + "</span>");
+    }
+    return parts.join("");
   }
 
   function setOddsRichText(el, plainText, opts) {
     if (!el) return;
     el.innerHTML = htmlWithEmphasizedPercents(plainText, opts || {});
+  }
+
+  /** 左上「ライブ成功確率（山札シミュ）」要約。％ヒーロー無しで前文マーク無しのときだけベースを上げる */
+  function syncDeckLiveSimSummaryPctEmphasisClass(el) {
+    if (!el || !el.querySelector) return;
+    var hasHero = el.querySelector(".deck-odds-pct--hero");
+    var hasVerdictHit = el.querySelector(".deck-live-sim-line-hit");
+    var hasCaption = el.querySelector(".deck-live-sim-line-caption");
+    el.classList.toggle(
+      "deck-live-sim-summary--no-pct-emphasis",
+      !hasHero && !hasVerdictHit && !hasCaption,
+    );
   }
 
   /** ライブ成功確率の文字色を 0〜100% の連続グラデーションで決定。
@@ -756,6 +792,12 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   /** 上記関数を sim 結果に応じて要素へ適用（kind に応じて 0% 扱い / 100% 扱い / 非適用を切替）。 */
   function applyDeckLiveSimProbColor(el, sim) {
     if (!el) return;
+    if (sim && sim.kind === "verdict") {
+      el.classList.remove("has-prob-color");
+      el.style.removeProperty("--prob-color");
+      el.style.removeProperty("--prob-glow");
+      return;
+    }
     var pct = null;
     if (sim) {
       if (sim.kind === "sim" && sim.pct != null) pct = Number(sim.pct);
@@ -2452,6 +2494,27 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     return "残り " + kShow + " 枚をランダムにめくった場合の成功確率：" + formatPctFromRate(sim.pct) + "％";
   }
 
+  /** 左上ライブ成功確率：判定確定時は「判定：」を小さく「成功／失敗」を特大に */
+  function deckLiveSimVerdictHtml(sim) {
+    var tail = "（解決がブレード枚数に達しました）";
+    if (sim.ok) {
+      return (
+        '<span class="deck-live-sim-line-label">判定：</span>' +
+        '<span class="deck-live-sim-line-hit deck-live-sim-line-hit--ok">成功</span>' +
+        '<span class="deck-live-sim-line-tail">' +
+        escapeHtmlPlain(tail) +
+        "</span>"
+      );
+    }
+    return (
+      '<span class="deck-live-sim-line-label">判定：</span>' +
+      '<span class="deck-live-sim-line-hit deck-live-sim-line-hit--ng">失敗</span>' +
+      '<span class="deck-live-sim-line-tail">' +
+      escapeHtmlPlain(tail) +
+      "</span>"
+    );
+  }
+
   function buildLiveSimBreakdownBody(b, sim) {
     var lines = [];
     lines.push(
@@ -2572,12 +2635,14 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       sumEl.classList.remove("is-ok", "is-warn", "is-fail", "has-prob-color");
       sumEl.style.removeProperty("--prob-color");
       sumEl.style.removeProperty("--prob-glow");
+      sumEl.classList.remove("deck-live-sim-summary--verdict");
       sumEl.classList.add("is-muted");
       setOddsRichText(
         sumEl,
         "成功確率：—（ライブターン中は裏向きのため、ライブ開始で表面が見えてから計算します）",
         { heroLiveSim: true },
       );
+      syncDeckLiveSimSummaryPctEmphasisClass(sumEl);
       var bdHold = $("deck-live-sim-breakdown-body");
       if (bdHold) bdHold.textContent = "";
       if (stEl) {
@@ -3013,7 +3078,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   }
 
   /**
-   * 要求色: 供給と need の差のうち、足りない色だけを列挙（充足している色は表示しない）
+   * 要求色（有色のみ）: 供給と need の差のうち、足りない色だけを列挙。
+   * heart0（任意色相・heart0）は対象外。有色がすべて足りていれば「達成」。
    */
   function formatStageHeartMinusNeedRemainderLine(stageHAcc, needAccum) {
     if (!needAccum || sumSlotAccumValues(needAccum) <= 0) return "—";
@@ -3027,19 +3093,13 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       if (rem >= 0) continue;
       parts.push(bladeHeartDisplaySlotLabel(s) + " 不足 " + Math.abs(rem));
     }
-    var nd0 = needAccum[0] || 0;
-    if (nd0 > 0) {
-      var st0 = stAcc[0] || 0;
-      var rem0 = st0 - nd0;
-      if (rem0 < 0) parts.push("任意 不足 " + Math.abs(rem0));
-    }
     var nd99 = needAccum[99] || 0;
     if (nd99 > 0) {
       var st99 = stAcc[99] || 0;
       var rem99 = st99 - nd99;
       if (rem99 < 0) parts.push("その他キー 不足 " + Math.abs(rem99));
     }
-    return parts.length ? parts.join(" · ") : "充足（不足なし）";
+    return parts.length ? parts.join(" · ") : "達成";
   }
 
   function syncLiveTurnStatsPanel() {
@@ -3052,6 +3112,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         ov0.textContent = "";
         ov0.classList.remove("is-ok", "is-fail", "is-muted");
       }
+      var reqCol0 = $("live-required-colors");
+      if (reqCol0) reqCol0.classList.remove("live-stats-required-colors--met");
       syncLiveCenterScoreBar(null);
       return;
     }
@@ -3079,7 +3141,9 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
 
     var reqCol = $("live-required-colors");
     if (reqCol) {
-      reqCol.innerHTML = liveStatsHeartishLineToHtml(formatStageHeartMinusNeedRemainderLine(b.mergedSupplyPreview, needAccum));
+      var reqColLine = formatStageHeartMinusNeedRemainderLine(b.mergedSupplyPreview, needAccum);
+      reqCol.innerHTML = liveStatsHeartishLineToHtml(reqColLine);
+      reqCol.classList.toggle("live-stats-required-colors--met", reqColLine === "達成");
     }
 
     var tolEl = $("live-nonbh-tolerance");
@@ -5173,12 +5237,24 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     }
   }
 
+  /** 左上シミュが「判定：成功／失敗」に確定しているとき（kind === verdict）。エールボタン発光停止／ターン開始へ移す判定に使う */
+  function liveSimResolutionVerdictLocked() {
+    if (state.liveStatsAfterBegin !== true) return false;
+    try {
+      var sim = computeDeckDrawLiveSuccessSimulation(deckLiveSimMode);
+      return !!(sim && sim.kind === "verdict");
+    } catch (_) {
+      return false;
+    }
+  }
+
   /** liveStatsAfterBegin かつライブ枠にライブが1枚でもあるとき、「1枚ドロー（解決）」を「1枚エール（解決）」へ。
    * 開始直後で枠が空のときはドローラベルのままにする。
    *  対象ボタン: btn-res-draw-one（解決ゾーン横）/ btn-draw-resolution（山札の下のドロー行） */
   function syncLiveYellDrawButtons() {
     var inLive =
       state.liveStatsAfterBegin === true && liveLiveCardsInFramesOnly() > 0;
+    var stopYellGlow = liveSimResolutionVerdictLocked();
     var ids = ["btn-res-draw-one", "btn-draw-resolution"];
     ids.forEach(function (id) {
       var b = $(id);
@@ -5186,7 +5262,11 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       if (inLive) {
         if (b.dataset.llocgLabelOrig == null) b.dataset.llocgLabelOrig = b.textContent || "";
         b.textContent = "1枚エール（解決）";
-        b.classList.add("btn--live-yell-glow");
+        if (stopYellGlow) {
+          b.classList.remove("btn--live-yell-glow");
+        } else {
+          b.classList.add("btn--live-yell-glow");
+        }
         b.setAttribute("aria-label", "1枚エール（解決）");
         if (b.dataset.llocgTitleOrig == null && b.getAttribute("title") != null) {
           b.dataset.llocgTitleOrig = b.getAttribute("title");
@@ -5296,15 +5376,24 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       "flow-hint--live-to-area",
       "flow-hint--live-begin",
       "flow-hint--turn-start",
+      "flow-hint--turn-start-yell",
       "flow-hint--live-success",
       "flow-hint--mulligan-execute",
     );
+    function finalizeTurnStartYellGlow() {
+      body.classList.toggle(
+        "flow-hint--turn-start-yell",
+        liveSimResolutionVerdictLocked() && body.classList.contains("flow-hint--turn-start"),
+      );
+    }
     if (state.awaitingTurnStart === true && !openingMulliganExecuteUsed) {
       body.classList.add("flow-hint--mulligan-execute");
+      finalizeTurnStartYellGlow();
       return;
     }
     if (state.awaitingTurnStart === true && openingMulliganExecuteUsed) {
       body.classList.add("flow-hint--turn-start");
+      finalizeTurnStartYellGlow();
       return;
     }
     var mull = state.awaitingTurnStart === true;
@@ -5335,27 +5424,34 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (lsb && evalOk) {
       body.classList.add("flow-hint--live-success");
       body.classList.add("flow-hint--turn-start");
+      finalizeTurnStartYellGlow();
       return;
     }
     if (lsb && ealeDone) {
       body.classList.add("flow-hint--turn-start");
+      finalizeTurnStartYellGlow();
       return;
     }
     if (ltp && bBegin && !bBegin.disabled && liveSlotsHaveCard()) {
       body.classList.add("flow-hint--live-begin");
+      finalizeTurnStartYellGlow();
       return;
     }
     if (ltp && state.liveTurnSelectedIds.length > 0 && primaryIsToArea) {
       body.classList.add("flow-hint--live-to-area");
+      finalizeTurnStartYellGlow();
       return;
     }
     if (!mull && !ltp && !lsb && liveTurnStartGlowArmed) {
       body.classList.add("flow-hint--live-turn-start");
+      finalizeTurnStartYellGlow();
       return;
     }
     if (!mull && !ltp && !lsb && ealeDone && !liveSlotsHaveCard()) {
       body.classList.add("flow-hint--turn-start");
     }
+
+    finalizeTurnStartYellGlow();
   }
 
   function syncLiveTurnHandUi() {

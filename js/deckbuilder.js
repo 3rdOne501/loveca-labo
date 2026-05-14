@@ -43,7 +43,13 @@ import {
   isHandDependentCost20Member,
 } from "./cards.js";
 import { parseDeckTextRecipe } from "./decklogImport.js";
-import { appendTestCardLogEntry, getTestCardLogCacheSig, getTestCardLogEntries } from "./testCardLog.js";
+import {
+  appendTestCardLogEntry,
+  getTestCardLogCacheSig,
+  getTestCardLogEntries,
+  getTestCardLogSavePreference,
+  setTestCardLogSavePreference,
+} from "./testCardLog.js";
 import { showToast } from "./ui.js";
 import {
   bladeHeartAggregatePillHtml,
@@ -999,18 +1005,21 @@ export function initDeckBuilder(root, { onStartGame }) {
           !!(needHeart && Object.keys(needHeart).length) ||
           !!testCardCustomImgDataUrl ||
           out !== pending.card_no;
-        if (
-          hadCustomization &&
-          typeof window !== "undefined" &&
-          window.confirm(
-            "このオリカの設定を「テストカードログ」に保存しますか？\n\n・あとからデッキ画面の「商品」から「テストカードログ」を選ぶと一覧で開けます\n・通常の検索や他の商品名では一覧に出ません（ログ専用です）",
-          )
-        ) {
-          if (appendTestCardLogEntry({ baseCardNo: pending.card_no, options: logOptions })) {
-            invalidateCatalogFilterCache();
-            showToast("テストカードログに保存しました");
-          } else {
-            showToast("ログへの保存に失敗しました（容量超過の可能性があります）");
+        if (hadCustomization) {
+          let saveToLog = getTestCardLogSavePreference();
+          if (saveToLog === null && typeof window !== "undefined") {
+            saveToLog = window.confirm(
+              "このオリカの設定を「テストカードログ」に保存しますか？\n\n・あとからデッキ画面の「商品」から「テストカードログ」を選ぶと一覧で開けます\n・通常の検索や他の商品名では一覧に出ません（ログ専用です）\n\n※この選択は最初の一回だけ確認します（あとから変更不要です）",
+            );
+            setTestCardLogSavePreference(!!saveToLog);
+          }
+          if (saveToLog) {
+            if (appendTestCardLogEntry({ baseCardNo: pending.card_no, options: logOptions })) {
+              invalidateCatalogFilterCache();
+              showToast("テストカードログに保存しました");
+            } else {
+              showToast("ログへの保存に失敗しました（容量超過の可能性があります）");
+            }
           }
         }
         finish(out);
@@ -1067,6 +1076,8 @@ export function initDeckBuilder(root, { onStartGame }) {
   async function resolvedCardNoForAdd(card) {
     if (!card || !card.card_no) return card && card.card_no;
     if (card.product !== UNSET_PLACEHOLDER_PRODUCT) return card.card_no;
+    /* ログ一覧は ensureTestCardVariant 済みの番号のみなので設定ダイアログは不要 */
+    if (filterProduct === FILTER_PRODUCT_TEST_CARD_LOG) return card.card_no;
     return await openTestCardVariantDialog(card);
   }
 

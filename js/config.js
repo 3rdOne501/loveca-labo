@@ -77,6 +77,8 @@ export const STORAGE_CARD_FAVORITES = "llocg_card_favorites";
 
 /** テストカード（オリカ）採用時に保存するログ（同一ブラウザの localStorage） */
 export const STORAGE_TEST_CARD_LOG = "llocg_test_card_log_v1";
+/** 初回の「ログに保存しますか」の結果のみ記録（"1"＝今後も保存／"0"＝今後も保存しない） */
+export const STORAGE_TEST_CARD_LOG_SAVE_PREF = "llocg_test_card_log_save_pref_v1";
 
 /**
  * カード一覧「商品」プルダウン用の疑似商品キー（DB の product とは別。検索・通常一覧では出さず、この項目を選ぶとログだけ表示）

@@ -3,7 +3,7 @@
  * デッキ構築の「商品」→「テストカードログ」で一覧表示（通常検索・他商品フィルタではヒットしない）。
  */
 
-import { STORAGE_TEST_CARD_LOG } from "./config.js";
+import { STORAGE_TEST_CARD_LOG, STORAGE_TEST_CARD_LOG_SAVE_PREF } from "./config.js";
 
 const MAX_ENTRIES = 24;
 const MAX_CUSTOM_IMG_CHARS = 380000;
@@ -53,6 +53,26 @@ export function getTestCardLogCacheSig() {
   if (!a.length) return "0";
   const last = a[a.length - 1];
   return String(a.length) + ":" + String((last && last.savedAt) || "");
+}
+
+/** @returns {boolean|null} null＝未決定（初回のみダイアログ） */
+export function getTestCardLogSavePreference() {
+  try {
+    const v = localStorage.getItem(STORAGE_TEST_CARD_LOG_SAVE_PREF);
+    if (v === "1") return true;
+    if (v === "0") return false;
+    return null;
+  } catch (_) {
+    return null;
+  }
+}
+
+export function setTestCardLogSavePreference(saveYes) {
+  try {
+    localStorage.setItem(STORAGE_TEST_CARD_LOG_SAVE_PREF, saveYes ? "1" : "0");
+  } catch (_) {
+    /* noop */
+  }
 }
 
 export function appendTestCardLogEntry(payload) {

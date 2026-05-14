@@ -1121,31 +1121,35 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
 }
 
 .live-turn-stats-wrap {
-  margin: 0.5rem 0 0.85rem;
+  margin: 0.35rem 0 0.55rem;
 }
 .live-turn-stats-details {
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(110, 200, 255, 0.28);
-  background: rgba(10, 22, 38, 0.45);
+  border: 1px solid rgba(255, 165, 205, 0.14);
+  background: transparent;
 }
 .live-turn-stats-summary {
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   font-weight: 600;
-  color: #cce8ff;
-  padding: 0.5rem 0.65rem;
+  color: rgba(255, 226, 245, 0.96);
+  padding: 0.38rem 0.52rem;
   list-style: none;
   user-select: none;
+  letter-spacing: 0.015em;
+  text-shadow:
+    0 0 14px rgba(255, 140, 190, 0.35),
+    0 0 28px rgba(255, 110, 170, 0.15);
 }
 .live-turn-stats-summary::-webkit-details-marker {
   display: none;
 }
 .live-turn-stats-details[open] > .live-turn-stats-summary {
-  border-bottom: 1px solid rgba(110, 200, 255, 0.18);
+  border-bottom: 1px solid rgba(255, 165, 205, 0.12);
 }
 .live-turn-stats-details .live-turn-stats-panel {
   margin: 0;
-  padding: 0.55rem 0.65rem 0.65rem;
+  padding: 0.38rem 0.52rem 0.48rem;
   border: none;
   background: transparent;
 }
@@ -1156,26 +1160,34 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
   margin-bottom: 0.4rem;
 }
 .live-stats-overview {
-  margin: 0 0 0.5rem;
-  padding: 0.35rem 0.45rem;
-  border-radius: 6px;
-  font-size: 0.78rem;
-  line-height: 1.45;
+  margin: 0 0 0.26rem;
+  padding: 0.08rem 0;
+  border-radius: 0;
+  font-size: 0.74rem;
+  line-height: 1.42;
   font-weight: 600;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: transparent;
+  border: none;
 }
 .live-stats-overview.is-ok {
-  color: #8fe8c8;
-  border-color: rgba(120, 220, 180, 0.25);
+  color: #ffc8ec;
+  font-weight: 800;
+  text-shadow:
+    0 0 12px rgba(255, 140, 195, 0.65),
+    0 0 26px rgba(255, 100, 175, 0.38),
+    0 0 42px rgba(255, 90, 160, 0.18);
 }
 .live-stats-overview.is-fail {
-  color: #ffc9bd;
-  border-color: rgba(255, 120, 100, 0.28);
+  color: #ffb39c;
+  font-weight: 800;
+  text-shadow:
+    0 0 10px rgba(255, 130, 95, 0.55),
+    0 0 22px rgba(255, 95, 70, 0.28);
 }
 .live-stats-overview.is-muted {
   color: var(--muted);
   font-weight: 500;
+  text-shadow: none;
 }
 .deck-role-draw-odds {
   margin: 0.35rem 0 0.25rem !important;
@@ -1185,10 +1197,10 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
 }
 .live-turn-stats-grid {
   display: grid;
-  grid-template-columns: minmax(5.5rem, 8.5rem) 1fr;
-  gap: 0.32rem 0.55rem;
+  grid-template-columns: minmax(4.75rem, 7rem) minmax(0, 1fr);
+  gap: 0.22rem 0.42rem;
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.76rem;
   align-items: start;
 }
 .live-stats-visually-hidden {
@@ -1205,35 +1217,38 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
 .live-stats-metric-strip {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: repeat(4, auto);
-  gap: 0.4rem 0.55rem;
-  padding: 0.4rem 0.45rem;
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(120, 200, 255, 0.14);
-  width: fit-content;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.22rem 0.34rem;
+  padding: 0.14rem 0;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  border-top: 1px solid rgba(255, 165, 205, 0.08);
+  padding-top: 0.26rem;
+  margin-top: 0.06rem;
+  width: 100%;
   max-width: 100%;
-  margin-right: auto;
+  margin-right: 0;
   margin-left: 0;
-  justify-items: start;
+  justify-items: stretch;
 }
 @media (max-width: 720px) {
   .live-stats-metric-strip {
-    grid-template-columns: repeat(2, auto);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 .live-stats-metric-cell {
   display: flex;
   flex-direction: column;
-  gap: 0.18rem;
+  gap: 0.12rem;
   min-width: 0;
 }
 .live-stats-metric-label {
-  font-size: 0.66rem;
+  font-size: 0.61rem;
   font-weight: 700;
   color: var(--muted);
-  letter-spacing: 0.02em;
-  line-height: 1.2;
+  letter-spacing: 0.018em;
+  line-height: 1.18;
 }
 .live-stats-metric-label--white {
   color: rgba(252, 252, 255, 0.96);
@@ -1246,12 +1261,12 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
   color: transparent;
 }
 .live-stats-metric-answer {
-  font-size: 1.05rem;
-  font-weight: 900;
-  color: #ff7eb8;
-  line-height: 1.15;
-  letter-spacing: 0.03em;
-  text-shadow: 0 0 14px rgba(255, 120, 200, 0.35);
+  font-size: 0.96rem;
+  font-weight: 800;
+  color: #ff8ec4;
+  line-height: 1.12;
+  letter-spacing: 0.022em;
+  text-shadow: 0 0 10px rgba(255, 130, 200, 0.22);
   word-break: break-word;
 }
 .live-stats-metric-answer--rich {
@@ -1262,9 +1277,9 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
 }
 .live-turn-stats-panel .live-stats-dd-heart,
 .live-turn-stats-panel .live-stats-colors.live-stats-dd-heart {
-  font-size: 0.88rem;
-  font-weight: 650;
-  line-height: 1.45;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.4;
 }
 .live-turn-stats-panel .live-stats-heart-sep {
   color: rgba(200, 215, 235, 0.55);
@@ -1309,8 +1324,10 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
 }
 .live-turn-stats-panel dt {
   margin: 0;
-  color: var(--muted);
+  padding-top: 0.06rem;
+  color: rgba(190, 205, 228, 0.82);
   font-weight: 500;
+  font-size: 0.72rem;
 }
 .live-turn-stats-panel dd {
   margin: 0;
@@ -1323,36 +1340,53 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
 }
 .live-turn-stats-panel .live-stats-colors {
   display: block;
-  font-size: 0.72rem;
-  line-height: 1.35;
-  margin-top: 0.18rem;
+  font-size: 0.71rem;
+  line-height: 1.34;
+  margin-top: 0.08rem;
   word-break: break-word;
 }
 .live-turn-stats-panel .live-stats-detail {
-  font-size: 0.88rem;
+  font-size: 0.84rem;
 }
 .live-need-suffix {
   font-weight: 500;
 }
 .live-success-verdict-line {
   font-weight: 700;
+  line-height: 1.38;
+}
+.live-stats-required-colors--met {
+  color: #ffb8e8;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-shadow:
+    0 0 12px rgba(255, 140, 195, 0.55),
+    0 0 24px rgba(255, 105, 175, 0.28);
 }
 .live-verdict--success {
-  color: #7ee0b8;
-  padding: 0.2rem 0.35rem;
-  border-radius: 8px;
-  background: rgba(40, 120, 90, 0.22);
-  border: 1px solid rgba(120, 230, 190, 0.45);
-  box-shadow:
-    0 0 12px rgba(100, 220, 170, 0.45),
-    0 0 28px rgba(80, 200, 160, 0.2);
+  display: inline-block;
+  color: #ffc8ec;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  font-weight: 800;
+  text-shadow:
+    0 0 12px rgba(255, 140, 195, 0.58),
+    0 0 26px rgba(255, 105, 175, 0.32);
 }
 .live-verdict--fail {
-  color: #ff9a8a;
+  display: inline-block;
+  color: #ffb09a;
+  font-weight: 800;
+  text-shadow:
+    0 0 10px rgba(255, 125, 95, 0.48),
+    0 0 22px rgba(255, 85, 65, 0.22);
 }
 .live-verdict--muted {
   color: var(--muted);
   font-weight: 600;
+  text-shadow: none;
 }
 
 /* 解決領域: 枚数が増えたら控え室に近い重なりで 1 行に収める */
@@ -2078,6 +2112,27 @@ body.play-mode.flow-hint--turn-start #btn-turn-start:not(:disabled) {
   animation: flow-btn-glow 1.55s ease-in-out infinite;
   border-radius: var(--radius-sm, 10px);
 }
+/* 左上シミュが成功／失敗に確定したあと：エールボタン発光を止め、ターン開始へ同系の発光を移す */
+body.play-mode.flow-hint--turn-start.flow-hint--turn-start-yell #btn-turn-start:not(:disabled) {
+  position: relative;
+  z-index: 2;
+  background: linear-gradient(135deg, #ffe7a3 0%, #ffb86b 45%, #ff7eb6 100%);
+  border-color: rgba(255, 220, 150, 0.85);
+  color: #2a1230;
+  text-shadow: 0 1px 1px rgba(255, 255, 230, 0.55);
+  box-shadow:
+    0 0 8px rgba(255, 220, 130, 0.85),
+    0 0 18px rgba(255, 170, 80, 0.65),
+    0 0 32px rgba(255, 140, 200, 0.55),
+    0 2px 0 rgba(170, 90, 30, 0.45);
+  animation: liveYellBtnPulse 1.6s ease-in-out infinite;
+  border-radius: var(--radius-sm, 10px);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+body.play-mode.flow-hint--turn-start.flow-hint--turn-start-yell #btn-turn-start:not(:disabled):hover {
+  filter: brightness(1.06);
+}
 body.play-mode.flow-hint--live-success #success-live-zone-shell {
   border-radius: var(--radius-sm);
   outline: 2px solid rgba(255, 160, 210, 0.65);
@@ -2087,7 +2142,8 @@ body.play-mode.flow-hint--live-success #success-live-zone-shell {
 @media (prefers-reduced-motion: reduce) {
   body.play-mode.flow-hint--live-turn-start #btn-live-turn-primary:not(:disabled),
   body.play-mode.flow-hint--live-to-area #btn-live-turn-primary:not(:disabled),
-  body.play-mode.flow-hint--live-begin #btn-live-turn-begin:not(:disabled) {
+  body.play-mode.flow-hint--live-begin #btn-live-turn-begin:not(:disabled),
+  body.play-mode.flow-hint--turn-start.flow-hint--turn-start-yell #btn-turn-start:not(:disabled) {
     animation: none;
   }
 }
@@ -2144,14 +2200,14 @@ body.play-mode .play-deck-preset-panel {
 }
 
 body.play-mode .live-stats-zone-hint-block {
-  margin-top: 0.45rem;
-  padding-top: 0.35rem;
-  border-top: 1px solid rgba(255, 180, 220, 0.15);
+  margin-top: 0.32rem;
+  padding-top: 0.28rem;
+  border-top: 1px solid rgba(120, 175, 230, 0.12);
 }
 body.play-mode .live-zone-hint-line {
-  margin: 0.25rem 0 0;
-  font-size: 0.7rem;
-  line-height: 1.45;
+  margin: 0.18rem 0 0;
+  font-size: 0.68rem;
+  line-height: 1.42;
 }
 
 body.play-mode .card-member-bonus-chip--all {
@@ -2379,10 +2435,10 @@ body.play-mode .live-score-center-bar {
   justify-content: center;
   gap: 0.25rem 0.55rem;
   margin-top: 0.32rem;
-  padding: 0.32rem 0.42rem 0.38rem;
+  padding: 0.26rem 0.22rem 0.32rem;
   border-radius: 10px;
-  background: rgba(18, 12, 28, 0.62);
-  border: 1px solid rgba(255, 190, 230, 0.14);
+  background: transparent;
+  border: 1px solid rgba(255, 175, 210, 0.11);
   box-sizing: border-box;
 }
 body.play-mode .live-score-center-bar__label {
@@ -2409,8 +2465,8 @@ body.play-mode .live-score-center-bar__unit {
   color: var(--muted);
 }
 body.play-mode .live-score-center-bar--placeholder {
-  border-color: rgba(120, 140, 160, 0.22);
-  background: rgba(14, 18, 28, 0.55);
+  border-color: rgba(140, 155, 175, 0.16);
+  background: transparent;
 }
 body.play-mode .live-score-center-bar--placeholder .live-score-center-bar__num.live-score-num--placeholder {
   color: rgba(170, 182, 202, 0.88);
@@ -2418,8 +2474,10 @@ body.play-mode .live-score-center-bar--placeholder .live-score-center-bar__num.l
   font-weight: 800;
 }
 body.play-mode .live-score-center-bar--fail .live-score-center-bar__num {
-  color: #94a3b8;
-  text-shadow: none;
+  color: #ffb09a;
+  text-shadow:
+    0 0 10px rgba(255, 125, 95, 0.42),
+    0 0 22px rgba(255, 85, 65, 0.18);
 }
 body.play-mode .live-score-center-bar--muted .live-score-center-bar__num {
   color: #7c8494;
@@ -2527,7 +2585,7 @@ body.play-mode .live-score-center-bar__num.live-score-num--ge22 {
 .live-score-bonus-controls {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.28rem;
 }
 .live-score-bonus-num {
   min-width: 1.5rem;
@@ -2771,6 +2829,20 @@ details.hand-stick-fold.zone-block {
     padding: 0.42rem 0.48rem !important;
     overflow-wrap: anywhere;
     word-break: break-word;
+  }
+  body.play-mode #deck-live-sim-summary.deck-live-sim-summary--no-pct-emphasis {
+    font-size: clamp(0.9rem, 3.4vw, 1.06rem) !important;
+    line-height: 1.52 !important;
+  }
+  body.play-mode #deck-live-sim-summary .deck-live-sim-line-caption {
+    font-size: 0.68rem;
+  }
+  body.play-mode #deck-live-sim-summary.deck-live-sim-summary--verdict .deck-live-sim-line-label,
+  body.play-mode #deck-live-sim-summary.deck-live-sim-summary--verdict .deck-live-sim-line-tail {
+    font-size: 0.68rem;
+  }
+  body.play-mode #deck-live-sim-summary.deck-live-sim-summary--verdict .deck-live-sim-line-hit {
+    font-size: clamp(1.05rem, 4.5vw, 1.58rem);
   }
   body.play-mode .zone-head.zone-head--hand {
     flex-direction: column;
@@ -3944,12 +4016,22 @@ body.play-mode .deck-pile {
   body.play-mode .game-board .col.col-left {
     order: 1;
     flex: 0 1 auto;
+    display: flex;
+    flex-direction: column;
     /* 左カラム単体のスクロールはやめ、game-board のスクロールで解決 sticky が効くようにする */
     max-height: none;
     overflow-y: visible;
     overflow-x: hidden;
     overscroll-behavior: contain;
     min-height: 0;
+  }
+
+  /* 縦画面では「解決」をブロックの物理順より上に見せる（sticky と相性よくヘッダ直下に寄せる） */
+  body.play-mode .col.col-left > * {
+    order: 3;
+  }
+  body.play-mode .col.col-left .zone-sim-success-row {
+    order: 2;
   }
 
   body.play-mode .game-board .col.col-center {
@@ -3978,9 +4060,11 @@ body.play-mode .deck-pile {
   }
 
   body.play-mode .col.col-left section.zone-block.zone-block-resolution-priority {
+    order: 1;
     position: sticky;
     top: 0;
-    z-index: 14;
+    align-self: stretch;
+    z-index: 16;
     padding-top: 0.35rem;
     padding-bottom: 0.5rem;
     margin-bottom: 0.55rem;
@@ -4996,9 +5080,12 @@ body.play-mode .play-disclaimer {
   color: var(--accent2);
 }
 .deck-flip-blade-note {
-  margin: 0.25rem 0 0;
-  font-size: 0.68rem !important;
-  line-height: 1.4 !important;
+  margin: 0.12rem 0 0;
+  font-size: 0.66rem !important;
+  line-height: 1.38 !important;
+}
+body.play-mode .deck-live-sim-shell > .deck-flip-blade-note {
+  margin-bottom: 0.06rem;
 }
 .resolution-over-blade-banner {
   margin: 0 0 0.5rem;
@@ -5010,14 +5097,11 @@ body.play-mode .play-disclaimer {
   background: rgba(90, 40, 28, 0.28);
   color: rgba(255, 226, 205, 0.98);
 }
-.deck-live-sim-block {
-  margin-bottom: 0.28rem;
-}
 .deck-live-sim-controls {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  gap: 0.3rem 0.45rem;
+  gap: 0.24rem 0.38rem;
   margin: 0 0 0.28rem;
 }
 .deck-live-sim-mode-field {
@@ -5032,21 +5116,25 @@ body.play-mode .play-disclaimer {
   background: rgba(255, 255, 255, 0.06);
   color: var(--text);
 }
+.deck-live-sim-block {
+  margin-bottom: 0;
+  margin-top: 0.06rem;
+}
 .deck-live-sim-breakdown {
-  margin: 0 0 0.22rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid rgba(120, 180, 255, 0.22);
-  background: rgba(12, 20, 36, 0.35);
-  padding: 0.08rem 0.26rem 0.2rem;
+  margin: 0 0 0.14rem;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 170, 200, 0.11);
+  background: transparent;
+  padding: 0.06rem 0.22rem 0.14rem;
 }
 .deck-live-sim-breakdown-summary {
   cursor: pointer;
   list-style: none;
-  font-size: 0.66rem;
+  font-size: 0.64rem;
   font-weight: 600;
-  color: rgba(190, 220, 255, 0.95);
+  color: rgba(255, 210, 235, 0.88);
   user-select: none;
-  padding: 0.1rem 0;
+  padding: 0.06rem 0;
 }
 .deck-live-sim-breakdown-summary::-webkit-details-marker {
   display: none;
@@ -5059,39 +5147,102 @@ body.play-mode .play-disclaimer {
   white-space: pre-wrap;
   word-break: break-word;
   font-family: ui-monospace, monospace;
-  color: rgba(220, 210, 235, 0.95);
+  color: rgba(235, 225, 248, 0.94);
   max-height: min(25vh, 9.5rem);
   overflow: auto;
   border-radius: 4px;
-  background: rgba(0, 0, 0, 0.2);
+  background: transparent;
 }
 .deck-live-sim-summary {
-  margin: 0.35rem 0 0.28rem !important;
+  margin: 0.18rem 0 0.14rem !important;
   font-size: 0.8rem !important;
-  line-height: 1.45 !important;
-  padding: 0.45rem 0.55rem;
+  line-height: 1.42 !important;
+  padding: 0.26rem 0.08rem !important;
   text-align: center;
-  border-radius: var(--radius-sm);
-  border: 1px solid rgba(255, 150, 200, 0.28);
-  background: rgba(0, 0, 0, 0.2);
+  border-radius: 0;
+  border: none;
+  background: transparent;
 }
 .deck-live-sim-summary.is-ok {
-  border-color: rgba(120, 220, 180, 0.35);
-  background: rgba(40, 100, 80, 0.12);
+  border: none;
+  background: transparent;
+  color: #ffc8ec;
+  text-shadow:
+    0 0 12px rgba(255, 140, 195, 0.55),
+    0 0 26px rgba(255, 105, 175, 0.28);
 }
 .deck-live-sim-summary.is-warn {
-  border-color: rgba(255, 200, 120, 0.45);
+  border: none;
+  background: transparent;
+  color: #ffe0a8;
+  text-shadow:
+    0 0 10px rgba(255, 200, 120, 0.42),
+    0 0 20px rgba(255, 170, 90, 0.18);
 }
 /* 確率 50% 以下：赤（warn 系よりはっきりした失敗色）— 旧設定。新グラデーション(.has-prob-color)が上書きする。 */
 .deck-live-sim-summary.is-fail {
-  color: #ffc9bd;
-  border-color: rgba(255, 120, 100, 0.5);
-  background: rgba(120, 30, 30, 0.18);
+  color: #ffb09a;
+  border: none;
+  background: transparent;
+  text-shadow:
+    0 0 10px rgba(255, 115, 85, 0.48),
+    0 0 22px rgba(255, 75, 55, 0.2);
 }
 .deck-live-sim-summary.is-muted {
   color: var(--muted);
-  border-style: dashed;
+  border: none;
   background: transparent;
+  text-shadow: none;
+}
+
+/* 左上ライブ成功確率：前文は小さく（判定：／確率の説明文）、％・成功・失敗は .deck-odds-pct--hero／.deck-live-sim-line-hit で特大 */
+body.play-mode #deck-live-sim-summary .deck-live-sim-line-caption {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(236, 228, 248, 0.9);
+}
+body.play-mode #deck-live-sim-summary.has-prob-color .deck-live-sim-line-caption {
+  color: inherit;
+  opacity: 0.93;
+}
+body.play-mode #deck-live-sim-summary.deck-live-sim-summary--verdict .deck-live-sim-line-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(175, 168, 210, 0.95);
+}
+body.play-mode #deck-live-sim-summary.deck-live-sim-summary--verdict .deck-live-sim-line-tail {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(236, 228, 248, 0.88);
+}
+body.play-mode #deck-live-sim-summary.deck-live-sim-summary--verdict .deck-live-sim-line-hit {
+  font-size: clamp(1.35rem, 5vw, 2.35rem);
+  font-weight: 900;
+  line-height: 1.08;
+  letter-spacing: 0.04em;
+  display: inline-block;
+  vertical-align: baseline;
+  margin: 0 0.06em;
+}
+body.play-mode #deck-live-sim-summary.deck-live-sim-summary--verdict .deck-live-sim-line-hit--ok {
+  color: #ffc8ec;
+  text-shadow:
+    0 0 14px rgba(255, 150, 200, 0.62),
+    0 0 30px rgba(255, 115, 185, 0.38),
+    0 0 48px rgba(255, 95, 170, 0.18);
+}
+body.play-mode #deck-live-sim-summary.deck-live-sim-summary--verdict .deck-live-sim-line-hit--ng {
+  color: #ffb09a;
+  text-shadow:
+    0 0 14px rgba(255, 130, 100, 0.48),
+    0 0 26px rgba(255, 85, 65, 0.22);
+}
+
+/* 左上「ライブ成功確率（山札シミュ）」の要約行のみ。「％」ヒーロー無し時は全文が細く見えるのでベースを上げる */
+body.play-mode #deck-live-sim-summary.deck-live-sim-summary--no-pct-emphasis {
+  font-size: clamp(0.93rem, 2.75vw, 1.12rem) !important;
+  font-weight: 700;
+  line-height: 1.48 !important;
 }
 
 /* ============================================================
@@ -5140,11 +5291,57 @@ body.play-mode .play-disclaimer {
 .zone-block-deck-live-sim {
   margin-bottom: 0.32rem;
 }
+body.play-mode .zone-block.zone-block-deck-live-sim {
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  margin-bottom: 0.38rem;
+}
 .zone-block-deck-live-sim > h3 {
   margin: 0 0 0.22rem;
   font-size: 0.84rem;
   font-family: var(--font-display);
   color: #fcdcec;
+}
+body.play-mode .zone-block.zone-block-deck-live-sim > h3 {
+  margin: 0 0 0.32rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  color: rgba(255, 228, 246, 0.96);
+  text-shadow:
+    0 0 14px rgba(255, 140, 190, 0.42),
+    0 0 28px rgba(255, 110, 175, 0.18);
+}
+.deck-live-sim-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+}
+.deck-live-sim-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.28rem 0.75rem;
+}
+.deck-live-sim-toolbar .deck-flip-k-row {
+  margin: 0;
+  flex: 1 1 auto;
+  min-width: min(100%, 10rem);
+}
+.deck-live-sim-toolbar .deck-live-sim-controls {
+  margin: 0;
+  flex: 0 1 auto;
+}
+.deck-live-sim-toolbar .deck-live-sim-mode-field.field {
+  margin-bottom: 0;
+  gap: 0.14rem;
+}
+.deck-live-sim-toolbar .deck-live-sim-mode-field.field span {
+  font-size: 0.65rem;
+  letter-spacing: 0.045em;
 }
 .deck-pick-block {
   margin-bottom: 0.55rem;
