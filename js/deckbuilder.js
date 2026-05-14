@@ -44,11 +44,11 @@ import {
 } from "./cards.js";
 import { parseDeckTextRecipe } from "./decklogImport.js";
 import {
-  downloadPublishedSampleRecipesJson,
   getSampleDeckRecipes,
   normalizeSampleRecipesArray,
   SAMPLE_DECK_RECIPES_MAX,
   SAMPLE_DEVELOPER_PASSCODE,
+  savePublishedSampleRecipesToDisk,
   setPublishedSampleRecipesCache,
 } from "./sampleDeckRecipes.js";
 import {
@@ -459,16 +459,14 @@ export function initDeckBuilder(root, { onStartGame }) {
   function syncSampleDeveloperToolbar() {
     var dev = isSampleDevMode();
     var toggleBtn = el("btn-sample-dev-toggle");
-    var addBtn = el("btn-add-current-deck-to-samples");
-    var hint = el("deck-dev-publish-hint");
+    var panel = el("deck-dev-only-panel");
     if (toggleBtn) {
       toggleBtn.textContent = dev ? "開発者モードを終了" : "開発者モード（サンプル編集）…";
       toggleBtn.setAttribute("aria-pressed", dev ? "true" : "false");
       toggleBtn.classList.toggle("primary", dev);
       toggleBtn.classList.toggle("secondary", !dev);
     }
-    if (addBtn) addBtn.hidden = !dev;
-    if (hint) hint.hidden = !dev;
+    if (panel) panel.hidden = !dev;
   }
 
   function devPublishSampleRecipeList(nextRaw) {
@@ -478,9 +476,8 @@ export function initDeckBuilder(root, { onStartGame }) {
       return;
     }
     setPublishedSampleRecipesCache(norm);
-    downloadPublishedSampleRecipesJson(norm);
     showToast(
-      "一覧を更新しました。ダウンロードした sample-deck-recipes.public.json をサイト直下に置いて再デプロイすると、誰が開いても同じ一覧になります。",
+      "一覧を更新しました。サイトに反映するには下の「デプロイ用 JSON を保存…」でファイルを書き出し、手順どおりアップロードしてください。",
     );
     if (cardPanelMode === "samples") scheduleRenderCardGrid();
   }
@@ -3397,6 +3394,23 @@ export function initDeckBuilder(root, { onStartGame }) {
     var draft = sampleRecipeDraftFromEditor(nm, id);
     cur.push(draft);
     devPublishSampleRecipeList(cur);
+  });
+
+  el("btn-sample-deploy-save")?.addEventListener("click", function () {
+    if (!isSampleDevMode()) return;
+    var list = getSampleDeckRecipes();
+    if (!list.length) {
+      showToast("保存するサンプルがありません");
+      return;
+    }
+    savePublishedSampleRecipesToDisk(list).then(function (r) {
+      if (!r || r.mode === "aborted") return;
+      if (r.mode === "picker") {
+        showToast("保存しました。続けて Git の push やホストへのアップロードを行ってください。");
+        return;
+      }
+      showToast("ブラウザのダウンロードフォルダに保存しました。index.html と同じフォルダへ移してからデプロイしてください。");
+    });
   });
 
   const cardGridScrollEl = el("card-grid-scroll");

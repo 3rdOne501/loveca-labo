@@ -325,15 +325,36 @@ python3 -m http.server 8080</pre>
             <button type="button" class="btn sm secondary" id="btn-sample-dev-toggle">
               開発者モード（サンプル編集）…
             </button>
-            <button type="button" class="btn sm secondary" id="btn-add-current-deck-to-samples" hidden>
-              サンプルに追加
-            </button>
           </div>
-          <p class="hint muted deck-dev-publish-hint" id="deck-dev-publish-hint" hidden>
-            一覧をサイト全体に反映するには、ダウンロードされた
-            <code>sample-deck-recipes.public.json</code>
-            を index と同じフォルダに置いて再デプロイしてください。
-          </p>
+          <div id="deck-dev-only-panel" class="deck-dev-only-panel" hidden>
+            <div class="deck-dev-sample-toolbar deck-dev-sample-toolbar--inner">
+              <button type="button" class="btn sm secondary" id="btn-add-current-deck-to-samples">サンプルに追加</button>
+              <button type="button" class="btn sm primary" id="btn-sample-deploy-save">デプロイ用 JSON を保存…</button>
+            </div>
+            <p class="hint muted deck-dev-publish-hint" id="deck-dev-publish-hint">
+              サンプル一覧を編集したら、次の「デプロイ用 JSON を保存…」で
+              <code>sample-deck-recipes.public.json</code>
+              を書き出し、下の手順どおりサイトへ反映してください（対応ブラウザでは<strong>保存先フォルダを選べます</strong>）。
+            </p>
+            <details class="deck-dev-deploy-steps" id="deck-dev-deploy-steps">
+              <summary>サイトに公開するまでの手順</summary>
+              <ol class="deck-dev-deploy-ol">
+                <li>
+                  <strong>デプロイ用 JSON を保存…</strong>を押す。保存ダイアログで、このツールのフォルダ（<code>index.html</code> がある場所）を選ぶと、同じ名前のファイルを上書きしやすいです。
+                </li>
+                <li>
+                  GitHub Pages などで公開している場合は、保存した JSON をリポジトリのルートに置き、<strong>コミットして push</strong>する（またはホストの「再デプロイ」手順に従う）。
+                </li>
+                <li>
+                  Mac でリポジトリに同梱の <code>Sync-to-GitHub.command</code> がある場合は、ファイルを置いたあと実行して GitHub へ送れることがあります。
+                </li>
+                <li>サイトを再読み込みし、サンプル一覧が更新されていれば完了です。</li>
+              </ol>
+              <p class="hint muted deck-dev-deploy-note">
+                Web ページはブラウザから直接「インターネット上のサーバー」へファイルを書き込めないため、<strong>パソコンに保存 → あなたの公開手順でアップロード</strong>の二段階になります。
+              </p>
+            </details>
+          </div>
 
           <details class="deck-panel-section" id="deck-section-text-import">
             <summary class="deck-panel-summary">テキストから読み込む（DECK LOG 貼り付け）</summary>

@@ -190,3 +190,41 @@ export function downloadPublishedSampleRecipesJson(recipes) {
     console.error(e);
   }
 }
+
+/**
+ * デプロイ用: 可能なら「名前を付けて保存」で保存先を選ぶ。不可ならダウンロードにフォールバック。
+ * @param {SampleDeckRecipe[]} recipes
+ * @returns {Promise<{ ok: boolean, mode: "picker"|"download"|"aborted", error?: string }>}
+ */
+export function savePublishedSampleRecipesToDisk(recipes) {
+  return (async function () {
+    var json = JSON.stringify(recipes, null, 2);
+    var blob = new Blob([json], { type: "application/json;charset=utf-8" });
+    if (typeof window !== "undefined" && typeof window.showSaveFilePicker === "function") {
+      try {
+        var handle = await window.showSaveFilePicker({
+          suggestedName: SAMPLE_DECK_RECIPES_PUBLIC_FILENAME,
+          types: [
+            {
+              description: "JSON",
+              accept: { "application/json": [".json"] },
+            },
+          ],
+        });
+        var writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        return { ok: true, mode: "picker" };
+      } catch (e) {
+        if (e && /** @type {{ name?: string }} */ (e).name === "AbortError") {
+          return { ok: false, mode: "aborted" };
+        }
+        console.error(e);
+        downloadPublishedSampleRecipesJson(recipes);
+        return { ok: true, mode: "download" };
+      }
+    }
+    downloadPublishedSampleRecipesJson(recipes);
+    return { ok: true, mode: "download" };
+  })();
+}

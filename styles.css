@@ -6031,9 +6031,46 @@ kbd {
   gap: 0.45rem 0.55rem;
   margin: 0 0 0.55rem;
 }
-.deck-dev-publish-hint {
+.deck-dev-only-panel {
   margin: 0 0 0.85rem;
-  font-size: 0.76rem;
+  padding: 0.6rem 0.65rem 0.65rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 140, 190, 0.16);
+  background: rgba(8, 4, 14, 0.22);
+}
+.deck-dev-sample-toolbar--inner {
+  margin-bottom: 0.45rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.55rem;
+}
+.deck-dev-deploy-steps {
+  margin: 0.55rem 0 0;
+  padding: 0.35rem 0.45rem 0.45rem;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.deck-dev-deploy-steps > summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: rgba(255, 232, 248, 0.92);
+}
+.deck-dev-deploy-ol {
+  margin: 0.45rem 0 0;
+  padding-left: 1.15rem;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: rgba(255, 236, 248, 0.88);
+}
+.deck-dev-deploy-ol li {
+  margin-bottom: 0.35rem;
+}
+.deck-dev-deploy-note {
+  margin: 0.5rem 0 0;
+  font-size: 0.72rem;
 }
 .sample-recipe-actions--dev {
   margin-top: 0.38rem;
