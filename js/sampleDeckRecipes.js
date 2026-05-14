@@ -1,17 +1,9 @@
 /**
  * デッキ構築画面「サンプルリスト」用レシピ。
- * 既定: `getBuiltInSampleDeckRecipes()`。サイト直下に `sample-deck-recipes.public.json`
- * を置いて fetch すると全員がその一覧を読みます（開発者モードで編集後は JSON をダウンロードして同ファイルをデプロイ）。
+ * 既定: 組み込み1件。`sample-deck-recipes.public.json` を index と同階層に置くと fetch で上書き。
  */
 import {
-  BUILTIN_LOVE_ORANGE_2611_PRESET_NAME,
   BUILTIN_STARTER_PRESET_NAME,
-  DEFAULT_LOVE_ORANGE_2611_DECK_MAP,
-  DEFAULT_LOVE_ORANGE_2611_KEY2_CARD_NOS,
-  DEFAULT_LOVE_ORANGE_2611_KEY3_CARD_NOS,
-  DEFAULT_LOVE_ORANGE_2611_KEY_CARD_NOS,
-  DEFAULT_LOVE_ORANGE_2611_MIDDLE_CARD_NOS,
-  DEFAULT_LOVE_ORANGE_2611_THUMBNAIL_CARD_NO,
   DEFAULT_STARTER_DECK_MAP,
   DEFAULT_STARTER_KEY2_CARD_NOS,
   DEFAULT_STARTER_KEY3_CARD_NOS,
@@ -26,8 +18,9 @@ import { cloneDeckMap } from "./deckLibrary.js";
 /** 開発者モード用（UI プロンプトと照合） */
 export const SAMPLE_DEVELOPER_PASSCODE = "nira1102";
 
-/** UI・説明文用の上限（実データはこの件数まで増やせます） */
-export const SAMPLE_DECK_RECIPES_MAX = 20;
+const IDB_NAME = "llocg-sample-deploy";
+const IDB_STORE = "kv";
+const IDB_KEY_DEPLOY_DIR = "deploy-directory-handle";
 
 /**
  * @typedef {{ id: string, name: string, deck: Record<string, number>, keyCardNos: string[], keyCard2Nos: string[], keyCard3Nos: string[], middleCardNos: string[], thumbnailCardNo: string, noteLines?: string[] }} SampleDeckRecipe
@@ -50,24 +43,28 @@ export function getBuiltInSampleDeckRecipes() {
       thumbnailCardNo: DEFAULT_STARTER_THUMBNAIL_CARD_NO,
       noteLines: [
         "ツール同梱の大会向けサンプル（メンバー48＋ライブ12）。",
-        "キー／キ②／キ③／中間は既定のままです。コピー後に登録デッキタブで変更できます。",
-      ],
-    },
-    {
-      id: "sample-builtin-love-orange-2611",
-      name: BUILTIN_LOVE_ORANGE_2611_PRESET_NAME,
-      deck: cloneDeckMap(DEFAULT_LOVE_ORANGE_2611_DECK_MAP),
-      keyCardNos: [...DEFAULT_LOVE_ORANGE_2611_KEY_CARD_NOS],
-      keyCard2Nos: [...DEFAULT_LOVE_ORANGE_2611_KEY2_CARD_NOS],
-      keyCard3Nos: [...DEFAULT_LOVE_ORANGE_2611_KEY3_CARD_NOS],
-      middleCardNos: [...DEFAULT_LOVE_ORANGE_2611_MIDDLE_CARD_NOS],
-      thumbnailCardNo: DEFAULT_LOVE_ORANGE_2611_THUMBNAIL_CARD_NO,
-      noteLines: [
-        "ツール同梱のサンプル「ラブユーランジュ2611」構成です。",
-        "ソロプレイはそのままメインデッキへ読み込んで開始します。",
+        "キー／キ②／キ③／中間は既定のままです。",
       ],
     },
   ];
+}
+
+/**
+ * サムネ用カード番号（未指定時はキー① → デッキ内の先頭番号）
+ * @param {SampleDeckRecipe | null | undefined} recipe
+ * @returns {string}
+ */
+export function effectiveSampleThumbnailCardNo(recipe) {
+  if (!recipe || !recipe.deck) return "";
+  var t = recipe.thumbnailCardNo != null ? String(recipe.thumbnailCardNo).trim() : "";
+  if (t && (recipe.deck[t] || 0) > 0) return t;
+  var k = Array.isArray(recipe.keyCardNos) ? recipe.keyCardNos[0] : "";
+  if (k && (recipe.deck[k] || 0) > 0) return String(k).trim();
+  var keys = Object.keys(recipe.deck).sort();
+  for (var i = 0; i < keys.length; i++) {
+    if ((recipe.deck[keys[i]] || 0) > 0) return keys[i];
+  }
+  return "";
 }
 
 /** @param {unknown} deck */
@@ -105,7 +102,7 @@ export function normalizeSampleRecipesArray(parsed) {
   if (!Array.isArray(parsed) || parsed.length === 0) return [];
   /** @type {SampleDeckRecipe[]} */
   const out = [];
-  for (let i = 0; i < parsed.length && out.length < SAMPLE_DECK_RECIPES_MAX; i++) {
+  for (let i = 0; i < parsed.length; i++) {
     const row = parsed[i];
     if (!row || typeof row !== "object" || Array.isArray(row)) continue;
     var idRaw = row.id != null ? String(row.id).trim() : "";
@@ -138,8 +135,81 @@ export function normalizeSampleRecipesArray(parsed) {
   return out;
 }
 
+function idbOpen() {
+  return new Promise(function (resolve, reject) {
+    var r = indexedDB.open(IDB_NAME, 1);
+    r.onupgradeneeded = function () {
+      if (!r.result.objectStoreNames.contains(IDB_STORE)) {
+        r.result.createObjectStore(IDB_STORE);
+      }
+    };
+    r.onsuccess = function () {
+      resolve(r.result);
+    };
+    r.onerror = function () {
+      reject(r.error);
+    };
+  });
+}
+
+/** @param {string} key */
+function idbGet(key) {
+  return idbOpen().then(function (db) {
+    return new Promise(function (resolve, reject) {
+      var tx = db.transaction(IDB_STORE, "readonly");
+      var g = tx.objectStore(IDB_STORE).get(key);
+      g.onsuccess = function () {
+        resolve(g.result);
+      };
+      g.onerror = function () {
+        reject(g.error);
+      };
+    });
+  });
+}
+
+/** @param {string} key @param {unknown} val */
+function idbPut(key, val) {
+  return idbOpen().then(function (db) {
+    return new Promise(function (resolve, reject) {
+      var tx = db.transaction(IDB_STORE, "readwrite");
+      tx.objectStore(IDB_STORE).put(val, key);
+      tx.oncomplete = function () {
+        resolve(undefined);
+      };
+      tx.onerror = function () {
+        reject(tx.error);
+      };
+    });
+  });
+}
+
 /**
- * ページ読込時に呼ぶ。`sample-deck-recipes.public.json` があれば全員共通の一覧として採用。
+ * @param {FileSystemDirectoryHandle} dir
+ * @returns {Promise<boolean>}
+ */
+async function ensureDirWritePermission(dir) {
+  try {
+    var opts = { mode: "readwrite" };
+    if ((await dir.queryPermission(opts)) === "granted") return true;
+    if ((await dir.requestPermission(opts)) === "granted") return true;
+  } catch (_) {}
+  return false;
+}
+
+/**
+ * @param {FileSystemDirectoryHandle} dir
+ * @param {Blob} blob
+ */
+async function writeSampleJsonToDirectory(dir, blob) {
+  var fh = await dir.getFileHandle(SAMPLE_DECK_RECIPES_PUBLIC_FILENAME, { create: true });
+  var w = await fh.createWritable();
+  await w.write(blob);
+  await w.close();
+}
+
+/**
+ * ページ読込時に呼ぶ。
  * @returns {Promise<void>}
  */
 export function initPublishedSampleRecipes() {
@@ -158,7 +228,6 @@ export function initPublishedSampleRecipes() {
   })();
 }
 
-/** 開発者モードで一覧を更新した直後にメモリへ反映（fetch より優先される） */
 export function setPublishedSampleRecipesCache(recipes) {
   publishedRecipesCache = recipes && recipes.length ? recipes.slice() : null;
 }
@@ -171,9 +240,6 @@ export function getSampleDeckRecipes() {
   return getBuiltInSampleDeckRecipes();
 }
 
-/**
- * @param {SampleDeckRecipe[]} recipes
- */
 export function downloadPublishedSampleRecipesJson(recipes) {
   try {
     var json = JSON.stringify(recipes, null, 2);
@@ -192,14 +258,53 @@ export function downloadPublishedSampleRecipesJson(recipes) {
 }
 
 /**
- * デプロイ用: 可能なら「名前を付けて保存」で保存先を選ぶ。不可ならダウンロードにフォールバック。
+ * index.html と同じフォルダへ保存: 保存済みディレクトリハンドルまたはフォルダ選択。
+ * 非対応ブラウザは保存ダイアログ／ダウンロード。
  * @param {SampleDeckRecipe[]} recipes
- * @returns {Promise<{ ok: boolean, mode: "picker"|"download"|"aborted", error?: string }>}
+ * @returns {Promise<{ ok: boolean, mode: "project"|"picker"|"download"|"aborted" }>}
  */
 export function savePublishedSampleRecipesToDisk(recipes) {
   return (async function () {
     var json = JSON.stringify(recipes, null, 2);
     var blob = new Blob([json], { type: "application/json;charset=utf-8" });
+
+    /** @type {FileSystemDirectoryHandle | null | undefined} */
+    var dir = null;
+    try {
+      dir = /** @type {FileSystemDirectoryHandle | undefined} */ (await idbGet(IDB_KEY_DEPLOY_DIR));
+    } catch (_) {
+      dir = null;
+    }
+    if (dir && (await ensureDirWritePermission(dir))) {
+      try {
+        await writeSampleJsonToDirectory(dir, blob);
+        return { ok: true, mode: "project" };
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    if (typeof window !== "undefined" && typeof window.showDirectoryPicker === "function") {
+      try {
+        dir = await window.showDirectoryPicker({ mode: "readwrite" });
+        if (!(await ensureDirWritePermission(dir))) {
+          return { ok: false, mode: "aborted" };
+        }
+        await writeSampleJsonToDirectory(dir, blob);
+        try {
+          await idbPut(IDB_KEY_DEPLOY_DIR, dir);
+        } catch (e2) {
+          console.warn(e2);
+        }
+        return { ok: true, mode: "project" };
+      } catch (e) {
+        if (e && /** @type {{ name?: string }} */ (e).name === "AbortError") {
+          return { ok: false, mode: "aborted" };
+        }
+        console.error(e);
+      }
+    }
+
     if (typeof window !== "undefined" && typeof window.showSaveFilePicker === "function") {
       try {
         var handle = await window.showSaveFilePicker({

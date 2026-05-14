@@ -11,6 +11,7 @@ import {
   MAX_LIVE_IN_MAIN,
   MAX_MEMBER_IN_MAIN,
   MAIN_SIZE,
+  SAMPLE_DECK_RECIPES_PUBLIC_FILENAME,
   STORAGE_ACTIVE_PRESET_ID,
   STORAGE_CARD_FAVORITES,
   STORAGE_DECK,
@@ -44,9 +45,9 @@ import {
 } from "./cards.js";
 import { parseDeckTextRecipe } from "./decklogImport.js";
 import {
+  effectiveSampleThumbnailCardNo,
   getSampleDeckRecipes,
   normalizeSampleRecipesArray,
-  SAMPLE_DECK_RECIPES_MAX,
   SAMPLE_DEVELOPER_PASSCODE,
   savePublishedSampleRecipesToDisk,
   setPublishedSampleRecipesCache,
@@ -2051,7 +2052,7 @@ export function initDeckBuilder(root, { onStartGame }) {
           filtered.length + " 種（メンバー " + hitMember + " / ライブ " + hitLive + "）・合計 " + sum + " 枚";
       } else if (cardPanelMode === "samples") {
         var rl = getSampleDeckRecipes();
-        hit.textContent = "サンプル " + rl.length + " / 最大 " + SAMPLE_DECK_RECIPES_MAX + " 件まで追加予定";
+        hit.textContent = "サンプル " + rl.length + " 件";
       } else {
         hit.textContent =
           filtered.length === cards.length
@@ -2139,7 +2140,7 @@ export function initDeckBuilder(root, { onStartGame }) {
       var recipesForUi = getSampleDeckRecipes();
       if (hitSam) {
         hitSam.textContent =
-          "サンプル " + recipesForUi.length + " / 最大 " + SAMPLE_DECK_RECIPES_MAX + " 件まで追加予定";
+          "サンプル " + recipesForUi.length + " 件";
       }
       renderSampleRecipesTiles(recipesForUi);
       cardGridVirtual.active = false;
@@ -3135,7 +3136,8 @@ export function initDeckBuilder(root, { onStartGame }) {
     var parts = [];
     for (var i = 0; i < recipes.length; i++) {
       var r = recipes[i];
-      var thumbCard = getCard(r.thumbnailCardNo);
+      var thumbNo = effectiveSampleThumbnailCardNo(r);
+      var thumbCard = getCard(thumbNo);
       var thumbInner = thumbCard
         ? builderCatalogThumbImgHtml(thumbCard.img, "sample-recipe-thumb-img deck-builder-card-thumb", {
             eager: i < 8,
@@ -3146,6 +3148,7 @@ export function initDeckBuilder(root, { onStartGame }) {
       if (isSampleDevMode()) {
         devActs =
           '<div class="sample-recipe-actions sample-recipe-actions--dev">' +
+          '<button type="button" class="btn sm" data-sample-act="dev-thumb">サムネ指定</button>' +
           '<button type="button" class="btn sm danger" data-sample-act="dev-delete">サンプルを削除</button>' +
           '<button type="button" class="btn sm secondary" data-sample-act="dev-overwrite">サンプルを上書き</button>' +
           "</div>";
@@ -3174,7 +3177,7 @@ export function initDeckBuilder(root, { onStartGame }) {
           " 枚</p>" +
           '<div class="sample-recipe-actions">' +
           '<button type="button" class="btn sm primary" data-sample-act="play">ソロプレイ</button>' +
-          '<button type="button" class="btn sm secondary" data-sample-act="copy">コピーして保存</button>' +
+          '<button type="button" class="btn sm secondary" data-sample-act="copy">コピーして編集</button>' +
           "</div>" +
           devActs +
           "</div></article>",
@@ -3266,22 +3269,31 @@ export function initDeckBuilder(root, { onStartGame }) {
       }
       if (act === "copy") {
         applySampleRecipeToMainDeck(recipe);
-        var copyName = recipe.name + "（サンプルより）";
-        var addedSam = addDeckSlot(library, copyName, deckMap, {
-          keyCardNos: recipe.keyCardNos,
-          keyCard2Nos: recipe.keyCard2Nos,
-          keyCard3Nos: recipe.keyCard3Nos,
-          middleCardNos: recipe.middleCardNos,
-        });
-        library = { slots: addedSam.slots };
-        persistDeckLibrary(library);
-        if (addedSam.addedId) localStorage.setItem(STORAGE_ACTIVE_PRESET_ID, addedSam.addedId);
-        renderPresetSelect();
-        var selPz = el("deck-preset-select");
-        if (selPz && addedSam.addedId) selPz.value = addedSam.addedId;
-        persistDeckState();
+        pruneOrphanRoleLabels();
         setCardPanelMode("deck");
-        showToast("「" + copyName + "」を登録一覧に追加し、登録中のデッキに反映しました");
+        showToast("「" + recipe.name + "」を編集中デッキに読み込みました（保存デッキ一覧には追加していません）");
+        return;
+      }
+      if (act === "dev-thumb") {
+        if (!isSampleDevMode()) return;
+        var k1 = Array.isArray(recipe.keyCardNos) && recipe.keyCardNos[0] ? String(recipe.keyCardNos[0]) : "";
+        var defLine =
+          "未入力にするとキー①" + (k1 ? "（" + k1 + "）" : "") + "をサムネにします。別のカードにする場合はカード番号を入力";
+        var inp = window.prompt("サムネイル表示に使うカード番号\n" + defLine, recipe.thumbnailCardNo || "");
+        if (inp === null) return;
+        var t = String(inp).trim();
+        if (t && (!(recipe.deck[t] > 0) || !getCard(t))) {
+          showToast("そのカード番号はこのサンプルのデッキに含まれている必要があります");
+          return;
+        }
+        var curTh = getSampleDeckRecipes().slice();
+        var mapped = curTh.map(function (x) {
+          if (x.id !== sid) return x;
+          var y = Object.assign({}, x);
+          y.thumbnailCardNo = t;
+          return y;
+        });
+        devPublishSampleRecipeList(mapped);
         return;
       }
       if (act === "dev-delete") {
@@ -3379,10 +3391,6 @@ export function initDeckBuilder(root, { onStartGame }) {
   el("btn-add-current-deck-to-samples")?.addEventListener("click", function () {
     if (!isSampleDevMode()) return;
     var cur = getSampleDeckRecipes().slice();
-    if (cur.length >= SAMPLE_DECK_RECIPES_MAX) {
-      showToast("サンプルは最大 " + SAMPLE_DECK_RECIPES_MAX + " 件までです");
-      return;
-    }
     var nameIn = window.prompt("新しいサンプルの名前", "新規サンプル");
     if (nameIn == null) return;
     var nm = String(nameIn).trim();
@@ -3405,11 +3413,22 @@ export function initDeckBuilder(root, { onStartGame }) {
     }
     savePublishedSampleRecipesToDisk(list).then(function (r) {
       if (!r || r.mode === "aborted") return;
+      if (r.mode === "project") {
+        showToast(
+          SAMPLE_DECK_RECIPES_PUBLIC_FILENAME +
+            " を index.html と同じフォルダに保存しました。続けて Git の push やホストへのアップロードを行ってください。",
+        );
+        return;
+      }
       if (r.mode === "picker") {
         showToast("保存しました。続けて Git の push やホストへのアップロードを行ってください。");
         return;
       }
-      showToast("ブラウザのダウンロードフォルダに保存しました。index.html と同じフォルダへ移してからデプロイしてください。");
+      showToast(
+        "ブラウザのダウンロードフォルダに保存しました。" +
+          SAMPLE_DECK_RECIPES_PUBLIC_FILENAME +
+          " を index.html と同じフォルダへ移してからデプロイしてください。",
+      );
     });
   });
 

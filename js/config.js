@@ -145,38 +145,6 @@ export const DEFAULT_STARTER_MIDDLE_CARD_NOS = ["PL!N-bp4-030-L", "PL!SP-bp5-001
 /** プリセット一覧サムネ（デッキに収録されている番号） */
 export const DEFAULT_STARTER_THUMBNAIL_CARD_NO = "PL!N-bp5-027-L";
 
-/** 組み込みプリセット2 — ラブユーランジュ2611（メンバー48＋ライブ12） */
-export const BUILTIN_LOVE_ORANGE_2611_PRESET_ID = "llocg-builtin-love-orange-2611";
-export const BUILTIN_LOVE_ORANGE_2611_PRESET_NAME = "ラブユーランジュ2611";
-
-export const DEFAULT_LOVE_ORANGE_2611_DECK_MAP = {
-  "PL!-pb1-018-R": 2,
-  "PL!N-bp1-002-P": 4,
-  "PL!N-bp1-002-SEC": 4,
-  "PL!N-bp1-003-SEC": 3,
-  "PL!N-bp1-012-SEC": 4,
-  "PL!N-bp3-004-P": 4,
-  "PL!N-PR-009-PR": 4,
-  "PL!N-PR-014-PR": 4,
-  "PL!N-sd1-001-SD": 3,
-  "PL!N-sd1-006-SD": 4,
-  "PL!N-sd1-008-SD": 4,
-  "PL!SP-bp2-002-R": 4,
-  "PL!SP-sd1-020-SD": 4,
-  "PL!N-bp1-026-L": 2,
-  "PL!N-bp1-029-L": 4,
-  "PL!N-bp3-030-L": 4,
-  "PL!N-sd1-026-SD": 2,
-};
-/** キー — 中須かすみ（SEC） */
-export const DEFAULT_LOVE_ORANGE_2611_KEY_CARD_NOS = ["PL!N-bp1-002-SEC"];
-/** キー② — 鐘 嵐珠（SEC） */
-export const DEFAULT_LOVE_ORANGE_2611_KEY2_CARD_NOS = ["PL!N-bp1-012-SEC"];
-export const DEFAULT_LOVE_ORANGE_2611_KEY3_CARD_NOS = [];
-/** 中間 — エマ・ヴェルデ、矢澤にこ */
-export const DEFAULT_LOVE_ORANGE_2611_MIDDLE_CARD_NOS = ["PL!N-sd1-008-SD", "PL!-pb1-018-R"];
-export const DEFAULT_LOVE_ORANGE_2611_THUMBNAIL_CARD_NO = "PL!N-bp1-002-SEC";
-
 /** 初期エネルギートークン（公式サイトの SD エネ画像） */
 export const DEFAULT_ENERGY_CARD_NO = "LL-E-001-SD";
 export const DEFAULT_ENERGY_NAME = "エネルギー";
