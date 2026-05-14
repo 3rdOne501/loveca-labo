@@ -182,10 +182,11 @@ export function addDeckSlot(lib, name, deckMap, roleLabels) {
   const k2 = roleLabels ? sanitizeCardNoList(roleLabels.keyCard2Nos) : [];
   const k3 = roleLabels ? sanitizeCardNoList(roleLabels.keyCard3Nos) : [];
   const m = roleLabels ? sanitizeCardNoList(roleLabels.middleCardNos) : [];
+  const newId = newSlotId();
   const slots = [
     ...userSlotsOnly(lib),
     {
-      id: newSlotId(),
+      id: newId,
       name: nm,
       deck: cloneDeckMap(deckMap),
       keyCardNos: k,
@@ -196,7 +197,7 @@ export function addDeckSlot(lib, name, deckMap, roleLabels) {
     },
   ];
   while (slots.length > MAX_SAVED_DECKS) slots.shift();
-  return { slots: [...builtins, ...slots] };
+  return { slots: [...builtins, ...slots], addedId: newId };
 }
 
 /**

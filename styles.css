@@ -492,6 +492,116 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
   background: rgba(8, 4, 14, 0.22);
 }
 
+/* サンプルリスト（カード一覧と同様にパネル内スクロール） */
+#view-deck .sample-recipes-scroll {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  align-self: stretch;
+  min-height: 280px;
+  max-height: min(calc(100vh - 8.5rem), 78vh, 980px);
+  max-height: min(calc(100svh - 8.5rem), 78svh, 980px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 0.35rem;
+  padding: 0.35rem 0.42rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 140, 190, 0.14);
+  background: rgba(8, 4, 14, 0.22);
+}
+
+.sample-recipes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(156px, 1fr));
+  gap: 0.65rem 0.55rem;
+  align-content: start;
+}
+
+.sample-recipe-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.38rem;
+  min-width: 0;
+  padding: 0.42rem 0.4rem 0.48rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 160, 210, 0.18);
+  background: rgba(4, 2, 12, 0.35);
+}
+
+.sample-recipe-thumb-btn {
+  display: block;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.25);
+  cursor: zoom-in;
+  overflow: hidden;
+  line-height: 0;
+  box-shadow: 0 0 0 1px rgba(255, 170, 210, 0.18);
+  transition:
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+.sample-recipe-thumb-btn:hover {
+  box-shadow: 0 0 0 2px rgba(255, 140, 190, 0.45), 0 6px 22px rgba(0, 0, 0, 0.35);
+  transform: translateY(-1px);
+}
+.sample-recipe-thumb-btn:focus-visible {
+  outline: 2px solid rgba(255, 160, 210, 0.85);
+  outline-offset: 2px;
+}
+
+.sample-recipe-thumb-btn .deck-builder-card-thumb,
+.sample-recipe-thumb-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  aspect-ratio: 88 / 126;
+  object-fit: cover;
+}
+
+.sample-recipe-thumb-fallback {
+  aspect-ratio: 88 / 126;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 900;
+  color: rgba(255, 220, 240, 0.35);
+  background: rgba(20, 12, 28, 0.6);
+}
+
+.sample-recipe-name {
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.35;
+  color: rgba(255, 236, 248, 0.96);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.sample-recipe-counts {
+  margin: 0;
+  font-size: 0.66rem;
+  line-height: 1.35;
+}
+
+.sample-recipe-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.32rem;
+}
+.sample-recipe-actions .btn {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 #view-deck .card-grid-virtual-spacer {
   width: 100%;
   flex-shrink: 0;
@@ -590,7 +700,8 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
 }
 
 @media (max-width: 1100px) {
-  #view-deck .card-grid-scroll {
+  #view-deck .card-grid-scroll,
+  #view-deck .sample-recipes-scroll {
     max-height: min(calc(100vh - 7.5rem), 86vh, 960px);
     max-height: min(calc(100svh - 7.5rem), 86svh, 960px);
   }

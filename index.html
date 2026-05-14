@@ -213,20 +213,30 @@ python3 -m http.server 8080</pre>
               <button type="button" class="btn sm primary" id="btn-card-panel-catalog" aria-pressed="true">
                 カード一覧
               </button>
+              <button type="button" class="btn sm secondary" id="btn-card-panel-samples" aria-pressed="false">
+                サンプルリスト
+              </button>
               <button type="button" class="btn sm secondary" id="btn-card-panel-deck" aria-pressed="false">
                 登録デッキ
               </button>
             </div>
           </div>
-          <p class="panel-lead">
+          <p id="card-panel-lead-catalog" class="panel-lead">
             メンバーは下の「−」「＋」またはカード本体クリックで追加。画像クリックで拡大。<kbd>/</kbd> 検索 · プレイ中 <kbd>U</kbd> / <kbd>R</kbd> ·
             <kbd>?</kbd>
+            <span class="muted"> · 上部の<strong>サンプルリスト</strong>／<strong>登録デッキ</strong>は同じボタンでもう一度押すと一覧に戻ります。</span>
+          </p>
+          <p id="card-panel-lead-samples" class="panel-lead" hidden>
+            <strong>サムネイル</strong>でカード一覧・BH・コスト分布を確認できます。<strong>ソロプレイ</strong>はそのまま対戦開始、<strong>コピーして保存</strong>は登録一覧に追加して<strong>いまの編集中デッキ</strong>にも反映し、登録デッキタブへ切り替わります。<strong>サンプルリスト</strong>／<strong>登録デッキ</strong>ボタンはもう一度押すとカード一覧に戻ります。
           </p>
           <div id="card-deck-summary" class="card-deck-summary" hidden></div>
           <div id="card-grid-scroll" class="card-grid-scroll">
             <div id="card-grid-top-spacer" class="card-grid-virtual-spacer" aria-hidden="true"></div>
             <div id="card-grid" class="card-grid"></div>
             <div id="card-grid-bottom-spacer" class="card-grid-virtual-spacer" aria-hidden="true"></div>
+          </div>
+          <div id="sample-recipes-scroll" class="sample-recipes-scroll" hidden>
+            <div id="sample-recipes-grid" class="sample-recipes-grid" role="list"></div>
           </div>
         </section>
 
@@ -307,6 +317,40 @@ python3 -m http.server 8080</pre>
                   JSON 読み込み
                   <input type="file" id="deck-import-file" accept="application/json,.json" class="sr-only" />
                 </label>
+              </div>
+            </div>
+          </details>
+
+          <details class="deck-panel-section" id="deck-section-sample-recipes-editor">
+            <summary class="deck-panel-summary">サンプルレシピ上書き（制作者・この端末のみ）</summary>
+            <div class="deck-panel-section-body">
+              <p class="hint search-hint-muted">
+                左の「サンプルリスト」に載せる構成を <strong>このブラウザの localStorage だけ</strong>で差し替えます（一般ユーザー向けではありません）。JSON
+                はオブジェクトの<strong>配列</strong>・最大 <strong>20</strong> 件・各要素は
+                <code>id</code> / <code>name</code> / <code>deck</code>（番号→枚数）必須。
+                <code>keyCardNos</code> 等は配列、<code>noteLines</code> は任意。<code>thumbnailCardNo</code> は画像用のカード番号。
+              </p>
+              <label class="field">
+                <span>上書き JSON</span>
+                <textarea
+                  id="sample-recipes-override-json"
+                  class="textarea-regulation sample-recipes-override-textarea"
+                  rows="14"
+                  maxlength="250000"
+                  spellcheck="false"
+                  aria-label="サンプルレシピ上書き用 JSON"
+                ></textarea>
+              </label>
+              <div class="btn-row wrap sample-recipes-override-actions">
+                <button type="button" class="btn sm primary" id="btn-sample-recipes-override-save">
+                  保存して反映
+                </button>
+                <button type="button" class="btn sm secondary" id="btn-sample-recipes-override-reload">
+                  欄を再読込
+                </button>
+                <button type="button" class="btn sm secondary" id="btn-sample-recipes-override-clear">
+                  上書きを削除（リポジトリ既定へ）
+                </button>
               </div>
             </div>
           </details>
@@ -1125,7 +1169,7 @@ python3 -m http.server 8080</pre>
           <details>
             <summary><strong>中央：カード一覧／登録デッキ</strong></summary>
             <p>
-              上部のボタンで「カード一覧」と「登録デッキ」を切り替えます。カードの <strong>−／＋</strong> や本体クリックでメインデッキに加減算。画像クリックで拡大。キー／中間ロールはデッキ内のカードに付ける<strong>目印</strong>で、ソロ開始時の並べ替え補助に使います。
+              上部のボタンで「カード一覧」「サンプルリスト」「登録デッキ」を切り替えます。サンプルは<strong>サムネイル</strong>でデッキ確認ダイアログ（一覧・BH・コスト分布）が開き、<strong>ソロプレイ</strong>または<strong>コピーして保存</strong>で登録デッキに追加できます。カードの <strong>−／＋</strong> や本体クリックでメインデッキに加減算。画像クリックで拡大。キー／中間ロールはデッキ内のカードに付ける<strong>目印</strong>で、ソロ開始時の並べ替え補助に使います。
             </p>
           </details>
           <details>
