@@ -31,18 +31,29 @@ export function setCardsJsonUrlOverride(urlOrEmpty) {
 /**
  * デッキ構築のカード一覧サムネ用に軽量 URL を返す（一覧は wsrv.nl 経由の縮小 JPEG、拡大プレビューは元 URL）。
  * @param {string} originalUrl
+ * @param {{ hi?: boolean } | undefined} opts `hi` で一覧より高解像（サンプルサムネ等）
  * @returns {string}
  */
-export function catalogListThumbnailUrl(originalUrl) {
+export function catalogListThumbnailUrl(originalUrl, opts) {
+  const hi = opts != null && typeof opts === "object" && opts.hi === true;
   if (!originalUrl || typeof originalUrl !== "string") return originalUrl;
   if (originalUrl.startsWith("data:") || originalUrl.includes("wsrv.nl")) return originalUrl;
   try {
     const u = new URL(originalUrl, typeof location !== "undefined" ? location.href : "https://local.invalid/");
     if (u.protocol !== "http:" && u.protocol !== "https:") return originalUrl;
+    const w = hi ? 240 : 112;
+    const h = hi ? 342 : 158;
+    const q = hi ? 88 : 65;
     return (
       "https://wsrv.nl/?url=" +
       encodeURIComponent(u.href) +
-      "&w=112&h=158&fit=cover&q=65&output=jpg&n=-1"
+      "&w=" +
+      w +
+      "&h=" +
+      h +
+      "&fit=cover&q=" +
+      q +
+      "&output=jpg&n=-1"
     );
   } catch (_) {
     return originalUrl;

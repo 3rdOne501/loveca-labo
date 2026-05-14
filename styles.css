@@ -398,6 +398,45 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
   box-shadow: 0 0 20px rgba(255, 85, 155, 0.38), 0 2px 0 rgba(184, 50, 106, 0.45);
 }
 
+/* ソロプレイ開始: 目立つ発光（無効時はアニメなし） */
+#view-deck .btn-start-game-sticky:not(:disabled) {
+  box-shadow:
+    0 0 22px rgba(255, 95, 165, 0.75),
+    0 0 48px rgba(255, 80, 145, 0.45),
+    0 0 4px rgba(255, 200, 230, 0.5) inset,
+    var(--shadow-glow-pink),
+    0 2px 0 rgba(184, 50, 106, 0.52);
+  animation: deck-start-game-glow 2.4s ease-in-out infinite;
+}
+#view-deck .btn-start-game-sticky:not(:disabled):hover {
+  animation: none;
+  filter: brightness(1.09);
+  box-shadow:
+    0 0 28px rgba(255, 110, 180, 0.9),
+    0 0 64px rgba(255, 70, 140, 0.5),
+    var(--shadow-glow-pink),
+    0 2px 0 rgba(184, 50, 106, 0.55);
+}
+@keyframes deck-start-game-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 20px rgba(255, 90, 160, 0.65),
+      0 0 42px rgba(255, 75, 140, 0.38),
+      0 0 4px rgba(255, 210, 235, 0.35) inset,
+      var(--shadow-glow-pink),
+      0 2px 0 rgba(184, 50, 106, 0.52);
+  }
+  50% {
+    box-shadow:
+      0 0 30px rgba(255, 110, 180, 0.95),
+      0 0 58px rgba(255, 85, 155, 0.52),
+      0 0 6px rgba(255, 220, 240, 0.55) inset,
+      var(--shadow-glow-pink),
+      0 2px 0 rgba(184, 50, 106, 0.58);
+  }
+}
+
 .deck-preset-counts-compact {
   margin: 0 0 0.55rem;
   font-size: 0.72rem;
@@ -465,6 +504,16 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
   min-height: 0;
 }
 
+/* 中央カード一覧 + 下サンプル一覧の縦スタック（同時表示用） */
+#view-deck .card-panel-body-stack {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0%;
+  min-height: 0;
+  align-self: stretch;
+  gap: 0.35rem;
+}
+
 /* Flex 縦並び時、内側スクロールに必要 */
 #view-deck .card-panel {
   overflow: hidden;
@@ -512,8 +561,8 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
   background: rgba(8, 4, 14, 0.22);
 }
 
-/* サンプルタブでないときはサンプル領域が flex で高さを奪わないようにする */
-#view-deck:not(.view-deck--samples-tab) .sample-recipes-scroll[hidden] {
+/* サンプルパネルが閉じているときはサンプル領域が flex で高さを奪わないようにする */
+#view-deck:not(.view-deck--sample-panel-open) .sample-recipes-scroll[hidden] {
   display: none !important;
   flex: 0 0 0 !important;
   min-height: 0 !important;
@@ -522,6 +571,118 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
   padding: 0 !important;
   border: none !important;
   overflow: hidden !important;
+}
+
+/* スタック内では兄弟間の gap のみで余白（二重マージン防止） */
+#view-deck .card-panel-body-stack .card-grid-scroll,
+#view-deck .card-panel-body-stack .sample-recipes-scroll {
+  margin-top: 0;
+}
+
+/* サンプル一覧を開いたとき: 上＝カード／登録デッキ、下＝サンプルで縦分割 */
+#view-deck.view-deck--sample-panel-open .card-panel-body-stack .card-grid-scroll {
+  flex: 1 1 56%;
+  min-height: min(240px, 48vh);
+  min-height: min(240px, 48dvh);
+  max-height: min(calc(100vh - 13rem), 56vh, 640px);
+  max-height: min(calc(100svh - 13rem), 56svh, 640px);
+}
+
+#view-deck.view-deck--sample-panel-open .card-panel-body-stack .sample-recipes-scroll {
+  flex: 1 1 44%;
+  min-height: min(200px, 36vh);
+  min-height: min(200px, 36dvh);
+  max-height: min(calc(100vh - 13rem), 42vh, 520px);
+  max-height: min(calc(100svh - 13rem), 42svh, 520px);
+}
+
+/* 開発者: サンプルサムネイルをカード画像から選択 */
+.sample-thumb-pick-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(6, 2, 10, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.sample-thumb-pick-dialog {
+  width: min(720px, 100%);
+  max-height: min(92vh, 900px);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 150, 200, 0.22);
+  background: linear-gradient(155deg, rgba(34, 20, 44, 0.96) 0%, rgba(16, 8, 22, 0.98) 100%);
+  box-shadow: var(--shadow-panel);
+  padding: 0.85rem 1rem 1rem;
+}
+.sample-thumb-pick-dialog h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1.02rem;
+  font-weight: 800;
+  color: #ffe8f4;
+}
+.sample-thumb-pick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 0.5rem;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 120px;
+  max-height: min(52vh, 480px);
+  padding: 0.35rem 0.1rem 0.5rem;
+}
+.sample-thumb-pick-card {
+  display: block;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  overflow: hidden;
+  line-height: 0;
+  box-shadow: 0 0 0 1px rgba(255, 170, 210, 0.15);
+  transition:
+    box-shadow 0.15s ease,
+    transform 0.12s ease;
+}
+.sample-thumb-pick-card.is-current {
+  box-shadow: 0 0 0 2px rgba(110, 200, 255, 0.65);
+}
+.sample-thumb-pick-card.is-current:hover {
+  box-shadow: 0 0 0 2px rgba(140, 220, 255, 0.85);
+}
+.sample-thumb-pick-card:focus-visible {
+  outline: 2px solid rgba(255, 160, 210, 0.9);
+  outline-offset: 2px;
+}
+.sample-thumb-pick-card .deck-builder-card-thumb,
+.sample-thumb-pick-card img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 88 / 126;
+  object-fit: cover;
+  display: block;
+}
+.sample-thumb-pick-meta {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin: 0 0 0.45rem;
+  line-height: 1.45;
+}
+.sample-thumb-pick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.55rem;
+  flex-shrink: 0;
 }
 
 .sample-recipes-grid {
@@ -4465,10 +4626,11 @@ body.play-mode .deck-pile {
 .card-deck-summary .deck-peek-bar-wrap {
   min-height: 70px;
 }
-.card-deck-summary-help {
-  margin: 0.28rem 0 0 !important;
-  font-size: 0.66rem !important;
-  line-height: 1.35 !important;
+.card-deck-summary .deck-peek-bar-col {
+  width: clamp(24px, 5.5vw, 38px);
+}
+.card-deck-summary .deck-peek-bar {
+  width: min(28px, 78%);
 }
 .card-thumb-role-edit-row {
   display: flex;

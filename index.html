@@ -221,22 +221,16 @@ python3 -m http.server 8080</pre>
               </button>
             </div>
           </div>
-          <p id="card-panel-lead-catalog" class="panel-lead">
-            メンバーは下の「−」「＋」またはカード本体クリックで追加。画像クリックで拡大。<kbd>/</kbd> 検索 · プレイ中 <kbd>U</kbd> / <kbd>R</kbd> ·
-            <kbd>?</kbd>
-            <span class="muted"> · 上部の<strong>サンプルリスト</strong>／<strong>登録デッキ</strong>は同じボタンでもう一度押すと一覧に戻ります。</span>
-          </p>
-          <p id="card-panel-lead-samples" class="panel-lead" hidden>
-            <strong>サムネイル</strong>でカード一覧・BH・コスト分布を確認できます。<strong>ソロプレイ</strong>はそのまま対戦開始、<strong>コピーして編集</strong>は保存デッキ一覧には追加せず<strong>いまの編集中デッキ</strong>にだけ反映し、登録デッキタブへ切り替わります（開発者モードではサムネイル表示カードも指定できます）。<strong>サンプルリスト</strong>／<strong>登録デッキ</strong>ボタンはもう一度押すとカード一覧に戻ります。
-          </p>
           <div id="card-deck-summary" class="card-deck-summary" hidden></div>
-          <div id="card-grid-scroll" class="card-grid-scroll">
-            <div id="card-grid-top-spacer" class="card-grid-virtual-spacer" aria-hidden="true"></div>
-            <div id="card-grid" class="card-grid"></div>
-            <div id="card-grid-bottom-spacer" class="card-grid-virtual-spacer" aria-hidden="true"></div>
-          </div>
-          <div id="sample-recipes-scroll" class="sample-recipes-scroll" hidden>
-            <div id="sample-recipes-grid" class="sample-recipes-grid" role="list"></div>
+          <div class="card-panel-body-stack">
+            <div id="card-grid-scroll" class="card-grid-scroll">
+              <div id="card-grid-top-spacer" class="card-grid-virtual-spacer" aria-hidden="true"></div>
+              <div id="card-grid" class="card-grid"></div>
+              <div id="card-grid-bottom-spacer" class="card-grid-virtual-spacer" aria-hidden="true"></div>
+            </div>
+            <div id="sample-recipes-scroll" class="sample-recipes-scroll" hidden>
+              <div id="sample-recipes-grid" class="sample-recipes-grid" role="list"></div>
+            </div>
           </div>
         </section>
 
@@ -252,9 +246,8 @@ python3 -m http.server 8080</pre>
             <div id="deck-validation-banner" class="deck-validation-banner" role="status" hidden></div>
             <p class="count-line deck-count-line">
               メンバー <strong id="deck-count-member">0</strong>
-              <span class="muted deck-count-ref">（目安 48）</span> · ライブ <strong id="deck-count-live">0</strong>
-              <span class="muted deck-count-ref">（目安 12）</span> · 合計 <strong id="deck-count-total">0</strong>
-              <span class="muted deck-count-ref">（目安 60）</span>
+              · ライブ <strong id="deck-count-live">0</strong>
+              · 合計 <strong id="deck-count-total">0</strong>
             </p>
           </div>
 
@@ -1170,13 +1163,13 @@ python3 -m http.server 8080</pre>
           <details>
             <summary><strong>中央：カード一覧／登録デッキ</strong></summary>
             <p>
-              上部のボタンで「カード一覧」「サンプルリスト」「登録デッキ」を切り替えます。サンプルは<strong>サムネイル</strong>でデッキ確認ダイアログ（一覧・BH・コスト分布）が開き、<strong>ソロプレイ</strong>または<strong>コピーして編集</strong>で編集中デッキに読み込めます（保存デッキ一覧には追加されません）。カードの <strong>−／＋</strong> や本体クリックでメインデッキに加減算。画像クリックで拡大。キー／中間ロールはデッキ内のカードに付ける<strong>目印</strong>で、ソロ開始時の並べ替え補助に使います。
+              上部のボタンで<strong>カード一覧</strong>と<strong>登録デッキ</strong>を切り替え、<strong>サンプルリスト</strong>は下段パネルの表示オン／オフです（上と同時に使えます）。サンプルは<strong>サムネイル</strong>でデッキ確認ダイアログ（一覧・BH・コスト分布）が開き、<strong>ソロプレイ</strong>または<strong>コピーして編集</strong>で編集中デッキに読み込めます（保存デッキ一覧には追加されません）。カードの <strong>−／＋</strong> や本体クリックでメインデッキに加減算。画像クリックで拡大。キー／中間ロールはデッキ内のカードに付ける<strong>目印</strong>で、ソロ開始時の並べ替え補助に使います。
             </p>
           </details>
           <details>
             <summary><strong>右：メインデッキと保存</strong></summary>
             <p>
-              メンバー 48・ライブ 12・計 60 枚が一般的な構築目安です（レギュはご自身で確認）。<strong>ソロプレイ開始</strong>でプレイ画面へ進みます。保存デッキスロットや JSON 入出力、テキスト（DECK LOG）取り込みは折りたたみセクションにあります。
+              <strong>ソロプレイ開始</strong>でプレイ画面へ進みます。保存デッキスロットや JSON 入出力、テキスト（DECK LOG）取り込みは折りたたみセクションにあります。
             </p>
             <p class="muted">
               一部の特殊な印刷コスト（例：手札の枚数でコストが下がるメンバー）は、一覧サムネに <strong>20〜0※</strong> のように注記し、プレイ中の側面エネ計算にも反映します。
