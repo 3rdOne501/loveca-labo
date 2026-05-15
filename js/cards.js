@@ -589,6 +589,35 @@ export function cardIsNoteLiveCatalog(card) {
   return /[＋+]/.test(seg) || /プラス/.test(seg);
 }
 
+/** simulator・インポート互換（文言トークンは音符ライブと同じ） */
+export const LIVE_START_FOR_DRAW_YELL = LIVE_START_FOR_NOTE_LIVE;
+export const LIVE_SUCCESS_SPLIT_FOR_DRAW_YELL = LIVE_SUCCESS_SPLIT;
+
+const DRAW_YELL_BLADE_HEART_CARD_NOS = new Set(
+  ["PL!N-bp1-029-L", "PL!N-bp5-027-L", "PL!HS-bp1-022-L"].map((x) => normalizeCardCatalogLookupKey(x)),
+);
+
+/**
+ * ドローエール（BH）：エールでめくれると追加ドローが出るライブ。
+ * cards.js と simulator で共通（古いキャッシュ環境での import 不整合対策）。
+ */
+export function catalogLiveCardIsDrawYellBladeHeart(card) {
+  if (!card || card.type !== T_LIVE) return false;
+  if (!cardHasBladeHeart(card)) return false;
+  const no = normalizeCardCatalogLookupKey(card.card_no || "");
+  if (DRAW_YELL_BLADE_HEART_CARD_NOS.has(no)) return true;
+  const ab = String(card.ability || "");
+  if (!ab.includes(LIVE_START_FOR_DRAW_YELL)) return false;
+  const tail = ab.split(LIVE_START_FOR_DRAW_YELL)[1];
+  if (!tail) return false;
+  const seg = tail.split(LIVE_SUCCESS_SPLIT_FOR_DRAW_YELL)[0];
+  if (!seg) return false;
+  if (/ドロー/.test(seg)) return true;
+  if (/引く/.test(seg) && /山札(?:から)?/.test(seg)) return true;
+  if (/見る/.test(seg) && /(?:山札|手札)/.test(seg) && /\d\s*枚/.test(seg)) return true;
+  return false;
+}
+
 /** @returns {Set<number>} blade_heart が寄与する表示スロット 1〜7（b_all は 7） */
 export function bladeHeartSlotsOnCard(card) {
   /** @type {Set<number>} */

@@ -1,10 +1,10 @@
 /**
  * blade_heart（ラブカ DB）のキーを UI 用に解釈する。
  * 1=桃,2=赤,3=黄,4=緑,5=青,6=紫,7=ALL（b_all も b_heart07 も ALL）。
- * ハート形は外部素材なしのインライン SVG（公式アイコンではない簡易表現）。
  */
 
 import { T_LIVE } from "./config.js";
+import { gameIconImgHtml, heartSlotToGameIconId } from "./gameIcons.js";
 
 /** メンバー・ライブ共通: DB に blade_heart オブジェクトがあり 1 キー以上あれば BH あり */
 export function cardHasBladeHeart(card) {
@@ -13,9 +13,6 @@ export function cardHasBladeHeart(card) {
   if (bh == null || typeof bh !== "object" || Array.isArray(bh)) return false;
   return Object.keys(bh).length > 0;
 }
-
-const BH_PATH =
-  "M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.41 4.41 3 7.5 3c1.73 0 3.41.81 4.5 2.09C13.09 3.81 14.77 3 16.5 3 19.59 3 22 5.41 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z";
 
 /** @type {{ name: string, fill?: string, all?: boolean }[]} */
 const SLOT = [
@@ -28,11 +25,6 @@ const SLOT = [
   { name: "紫", fill: "#8e24aa" },
   { name: "ALL", all: true },
 ];
-
-let gradIdSeq = 0;
-function nextGradId() {
-  return "bhgrad" + String(++gradIdSeq);
-}
 
 function escapeAttr(s) {
   return String(s)
@@ -408,12 +400,17 @@ function svgHeartAll(className) {
  */
 export function svgForBladeHeartKey(dbKey, className) {
   const slot = parseBladeHeartSlotFromKey(dbKey);
-  if (slot === 7) return svgHeartAll(className + " blade-heart-svg");
-  if (slot != null && slot >= 1 && slot <= 6) {
-    const meta = SLOT[slot];
-    return svgHeartSolid(meta.fill || "#888", className + " blade-heart-svg");
-  }
-  return svgHeartSolid("#a8adb8", className + " blade-heart-svg blade-heart-svg--unknown");
+  const id = heartSlotToGameIconId(slot == null ? 99 : slot);
+  const meta = slot != null && slot >= 1 && slot <= 7 ? SLOT[slot] : null;
+  const alt = meta ? meta.name + " BH" : escapeHtml(String(dbKey));
+  const cn = ((className || "") + " blade-heart-svg").trim();
+  return gameIconImgHtml(id, {
+    className: cn,
+    alt,
+    title: alt,
+    width: 16,
+    height: 16,
+  });
 }
 
 /**

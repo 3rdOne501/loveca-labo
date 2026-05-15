@@ -34,6 +34,8 @@ import {
   bladeHeartSlotsOnCard,
   isHandDependentCost20Member,
   cardIsNoteLiveCatalog,
+  catalogLiveCardIsDrawYellBladeHeart,
+  LIVE_START_FOR_DRAW_YELL,
 } from "./cards.js";
 import { loadDeckLibrary, normalizeDeckMapCounts } from "./deckLibrary.js";
 import {
@@ -54,42 +56,12 @@ import {
   sumSlotAccumValues,
 } from "./bladeHeart.js";
 import { showToast } from "./ui.js";
+import { openCardCatalogDetailDialog } from "./cardCatalogDetail.js";
+import { gameIconImgHtml, gameIconUrl, heartSlotToGameIconId } from "./gameIcons.js";
 
 /** 開幕マリガン／確率モデル用 sessionStorage キー（config 未同期のときの named import 失敗を避ける）。 */
 const STORAGE_OPENING_MULLIGAN_K = "llocg_opening_mulligan_k";
 const STORAGE_DECK_ODDS_OPENING_MULL_MODEL = "llocg_deck_odds_open_mull_model";
-
-const LIVE_START_FOR_DRAW_YELL = "{{live_start.png|ライブ開始時}}";
-const LIVE_SUCCESS_SPLIT_FOR_DRAW_YELL = "{{live_success.png|ライブ成功時}}";
-
-function normalizeCatalogKeyForDrawYell(s) {
-  return String(s == null ? "" : s)
-    .replace(/\ufeff/g, "")
-    .normalize("NFKC")
-    .trim();
-}
-
-const DRAW_YELL_BLADE_HEART_CARD_NOS = new Set(
-  ["PL!N-bp1-029-L", "PL!N-bp5-027-L", "PL!HS-bp1-022-L"].map(normalizeCatalogKeyForDrawYell),
-);
-
-/** ドローエール（BH）：エールでめくれると追加ドローが出るライブ。cards.js と独立（古いキャッシュ環境での import 不整合対策）。 */
-function catalogLiveCardIsDrawYellBladeHeart(card) {
-  if (!card || card.type !== T_LIVE) return false;
-  if (!cardHasBladeHeart(card)) return false;
-  const no = normalizeCatalogKeyForDrawYell(card.card_no || "");
-  if (DRAW_YELL_BLADE_HEART_CARD_NOS.has(no)) return true;
-  const ab = String(card.ability || "");
-  if (!ab.includes(LIVE_START_FOR_DRAW_YELL)) return false;
-  const tail = ab.split(LIVE_START_FOR_DRAW_YELL)[1];
-  if (!tail) return false;
-  const seg = tail.split(LIVE_SUCCESS_SPLIT_FOR_DRAW_YELL)[0];
-  if (!seg) return false;
-  if (/ドロー/.test(seg)) return true;
-  if (/引く/.test(seg) && /山札(?:から)?/.test(seg)) return true;
-  if (/見る/.test(seg) && /(?:山札|手札)/.test(seg) && /\d\s*枚/.test(seg)) return true;
-  return false;
-}
 
 /** @type {{ t: string, act: string, meta?: object }[]} */
 let replayLog = [];
@@ -102,8 +74,8 @@ let uid = 1;
 /** 側面エネに使うカード番号（空なら既定） */
 let selectedEnergyCardNo = "";
 
-/** メンバー追加分のブレード表示（favicon と同じアセット） */
-const MEMBER_BONUS_BLADE_IMG = "https://loveca-solo.pages.dev/icon_blade.png";
+/** メンバー追加分のブレード表示（ゲームアイコン） */
+const MEMBER_BONUS_BLADE_IMG = gameIconUrl("blade");
 
 /** 山札レイアウトは window resize + 描画後 rAF のみ（#zone-deck の ResizeObserver はスクロールバーと相性が悪く長時間ブロックしうる） */
 let deckPileResizeObserver = null;
@@ -682,7 +654,14 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         var fullEsc = escapeHtmlPlain(trimmed);
         if (slot != null) {
           var sc = slot === 99 ? "99" : String(slot);
-          out += '<span class="live-stats-heart-seg live-stats-heart-seg--s' + sc + '">' + fullEsc + "</span>";
+          var ico =
+            '<span class="live-stats-heart-ico-wrap">' +
+            gameIconImgHtml(heartSlotToGameIconId(slot), {
+              className: "game-ico game-ico--live-stats",
+              alt: "",
+            }) +
+            "</span>";
+          out += '<span class="live-stats-heart-seg live-stats-heart-seg--s' + sc + '">' + ico + fullEsc + "</span>";
         } else {
           out += '<span class="live-stats-heart-seg live-stats-heart-seg--plain">' + fullEsc + "</span>";
         }
@@ -3364,7 +3343,10 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         '<span class="deck-remain-bh-pill" data-bh-slot="' +
           si +
           '"><span class="deck-remain-bh-pill__lab">' +
-          escapeHtmlPlain(bladeHeartDisplaySlotLabel(si)) +
+          gameIconImgHtml(heartSlotToGameIconId(si), {
+            className: "game-ico game-ico--remain-pill",
+            alt: bladeHeartDisplaySlotLabel(si),
+          }) +
           '</span><strong class="deck-remain-bh-pill__n">' +
           escapeHtmlPlain(String(cnt)) +
           "</strong></span>",
@@ -3426,7 +3408,10 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         '<span class="deck-remain-bh-pill" data-bh-slot="' +
           sj +
           '"><span class="deck-remain-bh-pill__lab">' +
-          escapeHtmlPlain(bladeHeartDisplaySlotLabel(sj)) +
+          gameIconImgHtml(heartSlotToGameIconId(sj), {
+            className: "game-ico game-ico--remain-pill",
+            alt: bladeHeartDisplaySlotLabel(sj),
+          }) +
           '</span><strong class="deck-remain-bh-pill__n">' +
           escapeHtmlPlain(String(cntW)) +
           "</strong></span>",
@@ -3542,7 +3527,6 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   function memberPlayBonusFooterEl(c) {
     if (!c || c.type !== T_MEMBER) return null;
     ensureCardBoardFields(c);
-    var heartEm = ["", "\ud83e\ude77", "\u2764\ufe0f", "\ud83d\udc9b", "\ud83d\udc9a", "\ud83d\udc99", "\ud83d\udc9c"];
     var frag = document.createElement("div");
     frag.className = "card-member-bonus-footer";
     frag.title = "追加の所持H／ブレード（非公式）";
@@ -3579,7 +3563,15 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       im2.height = 14;
       im2.decoding = "async";
       spM.appendChild(im2);
-      spM.appendChild(document.createTextNode("常時+" + miaBlade));
+      var jMia = document.createElement("img");
+      jMia.className = "card-member-bonus-timing-ico";
+      jMia.src = gameIconUrl("jouji");
+      jMia.alt = "常時";
+      jMia.width = 12;
+      jMia.height = 12;
+      jMia.decoding = "async";
+      spM.appendChild(jMia);
+      spM.appendChild(document.createTextNode("+" + miaBlade));
       frag.appendChild(spM);
     }
     if (lzBlade > 0) {
@@ -3605,7 +3597,15 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       has = true;
       var sp2 = document.createElement("span");
       sp2.className = "card-member-bonus-chip";
-      sp2.appendChild(document.createTextNode((heartEm[si] || "\u2764\ufe0f") + "+" + v));
+      var hi = document.createElement("img");
+      hi.className = "card-member-bonus-heart-ico";
+      hi.src = gameIconUrl(heartSlotToGameIconId(si));
+      hi.alt = "";
+      hi.width = 14;
+      hi.height = 14;
+      hi.decoding = "async";
+      sp2.appendChild(hi);
+      sp2.appendChild(document.createTextNode("+" + v));
       frag.appendChild(sp2);
     }
     var v7 = bonusHeartSlotRead(c, 7);
@@ -3614,11 +3614,14 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       var sp3 = document.createElement("span");
       sp3.className = "card-member-bonus-chip card-member-bonus-chip--all";
       sp3.title = "ALL ハート（任意支払い）";
-      var ic = document.createElement("span");
-      ic.className = "card-member-bonus-all-heart";
-      ic.setAttribute("aria-hidden", "true");
-      ic.textContent = "\u2665";
-      sp3.appendChild(ic);
+      var hi7 = document.createElement("img");
+      hi7.className = "card-member-bonus-heart-ico";
+      hi7.src = gameIconUrl("heart7");
+      hi7.alt = "ALL";
+      hi7.width = 14;
+      hi7.height = 14;
+      hi7.decoding = "async";
+      sp3.appendChild(hi7);
       sp3.appendChild(document.createTextNode("+" + v7));
       frag.appendChild(sp3);
     }
@@ -3628,11 +3631,14 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       spLzA.className = "card-member-bonus-chip card-member-bonus-chip--all card-member-bonus-chip--lanzhu";
       spLzA.title =
         "鐘 嵐珠（bp1-012）: ライブ枠にライブが3枚以上かつ虹ヶ咲シリーズのライブが1枚以上あるとき、ALLハート+2（任意プール）";
-      var icLz = document.createElement("span");
-      icLz.className = "card-member-bonus-all-heart";
-      icLz.setAttribute("aria-hidden", "true");
-      icLz.textContent = "\u2665";
-      spLzA.appendChild(icLz);
+      var hiLz = document.createElement("img");
+      hiLz.className = "card-member-bonus-heart-ico";
+      hiLz.src = gameIconUrl("heart7");
+      hiLz.alt = "ALL";
+      hiLz.width = 14;
+      hiLz.height = 14;
+      hiLz.decoding = "async";
+      spLzA.appendChild(hiLz);
       spLzA.appendChild(document.createTextNode("条件+" + lzAllHeart));
       frag.appendChild(spLzA);
     }
@@ -4506,97 +4512,6 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     );
   }
 
-  function countWikiBladeIconMarks(s) {
-    if (!s) return 0;
-    var m = s.match(/\{\{\s*icon_blade\.png\|/gi);
-    return m ? m.length : 0;
-  }
-
-  function augmentBladeGainPhraseInWiki(raw) {
-    var W = "ブレードを得る";
-    if (!raw || String(raw).indexOf(W) < 0) return raw;
-    return String(raw)
-      .split("\n")
-      .map(function (line) {
-        if (line.indexOf(W) < 0) return line;
-        var buf = "";
-        var idx = 0;
-        while (true) {
-          var i = line.indexOf(W, idx);
-          if (i < 0) {
-            buf += line.slice(idx);
-            break;
-          }
-          var before = line.slice(0, i);
-          var n = countWikiBladeIconMarks(before);
-          var rep = n > 0 ? "ブレード⚔️×" + n + "を得る" : W;
-          buf += line.slice(idx, i) + rep;
-          idx = i + W.length;
-        }
-        return buf;
-      })
-      .join("\n");
-  }
-
-  /** 詳細モーダル用（ブレード×n など） */
-  function wikiAbilityHtmlForDetail(rawWiki, escHtml) {
-    if (rawWiki == null || typeof rawWiki !== "string") return "";
-    var step1 = augmentBladeGainPhraseInWiki(rawWiki);
-    step1 = step1.replace(/\{\{\s*icon_blade\.png\|[^}]*\}\}/gi, "⚔️");
-    var plain = String(step1)
-      .replace(/\{\{[^}]*\|([^}]*)\}\}/g, "$1")
-      .trim();
-    return escHtml(plain).replace(/\n/g, "<br>");
-  }
-
-  function emojiForHeartSlot(slotNum) {
-    slotNum = Number(slotNum);
-    if (slotNum === 1) return "🩷";
-    if (slotNum === 2) return "❤️";
-    if (slotNum === 3) return "💛";
-    if (slotNum === 4) return "💚";
-    if (slotNum === 5) return "💙";
-    if (slotNum === 6) return "💜";
-    if (slotNum === 7) return "✨";
-    if (slotNum === 0) return "🤍";
-    if (slotNum === 99) return "🩶";
-    return "";
-  }
-
-  function formatBaseHeartEmojiOnly(h) {
-    if (!h || typeof h !== "object" || Array.isArray(h)) return "—";
-    var ks = Object.keys(h).slice().sort(function (a, b) {
-      return String(a).localeCompare(String(b), "ja");
-    });
-    var parts = [];
-    for (var i = 0; i < ks.length; i++) {
-      var k = ks[i];
-      var slot = parseHeartColorSlotFromKey(k);
-      if (slot == null) slot = 99;
-      var qty = Number(h[k]);
-      if (!Number.isFinite(qty) || qty === 0) continue;
-      var em = emojiForHeartSlot(slot) || "♥";
-      parts.push(em + "×" + qty);
-    }
-    return parts.length ? parts.join(" ") : "—";
-  }
-
-  function formatBladeHeartEmojiOnly(bh) {
-    if (!bh || typeof bh !== "object" || Array.isArray(bh)) return "—";
-    var ks = Object.keys(bh).slice().sort(compareBladeHeartDbKeys);
-    var parts = [];
-    for (var j = 0; j < ks.length; j++) {
-      var key = ks[j];
-      var slot = parseBladeHeartSlotFromKey(key);
-      if (slot == null) continue;
-      var qty = Number(bh[key]);
-      if (!Number.isFinite(qty) || qty === 0) continue;
-      var em = emojiForHeartSlot(slot) || "♥";
-      parts.push(em + "×" + qty);
-    }
-    return parts.length ? parts.join(" ") : "—";
-  }
-
   /** キーワードはヒント用。正式なルール解釈ツールではない。 */
   function classifyWikiAbilityEffectHints(abWiki) {
     var s = String(abWiki || "")
@@ -4612,121 +4527,10 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         /登場時/.test(s) ||
         /登場処理/.test(s),
       liveStart:
-        s.includes("{{live_start.png|ライブ開始時}}") ||
+        s.includes(LIVE_START_FOR_DRAW_YELL) ||
         (/ライブ開始時/.test(s) && !/ライブ開始時以外/.test(s)),
       jidouAuto: /\|自動/.test(s) || /自動効果/.test(s) || /【自動/.test(s) || /常時/.test(s),
     };
-  }
-
-  /** @param {*} c 盤上カード実体 */
-  function openCardCatalogDetail(c) {
-    if (!c || typeof c !== "object") return;
-    var mc = mergedCatalogCard(c);
-    var dlg = document.getElementById("dlg-card-catalog");
-    var sub = document.getElementById("dlg-card-catalog-subtitle");
-    var bodyEl = document.getElementById("dlg-card-catalog-body");
-    var h2 = document.getElementById("dlg-card-catalog-title");
-    var dlgImg = document.getElementById("dlg-card-catalog-img");
-    var typeIcons = document.getElementById("dlg-card-catalog-type-icons");
-    if (!dlg || !bodyEl || !mc) return;
-
-    function esc(x) {
-      return String(x == null ? "" : x)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-    }
-    var nm = mc.name || c.name || "カード情報";
-    if (h2) h2.textContent = nm;
-    if (sub) sub.textContent = mc.card_no || c.card_no || "";
-
-    function row(dt, dd) {
-      return (
-        '<div class="dlg-card-catalog-row"><dt>' +
-        esc(dt) +
-        "</dt><dd>" +
-        dd +
-        "</dd></div>"
-      );
-    }
-
-    var ctype = String(mc.type || c.type || "—");
-
-    if (dlgImg) {
-      if (mc.img) {
-        dlgImg.hidden = false;
-        dlgImg.src = mc.img;
-        dlgImg.alt = nm || "";
-      } else {
-        dlgImg.hidden = true;
-        dlgImg.removeAttribute("src");
-        dlgImg.alt = "";
-      }
-    }
-    if (typeIcons) {
-      if (ctype === T_LIVE) {
-        var pieces = "";
-        if (catalogLiveCardIsDrawYellBladeHeart(mc)) {
-          pieces += '<span class="dlg-card-type-ico dlg-card-type-ico--deck" title="ドローエール">🃏</span>';
-        }
-        if (cardIsNoteLiveCatalog(mc)) {
-          pieces += '<span class="dlg-card-type-ico dlg-card-type-ico--note" title="音符ライブ">♪</span>';
-        }
-        typeIcons.innerHTML = pieces;
-      } else {
-        typeIcons.innerHTML = "";
-      }
-    }
-
-    var rows = "";
-    rows += row("タイプ", esc(ctype));
-
-    var costN = mc.cost != null ? mc.cost : c.cost;
-    if (costN != null && String(costN) !== "") {
-      rows += ctype === T_LIVE ? row("スコア", esc(costN)) : row("コスト／スコア", esc(costN));
-    }
-
-    var bladeN = mc.blade != null ? mc.blade : c.blade;
-    if (bladeN != null && String(bladeN) !== "") rows += row("ブレード", esc(bladeN));
-
-    if (mc.unit) rows += row("ユニット", esc(mc.unit));
-    if (mc.series) rows += row("シリーズ", esc(mc.series));
-    if (mc.product) rows += row("商品", esc(mc.product));
-    if (mc.rare) rows += row("レアリティ", esc(mc.rare));
-
-    if (
-      ctype === T_MEMBER &&
-      mc.base_heart &&
-      typeof mc.base_heart === "object" &&
-      Object.keys(mc.base_heart).length
-    ) {
-      rows += row("所持ハート", esc(formatBaseHeartEmojiOnly(mc.base_heart)));
-    }
-    if (ctype === T_LIVE && mc.need_heart && typeof mc.need_heart === "object" && Object.keys(mc.need_heart).length) {
-      rows += row("必要ハート", esc(formatBaseHeartEmojiOnly(mc.need_heart)));
-    }
-    if (ctype === T_LIVE && mc.blade_heart && typeof mc.blade_heart === "object" && Object.keys(mc.blade_heart).length) {
-      rows += row("BH", esc(formatBladeHeartEmojiOnly(mc.blade_heart)));
-    }
-    if (ctype !== T_LIVE && mc.blade_heart && typeof mc.blade_heart === "object" && Object.keys(mc.blade_heart).length) {
-      rows += row("BH", esc(formatBladeHeartEmojiOnly(mc.blade_heart)));
-    }
-
-    var abHtml = wikiAbilityHtmlForDetail(mc.ability || "", esc);
-
-    bodyEl.innerHTML =
-      '<dl class="dlg-card-catalog-dl">' +
-      rows +
-      "</dl>" +
-      (abHtml
-        ? '<h3 class="dlg-card-catalog-ability-heading">効果テキスト</h3><div class="dlg-card-catalog-ability">' +
-          abHtml +
-          "</div>"
-        : '<p class="muted dlg-card-catalog-no-effect">効果テキストはカードDBに未定義または取得できませんでした。</p>');
-
-    if (dlg.showModal) dlg.showModal();
-    logReplay("card-catalog-detail-open");
   }
 
   function wireStageMemberCatalogAndLongZoom(imgEl, divEl, boardCard) {
@@ -4798,7 +4602,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         }
         e.stopPropagation();
         e.preventDefault();
-        openCardCatalogDetail(boardCard);
+        openCardCatalogDetailDialog(boardCard, { logReplay: logReplay });
       },
       true,
     );
@@ -4861,7 +4665,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
             if (Date.now() - lastDragEndAt < 550) return;
             e.stopPropagation();
             e.preventDefault();
-            openCardCatalogDetail(c);
+            openCardCatalogDetailDialog(c, { logReplay: logReplay });
           },
           true,
         );

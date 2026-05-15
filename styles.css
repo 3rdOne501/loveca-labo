@@ -5219,6 +5219,10 @@ dialog.app-dialog:not([open]) {
 }
 .dlg-card-catalog-actions {
   margin-top: 0.65rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
 }
 .dlg-card-catalog-dl {
   margin: 0;
@@ -5253,6 +5257,90 @@ dialog.app-dialog:not([open]) {
   border: 1px solid rgba(255, 150, 200, 0.22);
   background: rgba(12, 8, 20, 0.55);
   white-space: normal;
+}
+
+/* assets/game-icons（ハート／エール／ブレード／起動・常時・ライブ開始時・ターン1回／スコア） */
+.game-ico {
+  vertical-align: middle;
+  image-rendering: auto;
+}
+.game-ico--filter-slot {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+.heart-bh-filter-strip .bh-filter-chk {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.22rem;
+}
+.bh-filter-meta-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.game-ico--cost-filter {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+.cost-filter-chk {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.22rem;
+}
+.cost-filter-num {
+  font-variant-numeric: tabular-nums;
+}
+.game-ico-stack {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.12rem;
+  margin-right: 0.28rem;
+}
+.game-ico--heart-inline {
+  width: 1.15em;
+  height: 1.15em;
+  object-fit: contain;
+}
+.game-ico-qty {
+  font-size: 0.85em;
+  font-weight: 700;
+}
+.game-ico--wiki {
+  height: 1.15em;
+  width: auto;
+  max-height: 1.35em;
+  vertical-align: text-bottom;
+  margin: 0 0.06em;
+}
+.game-ico--inline-score,
+.game-ico--inline-blade,
+.game-ico--type-badge {
+  width: 1.25em;
+  height: 1.25em;
+  object-fit: contain;
+  vertical-align: text-bottom;
+}
+.live-stats-heart-ico-wrap .game-ico--live-stats {
+  width: 16px;
+  height: 16px;
+  margin-right: 0.18rem;
+  vertical-align: middle;
+}
+.game-ico--remain-pill {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+.deck-remain-bh-pill__lab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+.card-member-bonus-heart-ico,
+.card-member-bonus-blade-ico,
+.card-member-bonus-timing-ico {
+  vertical-align: middle;
 }
 
 /** ステージ側面エネ: ステージメンバー向けの向きボタン */
