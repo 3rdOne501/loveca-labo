@@ -42,7 +42,7 @@ export function getBuiltInSampleDeckRecipes() {
       middleCardNos: [...DEFAULT_STARTER_MIDDLE_CARD_NOS],
       thumbnailCardNo: DEFAULT_STARTER_THUMBNAIL_CARD_NO,
       noteLines: [
-        "ツール同梱の大会向けサンプル（メンバー48＋ライブ12）。",
+        "ツール同梱の大会向けサンプルデッキ。",
         "キー／キ②／キ③／中間は既定のままです。",
       ],
     },

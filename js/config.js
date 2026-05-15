@@ -108,7 +108,7 @@ export const DECK_EXPORT_VERSION = 1;
 export const BUILTIN_STARTER_PRESET_ID = "llocg-builtin-starter";
 export const BUILTIN_STARTER_PRESET_NAME = "１０軸青紫ミラステ";
 
-/** メンバー48＋ライブ12＝60 */
+/** 組み込みプリセットのメインデッキ（60枚想定・内訳は大会向け例） */
 export const DEFAULT_STARTER_DECK_MAP = {
   "PL!-bp5-003-R＋": 2,
   "PL!-bp5-007-R": 1,

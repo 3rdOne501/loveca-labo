@@ -41,11 +41,81 @@
       "PL!SP-bp5-001-R＋",
       "PL!N-bp1-003-R＋"
     ],
-    "thumbnailCardNo": "PL!N-bp5-027-L",
+    "thumbnailCardNo": "PL!SP-bp5-001-R＋",
     "noteLines": [
       "ツール同梱の大会向けサンプル（メンバー48＋ライブ12）。",
       "キー／キ②／キ③／中間は既定のままです。"
     ]
+  },
+  {
+    "id": "sample-dev-1778867009545",
+    "name": "5軸青紫ミラステ",
+    "deck": {
+      "PL!-bp5-003-R＋": 4,
+      "PL!-bp5-011-N": 4,
+      "PL!HS-bp5-001-P": 2,
+      "PL!HS-PR-022-PR": 4,
+      "PL!N-pb1-011-R": 4,
+      "PL!S-bp2-016-N": 4,
+      "PL!S-bp5-111-R": 4,
+      "PL!S-pb1-004-R": 1,
+      "PL!S-PR-026-PR": 4,
+      "PL!S-sd1-008-SD": 1,
+      "PL!SP-bp5-006-R": 3,
+      "PL!SP-pb1-014-N": 1,
+      "PL!SP-sd1-019-SD": 4,
+      "PL!N-bp1-026-L": 1,
+      "PL!N-bp3-030-L": 3,
+      "PL!N-bp4-030-L": 4,
+      "PL!N-bp5-027-L": 3,
+      "PL!N-bp5-001-SEC": 3,
+      "PL!N-bp1-012-SEC": 1,
+      "PL!N-bp4-004-P": 1,
+      "PL!N-pb1-007-P＋": 1,
+      "PL!-bp5-007-P": 2,
+      "PL!N-bp1-029-L": 1
+    },
+    "keyCardNos": [
+      "PL!N-bp4-030-L"
+    ],
+    "keyCard2Nos": [
+      "PL!N-pb1-011-R"
+    ],
+    "keyCard3Nos": [
+      "PL!N-bp1-026-L"
+    ],
+    "middleCardNos": [
+      "PL!N-bp4-030-L",
+      "PL!N-bp5-001-SEC"
+    ],
+    "thumbnailCardNo": "PL!N-bp5-001-SEC"
+  },
+  {
+    "id": "sample-dev-1778837518819",
+    "name": "黄緑空手",
+    "deck": {
+      "PL!-bp3-017-N": 4,
+      "PL!-PR-012-PR": 4,
+      "PL!HS-bp5-001-R＋": 3,
+      "PL!N-bp1-002-R＋": 3,
+      "PL!N-bp3-008-R＋": 4,
+      "PL!N-bp4-020-N": 4,
+      "PL!N-pb1-006-R": 4,
+      "PL!N-pb1-008-R": 4,
+      "PL!N-PR-012-PR": 4,
+      "PL!N-PR-019-PR": 4,
+      "PL!N-sd1-011-SD": 2,
+      "PL!S-PR-027-PR": 4,
+      "PL!S-PR-038-PR": 4,
+      "PL!N-bp1-026-L": 4,
+      "PL!N-bp3-027-L": 4,
+      "PL!N-pb1-037-L": 4
+    },
+    "keyCardNos": [],
+    "keyCard2Nos": [],
+    "keyCard3Nos": [],
+    "middleCardNos": [],
+    "thumbnailCardNo": "PL!N-pb1-008-R"
   },
   {
     "id": "sample-dev-1778837451956",
@@ -84,32 +154,5 @@
       "PL!HS-pb1-015-P＋"
     ],
     "thumbnailCardNo": "PL!HS-bp5-008-P"
-  },
-  {
-    "id": "sample-dev-1778837518819",
-    "name": "黄緑空手",
-    "deck": {
-      "PL!-bp3-017-N": 4,
-      "PL!-PR-012-PR": 4,
-      "PL!HS-bp5-001-R＋": 3,
-      "PL!N-bp1-002-R＋": 3,
-      "PL!N-bp3-008-R＋": 4,
-      "PL!N-bp4-020-N": 4,
-      "PL!N-pb1-006-R": 4,
-      "PL!N-pb1-008-R": 4,
-      "PL!N-PR-012-PR": 4,
-      "PL!N-PR-019-PR": 4,
-      "PL!N-sd1-011-SD": 2,
-      "PL!S-PR-027-PR": 4,
-      "PL!S-PR-038-PR": 4,
-      "PL!N-bp1-026-L": 4,
-      "PL!N-bp3-027-L": 4,
-      "PL!N-pb1-037-L": 4
-    },
-    "keyCardNos": [],
-    "keyCard2Nos": [],
-    "keyCard3Nos": [],
-    "middleCardNos": [],
-    "thumbnailCardNo": "PL!N-pb1-008-R"
   }
 ]

@@ -1350,6 +1350,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
 
   /** キーボード W／A の対象（ステージのメンバー・側面エネの実体 id） */
   let stanceKeyboardFocusCardId = "";
+  /** 上記カードがあったゾーン要素 id（例: stage-left, zone-energy） */
+  let stanceKeyboardFocusParentZoneId = "";
 
   /** 1ドロー直後のフラッシュ表示の継続時間（ms） */
   const FLASH_DRAW_DURATION_MS = 1000;
@@ -2680,6 +2682,10 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   }
 
   function syncDeckLiveSimPanel() {
+    var liveSimWrap = root.querySelector(".zone-block-deck-live-sim-under-preview");
+    if (liveSimWrap) liveSimWrap.hidden = !state.liveStatsAfterBegin;
+    if (!state.liveStatsAfterBegin) return;
+
     var disp = $("deck-flip-k-display");
     var bladeNoteEl = $("deck-flip-blade-note");
     var sumEl = $("deck-live-sim-summary");
@@ -4497,10 +4503,12 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     );
   }
 
-  function wikiAbilityToReadable(s) {
+  function wikiAbilityToReadableHtml(s, escHtml) {
     if (s == null || typeof s !== "string") return "";
-    var t = s.replace(/\{\{([^|]+\|)?([^}]*)\}\}/g, "$2").replace(/\n/g, "<br>");
-    return t.trim();
+    var plain = String(s)
+      .replace(/\{\{[^}]*\|([^}]*)\}\}/g, "$1")
+      .trim();
+    return escHtml(plain).replace(/\n/g, "<br>");
   }
 
   /** @param {*} c 盤上カード実体 */
@@ -4512,17 +4520,18 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     var bodyEl = document.getElementById("dlg-card-catalog-body");
     var h2 = document.getElementById("dlg-card-catalog-title");
     if (!dlg || !bodyEl || !mc) return;
-    var nm = mc.name || c.name || "カード情報";
-    if (h2) h2.textContent = nm;
-    if (sub) sub.textContent = mc.card_no || c.card_no || "";
 
     function esc(x) {
       return String(x == null ? "" : x)
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
-        .replace(/\"/g, "&quot;");
+        .replace(/"/g, "&quot;");
     }
+    var nm = mc.name || c.name || "カード情報";
+    if (h2) h2.textContent = nm;
+    if (sub) sub.textContent = mc.card_no || c.card_no || "";
+
     function row(dt, dd) {
       return (
         '<div class="dlg-card-catalog-row"><dt>' +
@@ -4550,15 +4559,15 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (mc.base_heart && typeof mc.base_heart === "object" && Object.keys(mc.base_heart).length)
       rows += row("所持ハート（印刷）", esc(JSON.stringify(mc.base_heart)));
 
-    var ab = wikiAbilityToReadable(mc.ability || "");
+    var abHtml = wikiAbilityToReadableHtml(mc.ability || "", esc);
 
     bodyEl.innerHTML =
       '<dl class="dlg-card-catalog-dl">' +
       rows +
       "</dl>" +
-      (ab
+      (abHtml
         ? '<h3 class="dlg-card-catalog-ability-heading">効果テキスト</h3><div class="dlg-card-catalog-ability">' +
-          ab +
+          abHtml +
           "</div>"
         : '<p class="muted dlg-card-catalog-no-effect">効果テキストはカードDBに未定義または取得できませんでした。</p>');
 
@@ -4566,7 +4575,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     logReplay("card-catalog-detail-open");
   }
 
-  function wireStageMemberCatalogAndLongZoom(imgEl, divEl, boardCard, onRotate) {
+  function wireStageMemberCatalogAndLongZoom(imgEl, divEl, boardCard) {
     var longMs = 480;
     var moveCap = 10;
     var longTimer = null;
@@ -4680,7 +4689,21 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       img.className = "card-img";
       if (opts.forceLiveHorizontal) img.classList.add("rotated");
       else if (c.isRotated) img.classList.add("rotated");
-      if (typeof opts.onRotate === "function") {
+      if (opts.stageCatalogLongZoom === true && c.img) {
+        wireStageMemberCatalogAndLongZoom(img, div, c);
+      } else if (opts.catalogImgClickDetail === true) {
+        img.addEventListener(
+          "click",
+          function (e) {
+            if (e.target.closest(".stance-chip, .card-no-drag, .card-pick-wrap")) return;
+            if (Date.now() - lastDragEndAt < 550) return;
+            e.stopPropagation();
+            e.preventDefault();
+            openCardCatalogDetail(c);
+          },
+          true,
+        );
+      } else if (typeof opts.onRotate === "function" && !opts.stageRotateChip) {
         img.addEventListener("click", (e) => {
           e.stopPropagation();
           opts.onRotate();
@@ -4741,6 +4764,19 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (opts.stanceBar) {
       const bar = document.createElement("div");
       bar.className = "card-stance-bar";
+      if (typeof opts.onRotate === "function" && opts.stageRotateChip === true) {
+        const mkRot = document.createElement("button");
+        mkRot.type = "button";
+        mkRot.className = "stance-chip stance-rotate";
+        mkRot.textContent = "↻";
+        mkRot.title = "向きを切り替え（縦／横）";
+        mkRot.addEventListener("click", (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          opts.onRotate();
+        });
+        bar.appendChild(mkRot);
+      }
       const mkWait = document.createElement("button");
       mkWait.type = "button";
       mkWait.className = "stance-chip stance-wait" + (c.lcWait === true ? " is-on" : "");
@@ -4803,19 +4839,27 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       if (bonFoot) div.appendChild(bonFoot);
     }
 
-    // 1ドロー直後のフラッシュ（カード上に「+1ドロー」を1秒だけフェードイン→アウト。ラベルは markCardFlashDraw 時に上書き可）
-    var flashUntil = (Number(c._flashDrawAt) || 0) + FLASH_DRAW_DURATION_MS;
+    // 1ドロー直後のフラッシュ（ドローエールのみやや長め＋カード枠の発光）
+    var isDrawYellFlash = c._flashDrawLabel === FLASH_LABEL_DRAW_YELL_PLUS_ONE;
+    var flashDur = isDrawYellFlash ? FLASH_DRAW_YELL_DURATION_MS : FLASH_DRAW_DURATION_MS;
+    var flashUntil = (Number(c._flashDrawAt) || 0) + flashDur;
     var nowMs = Date.now();
     if (flashUntil > nowMs) {
       var remainMs = Math.max(120, flashUntil - nowMs);
       var flash = document.createElement("div");
       flash.className =
         "card-flash-plus-one" +
-        (c._flashDrawLabel === FLASH_LABEL_DRAW_YELL_PLUS_ONE ? " card-flash-plus-one--draw-yell" : "");
+        (isDrawYellFlash ? " card-flash-plus-one--draw-yell" : "");
       flash.setAttribute("aria-hidden", "true");
       flash.textContent = c._flashDrawLabel || FLASH_LABEL_PLUS_DRAW;
       flash.style.animationDuration = remainMs + "ms";
       div.appendChild(flash);
+      if (isDrawYellFlash) {
+        div.classList.add("card-item--draw-yell-glow");
+        window.setTimeout(function () {
+          div.classList.remove("card-item--draw-yell-glow");
+        }, remainMs + 80);
+      }
       setTimeout(function () {
         if (flash && flash.parentNode) flash.parentNode.removeChild(flash);
       }, remainMs + 60);
@@ -4918,6 +4962,16 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       var successLiveAlwaysGlow = isSuccessLive && c.type === T_LIVE;
       var liveVenueBoost = isLiveBoard && !state.liveTurnPickMode && c.type === T_LIVE;
 
+      var stageRotateChip = isStage && c.type === T_MEMBER && typeof onRotate === "function";
+      var stageCatalogCombo = isStage && c.type === T_MEMBER;
+
+      var catalogImgClickDetail =
+        (c.type === T_MEMBER || c.type === T_LIVE) &&
+        (zoneId === "zone-hand" ||
+          zoneId === "zone-waiting" ||
+          zoneId === "zone-deck" ||
+          zoneId === "zone-preview");
+
       const cardOpts = {
         onRotate: onRotate || undefined,
         zoomClick: zoomClick,
@@ -4930,6 +4984,9 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         stageVeteranGlow: stageVeteranGlow,
         successLiveAlwaysGlow: successLiveAlwaysGlow,
         liveVenueBoost: liveVenueBoost,
+        stageRotateChip: stageRotateChip === true,
+        stageCatalogLongZoom: stageCatalogCombo === true,
+        catalogImgClickDetail: catalogImgClickDetail === true && !stageCatalogCombo,
       };
       if (zoneId === "zone-hand" && state.awaitingTurnStart) {
         const sel = state.mulliganSelectedIds;
@@ -6524,8 +6581,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       }
       return;
     }
-    const keys = ["left", "center", "right"];
-    const emptyKeys = keys.filter(function (k) {
+    const keysPref = ["center", "left", "right"];
+    const emptyKeys = keysPref.filter(function (k) {
       return state.liveArea[k].length === 0;
     });
     if (ordered.length > emptyKeys.length) {
@@ -7118,6 +7175,95 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       togglePreviewRailExpanded(ev);
     });
   })();
+
+  (function initPlayTopFixedStripCollapse() {
+    var strip = document.getElementById("play-top-fixed-strip");
+    var btn = document.getElementById("btn-play-top-strip-toggle");
+    var KEY = "llocg_play_top_strip_collapsed";
+    if (!strip || !btn) return;
+    function applyCollapsed(on) {
+      strip.classList.toggle("play-top-fixed-strip--collapsed", on);
+      btn.setAttribute("aria-expanded", on ? "false" : "true");
+      btn.textContent = on ? "開く" : "閉じる";
+      try {
+        sessionStorage.setItem(KEY, on ? "1" : "0");
+      } catch (_) {}
+    }
+    try {
+      applyCollapsed(sessionStorage.getItem(KEY) === "1");
+    } catch (_) {
+      applyCollapsed(false);
+    }
+    btn.addEventListener("click", function () {
+      applyCollapsed(!strip.classList.contains("play-top-fixed-strip--collapsed"));
+    });
+  })();
+
+  if (root) {
+    if (typeof root.__llocgStanceFocusPointerDown === "function") {
+      root.removeEventListener("pointerdown", root.__llocgStanceFocusPointerDown, true);
+    }
+    root.__llocgStanceFocusPointerDown = function (ev) {
+      var item = ev.target.closest && ev.target.closest(".card-item");
+      if (!item || !root.contains(item)) return;
+      var pid = item.parentElement ? item.parentElement.id : "";
+      var t = item.dataset.type;
+      if ((/^stage-/.test(pid) && t === T_MEMBER) || (pid === "zone-energy" && t === T_ENERGY)) {
+        stanceKeyboardFocusCardId = item.dataset.id != null ? String(item.dataset.id) : "";
+        stanceKeyboardFocusParentZoneId = pid;
+      }
+    };
+    root.addEventListener("pointerdown", root.__llocgStanceFocusPointerDown, true);
+  }
+
+  if (typeof window.__llocgWaKeyHandler === "function") {
+    window.removeEventListener("keydown", window.__llocgWaKeyHandler, true);
+  }
+  window.__llocgWaKeyHandler = function (ev) {
+    var vg = document.getElementById("view-game");
+    if (!vg || vg.hidden || vg.hasAttribute("hidden")) return;
+    var tgn = ev.target && ev.target.tagName;
+    if (tgn === "INPUT" || tgn === "TEXTAREA" || tgn === "SELECT") return;
+    if (ev.target && ev.target.closest && ev.target.closest("dialog")) return;
+    if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
+    var ch = ev.key;
+    if (ch !== "w" && ch !== "W" && ch !== "a" && ch !== "A") return;
+    var inst = findBoardCardByInstanceId(stanceKeyboardFocusCardId);
+    if (!inst) return;
+    var pid = stanceKeyboardFocusParentZoneId || "";
+    if (/^stage-/.test(pid)) {
+      if (inst.type !== T_MEMBER) return;
+    } else if (pid === "zone-energy") {
+      if (inst.type !== T_ENERGY) return;
+    } else {
+      return;
+    }
+    ev.preventDefault();
+    if (pid === "zone-energy" && inst.type === T_ENERGY) {
+      if (ch === "w" || ch === "W") {
+        pushHistoryBefore("keyboard-energy-wait");
+        inst.isRotated = !inst.isRotated;
+        inst.lcWait = inst.isRotated === true;
+        inst.lcActive = inst.lcWait !== true;
+      } else {
+        pushHistoryBefore("keyboard-energy-active");
+        inst.isRotated = false;
+        inst.lcWait = false;
+        inst.lcActive = true;
+      }
+      renderSynchronouslyOnce();
+      return;
+    }
+    if (ch === "w" || ch === "W") {
+      pushHistoryBefore("keyboard-lcWait");
+      inst.lcWait = !inst.lcWait;
+    } else {
+      pushHistoryBefore("keyboard-lcActive");
+      inst.lcActive = !inst.lcActive;
+    }
+    renderSynchronouslyOnce();
+  };
+  window.addEventListener("keydown", window.__llocgWaKeyHandler, true);
 
   const btnHandMask = $("toggle-hand-mask");
   if (sessionStorage.getItem("llocg_hide_hand_stream") === "1") {

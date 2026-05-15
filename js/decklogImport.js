@@ -80,21 +80,13 @@ function fuzzyResolveCardNo(catalog, raw) {
 function buildDeckWarns(deckMap, catalog) {
   /** @type {string[]} */
   const warns = [];
-  let m = 0;
-  let l = 0;
   let total = 0;
   for (const [no, qty] of Object.entries(deckMap)) {
     if (qty <= 0) continue;
     const card = catalog[no];
     if (!card) continue;
     total += qty;
-    if (card.type === T_MEMBER) m += qty;
-    else if (card.type === T_LIVE) l += qty;
   }
   if (total > 0 && total !== MAIN_SIZE) warns.push("枚数が " + MAIN_SIZE + " ではなく " + total + " です。");
-  if (total === MAIN_SIZE) {
-    if (m !== 48) warns.push("メンバー合計が 48 枚ではなく " + m + " 枚です。");
-    if (l !== 12) warns.push("ライブが 12 枚ではなく " + l + " 枚です。");
-  }
   return warns;
 }

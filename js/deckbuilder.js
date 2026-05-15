@@ -8,8 +8,6 @@ import {
   FIRST_VISIT_CATALOG_PRODUCT_EXACT,
   FILTER_PRODUCT_TEST_CARD_LOG,
   MAX_COPIES_PER_CARD,
-  MAX_LIVE_IN_MAIN,
-  MAX_MEMBER_IN_MAIN,
   MAIN_SIZE,
   SAMPLE_DECK_RECIPES_PUBLIC_FILENAME,
   STORAGE_ACTIVE_PRESET_ID,
@@ -216,7 +214,7 @@ function countMain(deckMap) {
 /** デッキ枚数チェックなど（自動では弾ききれない件も含める） */
 function computeDeckWarnings(deckMap) {
   const warnings = [];
-  const { m, l, total } = countMain(deckMap);
+  const { total } = countMain(deckMap);
 
   for (const [no, n] of Object.entries(deckMap)) {
     if (n <= 0) continue;
@@ -225,24 +223,10 @@ function computeDeckWarnings(deckMap) {
       warnings.push(no + " が同一 " + MAX_COPIES_PER_CARD + " 枚を超えています（×" + n + "）");
     }
   }
-  if (m > MAX_MEMBER_IN_MAIN) {
-    warnings.push(
-      "メンバーが公式目安を超えています（" + m + " / " + MAX_MEMBER_IN_MAIN + "）。ソロではこのまま続行できます。",
-    );
-  }
-  if (l > MAX_LIVE_IN_MAIN) {
-    warnings.push(
-      "ライブが公式目安を超えています（" + l + " / " + MAX_LIVE_IN_MAIN + "）。ソロではこのまま続行できます。",
-    );
-  }
+
+
   if (total !== MAIN_SIZE && total > 0) {
-    warnings.push(
-      "メインデッキは公式目安 " +
-        MAIN_SIZE +
-        " 枚ですが、現在 " +
-        total +
-        " 枚です（オーバー／不足でもソロでは開始できます）。",
-    );
+    warnings.push("メインデッキの枚数が " + MAIN_SIZE + " 枚ではありません（現在 " + total + " 枚ですが、ソロでは開始できます）。");
   }
   return warnings;
 }
