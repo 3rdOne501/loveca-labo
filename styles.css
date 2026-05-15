@@ -727,6 +727,12 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
   outline: 2px solid rgba(255, 160, 210, 0.85);
   outline-offset: 2px;
 }
+.sample-recipe-thumb-btn.sample-recipe-thumb-btn--dev-dnd {
+  cursor: grab;
+}
+.sample-recipe-thumb-btn.sample-recipe-thumb-btn--dev-dnd:active {
+  cursor: grabbing;
+}
 
 .sample-recipe-thumb-btn .deck-builder-card-thumb,
 .sample-recipe-thumb-img {
@@ -955,12 +961,33 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
 .filter-type-chk-row {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 0.65rem 1rem;
+  align-items: stretch;
+  gap: 0.55rem 0.75rem;
   margin-top: 0.25rem;
 }
 .filter-type-chk {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.75rem;
+  padding: 0.42rem 0.75rem 0.42rem 0.55rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 140, 190, 0.22);
+  background: rgba(10, 6, 18, 0.45);
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.filter-type-chk:hover {
+  border-color: rgba(255, 160, 210, 0.4);
+  background: rgba(14, 8, 22, 0.55);
+}
+.filter-type-chk input {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0;
+  flex-shrink: 0;
 }
 .filter-fav-only-row {
   display: flex;
@@ -4625,12 +4652,6 @@ body.play-mode .deck-pile {
 }
 .card-deck-summary .deck-peek-bar-wrap {
   min-height: 70px;
-}
-.card-deck-summary .deck-peek-bar-col {
-  width: clamp(24px, 5.5vw, 38px);
-}
-.card-deck-summary .deck-peek-bar {
-  width: min(28px, 78%);
 }
 .card-thumb-role-edit-row {
   display: flex;

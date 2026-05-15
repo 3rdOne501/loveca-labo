@@ -217,6 +217,8 @@ export function initPublishedSampleRecipes() {
     publishedRecipesCache = null;
     try {
       var u = new URL(SAMPLE_DECK_RECIPES_PUBLIC_FILENAME, window.location.href);
+      /* Pages / CDN の古い応答を避ける（同一 URL の fetch キャッシュをすり抜ける） */
+      u.searchParams.set("v", String(Date.now()));
       var r = await fetch(u.toString(), { cache: "no-store" });
       if (!r.ok) return;
       var data = await r.json();

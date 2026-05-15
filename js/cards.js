@@ -634,6 +634,8 @@ export function filterCards(cards, opts) {
       if (!ser.includes(opts.series)) return false;
     }
     if (opts.unit && c.unit !== opts.unit) return false;
+    /* コストに何かしら「外した」チェックがあるとき、ライブはコストを持たないので一覧に出さない */
+    if (opts.narrowCostExcludeLive && c.type === T_LIVE) return false;
     /* ライブカードは JSON 上コストが無く score 等のみのため、コスト絞り込みはメンバーだけに適用 */
     if (opts.costs && Object.keys(opts.costs).length && c.type === T_MEMBER) {
       const co = Number(c.cost);

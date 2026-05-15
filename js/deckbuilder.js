@@ -443,6 +443,8 @@ export function initDeckBuilder(root, { onStartGame }) {
   const el = (id) => root.querySelector("#" + id) || document.getElementById(id);
 
   const SESSION_SAMPLE_DEV_KEY = "llocg_sample_dev_mode_v1";
+  /** 開発者モード・サンプル並べ替え DnD 用 drag 元インデックス */
+  var sampleRecipeDnDFrom = -1;
 
   function isSampleDevMode() {
     try {
@@ -472,16 +474,19 @@ export function initDeckBuilder(root, { onStartGame }) {
     if (panel) panel.hidden = !dev;
   }
 
-  function devPublishSampleRecipeList(nextRaw) {
+  function devPublishSampleRecipeList(nextRaw, opts) {
+    opts = opts || {};
     var norm = normalizeSampleRecipesArray(nextRaw);
     if (!norm.length) {
       showToast("サンプルは1件以上必要です");
       return;
     }
     setPublishedSampleRecipesCache(norm);
-    showToast(
-      "一覧を更新しました。サイトに反映するには下の「デプロイ用 JSON を保存…」でファイルを書き出し、手順どおりアップロードしてください。",
-    );
+    if (!opts.quiet) {
+      showToast(
+        "一覧を更新しました。サイトに反映するには下の「デプロイ用 JSON を保存…」でファイルを書き出し、手順どおりアップロードしてください。",
+      );
+    }
     if (samplePanelOpen) scheduleRenderCardGrid();
   }
 
@@ -617,6 +622,13 @@ export function initDeckBuilder(root, { onStartGame }) {
     catalogFilterCached = null;
   }
 
+  function narrowCostFilterExcludesLive(costsRecord) {
+    if (!costsRecord || typeof costsRecord !== "object") return false;
+    return Object.keys(costsRecord).some(function (k) {
+      return !costsRecord[k];
+    });
+  }
+
   function buildCatalogFilterCacheKey() {
     const bh = readBhSlotFilters();
     const bx = readBhFilterExtras();
@@ -639,6 +651,7 @@ export function initDeckBuilder(root, { onStartGame }) {
       bx.noteLive ? "1" : "0",
       [...hs].sort().join(","),
       costParts.join(","),
+      narrowCostFilterExcludesLive(filterCosts) ? "1" : "0",
       getTestCardLogCacheSig(),
     ].join("|");
   }
@@ -746,6 +759,7 @@ export function initDeckBuilder(root, { onStartGame }) {
       series: filterSeries || null,
       unit: filterUnit || null,
       costs: filterCosts,
+      narrowCostExcludeLive: narrowCostFilterExcludesLive(filterCosts),
       bhSlots: readBhSlotFilters(),
       bhNonBh: bx.nonBh,
       bhNoteLive: bx.noteLive,
@@ -3094,6 +3108,7 @@ export function initDeckBuilder(root, { onStartGame }) {
   function renderSampleRecipesTiles(recipes) {
     var host = el("sample-recipes-grid");
     if (!host) return;
+    var devDn = isSampleDevMode();
     var parts = [];
     for (var i = 0; i < recipes.length; i++) {
       var r = recipes[i];
@@ -3107,7 +3122,7 @@ export function initDeckBuilder(root, { onStartGame }) {
         : '<div class="sample-recipe-thumb-fallback" aria-hidden="true">?</div>';
       var t = totalsFromDeckMapForSample(r.deck);
       var devActs = "";
-      if (isSampleDevMode()) {
+      if (devDn) {
         devActs =
           '<div class="sample-recipe-actions sample-recipe-actions--dev">' +
           '<button type="button" class="btn sm" data-sample-act="dev-thumb">サムネ指定</button>' +
@@ -3115,11 +3130,20 @@ export function initDeckBuilder(root, { onStartGame }) {
           '<button type="button" class="btn sm secondary" data-sample-act="dev-overwrite">サンプルを上書き</button>' +
           "</div>";
       }
+      var thumbTitle = devDn ? "ドラッグで並べ替え · クリックで一覧" : "一覧・BH・コスト分布を見る";
       parts.push(
         '<article class="sample-recipe-tile" role="listitem" data-sample-id="' +
           escapeAttr(r.id) +
+          '" data-sample-index="' +
+          i +
           '">' +
-          '<button type="button" class="sample-recipe-thumb-btn" data-sample-act="peek" title="一覧・BH・コスト分布を見る" aria-label="' +
+          '<button type="button" class="sample-recipe-thumb-btn' +
+          (devDn ? " sample-recipe-thumb-btn--dev-dnd" : "") +
+          '" data-sample-act="peek"' +
+          (devDn ? ' draggable="true"' : "") +
+          ' title="' +
+          escapeAttr(thumbTitle) +
+          '" aria-label="' +
           escapeAttr(r.name + "の詳細を開く") +
           '">' +
           thumbInner +
@@ -3277,6 +3301,67 @@ export function initDeckBuilder(root, { onStartGame }) {
         devPublishSampleRecipeList(replaced);
         return;
       }
+    });
+  }
+
+  function wireSampleRecipesDnDOnce() {
+    var host = el("sample-recipes-grid");
+    if (!host || host.dataset.sampleDndWired === "1") return;
+    host.dataset.sampleDndWired = "1";
+    host.addEventListener("dragstart", function (ev) {
+      if (!isSampleDevMode()) return;
+      var btn = ev.target && ev.target.closest && ev.target.closest(".sample-recipe-thumb-btn--dev-dnd");
+      if (!btn || !ev.dataTransfer) return;
+      var tile = btn.closest(".sample-recipe-tile");
+      if (!tile) return;
+      var ix = parseInt(tile.getAttribute("data-sample-index") || "-1", 10);
+      if (ix < 0 || Number.isNaN(ix)) return;
+      sampleRecipeDnDFrom = ix;
+      ev.dataTransfer.setData("text/plain", "sample-recipe-order:" + ix);
+      ev.dataTransfer.effectAllowed = "move";
+    });
+    host.addEventListener("dragend", function () {
+      sampleRecipeDnDFrom = -1;
+    });
+    host.addEventListener("dragover", function (ev) {
+      if (!isSampleDevMode() || sampleRecipeDnDFrom < 0) return;
+      var tile = ev.target && ev.target.closest && ev.target.closest(".sample-recipe-tile");
+      if (!tile) return;
+      ev.preventDefault();
+      ev.dataTransfer.dropEffect = "move";
+    });
+    host.addEventListener("drop", function (ev) {
+      if (!isSampleDevMode()) return;
+      var tile = ev.target && ev.target.closest && ev.target.closest(".sample-recipe-tile");
+      if (!tile) return;
+      var raw = "";
+      try {
+        raw = ev.dataTransfer ? ev.dataTransfer.getData("text/plain") || "" : "";
+      } catch (_) {
+        raw = "";
+      }
+      var from =
+        typeof raw === "string" && raw.indexOf("sample-recipe-order:") === 0
+          ? parseInt(raw.slice("sample-recipe-order:".length), 10)
+          : sampleRecipeDnDFrom;
+      var to = parseInt(tile.getAttribute("data-sample-index") || "-1", 10);
+      if (
+        from < 0 ||
+        to < 0 ||
+        from === to ||
+        Number.isNaN(from) ||
+        Number.isNaN(to)
+      ) {
+        return;
+      }
+      ev.preventDefault();
+      var arr = getSampleDeckRecipes().slice();
+      if (from >= arr.length || to >= arr.length) return;
+      var swapA = arr[from];
+      arr[from] = arr[to];
+      arr[to] = swapA;
+      devPublishSampleRecipeList(arr, { quiet: true });
+      sampleRecipeDnDFrom = -1;
     });
   }
 
@@ -3475,21 +3560,26 @@ export function initDeckBuilder(root, { onStartGame }) {
     }
     savePublishedSampleRecipesToDisk(list).then(function (r) {
       if (!r || r.mode === "aborted") return;
+      var synced = normalizeSampleRecipesArray(list);
+      if (synced.length) setPublishedSampleRecipesCache(synced);
+      if (samplePanelOpen) scheduleRenderCardGrid();
       if (r.mode === "project") {
         showToast(
           SAMPLE_DECK_RECIPES_PUBLIC_FILENAME +
-            " を index.html と同じフォルダに保存しました。続けて Git の push やホストへのアップロードを行ってください。",
+            " をサイト用フォルダに保存しました。このタブのサンプル一覧も更新済みです。公開サイトは push のあと再読み込みしてください。",
         );
         return;
       }
       if (r.mode === "picker") {
-        showToast("保存しました。続けて Git の push やホストへのアップロードを行ってください。");
+        showToast(
+          "保存しました。このタブのサンプル一覧も更新済みです。公開サイトは push のあとページを再読み込みしてください。",
+        );
         return;
       }
       showToast(
-        "ブラウザのダウンロードフォルダに保存しました。" +
+        "ブラウザにダウンロードしました。このタブの一覧は更新済みです。" +
           SAMPLE_DECK_RECIPES_PUBLIC_FILENAME +
-          " を index.html と同じフォルダへ移してからデプロイしてください。",
+          " を公開ディレクトリに置いて push 後に再読み込みしてください。",
       );
     });
   });
@@ -3569,6 +3659,7 @@ export function initDeckBuilder(root, { onStartGame }) {
   fillSelects();
   applyStartupCatalogProductFilter();
   wireSampleRecipesGridOnce();
+  wireSampleRecipesDnDOnce();
   wirePeekListRoleEditorOnce();
   renderPresetSelect();
   renderCounts();
