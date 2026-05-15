@@ -43,10 +43,13 @@ import {
   bladeHeartDisplaySlotLabel,
   bladeHeartIsLiveAdditiveBladeHeart,
   cardHasBladeHeart,
+  compareBladeHeartDbKeys,
   evaluateNeedHeartFulfillment,
   formatBladeHeartSlotBreakdown,
   formatHeartSlotAccumBreakdown,
   listAllNeedHeartDeficitsSequential,
+  parseBladeHeartSlotFromKey,
+  parseHeartColorSlotFromKey,
   sumBladeHeartWeightedValues,
   sumSlotAccumValues,
 } from "./bladeHeart.js";
@@ -556,7 +559,6 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     var disp2 = $("deck-flip-k-display");
     var sumEl2 = $("deck-live-sim-summary");
     var stEl2 = $("deck-live-sim-stats");
-    var bdBody = $("deck-live-sim-breakdown-body");
     if (!sumEl2) return;
     var n2 = state.deck.length;
     var w2 = state.waitingRoom.length;
@@ -574,7 +576,6 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       }
     }
 
-    var bundleForBreakdown = evaluateLiveMechanicalFulfillmentBundle();
     var sim = computeDeckDrawLiveSuccessSimulation(deckLiveSimMode);
     sumEl2.classList.toggle("deck-live-sim-summary--verdict", sim.kind === "verdict");
     if (sim.kind === "verdict") {
@@ -589,10 +590,6 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     }
     /* 確率に応じた連続グラデーション色付け（0% 茶 → 25% 暗青 → 40% 真っ赤 → 50% オレンジ → 70% 黄 → 85% 緑 → 90〜100% 薄ピンク発光） */
     applyDeckLiveSimProbColor(sumEl2, sim);
-
-    if (bdBody) {
-      bdBody.textContent = buildLiveSimBreakdownBody(bundleForBreakdown, sim);
-    }
 
     if (stEl2) {
       stEl2.hidden = true;
@@ -1372,6 +1369,68 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   normalizeAllCardFields();
 
   const $ = (id) => root.querySelector("#" + id) || document.getElementById(id);
+
+  function playLayoutIsMobilePortrait() {
+    try {
+      return window.matchMedia("(max-width: 900px) and (orientation: portrait)").matches;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function syncPlayChromeLayout() {
+    var mobile = playLayoutIsMobilePortrait();
+    document.body.classList.toggle("play-layout-mobile-portrait", mobile);
+    var liveSimSec = document.getElementById("section-play-deck-live-sim");
+    var resSec = document.getElementById("section-play-resolution");
+    var sucSec = document.getElementById("section-play-success-live");
+    var mobileProb = document.getElementById("mount-mobile-live-prob-inline");
+    var stripRes = document.getElementById("play-strip-resolution-slot");
+    var stripSuc = document.getElementById("play-strip-success-live-slot");
+    var deskRow = document.getElementById("mount-desktop-live-sim-row");
+    var deskRes = document.getElementById("mount-desktop-resolution");
+    if (!liveSimSec || !resSec || !sucSec || !mobileProb || !stripRes || !stripSuc || !deskRow || !deskRes)
+      return;
+    if (mobile) {
+      if (resSec.parentElement !== stripRes) stripRes.appendChild(resSec);
+      if (sucSec.parentElement !== stripSuc) stripSuc.appendChild(sucSec);
+      if (liveSimSec.parentElement !== mobileProb) mobileProb.appendChild(liveSimSec);
+    } else {
+      deskRow.appendChild(liveSimSec);
+      deskRow.appendChild(sucSec);
+      deskRes.appendChild(resSec);
+    }
+  }
+
+  (function wireChromeHandScrollIsolationOnceGlobal() {
+    if (typeof window.__llocgChromeHandUnlock === "function") return;
+    window.__llocgChromeHandUnlock = function () {
+      document.body.classList.remove("chrome-hand-scroll-locked");
+    };
+    document.addEventListener("pointerup", window.__llocgChromeHandUnlock, true);
+    document.addEventListener("pointercancel", window.__llocgChromeHandUnlock, true);
+  })();
+
+  function wireChromeHandScrollIsolation() {
+    var handRow = document.getElementById("hand-row");
+    if (!handRow || handRow.dataset.chromeHandIsolation === "1") return;
+    handRow.dataset.chromeHandIsolation = "1";
+    handRow.addEventListener(
+      "pointerdown",
+      function (ev) {
+        if (!playLayoutIsMobilePortrait()) return;
+        if (ev.button !== undefined && ev.button !== 0) return;
+        document.body.classList.add("chrome-hand-scroll-locked");
+        try {
+          handRow.setPointerCapture(ev.pointerId);
+        } catch (_) {}
+      },
+      true,
+    );
+  }
+
+  syncPlayChromeLayout();
+  wireChromeHandScrollIsolation();
 
   wireDeckOddsTurnStepsOnce();
 
@@ -2591,61 +2650,6 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     );
   }
 
-  function buildLiveSimBreakdownBody(b, sim) {
-    var lines = [];
-    lines.push(
-      "モデル: " +
-        (sim && sim.mode === "whole"
-          ? "デッキ全体（山札+控え室）"
-          : "盤面B（B=盤面ブレード、R=解決枚数）") +
-        "。残りランダム k を計算。",
-    );
-    lines.push(
-      "B = " +
-        (sim && sim.blade != null ? sim.blade : "—") +
-        " · R = " +
-        (sim && sim.resR != null ? sim.resR : "—") +
-        " · k = " +
-        (sim && sim.kRem != null ? sim.kRem : sim && sim.k != null ? sim.k : "—") +
-        " · 残り山札 n = " +
-        (sim && sim.n != null ? sim.n : "—") +
-        " · 控え室 w = " +
-        (sim && sim.waiting != null ? sim.waiting : "—"),
-    );
-    if (b) {
-      lines.push("ライブ枚数: " + (b.liveCt || 0) + " · need 合計: " + (b.needSum || 0));
-      lines.push("need 内訳: " + formatLiveNeedHeartLine(b.needAccum));
-      lines.push(
-        "充足モデル: ライブ need_heart に対し、場メンバー所持H（ステージ＋ライブ枠）＋解決めくりの BH を合算。",
-      );
-      lines.push(
-        "場メンバー所持H（充足に使用）: " + formatHeartSlotAccumBreakdown(b.boardHAcc),
-      );
-      lines.push(
-        "解決ゾーン BH（充足の色源・slot7 除く）: " +
-          formatBladeHeartSlotBreakdown(b.resolutionBhSlotsAcc || {}),
-      );
-      lines.push(
-        "BH ALL（解決 slot7。有色不足にも充当・エールで k 枚増える分は上に加算）: " +
-          (b.wildcardBhAllFlex != null ? b.wildcardBhAllFlex : "—"),
-      );
-      lines.push(
-        "任意プール加算（場メンバーの play ALL heart のみ）: " +
-          (b.wildcardHeartBump != null ? b.wildcardHeartBump : "—"),
-      );
-      lines.push(
-        "参考・解決ゾーン所持H（成功判定には未使用）: " + formatHeartSlotAccumBreakdown(b.resHAcc),
-      );
-      if (b.evaluateResult && !b.evaluateResult.ok) {
-        lines.push("現時点（追加ランダム前）の不足: " + formatLiveEvalFailShort(b.evaluateResult));
-      }
-    }
-    if (sim) {
-      lines.push("結果種別: " + sim.kind + (sim.pct != null && Number.isFinite(sim.pct) ? "（" + formatPctFromRate(sim.pct) + "％）" : ""));
-    }
-    return lines.join("\n");
-  }
-
   /** 解決枚数とブレード・残りめくりの整合 */
   function syncResolutionOverBladeBanner() {
     var ban = $("resolution-over-blade-banner");
@@ -2723,8 +2727,6 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         { heroLiveSim: true },
       );
       syncDeckLiveSimSummaryPctEmphasisClass(sumEl);
-      var bdHold = $("deck-live-sim-breakdown-body");
-      if (bdHold) bdHold.textContent = "";
       if (stEl) {
         stEl.hidden = true;
         stEl.textContent = "";
@@ -4503,12 +4505,116 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     );
   }
 
-  function wikiAbilityToReadableHtml(s, escHtml) {
-    if (s == null || typeof s !== "string") return "";
-    var plain = String(s)
+  function countWikiBladeIconMarks(s) {
+    if (!s) return 0;
+    var m = s.match(/\{\{\s*icon_blade\.png\|/gi);
+    return m ? m.length : 0;
+  }
+
+  function augmentBladeGainPhraseInWiki(raw) {
+    var W = "ブレードを得る";
+    if (!raw || String(raw).indexOf(W) < 0) return raw;
+    return String(raw)
+      .split("\n")
+      .map(function (line) {
+        if (line.indexOf(W) < 0) return line;
+        var buf = "";
+        var idx = 0;
+        while (true) {
+          var i = line.indexOf(W, idx);
+          if (i < 0) {
+            buf += line.slice(idx);
+            break;
+          }
+          var before = line.slice(0, i);
+          var n = countWikiBladeIconMarks(before);
+          var rep = n > 0 ? "ブレード⚔️×" + n + "を得る" : W;
+          buf += line.slice(idx, i) + rep;
+          idx = i + W.length;
+        }
+        return buf;
+      })
+      .join("\n");
+  }
+
+  /** 詳細モーダル用（ブレード×n など） */
+  function wikiAbilityHtmlForDetail(rawWiki, escHtml) {
+    if (rawWiki == null || typeof rawWiki !== "string") return "";
+    var step1 = augmentBladeGainPhraseInWiki(rawWiki);
+    step1 = step1.replace(/\{\{\s*icon_blade\.png\|[^}]*\}\}/gi, "⚔️");
+    var plain = String(step1)
       .replace(/\{\{[^}]*\|([^}]*)\}\}/g, "$1")
       .trim();
     return escHtml(plain).replace(/\n/g, "<br>");
+  }
+
+  function emojiForHeartSlot(slotNum) {
+    slotNum = Number(slotNum);
+    if (slotNum === 1) return "🩷";
+    if (slotNum === 2) return "❤️";
+    if (slotNum === 3) return "💛";
+    if (slotNum === 4) return "💚";
+    if (slotNum === 5) return "💙";
+    if (slotNum === 6) return "💜";
+    if (slotNum === 7) return "✨";
+    if (slotNum === 0) return "🤍";
+    if (slotNum === 99) return "🩶";
+    return "";
+  }
+
+  function formatBaseHeartEmojiOnly(h) {
+    if (!h || typeof h !== "object" || Array.isArray(h)) return "—";
+    var ks = Object.keys(h).slice().sort(function (a, b) {
+      return String(a).localeCompare(String(b), "ja");
+    });
+    var parts = [];
+    for (var i = 0; i < ks.length; i++) {
+      var k = ks[i];
+      var slot = parseHeartColorSlotFromKey(k);
+      if (slot == null) slot = 99;
+      var qty = Number(h[k]);
+      if (!Number.isFinite(qty) || qty === 0) continue;
+      var em = emojiForHeartSlot(slot) || "♥";
+      parts.push(em + "×" + qty);
+    }
+    return parts.length ? parts.join(" ") : "—";
+  }
+
+  function formatBladeHeartEmojiOnly(bh) {
+    if (!bh || typeof bh !== "object" || Array.isArray(bh)) return "—";
+    var ks = Object.keys(bh).slice().sort(compareBladeHeartDbKeys);
+    var parts = [];
+    for (var j = 0; j < ks.length; j++) {
+      var key = ks[j];
+      var slot = parseBladeHeartSlotFromKey(key);
+      if (slot == null) continue;
+      var qty = Number(bh[key]);
+      if (!Number.isFinite(qty) || qty === 0) continue;
+      var em = emojiForHeartSlot(slot) || "♥";
+      parts.push(em + "×" + qty);
+    }
+    return parts.length ? parts.join(" ") : "—";
+  }
+
+  /** キーワードはヒント用。正式なルール解釈ツールではない。 */
+  function classifyWikiAbilityEffectHints(abWiki) {
+    var s = String(abWiki || "")
+      .replace(/\ufeff/g, "")
+      .normalize("NFKC");
+    return {
+      kidou:
+        /\{\{[^}|]*kidou[^}|]*\|/i.test(s) ||
+        /起動効果/.test(s) ||
+        /【[^\]]*起動[^\]]*/.test(s),
+      toujyou:
+        /\{\{[^}|]*toujyou[^}|]*\|/i.test(s) ||
+        /登場時/.test(s) ||
+        /登場処理/.test(s),
+      liveStart:
+        s.includes("{{live_start.png|ライブ開始時}}") ||
+        (/ライブ開始時/.test(s) && !/ライブ開始時以外/.test(s)),
+      jidouAuto: /\|自動/.test(s) || /自動効果/.test(s) || /【自動/.test(s) || /常時/.test(s),
+    };
   }
 
   /** @param {*} c 盤上カード実体 */
@@ -4519,6 +4625,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     var sub = document.getElementById("dlg-card-catalog-subtitle");
     var bodyEl = document.getElementById("dlg-card-catalog-body");
     var h2 = document.getElementById("dlg-card-catalog-title");
+    var dlgImg = document.getElementById("dlg-card-catalog-img");
+    var typeIcons = document.getElementById("dlg-card-catalog-type-icons");
     if (!dlg || !bodyEl || !mc) return;
 
     function esc(x) {
@@ -4542,11 +4650,41 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       );
     }
 
+    var ctype = String(mc.type || c.type || "—");
+
+    if (dlgImg) {
+      if (mc.img) {
+        dlgImg.hidden = false;
+        dlgImg.src = mc.img;
+        dlgImg.alt = nm || "";
+      } else {
+        dlgImg.hidden = true;
+        dlgImg.removeAttribute("src");
+        dlgImg.alt = "";
+      }
+    }
+    if (typeIcons) {
+      if (ctype === T_LIVE) {
+        var pieces = "";
+        if (catalogLiveCardIsDrawYellBladeHeart(mc)) {
+          pieces += '<span class="dlg-card-type-ico dlg-card-type-ico--deck" title="ドローエール">🃏</span>';
+        }
+        if (cardIsNoteLiveCatalog(mc)) {
+          pieces += '<span class="dlg-card-type-ico dlg-card-type-ico--note" title="音符ライブ">♪</span>';
+        }
+        typeIcons.innerHTML = pieces;
+      } else {
+        typeIcons.innerHTML = "";
+      }
+    }
+
     var rows = "";
-    rows += row("タイプ", esc(mc.type || c.type || "—"));
+    rows += row("タイプ", esc(ctype));
 
     var costN = mc.cost != null ? mc.cost : c.cost;
-    if (costN != null && String(costN) !== "") rows += row("コスト／スコア", esc(costN));
+    if (costN != null && String(costN) !== "") {
+      rows += ctype === T_LIVE ? row("スコア", esc(costN)) : row("コスト／スコア", esc(costN));
+    }
 
     var bladeN = mc.blade != null ? mc.blade : c.blade;
     if (bladeN != null && String(bladeN) !== "") rows += row("ブレード", esc(bladeN));
@@ -4556,10 +4694,25 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (mc.product) rows += row("商品", esc(mc.product));
     if (mc.rare) rows += row("レアリティ", esc(mc.rare));
 
-    if (mc.base_heart && typeof mc.base_heart === "object" && Object.keys(mc.base_heart).length)
-      rows += row("所持ハート（印刷）", esc(JSON.stringify(mc.base_heart)));
+    if (
+      ctype === T_MEMBER &&
+      mc.base_heart &&
+      typeof mc.base_heart === "object" &&
+      Object.keys(mc.base_heart).length
+    ) {
+      rows += row("所持ハート", esc(formatBaseHeartEmojiOnly(mc.base_heart)));
+    }
+    if (ctype === T_LIVE && mc.need_heart && typeof mc.need_heart === "object" && Object.keys(mc.need_heart).length) {
+      rows += row("必要ハート", esc(formatBaseHeartEmojiOnly(mc.need_heart)));
+    }
+    if (ctype === T_LIVE && mc.blade_heart && typeof mc.blade_heart === "object" && Object.keys(mc.blade_heart).length) {
+      rows += row("BH", esc(formatBladeHeartEmojiOnly(mc.blade_heart)));
+    }
+    if (ctype !== T_LIVE && mc.blade_heart && typeof mc.blade_heart === "object" && Object.keys(mc.blade_heart).length) {
+      rows += row("BH", esc(formatBladeHeartEmojiOnly(mc.blade_heart)));
+    }
 
-    var abHtml = wikiAbilityToReadableHtml(mc.ability || "", esc);
+    var abHtml = wikiAbilityHtmlForDetail(mc.ability || "", esc);
 
     bodyEl.innerHTML =
       '<dl class="dlg-card-catalog-dl">' +
@@ -4664,6 +4817,14 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (c.lcActive === false) div.classList.add("card-item--lc-inactive");
     if (opts.successLiveAlwaysGlow) div.classList.add("card-item--success-live-glow");
     if (opts.liveVenueBoost) div.classList.add("card-item--live-venue-boost");
+    if (opts.effectWikiHints === true) {
+      var mGlow = mergedCatalogCard(c);
+      var wh = classifyWikiAbilityEffectHints(mGlow && mGlow.ability);
+      if (wh.kidou) div.classList.add("card-item--wiki-hint-kidou");
+      if (wh.toujyou) div.classList.add("card-item--wiki-hint-toujyou");
+      if (wh.liveStart) div.classList.add("card-item--wiki-hint-live-start");
+      if (wh.jidouAuto) div.classList.add("card-item--wiki-hint-jidou");
+    }
 
     if (c.img) {
       const img = document.createElement("img");
@@ -4972,6 +5133,12 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
           zoneId === "zone-deck" ||
           zoneId === "zone-preview");
 
+      var effectWikiHints =
+        zoneId === "zone-hand" ||
+        zoneId === "zone-resolution" ||
+        (isStage && (c.type === T_MEMBER || c.type === T_LIVE)) ||
+        (isLiveBoard && c.type === T_LIVE);
+
       const cardOpts = {
         onRotate: onRotate || undefined,
         zoomClick: zoomClick,
@@ -4987,6 +5154,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         stageRotateChip: stageRotateChip === true,
         stageCatalogLongZoom: stageCatalogCombo === true,
         catalogImgClickDetail: catalogImgClickDetail === true && !stageCatalogCombo,
+        effectWikiHints: effectWikiHints === true,
       };
       if (zoneId === "zone-hand" && state.awaitingTurnStart) {
         const sel = state.mulliganSelectedIds;
@@ -6627,6 +6795,31 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
 
   function doLiveTurnBegin() {
     if (!state.liveTurnPickMode) return;
+    try {
+      if (sessionStorage.getItem("llocg_effect_confirm_live_begin") === "1") {
+        var names = [];
+        ["left", "center", "right"].forEach(function (k) {
+          state.liveArea[k].forEach(function (card) {
+            if (!card || card.type !== T_LIVE) return;
+            var merged = mergedCatalogCard(card);
+            var ab = String((merged && merged.ability) || "");
+            if (ab.includes(LIVE_START_FOR_DRAW_YELL) || /\bライブ開始時\b/.test(ab)) {
+              names.push(String(merged.name || merged.card_no || "（無名）"));
+            }
+          });
+        });
+        if (
+          names.length &&
+          !window.confirm(
+            "ライブ開始時の記載があるライブがあります: " +
+              names.slice(0, 8).join("、") +
+              (names.length > 8 ? " …" : "") +
+              "\n処理を進めますか？（オフにするには sessionStorage から「llocg_effect_confirm_live_begin」を削除してください）",
+          )
+        )
+          return;
+      }
+    } catch (_) {}
     pushHistoryBefore("live-turn-begin");
     clearTurnScopedPlayBonusesEverywhere();
     var movedNonLive = 0;
@@ -7199,6 +7392,24 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     });
   })();
 
+  (function initDeckPickFoldPersistence() {
+    var det = document.getElementById("deck-pick-fold");
+    var KEY = "llocg_deck_pick_fold_collapsed";
+    if (!det) return;
+    function syncFromStorage() {
+      try {
+        if (sessionStorage.getItem(KEY) === "1") det.removeAttribute("open");
+        else det.setAttribute("open", "");
+      } catch (_) {}
+    }
+    syncFromStorage();
+    det.addEventListener("toggle", function () {
+      try {
+        sessionStorage.setItem(KEY, det.open ? "0" : "1");
+      } catch (_) {}
+    });
+  })();
+
   if (root) {
     if (typeof root.__llocgStanceFocusPointerDown === "function") {
       root.removeEventListener("pointerdown", root.__llocgStanceFocusPointerDown, true);
@@ -7331,6 +7542,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (deckPileLayoutDebounce) clearTimeout(deckPileLayoutDebounce);
     deckPileLayoutDebounce = window.setTimeout(function () {
       deckPileLayoutDebounce = 0;
+      syncPlayChromeLayout();
       deckPileScheduleLayoutRef();
       updateHandZoneLayoutMode();
       updateWaitingZoneOverlapMode();

@@ -4373,14 +4373,15 @@ body.play-mode .deck-pile {
   }
 
   body.play-mode .play-top-fixed-strip__body {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto;
+    grid-template-columns: minmax(0, 7fr) minmax(0, 3fr);
+    grid-template-rows: auto;
+    gap: 0.35rem 0.42rem;
+    align-items: stretch;
   }
-  @media (min-width: 420px) {
-    body.play-mode .play-top-fixed-strip__body {
-      grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-      grid-template-rows: auto;
-    }
+
+  body.play-mode .zone-sim-success-row-desktop:empty,
+  body.play-mode .play-desktop-resolution-mount:empty {
+    display: none !important;
   }
 
   body.play-mode .game-board .col.col-left,
@@ -5157,12 +5158,49 @@ dialog.app-dialog:not([open]) {
 }
 
 .dlg-card-catalog {
-  max-width: min(560px, calc(100vw - 1rem));
+  max-width: min(880px, calc(100vw - 1rem));
 }
 .dlg-card-catalog-subtitle {
   margin: -0.2rem 0 0.5rem;
   font-size: 0.76rem;
   word-break: break-all;
+}
+.dlg-card-catalog-shell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  align-items: flex-start;
+}
+.dlg-card-catalog-visual-col {
+  flex: 0 1 210px;
+  max-width: min(260px, 38vw);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.dlg-card-catalog-img {
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 170, 220, 0.35);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  object-fit: contain;
+  background: rgba(0, 0, 0, 0.15);
+}
+.dlg-card-catalog-type-icons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: flex-start;
+}
+.dlg-card-type-ico {
+  font-size: 1.35rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 6px rgba(255, 200, 255, 0.45));
+}
+.dlg-card-catalog-main-col {
+  flex: 1 1 260px;
+  min-width: 0;
 }
 .dlg-card-catalog-body {
   max-height: min(56vh, 22rem);
@@ -5170,6 +5208,9 @@ dialog.app-dialog:not([open]) {
   -webkit-overflow-scrolling: touch;
   font-size: 0.8rem;
   line-height: 1.45;
+}
+.dlg-card-catalog-actions {
+  margin-top: 0.65rem;
 }
 .dlg-card-catalog-dl {
   margin: 0;
@@ -6398,4 +6439,141 @@ kbd {
   margin-top: 0.38rem;
   padding-top: 0.38rem;
   border-top: 1px solid rgba(255, 140, 190, 0.14);
+}
+
+/* ---- プレイ画面: レイアウト切替（縦スマホのみ sticky 帯・インライン成功確率） ---- */
+@media (min-width: 901px), (orientation: landscape) {
+  .layout-strip-mobile-portrait-only {
+    display: none !important;
+  }
+  #mount-mobile-live-prob-inline {
+    display: none !important;
+  }
+}
+
+#mount-mobile-live-prob-inline {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 100%;
+  align-self: center;
+}
+
+@media (max-width: 900px) and (orientation: portrait) {
+  #mount-mobile-live-prob-inline > .zone-block-deck-live-sim {
+    margin-bottom: 0 !important;
+    padding: 0.12rem 0.2rem 0.08rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 150, 210, 0.25);
+    background: rgba(14, 10, 22, 0.55);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+  }
+  #mount-mobile-live-prob-inline h3 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  #mount-mobile-live-prob-inline .deck-flip-blade-note,
+  #mount-mobile-live-prob-inline .deck-live-sim-note {
+    display: none !important;
+  }
+  #mount-mobile-live-prob-inline .deck-live-sim-toolbar {
+    gap: 0.2rem 0.35rem;
+  }
+  #mount-mobile-live-prob-inline .deck-flip-k-line-short span {
+    font-size: 0.58rem;
+  }
+  #mount-mobile-live-prob-inline .deck-flip-k-display {
+    font-size: 0.78rem;
+  }
+  #mount-mobile-live-prob-inline .deck-live-sim-mode-field.field span {
+    font-size: 0.54rem;
+  }
+  #mount-mobile-live-prob-inline .deck-live-sim-mode-field select {
+    font-size: 0.62rem;
+    padding: 0.12rem 0.25rem;
+    max-width: min(100%, 9.5rem);
+  }
+  #mount-mobile-live-prob-inline #deck-live-sim-summary {
+    font-size: 0.62rem !important;
+    line-height: 1.35 !important;
+    padding: 0.18rem 0.24rem !important;
+    margin: 0 !important;
+  }
+
+  body.play-mode.chrome-hand-scroll-locked .game-board {
+    overflow-y: hidden !important;
+    touch-action: none;
+    overscroll-behavior: none;
+  }
+  body.play-mode.chrome-hand-scroll-locked #hand-row {
+    touch-action: pan-x;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+body.play-mode .zone-sim-success-row-desktop:not(:empty) {
+  margin-top: 0.45rem;
+  margin-bottom: 0.55rem;
+}
+
+body.play-mode .play-desktop-resolution-mount:not(:empty) {
+  margin-bottom: 0.55rem;
+}
+
+/* 効果テキストのキーワードは参考表示（ルールエンジンではない） */
+body.play-mode #view-game .card-item--wiki-hint-kidou {
+  outline: 2px solid rgba(120, 220, 255, 0.75);
+  outline-offset: 1px;
+  box-shadow: 0 0 12px rgba(80, 200, 255, 0.35);
+}
+body.play-mode #view-game .card-item--wiki-hint-toujyou {
+  outline: 2px solid rgba(160, 255, 120, 0.55);
+  outline-offset: 1px;
+}
+body.play-mode #view-game .card-item--wiki-hint-live-start {
+  outline: 2px solid rgba(255, 200, 110, 0.8);
+  outline-offset: 1px;
+}
+body.play-mode #view-game .card-item--wiki-hint-jidou {
+  outline: 2px solid rgba(200, 140, 255, 0.7);
+  outline-offset: 1px;
+}
+
+details.deck-pick-fold {
+  min-width: 0;
+  padding: 0.32rem 0.4rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 150, 210, 0.2);
+  background: rgba(10, 8, 18, 0.35);
+}
+.deck-pick-fold > summary.deck-pick-fold__summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 0.5rem;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.78rem;
+  color: #fcdcec;
+}
+.deck-pick-fold > summary.deck-pick-fold__summary::-webkit-details-marker {
+  display: none;
+}
+.deck-pick-fold__hint {
+  font-size: 0.65rem;
+  font-weight: 500;
+}
+.deck-pick-fold__body {
+  margin-top: 0.35rem;
+  min-width: 0;
 }

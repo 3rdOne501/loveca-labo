@@ -607,10 +607,15 @@ python3 -m http.server 8080</pre>
               キー／中間・ライブ・指定を<strong>k 枚</strong>で引く確率。「今」は下のスライダー／マリガン連動。「nT開始時」は折りたたみのターン別モデルで累積した k。
             </p>
           </section>
+          <div id="mount-desktop-live-sim-row" class="zone-sim-success-row zone-sim-success-row-desktop"></div>
+          <div id="mount-desktop-resolution" class="play-desktop-resolution-mount"></div>
         </div>
 
         <div class="col col-center">
-          <div id="play-top-fixed-strip" class="play-top-fixed-strip zone-block">
+          <div
+            id="play-top-fixed-strip"
+            class="play-top-fixed-strip zone-block layout-strip-mobile-portrait-only"
+          >
             <div class="play-top-fixed-strip__head">
               <h3 class="play-top-fixed-strip__title">解決・成功ライブ</h3>
               <button
@@ -625,8 +630,11 @@ python3 -m http.server 8080</pre>
               </button>
             </div>
             <div id="play-top-fixed-strip-body" class="play-top-fixed-strip__body">
-              <div class="play-top-fixed-strip__resolution">
-                <section class="zone-block zone-block-resolution-priority zone-block-resolution-play-top">
+              <div id="play-strip-resolution-slot" class="play-top-fixed-strip__resolution">
+                <section
+                  id="section-play-resolution"
+                  class="zone-block zone-block-resolution-priority zone-block-resolution-play-top"
+                >
                   <p id="resolution-over-blade-banner" class="resolution-over-blade-banner" role="status" hidden></p>
                   <div class="zone-head">
                     <h3>解決 <span id="resolution-zone-head-count" class="badge zone-resolution-head-count" aria-live="polite">0</span></h3>
@@ -642,8 +650,11 @@ python3 -m http.server 8080</pre>
                   <div id="zone-resolution" class="card-strip zone-drop tall resolution-zone-strip"></div>
                 </section>
               </div>
-              <div class="play-top-fixed-strip__success-live">
-                <section class="zone-block zone-block-success-live-only zone-block-success-live-play-top">
+              <div id="play-strip-success-live-slot" class="play-top-fixed-strip__success-live">
+                <section
+                  id="section-play-success-live"
+                  class="zone-block zone-block-success-live-only zone-block-success-live-play-top"
+                >
                   <h3 class="success-live-only-title">成功ライブ置き場</h3>
                   <div id="success-live-zone-shell" class="success-live-zone-shell">
                     <div id="success-live-chrome-row" class="success-live-chrome-row" aria-live="polite">
@@ -678,6 +689,7 @@ python3 -m http.server 8080</pre>
                 <option value="後攻">後攻</option>
               </select>
             </div>
+            <div id="mount-mobile-live-prob-inline" class="live-prob-toolbar-inline"></div>
             <div class="play-undo-redo-cluster">
               <button type="button" class="btn play-undo-redo play-undo-redo--undo" id="btn-undo" title="U キー">
                 ひとつ戻す
@@ -974,7 +986,10 @@ python3 -m http.server 8080</pre>
             </div>
           </section>
 
-            <section class="zone-block zone-block-deck-live-sim zone-block-deck-live-sim-under-preview">
+            <section
+              id="section-play-deck-live-sim"
+              class="zone-block zone-block-deck-live-sim zone-block-deck-live-sim-under-preview"
+            >
               <h3>ライブ成功確率（山札シミュ）</h3>
               <div class="deck-live-sim-shell">
                 <div class="deck-live-sim-toolbar">
@@ -1001,10 +1016,6 @@ python3 -m http.server 8080</pre>
                 ></p>
                 <div id="deck-live-sim-block" class="deck-live-sim-block">
                   <p id="deck-live-sim-summary" class="deck-live-sim-summary deck-draw-odds-visible"></p>
-                  <details id="deck-live-sim-breakdown" class="deck-live-sim-breakdown">
-                    <summary class="deck-live-sim-breakdown-summary">計算の内訳</summary>
-                    <pre id="deck-live-sim-breakdown-body" class="deck-live-sim-breakdown-body"></pre>
-                  </details>
                   <pre id="deck-live-sim-stats" class="deck-live-sim-stats deck-draw-odds-visible" hidden></pre>
                   <p id="deck-live-sim-note" class="hint zone-inline-help deck-live-sim-note deck-prob-explain-hide">
                     モードは盤面B（k=B−R）／デッキ全体。めくりで増えるのは BH のみ。BH の ALL（b_all）は有色 need にも充当されます。
@@ -1058,20 +1069,28 @@ python3 -m http.server 8080</pre>
           <section class="zone-block play-tools-block">
             <div class="deck-tools-split">
               <div class="deck-tools-split__pick">
-                <div class="deck-pick-block">
-                  <div class="deck-pick-head-row">
-                    <h4 class="deck-pick-odds-section-title">指定カード検索</h4>
-                    <label class="field deck-pick-k-field">
-                      <span>めくり枚数</span>
-                      <input type="number" id="deck-pick-k" min="1" max="99" step="1" value="1" />
-                    </label>
+                <details id="deck-pick-fold" class="deck-pick-fold" open>
+                  <summary class="deck-pick-fold__summary">
+                    <span class="deck-pick-fold__label">検索・絞り込み</span>
+                    <span class="deck-pick-fold__hint muted">タップで開閉</span>
+                  </summary>
+                  <div class="deck-pick-fold__body">
+                    <div class="deck-pick-block">
+                      <div class="deck-pick-head-row">
+                        <h4 class="deck-pick-odds-section-title">指定カード検索</h4>
+                        <label class="field deck-pick-k-field">
+                          <span>めくり枚数</span>
+                          <input type="number" id="deck-pick-k" min="1" max="99" step="1" value="1" />
+                        </label>
+                      </div>
+                      <p id="deck-pick-odds" class="hint zone-inline-help deck-pick-odds-line deck-draw-odds-visible"></p>
+                      <div id="deck-pick-list" class="deck-pick-list" role="group" aria-label="山札に残っているカード"></div>
+                      <div class="btn-row deck-pick-actions">
+                        <button type="button" class="btn sm secondary" id="btn-deck-pick-clear">選択をクリア</button>
+                      </div>
+                    </div>
                   </div>
-                  <p id="deck-pick-odds" class="hint zone-inline-help deck-pick-odds-line deck-draw-odds-visible"></p>
-                  <div id="deck-pick-list" class="deck-pick-list" role="group" aria-label="山札に残っているカード"></div>
-                  <div class="btn-row deck-pick-actions">
-                    <button type="button" class="btn sm secondary" id="btn-deck-pick-clear">選択をクリア</button>
-                  </div>
-                </div>
+                </details>
               </div>
               <div class="deck-tools-split__odds">
                 <div id="deck-remain-bh-panel" class="deck-remain-bh-panel" aria-live="polite">
@@ -1377,10 +1396,27 @@ python3 -m http.server 8080</pre>
     <dialog id="dlg-card-catalog" class="app-dialog dlg-card-catalog" aria-labelledby="dlg-card-catalog-title">
       <h2 id="dlg-card-catalog-title" class="app-dialog__title">カード情報</h2>
       <p id="dlg-card-catalog-subtitle" class="muted dlg-card-catalog-subtitle"></p>
-      <div id="dlg-card-catalog-body" class="dlg-card-catalog-body"></div>
-      <form method="dialog" class="btn-row" style="margin-top: 0.85rem">
-        <button type="submit" class="btn primary">閉じる</button>
-      </form>
+      <div class="dlg-card-catalog-shell">
+        <div class="dlg-card-catalog-visual-col">
+          <img
+            id="dlg-card-catalog-img"
+            class="dlg-card-catalog-img"
+            alt=""
+            width="260"
+            height="364"
+            loading="lazy"
+            decoding="async"
+            hidden
+          />
+          <div id="dlg-card-catalog-type-icons" class="dlg-card-catalog-type-icons" aria-hidden="true"></div>
+        </div>
+        <div class="dlg-card-catalog-main-col">
+          <div id="dlg-card-catalog-body" class="dlg-card-catalog-body"></div>
+          <form method="dialog" class="btn-row dlg-card-catalog-actions">
+            <button type="submit" class="btn primary">閉じる</button>
+          </form>
+        </div>
+      </div>
     </dialog>
 
     <dialog id="dlg-card-zoom" class="app-dialog dlg-card-zoom" aria-label="カード拡大プレビュー">
