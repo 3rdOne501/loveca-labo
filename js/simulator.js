@@ -91,6 +91,36 @@ function catalogLiveCardIsDrawYellBladeHeart(card) {
   return false;
 }
 
+/**
+ * プレイ画面の「スマホ縦レイアウト」を拾うか。
+ * `orientation: portrait` だけでは iOS / PWA / インアプリブラウザで誤検出することがあるので、
+ * アスペクト比および visualViewport の縦／横も参照する。
+ * @returns {boolean}
+ */
+function matchesPlayPortraitLayout() {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
+  if (!window.matchMedia("(max-width: 900px)").matches) return false;
+  try {
+    if (window.matchMedia("(orientation: portrait)").matches) return true;
+  } catch (_) {
+    /* noop */
+  }
+  try {
+    if (window.matchMedia("(max-aspect-ratio: 1/1)").matches) return true;
+  } catch (_) {
+    /* noop */
+  }
+  var w =
+    typeof window.visualViewport !== "undefined" && window.visualViewport != null
+      ? Math.round(window.visualViewport.width)
+      : Math.round(window.innerWidth);
+  var h =
+    typeof window.visualViewport !== "undefined" && window.visualViewport != null
+      ? Math.round(window.visualViewport.height)
+      : Math.round(window.innerHeight);
+  return w > 0 && h > 0 && h > w + 6;
+}
+
 /** @type {{ t: string, act: string, meta?: object }[]} */
 let replayLog = [];
 let undoHistory = [];
@@ -1378,8 +1408,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
 
   /** プレイ画面のみ：縦長スマホ向け DOM 組み替え（デスクトップでは左列レイアウトへ復帰） */
   function isPlayChromeMobilePortraitLayout() {
-    if (typeof window.matchMedia !== "function") return false;
-    return window.matchMedia("(max-width: 900px) and (orientation: portrait)").matches;
+    return matchesPlayPortraitLayout();
   }
 
   function syncPlayBoardChromeMounts() {
@@ -6287,9 +6316,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (!fold || !mobileHost) return;
     var originParent = fold.parentNode;
     var originNext = fold.nextElementSibling;
-    var mq = window.matchMedia("(max-width: 900px) and (orientation: portrait)");
     function syncDeckOddsFoldHost() {
-      if (mq.matches) {
+      if (matchesPlayPortraitLayout()) {
         var firstRemain = $("deck-remain-bh-panel");
         if (firstRemain && firstRemain.parentNode === mobileHost) {
           mobileHost.insertBefore(fold, firstRemain.nextElementSibling);
@@ -6302,22 +6330,30 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       }
     }
     syncDeckOddsFoldHost();
-    if (mq.addEventListener) mq.addEventListener("change", syncDeckOddsFoldHost);
-    else if (mq.addListener) mq.addListener(syncDeckOddsFoldHost);
+    window.addEventListener("resize", syncDeckOddsFoldHost, { passive: true });
+    window.addEventListener(
+      "orientationchange",
+      function () {
+        window.setTimeout(syncDeckOddsFoldHost, 220);
+      },
+      { passive: true },
+    );
   })();
   (function initHandStickFoldViewport() {
     var det = $("hand-stick-fold");
     if (!det || det.tagName !== "DETAILS") return;
-    var mq = window.matchMedia("(max-width: 900px) and (orientation: portrait)");
     function syncOpen() {
-      if (!mq.matches) det.setAttribute("open", "");
+      if (!matchesPlayPortraitLayout()) det.setAttribute("open", "");
     }
     syncOpen();
-    if (mq.addEventListener) mq.addEventListener("change", syncOpen);
-    else if (mq.addListener) mq.addListener(syncOpen);
-    window.addEventListener("orientationchange", function () {
-      window.setTimeout(syncOpen, 200);
-    });
+    window.addEventListener("resize", syncOpen, { passive: true });
+    window.addEventListener(
+      "orientationchange",
+      function () {
+        window.setTimeout(syncOpen, 200);
+      },
+      { passive: true },
+    );
   })();
   function bumpDeckOddsKManual(delta) {
     var n = state.deck.length;
@@ -7604,6 +7640,9 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     }, 140);
   };
   window.addEventListener("resize", deckPileWindowResizeHandler, { passive: true });
+  if (typeof window.visualViewport !== "undefined" && window.visualViewport != null) {
+    window.visualViewport.addEventListener("resize", deckPileWindowResizeHandler, { passive: true });
+  }
   window.addEventListener(
     "orientationchange",
     function () {

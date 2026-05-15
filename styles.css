@@ -3126,7 +3126,7 @@ details.hand-stick-fold.zone-block {
 }
 
 /* プレイ画面・スマホ縦のみ: 文字の重なり・確率まわりの折り返し等 */
-@media (max-width: 900px) and (orientation: portrait) {
+@media (max-width: 900px) and ((orientation: portrait) or (max-aspect-ratio: 1/1)) {
   body.play-mode .deck-odds-pct--hero {
     font-size: clamp(1rem, 4.5vw, 1.55rem);
     line-height: 1.35;
@@ -3231,7 +3231,7 @@ details.hand-stick-fold.zone-block {
   }
 }
 
-@media (max-width: 900px) and (orientation: portrait) and (max-width: 700px) {
+@media (max-width: 900px) and ((orientation: portrait) or (max-aspect-ratio: 1/1)) and (max-width: 700px) {
   body.play-mode .deck-tools-split {
     grid-template-columns: minmax(4.25rem, 5.75rem) minmax(0, 1fr);
     gap: 0.35rem 0.42rem;
@@ -3241,7 +3241,7 @@ details.hand-stick-fold.zone-block {
   }
 }
 
-@media (max-width: 900px) and (orientation: portrait) and (max-width: 480px) {
+@media (max-width: 900px) and ((orientation: portrait) or (max-aspect-ratio: 1/1)) and (max-width: 480px) {
   body.play-mode .deck-tools-split__odds {
     grid-template-columns: 1fr;
   }
@@ -3434,7 +3434,7 @@ details.hand-stick-fold.zone-block {
   border: 1px solid rgba(255, 150, 200, 0.22);
   background: rgba(255, 255, 255, 0.04);
 }
-@media (max-width: 900px) and (orientation: portrait) {
+@media (max-width: 900px) and ((orientation: portrait) or (max-aspect-ratio: 1/1)) {
   .deck-odds-skill-explain-row {
     grid-template-columns: 1fr;
   }
@@ -4305,7 +4305,7 @@ body.play-mode .deck-pile {
  * 解決ゾーンは sticky でコンテンツ途中でも画面上端付近に張り付く。
  * 手札は右カラム末尾で sticky bottom。
  */
-@media (max-width: 900px) and (orientation: portrait) {
+@media (max-width: 900px) and ((orientation: portrait) or (max-aspect-ratio: 1/1)) {
   body.play-mode .game-board {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -4846,7 +4846,7 @@ summary {
     padding: 5px;
   }
 }
-@media (max-width: 900px) and (orientation: portrait) {
+@media (max-width: 900px) and ((orientation: portrait) or (max-aspect-ratio: 1/1)) {
   :root {
     --deck-cards-per-row: 10;
     --deck-thumb-w-pile: 52px;
