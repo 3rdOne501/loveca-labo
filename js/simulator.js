@@ -7370,29 +7370,6 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     });
   })();
 
-  (function initPlayTopFixedStripCollapse() {
-    var strip = document.getElementById("play-top-fixed-strip");
-    var btn = document.getElementById("btn-play-top-strip-toggle");
-    var KEY = "llocg_play_top_strip_collapsed";
-    if (!strip || !btn) return;
-    function applyCollapsed(on) {
-      strip.classList.toggle("play-top-fixed-strip--collapsed", on);
-      btn.setAttribute("aria-expanded", on ? "false" : "true");
-      btn.textContent = on ? "開く" : "閉じる";
-      try {
-        sessionStorage.setItem(KEY, on ? "1" : "0");
-      } catch (_) {}
-    }
-    try {
-      applyCollapsed(sessionStorage.getItem(KEY) === "1");
-    } catch (_) {
-      applyCollapsed(false);
-    }
-    btn.addEventListener("click", function () {
-      applyCollapsed(!strip.classList.contains("play-top-fixed-strip--collapsed"));
-    });
-  })();
-
   if (root) {
     if (typeof root.__llocgStanceFocusPointerDown === "function") {
       root.removeEventListener("pointerdown", root.__llocgStanceFocusPointerDown, true);

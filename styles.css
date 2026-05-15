@@ -4301,20 +4301,19 @@ body.play-mode .deck-pile {
 }
 
 /*
- * スマホ縦（プレイのみ）: ステージ優先の縦並び。game-board を縦スクロールに統一。
- * 解決ゾーンは sticky でコンテンツ途中でも画面上端付近に張り付く。
+ * スマホ縦（プレイのみ）: 左列を縦フローにし、解決ゾーンを sticky で上端付近に固定。
+ * 列順は order で「解決 → 確率/成功ライブブロック → デッキ確率」相当に並べ替え。
  * 手札は右カラム末尾で sticky bottom。
  */
 @media (max-width: 900px) and (orientation: portrait) {
   body.play-mode .game-board {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, 1fr);
+    display: flex;
+    flex-direction: column;
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
-    align-content: start;
-    gap: 0.45rem 0.35rem;
+    align-content: stretch;
+    gap: 0.45rem;
     touch-action: pan-y;
     overscroll-behavior-y: contain;
   }
@@ -4322,13 +4321,12 @@ body.play-mode .deck-pile {
   body.play-mode .game-board .col {
     overflow: visible;
     min-width: 0;
+    width: 100%;
   }
 
-  /** 上段いっぱい: デッキ確率グリッドのみ */
   body.play-mode .game-board .col.col-left {
-    grid-column: 1 / -1;
-    grid-row: 1;
-    flex: unset;
+    order: 1;
+    flex: 0 1 auto;
     display: flex;
     flex-direction: column;
     max-height: none;
@@ -4338,49 +4336,60 @@ body.play-mode .deck-pile {
     min-height: 0;
   }
 
-  /** 下段2分割: 中央＝盤面、右＝デッキ〜手札（2領域） */
+  body.play-mode .col.col-left > * {
+    order: 3;
+  }
+  body.play-mode .col.col-left .zone-sim-success-row {
+    order: 2;
+  }
+
   body.play-mode .game-board .col.col-center {
-    grid-column: 1;
-    grid-row: 2;
-    flex: unset;
-    min-height: min(34vh, 400px);
-    min-height: min(34svh, 400px);
+    order: 2;
+    flex: 1 1 auto;
+    min-height: min(36vh, 410px);
+    min-height: min(36svh, 410px);
+    min-width: 0;
   }
 
   body.play-mode .game-board .col.col-right {
-    grid-column: 2;
-    grid-row: 2;
+    order: 3;
     display: flex;
     flex-direction: column;
-    flex: unset;
-    min-height: min(34vh, 400px);
-    min-height: min(34svh, 400px);
+    flex: 1 1 auto;
+    min-height: min(44vh, 520px);
+    min-height: min(44svh, 520px);
     max-height: none;
     overflow-y: visible;
     overflow-x: hidden;
     overscroll-behavior: contain;
-    width: auto;
+    width: 100%;
   }
 
-  body.play-mode .play-top-fixed-strip {
+  body.play-mode .col.col-left section.zone-block.zone-block-resolution-priority {
+    order: 1;
     position: sticky;
     top: 0;
-    z-index: 18;
-    background: linear-gradient(180deg, rgba(18, 10, 28, 0.98), rgba(14, 9, 22, 0.88));
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.42);
+    align-self: stretch;
+    z-index: 16;
+    padding-top: 0.35rem;
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.55rem;
+    background: linear-gradient(
+      180deg,
+      rgba(18, 10, 28, 0.98) 0%,
+      rgba(14, 9, 22, 0.94) 50%,
+      rgba(14, 9, 22, 0.78) 100%
+    );
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 160, 200, 0.22);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.38);
   }
 
-  body.play-mode .play-top-fixed-strip__body {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto;
-  }
-  @media (min-width: 420px) {
-    body.play-mode .play-top-fixed-strip__body {
-      grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-      grid-template-rows: auto;
-    }
+  body.play-mode .zone-sim-success-row {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    gap: 0.38rem 0.42rem;
+    align-items: stretch;
   }
 
   body.play-mode .game-board .col.col-left,
@@ -5284,57 +5293,8 @@ body.play-mode .stance-chip.stance-rotate {
   }
 }
 
-/** ライブ／ステージ直上: 解決 + 成功ライブ（約2:1）。閉じると本文のみ折りたたみ */
-.play-top-fixed-strip {
-  margin-bottom: 0.45rem;
-  padding: 0.42rem 0.48rem 0.5rem;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 150, 200, 0.22);
-  background: rgba(22, 12, 32, 0.65);
-}
-.play-top-fixed-strip__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.45rem;
-  margin-bottom: 0.42rem;
-}
-.play-top-fixed-strip__title {
-  margin: 0;
-  font-size: 0.82rem;
-  font-family: var(--font-display);
-  color: #fde6f8;
-}
-.play-top-fixed-strip__toggle {
-  flex-shrink: 0;
-}
-.play-top-fixed-strip__body {
-  display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-  gap: 0.42rem;
-  align-items: stretch;
-}
-.play-top-fixed-strip--collapsed .play-top-fixed-strip__body {
-  display: none;
-}
-.play-top-fixed-strip .zone-block-resolution-play-top,
-.play-top-fixed-strip .zone-block-success-live-play-top {
-  margin-bottom: 0 !important;
-}
-.play-top-fixed-strip .resolution-zone-strip {
-  min-height: min(118px, 18vh);
-}
-.play-top-fixed-strip .success-live-strip.card-strip {
-  min-height: min(118px, 18vh);
-}
-.play-top-fixed-strip .success-live-only-title {
-  font-size: 0.78rem !important;
-  margin: 0 0 0.22rem !important;
-}
-.play-top-success-live-hint {
-  margin: 0.25rem 0 0 !important;
-  font-size: 0.62rem !important;
+.col.col-left .zone-block.zone-block-deck-live-sim-under-preview {
+  margin-top: 0;
 }
 
 .zone-block.zone-block-deck-live-sim-under-preview {
