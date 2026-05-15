@@ -41,6 +41,7 @@ import {
   uniqueUnits,
   isHandDependentCost20Member,
 } from "./cards.js";
+import { openCardCatalogDialog } from "./cardCatalogDialog.js";
 import { parseDeckTextRecipe } from "./decklogImport.js";
 import {
   effectiveSampleThumbnailCardNo,
@@ -1508,6 +1509,11 @@ export function initDeckBuilder(root, { onStartGame }) {
         dz.addEventListener("click", function (ev) {
           ev.preventDefault();
           ev.stopPropagation();
+          openCardCatalogDialog(card);
+        });
+        dz.addEventListener("dblclick", function (ev) {
+          ev.preventDefault();
+          ev.stopPropagation();
           openDeckBuilderCardZoom(card);
         });
       }
@@ -1826,6 +1832,12 @@ export function initDeckBuilder(root, { onStartGame }) {
         var pzk = li.querySelector("img.deck-builder-card-thumb");
         if (pzk && card) {
           pzk.addEventListener("click", function (ev) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            openCardCatalogDialog(card);
+          });
+          pzk.addEventListener("dblclick", function (ev) {
+            ev.preventDefault();
             ev.stopPropagation();
             openDeckBuilderCardZoom(card);
           });
@@ -2247,6 +2259,22 @@ export function initDeckBuilder(root, { onStartGame }) {
       fav.setAttribute("aria-pressed", cardFavorites.has(k) ? "true" : "false");
     });
     div.appendChild(fav);
+    div.addEventListener(
+      "dblclick",
+      function (ev) {
+        if (ev.target.closest(".card-thumb-fav")) return;
+        if (
+          ev.target &&
+          ev.target.closest &&
+          (ev.target.closest(".deck-builder-card-thumb") || ev.target.tagName === "IMG")
+        ) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          openDeckBuilderCardZoom(card);
+        }
+      },
+      true,
+    );
     div.addEventListener("click", function (ev) {
       if (ev.target && ev.target.closest && ev.target.closest(".card-thumb-fav")) return;
       if (
@@ -2256,7 +2284,7 @@ export function initDeckBuilder(root, { onStartGame }) {
       ) {
         ev.preventDefault();
         ev.stopPropagation();
-        openDeckBuilderCardZoom(card);
+        openCardCatalogDialog(card);
         return;
       }
       void (async function () {

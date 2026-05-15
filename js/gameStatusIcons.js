@@ -1,9 +1,40 @@
 /**
  * 効果／ステータス欄の wiki トークン向けゲーム UI アイコン。
- * （assets/game-icons の PNG が単色ダミーのため SVG で描く）
+ * `game-icons/` 直下のフォルダ（ユーザー提供の一式）内の PNG を優先する。
  */
 
 export const GAME_STATUS_ICON_BASE = "assets/game-icons/";
+
+/** macOS 等の APFS 上の実フォルダ名（NFD・合成文字）と一致させる */
+const GAME_STATUS_ICON_ART_SEGMENT =
+  "\u30e9\u30d5\u3099\u30ab\u30c6\u3099\u30fc\u30bf\uff11";
+
+/** 公式アイコン PNG 束へのパス（フォルダ名だけ URL エンコード） */
+export const GAME_STATUS_ICON_ART_DIR =
+  GAME_STATUS_ICON_BASE + encodeURIComponent(GAME_STATUS_ICON_ART_SEGMENT) + "/";
+
+/**
+ * @type {Record<string, string>}
+ * canonical key（STEM_ALIAS の値）→ バンドル内ファイル名（ASCIIのみ）
+ */
+const ART_FILE_BY_KEY = /** @type {Record<string, string>} */ ({
+  h00: "heart_00.png",
+  h01: "heart_01.png",
+  h02: "heart_02.png",
+  h03: "heart_03.png",
+  h04: "heart_04.png",
+  h05: "heart_05.png",
+  h06: "heart_06.png",
+  hall: "icon_all.png",
+  blade: "icon_blade.png",
+  energy: "icon_energy.png",
+  score: "icon_score.png",
+  jouji: "jyouji.png",
+  kidou: "kidou-2.png",
+  live_start: "live_start.png",
+  turn1: "turn1.png",
+  toujyou: "toujyou.png",
+});
 
 export function wikiAbilityStemNormalize(stem) {
   return String(stem || "")
@@ -46,6 +77,17 @@ const STEM_ALIAS = /** @type {Record<string, string>} */ ({
   turn1: "turn1",
   turn_once: "turn1",
   "ターン1回": "turn1",
+  toujyou: "toujyou",
+  登場: "toujyou",
+});
+
+/** 横長ラベル系（効果テキスト内で拡大表示） */
+const PILL_ICON_KEYS = /** @type {Record<string, 1>} */ ({
+  jouji: 1,
+  kidou: 1,
+  live_start: 1,
+  turn1: 1,
+  toujyou: 1,
 });
 
 function svgDoc(children) {
@@ -152,16 +194,25 @@ export function escapeAttrHtml(s) {
  * @param {string} href
  * @returns {string}
  */
-export function htmlStatusGameIconImg(alt, href) {
+export function htmlStatusGameIconImg(alt, href, extraClass) {
   if (!href) return "";
   var a = escapeAttrHtml(alt || "");
+  var cls = "status-inline-game-icon";
+  if (typeof extraClass === "string" && extraClass.trim() !== "") {
+    var parts = extraClass.trim().split(/\s+/).filter(function (t) {
+      return /^[\w\-]+$/.test(t);
+    });
+    if (parts.length) cls += " " + parts.join(" ");
+  }
   return (
     '<img src="' +
     escapeAttrHtml(href) +
     '" alt="' +
     a +
     '"' +
-    ' class="status-inline-game-icon"' +
+    ' class="' +
+    escapeAttrHtml(cls) +
+    '"' +
     ' draggable="false"' +
     ' loading="lazy"' +
     ' decoding="async"' +
@@ -170,7 +221,7 @@ export function htmlStatusGameIconImg(alt, href) {
 }
 
 /**
- * wiki 茎 → インライン SVG（span 付き）
+ * wiki 茎 → PNG（優先）またはインライン SVG
  * @param {string} alt
  * @param {string} stem
  * @returns {string | null}
@@ -179,17 +230,35 @@ export function wikiAbilityFileStemToIconHtml(alt, stem) {
   var norm = wikiAbilityStemNormalize(stem);
   var key = STEM_ALIAS[norm];
   if (!key) return null;
+  var pill = !!PILL_ICON_KEYS[key];
+  var artFile = ART_FILE_BY_KEY[key];
+  if (artFile)
+    return htmlStatusGameIconImg(
+      alt,
+      GAME_STATUS_ICON_ART_DIR + artFile,
+      pill ? "status-inline-game-icon--pill" : "",
+    );
   var build = SVG_BUILD[key];
   if (!build) return null;
   var a = escapeAttrHtml(alt || "");
-  return '<span class="status-inline-game-icon" role="img" aria-label="' + a + '">' + build() + "</span>";
+  return (
+    '<span class="status-inline-game-icon' +
+    (pill ? " status-inline-game-icon--pill" : "") +
+    '" role="img" aria-label="' +
+    a +
+    '">' +
+    build() +
+    "</span>"
+  );
 }
 
-/** img の src 用 data URI（未マップは null）。旧コード互換。 */
+/** img の src 用パスまたは data URI。旧コード互換。 */
 export function wikiAbilityFileStemToIconHref(stem) {
   var norm = wikiAbilityStemNormalize(stem);
   var key = STEM_ALIAS[norm];
   if (!key) return null;
+  var artFile = ART_FILE_BY_KEY[key];
+  if (artFile) return GAME_STATUS_ICON_ART_DIR + artFile;
   var build = SVG_BUILD[key];
   if (!build) return null;
   return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(build());
@@ -205,11 +274,11 @@ export function catalogDrawYellBadgeHtml() {
   return '<span class="dlg-card-catalog-badge-img" role="img" aria-label="ドローエール（BH）">' + svgDoc(inner) + "</span>";
 }
 
-/** カード詳細: 音符ライブ／スコア */
+/** カード詳細: 音符ライブ／スコア（バンドル icon_score.png） */
 export function catalogNoteLiveBadgeHtml() {
-  var inner =
-    '<path fill="#ba68c8" stroke="#ffffff" stroke-width="1.3" stroke-linejoin="round" d="' +
-    "M26.2 6.5v18.2a3.6 3.6 0 11-2.7-3.3V12.4l-9-1.3v14.4a3.6 3.6 0 11-2.7-3.3V6.4l12.4 2.1z" +
-    '"/>';
-  return '<span class="dlg-card-catalog-badge-img" role="img" aria-label="音符ライブ／スコア">' + svgDoc(inner) + "</span>";
+  return htmlStatusGameIconImg(
+    "音符ライブ／スコア",
+    GAME_STATUS_ICON_ART_DIR + ART_FILE_BY_KEY.score,
+    "dlg-card-catalog-badge-img",
+  );
 }

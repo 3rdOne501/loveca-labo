@@ -36,6 +36,7 @@ import {
   cardIsNoteLiveCatalog,
 } from "./cards.js";
 import { loadDeckLibrary, normalizeDeckMapCounts } from "./deckLibrary.js";
+import { openCardCatalogDialog, catalogLiveCardIsDrawYellBladeHeart } from "./cardCatalogDialog.js";
 import {
   addBaseHeartToSlotAccum,
   addBladeHeartWeightsPerDisplaySlot,
@@ -58,38 +59,6 @@ import { showToast } from "./ui.js";
 /** 開幕マリガン／確率モデル用 sessionStorage キー（config 未同期のときの named import 失敗を避ける）。 */
 const STORAGE_OPENING_MULLIGAN_K = "llocg_opening_mulligan_k";
 const STORAGE_DECK_ODDS_OPENING_MULL_MODEL = "llocg_deck_odds_open_mull_model";
-
-const LIVE_START_FOR_DRAW_YELL = "{{live_start.png|ライブ開始時}}";
-const LIVE_SUCCESS_SPLIT_FOR_DRAW_YELL = "{{live_success.png|ライブ成功時}}";
-
-function normalizeCatalogKeyForDrawYell(s) {
-  return String(s == null ? "" : s)
-    .replace(/\ufeff/g, "")
-    .normalize("NFKC")
-    .trim();
-}
-
-const DRAW_YELL_BLADE_HEART_CARD_NOS = new Set(
-  ["PL!N-bp1-029-L", "PL!N-bp5-027-L", "PL!HS-bp1-022-L"].map(normalizeCatalogKeyForDrawYell),
-);
-
-/** ドローエール（BH）：エールでめくれると追加ドローが出るライブ。cards.js と独立（古いキャッシュ環境での import 不整合対策）。 */
-function catalogLiveCardIsDrawYellBladeHeart(card) {
-  if (!card || card.type !== T_LIVE) return false;
-  if (!cardHasBladeHeart(card)) return false;
-  const no = normalizeCatalogKeyForDrawYell(card.card_no || "");
-  if (DRAW_YELL_BLADE_HEART_CARD_NOS.has(no)) return true;
-  const ab = String(card.ability || "");
-  if (!ab.includes(LIVE_START_FOR_DRAW_YELL)) return false;
-  const tail = ab.split(LIVE_START_FOR_DRAW_YELL)[1];
-  if (!tail) return false;
-  const seg = tail.split(LIVE_SUCCESS_SPLIT_FOR_DRAW_YELL)[0];
-  if (!seg) return false;
-  if (/ドロー/.test(seg)) return true;
-  if (/引く/.test(seg) && /山札(?:から)?/.test(seg)) return true;
-  if (/見る/.test(seg) && /(?:山札|手札)/.test(seg) && /\d\s*枚/.test(seg)) return true;
-  return false;
-}
 
 /**
  * プレイ画面の「スマホ縦レイアウト」を拾うか。
@@ -140,8 +109,8 @@ let uid = 1;
 /** 側面エネに使うカード番号（空なら既定） */
 let selectedEnergyCardNo = "";
 
-/** メンバー追加分のブレード表示（favicon と同じアセット） */
-const MEMBER_BONUS_BLADE_IMG = "https://loveca-solo.pages.dev/icon_blade.png";
+/** ステージ側面メンバー追加のブレード表示（ゲームアイコン束） */
+const MEMBER_BONUS_BLADE_IMG = Gsi.GAME_STATUS_ICON_ART_DIR + "icon_blade.png";
 
 /** 山札レイアウトは window resize + 描画後 rAF のみ（#zone-deck の ResizeObserver はスクロールバーと相性が悪く長時間ブロックしうる） */
 let deckPileResizeObserver = null;
@@ -4596,246 +4565,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     );
   }
 
-  function augmentBladeGainReadWiki(raw) {
-    if (raw == null || typeof raw !== "string") return "";
-    var needle = "ブレードを得る";
-    var out = "";
-    var cursor = 0;
-    while (true) {
-      var idx = raw.indexOf(needle, cursor);
-      if (idx < 0) {
-        out += raw.slice(cursor);
-        break;
-      }
-      out += raw.slice(cursor, idx);
-      var seg = raw.slice(0, idx);
-      var reBl = /\{\{[^}]*blade[^}]*\}\}/gi;
-      var n = 0;
-      var m;
-      while ((m = reBl.exec(seg)) !== null) n++;
-      out += n > 0 ? "ブレード__ICON_BLADE__×" + n + "を得る" : needle;
-      cursor = idx + needle.length;
-    }
-    return out;
-  }
-
-  function wikiAbilityBladeIconHtmlFragment() {
-    return Gsi.wikiAbilityFileStemToIconHtml("ブレード", "icon_blade") || "";
-  }
-
-  /** 効果テキスト: wiki トークン＋ブレード加算をゲーム UI アイコンへ */
-  function wikiAbilityToStatusHtml(raw) {
-    if (raw == null || typeof raw !== "string") return "";
-
-    function escTxt(tx) {
-      return escapeHtmlPlain(tx).replace(/\n/g, "<br>");
-    }
-
-    function spliceBladeMarkers(chunk) {
-      if (!chunk) return "";
-      return chunk.split("__ICON_BLADE__").join(wikiAbilityBladeIconHtmlFragment());
-    }
-
-    var s = augmentBladeGainReadWiki(String(raw));
-
-    function flushTextSegment(seg) {
-      return escTxt(spliceBladeMarkers(seg));
-    }
-
-    var reWiki = /\{\{([^}|]+)\|([^}]*)\}\}/g;
-    var result = "";
-    var lastIdx = 0;
-    var m;
-    while ((m = reWiki.exec(s)) !== null) {
-      if (m.index > lastIdx) {
-        result += flushTextSegment(s.slice(lastIdx, m.index));
-      }
-      var label =
-        m[2] != null && String(m[2]).trim() !== "" ? String(m[2]).trim() : String(m[1]).trim();
-      var icon = Gsi.wikiAbilityFileStemToIconHtml(label, m[1]);
-      result += icon != null ? icon : escTxt(label);
-      lastIdx = m.index + m[0].length;
-    }
-    if (lastIdx < s.length) {
-      result += flushTextSegment(s.slice(lastIdx));
-    }
-    if (!result) result = flushTextSegment(s);
-
-    return result;
-  }
-
-  function formatBladeHeartStatusHtmlRow(bh) {
-    if (!bh || typeof bh !== "object") return "";
-    var parts = [];
-    Object.keys(bh).forEach(function (k) {
-      var slot = parseBladeHeartSlotFromKey(k);
-      var v = Number(bh[k]);
-      if (!Number.isFinite(v) || v === 0) return;
-      var stem =
-        slot === 7
-          ? "icon_all"
-          : slot != null && slot >= 1 && slot <= 6
-            ? "heart_" + String(slot).padStart(2, "0")
-            : null;
-      var lbl = stem === "icon_all" ? "ALL" : stem != null ? stem : "?";
-      var icon = stem != null ? Gsi.wikiAbilityFileStemToIconHtml(lbl, stem) : null;
-      var chip =
-        icon != null
-          ? '<span class="dlg-status-icon-chip dlg-status-icon-chip--bh">' +
-            icon +
-            '<span class="dlg-status-count-tail" aria-hidden="true">×</span>' +
-            '<span class="dlg-status-count-num">' +
-            escapeHtmlPlain(String(v)) +
-            "</span></span>"
-          : '<span class="dlg-status-icon-chip dlg-status-icon-chip--bh dlg-status-icon-chip--muted">' +
-            escapeHtmlPlain("×" + v) +
-            "</span>";
-      parts.push({ ord: slot == null ? 99 : slot, html: chip });
-    });
-    parts.sort(function (a, b) {
-      return a.ord - b.ord;
-    });
-    return '<span class="dlg-status-inline-icon-row">' + parts.map(function (p) {
-      return p.html;
-    }).join("") + "</span>";
-  }
-
-  function formatHeartRecordStatusHtmlRow(h) {
-    if (!h || typeof h !== "object") return "";
-    var parts = [];
-    Object.keys(h).forEach(function (k) {
-      var slot = parseHeartColorSlotFromKey(k);
-      if (slot == null) return;
-      var v = Number(h[k]);
-      if (!Number.isFinite(v) || v === 0) return;
-      var stem =
-        slot === 0 ? "heart_00" : "heart_" + String(slot).padStart(2, "0");
-      var lbl = stem.replace(/_/g, "");
-      var icon = Gsi.wikiAbilityFileStemToIconHtml(lbl, stem);
-      var chip =
-        icon != null
-          ? '<span class="dlg-status-icon-chip dlg-status-icon-chip--heart">' +
-            icon +
-            '<span class="dlg-status-count-tail" aria-hidden="true">×</span>' +
-            '<span class="dlg-status-count-num">' +
-            escapeHtmlPlain(String(v)) +
-            "</span></span>"
-          : '<span class="dlg-status-icon-chip dlg-status-icon-chip--muted">' +
-            escapeHtmlPlain("×" + v) +
-            "</span>";
-      parts.push({ ord: slot, html: chip });
-    });
-    parts.sort(function (a, b) {
-      return a.ord - b.ord;
-    });
-    return '<span class="dlg-status-inline-icon-row">' + parts.map(function (p) {
-      return p.html;
-    }).join("") + "</span>";
-  }
-
-  /** @param {*} c 盤上カード実体 */
   function openCardCatalogDetail(c) {
-    if (!c || typeof c !== "object") return;
-    var mc = mergedCatalogCard(c);
-    var dlg = document.getElementById("dlg-card-catalog");
-    var sub = document.getElementById("dlg-card-catalog-subtitle");
-    var bodyEl = document.getElementById("dlg-card-catalog-body");
-    var effectSlot = document.getElementById("dlg-card-catalog-effect-slot");
-    var imgCatalog = document.getElementById("dlg-card-catalog-img");
-    var badgeEl = document.getElementById("dlg-card-catalog-type-badges");
-    var h2 = document.getElementById("dlg-card-catalog-title");
-    if (!dlg || !bodyEl || !mc) return;
-
-    function esc(x) {
-      return String(x == null ? "" : x)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-    }
-
-    function row(dt, dd) {
-      return (
-        '<div class="dlg-card-catalog-row"><dt>' +
-        esc(dt) +
-        "</dt><dd>" +
-        dd +
-        "</dd></div>"
-      );
-    }
-
-    var nm = mc.name || c.name || "カード情報";
-    if (h2) h2.textContent = nm;
-    if (sub) sub.textContent = mc.card_no || c.card_no || "";
-
-    if (imgCatalog) {
-      var src = mc.img || c.img || "";
-      if (src) {
-        imgCatalog.src = src;
-        imgCatalog.alt = nm;
-        imgCatalog.hidden = false;
-      } else {
-        imgCatalog.removeAttribute("src");
-        imgCatalog.alt = "";
-        imgCatalog.hidden = true;
-      }
-    }
-
-    var ty = mc.type || c.type || "—";
-    var isLive = ty === T_LIVE;
-    var isMember = ty === T_MEMBER;
-
-    if (badgeEl) {
-      var bits = [];
-      if (isLive && catalogLiveCardIsDrawYellBladeHeart(mc))
-        bits.push(Gsi.catalogDrawYellBadgeHtml());
-      if (isLive && cardIsNoteLiveCatalog(mc)) bits.push(Gsi.catalogNoteLiveBadgeHtml());
-      badgeEl.innerHTML = bits.join("");
-    }
-
-    var rows = "";
-    rows += row("タイプ", esc(ty));
-
-    var costN = mc.cost != null ? mc.cost : c.cost;
-    if (costN != null && String(costN) !== "") rows += row(isLive ? "スコア" : "コスト／スコア", esc(costN));
-
-    var bladeN = mc.blade != null ? mc.blade : c.blade;
-    if (!isLive && bladeN != null && String(bladeN) !== "") rows += row("ブレード", esc(bladeN));
-
-    if (mc.unit) rows += row("ユニット", esc(mc.unit));
-    if (mc.series) rows += row("シリーズ", esc(mc.series));
-    if (mc.product) rows += row("商品", esc(mc.product));
-    if (mc.rare) rows += row("レアリティ", esc(mc.rare));
-
-    var bhLine = formatBladeHeartStatusHtmlRow(mc.blade_heart);
-    if (bhLine) rows += row("BH", bhLine);
-
-    if (isMember) {
-      var held = formatHeartRecordStatusHtmlRow(mc.base_heart);
-      if (held) rows += row("所持ハート", held);
-    }
-    if (isLive) {
-      var needL = formatHeartRecordStatusHtmlRow(mc.need_heart);
-      if (needL) rows += row("必要ハート", needL);
-    }
-
-    var abHtml = wikiAbilityToStatusHtml(mc.ability || "");
-
-    bodyEl.innerHTML = '<dl class="dlg-card-catalog-dl">' + rows + "</dl>";
-
-    if (effectSlot) {
-      if (abHtml) {
-        effectSlot.innerHTML =
-          '<h3 class="dlg-card-catalog-ability-heading">効果テキスト</h3><div class="dlg-card-catalog-ability">' +
-          abHtml +
-          "</div>";
-      } else {
-        effectSlot.innerHTML =
-          '<p class="muted dlg-card-catalog-no-effect">効果テキストはカードDBに未定義または取得できませんでした。</p>';
-      }
-    }
-
-    if (dlg.showModal) dlg.showModal();
+    openCardCatalogDialog(c);
     logReplay("card-catalog-detail-open");
   }
 
