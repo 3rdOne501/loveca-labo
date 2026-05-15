@@ -64,8 +64,6 @@ import {
   cardHasBladeHeart,
   compareBladeHeartDbKeys,
 } from "./bladeHeart.js";
-import { openCardCatalogDetailDialog } from "./cardCatalogDetail.js";
-import { gameIconImgHtml, GAME_ICON_ALT } from "./gameIcons.js";
 
 let deckBuilderStorageFlushHooked = false;
 
@@ -540,32 +538,22 @@ export function initDeckBuilder(root, { onStartGame }) {
   }
 
   let zoomTargetCardForBuilder = null;
-
-  function restoreDeckQtyControlsToZoomDialog() {
-    var ctr = document.getElementById("dlg-zoom-deck-controls");
-    var cap = document.getElementById("dlg-zoom-caption");
-    if (!ctr || !cap || !cap.parentElement) return;
-    if (ctr.parentElement !== cap.parentElement) {
-      ctr.hidden = true;
-      cap.parentElement.insertBefore(ctr, cap.nextSibling);
-    }
-  }
-
-  function attachDeckQtyControlsToCatalogDetail(card) {
-    var ctr = document.getElementById("dlg-zoom-deck-controls");
-    var catalog = document.getElementById("dlg-card-catalog");
-    var actions = catalog && catalog.querySelector(".dlg-card-catalog-actions");
-    if (!ctr || !catalog || !actions || !card) return;
-    var em = effectiveMainDeckCategory(card);
-    ctr.hidden = em !== T_MEMBER && em !== T_LIVE;
-    actions.parentElement.insertBefore(ctr, actions);
-  }
-
   function openDeckBuilderCardZoom(card) {
     zoomTargetCardForBuilder = card;
-    if (!card) return;
-    attachDeckQtyControlsToCatalogDetail(card);
-    openCardCatalogDetailDialog(card, {});
+    if (!card || !card.img) return;
+    var dlg = document.getElementById("dlg-card-zoom");
+    var zi = document.getElementById("dlg-zoom-img");
+    var cap = document.getElementById("dlg-zoom-caption");
+    if (!dlg || !zi || typeof dlg.showModal !== "function") return;
+    zi.src = card.img;
+    zi.alt = card.name || "";
+    if (cap) cap.textContent = [card.name, card.card_no].filter(Boolean).join(" · ");
+    var ctr = document.getElementById("dlg-zoom-deck-controls");
+    if (ctr) {
+      const em = effectiveMainDeckCategory(card);
+      ctr.hidden = em !== T_MEMBER && em !== T_LIVE;
+    }
+    dlg.showModal();
   }
 
   function pruneOrphanRoleLabels() {
@@ -2585,13 +2573,8 @@ export function initDeckBuilder(root, { onStartGame }) {
       fc.innerHTML = "";
       allCosts.forEach((n) => {
         const lab = document.createElement("label");
-        lab.className = "chk cost-filter-chk";
-        const scoreIco = gameIconImgHtml("score", {
-          className: "game-ico game-ico--cost-filter",
-          alt: GAME_ICON_ALT.score,
-          title: "スコア",
-        });
-        lab.innerHTML = `<input type="checkbox" data-cost="${n}" checked /> ${scoreIco}<span class="cost-filter-num">${n}</span>`;
+        lab.className = "chk";
+        lab.innerHTML = `<input type="checkbox" data-cost="${n}" checked /> ${n}`;
         fc.appendChild(lab);
       });
       fc.querySelectorAll("input[data-cost]").forEach((inp) => {
@@ -3040,8 +3023,6 @@ export function initDeckBuilder(root, { onStartGame }) {
     deckListSort = ev.target.value || "name";
     scheduleRenderDeckList();
   });
-
-  el("dlg-card-catalog")?.addEventListener("close", restoreDeckQtyControlsToZoomDialog);
 
   el("filter-bh-slots")?.addEventListener("change", scheduleRenderCardGrid);
   el("filter-heart-slots")?.addEventListener("change", scheduleRenderCardGrid);
