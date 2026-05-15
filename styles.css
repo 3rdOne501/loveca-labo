@@ -5248,6 +5248,82 @@ dialog.app-dialog:not([open]) {
   border: 1px solid rgba(255, 150, 200, 0.22);
   background: rgba(12, 8, 20, 0.55);
   white-space: normal;
+  line-height: 1.65;
+  word-break: break-word;
+}
+
+/* ステータス欄: wiki アイコン（テキスト行内での崩れ／スマホでの縦ずれ対策） */
+.status-inline-game-icon {
+  box-sizing: content-box;
+  display: inline-block;
+  height: 1.2em;
+  width: auto;
+  max-height: 1.32rem;
+  margin: 0 0.04em;
+  padding: 0;
+  vertical-align: -0.28em;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.dlg-status-inline-icon-row {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+}
+
+.dlg-status-icon-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.08rem 0.14rem;
+  line-height: 1;
+}
+
+.dlg-status-icon-chip .status-inline-game-icon {
+  height: 1.38rem;
+  width: 1.38rem;
+  max-height: 1.38rem;
+  max-width: 1.38rem;
+  margin: 0;
+  vertical-align: middle;
+}
+
+.dlg-status-count-tail,
+.dlg-status-count-num {
+  font-size: 0.86em;
+  font-weight: 800;
+  color: rgba(255, 235, 250, 0.95);
+}
+
+.dlg-status-icon-chip--muted {
+  color: rgba(255, 210, 230, 0.75);
+  font-size: 0.85rem;
+}
+
+.dlg-card-catalog-badge-img {
+  height: 1.75rem;
+  width: auto;
+  max-height: 2rem;
+  object-fit: contain;
+  vertical-align: middle;
+  margin: 0 0.12rem 0 0;
+}
+
+@media (max-width: 900px) {
+  .status-inline-game-icon {
+    vertical-align: -0.22em;
+    max-height: 1.22rem;
+  }
+  .dlg-status-icon-chip .status-inline-game-icon {
+    height: 1.22rem;
+    width: 1.22rem;
+    max-height: 1.22rem;
+    max-width: 1.22rem;
+  }
+  .dlg-card-catalog-ability {
+    line-height: 1.72;
+  }
 }
 
 /** ステージ側面エネ: ステージメンバー向けの向きボタン */
@@ -5395,12 +5471,6 @@ body.play-mode.chrome-layout-play-mobile-portrait .live-prob-toolbar-inline .dec
 body.play-mode.chrome-layout-play-mobile-portrait.play-hand-zone-active #view-game .game-board {
   overflow-y: hidden !important;
   touch-action: none;
-}
-
-body.play-mode .card-item--catalog-kidou {
-  box-shadow:
-    0 0 0 2px rgba(255, 230, 160, 0.55),
-    0 0 14px rgba(255, 200, 120, 0.38);
 }
 
 details.play-deck-search-fold.deck-tools-pick-fold {

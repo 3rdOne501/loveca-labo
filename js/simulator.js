@@ -52,6 +52,7 @@ import {
   sumBladeHeartWeightedValues,
   sumSlotAccumValues,
 } from "./bladeHeart.js";
+import * as Gsi from "./gameStatusIcons.js";
 import { showToast } from "./ui.js";
 
 /** 開幕マリガン／確率モデル用 sessionStorage キー（config 未同期のときの named import 失敗を避ける）。 */
@@ -4575,59 +4576,95 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       var n = 0;
       var m;
       while ((m = reBl.exec(seg)) !== null) n++;
-      out += n > 0 ? "ブレード⚔️×" + n + "を得る" : needle;
+      out += n > 0 ? "ブレード__ICON_BLADE__×" + n + "を得る" : needle;
       cursor = idx + needle.length;
     }
     return out;
   }
 
-  function wikiAbilityToReadableHtml(s, escHtml) {
-    if (s == null || typeof s !== "string") return "";
-    var augmented = augmentBladeGainReadWiki(String(s));
-    var plain = augmented.replace(/\{\{[^}]*\|([^}]*)\}\}/g, "$1").trim();
-    return escHtml(plain).replace(/\n/g, "<br>");
+  function wikiAbilityBladeIconHtmlFragment() {
+    var href = Gsi.wikiAbilityFileStemToIconHref("icon_blade");
+    return href ? Gsi.htmlStatusGameIconImg("ブレード", href) : "";
   }
 
-  function heartColorSlotEmoji(slotNum) {
-    var n = Number(slotNum);
-    if (n === 1) return "🩷";
-    if (n === 2) return "❤️";
-    if (n === 3) return "💛";
-    if (n === 4) return "💚";
-    if (n === 5) return "💙";
-    if (n === 6) return "💜";
-    if (n === 0) return "🤍";
-    return "♥️";
+  /** 効果テキスト: wiki トークン＋ブレード加算を assets/game-icons 画像へ */
+  function wikiAbilityToStatusHtml(raw) {
+    if (raw == null || typeof raw !== "string") return "";
+
+    function escTxt(tx) {
+      return escapeHtmlPlain(tx).replace(/\n/g, "<br>");
+    }
+
+    function spliceBladeMarkers(chunk) {
+      if (!chunk) return "";
+      return chunk.split("__ICON_BLADE__").join(wikiAbilityBladeIconHtmlFragment());
+    }
+
+    var s = augmentBladeGainReadWiki(String(raw));
+
+    function flushTextSegment(seg) {
+      return escTxt(spliceBladeMarkers(seg));
+    }
+
+    var reWiki = /\{\{([^}|]+)\|([^}]*)\}\}/g;
+    var result = "";
+    var lastIdx = 0;
+    var m;
+    while ((m = reWiki.exec(s)) !== null) {
+      if (m.index > lastIdx) {
+        result += flushTextSegment(s.slice(lastIdx, m.index));
+      }
+      var href = Gsi.wikiAbilityFileStemToIconHref(m[1]);
+      var label = m[2] != null && String(m[2]).trim() !== "" ? String(m[2]).trim() : String(m[1]).trim();
+      result +=
+        href != null ? Gsi.htmlStatusGameIconImg(label, href) : escTxt(label);
+      lastIdx = m.index + m[0].length;
+    }
+    if (lastIdx < s.length) {
+      result += flushTextSegment(s.slice(lastIdx));
+    }
+    if (!result) result = flushTextSegment(s);
+
+    return result;
   }
 
-  function bhSlotEmoji(slotNum) {
-    var n = Number(slotNum);
-    if (n >= 1 && n <= 6) return heartColorSlotEmoji(n);
-    if (n === 7) return "🤍";
-    return "♥️";
-  }
-
-  function formatBladeHeartEmojiLine(bh) {
+  function formatBladeHeartStatusHtmlRow(bh) {
     if (!bh || typeof bh !== "object") return "";
     var parts = [];
     Object.keys(bh).forEach(function (k) {
       var slot = parseBladeHeartSlotFromKey(k);
       var v = Number(bh[k]);
       if (!Number.isFinite(v) || v === 0) return;
-      var em = slot == null ? "⚪" : bhSlotEmoji(slot);
-      parts.push({ ord: slot == null ? 99 : slot, s: em + "×" + v });
+      var stem =
+        slot === 7
+          ? "icon_all"
+          : slot != null && slot >= 1 && slot <= 6
+            ? "heart_" + String(slot).padStart(2, "0")
+            : null;
+      var href = stem != null ? Gsi.wikiAbilityFileStemToIconHref(stem) : null;
+      var lbl = stem === "icon_all" ? "ALL" : stem != null ? stem : "?";
+      var chip =
+        href != null
+          ? '<span class="dlg-status-icon-chip dlg-status-icon-chip--bh">' +
+            Gsi.htmlStatusGameIconImg(lbl, href) +
+            '<span class="dlg-status-count-tail" aria-hidden="true">×</span>' +
+            '<span class="dlg-status-count-num">' +
+            escapeHtmlPlain(String(v)) +
+            "</span></span>"
+          : '<span class="dlg-status-icon-chip dlg-status-icon-chip--bh dlg-status-icon-chip--muted">' +
+            escapeHtmlPlain("×" + v) +
+            "</span>";
+      parts.push({ ord: slot == null ? 99 : slot, html: chip });
     });
     parts.sort(function (a, b) {
       return a.ord - b.ord;
     });
-    return parts
-      .map(function (p) {
-        return p.s;
-      })
-      .join(" ");
+    return '<span class="dlg-status-inline-icon-row">' + parts.map(function (p) {
+      return p.html;
+    }).join("") + "</span>";
   }
 
-  function formatHeartRecordEmojiLine(h) {
+  function formatHeartRecordStatusHtmlRow(h) {
     if (!h || typeof h !== "object") return "";
     var parts = [];
     Object.keys(h).forEach(function (k) {
@@ -4635,16 +4672,28 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       if (slot == null) return;
       var v = Number(h[k]);
       if (!Number.isFinite(v) || v === 0) return;
-      parts.push({ ord: slot, s: heartColorSlotEmoji(slot) + "×" + v });
+      var stem =
+        slot === 0 ? "heart_00" : "heart_" + String(slot).padStart(2, "0");
+      var href = Gsi.wikiAbilityFileStemToIconHref(stem);
+      var chip =
+        href != null
+          ? '<span class="dlg-status-icon-chip dlg-status-icon-chip--heart">' +
+            Gsi.htmlStatusGameIconImg(stem.replace(/_/g, ""), href) +
+            '<span class="dlg-status-count-tail" aria-hidden="true">×</span>' +
+            '<span class="dlg-status-count-num">' +
+            escapeHtmlPlain(String(v)) +
+            "</span></span>"
+          : '<span class="dlg-status-icon-chip dlg-status-icon-chip--muted">' +
+            escapeHtmlPlain("×" + v) +
+            "</span>";
+      parts.push({ ord: slot, html: chip });
     });
     parts.sort(function (a, b) {
       return a.ord - b.ord;
     });
-    return parts
-      .map(function (p) {
-        return p.s;
-      })
-      .join(" ");
+    return '<span class="dlg-status-inline-icon-row">' + parts.map(function (p) {
+      return p.html;
+    }).join("") + "</span>";
   }
 
   /** @param {*} c 盤上カード実体 */
@@ -4702,10 +4751,18 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (badgeEl) {
       var bits = [];
       if (isLive && catalogLiveCardIsDrawYellBladeHeart(mc))
-        bits.push('<span class="dlg-card-catalog-badge" title="ドローエール（BH）">🎴</span>');
+        bits.push(
+          '<img src="' +
+          Gsi.GAME_STATUS_ICON_BASE +
+          'yell.png" alt="ドローエール（BH）" class="dlg-card-catalog-badge-img" draggable="false" loading="lazy" />',
+        );
       if (isLive && cardIsNoteLiveCatalog(mc))
-        bits.push('<span class="dlg-card-catalog-badge" title="音符ライブ">🎵</span>');
-      badgeEl.innerHTML = bits.join(" ");
+        bits.push(
+          '<img src="' +
+          Gsi.GAME_STATUS_ICON_BASE +
+          'score.png" alt="音符ライブ／スコア" class="dlg-card-catalog-badge-img" draggable="false" loading="lazy" />',
+        );
+      badgeEl.innerHTML = bits.join("");
     }
 
     var rows = "";
@@ -4722,19 +4779,19 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (mc.product) rows += row("商品", esc(mc.product));
     if (mc.rare) rows += row("レアリティ", esc(mc.rare));
 
-    var bhLine = formatBladeHeartEmojiLine(mc.blade_heart);
+    var bhLine = formatBladeHeartStatusHtmlRow(mc.blade_heart);
     if (bhLine) rows += row("BH", bhLine);
 
     if (isMember) {
-      var held = formatHeartRecordEmojiLine(mc.base_heart);
+      var held = formatHeartRecordStatusHtmlRow(mc.base_heart);
       if (held) rows += row("所持ハート", held);
     }
     if (isLive) {
-      var needL = formatHeartRecordEmojiLine(mc.need_heart);
+      var needL = formatHeartRecordStatusHtmlRow(mc.need_heart);
       if (needL) rows += row("必要ハート", needL);
     }
 
-    var abHtml = wikiAbilityToReadableHtml(mc.ability || "", esc);
+    var abHtml = wikiAbilityToStatusHtml(mc.ability || "");
 
     bodyEl.innerHTML = '<dl class="dlg-card-catalog-dl">' + rows + "</dl>";
 
@@ -4843,7 +4900,6 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (c.lcActive === false) div.classList.add("card-item--lc-inactive");
     if (opts.successLiveAlwaysGlow) div.classList.add("card-item--success-live-glow");
     if (opts.liveVenueBoost) div.classList.add("card-item--live-venue-boost");
-    if (opts.catalogKidouGlow) div.classList.add("card-item--catalog-kidou");
 
     if (c.img) {
       const img = document.createElement("img");
@@ -5155,18 +5211,6 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
           zoneId === "zone-success-live" ||
           /^live-/.test(zoneId));
 
-      var mcKidou = mergedCatalogCard(c);
-      var catalogKidouGlow =
-        (c.type === T_MEMBER || c.type === T_LIVE) &&
-        mcKidou &&
-        typeof mcKidou.ability === "string" &&
-        /\{\{[^}]*kidou[^}]*\}\}/i.test(mcKidou.ability) &&
-        (zoneId === "zone-hand" ||
-          zoneId === "zone-resolution" ||
-          zoneId === "zone-success-live" ||
-          /^live-/.test(zoneId) ||
-          /^stage-/.test(zoneId));
-
       const cardOpts = {
         onRotate: onRotate || undefined,
         zoomClick: zoomClick,
@@ -5182,7 +5226,6 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         stageRotateChip: stageRotateChip === true,
         stageCatalogLongZoom: stageCatalogCombo === true,
         catalogImgClickDetail: catalogImgClickDetail === true && !stageCatalogCombo,
-        catalogKidouGlow: catalogKidouGlow === true,
       };
       if (zoneId === "zone-hand" && state.awaitingTurnStart) {
         const sel = state.mulliganSelectedIds;
