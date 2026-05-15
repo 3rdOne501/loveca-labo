@@ -426,81 +426,6 @@ python3 -m http.server 8080</pre>
 
       <div class="game-board">
         <div class="col col-left">
-          <div class="zone-sim-success-row">
-            <section class="zone-block zone-block-deck-live-sim">
-              <h3>ライブ成功確率（山札シミュ）</h3>
-              <div class="deck-live-sim-shell">
-                <div class="deck-live-sim-toolbar">
-                  <div class="deck-flip-k-row deck-flip-k-readout">
-                    <p class="muted deck-flip-k-line-short">
-                      <span>残りエール数</span>
-                      <strong id="deck-flip-k-display" class="deck-flip-k-display" aria-live="polite">0</strong>
-                    </p>
-                  </div>
-                  <div class="deck-live-sim-controls zone-inline-help deck-prob-explain-hide">
-                    <label class="field deck-live-sim-mode-field">
-                      <span>シミュレートモード</span>
-                      <select id="deck-live-sim-mode">
-                        <option value="board">盤面B（解決で減算）</option>
-                        <option value="whole">デッキ全体</option>
-                      </select>
-                    </label>
-                  </div>
-                </div>
-                <p
-                  id="deck-flip-blade-note"
-                  class="muted deck-flip-blade-note hint zone-inline-help deck-prob-explain-hide"
-                  aria-live="polite"
-                ></p>
-                <div id="deck-live-sim-block" class="deck-live-sim-block">
-                  <p id="deck-live-sim-summary" class="deck-live-sim-summary deck-draw-odds-visible"></p>
-                  <details id="deck-live-sim-breakdown" class="deck-live-sim-breakdown">
-                    <summary class="deck-live-sim-breakdown-summary">計算の内訳</summary>
-                    <pre id="deck-live-sim-breakdown-body" class="deck-live-sim-breakdown-body"></pre>
-                  </details>
-                  <pre id="deck-live-sim-stats" class="deck-live-sim-stats deck-draw-odds-visible" hidden></pre>
-                  <p id="deck-live-sim-note" class="hint zone-inline-help deck-live-sim-note deck-prob-explain-hide">
-                    モードは盤面B（k=B−R）／デッキ全体。めくりで増えるのは BH のみ。BH の ALL（b_all）は有色 need にも充当されます。
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            <section class="zone-block zone-block-success-live-only">
-              <h3 class="success-live-only-title">成功ライブ置き場</h3>
-              <div id="success-live-zone-shell" class="success-live-zone-shell">
-                <div id="success-live-chrome-row" class="success-live-chrome-row" aria-live="polite">
-                  <span id="success-live-msg-youwin" class="success-live-msg success-live-msg--youwin" hidden>
-                    YOU WIN!
-                  </span>
-                  <span id="success-live-msg-snsyuraku" class="success-live-msg success-live-msg--snsyuraku" hidden>
-                    千秋楽
-                  </span>
-                </div>
-                <div id="zone-success-live" class="card-strip zone-drop success-live-strip"></div>
-              </div>
-              <p class="hint zone-inline-help deck-prob-explain-hide">
-                ライブカードのみ（ドラッグ可）。通常の縦向き表示です。
-              </p>
-            </section>
-          </div>
-
-          <section class="zone-block zone-block-resolution-priority">
-            <p id="resolution-over-blade-banner" class="resolution-over-blade-banner" role="status" hidden></p>
-            <div class="zone-head">
-              <h3>解決 <span id="resolution-zone-head-count" class="badge zone-resolution-head-count" aria-live="polite">0</span></h3>
-              <div class="btn-row">
-                <button type="button" class="btn sm primary" id="btn-res-draw-one" title="山札の先頭を1枚解決ゾーンへ（Undo可）">
-                  1枚ドロー（解決）
-                </button>
-                <button type="button" class="btn sm" id="btn-res-top">デッキ上に戻す</button>
-                <button type="button" class="btn sm" id="btn-res-shuf">戻してシャッフル</button>
-                <button type="button" class="btn sm" id="btn-res-wait">控室へ</button>
-              </div>
-            </div>
-            <div id="zone-resolution" class="card-strip zone-drop tall resolution-zone-strip"></div>
-          </section>
-
           <section id="deck-odds-fold" class="zone-block zone-block-deck-odds-wide">
             <h3>デッキの確率（参考）</h3>
             <div id="live-deck-odds-panel" class="live-deck-odds-panel" aria-live="polite">
@@ -685,6 +610,60 @@ python3 -m http.server 8080</pre>
         </div>
 
         <div class="col col-center">
+          <div id="play-top-fixed-strip" class="play-top-fixed-strip zone-block">
+            <div class="play-top-fixed-strip__head">
+              <h3 class="play-top-fixed-strip__title">解決・成功ライブ</h3>
+              <button
+                type="button"
+                class="btn sm secondary play-top-fixed-strip__toggle"
+                id="btn-play-top-strip-toggle"
+                aria-expanded="true"
+                aria-controls="play-top-fixed-strip-body"
+                title="解決ゾーンと成功ライブ置き場を折りたたみ"
+              >
+                閉じる
+              </button>
+            </div>
+            <div id="play-top-fixed-strip-body" class="play-top-fixed-strip__body">
+              <div class="play-top-fixed-strip__resolution">
+                <section class="zone-block zone-block-resolution-priority zone-block-resolution-play-top">
+                  <p id="resolution-over-blade-banner" class="resolution-over-blade-banner" role="status" hidden></p>
+                  <div class="zone-head">
+                    <h3>解決 <span id="resolution-zone-head-count" class="badge zone-resolution-head-count" aria-live="polite">0</span></h3>
+                    <div class="btn-row wrap">
+                      <button type="button" class="btn sm primary" id="btn-res-draw-one" title="山札の先頭を1枚解決ゾーンへ（Undo可）">
+                        1枚ドロー（解決）
+                      </button>
+                      <button type="button" class="btn sm" id="btn-res-top">デッキ上に戻す</button>
+                      <button type="button" class="btn sm" id="btn-res-shuf">戻してシャッフル</button>
+                      <button type="button" class="btn sm" id="btn-res-wait">控室へ</button>
+                    </div>
+                  </div>
+                  <div id="zone-resolution" class="card-strip zone-drop tall resolution-zone-strip"></div>
+                </section>
+              </div>
+              <div class="play-top-fixed-strip__success-live">
+                <section class="zone-block zone-block-success-live-only zone-block-success-live-play-top">
+                  <h3 class="success-live-only-title">成功ライブ置き場</h3>
+                  <div id="success-live-zone-shell" class="success-live-zone-shell">
+                    <div id="success-live-chrome-row" class="success-live-chrome-row" aria-live="polite">
+                      <span id="success-live-msg-youwin" class="success-live-msg success-live-msg--youwin" hidden>
+                        YOU WIN!
+                      </span>
+                      <span id="success-live-msg-snsyuraku" class="success-live-msg success-live-msg--snsyuraku" hidden>
+                        千秋楽
+                      </span>
+                    </div>
+                    <div id="zone-success-live" class="card-strip zone-drop success-live-strip"></div>
+                  </div>
+                  <p class="hint zone-inline-help deck-prob-explain-hide play-top-success-live-hint">
+                    ライブカードのみ（ドラッグ可）。通常の縦向き表示です。
+                  </p>
+                </section>
+              </div>
+            </div>
+          </div>
+
           <h3 class="live-area-col-heading">ライブエリア</h3>
           <div class="zone-head zone-head--live-with-turn">
             <div id="play-turn-badge" class="play-turn-badge" title="ターン数（ターン開始で増加）" aria-live="polite">
@@ -738,7 +717,7 @@ python3 -m http.server 8080</pre>
           </div>
           <p class="hint live-area-hint zone-inline-help deck-prob-explain-hide">
             <strong>ライブターン中</strong>の配置は、3枠とも<strong>横向き・表面非表示（裏）</strong>です。<strong>ライブ開始</strong>後は残るライブカードが<strong>縦向きで表面表示</strong>になります（手札のライブも<strong>メンバーと同じ枠</strong>で、手札では画像クリックで向きは変えません）。<strong>メンバーはライブターン以外はこの3枠に置けません</strong>（通常はライブカードのみ）。通常時に枠へ置いたカードも<strong>メンバーと同サイズの縦</strong>です。ドラッグでメンバーが枠<strong>へ入った</strong>ときだけ山札から<strong>手札に1ドロー</strong>します（自動）。この3枠には<strong>W／A（ウェイト／アクティブ）は表示されません。</strong><strong>ライブ開始</strong>でライブカード以外は<strong>控え室</strong>へ送ります。
-            <strong>操作のコツ：</strong>手札で複数選んでからボタンを押すと左→中央→右の<strong>空き</strong>から順に置かれます。取り消しは <kbd>U</kbd>。迷ったらヘルプ（<kbd>?</kbd>）のライブ段落を開いてください。
+            <strong>操作のコツ：</strong>手札で複数選んでからボタンを押すと<strong>中央→左→右</strong>の<strong>空き</strong>から順に置かれます（最初に選んだカードは中央が空いていれば中央へ）。取り消しは <kbd>U</kbd>。迷ったらヘルプ（<kbd>?</kbd>）のライブ段落を開いてください。
           </p>
 
           <div id="live-turn-stats-wrap" class="live-turn-stats-wrap" hidden>
@@ -995,6 +974,45 @@ python3 -m http.server 8080</pre>
             </div>
           </section>
 
+            <section class="zone-block zone-block-deck-live-sim zone-block-deck-live-sim-under-preview">
+              <h3>ライブ成功確率（山札シミュ）</h3>
+              <div class="deck-live-sim-shell">
+                <div class="deck-live-sim-toolbar">
+                  <div class="deck-flip-k-row deck-flip-k-readout">
+                    <p class="muted deck-flip-k-line-short">
+                      <span>残りエール数</span>
+                      <strong id="deck-flip-k-display" class="deck-flip-k-display" aria-live="polite">0</strong>
+                    </p>
+                  </div>
+                  <div class="deck-live-sim-controls zone-inline-help deck-prob-explain-hide">
+                    <label class="field deck-live-sim-mode-field">
+                      <span>シミュレートモード</span>
+                      <select id="deck-live-sim-mode">
+                        <option value="board">盤面B（解決で減算）</option>
+                        <option value="whole">デッキ全体</option>
+                      </select>
+                    </label>
+                  </div>
+                </div>
+                <p
+                  id="deck-flip-blade-note"
+                  class="muted deck-flip-blade-note hint zone-inline-help deck-prob-explain-hide"
+                  aria-live="polite"
+                ></p>
+                <div id="deck-live-sim-block" class="deck-live-sim-block">
+                  <p id="deck-live-sim-summary" class="deck-live-sim-summary deck-draw-odds-visible"></p>
+                  <details id="deck-live-sim-breakdown" class="deck-live-sim-breakdown">
+                    <summary class="deck-live-sim-breakdown-summary">計算の内訳</summary>
+                    <pre id="deck-live-sim-breakdown-body" class="deck-live-sim-breakdown-body"></pre>
+                  </details>
+                  <pre id="deck-live-sim-stats" class="deck-live-sim-stats deck-draw-odds-visible" hidden></pre>
+                  <p id="deck-live-sim-note" class="hint zone-inline-help deck-live-sim-note deck-prob-explain-hide">
+                    モードは盤面B（k=B−R）／デッキ全体。めくりで増えるのは BH のみ。BH の ALL（b_all）は有色 need にも充当されます。
+                  </p>
+                </div>
+              </div>
+            </section>
+
           <details id="hand-stick-fold" class="zone-block hand-stick-fold" open>
             <summary class="hand-stick-fold__summary">
               <span class="hand-stick-fold__label">手札</span>
@@ -1024,7 +1042,7 @@ python3 -m http.server 8080</pre>
               </div>
               <p id="hand-live-turn-hint" class="hint zone-inline-help" hidden>
                 <strong>ライブターン中:</strong>
-                カードを選び、続けて<strong>ライブエリアへ</strong>と表示されているボタンで<strong>左→中央→右</strong>の空き枠へ移します（枠では<strong>裏・横向き</strong>）。<strong>置いた枚数だけ</strong>山札からドローします。「<strong>ライブ開始</strong>」で<strong>ライブカード以外</strong>が<strong>控え室</strong>へ送られ、残りは<strong>表面の縦向き</strong>になり、このモードを終了します。
+                カードを選び、続けて<strong>ライブエリアへ</strong>と表示されているボタンで<strong>中央→左→右</strong>の空き枠へ移します（枠では<strong>裏・横向き</strong>）。<strong>置いた枚数だけ</strong>山札からドローします。「<strong>ライブ開始</strong>」で<strong>ライブカード以外</strong>が<strong>控え室</strong>へ送られ、残りは<strong>表面の縦向き</strong>になり、このモードを終了します。
               </p>
               <p id="hand-mulligan-hint" class="hint zone-inline-help">
                 <strong>ターン開始まで:</strong>
@@ -1354,6 +1372,15 @@ python3 -m http.server 8080</pre>
         <button type="button" class="btn secondary" id="btn-test-card-cancel">キャンセル</button>
         <button type="button" class="btn primary" id="btn-test-card-ok">デッキに採用</button>
       </div>
+    </dialog>
+
+    <dialog id="dlg-card-catalog" class="app-dialog dlg-card-catalog" aria-labelledby="dlg-card-catalog-title">
+      <h2 id="dlg-card-catalog-title" class="app-dialog__title">カード情報</h2>
+      <p id="dlg-card-catalog-subtitle" class="muted dlg-card-catalog-subtitle"></p>
+      <div id="dlg-card-catalog-body" class="dlg-card-catalog-body"></div>
+      <form method="dialog" class="btn-row" style="margin-top: 0.85rem">
+        <button type="submit" class="btn primary">閉じる</button>
+      </form>
     </dialog>
 
     <dialog id="dlg-card-zoom" class="app-dialog dlg-card-zoom" aria-label="カード拡大プレビュー">

@@ -1348,8 +1348,13 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   /** 直近の Sortable onEnd 時刻（Date.now()）。直後の合成クリックを無視するために使う。 */
   let lastDragEndAt = 0;
 
+  /** キーボード W／A の対象（ステージのメンバー・側面エネの実体 id） */
+  let stanceKeyboardFocusCardId = "";
+
   /** 1ドロー直後のフラッシュ表示の継続時間（ms） */
   const FLASH_DRAW_DURATION_MS = 1000;
+  /** ドローエール由来のフラッシュ／カード発光を少し長めに（約2〜3秒） */
+  const FLASH_DRAW_YELL_DURATION_MS = 2600;
   const FLASH_LABEL_PLUS_DRAW = "+1ドロー";
   /** ライブ進行中「山札→解決」や旧「エール+1」を解決へ置いた場合のフラッシュ文言 */
   const FLASH_LABEL_PLUS_DRAW_RESOLUTION = "+１ドロー";
@@ -4480,6 +4485,160 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (cap) cap.textContent = img.title || img.alt || "";
     if (dlg.showModal) dlg.showModal();
     logReplay("card-zoom-open");
+  }
+
+  function findBoardCardByInstanceId(cid) {
+    var s = cid == null ? "" : String(cid);
+    if (!s) return null;
+    return (
+      allZonesFlat().find(function (c) {
+        return c && c.id != null && String(c.id) === s;
+      }) || null
+    );
+  }
+
+  function wikiAbilityToReadable(s) {
+    if (s == null || typeof s !== "string") return "";
+    var t = s.replace(/\{\{([^|]+\|)?([^}]*)\}\}/g, "$2").replace(/\n/g, "<br>");
+    return t.trim();
+  }
+
+  /** @param {*} c 盤上カード実体 */
+  function openCardCatalogDetail(c) {
+    if (!c || typeof c !== "object") return;
+    var mc = mergedCatalogCard(c);
+    var dlg = document.getElementById("dlg-card-catalog");
+    var sub = document.getElementById("dlg-card-catalog-subtitle");
+    var bodyEl = document.getElementById("dlg-card-catalog-body");
+    var h2 = document.getElementById("dlg-card-catalog-title");
+    if (!dlg || !bodyEl || !mc) return;
+    var nm = mc.name || c.name || "カード情報";
+    if (h2) h2.textContent = nm;
+    if (sub) sub.textContent = mc.card_no || c.card_no || "";
+
+    function esc(x) {
+      return String(x == null ? "" : x)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;");
+    }
+    function row(dt, dd) {
+      return (
+        '<div class="dlg-card-catalog-row"><dt>' +
+        esc(dt) +
+        "</dt><dd>" +
+        dd +
+        "</dd></div>"
+      );
+    }
+
+    var rows = "";
+    rows += row("タイプ", esc(mc.type || c.type || "—"));
+
+    var costN = mc.cost != null ? mc.cost : c.cost;
+    if (costN != null && String(costN) !== "") rows += row("コスト／スコア", esc(costN));
+
+    var bladeN = mc.blade != null ? mc.blade : c.blade;
+    if (bladeN != null && String(bladeN) !== "") rows += row("ブレード", esc(bladeN));
+
+    if (mc.unit) rows += row("ユニット", esc(mc.unit));
+    if (mc.series) rows += row("シリーズ", esc(mc.series));
+    if (mc.product) rows += row("商品", esc(mc.product));
+    if (mc.rare) rows += row("レアリティ", esc(mc.rare));
+
+    if (mc.base_heart && typeof mc.base_heart === "object" && Object.keys(mc.base_heart).length)
+      rows += row("所持ハート（印刷）", esc(JSON.stringify(mc.base_heart)));
+
+    var ab = wikiAbilityToReadable(mc.ability || "");
+
+    bodyEl.innerHTML =
+      '<dl class="dlg-card-catalog-dl">' +
+      rows +
+      "</dl>" +
+      (ab
+        ? '<h3 class="dlg-card-catalog-ability-heading">効果テキスト</h3><div class="dlg-card-catalog-ability">' +
+          ab +
+          "</div>"
+        : '<p class="muted dlg-card-catalog-no-effect">効果テキストはカードDBに未定義または取得できませんでした。</p>');
+
+    if (dlg.showModal) dlg.showModal();
+    logReplay("card-catalog-detail-open");
+  }
+
+  function wireStageMemberCatalogAndLongZoom(imgEl, divEl, boardCard, onRotate) {
+    var longMs = 480;
+    var moveCap = 10;
+    var longTimer = null;
+    var suppressedClick = false;
+    var sx = 0;
+    var sy = 0;
+    function killTimer() {
+      if (longTimer) {
+        clearTimeout(longTimer);
+        longTimer = null;
+      }
+    }
+    divEl.addEventListener(
+      "pointerdown",
+      function (e) {
+        if (e.button !== 0) return;
+        var ign = e.target.closest(".stance-chip, .card-no-drag, .card-pick-wrap, .card-flash-plus-one");
+        if (ign) return;
+        killTimer();
+        suppressedClick = false;
+        sx = e.clientX;
+        sy = e.clientY;
+        longTimer = window.setTimeout(function () {
+          longTimer = null;
+          suppressedClick = true;
+          openCardZoomFromImg(imgEl);
+          try {
+            e.preventDefault();
+          } catch (_) {}
+        }, longMs);
+      },
+      true,
+    );
+    divEl.addEventListener(
+      "pointermove",
+      function (e) {
+        if (!longTimer) return;
+        if (Math.abs(e.clientX - sx) > moveCap || Math.abs(e.clientY - sy) > moveCap) killTimer();
+      },
+      true,
+    );
+    divEl.addEventListener(
+      "pointerup",
+      function () {
+        killTimer();
+      },
+      true,
+    );
+    divEl.addEventListener(
+      "pointercancel",
+      function () {
+        killTimer();
+      },
+      true,
+    );
+    imgEl.addEventListener(
+      "click",
+      function (e) {
+        if (e.target.closest(".stance-chip, .card-no-drag, .card-pick-wrap")) return;
+        if (Date.now() - lastDragEndAt < 550) return;
+        if (suppressedClick) {
+          suppressedClick = false;
+          e.stopPropagation();
+          e.preventDefault();
+          return;
+        }
+        e.stopPropagation();
+        e.preventDefault();
+        openCardCatalogDetail(boardCard);
+      },
+      true,
+    );
   }
 
   function cardEl(c, opts) {
