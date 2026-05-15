@@ -3126,14 +3126,14 @@ details.hand-stick-fold.zone-block {
 }
 
 /* プレイ画面・スマホ縦のみ: 文字の重なり・確率まわりの折り返し等 */
-@media (max-width: 900px) and ((orientation: portrait) or (max-aspect-ratio: 1/1)) {
-  body.play-mode .deck-odds-pct--hero {
+@media (max-width: 900px) {
+  body.play-mode.chrome-layout-play-mobile-portrait .deck-odds-pct--hero {
     font-size: clamp(1rem, 4.5vw, 1.55rem);
     line-height: 1.35;
     margin: 0.35rem 0;
     max-width: 100%;
   }
-  body.play-mode .deck-live-sim-summary {
+  body.play-mode.chrome-layout-play-mobile-portrait .deck-live-sim-summary {
     font-size: 0.76rem !important;
     line-height: 1.5 !important;
     text-align: left !important;
@@ -3141,62 +3141,62 @@ details.hand-stick-fold.zone-block {
     overflow-wrap: anywhere;
     word-break: break-word;
   }
-  body.play-mode #deck-live-sim-summary.deck-live-sim-summary--no-pct-emphasis {
+  body.play-mode.chrome-layout-play-mobile-portrait #deck-live-sim-summary.deck-live-sim-summary--no-pct-emphasis {
     font-size: clamp(0.9rem, 3.4vw, 1.06rem) !important;
     line-height: 1.52 !important;
   }
-  body.play-mode #deck-live-sim-summary .deck-live-sim-line-caption {
+  body.play-mode.chrome-layout-play-mobile-portrait #deck-live-sim-summary .deck-live-sim-line-caption {
     font-size: 0.68rem;
   }
-  body.play-mode #deck-live-sim-summary.deck-live-sim-summary--verdict .deck-live-sim-line-label,
-  body.play-mode #deck-live-sim-summary.deck-live-sim-summary--verdict .deck-live-sim-line-tail {
+  body.play-mode.chrome-layout-play-mobile-portrait #deck-live-sim-summary.deck-live-sim-summary--verdict .deck-live-sim-line-label,
+  body.play-mode.chrome-layout-play-mobile-portrait #deck-live-sim-summary.deck-live-sim-summary--verdict .deck-live-sim-line-tail {
     font-size: 0.68rem;
   }
-  body.play-mode #deck-live-sim-summary.deck-live-sim-summary--verdict .deck-live-sim-line-hit {
+  body.play-mode.chrome-layout-play-mobile-portrait #deck-live-sim-summary.deck-live-sim-summary--verdict .deck-live-sim-line-hit {
     font-size: clamp(1.05rem, 4.5vw, 1.58rem);
   }
-  body.play-mode .zone-head.zone-head--hand {
+  body.play-mode.chrome-layout-play-mobile-portrait .zone-head.zone-head--hand {
     flex-direction: column;
     align-items: stretch;
     gap: 0.35rem;
   }
-  body.play-mode .zone-head .hand-zone-actions {
+  body.play-mode.chrome-layout-play-mobile-portrait .zone-head .hand-zone-actions {
     flex-wrap: wrap;
     justify-content: flex-start;
     overflow: visible;
     width: 100%;
     max-width: 100%;
   }
-  body.play-mode .deck-odds-grid-meta {
+  body.play-mode.chrome-layout-play-mobile-portrait .deck-odds-grid-meta {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.35rem;
   }
-  body.play-mode table.deck-odds-grid {
+  body.play-mode.chrome-layout-play-mobile-portrait table.deck-odds-grid {
     font-size: 0.72rem;
   }
-  body.play-mode .live-deck-odds-panel {
+  body.play-mode.chrome-layout-play-mobile-portrait .live-deck-odds-panel {
     line-height: 1.5;
   }
-  body.play-mode .deck-odds-tstep-row {
+  body.play-mode.chrome-layout-play-mobile-portrait .deck-odds-tstep-row {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.4rem 0.35rem;
   }
-  body.play-mode .deck-odds-k-label {
+  body.play-mode.chrome-layout-play-mobile-portrait .deck-odds-k-label {
     flex: 1 1 100%;
   }
-  body.play-mode .zone-block-snapshots--under-energy {
+  body.play-mode.chrome-layout-play-mobile-portrait .zone-block-snapshots--under-energy {
     display: none;
   }
-  body.play-mode .deck-tools-split {
+  body.play-mode.chrome-layout-play-mobile-portrait .deck-tools-split {
     display: grid;
     grid-template-columns: minmax(4.75rem, 6.75rem) minmax(0, 1fr);
     gap: 0.4rem 0.5rem;
     align-items: start;
     margin-top: 0.28rem;
   }
-  body.play-mode .deck-tools-split__odds {
+  body.play-mode.chrome-layout-play-mobile-portrait .deck-tools-split__odds {
     display: grid;
     grid-template-columns: minmax(6rem, 0.2fr) minmax(0, 0.8fr);
     gap: 0.45rem 0.55rem;
@@ -3204,51 +3204,51 @@ details.hand-stick-fold.zone-block {
     max-width: none;
     width: 100%;
   }
-  body.play-mode .deck-tools-split__odds > #deck-remain-bh-panel {
+  body.play-mode.chrome-layout-play-mobile-portrait .deck-tools-split__odds > #deck-remain-bh-panel {
     grid-column: 1;
     grid-row: 1;
   }
-  body.play-mode .deck-tools-split__odds > #waiting-remain-bh-panel {
+  body.play-mode.chrome-layout-play-mobile-portrait .deck-tools-split__odds > #waiting-remain-bh-panel {
     grid-column: 1;
     grid-row: 2;
   }
-  body.play-mode .deck-tools-split__odds > .play-deck-preset-panel {
+  body.play-mode.chrome-layout-play-mobile-portrait .deck-tools-split__odds > .play-deck-preset-panel {
     grid-column: 1;
     grid-row: 3;
   }
-  body.play-mode .deck-tools-split__odds > #deck-odds-fold {
+  body.play-mode.chrome-layout-play-mobile-portrait .deck-tools-split__odds > #deck-odds-fold {
     grid-column: 2;
     grid-row: 1 / 4;
     align-self: start;
     width: 100%;
     min-width: 0;
   }
-  body.play-mode .deck-tools-split__odds > .deck-remain-bh-panel,
-  body.play-mode .deck-tools-split__odds > .play-deck-preset-panel,
-  body.play-mode .deck-tools-split__odds > #deck-odds-fold {
+  body.play-mode.chrome-layout-play-mobile-portrait .deck-tools-split__odds > .deck-remain-bh-panel,
+  body.play-mode.chrome-layout-play-mobile-portrait .deck-tools-split__odds > .play-deck-preset-panel,
+  body.play-mode.chrome-layout-play-mobile-portrait .deck-tools-split__odds > #deck-odds-fold {
     min-width: 0;
     max-width: 100%;
   }
 }
 
-@media (max-width: 900px) and ((orientation: portrait) or (max-aspect-ratio: 1/1)) and (max-width: 700px) {
-  body.play-mode .deck-tools-split {
+@media (max-width: 700px) {
+  body.play-mode.chrome-layout-play-mobile-portrait .deck-tools-split {
     grid-template-columns: minmax(4.25rem, 5.75rem) minmax(0, 1fr);
     gap: 0.35rem 0.42rem;
   }
-  body.play-mode .deck-tools-split__odds {
+  body.play-mode.chrome-layout-play-mobile-portrait .deck-tools-split__odds {
     grid-template-columns: minmax(5.5rem, 0.2fr) minmax(0, 0.8fr);
   }
 }
 
-@media (max-width: 900px) and ((orientation: portrait) or (max-aspect-ratio: 1/1)) and (max-width: 480px) {
-  body.play-mode .deck-tools-split__odds {
+@media (max-width: 480px) {
+  body.play-mode.chrome-layout-play-mobile-portrait .deck-tools-split__odds {
     grid-template-columns: 1fr;
   }
-  body.play-mode .deck-tools-split__odds > #deck-remain-bh-panel,
-  body.play-mode .deck-tools-split__odds > #waiting-remain-bh-panel,
-  body.play-mode .deck-tools-split__odds > .play-deck-preset-panel,
-  body.play-mode .deck-tools-split__odds > #deck-odds-fold {
+  body.play-mode.chrome-layout-play-mobile-portrait .deck-tools-split__odds > #deck-remain-bh-panel,
+  body.play-mode.chrome-layout-play-mobile-portrait .deck-tools-split__odds > #waiting-remain-bh-panel,
+  body.play-mode.chrome-layout-play-mobile-portrait .deck-tools-split__odds > .play-deck-preset-panel,
+  body.play-mode.chrome-layout-play-mobile-portrait .deck-tools-split__odds > #deck-odds-fold {
     grid-column: 1;
     grid-row: auto;
     max-width: 100%;
@@ -3434,8 +3434,8 @@ details.hand-stick-fold.zone-block {
   border: 1px solid rgba(255, 150, 200, 0.22);
   background: rgba(255, 255, 255, 0.04);
 }
-@media (max-width: 900px) and ((orientation: portrait) or (max-aspect-ratio: 1/1)) {
-  .deck-odds-skill-explain-row {
+@media (max-width: 900px) {
+  body.play-mode.chrome-layout-play-mobile-portrait .deck-odds-skill-explain-row {
     grid-template-columns: 1fr;
   }
 }
@@ -4293,7 +4293,7 @@ body.play-mode .deck-pile {
 }
 
 @media (max-width: 900px) {
-  body.play-mode .game-board {
+  body.play-mode:not(.chrome-layout-play-mobile-portrait) .game-board {
     grid-template-columns: 1fr;
     overflow-y: auto;
     align-content: start;
@@ -4305,8 +4305,8 @@ body.play-mode .deck-pile {
  * 解決ゾーンは sticky でコンテンツ途中でも画面上端付近に張り付く。
  * 手札は右カラム末尾で sticky bottom。
  */
-@media (max-width: 900px) and ((orientation: portrait) or (max-aspect-ratio: 1/1)) {
-  body.play-mode .game-board {
+@media (max-width: 900px) {
+  body.play-mode.chrome-layout-play-mobile-portrait .game-board {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr);
@@ -4319,13 +4319,13 @@ body.play-mode .deck-pile {
     overscroll-behavior-y: contain;
   }
 
-  body.play-mode .game-board .col {
+  body.play-mode.chrome-layout-play-mobile-portrait .game-board .col {
     overflow: visible;
     min-width: 0;
   }
 
   /** 上段いっぱい: デッキ確率グリッドのみ */
-  body.play-mode .game-board .col.col-left {
+  body.play-mode.chrome-layout-play-mobile-portrait .game-board .col.col-left {
     grid-column: 1 / -1;
     grid-row: 1;
     flex: unset;
@@ -4339,7 +4339,7 @@ body.play-mode .deck-pile {
   }
 
   /** 下段2分割: 中央＝盤面、右＝デッキ〜手札（2領域） */
-  body.play-mode .game-board .col.col-center {
+  body.play-mode.chrome-layout-play-mobile-portrait .game-board .col.col-center {
     grid-column: 1;
     grid-row: 2;
     flex: unset;
@@ -4347,7 +4347,7 @@ body.play-mode .deck-pile {
     min-height: min(34svh, 400px);
   }
 
-  body.play-mode .game-board .col.col-right {
+  body.play-mode.chrome-layout-play-mobile-portrait .game-board .col.col-right {
     grid-column: 2;
     grid-row: 2;
     display: flex;
@@ -4362,7 +4362,7 @@ body.play-mode .deck-pile {
     width: auto;
   }
 
-  body.play-mode .play-top-fixed-strip {
+  body.play-mode.chrome-layout-play-mobile-portrait .play-top-fixed-strip {
     position: sticky;
     top: 0;
     z-index: 18;
@@ -4372,38 +4372,38 @@ body.play-mode .deck-pile {
     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.42);
   }
 
-  body.play-mode .play-top-fixed-strip__body {
+  body.play-mode.chrome-layout-play-mobile-portrait .play-top-fixed-strip__body {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto auto;
   }
   @media (min-width: 420px) {
-    body.play-mode .play-top-fixed-strip__body {
+    body.play-mode.chrome-layout-play-mobile-portrait .play-top-fixed-strip__body {
       grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
       grid-template-rows: auto;
     }
   }
 
-  body.play-mode .game-board .col.col-left,
-  body.play-mode .game-board .col.col-right {
+  body.play-mode.chrome-layout-play-mobile-portrait .game-board .col.col-left,
+  body.play-mode.chrome-layout-play-mobile-portrait .game-board .col.col-right {
     padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
   }
 
   /* デッキ〜プレビュー → ツール類 → 最後に手札 */
-  body.play-mode .col.col-right section.play-tools-block {
+  body.play-mode.chrome-layout-play-mobile-portrait .col.col-right section.play-tools-block {
     order: 60;
   }
-  body.play-mode .col.col-right :is(section, details).zone-block:has(#zone-hand) {
+  body.play-mode.chrome-layout-play-mobile-portrait .col.col-right :is(section, details).zone-block:has(#zone-hand) {
     order: 100;
     margin-top: 0.45rem;
   }
 
-  body.play-mode .col.col-right :is(section, details).zone-block:has(#zone-hand) .zone-head--hand {
+  body.play-mode.chrome-layout-play-mobile-portrait .col.col-right :is(section, details).zone-block:has(#zone-hand) .zone-head--hand {
     flex-wrap: wrap;
     gap: 0.35rem;
   }
 
   /* 手札を下端 sticky + 開閉サマリー（スマホ縦のみこのメディア内） */
-  body.play-mode .col.col-right details#hand-stick-fold.hand-stick-fold {
+  body.play-mode.chrome-layout-play-mobile-portrait .col.col-right details#hand-stick-fold.hand-stick-fold {
     position: sticky;
     bottom: 0;
     z-index: 8;
@@ -4419,7 +4419,7 @@ body.play-mode .deck-pile {
     border-top: 1px solid rgba(255, 160, 200, 0.22);
     box-shadow: 0 -10px 36px rgba(0, 0, 0, 0.35);
   }
-  body.play-mode .hand-stick-fold > summary.hand-stick-fold__summary {
+  body.play-mode.chrome-layout-play-mobile-portrait .hand-stick-fold > summary.hand-stick-fold__summary {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -4436,17 +4436,17 @@ body.play-mode .deck-pile {
     color: #fcdcec;
     box-sizing: border-box;
   }
-  body.play-mode .hand-stick-fold[open] > summary.hand-stick-fold__summary {
+  body.play-mode.chrome-layout-play-mobile-portrait .hand-stick-fold[open] > summary.hand-stick-fold__summary {
     margin-bottom: 0.38rem;
     border-style: solid;
     border-color: rgba(255, 160, 200, 0.38);
   }
-  body.play-mode .hand-stick-fold__hint {
+  body.play-mode.chrome-layout-play-mobile-portrait .hand-stick-fold__hint {
     font-size: 0.7rem;
     font-weight: 400;
   }
   /* 本文側の重複見出し（手札 h3）はサマリーが見えるので隠す（読み上げ用に残す） */
-  body.play-mode .hand-stick-fold .hand-stick-fold__body .hand-zone-title {
+  body.play-mode.chrome-layout-play-mobile-portrait .hand-stick-fold .hand-stick-fold__body .hand-zone-title {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -4458,49 +4458,49 @@ body.play-mode .deck-pile {
     border: 0;
   }
 
-  body.play-mode #hand-row {
+  body.play-mode.chrome-layout-play-mobile-portrait #hand-row {
     overflow-x: auto;
     overflow-y: visible;
     -webkit-overflow-scrolling: touch;
     padding-bottom: 0.2rem;
   }
 
-  body.play-mode #zone-hand {
+  body.play-mode.chrome-layout-play-mobile-portrait #zone-hand {
     --loveca-hand-w: min(100px, 26vw);
     --loveca-hand-h: calc(var(--loveca-hand-w) * var(--loveca-mm-h) / var(--loveca-mm-w));
   }
 
-  body.play-mode #view-game #zone-hand .card-item {
+  body.play-mode.chrome-layout-play-mobile-portrait #view-game #zone-hand .card-item {
     width: var(--loveca-hand-w);
   }
 
-  body.play-mode #zone-hand .card-item[data-type="ライブ"] {
+  body.play-mode.chrome-layout-play-mobile-portrait #zone-hand .card-item[data-type="ライブ"] {
     width: var(--loveca-hand-w);
   }
 
-  body.play-mode #zone-hand .card-item[data-type="ライブ"] .card-img:not(.rotated) {
+  body.play-mode.chrome-layout-play-mobile-portrait #zone-hand .card-item[data-type="ライブ"] .card-img:not(.rotated) {
     width: 100%;
     height: var(--loveca-hand-h);
   }
 
-  body.play-mode #zone-hand.hand-zone--overlap .card-item + .card-item {
+  body.play-mode.chrome-layout-play-mobile-portrait #zone-hand.hand-zone--overlap .card-item + .card-item {
     margin-left: calc(var(--loveca-hand-w) * var(--hand-overlap-frac));
   }
-  body.play-mode .game-board .col {
+  body.play-mode.chrome-layout-play-mobile-portrait .game-board .col {
     overflow-x: hidden;
   }
-  body.play-mode .col.col-left > :is(section, details).zone-block,
-  body.play-mode .col.col-center > :is(section, details).zone-block,
-  body.play-mode .col.col-right > :is(section, details).zone-block {
+  body.play-mode.chrome-layout-play-mobile-portrait .col.col-left > :is(section, details).zone-block,
+  body.play-mode.chrome-layout-play-mobile-portrait .col.col-center > :is(section, details).zone-block,
+  body.play-mode.chrome-layout-play-mobile-portrait .col.col-right > :is(section, details).zone-block {
     isolation: isolate;
     margin-bottom: 0.55rem;
   }
-  body.play-mode .col.col-left > :is(section, details).zone-block:last-child,
-  body.play-mode .col.col-center > :is(section, details).zone-block:last-child,
-  body.play-mode .col.col-right > :is(section, details).zone-block:last-child {
+  body.play-mode.chrome-layout-play-mobile-portrait .col.col-left > :is(section, details).zone-block:last-child,
+  body.play-mode.chrome-layout-play-mobile-portrait .col.col-center > :is(section, details).zone-block:last-child,
+  body.play-mode.chrome-layout-play-mobile-portrait .col.col-right > :is(section, details).zone-block:last-child {
     margin-bottom: 0;
   }
-  body.play-mode .zone-sim-success-row > .zone-block {
+  body.play-mode.chrome-layout-play-mobile-portrait .zone-sim-success-row > .zone-block {
     min-width: 0;
     overflow: hidden;
   }
@@ -4511,39 +4511,39 @@ body.play-mode .deck-pile {
    * チェック・サムネ・枚数だけのコンパクト表示にする。
    * 「めくり枚数」と「確率」表示はそのまま残す。
    */
-  body.play-mode .play-tools-block .deck-pick-block .deck-pick-odds-section-title {
+  body.play-mode.chrome-layout-play-mobile-portrait .play-tools-block .deck-pick-block .deck-pick-odds-section-title {
     display: none;
   }
-  body.play-mode .play-tools-block .deck-pick-list .deck-pick-name {
+  body.play-mode.chrome-layout-play-mobile-portrait .play-tools-block .deck-pick-list .deck-pick-name {
     display: none;
   }
-  body.play-mode .play-tools-block .deck-pick-list {
+  body.play-mode.chrome-layout-play-mobile-portrait .play-tools-block .deck-pick-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(54px, 1fr));
     gap: 0.32rem 0.32rem;
     max-height: min(46vh, 300px);
     padding: 0.34rem 0.34rem;
   }
-  body.play-mode .play-tools-block .deck-pick-list .deck-pick-row {
+  body.play-mode.chrome-layout-play-mobile-portrait .play-tools-block .deck-pick-list .deck-pick-row {
     flex-direction: column;
     align-items: center;
     gap: 0.18rem;
     padding: 0.22rem 0.18rem;
     background: rgba(255, 255, 255, 0.02);
   }
-  body.play-mode .play-tools-block .deck-pick-list .deck-pick-row input[type="checkbox"] {
+  body.play-mode.chrome-layout-play-mobile-portrait .play-tools-block .deck-pick-list .deck-pick-row input[type="checkbox"] {
     margin: 0;
   }
-  body.play-mode .play-tools-block .deck-pick-list .deck-pick-thumb {
+  body.play-mode.chrome-layout-play-mobile-portrait .play-tools-block .deck-pick-list .deck-pick-thumb {
     width: 100%;
     max-width: 54px;
     max-height: 76px;
   }
-  body.play-mode .play-tools-block .deck-pick-list .deck-pick-meta {
+  body.play-mode.chrome-layout-play-mobile-portrait .play-tools-block .deck-pick-list .deck-pick-meta {
     align-items: center;
     width: 100%;
   }
-  body.play-mode .play-tools-block .deck-pick-list .deck-pick-count {
+  body.play-mode.chrome-layout-play-mobile-portrait .play-tools-block .deck-pick-list .deck-pick-count {
     font-size: 0.78rem;
     font-weight: 700;
     color: rgba(255, 230, 245, 0.95);
@@ -4846,8 +4846,8 @@ summary {
     padding: 5px;
   }
 }
-@media (max-width: 900px) and ((orientation: portrait) or (max-aspect-ratio: 1/1)) {
-  :root {
+@media (max-width: 900px) {
+  body.play-mode.chrome-layout-play-mobile-portrait {
     --deck-cards-per-row: 10;
     --deck-thumb-w-pile: 52px;
   }
@@ -4855,7 +4855,7 @@ summary {
    * スマホ縦（PWA／Safari）: 3行が横並びだと上端／右端の項目がはみ出して
    * タップしづらいので縦に並べ直し、上のセーフエリアぶん下げる。
    */
-  body.play-mode .game-bar {
+  body.play-mode.chrome-layout-play-mobile-portrait .game-bar {
     flex-wrap: wrap;
     overflow-x: hidden;
     gap: 0.32rem;
@@ -4864,22 +4864,22 @@ summary {
     padding-bottom: 0.34rem;
     padding-left: max(0.45rem, env(safe-area-inset-left, 0px));
   }
-  body.play-mode .game-bar-row {
+  body.play-mode.chrome-layout-play-mobile-portrait .game-bar-row {
     flex: 1 1 100%;
     width: 100%;
   }
-  body.play-mode .game-bar-row.game-bar-actions .btn,
-  body.play-mode .game-bar-row.game-tools-row .btn {
+  body.play-mode.chrome-layout-play-mobile-portrait .game-bar-row.game-bar-actions .btn,
+  body.play-mode.chrome-layout-play-mobile-portrait .game-bar-row.game-tools-row .btn {
     font-size: 0.7rem;
     padding-left: 0.4rem;
     padding-right: 0.4rem;
     min-height: 34px;
   }
-  .energy-card-thumb-chip img {
+  body.play-mode.chrome-layout-play-mobile-portrait .energy-card-thumb-chip img {
     width: 34px;
     height: 48px;
   }
-  .deck-live-sim-breakdown-body {
+  body.play-mode.chrome-layout-play-mobile-portrait .deck-live-sim-breakdown-body {
     max-height: 8rem;
   }
 }
@@ -5257,13 +5257,19 @@ dialog.app-dialog:not([open]) {
   box-sizing: content-box;
   display: inline-block;
   height: 1.2em;
-  width: auto;
+  width: 1.2em;
   max-height: 1.32rem;
+  max-width: 1.32rem;
   margin: 0 0.04em;
   padding: 0;
   vertical-align: -0.28em;
   object-fit: contain;
   flex-shrink: 0;
+}
+.status-inline-game-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .dlg-status-inline-icon-row {
@@ -5303,11 +5309,17 @@ dialog.app-dialog:not([open]) {
 
 .dlg-card-catalog-badge-img {
   height: 1.75rem;
-  width: auto;
+  width: 1.75rem;
   max-height: 2rem;
+  max-width: 2rem;
   object-fit: contain;
   vertical-align: middle;
   margin: 0 0.12rem 0 0;
+}
+.dlg-card-catalog-badge-img svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 @media (max-width: 900px) {

@@ -98,27 +98,35 @@ function catalogLiveCardIsDrawYellBladeHeart(card) {
  * @returns {boolean}
  */
 function matchesPlayPortraitLayout() {
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
-  if (!window.matchMedia("(max-width: 900px)").matches) return false;
-  try {
-    if (window.matchMedia("(orientation: portrait)").matches) return true;
-  } catch (_) {
-    /* noop */
+  if (typeof window === "undefined") return false;
+  var vv = window.visualViewport;
+  var w = Math.round(vv && vv.width ? vv.width : window.innerWidth);
+  var h = Math.round(vv && vv.height ? vv.height : window.innerHeight);
+  if (w < 260 || h < 260) return false;
+  if (Math.min(w, h) > 900) return false;
+
+  var mmq = typeof window.matchMedia === "function" ? window.matchMedia.bind(window) : null;
+  if (mmq) {
+    try {
+      if (!mmq("(max-width: 900px)").matches) return false;
+    } catch (_) {
+      if (w > 900) return false;
+    }
+    try {
+      if (mmq("(orientation: portrait)").matches) return true;
+    } catch (_) {
+      /* noop */
+    }
+    try {
+      if (mmq("(max-aspect-ratio: 1/1)").matches) return true;
+    } catch (_) {
+      /* noop */
+    }
+  } else if (w > 900) {
+    return false;
   }
-  try {
-    if (window.matchMedia("(max-aspect-ratio: 1/1)").matches) return true;
-  } catch (_) {
-    /* noop */
-  }
-  var w =
-    typeof window.visualViewport !== "undefined" && window.visualViewport != null
-      ? Math.round(window.visualViewport.width)
-      : Math.round(window.innerWidth);
-  var h =
-    typeof window.visualViewport !== "undefined" && window.visualViewport != null
-      ? Math.round(window.visualViewport.height)
-      : Math.round(window.innerHeight);
-  return w > 0 && h > 0 && h > w + 6;
+
+  return h + 8 >= w;
 }
 
 /** @type {{ t: string, act: string, meta?: object }[]} */
@@ -4612,11 +4620,10 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   }
 
   function wikiAbilityBladeIconHtmlFragment() {
-    var href = Gsi.wikiAbilityFileStemToIconHref("icon_blade");
-    return href ? Gsi.htmlStatusGameIconImg("ブレード", href) : "";
+    return Gsi.wikiAbilityFileStemToIconHtml("ブレード", "icon_blade") || "";
   }
 
-  /** 効果テキスト: wiki トークン＋ブレード加算を assets/game-icons 画像へ */
+  /** 効果テキスト: wiki トークン＋ブレード加算をゲーム UI アイコンへ */
   function wikiAbilityToStatusHtml(raw) {
     if (raw == null || typeof raw !== "string") return "";
 
@@ -4643,10 +4650,10 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       if (m.index > lastIdx) {
         result += flushTextSegment(s.slice(lastIdx, m.index));
       }
-      var href = Gsi.wikiAbilityFileStemToIconHref(m[1]);
-      var label = m[2] != null && String(m[2]).trim() !== "" ? String(m[2]).trim() : String(m[1]).trim();
-      result +=
-        href != null ? Gsi.htmlStatusGameIconImg(label, href) : escTxt(label);
+      var label =
+        m[2] != null && String(m[2]).trim() !== "" ? String(m[2]).trim() : String(m[1]).trim();
+      var icon = Gsi.wikiAbilityFileStemToIconHtml(label, m[1]);
+      result += icon != null ? icon : escTxt(label);
       lastIdx = m.index + m[0].length;
     }
     if (lastIdx < s.length) {
@@ -4670,12 +4677,12 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
           : slot != null && slot >= 1 && slot <= 6
             ? "heart_" + String(slot).padStart(2, "0")
             : null;
-      var href = stem != null ? Gsi.wikiAbilityFileStemToIconHref(stem) : null;
       var lbl = stem === "icon_all" ? "ALL" : stem != null ? stem : "?";
+      var icon = stem != null ? Gsi.wikiAbilityFileStemToIconHtml(lbl, stem) : null;
       var chip =
-        href != null
+        icon != null
           ? '<span class="dlg-status-icon-chip dlg-status-icon-chip--bh">' +
-            Gsi.htmlStatusGameIconImg(lbl, href) +
+            icon +
             '<span class="dlg-status-count-tail" aria-hidden="true">×</span>' +
             '<span class="dlg-status-count-num">' +
             escapeHtmlPlain(String(v)) +
@@ -4703,11 +4710,12 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       if (!Number.isFinite(v) || v === 0) return;
       var stem =
         slot === 0 ? "heart_00" : "heart_" + String(slot).padStart(2, "0");
-      var href = Gsi.wikiAbilityFileStemToIconHref(stem);
+      var lbl = stem.replace(/_/g, "");
+      var icon = Gsi.wikiAbilityFileStemToIconHtml(lbl, stem);
       var chip =
-        href != null
+        icon != null
           ? '<span class="dlg-status-icon-chip dlg-status-icon-chip--heart">' +
-            Gsi.htmlStatusGameIconImg(stem.replace(/_/g, ""), href) +
+            icon +
             '<span class="dlg-status-count-tail" aria-hidden="true">×</span>' +
             '<span class="dlg-status-count-num">' +
             escapeHtmlPlain(String(v)) +
@@ -4780,17 +4788,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (badgeEl) {
       var bits = [];
       if (isLive && catalogLiveCardIsDrawYellBladeHeart(mc))
-        bits.push(
-          '<img src="' +
-          Gsi.GAME_STATUS_ICON_BASE +
-          'yell.png" alt="ドローエール（BH）" class="dlg-card-catalog-badge-img" draggable="false" loading="lazy" />',
-        );
-      if (isLive && cardIsNoteLiveCatalog(mc))
-        bits.push(
-          '<img src="' +
-          Gsi.GAME_STATUS_ICON_BASE +
-          'score.png" alt="音符ライブ／スコア" class="dlg-card-catalog-badge-img" draggable="false" loading="lazy" />',
-        );
+        bits.push(Gsi.catalogDrawYellBadgeHtml());
+      if (isLive && cardIsNoteLiveCatalog(mc)) bits.push(Gsi.catalogNoteLiveBadgeHtml());
       badgeEl.innerHTML = bits.join("");
     }
 
