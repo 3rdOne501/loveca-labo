@@ -559,6 +559,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     var disp2 = $("deck-flip-k-display");
     var sumEl2 = $("deck-live-sim-summary");
     var stEl2 = $("deck-live-sim-stats");
+    var bdBody = $("deck-live-sim-breakdown-body");
     if (!sumEl2) return;
     var n2 = state.deck.length;
     var w2 = state.waitingRoom.length;
@@ -576,6 +577,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       }
     }
 
+    var bundleForBreakdown = evaluateLiveMechanicalFulfillmentBundle();
     var sim = computeDeckDrawLiveSuccessSimulation(deckLiveSimMode);
     sumEl2.classList.toggle("deck-live-sim-summary--verdict", sim.kind === "verdict");
     if (sim.kind === "verdict") {
@@ -590,6 +592,10 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     }
     /* 確率に応じた連続グラデーション色付け（0% 茶 → 25% 暗青 → 40% 真っ赤 → 50% オレンジ → 70% 黄 → 85% 緑 → 90〜100% 薄ピンク発光） */
     applyDeckLiveSimProbColor(sumEl2, sim);
+
+    if (bdBody) {
+      bdBody.textContent = buildLiveSimBreakdownBody(bundleForBreakdown, sim);
+    }
 
     if (stEl2) {
       stEl2.hidden = true;
@@ -1369,68 +1375,6 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   normalizeAllCardFields();
 
   const $ = (id) => root.querySelector("#" + id) || document.getElementById(id);
-
-  function playLayoutIsMobilePortrait() {
-    try {
-      return window.matchMedia("(max-width: 900px) and (orientation: portrait)").matches;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  function syncPlayChromeLayout() {
-    var mobile = playLayoutIsMobilePortrait();
-    document.body.classList.toggle("play-layout-mobile-portrait", mobile);
-    var liveSimSec = document.getElementById("section-play-deck-live-sim");
-    var resSec = document.getElementById("section-play-resolution");
-    var sucSec = document.getElementById("section-play-success-live");
-    var mobileProb = document.getElementById("mount-mobile-live-prob-inline");
-    var stripRes = document.getElementById("play-strip-resolution-slot");
-    var stripSuc = document.getElementById("play-strip-success-live-slot");
-    var deskRow = document.getElementById("mount-desktop-live-sim-row");
-    var deskRes = document.getElementById("mount-desktop-resolution");
-    if (!liveSimSec || !resSec || !sucSec || !mobileProb || !stripRes || !stripSuc || !deskRow || !deskRes)
-      return;
-    if (mobile) {
-      if (resSec.parentElement !== stripRes) stripRes.appendChild(resSec);
-      if (sucSec.parentElement !== stripSuc) stripSuc.appendChild(sucSec);
-      if (liveSimSec.parentElement !== mobileProb) mobileProb.appendChild(liveSimSec);
-    } else {
-      deskRow.appendChild(liveSimSec);
-      deskRow.appendChild(sucSec);
-      deskRes.appendChild(resSec);
-    }
-  }
-
-  (function wireChromeHandScrollIsolationOnceGlobal() {
-    if (typeof window.__llocgChromeHandUnlock === "function") return;
-    window.__llocgChromeHandUnlock = function () {
-      document.body.classList.remove("chrome-hand-scroll-locked");
-    };
-    document.addEventListener("pointerup", window.__llocgChromeHandUnlock, true);
-    document.addEventListener("pointercancel", window.__llocgChromeHandUnlock, true);
-  })();
-
-  function wireChromeHandScrollIsolation() {
-    var handRow = document.getElementById("hand-row");
-    if (!handRow || handRow.dataset.chromeHandIsolation === "1") return;
-    handRow.dataset.chromeHandIsolation = "1";
-    handRow.addEventListener(
-      "pointerdown",
-      function (ev) {
-        if (!playLayoutIsMobilePortrait()) return;
-        if (ev.button !== undefined && ev.button !== 0) return;
-        document.body.classList.add("chrome-hand-scroll-locked");
-        try {
-          handRow.setPointerCapture(ev.pointerId);
-        } catch (_) {}
-      },
-      true,
-    );
-  }
-
-  syncPlayChromeLayout();
-  wireChromeHandScrollIsolation();
 
   wireDeckOddsTurnStepsOnce();
 
@@ -2650,6 +2594,61 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     );
   }
 
+  function buildLiveSimBreakdownBody(b, sim) {
+    var lines = [];
+    lines.push(
+      "モデル: " +
+        (sim && sim.mode === "whole"
+          ? "デッキ全体（山札+控え室）"
+          : "盤面B（B=盤面ブレード、R=解決枚数）") +
+        "。残りランダム k を計算。",
+    );
+    lines.push(
+      "B = " +
+        (sim && sim.blade != null ? sim.blade : "—") +
+        " · R = " +
+        (sim && sim.resR != null ? sim.resR : "—") +
+        " · k = " +
+        (sim && sim.kRem != null ? sim.kRem : sim && sim.k != null ? sim.k : "—") +
+        " · 残り山札 n = " +
+        (sim && sim.n != null ? sim.n : "—") +
+        " · 控え室 w = " +
+        (sim && sim.waiting != null ? sim.waiting : "—"),
+    );
+    if (b) {
+      lines.push("ライブ枚数: " + (b.liveCt || 0) + " · need 合計: " + (b.needSum || 0));
+      lines.push("need 内訳: " + formatLiveNeedHeartLine(b.needAccum));
+      lines.push(
+        "充足モデル: ライブ need_heart に対し、場メンバー所持H（ステージ＋ライブ枠）＋解決めくりの BH を合算。",
+      );
+      lines.push(
+        "場メンバー所持H（充足に使用）: " + formatHeartSlotAccumBreakdown(b.boardHAcc),
+      );
+      lines.push(
+        "解決ゾーン BH（充足の色源・slot7 除く）: " +
+          formatBladeHeartSlotBreakdown(b.resolutionBhSlotsAcc || {}),
+      );
+      lines.push(
+        "BH ALL（解決 slot7。有色不足にも充当・エールで k 枚増える分は上に加算）: " +
+          (b.wildcardBhAllFlex != null ? b.wildcardBhAllFlex : "—"),
+      );
+      lines.push(
+        "任意プール加算（場メンバーの play ALL heart のみ）: " +
+          (b.wildcardHeartBump != null ? b.wildcardHeartBump : "—"),
+      );
+      lines.push(
+        "参考・解決ゾーン所持H（成功判定には未使用）: " + formatHeartSlotAccumBreakdown(b.resHAcc),
+      );
+      if (b.evaluateResult && !b.evaluateResult.ok) {
+        lines.push("現時点（追加ランダム前）の不足: " + formatLiveEvalFailShort(b.evaluateResult));
+      }
+    }
+    if (sim) {
+      lines.push("結果種別: " + sim.kind + (sim.pct != null && Number.isFinite(sim.pct) ? "（" + formatPctFromRate(sim.pct) + "％）" : ""));
+    }
+    return lines.join("\n");
+  }
+
   /** 解決枚数とブレード・残りめくりの整合 */
   function syncResolutionOverBladeBanner() {
     var ban = $("resolution-over-blade-banner");
@@ -2727,6 +2726,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         { heroLiveSim: true },
       );
       syncDeckLiveSimSummaryPctEmphasisClass(sumEl);
+      var bdHold = $("deck-live-sim-breakdown-body");
+      if (bdHold) bdHold.textContent = "";
       if (stEl) {
         stEl.hidden = true;
         stEl.textContent = "";
@@ -7392,24 +7393,6 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     });
   })();
 
-  (function initDeckPickFoldPersistence() {
-    var det = document.getElementById("deck-pick-fold");
-    var KEY = "llocg_deck_pick_fold_collapsed";
-    if (!det) return;
-    function syncFromStorage() {
-      try {
-        if (sessionStorage.getItem(KEY) === "1") det.removeAttribute("open");
-        else det.setAttribute("open", "");
-      } catch (_) {}
-    }
-    syncFromStorage();
-    det.addEventListener("toggle", function () {
-      try {
-        sessionStorage.setItem(KEY, det.open ? "0" : "1");
-      } catch (_) {}
-    });
-  })();
-
   if (root) {
     if (typeof root.__llocgStanceFocusPointerDown === "function") {
       root.removeEventListener("pointerdown", root.__llocgStanceFocusPointerDown, true);
@@ -7542,7 +7525,6 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (deckPileLayoutDebounce) clearTimeout(deckPileLayoutDebounce);
     deckPileLayoutDebounce = window.setTimeout(function () {
       deckPileLayoutDebounce = 0;
-      syncPlayChromeLayout();
       deckPileScheduleLayoutRef();
       updateHandZoneLayoutMode();
       updateWaitingZoneOverlapMode();

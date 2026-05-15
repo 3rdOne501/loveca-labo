@@ -4373,15 +4373,14 @@ body.play-mode .deck-pile {
   }
 
   body.play-mode .play-top-fixed-strip__body {
-    grid-template-columns: minmax(0, 7fr) minmax(0, 3fr);
-    grid-template-rows: auto;
-    gap: 0.35rem 0.42rem;
-    align-items: stretch;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto;
   }
-
-  body.play-mode .zone-sim-success-row-desktop:empty,
-  body.play-mode .play-desktop-resolution-mount:empty {
-    display: none !important;
+  @media (min-width: 420px) {
+    body.play-mode .play-top-fixed-strip__body {
+      grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+      grid-template-rows: auto;
+    }
   }
 
   body.play-mode .game-board .col.col-left,
@@ -6441,6 +6440,24 @@ kbd {
   border-top: 1px solid rgba(255, 140, 190, 0.14);
 }
 
+/* 効果テキストのキーワードは参考表示（ルール解釈エンジンではない） */
+body.play-mode #view-game .card-item--wiki-hint-kidou {
+  outline: 2px solid rgba(120, 220, 255, 0.75);
+  outline-offset: 1px;
+  box-shadow: 0 0 12px rgba(80, 200, 255, 0.35);
+}
+body.play-mode #view-game .card-item--wiki-hint-toujyou {
+  outline: 2px solid rgba(160, 255, 120, 0.55);
+  outline-offset: 1px;
+}
+body.play-mode #view-game .card-item--wiki-hint-live-start {
+  outline: 2px solid rgba(255, 200, 110, 0.8);
+  outline-offset: 1px;
+}
+body.play-mode #view-game .card-item--wiki-hint-jidou {
+  outline: 2px solid rgba(200, 140, 255, 0.7);
+  outline-offset: 1px;
+}
 /* ---- プレイ画面: レイアウト切替（縦スマホのみ sticky 帯・インライン成功確率） ---- */
 @media (min-width: 901px), (orientation: landscape) {
   .layout-strip-mobile-portrait-only {
