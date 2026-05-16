@@ -44,10 +44,11 @@ find_site_root() {
 }
 
 ROOT=""
+# .app 単体配布時は同梱 www を最優先（デスクトップ等へ移しても動く）
 for candidate in \
   "${LL_OCG_ROOT:-}" \
-  "$(find_site_root "$(dirname "$BUNDLE")")" \
   "$(find_site_root "$CONTENTS/Resources/www")" \
+  "$(find_site_root "$(dirname "$BUNDLE")")" \
   "$(find_site_root "$(dirname "$BUNDLE")/ll-ocg-tools")"
 do
   if [[ -n "$candidate" && -f "$candidate/index.html" ]]; then

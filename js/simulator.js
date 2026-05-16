@@ -3624,7 +3624,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         ? '<span class="deck-remain-bh-pill deck-remain-bh-pill--note-live deck-remain-bh-pill--art" data-bh-slot="note">' +
           '<span class="deck-remain-bh-pill__lab">' +
           heartSlotArtIconHtml(0, { score: true, extraClass: "deck-remain-bh-pill__art-ico" }) +
-          '<span class="visually-hidden">♪ライブ</span>' +
+          '<span class="visually-hidden">スコアライブ</span>' +
           '</span><strong class="deck-remain-bh-pill__n">' +
           escapeHtmlPlain(String(noteLive)) +
           "</strong></span>"
@@ -3647,7 +3647,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       deckRemHint.textContent =
         "山札合計 " +
         n +
-        " 枚。色ピルはカード1枚につき複数色を持てる集計です（BHなし＝BH未記載、♪ライブ＝スコア系、ドローエール＝ドロー系の特殊BH）。";
+        " 枚。色ピルはカード1枚につき複数色を持てる集計です（BHなし＝BH未記載、スコアライブ＝スコア系、ドローエール＝ドロー系の特殊BH）。";
     }
   }
 
@@ -3714,7 +3714,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         ? '<span class="deck-remain-bh-pill deck-remain-bh-pill--note-live deck-remain-bh-pill--art" data-bh-slot="note">' +
           '<span class="deck-remain-bh-pill__lab">' +
           heartSlotArtIconHtml(0, { score: true, extraClass: "deck-remain-bh-pill__art-ico" }) +
-          '<span class="visually-hidden">♪ライブ</span>' +
+          '<span class="visually-hidden">スコアライブ</span>' +
           '</span><strong class="deck-remain-bh-pill__n">' +
           escapeHtmlPlain(String(noteLive)) +
           "</strong></span>"
@@ -3737,7 +3737,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       wh.textContent =
         "控え室合計 " +
         n +
-        " 枚。色ピルはカード1枚につき複数色を持てる集計です（BHなし＝BH未記載、♪ライブ＝スコア系、ドローエール＝ドロー系の特殊BH）。";
+        " 枚。色ピルはカード1枚につき複数色を持てる集計です（BHなし＝BH未記載、スコアライブ＝スコア系、ドローエール＝ドロー系の特殊BH）。";
     }
   }
 
@@ -3768,7 +3768,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       slotLabel = "BHなし";
       pred = function (cat) { return !cardHasBladeHeart(cat); };
     } else if (slotKey === "note") {
-      slotLabel = "♪ライブ";
+      slotLabel = "スコアライブ";
       pred = function (cat) { return cat && cat.type === T_LIVE && cardIsNoteLiveCatalog(cat); };
     } else if (slotKey === "draw-yell") {
       slotLabel = "ドローエール";

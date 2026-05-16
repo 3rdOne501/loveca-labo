@@ -304,9 +304,9 @@ export function catalogDrawYellBadgeHtml() {
   );
 }
 
-/** カード詳細: 音符ライブ／スコア（バンドル icon_score.png） */
+/** カード詳細: スコアライブ（バンドル icon_score.png） */
 export function catalogNoteLiveBadgeHtml() {
-  return htmlStatusGameIconImg("音符ライブ／スコア", GAME_STATUS_ICON_ART_DIR + ART_FILE_BY_KEY.score, "dlg-card-catalog-badge-img");
+  return htmlStatusGameIconImg("スコアライブ", GAME_STATUS_ICON_ART_DIR + ART_FILE_BY_KEY.score, "dlg-card-catalog-badge-img");
 }
 
 var __gsiArtPrefetchStarted = false;

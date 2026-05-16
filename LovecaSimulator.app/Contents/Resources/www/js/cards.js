@@ -580,19 +580,67 @@ export function liveCardHasExcludedAllBladeHeart(card) {
 const LIVE_START_FOR_NOTE_LIVE = "{{live_start.png|ライブ開始時}}";
 const LIVE_SUCCESS_SPLIT = "{{live_success.png|ライブ成功時}}";
 
-/** 能力文だけでは判定しづらい代表的な音符ライブ（表記ゆれは normalize に合わせる） */
-const NOTE_LIVE_EXPLICIT_CARD_NOS = new Set(
-  ["PL!-sd1-019-SD", "PL!S-bp2-024-L", "PL!S-bp5-023-L"].map((x) => normalizeCardCatalogLookupKey(x)),
+/** スコアライブ（icon_score / ライブ開始時スコア＋）。DB 全件走査で確定した card_no（表記ゆれは normalize） */
+const SCORE_LIVE_EXPLICIT_CARD_NOS = new Set(
+  [
+    "PL!-bp3-022-L",
+    "PL!-bp3-024-L",
+    "PL!-bp4-021-L",
+    "PL!-bp5-021-L",
+    "PL!-bp5-022-L",
+    "PL!-pb1-028-L",
+    "PL!-sd1-019-SD",
+    "PL!HS-bp2-020-L",
+    "PL!HS-bp2-022-L",
+    "PL!HS-bp2-026-L",
+    "PL!HS-bp2-026-L＋",
+    "PL!HS-bp5-017-L",
+    "PL!HS-bp5-018-L",
+    "PL!HS-bp5-021-L",
+    "PL!HS-sd1-018-SD",
+    "PL!N-bp3-026-L",
+    "PL!N-bp4-027-L",
+    "PL!N-bp4-028-L",
+    "PL!N-bp4-029-L",
+    "PL!N-bp5-026-L",
+    "PL!N-bp5-027-L",
+    "PL!N-pb1-037-L",
+    "PL!N-pb1-038-L",
+    "PL!S-bp2-024-L",
+    "PL!S-bp3-025-L",
+    "PL!S-bp5-023-L",
+    "PL!S-pb1-020-L",
+    "PL!SP-bp4-024-L",
+    "PL!SP-bp4-028-L",
+    "PL!SP-bp5-023-L",
+    "PL!SP-pb1-023-L",
+    "PL!SP-pb1-024-L",
+  ].map((x) => normalizeCardCatalogLookupKey(x)),
 );
 
-/** ドローエール（特殊 BH の別系統。♪ライブとは別物） */
+/** ドローエール（icon_draw / エール後ドロー）。スコアライブとは別系統 */
 const DRAW_YELL_EXPLICIT_CARD_NOS = new Set(
-  ["PL!N-bp1-029-L", "PL!N-bp5-027-L", "PL!HS-bp1-022-L"].map((x) => normalizeCardCatalogLookupKey(x)),
+  [
+    "PL!HS-bp1-022-L",
+    "PL!N-bp1-027-L",
+    "PL!N-bp1-028-L",
+    "PL!N-bp1-029-L",
+    "PL!N-sd1-028-SD",
+    "PL!SP-bp1-027-L",
+    "PL!SP-sd1-026-SD",
+  ].map((x) => normalizeCardCatalogLookupKey(x)),
 );
+
+function liveStartAbilitySegment(ab) {
+  if (!ab.includes(LIVE_START_FOR_NOTE_LIVE)) return "";
+  const tail = ab.split(LIVE_START_FOR_NOTE_LIVE)[1];
+  if (!tail) return "";
+  return tail.split(LIVE_SUCCESS_SPLIT)[0] || "";
+}
 
 /**
- * ドローエール（ライブ開始時の解決めくりで「ドロー」「山札を見る」等の効果を持つ特殊 BH）。
- * 表記ゆれを受けつつ heuristics で判定。明示リストに一致するものは常に true。
+ * ドローエール: 能力文の `icon_draw`（score）表記、またはエール後ドロー括弧。
+ * ライブ開始時セグメント内の「ドロー」だけでは誤判定しやすいため、全文を優先する。
  */
 export function cardIsDrawYellLiveCatalog(card) {
   if (!card || card.type !== T_LIVE) return false;
@@ -601,35 +649,29 @@ export function cardIsDrawYellLiveCatalog(card) {
   if (DRAW_YELL_EXPLICIT_CARD_NOS.has(no)) return true;
   const ab = String(card.ability || "");
   if (/ドローエール/.test(ab)) return true;
-  if (!ab.includes(LIVE_START_FOR_NOTE_LIVE)) return false;
-  const tail = ab.split(LIVE_START_FOR_NOTE_LIVE)[1];
-  if (!tail) return false;
-  const seg = tail.split(LIVE_SUCCESS_SPLIT)[0];
-  if (!seg) return false;
-  if (/ドロー/.test(seg)) return true;
-  if (/引く/.test(seg) && /山札(?:から)?/.test(seg)) return true;
-  if (/見る/.test(seg) && /(?:山札|手札)/.test(seg) && /\d\s*枚/.test(seg)) return true;
+  if (/icon_draw\.png|icon_draw\b/i.test(ab)) return true;
+  if (/エールをすべて行った後/.test(ab) && /ドロー/.test(ab)) return true;
+  const seg = liveStartAbilitySegment(ab);
+  if (seg && /ドロー/.test(seg) && (/引く/.test(seg) || /山札/.test(seg))) return true;
   return false;
 }
 
 /**
- * 音符ライブ（＝score 系特殊 BH）: エール（ライブ開始時の解決めくり）で「スコア+〜」が増える系。
- * ドローエールは ♪ライブには含めない（特殊 BH 内の別系統）。
- * ALL ブレードハート（b_all）を持つライブは音符に含めない。
+ * スコアライブ（score 系特殊 BH）: `icon_score` またはライブ開始時の「スコア＋」。
+ * ドローエールより優先度は低い（同一カードに両方ある場合はドローエール）。
+ * ALL ブレード（b_all）のみの BH はスコアライブに含めない。
  */
 export function cardIsNoteLiveCatalog(card) {
   if (!card || card.type !== T_LIVE) return false;
   if (liveCardHasExcludedAllBladeHeart(card)) return false;
   if (cardIsDrawYellLiveCatalog(card)) return false;
   const no = normalizeCardCatalogLookupKey(card.card_no || "");
-  if (NOTE_LIVE_EXPLICIT_CARD_NOS.has(no)) return true;
+  if (SCORE_LIVE_EXPLICIT_CARD_NOS.has(no)) return true;
   const ab = String(card.ability || "");
-  if (!ab.includes(LIVE_START_FOR_NOTE_LIVE)) return false;
-  const tail = ab.split(LIVE_START_FOR_NOTE_LIVE)[1];
-  if (!tail) return false;
-  const seg = tail.split(LIVE_SUCCESS_SPLIT)[0];
-  if (!/スコア/.test(seg)) return false;
-  return /[＋+]/.test(seg) || /プラス/.test(seg);
+  if (/icon_score\.png|icon_score\b/i.test(ab)) return true;
+  const seg = liveStartAbilitySegment(ab);
+  if (seg && /スコア/.test(seg) && (/[＋+]/.test(seg) || /プラス/.test(seg))) return true;
+  return false;
 }
 
 /* bladeHeart.js の ♪ 表示判定（カード一覧サムネ等の note 装飾）を、循環参照を避けて差し込む */

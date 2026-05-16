@@ -133,8 +133,8 @@ function formatDeckPeekSyntheticBhPillsHtml(nonBhMemberCopies, nonBhLiveCopies, 
   if (noteLiveCopies > 0) {
     html +=
       '<span class="deck-peek-bh-color-pill deck-peek-bh-pill--note-live-pill" title="' +
-      escapeHtml("♪ライブ（一覧の♪判定）") +
-      '"><span class="deck-peek-bh-kanji">♪ライブ</span><span class="deck-peek-bh-pill-qty">× ' +
+      escapeHtml("スコアライブ（一覧のスコア判定）") +
+      '"><span class="deck-peek-bh-kanji">スコアライブ</span><span class="deck-peek-bh-pill-qty">× ' +
       noteLiveCopies +
       "</span></span>";
   }
@@ -142,7 +142,7 @@ function formatDeckPeekSyntheticBhPillsHtml(nonBhMemberCopies, nonBhLiveCopies, 
     html +=
       '<span class="deck-peek-bh-color-pill deck-peek-bh-pill--live-note" title="' +
       escapeHtml("ライブカードの BH（♪で追加カウントされる分を含む）") +
-      '"><span class="deck-peek-bh-kanji">♪ライブBH</span><span class="deck-peek-bh-pill-qty">× ' +
+      '"><span class="deck-peek-bh-kanji">スコアライブBH</span><span class="deck-peek-bh-pill-qty">× ' +
       liveBhCopies +
       "</span></span>";
   }
@@ -180,7 +180,7 @@ function formatBladeHeartBlockHtml(
     nonBhMemberCopies +
     '</span> · BHなしライブ <span class="deck-peek-muted-num">' +
     nonBhLiveCopies +
-    '</span> · ♪ライブ <span class="deck-peek-muted-num">' +
+    '</span> · スコアライブ <span class="deck-peek-muted-num">' +
     noteLiveCopies +
     "</span></div>";
 

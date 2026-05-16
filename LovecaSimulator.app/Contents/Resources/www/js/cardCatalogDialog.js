@@ -288,14 +288,13 @@ export function renderCardCatalogContentInto(c, targets) {
       specBits.push(
         '<span class="dlg-card-catalog-special-heart-pill dlg-card-catalog-special-heart-pill--note-live">' +
           Gsi.catalogNoteLiveBadgeHtml() +
-          '<span class="dlg-card-catalog-special-heart-pill__label">音符ライブ（スコア）</span>' +
+          '<span class="dlg-card-catalog-special-heart-pill__label">スコアライブ</span>' +
           "</span>",
       );
     }
-    var specRowHtml =
-      specBits.length
-        ? '<span class="dlg-card-catalog-special-heart-row">' + specBits.join("") + "</span>"
-        : '<span class="muted dlg-card-catalog-special-heart-row dlg-card-catalog-special-heart-row--none">特殊ハートなし</span>';
+    var specRowHtml = specBits.length
+      ? '<span class="dlg-card-catalog-special-heart-row">' + specBits.join("") + "</span>"
+      : '<span class="muted dlg-card-catalog-special-heart-row dlg-card-catalog-special-heart-row--none">（スコア／ドロー系の特殊BHではありません）</span>';
     rows += row("特殊ハート", specRowHtml);
   }
 
@@ -325,7 +324,6 @@ export function renderCardCatalogContentInto(c, targets) {
  * 現在カードはハイライトする。`targets.onVariantSelected(cardNo)` があれば「入れ替え」ボタンも表示する。
  */
 function buildCardVariantsRowHtml(mc, targets) {
-  if (!targets || targets.showIllustVariants !== true) return "";
   if (!mc || typeof mc !== "object") return "";
   var rl = Array.isArray(mc.rare_list) ? mc.rare_list : [];
   if (rl.length < 2) return "";
@@ -415,7 +413,7 @@ function wireCatalogVariantsRowOnce(bodyEl) {
 
 /**
  * @param {*} c カード実体または card_no を含むオブジェクト
- * @param {{ showIllustVariants?: boolean, onVariantSelected?: (cardNo: string) => boolean | void }} [options]
+ * @param {{ onVariantSelected?: (cardNo: string) => boolean | void }} [options]
  */
 export function openCardCatalogDialog(c, options) {
   var dlg = document.getElementById("dlg-card-catalog");
@@ -428,9 +426,6 @@ export function openCardCatalogDialog(c, options) {
     img: document.getElementById("dlg-card-catalog-img"),
     badge: document.getElementById("dlg-card-catalog-type-badges"),
   };
-  if (options && options.showIllustVariants === true) {
-    targets.showIllustVariants = true;
-  }
   if (options && typeof options.onVariantSelected === "function") {
     targets.onVariantSelected = options.onVariantSelected;
   }
