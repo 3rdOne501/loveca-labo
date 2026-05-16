@@ -906,8 +906,24 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
 }
 .deck-library-head {
   display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.deck-library-head__main {
+  display: flex;
   flex-direction: column;
   gap: 0.12rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.deck-library-head__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 0 0 auto;
 }
 .deck-library-head__title {
   margin: 0;
@@ -5875,6 +5891,102 @@ body.play-mode .play-undo-redo-cluster--under-prob .play-undo-redo {
 }
 .dlg-card-catalog-special-heart-row--none {
   font-style: italic;
+}
+
+/* イラスト違い一覧（rare_list） */
+.dlg-card-catalog-variants {
+  margin-top: 0.85rem;
+  padding: 0.55rem 0.65rem 0.7rem;
+  border: 1px solid rgba(255, 180, 220, 0.22);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(80, 35, 80, 0.32), rgba(40, 20, 60, 0.18));
+}
+.dlg-card-catalog-variants__title {
+  margin: 0 0 0.25rem;
+  font-size: 0.86rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: rgba(255, 220, 240, 0.95);
+}
+.dlg-card-catalog-variants__hint {
+  margin: 0 0 0.45rem;
+  font-size: 0.7rem;
+}
+.dlg-card-catalog-variants__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 0.45rem;
+}
+.dlg-card-catalog-variant-item {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.28rem;
+  padding: 0.18rem;
+  border-radius: 10px;
+  background: rgba(255, 220, 240, 0.04);
+  border: 1px solid transparent;
+  transition: border-color 120ms ease, transform 120ms ease;
+}
+.dlg-card-catalog-variant-item.is-current {
+  border-color: rgba(255, 200, 240, 0.78);
+  background: rgba(255, 215, 240, 0.13);
+  box-shadow: 0 0 0 2px rgba(255, 200, 240, 0.18) inset;
+}
+.dlg-card-catalog-variant-btn {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.18rem;
+  cursor: pointer;
+  color: inherit;
+}
+.dlg-card-catalog-variant-img {
+  width: 100%;
+  aspect-ratio: 5 / 7;
+  object-fit: cover;
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.3);
+}
+.dlg-card-catalog-variant-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 5 / 7;
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.35);
+  color: rgba(255, 220, 240, 0.6);
+  font-size: 1.3rem;
+}
+.dlg-card-catalog-variant-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  font-size: 0.68rem;
+  line-height: 1.15;
+  color: rgba(255, 230, 250, 0.85);
+}
+.dlg-card-catalog-variant-rare {
+  font-weight: 700;
+  color: rgba(255, 200, 240, 0.95);
+}
+.dlg-card-catalog-variant-no {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.62rem;
+  color: rgba(220, 220, 235, 0.7);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dlg-card-catalog-variant-swap {
+  align-self: stretch;
 }
 
 /* loveca-data-1 のハート／ALL／スコアアイコン共通スタイル

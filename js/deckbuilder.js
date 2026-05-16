@@ -20,12 +20,14 @@ import {
 } from "./config.js";
 import {
   addDeckSlot,
+  canDismissBuiltInStarter,
   cloneDeckMap,
   duplicateDeckSlot,
   isBuiltInStarterDeckId,
   loadDeckLibrary,
   persistDeckLibrary,
   removeDeckSlot,
+  restoreBuiltInStarterSlot,
   updateDeckSlot,
 } from "./deckLibrary.js";
 import {
@@ -682,6 +684,62 @@ export function initDeckBuilder(root, { onStartGame }) {
   function persistDeckState() {
     pruneOrphanRoleLabels();
     schedulePersistDeckFlush();
+  }
+
+  /** 役割ラベル系の Set 内に fromNo があれば toNo に置き換える */
+  function migrateRoleLabelInSet(set, fromNo, toNo) {
+    if (!set || typeof set.has !== "function" || !set.has(fromNo)) return;
+    set.delete(fromNo);
+    set.add(toNo);
+  }
+
+  /**
+   * デッキ編集中、カード詳細から「イラスト違いに入れ替え」を押された時の処理。
+   * 同枚数を保ったまま fromNo の枚数を toNo に移動する。
+   * 入れ替えに成功すれば true、何もできなければ false。
+   */
+  function swapDeckCardVariantInPlace(toNo, fromNo) {
+    var from = String(fromNo || "").trim();
+    var to = String(toNo || "").trim();
+    if (!from || !to || from === to) return false;
+    var n = Number(deckMap[from]) || 0;
+    if (n <= 0) {
+      showToast("このカードは現在のデッキに含まれていないため、入れ替えできません");
+      return false;
+    }
+    var newCard = getCard(to);
+    if (!newCard) {
+      showToast("入れ替え先のカード（" + to + "）が見つかりません");
+      return false;
+    }
+    var prev = Number(deckMap[to]) || 0;
+    var combined = prev + n;
+    if (combined > MAX_COPIES_PER_CARD) {
+      showToast("入れ替えると上限 " + MAX_COPIES_PER_CARD + " 枚を超えてしまいます（" + (prev + n) + " 枚）");
+      return false;
+    }
+    delete deckMap[from];
+    deckMap[to] = combined;
+    migrateRoleLabelInSet(keyCardNos, from, to);
+    migrateRoleLabelInSet(keyCard2Nos, from, to);
+    migrateRoleLabelInSet(keyCard3Nos, from, to);
+    migrateRoleLabelInSet(middleCardNos, from, to);
+    persistDeckState();
+    renderCounts();
+    scheduleRenderDeckList();
+    scheduleRenderCardGrid();
+    showToast("イラストを入れ替えました（" + from + " → " + to + " × " + n + " 枚）");
+    return true;
+  }
+
+  /** デッキ編集中、カード詳細を開く（イラスト違いの入れ替え機能つき）。 */
+  function openCardCatalogDialogForDeckEdit(card) {
+    if (!card) return;
+    openCardCatalogDialog(card, {
+      onVariantSelected: function (toNo, fromNoArg) {
+        return swapDeckCardVariantInPlace(toNo, fromNoArg);
+      },
+    });
   }
 
   function invalidateCatalogFilterCache() {
@@ -1618,7 +1676,7 @@ export function initDeckBuilder(root, { onStartGame }) {
         dz.addEventListener("click", function (ev) {
           ev.preventDefault();
           ev.stopPropagation();
-          openCardCatalogDialog(card);
+          openCardCatalogDialogForDeckEdit(card);
         });
         dz.addEventListener("dblclick", function (ev) {
           ev.preventDefault();
@@ -1949,7 +2007,7 @@ export function initDeckBuilder(root, { onStartGame }) {
             /* デッキ確認ダイアログが開いているなら、左下のインラインステータス欄に切替表示。
                外（盤面など）から呼ばれた場合は従来どおり別ダイアログで開く。 */
             if (renderInlineCatalogStatusInDeckPeekIfOpen(card)) return;
-            openCardCatalogDialog(card);
+            openCardCatalogDialogForDeckEdit(card);
           });
           pzk.addEventListener("dblclick", function (ev) {
             ev.preventDefault();
@@ -2010,6 +2068,9 @@ export function initDeckBuilder(root, { onStartGame }) {
       effectSlot: el("deck-peek-inline-status-effect"),
       img: el("deck-peek-inline-status-img"),
       badge: el("deck-peek-inline-status-badge"),
+      onVariantSelected: function (toNo, fromNo) {
+        return swapDeckCardVariantInPlace(toNo, fromNo);
+      },
     });
     if (!rendered) {
       host.hidden = true;
@@ -2499,7 +2560,7 @@ export function initDeckBuilder(root, { onStartGame }) {
       ) {
         ev.preventDefault();
         ev.stopPropagation();
-        openCardCatalogDialog(card);
+        openCardCatalogDialogForDeckEdit(card);
         return;
       }
       void (async function () {
@@ -3433,8 +3494,12 @@ export function initDeckBuilder(root, { onStartGame }) {
         : '<div class="deck-library-tile-thumb-fallback" aria-hidden="true">?</div>';
       var t = totalsFromDeckMapForSample(s.deck);
       var isActive = activeId && s.id === activeId;
+      /** サンプル（共通プリセット）は、ユーザー独自デッキが 1 件以上あるときに限り「サンプルを非表示」可。 */
+      var canDeleteBuiltIn = canDismissBuiltInStarter(library);
       var deleteBtn = isBuiltIn
-        ? ""
+        ? (canDeleteBuiltIn
+            ? '<button type="button" class="btn sm danger" data-deck-lib-act="delete-builtin">サンプルを非表示</button>'
+            : "")
         : '<button type="button" class="btn sm danger" data-deck-lib-act="delete">削除</button>';
       parts.push(
         '<article class="deck-library-tile' +
@@ -3472,6 +3537,32 @@ export function initDeckBuilder(root, { onStartGame }) {
       );
     }
     host.innerHTML = parts.join("");
+    syncRestoreBuiltInButton();
+  }
+
+  function syncRestoreBuiltInButton() {
+    var btn = el("btn-restore-builtin-starter");
+    if (!btn) return;
+    var hasBuiltIn = false;
+    var slots = (library && Array.isArray(library.slots)) ? library.slots : [];
+    for (var i = 0; i < slots.length; i++) {
+      if (isBuiltInStarterDeckId(slots[i] && slots[i].id)) { hasBuiltIn = true; break; }
+    }
+    btn.hidden = hasBuiltIn;
+  }
+
+  function wireRestoreBuiltInButtonOnce() {
+    var btn = el("btn-restore-builtin-starter");
+    if (!btn || btn.dataset.wired === "1") return;
+    btn.dataset.wired = "1";
+    btn.addEventListener("click", function () {
+      restoreBuiltInStarterSlot();
+      library = loadDeckLibrary();
+      persistDeckLibrary(library);
+      renderPresetSelect();
+      renderDeckLibraryTiles();
+      showToast("サンプルデッキを再表示しました");
+    });
   }
 
   function applyLibrarySlotToMainDeck(slot) {
@@ -3539,7 +3630,7 @@ export function initDeckBuilder(root, { onStartGame }) {
       }
       if (act === "delete") {
         if (isBuiltInStarterDeckId(slot.id)) {
-          showToast("共通の初期デッキは削除できません");
+          showToast("共通の初期デッキは「サンプルを非表示」から外してください");
           return;
         }
         if (!window.confirm("「" + (slot.name || "デッキ") + "」を削除しますか？")) return;
@@ -3548,6 +3639,20 @@ export function initDeckBuilder(root, { onStartGame }) {
         renderPresetSelect();
         renderDeckLibraryTiles();
         showToast("「" + (slot.name || "デッキ") + "」を削除しました");
+        return;
+      }
+      if (act === "delete-builtin") {
+        if (!isBuiltInStarterDeckId(slot.id)) return;
+        if (!canDismissBuiltInStarter(library)) {
+          showToast("自分のデッキを 1 件以上保存してからサンプルを非表示にできます");
+          return;
+        }
+        if (!window.confirm("サンプルデッキ「" + (slot.name || "") + "」を一覧から非表示にしますか？\n（あとで「サンプルを再表示」から戻せます）")) return;
+        library = removeDeckSlot(library, slot.id);
+        persistDeckLibrary(library);
+        renderPresetSelect();
+        renderDeckLibraryTiles();
+        showToast("サンプルを一覧から非表示にしました");
         return;
       }
     });
@@ -3886,6 +3991,7 @@ export function initDeckBuilder(root, { onStartGame }) {
       deckRegistrationPanelOpen = !deckRegistrationPanelOpen;
       syncCardPanelToggleButtons();
       wireDeckLibraryGridOnce();
+      wireRestoreBuiltInButtonOnce();
       scheduleRenderCardGrid();
     });
     el("btn-card-panel-current-deck")?.addEventListener("click", function () {
@@ -3897,6 +4003,7 @@ export function initDeckBuilder(root, { onStartGame }) {
 
   syncCardPanelToggleButtons();
   wireDeckLibraryGridOnce();
+  wireRestoreBuiltInButtonOnce();
 
   syncSampleDeveloperToolbar();
   el("btn-sample-dev-toggle")?.addEventListener("click", function () {

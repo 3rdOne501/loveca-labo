@@ -322,7 +322,10 @@ export function renderCardCatalogContentInto(c, targets) {
 
   var abHtml = wikiAbilityToStatusHtml(mc.ability || "");
 
-  bodyEl.innerHTML = '<dl class="dlg-card-catalog-dl">' + rows + "</dl>";
+  /** 同名カードのイラスト違い一覧（rare_list）を小さな thumbnail として並べる */
+  var variantsHtml = buildCardVariantsRowHtml(mc, targets);
+
+  bodyEl.innerHTML = '<dl class="dlg-card-catalog-dl">' + rows + "</dl>" + variantsHtml;
 
   if (effectSlot) {
     effectSlot.innerHTML =
@@ -334,8 +337,101 @@ export function renderCardCatalogContentInto(c, targets) {
   /* 後でクリック時に「最新の」カード／ターゲットで再描画できるよう、body 要素に紐づけて保存。 */
   bodyEl.__llocgCatalogLatest = { card: c, targets: targets };
   wireSpecialBhOverrideButtonsOnce(bodyEl);
+  wireCatalogVariantsRowOnce(bodyEl);
 
   return mc;
+}
+
+/**
+ * `rare_list` の各バリアントを横並びの thumbnail として描画する HTML を返す。
+ * 現在カードはハイライトする。`targets.onVariantSelected(cardNo)` があれば「入れ替え」ボタンも表示する。
+ */
+function buildCardVariantsRowHtml(mc, targets) {
+  if (!mc || typeof mc !== "object") return "";
+  var rl = Array.isArray(mc.rare_list) ? mc.rare_list : [];
+  if (rl.length < 2) return "";
+  var currentNo = String(mc.card_no || "");
+  var supportsSwap = !!(targets && typeof targets.onVariantSelected === "function");
+  var items = [];
+  for (var i = 0; i < rl.length; i++) {
+    var v = rl[i] || {};
+    var vno = String(v.card_no || "").trim();
+    if (!vno) continue;
+    var vcard = getCard(vno);
+    if (!vcard) continue;
+    var isCurrent = vno === currentNo;
+    var imgSrc = String(vcard.img || "");
+    var rareLbl = vcard.rare != null ? String(vcard.rare) : "";
+    var prodLbl = vcard.product != null ? String(vcard.product) : "";
+    items.push(
+      '<li class="dlg-card-catalog-variant-item' + (isCurrent ? " is-current" : "") + '">' +
+        '<button type="button" class="dlg-card-catalog-variant-btn" data-variant-no="' + escapeAttrLocal(vno) + '" title="' + escapeAttrLocal(rareLbl + (prodLbl ? " / " + prodLbl : "")) + '"' + (isCurrent ? ' aria-current="true"' : '') + '>' +
+          (imgSrc ? '<img class="dlg-card-catalog-variant-img" loading="lazy" src="' + escapeAttrLocal(imgSrc) + '" alt="' + escapeAttrLocal(vno) + '">' : '<span class="dlg-card-catalog-variant-fallback" aria-hidden="true">?</span>') +
+          '<span class="dlg-card-catalog-variant-meta">' +
+            '<span class="dlg-card-catalog-variant-rare">' + escapeHtmlPlain(rareLbl || "—") + '</span>' +
+            '<span class="dlg-card-catalog-variant-no">' + escapeHtmlPlain(vno) + '</span>' +
+          '</span>' +
+        '</button>' +
+        (supportsSwap && !isCurrent
+          ? '<button type="button" class="btn xs primary dlg-card-catalog-variant-swap" data-variant-swap-no="' + escapeAttrLocal(vno) + '" title="このイラストにデッキ内のカードを入れ替えます">入れ替え</button>'
+          : "") +
+      "</li>",
+    );
+  }
+  if (!items.length) return "";
+  return (
+    '<section class="dlg-card-catalog-variants">' +
+      '<h3 class="dlg-card-catalog-variants__title">イラスト違い（' + String(items.length) + " 種)</h3>" +
+      (supportsSwap
+        ? '<p class="muted dlg-card-catalog-variants__hint">「入れ替え」を押すと、デッキ内の同名カードを選んだイラストに差し替えます（同枚数を維持）。</p>'
+        : '<p class="muted dlg-card-catalog-variants__hint">クリックでカード詳細を切り替えます。</p>') +
+      '<ul class="dlg-card-catalog-variants__list" role="list">' + items.join("") + "</ul>" +
+    "</section>"
+  );
+}
+
+function escapeAttrLocal(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function wireCatalogVariantsRowOnce(bodyEl) {
+  if (!bodyEl || bodyEl.dataset.variantsWired === "1") return;
+  bodyEl.dataset.variantsWired = "1";
+  bodyEl.addEventListener("click", function (ev) {
+    var t = ev.target instanceof Element ? ev.target : null;
+    if (!t) return;
+    var swap = t.closest(".dlg-card-catalog-variant-swap");
+    if (swap) {
+      var swapNo = swap.getAttribute("data-variant-swap-no") || "";
+      if (!swapNo) return;
+      var latest = bodyEl.__llocgCatalogLatest;
+      if (!latest || !latest.targets) return;
+      var cb = latest.targets.onVariantSelected;
+      if (typeof cb !== "function") return;
+      /* 「現在の」カード（最終描画で使ったカード）を fromNo として渡す。 */
+      var fromNo = String((latest.card && latest.card.card_no) || "");
+      var swapped = false;
+      try { swapped = !!cb(swapNo, fromNo); } catch (_) { swapped = false; }
+      if (!swapped) return;
+      var newCard = getCard(swapNo);
+      if (newCard) renderCardCatalogContentInto(newCard, latest.targets);
+      return;
+    }
+    var btn = t.closest(".dlg-card-catalog-variant-btn");
+    if (!btn) return;
+    var vno = btn.getAttribute("data-variant-no") || "";
+    if (!vno) return;
+    var latest2 = bodyEl.__llocgCatalogLatest;
+    if (!latest2 || !latest2.targets) return;
+    if (String((latest2.card && latest2.card.card_no) || "") === vno) return;
+    var newCard2 = getCard(vno);
+    if (!newCard2) return;
+    renderCardCatalogContentInto(newCard2, latest2.targets);
+  });
 }
 
 /** 特殊ハート オーバーライドボタンを 1 度だけ delegation でバインドする */
@@ -370,18 +466,23 @@ function wireSpecialBhOverrideButtonsOnce(bodyEl) {
 
 /**
  * @param {*} c カード実体または card_no を含むオブジェクト
+ * @param {{ onVariantSelected?: (cardNo: string) => boolean | void }} [options]
  */
-export function openCardCatalogDialog(c) {
+export function openCardCatalogDialog(c, options) {
   var dlg = document.getElementById("dlg-card-catalog");
   if (!dlg) return;
-  var rendered = renderCardCatalogContentInto(c, {
+  var targets = {
     title: document.getElementById("dlg-card-catalog-title"),
     subtitle: document.getElementById("dlg-card-catalog-subtitle"),
     body: document.getElementById("dlg-card-catalog-body"),
     effectSlot: document.getElementById("dlg-card-catalog-effect-slot"),
     img: document.getElementById("dlg-card-catalog-img"),
     badge: document.getElementById("dlg-card-catalog-type-badges"),
-  });
+  };
+  if (options && typeof options.onVariantSelected === "function") {
+    targets.onVariantSelected = options.onVariantSelected;
+  }
+  var rendered = renderCardCatalogContentInto(c, targets);
   if (!rendered) return;
   if (dlg.showModal) dlg.showModal();
 }

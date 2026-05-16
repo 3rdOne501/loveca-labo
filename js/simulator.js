@@ -2092,10 +2092,46 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         s += memberEffectiveBlade(inst);
       });
     });
-    return Math.floor(s);
+    var raw = Math.floor(s);
+    var reduction = liveStartBladeReductionFromAbilities();
+    return Math.max(0, raw - reduction);
   }
 
   /** ステージ＋ライブ枠のメンバー blade 合計（盤面・シミュの捲り枚数 k に使用） */
+  /**
+   * カード固有のライブ開始時効果による「エールで公開する自分のカード」枚数の減算。
+   *
+   * 現在登録:
+   *   - PL!SP-bp2-010 ウィーン・マルガレーテ
+   *     条件: 自身がステージにいて、かつステージに別のメンバーが 1 体以上いる。
+   *           インスタンスに `_abilityDisabledThisTurn === true` が立っている場合は無効。
+   *     効果: ライブ開始時〜ライブ終了までエール -8。
+   *
+   * 「ライブ開始時に適用」なので `state.liveStatsAfterBegin === true` のときだけ働く。
+   */
+  function liveStartBladeReductionFromAbilities() {
+    if (!state.liveStatsAfterBegin) return 0;
+    if (!state.stage) return 0;
+    var bp2010Count = 0;
+    var otherMembers = 0;
+    var keys = ["left", "center", "right"];
+    for (var ki = 0; ki < keys.length; ki++) {
+      var arr = state.stage[keys[ki]] || [];
+      for (var i = 0; i < arr.length; i++) {
+        var c = arr[i];
+        if (!c || c.type !== T_MEMBER) continue;
+        if (String(c.card_no) === "PL!SP-bp2-010") {
+          if (c._abilityDisabledThisTurn === true) continue;
+          bp2010Count++;
+        } else {
+          otherMembers++;
+        }
+      }
+    }
+    if (bp2010Count > 0 && otherMembers >= 1) return 8 * bp2010Count;
+    return 0;
+  }
+
   function sumBoardMemberBlades() {
     var s = 0;
     ["left", "center", "right"].forEach(function (k) {
@@ -2108,7 +2144,27 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         s += memberEffectiveBlade(inst);
       });
     });
-    return Math.floor(s);
+    var raw = Math.floor(s);
+    var reduction = liveStartBladeReductionFromAbilities();
+    return Math.max(0, raw - reduction);
+  }
+
+  /** 「公開可能枚数」を求める内訳付き版（HUD やヒントから参照可） */
+  function sumBoardMemberBladesWithBreakdown() {
+    var s = 0;
+    ["left", "center", "right"].forEach(function (k) {
+      state.stage[k].forEach(function (inst) {
+        if (inst.type !== T_MEMBER) return;
+        s += memberEffectiveBlade(inst);
+      });
+      state.liveArea[k].forEach(function (inst) {
+        if (inst.type !== T_MEMBER) return;
+        s += memberEffectiveBlade(inst);
+      });
+    });
+    var raw = Math.floor(s);
+    var reduction = liveStartBladeReductionFromAbilities();
+    return { raw: raw, reduction: reduction, effective: Math.max(0, raw - reduction) };
   }
 
   function liveCardCountOnBoard() {
@@ -4742,6 +4798,60 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     });
   }
 
+  /**
+   * PL!SP-bp2-001 が新たにステージに「登場」した時、ユーザーに「ウィーン・マルガレーテのライブ開始時効果を
+   * 無効化しますか？」と確認し、「はい」ならステージ上の PL!SP-bp2-010 全てに `_abilityDisabledThisTurn = true` を
+   * 立てる。フラグは「ターン開始」で全インスタンスから掃除される（このターン限定）。
+   */
+  function maybeHandleBp2001EntryPrompt(snapBeforeDrag) {
+    if (!snapBeforeDrag || typeof snapBeforeDrag !== "object") return;
+    const prev = stageMemberIdSetFromSnap(snapBeforeDrag);
+    const now = stageMemberIdSetFromState();
+    /** 今ステージにいて、かつ snap 時点ではいなかった = 「登場」したメンバー */
+    var newlyEntered = [];
+    now.forEach(function (id) {
+      if (prev.has(id)) return;
+      var inst = findCardInstById(id);
+      if (inst && inst.type === T_MEMBER) newlyEntered.push(inst);
+    });
+    if (!newlyEntered.length) return;
+    var entered001 = newlyEntered.find(function (c) {
+      return String(c && c.card_no) === "PL!SP-bp2-001";
+    });
+    if (!entered001) return;
+    /* PL!SP-bp2-010 が現在ステージにいる場合のみ確認する意味があるので、いない場合は確認しない。 */
+    var hasMargareteOnStage = false;
+    ["left", "center", "right"].forEach(function (k) {
+      (state.stage[k] || []).forEach(function (c) {
+        if (c && c.type === T_MEMBER && String(c.card_no) === "PL!SP-bp2-010") hasMargareteOnStage = true;
+      });
+    });
+    if (!hasMargareteOnStage) return;
+    var ok = false;
+    try {
+      ok = window.confirm("PL!SP-bp2-001 が登場しました。\n「ウィーン・マルガレーテ」のライブ開始時効果（エール -8）を、このターンだけ無効化しますか？");
+    } catch (_) {
+      ok = false;
+    }
+    if (!ok) return;
+    ["left", "center", "right"].forEach(function (k) {
+      (state.stage[k] || []).forEach(function (c) {
+        if (c && c.type === T_MEMBER && String(c.card_no) === "PL!SP-bp2-010") {
+          c._abilityDisabledThisTurn = true;
+        }
+      });
+    });
+    logReplay("ability-disable-bp2-010-by-bp2-001", { sourceId: entered001.id });
+    try { showToast("ウィーン・マルガレーテのライブ開始時効果をこのターン無効化しました"); } catch (_) { /* noop */ }
+  }
+
+  /** ターン開始時に「このターンだけ無効」フラグを全インスタンスから掃除 */
+  function clearTurnScopedAbilityDisableFlags() {
+    allZonesFlat().forEach(function (c) {
+      if (c && c._abilityDisabledThisTurn) delete c._abilityDisabledThisTurn;
+    });
+  }
+
   /** ドラッグ中は裏面表示（対面イメージ）。ライブ枠の表面隠しは data-ll-real-face-src に原版を渡す */
   function showCardBackWhileDragging(item) {
     if (!item) return;
@@ -5606,6 +5716,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         maybeAutoDrawHandAfterLiveMemberSet(evt);
         maybeRotateEnergyCostForMembersNewOnStage(dragUndoSnap);
         stampNewStageMembersForGlow(dragUndoSnap);
+        maybeHandleBp2001EntryPrompt(dragUndoSnap);
         warnAfterStageBatonSameTurnPolicy(dragUndoSnap);
         clearEnergyDropHints();
         var beforeFp = fingerprintZonesFromShot(dragUndoSnap);
@@ -6601,6 +6712,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     state.pendingDrawYellHandDraws = 0;
     /** 登場／起動／開始時行の H／B（ターン側）はターン開始でクリア（常時側は残す） */
     clearTurnScopedPlayBonusesEverywhere();
+    /** カード固有「このターンだけ無効」フラグもターン開始で掃除（例: bp2-001 による bp2-010 無効化） */
+    clearTurnScopedAbilityDisableFlags();
     /** マリガン終了タイミングで解決／ライブ枠は控えへ（ルール自動処理ではなく補助用の一括移動） */
     var flushed = [];
     if (state.resolutionArea.length) {
@@ -6912,12 +7025,10 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     var base = cat && cat.need_heart && typeof cat.need_heart === "object" ? cat.need_heart : {};
     var b = Number(base[slotKey]) || 0;
     var cur = Number(inst._needHeartDelta[slotKey]) || 0;
-    /* step = -1 で need を増やす方向、step = +1 で減らす方向。
-       ただし effective = max(0, b + delta) なので、delta は -b 以下にしない。
-       (delta < 0 が「減らす」方向。これは UI 上の「＋」=減らすに対応。) */
-    /* step = +1（＋ボタン）→ deltaを-1する（必要ハート減）, step = -1（−ボタン）→ deltaを+1する */
-    var nextDelta = cur + (step > 0 ? -1 : 1);
-    /* 範囲制限: 基本 b に対し、effective = b + delta は [0, b + 9] で十分。 */
+    /* UI 直感に合わせて、＋ボタンは effective を増やす方向（delta を +1）、
+       −ボタンは effective を減らす方向（delta を -1）に対応させる。
+       effective = max(0, b + delta) なので、delta は -b 以下にしない。 */
+    var nextDelta = cur + (step > 0 ? +1 : -1);
     if (b + nextDelta < 0) nextDelta = -b;
     if (b + nextDelta > b + 9) nextDelta = 9;
     inst._needHeartDelta[slotKey] = nextDelta;

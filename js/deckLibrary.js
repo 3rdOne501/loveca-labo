@@ -30,6 +30,43 @@ export function isBuiltInStarterDeckId(id) {
   return s === BUILTIN_STARTER_PRESET_ID;
 }
 
+/**
+ * 「サンプル（共通プリセット）を一覧から消した」状態を端末に記録するためのストレージキー。
+ * ユーザーが 1 件以上の独自デッキを保存していれば、このフラグを立てることで一覧から外せる。
+ */
+const STORAGE_BUILTIN_DISMISSED = "llocg_builtin_starter_dismissed";
+
+function isBuiltInStarterDismissed() {
+  try {
+    return localStorage.getItem(STORAGE_BUILTIN_DISMISSED) === "1";
+  } catch (_) {
+    return false;
+  }
+}
+
+function setBuiltInStarterDismissed(flag) {
+  try {
+    if (flag) localStorage.setItem(STORAGE_BUILTIN_DISMISSED, "1");
+    else localStorage.removeItem(STORAGE_BUILTIN_DISMISSED);
+  } catch (_) {
+    /* noop */
+  }
+}
+
+/** ユーザーが追加で登録したデッキが 1 件以上あるなら true。 */
+export function canDismissBuiltInStarter(lib) {
+  if (!lib || !Array.isArray(lib.slots)) return false;
+  for (let i = 0; i < lib.slots.length; i++) {
+    const s = lib.slots[i];
+    if (s && !isBuiltInStarterDeckId(s.id)) return true;
+  }
+  return false;
+}
+
+export function restoreBuiltInStarterSlot() {
+  setBuiltInStarterDismissed(false);
+}
+
 /** ストレージには書かない・一覧先頭に常に出す共通プリセット */
 export function getBuiltInStarterSlot() {
   return {
@@ -45,8 +82,10 @@ export function getBuiltInStarterSlot() {
   };
 }
 
-/** 組み込みプリセットを定義順ですべて返す（一覧先頭・保存対象外） */
+/** 組み込みプリセットを定義順ですべて返す（一覧先頭・保存対象外）。
+ *  ユーザーが「サンプルを削除」を実行済みの端末では空配列を返す。 */
 export function getBuiltInPresetSlots() {
+  if (isBuiltInStarterDismissed()) return [];
   return [getBuiltInStarterSlot()];
 }
 
@@ -221,7 +260,12 @@ export function updateDeckSlot(lib, id, deckMap, roleLabels) {
 }
 
 export function removeDeckSlot(lib, id) {
-  if (isBuiltInStarterDeckId(id)) return lib;
+  if (isBuiltInStarterDeckId(id)) {
+    /* 共通プリセット（サンプル）は、ユーザー独自デッキが 1 件以上あるときだけ一覧から外せる。 */
+    if (!canDismissBuiltInStarter(lib)) return lib;
+    setBuiltInStarterDismissed(true);
+    return { slots: userSlotsOnly(lib) };
+  }
   return { slots: [...getBuiltInPresetSlots(), ...userSlotsOnly(lib).filter((s) => s.id !== id)] };
 }
 

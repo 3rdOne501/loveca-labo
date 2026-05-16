@@ -265,8 +265,13 @@ python3 -m http.server 8080</pre>
             </div>
             <div id="deck-library-scroll" class="deck-library-scroll" hidden>
               <div class="deck-library-head">
-                <h3 class="deck-library-head__title">登録デッキ</h3>
-                <p class="deck-library-head__hint muted">タイルから読み込み・確認・ソロプレイができます。</p>
+                <div class="deck-library-head__main">
+                  <h3 class="deck-library-head__title">登録デッキ</h3>
+                  <p class="deck-library-head__hint muted">タイルから読み込み・確認・ソロプレイができます。</p>
+                </div>
+                <div class="deck-library-head__actions">
+                  <button type="button" class="btn sm secondary" id="btn-restore-builtin-starter" hidden>サンプルを再表示</button>
+                </div>
               </div>
               <div id="deck-library-grid" class="deck-library-grid" role="list"></div>
               <p id="deck-library-empty" class="deck-library-empty muted" hidden>
