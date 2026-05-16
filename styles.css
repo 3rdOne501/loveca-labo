@@ -356,6 +356,39 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
   border-bottom: 1px solid rgba(255, 120, 180, 0.15);
 }
 
+.search-panel-filters-fold {
+  margin-top: 0.35rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 140, 190, 0.26);
+  background: rgba(6, 4, 12, 0.38);
+  padding: 0;
+}
+
+.search-panel-filters-fold > summary.search-panel-filters-fold__summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  padding: 0.5rem 0.65rem;
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: rgba(255, 224, 245, 0.98);
+}
+
+.search-panel-filters-fold > summary.search-panel-filters-fold__summary::-webkit-details-marker {
+  display: none;
+}
+
+.search-panel-filters-fold[open] > summary.search-panel-filters-fold__summary {
+  border-bottom: 1px solid rgba(255, 120, 180, 0.18);
+}
+
+.search-panel-filters-fold__body {
+  padding: 0.65rem 0.72rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.08rem;
+}
+
 #view-deck .deck-panel-sticky-head {
   position: sticky;
   top: 0;
@@ -4174,7 +4207,7 @@ body.play-mode .energy-zone.card-strip {
 }
 
 body.play-mode .energy-zone .card-item + .card-item {
-  margin-left: calc(var(--loveca-play-w) * -0.5);
+  margin-left: calc(var(--loveca-play-w) * -0.62);
 }
 
 body.play-mode #zone-deck.deck-pile .card-item {
@@ -5257,17 +5290,17 @@ dialog.app-dialog:not([open]) {
 .dlg-card-catalog-ability img.status-inline-game-icon--pill {
   height: auto !important;
   width: auto !important;
-  max-width: min(100%, 15rem);
-  min-height: 2.35rem;
-  max-height: 3.6rem;
+  max-width: min(100%, 13rem);
+  min-height: 1.85rem;
+  max-height: 2.95rem;
   vertical-align: middle;
-  margin: 0.12em 0.08em;
+  margin: 0.1em 0.06em;
 }
 
 .dlg-card-catalog-ability .status-inline-game-icon--pill svg {
   width: auto;
-  height: 2.55rem;
-  max-width: min(100%, 15rem);
+  height: 2rem;
+  max-width: min(100%, 13rem);
   display: block;
 }
 
@@ -5454,6 +5487,29 @@ body.play-mode.chrome-layout-play-desktop .chrome-strip-mobile-portrait-only {
 body.play-mode.chrome-layout-play-desktop .chrome-live-prob-mobile-slot {
   display: none !important;
 }
+
+.chrome-live-prob-desktop-inline {
+  display: none;
+  flex: 1 1 12rem;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.2rem;
+  box-sizing: border-box;
+}
+
+body.play-mode.chrome-layout-play-desktop .chrome-live-prob-desktop-inline {
+  display: flex;
+}
+
+body.play-mode.chrome-layout-play-desktop .deck-live-sim-summary.deck-live-sim-summary--desktop-toolbar,
+body.play-mode.chrome-layout-play-desktop .deck-live-sim-summary.deck-live-sim-summary--desktop-toolbar-muted {
+  margin: 0 !important;
+  font-size: 0.74rem !important;
+  line-height: 1.26 !important;
+  text-align: center;
+}
+
 body.play-mode.chrome-layout-play-mobile-portrait .chrome-play-mount-desktop {
   display: none !important;
 }

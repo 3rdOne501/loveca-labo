@@ -560,6 +560,24 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     deckLiveSimIdleHandle = null;
   }
 
+  function mirrorDeckLiveSimDesktopToolbarFromSrc(sumElSrc) {
+    var dst = $("deck-live-sim-summary-desktop-inline");
+    if (!dst || !sumElSrc) return;
+    dst.innerHTML = sumElSrc.innerHTML;
+    dst.className = sumElSrc.className;
+    dst.classList.add("deck-live-sim-summary--desktop-toolbar");
+    dst.style.cssText = sumElSrc.style.cssText || "";
+  }
+
+  function clearDeckLiveSimDesktopToolbarMirror() {
+    var dst = $("deck-live-sim-summary-desktop-inline");
+    if (!dst) return;
+    dst.textContent = "";
+    dst.innerHTML = "";
+    dst.removeAttribute("style");
+    dst.className = "deck-live-sim-summary deck-live-sim-summary--desktop-toolbar-muted";
+  }
+
   function runDeckLiveSimHeavy() {
     deckLiveSimIdleHandle = null;
     if (!$("deck-live-sim-summary")) return;
@@ -608,6 +626,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       stEl2.hidden = true;
       stEl2.textContent = "";
     }
+
+    mirrorDeckLiveSimDesktopToolbarFromSrc(sumEl2);
   }
 
   function deckPickNoSort(a, b) {
@@ -2745,15 +2765,23 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
 
   function syncDeckLiveSimPanel() {
     var liveSimWrap = root.querySelector(".zone-block-deck-live-sim-under-preview");
-    if (liveSimWrap) liveSimWrap.hidden = !state.liveStatsAfterBegin;
-    if (!state.liveStatsAfterBegin) return;
+    var liveProbRelevant = liveCardCountOnBoard() > 0;
+    if (liveSimWrap) liveSimWrap.hidden = !liveProbRelevant;
+    if (!liveProbRelevant) {
+      cancelDeckLiveSimDeferred();
+      clearDeckLiveSimDesktopToolbarMirror();
+      return;
+    }
 
     var disp = $("deck-flip-k-display");
     var bladeNoteEl = $("deck-flip-blade-note");
     var sumEl = $("deck-live-sim-summary");
     var stEl = $("deck-live-sim-stats");
     var modeSel = $("deck-live-sim-mode");
-    if (!disp || !sumEl) return;
+    if (!disp || !sumEl) {
+      clearDeckLiveSimDesktopToolbarMirror();
+      return;
+    }
     if (modeSel) {
       modeSel.value = deckLiveSimMode === "whole" ? "whole" : "board";
     }
@@ -2791,6 +2819,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         stEl.hidden = true;
         stEl.textContent = "";
       }
+      mirrorDeckLiveSimDesktopToolbarFromSrc(sumEl);
       return;
     }
 
@@ -4570,81 +4599,6 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     logReplay("card-catalog-detail-open");
   }
 
-  function wireStageMemberCatalogAndLongZoom(imgEl, divEl, boardCard) {
-    var longMs = 480;
-    var moveCap = 10;
-    var longTimer = null;
-    var suppressedClick = false;
-    var sx = 0;
-    var sy = 0;
-    function killTimer() {
-      if (longTimer) {
-        clearTimeout(longTimer);
-        longTimer = null;
-      }
-    }
-    divEl.addEventListener(
-      "pointerdown",
-      function (e) {
-        if (e.button !== 0) return;
-        var ign = e.target.closest(".stance-chip, .card-no-drag, .card-pick-wrap, .card-flash-plus-one");
-        if (ign) return;
-        killTimer();
-        suppressedClick = false;
-        sx = e.clientX;
-        sy = e.clientY;
-        longTimer = window.setTimeout(function () {
-          longTimer = null;
-          suppressedClick = true;
-          openCardZoomFromImg(imgEl);
-          try {
-            e.preventDefault();
-          } catch (_) {}
-        }, longMs);
-      },
-      true,
-    );
-    divEl.addEventListener(
-      "pointermove",
-      function (e) {
-        if (!longTimer) return;
-        if (Math.abs(e.clientX - sx) > moveCap || Math.abs(e.clientY - sy) > moveCap) killTimer();
-      },
-      true,
-    );
-    divEl.addEventListener(
-      "pointerup",
-      function () {
-        killTimer();
-      },
-      true,
-    );
-    divEl.addEventListener(
-      "pointercancel",
-      function () {
-        killTimer();
-      },
-      true,
-    );
-    imgEl.addEventListener(
-      "click",
-      function (e) {
-        if (e.target.closest(".stance-chip, .card-no-drag, .card-pick-wrap")) return;
-        if (Date.now() - lastDragEndAt < 550) return;
-        if (suppressedClick) {
-          suppressedClick = false;
-          e.stopPropagation();
-          e.preventDefault();
-          return;
-        }
-        e.stopPropagation();
-        e.preventDefault();
-        openCardCatalogDetail(boardCard);
-      },
-      true,
-    );
-  }
-
   function cardEl(c, opts) {
     opts = opts || {};
     ensureCardBoardFields(c);
@@ -4684,9 +4638,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       img.className = "card-img";
       if (opts.forceLiveHorizontal) img.classList.add("rotated");
       else if (c.isRotated) img.classList.add("rotated");
-      if (opts.stageCatalogLongZoom === true && c.img) {
-        wireStageMemberCatalogAndLongZoom(img, div, c);
-      } else if (opts.catalogImgClickDetail === true) {
+      if (opts.catalogImgClickDetail === true) {
         img.addEventListener(
           "click",
           function (e) {
@@ -4698,7 +4650,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
           },
           true,
         );
-      } else if (typeof opts.onRotate === "function" && !opts.stageRotateChip) {
+      } else if (typeof opts.onRotate === "function") {
         img.addEventListener("click", (e) => {
           e.stopPropagation();
           opts.onRotate();
@@ -4759,41 +4711,52 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (opts.stanceBar) {
       const bar = document.createElement("div");
       bar.className = "card-stance-bar";
-      if (typeof opts.onRotate === "function" && opts.stageRotateChip === true) {
-        const mkRot = document.createElement("button");
-        mkRot.type = "button";
-        mkRot.className = "stance-chip stance-rotate";
-        mkRot.textContent = "↻";
-        mkRot.title = "向きを切り替え（縦／横）";
-        mkRot.addEventListener("click", (e) => {
-          e.stopPropagation();
-          e.preventDefault();
-          opts.onRotate();
-        });
-        bar.appendChild(mkRot);
-      }
       const mkWait = document.createElement("button");
       mkWait.type = "button";
       mkWait.className = "stance-chip stance-wait" + (c.lcWait === true ? " is-on" : "");
       mkWait.textContent = "W";
-      mkWait.title = "ウェイト（負荷）のトグル（非公式表示）";
+      mkWait.title =
+        c.type === T_MEMBER
+          ? "ウェイト：横向き（キー W と同じ）"
+          : "ウェイト状態（側面エネ：横向き。キー W と同じ）";
       mkWait.addEventListener("click", (e) => {
         e.stopPropagation();
         e.preventDefault();
-        pushHistoryBefore("stance-lcWait");
-        c.lcWait = !c.lcWait;
+        if (c.type === T_MEMBER) {
+          pushHistoryBefore("stance-member-wait");
+          c.lcWait = true;
+          c.lcActive = false;
+          c.isRotated = true;
+        } else {
+          pushHistoryBefore("stance-lcWait");
+          c.isRotated = true;
+          c.lcWait = true;
+          c.lcActive = false;
+        }
         render();
       });
       const mkAct = document.createElement("button");
       mkAct.type = "button";
       mkAct.className = "stance-chip stance-active" + (c.lcActive !== false ? " is-on" : "");
       mkAct.textContent = "A";
-      mkAct.title = "アクティブ（オン）／オフでレスト相当の見た目（非公式表示）";
+      mkAct.title =
+        c.type === T_MEMBER
+          ? "アクティブ：縦向き（キー A と同じ）"
+          : "アクティブ状態（側面エネ：縦向き。キー A と同じ）";
       mkAct.addEventListener("click", (e) => {
         e.stopPropagation();
         e.preventDefault();
-        pushHistoryBefore("stance-lcActive");
-        c.lcActive = !c.lcActive;
+        if (c.type === T_MEMBER) {
+          pushHistoryBefore("stance-member-active");
+          c.lcWait = false;
+          c.lcActive = true;
+          c.isRotated = false;
+        } else {
+          pushHistoryBefore("stance-lcActive");
+          c.isRotated = false;
+          c.lcWait = false;
+          c.lcActive = true;
+        }
         render();
       });
       bar.appendChild(mkWait);
@@ -4911,6 +4874,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       var onRotate =
         isStage &&
         rotateLabel &&
+        c.type !== T_MEMBER &&
         function () {
           pushHistoryBefore(rotateLabel);
           c.isRotated = !c.isRotated;
@@ -4957,9 +4921,6 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       var successLiveAlwaysGlow = isSuccessLive && c.type === T_LIVE;
       var liveVenueBoost = isLiveBoard && !state.liveTurnPickMode && c.type === T_LIVE;
 
-      var stageRotateChip = isStage && c.type === T_MEMBER && typeof onRotate === "function";
-      var stageCatalogCombo = isStage && c.type === T_MEMBER;
-
       var catalogImgClickDetail =
         (c.type === T_MEMBER || c.type === T_LIVE) &&
         (zoneId === "zone-hand" ||
@@ -4968,7 +4929,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
           zoneId === "zone-preview" ||
           zoneId === "zone-resolution" ||
           zoneId === "zone-success-live" ||
-          /^live-/.test(zoneId));
+          /^live-/.test(zoneId) ||
+          /^stage-/.test(zoneId));
 
       const cardOpts = {
         onRotate: onRotate || undefined,
@@ -4982,9 +4944,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         stageVeteranGlow: stageVeteranGlow,
         successLiveAlwaysGlow: successLiveAlwaysGlow,
         liveVenueBoost: liveVenueBoost,
-        stageRotateChip: stageRotateChip === true,
-        stageCatalogLongZoom: stageCatalogCombo === true,
-        catalogImgClickDetail: catalogImgClickDetail === true && !stageCatalogCombo,
+        catalogImgClickDetail: catalogImgClickDetail === true,
       };
       if (zoneId === "zone-hand" && state.awaitingTurnStart) {
         const sel = state.mulliganSelectedIds;
@@ -7273,9 +7233,9 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (pid === "zone-energy" && inst.type === T_ENERGY) {
       if (ch === "w" || ch === "W") {
         pushHistoryBefore("keyboard-energy-wait");
-        inst.isRotated = !inst.isRotated;
-        inst.lcWait = inst.isRotated === true;
-        inst.lcActive = inst.lcWait !== true;
+        inst.isRotated = true;
+        inst.lcWait = true;
+        inst.lcActive = false;
       } else {
         pushHistoryBefore("keyboard-energy-active");
         inst.isRotated = false;
@@ -7286,11 +7246,15 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       return;
     }
     if (ch === "w" || ch === "W") {
-      pushHistoryBefore("keyboard-lcWait");
-      inst.lcWait = !inst.lcWait;
+      pushHistoryBefore("keyboard-member-wait");
+      inst.lcWait = true;
+      inst.lcActive = false;
+      inst.isRotated = true;
     } else {
-      pushHistoryBefore("keyboard-lcActive");
-      inst.lcActive = !inst.lcActive;
+      pushHistoryBefore("keyboard-member-active");
+      inst.lcWait = false;
+      inst.lcActive = true;
+      inst.isRotated = false;
     }
     renderSynchronouslyOnce();
   };

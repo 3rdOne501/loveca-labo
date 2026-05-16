@@ -32,6 +32,12 @@ const ART_FILE_BY_KEY = /** @type {Record<string, string>} */ ({
   jouji: "jyouji.png",
   kidou: "kidou-2.png",
   live_start: "live_start.png",
+  /** 効果文中のライブ成功時トークン */
+  live_success: "live_success.png",
+  /** ドローエール等 */
+  draw_yell: "icon_draw.png",
+  /** 自動 */
+  jidou: "jidou.png",
   turn1: "turn1.png",
   toujyou: "toujyou.png",
 });
@@ -79,6 +85,11 @@ const STEM_ALIAS = /** @type {Record<string, string>} */ ({
   "ターン1回": "turn1",
   toujyou: "toujyou",
   登場: "toujyou",
+  live_success: "live_success",
+  icon_draw: "draw_yell",
+  draw_yell: "draw_yell",
+  jidou: "jidou",
+  自動: "jidou",
 });
 
 /** 横長ラベル系（効果テキスト内で拡大表示） */
@@ -86,6 +97,9 @@ const PILL_ICON_KEYS = /** @type {Record<string, 1>} */ ({
   jouji: 1,
   kidou: 1,
   live_start: 1,
+  live_success: 1,
+  draw_yell: 1,
+  jidou: 1,
   turn1: 1,
   toujyou: 1,
 });
@@ -190,12 +204,30 @@ export function escapeAttrHtml(s) {
 }
 
 /**
+ * SPA・サブパス配信でも他端末で画像が読み込めるよう、画像 src をページの base に対する絶対 URL に揃える。
+ * @param {string} href
+ * @returns {string}
+ */
+export function resolveGameStatusBundledHref(href) {
+  if (!href) return "";
+  var s = String(href).trim();
+  if (!s || /^data:/i.test(s) || /^blob:/i.test(s)) return s;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(s)) return s;
+  try {
+    return new URL(s, typeof document !== "undefined" ? document.baseURI : undefined).href;
+  } catch (_) {
+    return s;
+  }
+}
+
+/**
  * @param {string} alt
  * @param {string} href
  * @returns {string}
  */
 export function htmlStatusGameIconImg(alt, href, extraClass) {
   if (!href) return "";
+  var resolved = resolveGameStatusBundledHref(href);
   var a = escapeAttrHtml(alt || "");
   var cls = "status-inline-game-icon";
   if (typeof extraClass === "string" && extraClass.trim() !== "") {
@@ -206,7 +238,7 @@ export function htmlStatusGameIconImg(alt, href, extraClass) {
   }
   return (
     '<img src="' +
-    escapeAttrHtml(href) +
+    escapeAttrHtml(resolved) +
     '" alt="' +
     a +
     '"' +
@@ -232,12 +264,9 @@ export function wikiAbilityFileStemToIconHtml(alt, stem) {
   if (!key) return null;
   var pill = !!PILL_ICON_KEYS[key];
   var artFile = ART_FILE_BY_KEY[key];
-  if (artFile)
-    return htmlStatusGameIconImg(
-      alt,
-      GAME_STATUS_ICON_ART_DIR + artFile,
-      pill ? "status-inline-game-icon--pill" : "",
-    );
+  if (artFile) {
+    return htmlStatusGameIconImg(alt, GAME_STATUS_ICON_ART_DIR + artFile, pill ? "status-inline-game-icon--pill" : "");
+  }
   var build = SVG_BUILD[key];
   if (!build) return null;
   var a = escapeAttrHtml(alt || "");
@@ -258,7 +287,7 @@ export function wikiAbilityFileStemToIconHref(stem) {
   var key = STEM_ALIAS[norm];
   if (!key) return null;
   var artFile = ART_FILE_BY_KEY[key];
-  if (artFile) return GAME_STATUS_ICON_ART_DIR + artFile;
+  if (artFile) return resolveGameStatusBundledHref(GAME_STATUS_ICON_ART_DIR + artFile);
   var build = SVG_BUILD[key];
   if (!build) return null;
   return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(build());
@@ -266,19 +295,14 @@ export function wikiAbilityFileStemToIconHref(stem) {
 
 /** カード詳細: ドローエール（BH）バッジ */
 export function catalogDrawYellBadgeHtml() {
-  var inner =
-    '<path fill="#ff4081" stroke="#ffffff" stroke-width="1.8" stroke-linejoin="round" d="' +
-    "M20 33.2c-5.3-4.5-9.6-9.2-9.6-14.7 0-4.2 3.2-7.6 7.3-7.6 2.2 0 4.1 1 5.3 2.5 1.2-1.5 3.1-2.5 5.3-2.5 4.1 0 7.3 3.4 7.3 7.6 0 5.5-4.3 10.2-9.6 14.7l-.7.5-.7-.5z" +
-    '"/>' +
-    '<path fill="#fff59d" stroke="#f48fb1" stroke-width="1.2" d="M27.2 8.5l9.2 4.4v14.2l-9.2 4.4V8.5z"/>';
-  return '<span class="dlg-card-catalog-badge-img" role="img" aria-label="ドローエール（BH）">' + svgDoc(inner) + "</span>";
+  return htmlStatusGameIconImg(
+    "ドローエール（BH）",
+    GAME_STATUS_ICON_ART_DIR + ART_FILE_BY_KEY.draw_yell,
+    "dlg-card-catalog-badge-img",
+  );
 }
 
 /** カード詳細: 音符ライブ／スコア（バンドル icon_score.png） */
 export function catalogNoteLiveBadgeHtml() {
-  return htmlStatusGameIconImg(
-    "音符ライブ／スコア",
-    GAME_STATUS_ICON_ART_DIR + ART_FILE_BY_KEY.score,
-    "dlg-card-catalog-badge-img",
-  );
+  return htmlStatusGameIconImg("音符ライブ／スコア", GAME_STATUS_ICON_ART_DIR + ART_FILE_BY_KEY.score, "dlg-card-catalog-badge-img");
 }

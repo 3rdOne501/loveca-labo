@@ -114,6 +114,9 @@ python3 -m http.server 8080</pre>
               <button type="button" class="btn sm secondary" id="btn-reset-filters">絞り込み全リセット</button>
             </div>
           </div>
+          <details class="search-panel-filters-fold" id="deck-search-panel-filters" open>
+            <summary class="search-panel-filters-fold__summary">詳細検索・絞り込み</summary>
+            <div class="search-panel-filters-fold__body">
           <div class="field">
             <span>一覧に出すカード種別</span>
             <div class="filter-type-chk-row" id="filter-type-chk-row">
@@ -189,6 +192,8 @@ python3 -m http.server 8080</pre>
               <button type="button" class="btn sm secondary" id="btn-filter-bh-heart-clear">BH・ハート絞り込み解除</button>
             </div>
           </div>
+            </div>
+          </details>
         </aside>
 
         <section class="card-panel">
@@ -682,6 +687,12 @@ python3 -m http.server 8080</pre>
                 <option value="後攻">後攻</option>
               </select>
             </div>
+            <div id="mount-desktop-live-prob-inline" class="chrome-live-prob-desktop-inline" aria-live="polite">
+              <p
+                id="deck-live-sim-summary-desktop-inline"
+                class="deck-live-sim-summary deck-live-sim-summary--desktop-toolbar-muted"
+              ></p>
+            </div>
             <div id="mount-mobile-live-prob-inline" class="live-prob-toolbar-inline chrome-live-prob-mobile-slot"></div>
             <div class="play-undo-redo-cluster">
               <button type="button" class="btn play-undo-redo play-undo-redo--undo" id="btn-undo" title="U キー">
@@ -969,7 +980,7 @@ python3 -m http.server 8080</pre>
             <div id="preview-row" class="preview-row preview-row--collapsed" aria-hidden="true">
               <p class="hint preview-zone-explainer zone-inline-help">
                 カードを一時退避したり、配信・対面では「公開してよい状態だけ手札とは別に置く」「組み換え途中の束」などに使えます。
-                ライブ計算・解決の統計には<strong>含まれません</strong>。Undo の対象にはなるので、試行錯誤の置き場としても使えます。
+                プレビュー上のライブは<strong>成功確率（必要ハート集計）</strong>の試算には含まれますが、ライブ開始後の詳細統計など公式ゾーン向けパネルの前提とは<strong>異なります</strong>。Undo の対象にはなるので、試行錯誤の置き場としても使えます。
               </p>
               <div
                 id="zone-preview"
@@ -1063,11 +1074,7 @@ python3 -m http.server 8080</pre>
 
           <section class="zone-block play-tools-block">
             <div class="deck-tools-split">
-              <details class="deck-tools-pick-fold play-deck-search-fold">
-                <summary class="deck-tools-pick-fold__summary">
-                  検索・絞り込み <span class="muted deck-tools-pick-fold__hint">（開閉）</span>
-                </summary>
-                <div class="deck-tools-split__pick">
+              <div class="deck-tools-split__pick deck-tools-split__pick--solo-always-visible">
                 <div class="deck-pick-block">
                   <div class="deck-pick-head-row">
                     <h4 class="deck-pick-odds-section-title">指定カード検索</h4>
@@ -1082,8 +1089,7 @@ python3 -m http.server 8080</pre>
                     <button type="button" class="btn sm secondary" id="btn-deck-pick-clear">選択をクリア</button>
                   </div>
                 </div>
-                </div>
-              </details>
+              </div>
               <div class="deck-tools-split__odds">
                 <div id="deck-remain-bh-panel" class="deck-remain-bh-panel" aria-live="polite">
                   <h4 class="deck-pick-odds-section-title">デッキの残色</h4>
