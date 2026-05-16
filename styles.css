@@ -123,6 +123,20 @@ body::before {
   border: 1px solid rgba(255, 160, 200, 0.28);
   font-size: 0.78rem;
 }
+.cloud-auth-bar--search-top {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+  margin: 0 0 0.45rem 0;
+  padding: 0.32rem 0.55rem;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 0.45rem;
+  box-sizing: border-box;
+}
+.cloud-auth-bar--search-top .cloud-auth-bar__status {
+  margin-right: auto;
+}
 .cloud-auth-bar__avatar {
   width: 22px;
   height: 22px;
@@ -444,6 +458,12 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
 }
 #view-deck .deck-panel-sticky-head .deck-count-line {
   margin-bottom: 0;
+}
+#view-deck .deck-panel-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.45rem;
+  margin: 0.3rem 0 0;
 }
 .btn-start-game-sticky {
   position: static;
@@ -859,6 +879,160 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
   gap: 0.32rem;
 }
 .sample-recipe-actions .btn {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* 登録デッキタイル一覧（カード一覧の下に並ぶサンプルと同じ縦スタック内） */
+#view-deck .deck-library-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.45rem 0.45rem 0.55rem;
+  border: 1px solid rgba(140, 200, 255, 0.22);
+  border-radius: 12px;
+  background: rgba(8, 12, 22, 0.45);
+  overflow: auto;
+  min-height: 160px;
+}
+#view-deck:not(.view-deck--deck-registration-open) .deck-library-scroll[hidden] {
+  display: none !important;
+  flex: 0 0 0 !important;
+}
+#view-deck.view-deck--deck-registration-open .card-panel-body-stack .deck-library-scroll {
+  flex: 1 1 40%;
+  min-height: min(200px, 36vh);
+  max-height: min(calc(100vh - 8rem), 60vh, 700px);
+}
+.deck-library-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+.deck-library-head__title {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: rgba(220, 240, 255, 0.96);
+}
+.deck-library-head__hint {
+  margin: 0;
+  font-size: 0.7rem;
+}
+.deck-library-empty {
+  margin: 0.45rem 0;
+  font-size: 0.78rem;
+}
+.deck-library-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.6rem 0.55rem;
+  align-content: start;
+}
+.deck-library-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.38rem;
+  min-width: 0;
+  padding: 0.42rem 0.4rem 0.48rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(140, 200, 255, 0.22);
+  background: rgba(4, 2, 12, 0.4);
+  position: relative;
+}
+.deck-library-tile.is-active {
+  border-color: rgba(255, 200, 100, 0.65);
+  box-shadow: 0 0 0 1px rgba(255, 200, 100, 0.45);
+}
+.deck-library-tile-thumb-btn {
+  display: block;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.25);
+  cursor: zoom-in;
+  overflow: hidden;
+  line-height: 0;
+  box-shadow: 0 0 0 1px rgba(140, 200, 255, 0.22);
+  transition:
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+  position: relative;
+}
+.deck-library-tile-thumb-btn:hover {
+  box-shadow: 0 0 0 2px rgba(140, 200, 255, 0.55), 0 6px 22px rgba(0, 0, 0, 0.35);
+  transform: translateY(-1px);
+}
+.deck-library-tile-thumb-btn:focus-visible {
+  outline: 2px solid rgba(140, 200, 255, 0.85);
+  outline-offset: 2px;
+}
+.deck-library-tile-thumb-btn .deck-builder-card-thumb,
+.deck-library-tile-thumb-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  aspect-ratio: 88 / 126;
+  object-fit: cover;
+}
+.deck-library-tile-thumb-fallback {
+  aspect-ratio: 88 / 126;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 900;
+  color: rgba(220, 240, 255, 0.35);
+  background: rgba(20, 12, 28, 0.6);
+}
+.deck-library-tile-active-flag {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  padding: 0.1rem 0.34rem;
+  border-radius: 999px;
+  background: rgba(255, 180, 60, 0.92);
+  color: rgba(28, 18, 6, 0.95);
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+}
+.deck-library-tile-name {
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.35;
+  color: rgba(220, 240, 255, 0.96);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.deck-library-tile-name-tag {
+  display: inline-block;
+  margin-left: 0.25rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 0.08rem 0.36rem;
+  border-radius: 999px;
+  background: rgba(120, 200, 255, 0.18);
+  color: rgba(220, 240, 255, 0.95);
+  border: 1px solid rgba(120, 200, 255, 0.4);
+  vertical-align: middle;
+}
+.deck-library-tile-counts {
+  margin: 0;
+  font-size: 0.66rem;
+  line-height: 1.35;
+}
+.deck-library-tile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.32rem;
+}
+.deck-library-tile-actions .btn {
   flex: 1 1 auto;
   min-width: 0;
 }
@@ -2768,6 +2942,10 @@ body.play-mode.stage-member-emphasis .stage-slot.card-strip .card-img {
 }
 body.play-mode.stage-member-emphasis .stage-slot.card-strip .card-img.rotated {
   width: calc(var(--loveca-play-w) * 1.26);
+}
+/* メンバー拡大時はエネの「のぞき」分を畳んで、ステージカードがスロット中央に揃うようにする */
+body.play-mode.stage-member-emphasis .stage-slot .card-item[data-type="エネルギー"] {
+  margin-right: calc(var(--loveca-play-w) * -1);
 }
 /* メンバー拡大時：W／A／+H/B のチップ列もカードサイズに合わせて拡大 */
 body.play-mode.stage-member-emphasis .stage-slot.card-strip .card-stance-bar,
@@ -4758,6 +4936,83 @@ body.play-mode .deck-pile {
   gap: 0.35rem;
   align-items: center;
 }
+.card-panel-mode-row__divider {
+  display: inline-block;
+  width: 1px;
+  height: 1.4rem;
+  margin: 0 0.55rem 0 0.25rem;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 200, 230, 0) 0%,
+    rgba(255, 200, 230, 0.45) 30%,
+    rgba(255, 200, 230, 0.45) 70%,
+    rgba(255, 200, 230, 0) 100%
+  );
+}
+
+/* モード切替ボタン: カテゴリで色を分ける（押下中は内部 JS で .primary／非押下時は .secondary が付く） */
+.card-panel-mode-btn {
+  position: relative;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+.card-panel-mode-btn--catalog {
+  margin-right: 0.2rem;
+  --mode-btn-base: rgba(255, 255, 255, 0.06);
+  --mode-btn-base-text: rgba(245, 250, 255, 0.96);
+  --mode-btn-active-bg: linear-gradient(135deg, #f8fafc 0%, #cbd5e1 100%);
+  --mode-btn-active-text: #0f172a;
+  --mode-btn-active-border: rgba(255, 255, 255, 0.75);
+  --mode-btn-active-shadow: 0 0 18px rgba(241, 245, 249, 0.35);
+}
+.card-panel-mode-btn--current {
+  --mode-btn-base: rgba(255, 110, 170, 0.16);
+  --mode-btn-base-text: rgba(255, 220, 235, 0.96);
+  --mode-btn-active-bg: linear-gradient(135deg, #ff5da3 0%, #b8326a 100%);
+  --mode-btn-active-text: #1a0a14;
+  --mode-btn-active-border: rgba(255, 170, 205, 0.85);
+  --mode-btn-active-shadow: 0 0 18px rgba(255, 95, 160, 0.5);
+}
+.card-panel-mode-btn--samples {
+  --mode-btn-base: rgba(120, 200, 255, 0.14);
+  --mode-btn-base-text: rgba(220, 240, 255, 0.96);
+  --mode-btn-active-bg: linear-gradient(135deg, #4fa8ff 0%, #1f6bcc 100%);
+  --mode-btn-active-text: #0c1730;
+  --mode-btn-active-border: rgba(140, 200, 255, 0.85);
+  --mode-btn-active-shadow: 0 0 18px rgba(80, 170, 255, 0.5);
+}
+.card-panel-mode-btn--library {
+  --mode-btn-base: rgba(255, 195, 90, 0.18);
+  --mode-btn-base-text: rgba(255, 235, 200, 0.96);
+  --mode-btn-active-bg: linear-gradient(135deg, #ffc94d 0%, #cf8a18 100%);
+  --mode-btn-active-text: #2b1a08;
+  --mode-btn-active-border: rgba(255, 215, 130, 0.9);
+  --mode-btn-active-shadow: 0 0 18px rgba(255, 195, 90, 0.55);
+}
+/* 非押下（.secondary） */
+.card-panel-mode-btn.secondary {
+  background: var(--mode-btn-base);
+  color: var(--mode-btn-base-text);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+.card-panel-mode-btn.secondary:hover {
+  filter: brightness(1.12);
+}
+/* 押下（.primary） */
+.card-panel-mode-btn.primary {
+  background: var(--mode-btn-active-bg);
+  color: var(--mode-btn-active-text);
+  border: 1px solid var(--mode-btn-active-border);
+  box-shadow: var(--mode-btn-active-shadow);
+  text-shadow: none;
+}
+.card-panel-mode-btn.primary:hover {
+  filter: brightness(1.06);
+}
+.card-panel-mode-btn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.75);
+  outline-offset: 2px;
+}
 .panel-lead {
   margin: 0 0 0.65rem;
   font-size: 0.78rem;
@@ -5415,22 +5670,121 @@ dialog.app-dialog:not([open]) {
   word-break: break-word;
 }
 
-/* 効果テキスト内: 横長ラベル系アイコンを読みやすく拡大 */
+/* loveca-data-1 のハート／ALL／スコアアイコン共通スタイル
+   桃赤黄緑青紫ALL／スコア の文字記述をすべてここの PNG で置き換える。 */
+.heart-slot-art-ico {
+  display: inline-block;
+  vertical-align: -0.22em;
+  width: auto;
+  height: 1.25em;
+  margin: 0 0.08em;
+  pointer-events: none;
+  user-select: none;
+  flex-shrink: 0;
+}
+.heart-slot-art-ico--score {
+  filter: drop-shadow(0 0 4px rgba(170, 90, 255, 0.45));
+}
+.heart-slot-art-ico--draw-yell {
+  filter: drop-shadow(0 0 3px rgba(255, 130, 200, 0.35));
+}
+.heart-slot-art-ico--slot7 {
+  filter: drop-shadow(0 0 3px rgba(255, 200, 240, 0.35));
+}
+/* デッキ／控え 残色ピル内アイコン */
+.deck-remain-bh-pill__art-ico {
+  height: 1.15em;
+  margin: 0 0.05em;
+  vertical-align: -0.2em;
+}
+/* デッキピーク BH ピル内アイコン */
+.deck-peek-bh-pill-art-ico {
+  height: 1.35em;
+  margin: 0 0.08em;
+}
+/* スクリーンリーダ用の不可視テキスト */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+/* ハート内訳（ライブ計算等）の HTML 行 */
+.heart-slot-breakdown-row {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem 0.45rem;
+  vertical-align: middle;
+}
+.heart-slot-breakdown-row--empty {
+  color: var(--muted);
+}
+.heart-slot-breakdown-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.12rem;
+  padding: 0.08rem 0.34rem;
+  border-radius: 8px;
+  background: rgba(255, 220, 235, 0.06);
+  border: 1px solid rgba(255, 220, 235, 0.18);
+  font-weight: 700;
+  font-size: 0.85em;
+  line-height: 1.2;
+}
+.heart-slot-breakdown-item--deficit {
+  background: rgba(255, 90, 90, 0.13);
+  border-color: rgba(255, 90, 90, 0.45);
+}
+.heart-slot-breakdown-item--other,
+.heart-slot-breakdown-item--other-need {
+  background: rgba(180, 180, 200, 0.1);
+  border-color: rgba(180, 180, 200, 0.32);
+}
+.heart-slot-breakdown-num {
+  font-weight: 800;
+}
+.heart-slot-breakdown-num-label {
+  font-size: 0.88em;
+  font-weight: 700;
+  margin-right: 0.05em;
+  opacity: 0.85;
+}
+.live-stats-heart-line {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem 0.35rem;
+}
+.live-stats-heart-line--empty {
+  color: var(--muted);
+}
+.live-stats-required-colors--met {
+  color: #7cf0a8;
+  font-weight: 800;
+}
+
+/* 効果テキスト内: 横長ラベル系アイコン（登場/ライブ開始時/自動/常時/起動 等）を控えめサイズに */
 .dlg-card-catalog-ability .status-inline-game-icon--pill,
 .dlg-card-catalog-ability img.status-inline-game-icon--pill {
   height: auto !important;
   width: auto !important;
-  max-width: min(100%, 13rem);
-  min-height: 1.85rem;
-  max-height: 2.95rem;
-  vertical-align: middle;
-  margin: 0.1em 0.06em;
+  max-width: min(100%, 7.5rem);
+  min-height: 1.05rem;
+  max-height: 1.55rem;
+  vertical-align: -0.22em;
+  margin: 0.04em 0.04em;
 }
 
 .dlg-card-catalog-ability .status-inline-game-icon--pill svg {
   width: auto;
-  height: 2rem;
-  max-width: min(100%, 13rem);
+  height: 1.15rem;
+  max-width: min(100%, 7.5rem);
   display: block;
 }
 
@@ -5502,6 +5856,45 @@ dialog.app-dialog:not([open]) {
   width: 100%;
   height: 100%;
   display: block;
+}
+
+.dlg-card-catalog-special-heart-row {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.32rem 0.45rem;
+  align-items: center;
+}
+.dlg-card-catalog-special-heart-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.18rem 0.5rem 0.18rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.1;
+  background: rgba(255, 150, 200, 0.12);
+  border: 1px solid rgba(255, 150, 200, 0.35);
+  color: rgba(255, 235, 250, 0.96);
+  white-space: nowrap;
+}
+.dlg-card-catalog-special-heart-pill--draw-yell {
+  background: rgba(120, 200, 255, 0.14);
+  border-color: rgba(120, 200, 255, 0.42);
+}
+.dlg-card-catalog-special-heart-pill--note-live {
+  background: rgba(255, 180, 100, 0.14);
+  border-color: rgba(255, 180, 100, 0.45);
+}
+.dlg-card-catalog-special-heart-pill .dlg-card-catalog-badge-img {
+  height: 1.1rem;
+  width: 1.1rem;
+  max-height: 1.1rem;
+  max-width: 1.1rem;
+  margin: 0;
+}
+.dlg-card-catalog-special-heart-pill__label {
+  display: inline-block;
 }
 
 @media (max-width: 900px) {
@@ -6419,6 +6812,130 @@ kbd {
 .deck-peek-chart-section {
   margin-bottom: 0;
   flex-shrink: 0;
+}
+
+/* デッキ確認ダイアログ: 左下の空きスペースに置く「カードのステータス欄」インライン表示 */
+.deck-peek-inline-status {
+  margin-top: 0.55rem;
+  border: 1px solid rgba(255, 180, 220, 0.22);
+  border-radius: 12px;
+  background: linear-gradient(155deg, rgba(60, 30, 64, 0.55), rgba(28, 14, 32, 0.65));
+  padding: 0.55rem 0.7rem 0.65rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.deck-peek-inline-status[hidden] {
+  display: none;
+}
+.deck-peek-inline-status__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.deck-peek-inline-status__title {
+  margin: 0;
+  font-size: 0.95rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.deck-peek-inline-status__close {
+  flex-shrink: 0;
+}
+.deck-peek-inline-status__subtitle {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.01em;
+}
+.deck-peek-inline-status__shell {
+  display: grid;
+  grid-template-columns: minmax(86px, 110px) minmax(0, 1fr);
+  gap: 0.55rem;
+  align-items: start;
+}
+.deck-peek-inline-status__thumb-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  align-items: center;
+}
+.deck-peek-inline-status__img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 170, 210, 0.2);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
+}
+.deck-peek-inline-status__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  justify-content: center;
+}
+.deck-peek-inline-status__main-col {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.deck-peek-inline-status__body .dlg-card-catalog-dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.18rem 0.55rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+.deck-peek-inline-status__body .dlg-card-catalog-row {
+  display: contents;
+}
+.deck-peek-inline-status__body dt {
+  color: var(--muted);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.deck-peek-inline-status__body dd {
+  margin: 0;
+  color: var(--text);
+}
+.deck-peek-inline-status__effect .dlg-card-catalog-ability-heading {
+  margin: 0 0 0.2rem;
+  font-size: 0.78rem;
+  color: #ffcde0;
+  letter-spacing: 0.02em;
+}
+.deck-peek-inline-status__effect .dlg-card-catalog-ability {
+  font-size: 0.78rem;
+  line-height: 1.55;
+  background: rgba(20, 6, 25, 0.45);
+  border: 1px solid rgba(255, 180, 220, 0.14);
+  border-radius: 8px;
+  padding: 0.45rem 0.55rem;
+  max-height: 26vh;
+  overflow-y: auto;
+}
+.deck-peek-inline-status__hint {
+  margin: 0;
+  font-size: 0.66rem;
+  color: rgba(255, 220, 235, 0.55);
+}
+@media (max-width: 720px) {
+  .deck-peek-inline-status__shell {
+    grid-template-columns: minmax(70px, 90px) minmax(0, 1fr);
+  }
+  .deck-peek-inline-status__body .dlg-card-catalog-dl {
+    grid-template-columns: 1fr;
+    gap: 0.05rem 0;
+  }
+  .deck-peek-inline-status__body dt {
+    margin-top: 0.2rem;
+  }
 }
 .deck-peek-chart-empty {
   margin: 0.2rem 0 0;

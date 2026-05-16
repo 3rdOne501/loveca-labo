@@ -95,16 +95,16 @@ python3 -m http.server 8080</pre>
     <div id="view-deck" class="view">
       <header class="app-header">
         <h1>Loveca Labo</h1>
-        <div id="cloud-auth-bar" class="cloud-auth-bar" hidden>
-          <span id="cloud-auth-status" class="cloud-auth-bar__status muted">未ログイン</span>
-          <img id="cloud-auth-avatar" class="cloud-auth-bar__avatar" alt="" hidden />
-          <button type="button" id="cloud-auth-signin" class="btn sm secondary cloud-auth-bar__signin">Google でログイン</button>
-          <button type="button" id="cloud-auth-signout" class="btn sm secondary cloud-auth-bar__signout" hidden>ログアウト</button>
-        </div>
       </header>
 
       <div class="builder">
         <aside class="search-panel">
+          <div id="cloud-auth-bar" class="cloud-auth-bar cloud-auth-bar--search-top" hidden>
+            <span id="cloud-auth-status" class="cloud-auth-bar__status muted">未ログイン</span>
+            <img id="cloud-auth-avatar" class="cloud-auth-bar__avatar" alt="" hidden />
+            <button type="button" id="cloud-auth-signin" class="btn sm secondary cloud-auth-bar__signin">Google でログイン</button>
+            <button type="button" id="cloud-auth-signout" class="btn sm secondary cloud-auth-bar__signout" hidden>ログアウト</button>
+          </div>
           <div class="search-panel-tools">
             <h2 class="panel-h2-plain">検索・絞り込み</h2>
             <div class="search-quick-tools">
@@ -205,7 +205,6 @@ python3 -m http.server 8080</pre>
         <section class="card-panel">
           <div class="panel-title-row">
             <h2 id="card-panel-heading">カード一覧</h2>
-            <span class="hit-badge" id="card-hit-count"></span>
             <label class="field card-panel-search-field">
               <span class="sr-only">カード名・能力</span>
               <input
@@ -218,13 +217,38 @@ python3 -m http.server 8080</pre>
               />
             </label>
             <div class="card-panel-mode-row">
-              <button type="button" class="btn sm secondary" id="btn-card-panel-samples" aria-pressed="false">
-                サンプルリスト
-              </button>
-              <button type="button" class="btn sm primary" id="btn-card-panel-catalog" aria-pressed="true">
+              <button
+                type="button"
+                class="btn sm card-panel-mode-btn card-panel-mode-btn--catalog"
+                id="btn-card-panel-catalog"
+                aria-pressed="true"
+              >
                 カード一覧
               </button>
-              <button type="button" class="btn sm secondary" id="btn-card-panel-deck" aria-pressed="false">
+              <span class="card-panel-mode-row__divider" aria-hidden="true"></span>
+              <button
+                type="button"
+                class="btn sm card-panel-mode-btn card-panel-mode-btn--current"
+                id="btn-card-panel-current-deck"
+                aria-pressed="false"
+                title="編集中のメインデッキだけを一覧表示・役割編集・統計"
+              >
+                現在のデッキ
+              </button>
+              <button
+                type="button"
+                class="btn sm card-panel-mode-btn card-panel-mode-btn--samples"
+                id="btn-card-panel-samples"
+                aria-pressed="false"
+              >
+                サンプルリスト
+              </button>
+              <button
+                type="button"
+                class="btn sm card-panel-mode-btn card-panel-mode-btn--library"
+                id="btn-card-panel-deck"
+                aria-pressed="false"
+              >
                 登録デッキ
               </button>
             </div>
@@ -238,6 +262,16 @@ python3 -m http.server 8080</pre>
             </div>
             <div id="sample-recipes-scroll" class="sample-recipes-scroll" hidden>
               <div id="sample-recipes-grid" class="sample-recipes-grid" role="list"></div>
+            </div>
+            <div id="deck-library-scroll" class="deck-library-scroll" hidden>
+              <div class="deck-library-head">
+                <h3 class="deck-library-head__title">登録デッキ</h3>
+                <p class="deck-library-head__hint muted">タイルから読み込み・確認・ソロプレイができます。</p>
+              </div>
+              <div id="deck-library-grid" class="deck-library-grid" role="list"></div>
+              <p id="deck-library-empty" class="deck-library-empty muted" hidden>
+                保存されたデッキはまだありません。右パネル「保存デッキの読み込み・保存」で「新規で保存」してください。
+              </p>
             </div>
           </div>
         </section>
@@ -257,6 +291,16 @@ python3 -m http.server 8080</pre>
               · ライブ <strong id="deck-count-live">0</strong>
               · 合計 <strong id="deck-count-total">0</strong>
             </p>
+            <div class="deck-panel-head-actions">
+              <button
+                type="button"
+                class="btn sm secondary"
+                id="btn-deck-registered-peek"
+                title="編集中のメインデッキの内訳・BH・コスト分布を確認"
+              >
+                現在のデッキを見る
+              </button>
+            </div>
           </div>
 
           <details class="deck-panel-section" id="deck-section-preset">
@@ -1444,6 +1488,30 @@ python3 -m http.server 8080</pre>
               <h3 class="deck-peek-section-h">メンバー コスト別（BH ありも含む）</h3>
               <div id="deck-peek-chart" class="deck-peek-chart" role="img" aria-label="メンバーBHありを含むコスト別枚数の棒グラフ"></div>
               <p id="deck-peek-chart-empty" class="deck-peek-chart-empty muted" hidden>このデッキに該当メンバーはありません。</p>
+            </div>
+            <div id="deck-peek-inline-status" class="deck-peek-inline-status" hidden>
+              <div class="deck-peek-inline-status__head">
+                <h3 id="deck-peek-inline-status-title" class="deck-peek-section-h deck-peek-inline-status__title">カード情報</h3>
+                <button
+                  type="button"
+                  class="btn sm secondary deck-peek-inline-status__close"
+                  id="deck-peek-inline-status-close"
+                  aria-label="このカード情報を閉じる"
+                  title="このカード情報を閉じる"
+                >閉じる</button>
+              </div>
+              <p id="deck-peek-inline-status-subtitle" class="muted deck-peek-inline-status__subtitle"></p>
+              <div class="deck-peek-inline-status__shell">
+                <div class="deck-peek-inline-status__thumb-col">
+                  <img id="deck-peek-inline-status-img" class="deck-peek-inline-status__img" alt="" decoding="async" hidden />
+                  <div id="deck-peek-inline-status-badge" class="deck-peek-inline-status__badges"></div>
+                </div>
+                <div class="deck-peek-inline-status__main-col">
+                  <div id="deck-peek-inline-status-body" class="deck-peek-inline-status__body"></div>
+                  <div id="deck-peek-inline-status-effect" class="deck-peek-inline-status__effect"></div>
+                </div>
+              </div>
+              <p class="deck-peek-inline-status__hint muted">カード一覧から別のカードをクリックすると、ここの内容が切り替わります。</p>
             </div>
           </div>
           <div class="deck-peek-col deck-peek-col-list">

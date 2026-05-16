@@ -5,6 +5,65 @@
  */
 
 import { T_LIVE } from "./config.js";
+import { GAME_STATUS_ICON_ART_DIR, resolveGameStatusBundledHref, escapeAttrHtml } from "./gameStatusIcons.js";
+
+/**
+ * loveca-data-1 内の対応するハート／ALL／スコアアイコン PNG の `<img>` HTML。
+ *
+ *   slot = 0   → heart_00.png（汎用ハート）
+ *   slot = 1〜6 → heart_01.png〜heart_06.png（桃／赤／黄／緑／青／紫）
+ *   slot = 7   → icon_all.png（ALL）
+ *   opts.score: true → icon_score.png（スコア）
+ *   opts.draw_yell: true → icon_draw.png（ドローエール）
+ *   opts.blade: true → icon_blade.png（ブレードハート）
+ *
+ * @param {number} slot
+ * @param {{score?:boolean, draw_yell?:boolean, blade?:boolean, extraClass?:string}} [opts]
+ */
+export function heartSlotArtIconHtml(slot, opts) {
+  opts = opts || {};
+  var file = null;
+  var alt = "";
+  var slotCls = "";
+  if (opts.score) {
+    file = "icon_score.png";
+    alt = "スコア";
+    slotCls = "heart-slot-art-ico--score";
+  } else if (opts.draw_yell) {
+    file = "icon_draw.png";
+    alt = "ドローエール";
+    slotCls = "heart-slot-art-ico--draw-yell";
+  } else if (opts.blade) {
+    file = "icon_blade.png";
+    alt = "ブレードハート";
+    slotCls = "heart-slot-art-ico--blade";
+  } else if (slot === 0) {
+    file = "heart_00.png";
+    alt = "汎用ハート";
+    slotCls = "heart-slot-art-ico--slot0";
+  } else if (slot === 7) {
+    file = "icon_all.png";
+    alt = "ALL";
+    slotCls = "heart-slot-art-ico--slot7";
+  } else if (typeof slot === "number" && slot >= 1 && slot <= 6) {
+    file = "heart_0" + slot + ".png";
+    alt = (SLOT[slot] && SLOT[slot].name) || "ハート";
+    slotCls = "heart-slot-art-ico--slot" + slot;
+  } else {
+    return "";
+  }
+  var cls = "heart-slot-art-ico " + slotCls;
+  if (opts.extraClass && typeof opts.extraClass === "string") {
+    cls += " " + opts.extraClass.trim().split(/\s+/).filter(function (t) { return /^[\w-]+$/.test(t); }).join(" ");
+  }
+  var href = resolveGameStatusBundledHref(GAME_STATUS_ICON_ART_DIR + file);
+  return (
+    '<img src="' + escapeAttrHtml(href) + '"' +
+    ' alt="' + escapeAttrHtml(alt) + '"' +
+    ' class="' + escapeAttrHtml(cls) + '"' +
+    ' draggable="false" loading="lazy" decoding="async" />'
+  );
+}
 
 /** メンバー・ライブ共通: DB に blade_heart オブジェクトがあり 1 キー以上あれば BH あり */
 export function cardHasBladeHeart(card) {
@@ -146,6 +205,34 @@ export function formatBladeHeartSlotBreakdown(accum) {
   }
   if (accum[99] && accum[99] > 0) parts.push("その他 " + accum[99]);
   return parts.length ? parts.join("／") : "—";
+}
+
+/**
+ * `formatBladeHeartSlotBreakdown` と同じ並び順だが、各色見出しを loveca-data-1 の PNG アイコンに置換した HTML。
+ * @param {Record<number, number>} accum
+ */
+export function formatBladeHeartSlotBreakdownHtml(accum) {
+  const parts = [];
+  for (let s = 1; s <= 7; s++) {
+    const v = accum[s];
+    if (v && v > 0) {
+      parts.push(
+        '<span class="heart-slot-breakdown-item heart-slot-breakdown-item--s' + s + '">' +
+        heartSlotArtIconHtml(s) +
+        '<span class="heart-slot-breakdown-num">' + v + '</span></span>',
+      );
+    }
+  }
+  if (accum[99] && accum[99] > 0) {
+    parts.push(
+      '<span class="heart-slot-breakdown-item heart-slot-breakdown-item--other">' +
+      '<span class="heart-slot-breakdown-num-label">その他</span>' +
+      '<span class="heart-slot-breakdown-num">' + accum[99] + '</span></span>',
+    );
+  }
+  return parts.length
+    ? '<span class="heart-slot-breakdown-row">' + parts.join('') + '</span>'
+    : '<span class="heart-slot-breakdown-row heart-slot-breakdown-row--empty">—</span>';
 }
 export function compareBladeHeartDbKeys(a, b) {
   const sa = parseBladeHeartSlotFromKey(a);
@@ -379,6 +466,42 @@ export function formatHeartSlotAccumBreakdown(accum) {
   return parts.length ? parts.join("／") : "—";
 }
 
+/**
+ * `formatHeartSlotAccumBreakdown` と同じ並びだが、見出しを loveca-data-1 アイコンに置換した HTML。
+ * @param {Record<number, number>} accum
+ */
+export function formatHeartSlotAccumBreakdownHtml(accum) {
+  const parts = [];
+  for (let s = 1; s <= 6; s++) {
+    const v = accum[s];
+    if (v && v > 0) {
+      parts.push(
+        '<span class="heart-slot-breakdown-item heart-slot-breakdown-item--s' + s + '">' +
+        heartSlotArtIconHtml(s) +
+        '<span class="heart-slot-breakdown-num">' + v + '</span></span>',
+      );
+    }
+  }
+  const v7 = accum[7];
+  if (v7 && v7 > 0) {
+    parts.push(
+      '<span class="heart-slot-breakdown-item heart-slot-breakdown-item--s7">' +
+      heartSlotArtIconHtml(7) +
+      '<span class="heart-slot-breakdown-num">' + v7 + '</span></span>',
+    );
+  }
+  if (accum[99] && accum[99] > 0) {
+    parts.push(
+      '<span class="heart-slot-breakdown-item heart-slot-breakdown-item--other">' +
+      '<span class="heart-slot-breakdown-num-label">その他</span>' +
+      '<span class="heart-slot-breakdown-num">' + accum[99] + '</span></span>',
+    );
+  }
+  return parts.length
+    ? '<span class="heart-slot-breakdown-row">' + parts.join('') + '</span>'
+    : '<span class="heart-slot-breakdown-row heart-slot-breakdown-row--empty">—</span>';
+}
+
 function svgHeartSolid(fill, className) {
   return (
     '<svg xmlns="http://www.w3.org/2000/svg" class="' +
@@ -440,26 +563,30 @@ export function bladeHeartAggregatePillHtml(dbKey, quantity, additiveQty) {
   const addP = typeof additiveQty === "number" && Number.isFinite(additiveQty) ? Math.max(0, additiveQty) : 0;
   const slot = parseBladeHeartSlotFromKey(dbKey);
   const slotClass = slot != null ? "bh-slot-" + slot : "bh-slot-unknown";
-  const label = slot != null ? SLOT[slot].name : escapeHtml(String(dbKey));
+  const labelText = slot != null ? SLOT[slot].name : escapeHtml(String(dbKey));
   let title = escapeAttr(dbKey + "／BH計 " + quantity);
   if (addP > 0) {
     if (addP >= quantity) title = escapeAttr(dbKey + "／BH計 " + quantity + "（♪＝ライブのBH）");
     else title = escapeAttr(dbKey + "／BH計 " + quantity + "（♪ライブ由来 " + addP + "）");
   }
-  const iconWrap = wrapHeartGlyphWithNote(
-    svgForBladeHeartKey(dbKey, "blade-heart-svg"),
-    addP > 0,
-  );
+  /* 旧 SVG ハートではなく loveca-data-1 の PNG をピル本体に使用する。♪ 添字は note check で別途付与。 */
+  let iconHtml = "";
+  if (slot != null && slot >= 1 && slot <= 7) {
+    iconHtml = heartSlotArtIconHtml(slot, { extraClass: "deck-peek-bh-pill-art-ico" });
+  } else {
+    iconHtml = svgForBladeHeartKey(dbKey, "blade-heart-svg");
+  }
+  const iconWrap = wrapHeartGlyphWithNote(iconHtml, addP > 0);
   return (
-    '<span class="deck-peek-bh-color-pill ' +
+    '<span class="deck-peek-bh-color-pill deck-peek-bh-color-pill--art ' +
     slotClass +
     "\" title=\"" +
     title +
     '"><span class="blade-heart-pill-icon">' +
     iconWrap +
     "</span>" +
-    '<span class="deck-peek-bh-kanji">' +
-    label +
+    '<span class="deck-peek-bh-kanji visually-hidden">' +
+    labelText +
     '</span><span class="deck-peek-bh-pill-qty">× ' +
     quantity +
     "</span></span>"

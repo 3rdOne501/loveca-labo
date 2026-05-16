@@ -45,7 +45,10 @@ import {
   cardHasBladeHeart,
   evaluateNeedHeartFulfillment,
   formatBladeHeartSlotBreakdown,
+  formatBladeHeartSlotBreakdownHtml,
   formatHeartSlotAccumBreakdown,
+  formatHeartSlotAccumBreakdownHtml,
+  heartSlotArtIconHtml,
   listAllNeedHeartDeficitsSequential,
   parseBladeHeartSlotFromKey,
   parseHeartColorSlotFromKey,
@@ -1573,6 +1576,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       if (!state.deck.length) break;
       var card = state.deck.shift();
       markCardFlashDraw(card, FLASH_LABEL_DRAW_YELL_PLUS_ONE);
+      /* 「デッキ上に戻す」「戻してシャッフル」操作で、ドローエール由来の手札カードも併せて戻せるようにする目印 */
+      if (card && typeof card === "object") card._fromDrawYellHand = true;
       state.hand.push(card);
       drew++;
     }
@@ -1712,6 +1717,9 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     var flushed = state.resolutionArea.slice();
     state.resolutionArea.length = 0;
     state.waitingRoom.push.apply(state.waitingRoom, flushed);
+    /* 別経路で解決を片付けたら、ドローエール由来の手札マーカーも掃除（残ると次回 戻す で誤回収される） */
+    state.pendingDrawYellHandDraws = 0;
+    clearAllDrawYellHandMarkers();
     showToast("ライブを移動したため、解決の " + flushed.length + " 枚を控え室へ送りました");
     logReplay("resolution-flush-with-verdict-live-move", { count: flushed.length, toZone: tid });
   }
@@ -2224,6 +2232,36 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (accum[0] && accum[0] > 0) parts.push("任意 " + accum[0]);
     if (accum[99] && accum[99] > 0) parts.push("その他キー必要 " + accum[99]);
     return parts.length ? parts.join(" ・ ") : "—";
+  }
+
+  /**
+   * `formatLiveNeedHeartLine` の HTML 版。色見出しを loveca-data-1 のアイコン PNG で表現する。
+   */
+  function formatLiveNeedHeartLineHtml(accum) {
+    var hasColors = false;
+    for (var s = 1; s <= 7; s++) {
+      if (accum[s] && accum[s] > 0) { hasColors = true; break; }
+    }
+    if (accum[99] && accum[99] > 0) hasColors = true;
+    var bits = [];
+    if (hasColors) bits.push(formatHeartSlotAccumBreakdownHtml(accum));
+    if (accum[0] && accum[0] > 0) {
+      bits.push(
+        '<span class="heart-slot-breakdown-item heart-slot-breakdown-item--any">' +
+        heartSlotArtIconHtml(0) +
+        '<span class="heart-slot-breakdown-num">' + accum[0] + '</span></span>',
+      );
+    }
+    if (accum[99] && accum[99] > 0) {
+      bits.push(
+        '<span class="heart-slot-breakdown-item heart-slot-breakdown-item--other-need">' +
+        '<span class="heart-slot-breakdown-num-label">その他キー必要</span>' +
+        '<span class="heart-slot-breakdown-num">' + accum[99] + '</span></span>',
+      );
+    }
+    return bits.length
+      ? '<span class="live-stats-heart-line">' + bits.join('<span class="live-stats-heart-sep"> ・ </span>') + '</span>'
+      : '<span class="live-stats-heart-line live-stats-heart-line--empty">—</span>';
   }
 
   function formatLiveEvalFailShort(ev) {
@@ -3274,6 +3312,43 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     return parts.length ? parts.join(" · ") : "達成";
   }
 
+  /**
+   * `formatStageHeartMinusNeedRemainderLine` の HTML 版。色ラベルを loveca-data-1 のアイコンで描画する。
+   */
+  function formatStageHeartMinusNeedRemainderLineHtml(stageHAcc, needAccum) {
+    if (!needAccum || sumSlotAccumValues(needAccum) <= 0) return '<span class="live-stats-heart-line live-stats-heart-line--empty">—</span>';
+    var stAcc = stageHAcc || {};
+    var items = [];
+    for (var s = 1; s <= 6; s++) {
+      var nd = needAccum[s] || 0;
+      if (nd <= 0) continue;
+      var st = stAcc[s] || 0;
+      var rem = st - nd;
+      if (rem >= 0) continue;
+      items.push(
+        '<span class="heart-slot-breakdown-item heart-slot-breakdown-item--deficit heart-slot-breakdown-item--s' + s + '">' +
+        heartSlotArtIconHtml(s) +
+        '<span class="heart-slot-breakdown-num-label">不足</span>' +
+        '<span class="heart-slot-breakdown-num">' + Math.abs(rem) + '</span></span>',
+      );
+    }
+    var nd99 = needAccum[99] || 0;
+    if (nd99 > 0) {
+      var st99 = stAcc[99] || 0;
+      var rem99 = st99 - nd99;
+      if (rem99 < 0) {
+        items.push(
+          '<span class="heart-slot-breakdown-item heart-slot-breakdown-item--deficit heart-slot-breakdown-item--other">' +
+          '<span class="heart-slot-breakdown-num-label">その他キー 不足</span>' +
+          '<span class="heart-slot-breakdown-num">' + Math.abs(rem99) + '</span></span>',
+        );
+      }
+    }
+    return items.length
+      ? '<span class="live-stats-heart-line">' + items.join('<span class="live-stats-heart-sep"> · </span>') + '</span>'
+      : '<span class="live-stats-heart-line live-stats-required-colors--met">達成</span>';
+  }
+
   function syncLiveTurnStatsPanel() {
     var wrap = $("live-turn-stats-wrap");
     if (!wrap) return;
@@ -3307,15 +3382,15 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     }
 
     var needDet = $("live-need-heart-detail");
-    if (needDet) needDet.innerHTML = liveStatsHeartishLineToHtml(formatLiveNeedHeartLine(needAccum));
+    if (needDet) needDet.innerHTML = formatLiveNeedHeartLineHtml(needAccum);
     var needTot = $("live-need-heart-total");
     if (needTot) needTot.textContent = String(needSum);
 
     var reqCol = $("live-required-colors");
     if (reqCol) {
-      var reqColLine = formatStageHeartMinusNeedRemainderLine(b.mergedSupplyPreview, needAccum);
-      reqCol.innerHTML = liveStatsHeartishLineToHtml(reqColLine);
-      reqCol.classList.toggle("live-stats-required-colors--met", reqColLine === "達成");
+      var reqColLinePlain = formatStageHeartMinusNeedRemainderLine(b.mergedSupplyPreview, needAccum);
+      reqCol.innerHTML = formatStageHeartMinusNeedRemainderLineHtml(b.mergedSupplyPreview, needAccum);
+      reqCol.classList.toggle("live-stats-required-colors--met", reqColLinePlain === "達成");
     }
 
     var tolEl = $("live-nonbh-tolerance");
@@ -3352,9 +3427,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     var bladeTot = $("live-total-blade");
     if (bladeTot) bladeTot.textContent = String(b.bladeSum);
 
-    var stLine = formatHeartSlotAccumBreakdown(b.stageHAcc);
     var stEl = $("live-stage-h-colors");
-    if (stEl) stEl.innerHTML = liveStatsHeartishLineToHtml(stLine && stLine !== "—" ? stLine : "—");
+    if (stEl) stEl.innerHTML = formatHeartSlotAccumBreakdownHtml(b.stageHAcc || {});
 
     var resBhEl = $("live-resolution-bh-ref");
     var resBhHint = $("live-zone-hint-resolution-bh");
@@ -3363,7 +3437,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (resBhEl) {
       if (hasSlotBreakdown) {
         resBhEl.classList.add("live-stats-metric-answer--rich");
-        resBhEl.innerHTML = liveStatsHeartishLineToHtml(bhLinePlain);
+        resBhEl.innerHTML = formatBladeHeartSlotBreakdownHtml(rsBh.slots || {});
       } else if (rsBh.totalBh) {
         resBhEl.classList.remove("live-stats-metric-answer--rich");
         resBhEl.textContent = String(rsBh.totalBh);
@@ -3450,10 +3524,11 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       var cnt = slotCount[si] || 0;
       if (cnt <= 0) continue;
       parts.push(
-        '<span class="deck-remain-bh-pill" data-bh-slot="' +
+        '<span class="deck-remain-bh-pill deck-remain-bh-pill--art" data-bh-slot="' +
           si +
           '"><span class="deck-remain-bh-pill__lab">' +
-          escapeHtmlPlain(bladeHeartDisplaySlotLabel(si)) +
+          heartSlotArtIconHtml(si, { extraClass: "deck-remain-bh-pill__art-ico" }) +
+          '<span class="visually-hidden">' + escapeHtmlPlain(bladeHeartDisplaySlotLabel(si)) + '</span>' +
           '</span><strong class="deck-remain-bh-pill__n">' +
           escapeHtmlPlain(String(cnt)) +
           "</strong></span>",
@@ -3466,8 +3541,11 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       "</strong></span>";
     var notePill =
       noteLive > 0
-        ? '<span class="deck-remain-bh-pill deck-remain-bh-pill--note-live" data-bh-slot="note">' +
-          '<span class="deck-remain-bh-pill__lab">♪ライブ</span><strong class="deck-remain-bh-pill__n">' +
+        ? '<span class="deck-remain-bh-pill deck-remain-bh-pill--note-live deck-remain-bh-pill--art" data-bh-slot="note">' +
+          '<span class="deck-remain-bh-pill__lab">' +
+          heartSlotArtIconHtml(0, { score: true, extraClass: "deck-remain-bh-pill__art-ico" }) +
+          '<span class="visually-hidden">♪ライブ</span>' +
+          '</span><strong class="deck-remain-bh-pill__n">' +
           escapeHtmlPlain(String(noteLive)) +
           "</strong></span>"
         : "";
@@ -3524,10 +3602,11 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       var cntW = slotCount[sj] || 0;
       if (cntW <= 0) continue;
       partsW.push(
-        '<span class="deck-remain-bh-pill" data-bh-slot="' +
+        '<span class="deck-remain-bh-pill deck-remain-bh-pill--art" data-bh-slot="' +
           sj +
           '"><span class="deck-remain-bh-pill__lab">' +
-          escapeHtmlPlain(bladeHeartDisplaySlotLabel(sj)) +
+          heartSlotArtIconHtml(sj, { extraClass: "deck-remain-bh-pill__art-ico" }) +
+          '<span class="visually-hidden">' + escapeHtmlPlain(bladeHeartDisplaySlotLabel(sj)) + '</span>' +
           '</span><strong class="deck-remain-bh-pill__n">' +
           escapeHtmlPlain(String(cntW)) +
           "</strong></span>",
@@ -3540,8 +3619,11 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       "</strong></span>";
     var notePillW =
       noteLive > 0
-        ? '<span class="deck-remain-bh-pill deck-remain-bh-pill--note-live" data-bh-slot="note">' +
-          '<span class="deck-remain-bh-pill__lab">♪ライブ</span><strong class="deck-remain-bh-pill__n">' +
+        ? '<span class="deck-remain-bh-pill deck-remain-bh-pill--note-live deck-remain-bh-pill--art" data-bh-slot="note">' +
+          '<span class="deck-remain-bh-pill__lab">' +
+          heartSlotArtIconHtml(0, { score: true, extraClass: "deck-remain-bh-pill__art-ico" }) +
+          '<span class="visually-hidden">♪ライブ</span>' +
+          '</span><strong class="deck-remain-bh-pill__n">' +
           escapeHtmlPlain(String(noteLive)) +
           "</strong></span>"
         : "";
@@ -6475,6 +6557,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (state.resolutionArea.length) {
       flushed.push.apply(flushed, state.resolutionArea);
       state.resolutionArea.length = 0;
+      state.pendingDrawYellHandDraws = 0;
+      clearAllDrawYellHandMarkers();
     }
     ["left", "center", "right"].forEach(function (k) {
       var la = state.liveArea[k];
@@ -6871,6 +6955,47 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     render();
   });
 
+  /** 「デッキ上に戻す」「戻してシャッフル」で、ドローエール由来の手札カードを一緒に回収する */
+  function harvestDrawYellHandCardsForReturn() {
+    if (!Array.isArray(state.hand)) return [];
+    var kept = [];
+    var returned = [];
+    for (var i = 0; i < state.hand.length; i++) {
+      var c = state.hand[i];
+      if (c && typeof c === "object" && c._fromDrawYellHand === true) {
+        try {
+          delete c._fromDrawYellHand;
+          delete c._flashDrawAt;
+          delete c._flashDrawLabel;
+        } catch (_) {
+          c._fromDrawYellHand = undefined;
+          c._flashDrawAt = undefined;
+          c._flashDrawLabel = undefined;
+        }
+        returned.push(c);
+      } else {
+        kept.push(c);
+      }
+    }
+    state.hand = kept;
+    return returned;
+  }
+
+  /** 別経路（控え送り・マリガン等）で解決エリアが空になった時点で、ドローエール由来の手札マークも掃除 */
+  function clearAllDrawYellHandMarkers() {
+    if (!Array.isArray(state.hand)) return;
+    for (var i = 0; i < state.hand.length; i++) {
+      var c = state.hand[i];
+      if (c && typeof c === "object" && c._fromDrawYellHand === true) {
+        try {
+          delete c._fromDrawYellHand;
+        } catch (_) {
+          c._fromDrawYellHand = undefined;
+        }
+      }
+    }
+  }
+
   $("btn-res-top")?.addEventListener("click", () => {
     if (!state.resolutionArea.length) {
       showToast("解決エリアが空です");
@@ -6878,10 +7003,17 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     }
     pushHistoryBefore("res-to-deck-top");
     state.pendingDrawYellHandDraws = 0;
-    const nu = state.resolutionArea.length;
-    state.deck.unshift(...state.resolutionArea);
+    var handReturned = harvestDrawYellHandCardsForReturn();
+    /** 戻す順: 手札からのドローエールカード → 解決エリア の順でデッキ上に積み戻す。 */
+    var moved = handReturned.concat(state.resolutionArea);
+    state.deck.unshift(...moved);
     state.resolutionArea = [];
-    showToast(nu + " 枚をデッキの上に戻しました");
+    var nu = moved.length;
+    var msg = nu + " 枚をデッキの上に戻しました";
+    if (handReturned.length) {
+      msg += "（うち手札に来ていたドローエール " + handReturned.length + " 枚を含む）";
+    }
+    showToast(msg);
     render();
   });
 
@@ -6892,10 +7024,15 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     }
     pushHistoryBefore("res-shuffle-in");
     state.pendingDrawYellHandDraws = 0;
-    state.deck.push(...state.resolutionArea);
+    var handReturned = harvestDrawYellHandCardsForReturn();
+    state.deck.push(...handReturned, ...state.resolutionArea);
     state.resolutionArea = [];
     state.deck = shuffle(state.deck);
-    showToast("解決をデッキに戻してシャッフルしました");
+    var msg = "解決をデッキに戻してシャッフルしました";
+    if (handReturned.length) {
+      msg += "（手札のドローエール " + handReturned.length + " 枚も一緒に戻しました）";
+    }
+    showToast(msg);
     render();
   });
 
@@ -6907,6 +7044,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     pushHistoryBefore("res-to-wait");
     state.waitingRoom.push(...state.resolutionArea);
     state.resolutionArea = [];
+    state.pendingDrawYellHandDraws = 0;
+    clearAllDrawYellHandMarkers();
     render();
   });
 

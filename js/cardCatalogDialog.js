@@ -3,7 +3,7 @@
  */
 
 import { T_LIVE, T_MEMBER } from "./config.js";
-import { getCard, cardIsNoteLiveCatalog } from "./cards.js";
+import { getCard, cardIsNoteLiveCatalog, cardIsDrawYellLiveCatalog } from "./cards.js";
 import {
   cardHasBladeHeart,
   parseBladeHeartSlotFromKey,
@@ -11,35 +11,9 @@ import {
 } from "./bladeHeart.js";
 import * as Gsi from "./gameStatusIcons.js";
 
-const LIVE_START_FOR_DRAW_YELL = "{{live_start.png|ライブ開始時}}";
-const LIVE_SUCCESS_SPLIT_FOR_DRAW_YELL = "{{live_success.png|ライブ成功時}}";
-
-function normalizeCatalogKeyForDrawYell(s) {
-  return String(s == null ? "" : s)
-    .replace(/\ufeff/g, "")
-    .normalize("NFKC")
-    .trim();
-}
-
-const DRAW_YELL_BLADE_HEART_CARD_NOS = new Set(
-  ["PL!N-bp1-029-L", "PL!N-bp5-027-L", "PL!HS-bp1-022-L"].map(normalizeCatalogKeyForDrawYell),
-);
-
+/** @deprecated cards.js の `cardIsDrawYellLiveCatalog` を直接使ってください。 */
 export function catalogLiveCardIsDrawYellBladeHeart(card) {
-  if (!card || card.type !== T_LIVE) return false;
-  if (!cardHasBladeHeart(card)) return false;
-  const no = normalizeCatalogKeyForDrawYell(card.card_no || "");
-  if (DRAW_YELL_BLADE_HEART_CARD_NOS.has(no)) return true;
-  const ab = String(card.ability || "");
-  if (!ab.includes(LIVE_START_FOR_DRAW_YELL)) return false;
-  const tail = ab.split(LIVE_START_FOR_DRAW_YELL)[1];
-  if (!tail) return false;
-  const seg = tail.split(LIVE_SUCCESS_SPLIT_FOR_DRAW_YELL)[0];
-  if (!seg) return false;
-  if (/ドロー/.test(seg)) return true;
-  if (/引く/.test(seg) && /山札(?:から)?/.test(seg)) return true;
-  if (/見る/.test(seg) && /(?:山札|手札)/.test(seg) && /\d\s*枚/.test(seg)) return true;
-  return false;
+  return cardIsDrawYellLiveCatalog(card);
 }
 
 function escapeHtmlPlain(s) {
@@ -206,19 +180,22 @@ function formatHeartRecordStatusHtmlRow(h) {
 }
 
 /**
- * @param {*} c カード実体または card_no を含むオブジェクト
+ * カードのカタログステータス（タイトル／画像／DL／効果）を指定の DOM 要素群に描画する内部ヘルパ。
+ * 戻り値: 描画した最終 `mc`、もしくは未描画なら null。
+ * @param {*} c
+ * @param {{ title?: HTMLElement | null, subtitle?: HTMLElement | null, body?: HTMLElement | null, effectSlot?: HTMLElement | null, img?: HTMLImageElement | null, badge?: HTMLElement | null }} targets
  */
-export function openCardCatalogDialog(c) {
-  if (!c || typeof c !== "object") return;
+export function renderCardCatalogContentInto(c, targets) {
+  if (!c || typeof c !== "object") return null;
   var mc = mergedCatalogCard(c);
-  var dlg = document.getElementById("dlg-card-catalog");
-  var sub = document.getElementById("dlg-card-catalog-subtitle");
-  var bodyEl = document.getElementById("dlg-card-catalog-body");
-  var effectSlot = document.getElementById("dlg-card-catalog-effect-slot");
-  var imgCatalog = document.getElementById("dlg-card-catalog-img");
-  var badgeEl = document.getElementById("dlg-card-catalog-type-badges");
-  var h2 = document.getElementById("dlg-card-catalog-title");
-  if (!dlg || !bodyEl || !mc) return;
+  if (!mc) return null;
+  var bodyEl = targets && targets.body;
+  if (!bodyEl) return null;
+  var sub = targets.subtitle || null;
+  var effectSlot = targets.effectSlot || null;
+  var imgCatalog = targets.img || null;
+  var badgeEl = targets.badge || null;
+  var h2 = targets.title || null;
 
   function esc(x) {
     return String(x == null ? "" : x)
@@ -264,11 +241,13 @@ export function openCardCatalogDialog(c) {
   var isLive = tyRaw === T_LIVE;
   var isMember = tyRaw === T_MEMBER;
 
+  var isDrawYellLive = isLive && cardIsDrawYellLiveCatalog(mc);
+  var isNoteLive = isLive && cardIsNoteLiveCatalog(mc);
+
   if (badgeEl) {
     var bits = [];
-    if (isLive && catalogLiveCardIsDrawYellBladeHeart(mc))
-      bits.push(Gsi.catalogDrawYellBadgeHtml());
-    if (isLive && cardIsNoteLiveCatalog(mc)) bits.push(Gsi.catalogNoteLiveBadgeHtml());
+    if (isDrawYellLive) bits.push(Gsi.catalogDrawYellBadgeHtml());
+    if (isNoteLive) bits.push(Gsi.catalogNoteLiveBadgeHtml());
     badgeEl.innerHTML = bits.join("");
   }
 
@@ -296,6 +275,29 @@ export function openCardCatalogDialog(c) {
   if (isLive) {
     var needL = formatHeartRecordStatusHtmlRow(mc.need_heart);
     rows += row("必要ハート", needL || escapeHtmlPlain(TEXT_NONE_JA));
+    if (isDrawYellLive || isNoteLive) {
+      var specBits = [];
+      if (isDrawYellLive) {
+        specBits.push(
+          '<span class="dlg-card-catalog-special-heart-pill dlg-card-catalog-special-heart-pill--draw-yell">' +
+            Gsi.catalogDrawYellBadgeHtml() +
+            '<span class="dlg-card-catalog-special-heart-pill__label">ドローエール</span>' +
+            "</span>",
+        );
+      }
+      if (isNoteLive) {
+        specBits.push(
+          '<span class="dlg-card-catalog-special-heart-pill dlg-card-catalog-special-heart-pill--note-live">' +
+            Gsi.catalogNoteLiveBadgeHtml() +
+            '<span class="dlg-card-catalog-special-heart-pill__label">音符ライブ（スコア）</span>' +
+            "</span>",
+        );
+      }
+      rows += row(
+        "特殊ハート",
+        '<span class="dlg-card-catalog-special-heart-row">' + specBits.join("") + "</span>",
+      );
+    }
   }
 
   var abHtml = wikiAbilityToStatusHtml(mc.ability || "");
@@ -309,5 +311,23 @@ export function openCardCatalogDialog(c) {
       "</div>";
   }
 
+  return mc;
+}
+
+/**
+ * @param {*} c カード実体または card_no を含むオブジェクト
+ */
+export function openCardCatalogDialog(c) {
+  var dlg = document.getElementById("dlg-card-catalog");
+  if (!dlg) return;
+  var rendered = renderCardCatalogContentInto(c, {
+    title: document.getElementById("dlg-card-catalog-title"),
+    subtitle: document.getElementById("dlg-card-catalog-subtitle"),
+    body: document.getElementById("dlg-card-catalog-body"),
+    effectSlot: document.getElementById("dlg-card-catalog-effect-slot"),
+    img: document.getElementById("dlg-card-catalog-img"),
+    badge: document.getElementById("dlg-card-catalog-type-badges"),
+  });
+  if (!rendered) return;
   if (dlg.showModal) dlg.showModal();
 }

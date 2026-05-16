@@ -585,14 +585,41 @@ const NOTE_LIVE_EXPLICIT_CARD_NOS = new Set(
   ["PL!-sd1-019-SD", "PL!S-bp2-024-L", "PL!S-bp5-023-L"].map((x) => normalizeCardCatalogLookupKey(x)),
 );
 
+/** ドローエール（特殊 BH の別系統。♪ライブとは別物） */
+const DRAW_YELL_EXPLICIT_CARD_NOS = new Set(
+  ["PL!N-bp1-029-L", "PL!N-bp5-027-L", "PL!HS-bp1-022-L"].map((x) => normalizeCardCatalogLookupKey(x)),
+);
+
 /**
- * 音符ライブ: エール（ライブ開始時の解決めくり）でスコアが増える系のライブの総称。
+ * ドローエール（ライブ開始時の解決めくりで「ドロー」「山札を見る」等の効果を持つ特殊 BH）。
+ * 表記ゆれを受けつつ heuristics で判定。明示リストに一致するものは常に true。
+ */
+export function cardIsDrawYellLiveCatalog(card) {
+  if (!card || card.type !== T_LIVE) return false;
+  if (!cardHasBladeHeart(card)) return false;
+  const no = normalizeCardCatalogLookupKey(card.card_no || "");
+  if (DRAW_YELL_EXPLICIT_CARD_NOS.has(no)) return true;
+  const ab = String(card.ability || "");
+  if (!ab.includes(LIVE_START_FOR_NOTE_LIVE)) return false;
+  const tail = ab.split(LIVE_START_FOR_NOTE_LIVE)[1];
+  if (!tail) return false;
+  const seg = tail.split(LIVE_SUCCESS_SPLIT)[0];
+  if (!seg) return false;
+  if (/ドロー/.test(seg)) return true;
+  if (/引く/.test(seg) && /山札(?:から)?/.test(seg)) return true;
+  if (/見る/.test(seg) && /(?:山札|手札)/.test(seg) && /\d\s*枚/.test(seg)) return true;
+  return false;
+}
+
+/**
+ * 音符ライブ（＝score 系特殊 BH）: エール（ライブ開始時の解決めくり）で「スコア+〜」が増える系。
+ * ドローエールは ♪ライブには含めない（特殊 BH 内の別系統）。
  * ALL ブレードハート（b_all）を持つライブは音符に含めない。
- * 「ライブ開始時」〜「ライブ成功時」手前の文中にスコア加算が書かれているか、明示リストに一致。
  */
 export function cardIsNoteLiveCatalog(card) {
   if (!card || card.type !== T_LIVE) return false;
   if (liveCardHasExcludedAllBladeHeart(card)) return false;
+  if (cardIsDrawYellLiveCatalog(card)) return false;
   const no = normalizeCardCatalogLookupKey(card.card_no || "");
   if (NOTE_LIVE_EXPLICIT_CARD_NOS.has(no)) return true;
   const ab = String(card.ability || "");

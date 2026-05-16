@@ -75,11 +75,33 @@ async function loadFirebaseSdk(config) {
       import(/* @vite-ignore */ FIREBASE_FIRESTORE_URL),
     ]);
     const app = initializeApp(config);
-    _auth = authMod.getAuth(app);
-    try {
-      await authMod.setPersistence(_auth, authMod.browserLocalPersistence);
-    } catch (_) {
-      /* noop */
+    /* `initializeAuth` を使うと、永続化を最初に明示できるので、
+     * 既定の `getAuth` よりログイン状態の復元が安定する（Safari／ITP 対策）。 */
+    const persistenceCandidates = [
+      authMod.indexedDBLocalPersistence,
+      authMod.browserLocalPersistence,
+      authMod.browserSessionPersistence,
+    ].filter(Boolean);
+    if (typeof authMod.initializeAuth === "function" && persistenceCandidates.length) {
+      try {
+        _auth = authMod.initializeAuth(app, {
+          persistence: persistenceCandidates,
+          popupRedirectResolver: authMod.browserPopupRedirectResolver,
+        });
+      } catch (err) {
+        console.warn("[cloudAuth] initializeAuth failed, falling back:", err);
+        _auth = authMod.getAuth(app);
+      }
+    } else {
+      _auth = authMod.getAuth(app);
+    }
+    for (const p of persistenceCandidates) {
+      try {
+        await authMod.setPersistence(_auth, p);
+        break;
+      } catch (err) {
+        console.warn("[cloudAuth] setPersistence failed, trying next:", err);
+      }
     }
     _gp = new authMod.GoogleAuthProvider();
     _authApi = authMod;
@@ -103,6 +125,16 @@ async function loadFirebaseSdk(config) {
         console.warn("[cloudAuth] pull failed:", err);
       });
     });
+
+    /* リダイレクト方式でサインインした場合の戻り値を処理（popup がブロックされた場合のフォールバック） */
+    try {
+      const redirected = await authMod.getRedirectResult(_auth);
+      if (redirected && redirected.user) {
+        /* onAuthStateChanged が引き続き同じ user で発火するため、ここでは追加処理不要 */
+      }
+    } catch (err) {
+      console.warn("[cloudAuth] getRedirectResult failed:", err);
+    }
     return app;
   })();
   return firebaseInitPromise;
@@ -255,6 +287,14 @@ export function getCurrentCloudUser() {
   return currentUser;
 }
 
+const POPUP_FALLBACK_ERRORS = new Set([
+  "auth/popup-blocked",
+  "auth/popup-closed-by-user",
+  "auth/cancelled-popup-request",
+  "auth/operation-not-supported-in-this-environment",
+  "auth/web-storage-unsupported",
+]);
+
 export async function signInWithGoogle() {
   if (!cloudSyncEnabled || !_auth || !_gp || !_authApi) {
     showToast("Google ログインの設定が見つかりません。`js/firebaseConfig.js` を作成して再読込してください。");
@@ -271,8 +311,18 @@ export async function signInWithGoogle() {
         }
       : null;
   } catch (err) {
-    console.warn("[cloudAuth] signIn failed:", err);
-    showToast("Google ログインに失敗しました。ポップアップが許可されているか確認してください。");
+    console.warn("[cloudAuth] signInWithPopup failed:", err);
+    const code = err && /** @type {any} */ (err).code;
+    if (typeof _authApi.signInWithRedirect === "function" && (POPUP_FALLBACK_ERRORS.has(code) || !code)) {
+      try {
+        showToast("ポップアップが開けないため、ページ遷移でログインします…");
+        await _authApi.signInWithRedirect(_auth, _gp);
+        return null;
+      } catch (errR) {
+        console.warn("[cloudAuth] signInWithRedirect failed:", errR);
+      }
+    }
+    showToast("Google ログインに失敗しました。ポップアップ・サードパーティ Cookie が許可されているか確認してください。");
     return null;
   }
 }
