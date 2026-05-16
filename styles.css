@@ -2739,6 +2739,14 @@ body.play-mode .zone-head--live-with-turn .play-undo-redo-cluster {
   margin-left: auto;
   flex-shrink: 0;
 }
+/* スマホ幅では、ライブエリア見出し横の Undo／Redo は隠す。
+   成功確率パネル下の `play-undo-redo-cluster--under-prob` が代わりに表示されているので、
+   操作はそちらから可能。 */
+@media (max-width: 720px) {
+  body.play-mode .zone-head--live-with-turn .play-undo-redo-cluster:not(.play-undo-redo-cluster--under-prob) {
+    display: none !important;
+  }
+}
 
 /* Undo / Redo ボタン: 中性的でモダンなガラス調の見た目。色は単色＋アクセント縁、
    矢印アイコン（::before）でアフォーダンスを補強する。 */
@@ -3028,6 +3036,14 @@ body.play-mode.stage-member-emphasis .stage-slot.card-strip .card-img.rotated {
 body.play-mode.stage-member-emphasis .stage-slot .card-item[data-type="エネルギー"] {
   /* 拡大時もエネルギーは表示する（緩めの -0.55 で見えるように。完全に隠さない） */
   margin-right: calc(var(--loveca-play-w) * -0.55);
+}
+/* メンバーをスロット中央に置き直す:
+   エネ n 枚を「左に積む」と、合成中央が右にずれて見えるため、JS が --energy-count を立てる。
+   1 枚ごとに 0.225*play-w 左へオフセットしてメンバーをスロット中心に戻す。
+   `transform-origin: top center` で拡大スケールの基点と矛盾しないよう、シフトのみに使う。 */
+body.play-mode.stage-member-emphasis .stage-slot.card-strip {
+  transform: translateX(calc(var(--loveca-play-w) * -0.225 * var(--energy-count, 0)));
+  transform-origin: top center;
 }
 /* メンバー拡大時：W／A／+H/B のチップ列もカードサイズに合わせて拡大 */
 body.play-mode.stage-member-emphasis .stage-slot.card-strip .card-stance-bar,
@@ -6642,20 +6658,26 @@ body.play-mode .play-disclaimer {
 }
 .deck-flip-k-readout .deck-flip-k-line-short {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: 0.96rem;
   line-height: 1.45;
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.35rem 0.5rem;
+  gap: 0.35rem 0.55rem;
+  color: rgba(220, 235, 255, 0.95);
+}
+.deck-flip-k-readout .deck-flip-k-line-short > span {
+  font-weight: 700;
+  letter-spacing: 0.01em;
 }
 #deck-flip-k-display.deck-flip-k-display {
   display: inline-block;
   margin-left: 0.3rem;
   font-variant-numeric: tabular-nums;
-  font-size: 1.35em;
-  font-weight: 700;
+  font-size: 1.55em;
+  font-weight: 800;
   color: var(--accent2);
+  text-shadow: 0 0 6px rgba(255, 170, 220, 0.28);
 }
 .deck-flip-blade-note {
   margin: 0.12rem 0 0;

@@ -6,6 +6,10 @@
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5"
     />
+    <!-- ブラウザに古い HTML をしつこくキャッシュさせない（GitHub Pages 配信時の取り残し対策） -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <meta name="theme-color" content="#1a1018" />
     <meta name="description" content="Loveca Labo — ラブカの非公式デッキ構築・ソロツール。" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -13,6 +17,19 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Loveca Labo" />
     <title>Loveca Labo</title>
+    <!-- 万一以前のバージョンの Service Worker が登録された端末で取り残しが起きた場合に備え、
+         先頭で SW 登録を一括解除する。SW 自体は本サイトでは使っていない。 -->
+    <script>
+      (function () {
+        try {
+          if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function (rs) {
+              rs.forEach(function (r) { try { r.unregister(); } catch (_) {} });
+            });
+          }
+        } catch (_) { /* noop */ }
+      })();
+    </script>
     <link rel="manifest" href="site.webmanifest" />
     <link rel="icon" type="image/svg+xml" href="icons/app-icon.svg" />
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />

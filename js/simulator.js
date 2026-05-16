@@ -6306,7 +6306,22 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     updateResolutionZoneOverlapMode();
     syncWaitingRailAria();
     syncPreviewRailAria();
+    syncStageSlotEnergyCountVars();
     schedulePersistPlayResume();
+  }
+
+  /**
+   * `body.stage-member-emphasis` モードでメンバーをステージ枠の中央に置くため、
+   * 各 `.stage-slot.card-strip` にぶら下がっているエネルギー枚数を CSS 変数で公開する。
+   * CSS 側がこの数だけ左に translateX してメンバーを中心に戻す。
+   */
+  function syncStageSlotEnergyCountVars() {
+    var slots = document.querySelectorAll(".stage-slot.card-strip");
+    for (var i = 0; i < slots.length; i++) {
+      var slot = slots[i];
+      var n = slot.querySelectorAll('.card-item[data-type="エネルギー"]').length;
+      slot.style.setProperty("--energy-count", String(n));
+    }
   }
 
   function render() {
