@@ -3,7 +3,8 @@
  */
 
 import { T_LIVE, T_MEMBER } from "./config.js";
-import { getCard, cardIsNoteLiveCatalog, cardIsDrawYellLiveCatalog } from "./cards.js";
+import { getCard, cardIsNoteLiveCatalog, cardIsDrawYellLiveCatalog, normalizeCardCatalogLookupKey } from "./cards.js";
+import { getLiveSpecialBhOverride, setLiveSpecialBhOverride } from "./liveSpecialBhOverride.js";
 import {
   cardHasBladeHeart,
   parseBladeHeartSlotFromKey,
@@ -275,29 +276,48 @@ export function renderCardCatalogContentInto(c, targets) {
   if (isLive) {
     var needL = formatHeartRecordStatusHtmlRow(mc.need_heart);
     rows += row("必要ハート", needL || escapeHtmlPlain(TEXT_NONE_JA));
-    if (isDrawYellLive || isNoteLive) {
-      var specBits = [];
-      if (isDrawYellLive) {
-        specBits.push(
-          '<span class="dlg-card-catalog-special-heart-pill dlg-card-catalog-special-heart-pill--draw-yell">' +
-            Gsi.catalogDrawYellBadgeHtml() +
-            '<span class="dlg-card-catalog-special-heart-pill__label">ドローエール</span>' +
-            "</span>",
-        );
-      }
-      if (isNoteLive) {
-        specBits.push(
-          '<span class="dlg-card-catalog-special-heart-pill dlg-card-catalog-special-heart-pill--note-live">' +
-            Gsi.catalogNoteLiveBadgeHtml() +
-            '<span class="dlg-card-catalog-special-heart-pill__label">音符ライブ（スコア）</span>' +
-            "</span>",
-        );
-      }
-      rows += row(
-        "特殊ハート",
-        '<span class="dlg-card-catalog-special-heart-row">' + specBits.join("") + "</span>",
+    var specBits = [];
+    if (isDrawYellLive) {
+      specBits.push(
+        '<span class="dlg-card-catalog-special-heart-pill dlg-card-catalog-special-heart-pill--draw-yell">' +
+          Gsi.catalogDrawYellBadgeHtml() +
+          '<span class="dlg-card-catalog-special-heart-pill__label">ドローエール</span>' +
+          "</span>",
       );
     }
+    if (isNoteLive) {
+      specBits.push(
+        '<span class="dlg-card-catalog-special-heart-pill dlg-card-catalog-special-heart-pill--note-live">' +
+          Gsi.catalogNoteLiveBadgeHtml() +
+          '<span class="dlg-card-catalog-special-heart-pill__label">音符ライブ（スコア）</span>' +
+          "</span>",
+      );
+    }
+    var ovNo = normalizeCardCatalogLookupKey(mc.card_no || c.card_no || "");
+    var currentOv = ovNo ? getLiveSpecialBhOverride(ovNo) : null;
+    /* ユーザーが「これはドローエール／音符ライブだ／どちらでもない」と手動で指定するボタン群 */
+    var overrideBtns =
+      '<div class="dlg-card-catalog-special-heart-override" data-card-no="' + esc(ovNo) + '">' +
+        '<span class="dlg-card-catalog-special-heart-override__label">手動で分類:</span>' +
+        '<button type="button" class="btn sm dlg-card-catalog-special-heart-override__btn' +
+          (currentOv === "draw-yell" ? " primary" : " secondary") +
+          '" data-ov-kind="draw-yell">ドローエール</button>' +
+        '<button type="button" class="btn sm dlg-card-catalog-special-heart-override__btn' +
+          (currentOv === "note-live" ? " primary" : " secondary") +
+          '" data-ov-kind="note-live">音符ライブ</button>' +
+        '<button type="button" class="btn sm dlg-card-catalog-special-heart-override__btn' +
+          (currentOv === "none" ? " primary" : " secondary") +
+          '" data-ov-kind="none">どちらでもない</button>' +
+        '<button type="button" class="btn sm dlg-card-catalog-special-heart-override__btn' +
+          (currentOv == null ? " primary" : " secondary") +
+          '" data-ov-kind="auto" title="ヒューリスティック自動判定に戻す">自動</button>' +
+      '</div>';
+    var specRowHtml =
+      (specBits.length
+        ? '<span class="dlg-card-catalog-special-heart-row">' + specBits.join("") + "</span>"
+        : '<span class="muted dlg-card-catalog-special-heart-row dlg-card-catalog-special-heart-row--none">特殊ハートなし</span>') +
+      overrideBtns;
+    rows += row("特殊ハート", specRowHtml);
   }
 
   var abHtml = wikiAbilityToStatusHtml(mc.ability || "");
@@ -311,7 +331,41 @@ export function renderCardCatalogContentInto(c, targets) {
       "</div>";
   }
 
+  /* 後でクリック時に「最新の」カード／ターゲットで再描画できるよう、body 要素に紐づけて保存。 */
+  bodyEl.__llocgCatalogLatest = { card: c, targets: targets };
+  wireSpecialBhOverrideButtonsOnce(bodyEl);
+
   return mc;
+}
+
+/** 特殊ハート オーバーライドボタンを 1 度だけ delegation でバインドする */
+function wireSpecialBhOverrideButtonsOnce(bodyEl) {
+  if (!bodyEl || bodyEl.dataset.specialBhOverrideWired === "1") return;
+  bodyEl.dataset.specialBhOverrideWired = "1";
+  bodyEl.addEventListener("click", function (ev) {
+    var btn = ev.target instanceof Element ? ev.target.closest(".dlg-card-catalog-special-heart-override__btn") : null;
+    if (!btn) return;
+    var host = btn.closest(".dlg-card-catalog-special-heart-override");
+    if (!host) return;
+    var cardNo = host.getAttribute("data-card-no") || "";
+    if (!cardNo) return;
+    var kind = btn.getAttribute("data-ov-kind") || "";
+    if (kind === "draw-yell" || kind === "note-live" || kind === "none") {
+      setLiveSpecialBhOverride(cardNo, /** @type {any} */ (kind));
+    } else {
+      setLiveSpecialBhOverride(cardNo, null);
+    }
+    /* このカタログを「最後に開いていた」カードで再描画する。 */
+    var latest = bodyEl.__llocgCatalogLatest;
+    if (latest && latest.card && latest.targets) {
+      renderCardCatalogContentInto(latest.card, latest.targets);
+    }
+    try {
+      window.dispatchEvent(new CustomEvent("llocg:specialBhOverrideChanged", { detail: { card_no: cardNo } }));
+    } catch (_) {
+      /* noop */
+    }
+  });
 }
 
 /**

@@ -29,6 +29,35 @@ const IDB_KEY_DEPLOY_DIR = "deploy-directory-handle";
 /** fetch 済み一覧。null は「未設定＝組み込みにフォールバック」 */
 let publishedRecipesCache = /** @type {SampleDeckRecipe[] | null} */ (null);
 
+/** ユーザーがブラウザ内で編集したローカル上書き（リロード後も復元させるため localStorage 永続化）。
+ * `setPublishedSampleRecipesCache` の都度ここにもコピーし、`initPublishedSampleRecipes` で
+ * fetch 結果より優先して当てる。null/未設定の時は fetch 内容を素のまま使う。 */
+const STORAGE_KEY_LOCAL_OVERRIDE = "llocg_sample_recipes_local_override";
+
+function readLocalOverrideRaw() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_LOCAL_OVERRIDE);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const norm = normalizeSampleRecipesArray(parsed);
+    return norm.length ? norm : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function writeLocalOverrideRaw(recipes) {
+  try {
+    if (!Array.isArray(recipes) || recipes.length === 0) {
+      localStorage.removeItem(STORAGE_KEY_LOCAL_OVERRIDE);
+      return;
+    }
+    localStorage.setItem(STORAGE_KEY_LOCAL_OVERRIDE, JSON.stringify(recipes));
+  } catch (_) {
+    /* noop */
+  }
+}
+
 /** @returns {SampleDeckRecipe[]} */
 export function getBuiltInSampleDeckRecipes() {
   return [
@@ -215,6 +244,11 @@ async function writeSampleJsonToDirectory(dir, blob) {
 export function initPublishedSampleRecipes() {
   return (async function () {
     publishedRecipesCache = null;
+    /* まず localStorage のローカル上書きを当てる（ユーザーの直近編集がここに残っている）。 */
+    var local = readLocalOverrideRaw();
+    if (local && local.length) {
+      publishedRecipesCache = local;
+    }
     try {
       var u = new URL(SAMPLE_DECK_RECIPES_PUBLIC_FILENAME, window.location.href);
       /* Pages / CDN の古い応答を避ける（同一 URL の fetch キャッシュをすり抜ける） */
@@ -223,15 +257,31 @@ export function initPublishedSampleRecipes() {
       if (!r.ok) return;
       var data = await r.json();
       var v = normalizeSampleRecipesArray(data);
-      if (v.length) publishedRecipesCache = v;
+      /* ローカル上書きが既にあるなら、そちらを優先（編集後リロード対策）。
+         未設定 or 空の場合は公開ファイルを採用。 */
+      if (!local || local.length === 0) {
+        if (v.length) publishedRecipesCache = v;
+      }
     } catch (_) {
-      publishedRecipesCache = null;
+      if (!local || local.length === 0) publishedRecipesCache = null;
     }
   })();
 }
 
 export function setPublishedSampleRecipesCache(recipes) {
   publishedRecipesCache = recipes && recipes.length ? recipes.slice() : null;
+  /* ローカル上書きにも保存して、リロード後も「最後に編集した内容」を維持できるようにする。 */
+  writeLocalOverrideRaw(publishedRecipesCache || []);
+}
+
+/** ユーザー操作で「公開ファイル（fetch 内容）の値に戻す」ためのリセット。 */
+export function clearLocalSampleRecipesOverride() {
+  try { localStorage.removeItem(STORAGE_KEY_LOCAL_OVERRIDE); } catch (_) { /* noop */ }
+}
+
+/** 現在ローカル上書きが効いているかを UI 側で表示できるよう公開。 */
+export function hasLocalSampleRecipesOverride() {
+  return !!readLocalOverrideRaw();
 }
 
 /** @returns {SampleDeckRecipe[]} */

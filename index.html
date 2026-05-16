@@ -120,7 +120,7 @@ python3 -m http.server 8080</pre>
               <button type="button" class="btn sm secondary" id="btn-reset-filters">絞り込み全リセット</button>
             </div>
           </div>
-          <details class="search-panel-filters-fold" id="deck-search-panel-filters" open>
+          <details class="search-panel-filters-fold" id="deck-search-panel-filters">
             <summary class="search-panel-filters-fold__summary">詳細検索・絞り込み</summary>
             <div class="search-panel-filters-fold__body">
           <div class="field">
@@ -799,6 +799,14 @@ python3 -m http.server 8080</pre>
                   <dd>
                     <span id="live-need-heart-detail" class="live-stats-detail">—</span>
                     <span class="live-need-suffix"> ／ 計 <strong id="live-need-heart-total">0</strong></span>
+                    <button
+                      type="button"
+                      class="btn sm secondary live-need-heart-adjust-btn"
+                      id="btn-open-live-need-heart-adjust"
+                      title="ライブカード効果で必要ハートが減る場合に補正します（Undo 可）"
+                    >
+                      補正…
+                    </button>
                   </dd>
                   <dt
                     title="heart01〜06 とその他キー（99）の不足のみ。heart0（任意色相）は対象外。（場メンバー所持H＋解決BH）と need の差で不足色だけ表示します"
@@ -1043,9 +1051,17 @@ python3 -m http.server 8080</pre>
           <div id="deck-live-sim-default-parent" class="deck-live-sim-default-parent chrome-deck-live-sim-desktop-slot">
             <section
               id="section-play-deck-live-sim"
-              class="zone-block zone-block-deck-live-sim zone-block-deck-live-sim-under-preview"
+              class="zone-block zone-block-deck-live-sim zone-block-deck-live-sim-under-preview live-prob-always-visible"
             >
               <h3 class="deck-live-sim-heading-compact">ライブ成功確率</h3>
+              <div class="play-undo-redo-cluster play-undo-redo-cluster--under-prob">
+                <button type="button" class="btn sm play-undo-redo play-undo-redo--undo" id="btn-undo-under-prob" title="U キー">
+                  ひとつ戻す
+                </button>
+                <button type="button" class="btn sm play-undo-redo play-undo-redo--redo" id="btn-redo-under-prob" title="R キー">
+                  ひとつ進む
+                </button>
+              </div>
               <div class="deck-live-sim-shell">
                 <div class="deck-live-sim-toolbar">
                   <div class="deck-flip-k-row deck-flip-k-readout">
@@ -1532,6 +1548,19 @@ python3 -m http.server 8080</pre>
       <form method="dialog" class="app-dialog__actions">
         <button type="submit" class="btn primary wide">閉じる</button>
       </form>
+    </dialog>
+
+    <dialog id="dlg-live-need-heart-adjust" class="app-dialog dlg-live-need-heart-adjust" aria-labelledby="dlg-live-need-heart-adjust-title">
+      <h2 id="dlg-live-need-heart-adjust-title" class="app-dialog__title">ライブの必要ハート補正</h2>
+      <p class="hint zone-inline-help">
+        ライブカード効果で必要ハートが減る場合、各色を −／＋ で補正します。0 未満には下がりません。
+        補正は対象カードに紐づき、Undo／盤面リセット／カードが解決ゾーン経由で控え室へ移動したタイミングで自動的に解除されます。
+      </p>
+      <div id="dlg-live-need-heart-adjust-body" class="dlg-live-need-heart-adjust-body"></div>
+      <div class="app-dialog__actions">
+        <button type="button" class="btn secondary" id="dlg-live-need-heart-adjust-reset">この画面の補正を全て解除</button>
+        <button type="button" class="btn primary" id="dlg-live-need-heart-adjust-close">閉じる</button>
+      </div>
     </dialog>
 
     <dialog id="dlg-pick-success-live" class="app-dialog dlg-pick-success-live" aria-labelledby="dlg-pick-success-live-title">

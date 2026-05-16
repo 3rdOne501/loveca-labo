@@ -2724,37 +2724,100 @@ body.play-mode .zone-head--live-with-turn .play-undo-redo-cluster {
   flex-shrink: 0;
 }
 
+/* Undo / Redo ボタン: 中性的でモダンなガラス調の見た目。色は単色＋アクセント縁、
+   矢印アイコン（::before）でアフォーダンスを補強する。 */
 body.play-mode .play-undo-redo {
-  font-size: 0.95rem;
-  font-weight: 800;
-  padding: 0.5em 1.05em;
-  min-height: 2.5rem;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.42rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 0.46em 1em 0.46em 0.86em;
+  min-height: 2.35rem;
   line-height: 1.2;
-  border-radius: 11px;
+  border-radius: 12px;
   flex-shrink: 0;
-  letter-spacing: 0.02em;
-}
-body.play-mode .play-undo-redo--undo {
-  color: #f4f8ff;
-  background: linear-gradient(165deg, #4b8dff 0%, #2f6feb 48%, #1e4db8 100%);
-  border: 1px solid rgba(160, 200, 255, 0.6);
+  letter-spacing: 0.04em;
+  color: #f6f1ff;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.0) 60%) padding-box,
+    linear-gradient(160deg, #2b2540 0%, #211b36 60%, #1a1530 100%) padding-box;
+  border: 1px solid rgba(255, 255, 255, 0.14);
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.14) inset,
-    0 3px 16px rgba(40, 100, 220, 0.42);
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.45),
+    0 4px 14px rgba(15, 10, 40, 0.4);
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease,
+    filter 0.18s ease;
+}
+body.play-mode .play-undo-redo:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+body.play-mode .play-undo-redo:active {
+  transform: translateY(0);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.55),
+    0 1px 4px rgba(0, 0, 0, 0.4);
+}
+body.play-mode .play-undo-redo:disabled,
+body.play-mode .play-undo-redo[aria-disabled="true"] {
+  opacity: 0.55;
+  filter: saturate(0.6);
+  cursor: not-allowed;
+}
+
+body.play-mode .play-undo-redo::before {
+  font-family: -apple-system, "Segoe UI Symbol", "Hiragino Sans", system-ui, sans-serif;
+  font-weight: 900;
+  font-size: 1em;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15em;
+  height: 1.15em;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  flex-shrink: 0;
+}
+
+/* 戻る: 落ち着いた青寄りのアクセント */
+body.play-mode .play-undo-redo--undo {
+  border-color: rgba(125, 170, 255, 0.55);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.45),
+    0 4px 14px rgba(28, 70, 180, 0.32);
+}
+body.play-mode .play-undo-redo--undo::before {
+  content: "↶";
+  color: #a9c8ff;
 }
 body.play-mode .play-undo-redo--undo:hover {
-  filter: brightness(1.07);
+  border-color: rgba(155, 195, 255, 0.85);
 }
+
+/* 進む: 落ち着いたピンク／コーラルのアクセント */
 body.play-mode .play-undo-redo--redo {
-  color: #2a0618;
-  background: linear-gradient(165deg, #ffb8e6 0%, #ff6eb0 48%, #e8489a 100%);
-  border: 1px solid rgba(255, 200, 230, 0.7);
+  border-color: rgba(255, 165, 210, 0.5);
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.22) inset,
-    0 3px 16px rgba(255, 80, 150, 0.38);
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.45),
+    0 4px 14px rgba(220, 70, 140, 0.3);
+}
+body.play-mode .play-undo-redo--redo::before {
+  content: "↷";
+  color: #ffb4d8;
 }
 body.play-mode .play-undo-redo--redo:hover {
-  filter: brightness(1.06);
+  border-color: rgba(255, 190, 220, 0.85);
 }
 
 body.play-mode .deck-remain-bh-panel,
@@ -2874,7 +2937,9 @@ body.play-mode .stage-slot.card-strip {
 body.play-mode .stage-slot .card-item[data-type="エネルギー"] {
   position: relative;
   z-index: 1;
-  margin-right: calc(var(--loveca-play-w) * -0.8);
+  /* メンバー下に敷くエネルギーはエネルギー置き場と同じスタイルで「深く」重ねる
+     （エネルギー置き場 -0.42 より深い -0.68 を採用してメンバーの邪魔をしない） */
+  margin-right: calc(var(--loveca-play-w) * -0.68);
 }
 body.play-mode .stage-slot .card-item[data-type="メンバー"] {
   position: relative;
@@ -2945,7 +3010,8 @@ body.play-mode.stage-member-emphasis .stage-slot.card-strip .card-img.rotated {
 }
 /* メンバー拡大時はエネの「のぞき」分を畳んで、ステージカードがスロット中央に揃うようにする */
 body.play-mode.stage-member-emphasis .stage-slot .card-item[data-type="エネルギー"] {
-  margin-right: calc(var(--loveca-play-w) * -1);
+  /* 拡大時もエネルギーは表示する（緩めの -0.55 で見えるように。完全に隠さない） */
+  margin-right: calc(var(--loveca-play-w) * -0.55);
 }
 /* メンバー拡大時：W／A／+H/B のチップ列もカードサイズに合わせて拡大 */
 body.play-mode.stage-member-emphasis .stage-slot.card-strip .card-stance-bar,
@@ -4140,9 +4206,10 @@ table.deck-odds-grid {
 .deck-remain-bh-pill {
   display: inline-flex;
   align-items: center;
-  gap: 0.28rem;
-  padding: 0.18rem 0.48rem;
+  gap: 0.32rem;
+  padding: 0.28rem 0.62rem;
   border-radius: 999px;
+  font-size: 0.92rem;
   border: 1px solid rgba(255, 160, 200, 0.3);
   background: rgba(255, 255, 255, 0.05);
   font-size: 0.72rem;
@@ -4163,6 +4230,12 @@ table.deck-odds-grid {
 .deck-remain-bh-pill__n {
   font-variant-numeric: tabular-nums;
   color: #ffd6ef;
+  font-size: 1.02em;
+  font-weight: 800;
+}
+.deck-remain-bh-pill__lab {
+  display: inline-flex;
+  align-items: center;
 }
 .deck-remain-bh-pill[data-bh-slot="1"] { border-color: rgba(255, 145, 180, 0.55); background: rgba(255, 145, 180, 0.18); }
 .deck-remain-bh-pill[data-bh-slot="2"] { border-color: rgba(255, 120, 120, 0.55); background: rgba(255, 110, 110, 0.18); }
@@ -4515,7 +4588,8 @@ body.play-mode .energy-zone.card-strip {
 }
 
 body.play-mode .energy-zone .card-item + .card-item {
-  margin-left: calc(var(--loveca-play-w) * -0.62);
+  /* エネルギー置き場の重なり：少し緩めにして視認性を上げる（-0.62 → -0.42） */
+  margin-left: calc(var(--loveca-play-w) * -0.42);
 }
 
 body.play-mode #zone-deck.deck-pile .card-item {
@@ -5670,6 +5744,139 @@ dialog.app-dialog:not([open]) {
   word-break: break-word;
 }
 
+/* ライブ成功確率セクション直下に置く Undo/Redo */
+.play-undo-redo-cluster--under-prob {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin: 0.2rem 0 0.5rem;
+  flex-wrap: wrap;
+}
+body.play-mode .play-undo-redo-cluster--under-prob .play-undo-redo {
+  flex: 1 1 6rem;
+  min-width: 5.4rem;
+  padding: 0.4em 0.7em 0.4em 0.6em;
+  font-size: 0.82rem;
+  min-height: 2.1rem;
+}
+.zone-block-deck-live-sim.live-prob-always-visible {
+  position: relative;
+}
+
+/* ライブ必要ハート補正 ダイアログ */
+.live-need-heart-adjust-btn {
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+.dlg-live-need-heart-adjust {
+  min-width: min(640px, 96vw);
+  max-width: 96vw;
+  padding: 1rem 1.2rem 1.1rem;
+}
+.dlg-live-need-heart-adjust-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0.4rem 0 0.6rem;
+  max-height: min(60vh, 520px);
+  overflow: auto;
+}
+.live-need-adjust-card {
+  border: 1px solid rgba(255, 200, 230, 0.18);
+  border-radius: 10px;
+  padding: 0.55rem 0.7rem 0.6rem;
+  background: rgba(255, 220, 240, 0.04);
+}
+.live-need-adjust-card__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.4rem;
+}
+.live-need-adjust-card__loc {
+  font-size: 0.75rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+.live-need-adjust-card__title {
+  flex: 1 1 auto;
+  font-weight: 700;
+  color: #ffe4f3;
+}
+.live-need-adjust-card__reset {
+  font-size: 0.74rem;
+}
+.live-need-adjust-card__tbl {
+  width: 100%;
+  border-collapse: collapse;
+}
+.live-need-adjust-row > th,
+.live-need-adjust-row > td {
+  padding: 0.25rem 0.32rem;
+  text-align: left;
+  vertical-align: middle;
+  font-size: 0.86rem;
+}
+.live-need-adjust-row > th {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+  color: #ffd6ef;
+}
+.live-need-adjust-row__ico {
+  height: 1.3em;
+  width: auto;
+}
+.live-need-adjust-row__base {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.live-need-adjust-row__ctl {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.live-need-adjust-row__eff {
+  min-width: 1.5em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+}
+.live-need-adjust-row__delta {
+  color: #ffb4d8;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 特殊ハート ユーザー上書きボタン群（カタログダイアログ・インラインステータス両方で使用） */
+.dlg-card-catalog-special-heart-override {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.45rem;
+  margin-top: 0.4rem;
+  padding: 0.3rem 0.42rem;
+  border: 1px dashed rgba(255, 180, 220, 0.28);
+  border-radius: 9px;
+  background: rgba(255, 200, 230, 0.04);
+}
+.dlg-card-catalog-special-heart-override__label {
+  font-size: 0.74rem;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+  margin-right: 0.1rem;
+}
+.dlg-card-catalog-special-heart-override__btn {
+  font-size: 0.78rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+}
+.dlg-card-catalog-special-heart-row--none {
+  font-style: italic;
+}
+
 /* loveca-data-1 のハート／ALL／スコアアイコン共通スタイル
    桃赤黄緑青紫ALL／スコア の文字記述をすべてここの PNG で置き換える。 */
 .heart-slot-art-ico {
@@ -5691,11 +5898,12 @@ dialog.app-dialog:not([open]) {
 .heart-slot-art-ico--slot7 {
   filter: drop-shadow(0 0 3px rgba(255, 200, 240, 0.35));
 }
-/* デッキ／控え 残色ピル内アイコン */
+/* デッキ／控え 残色ピル内アイコン（読みやすさ重視で大きめに） */
 .deck-remain-bh-pill__art-ico {
-  height: 1.15em;
-  margin: 0 0.05em;
-  vertical-align: -0.2em;
+  height: 1.8em;
+  width: auto;
+  margin: 0 0.08em;
+  vertical-align: -0.32em;
 }
 /* デッキピーク BH ピル内アイコン */
 .deck-peek-bh-pill-art-ico {

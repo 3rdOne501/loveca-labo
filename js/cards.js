@@ -5,6 +5,7 @@ import {
   parseHeartColorSlotFromKey,
   setIsScoreLiveCheck,
 } from "./bladeHeart.js";
+import { getLiveSpecialBhOverride } from "./liveSpecialBhOverride.js";
 
 let catalog = {};
 let list = [];
@@ -12,7 +13,7 @@ let list = [];
 let catalogKeyByNormalized = new Map();
 
 /** @param {unknown} s */
-function normalizeCardCatalogLookupKey(s) {
+export function normalizeCardCatalogLookupKey(s) {
   return String(s == null ? "" : s)
     .replace(/\ufeff/g, "")
     .normalize("NFKC")
@@ -598,6 +599,10 @@ export function cardIsDrawYellLiveCatalog(card) {
   if (!card || card.type !== T_LIVE) return false;
   if (!cardHasBladeHeart(card)) return false;
   const no = normalizeCardCatalogLookupKey(card.card_no || "");
+  /** ユーザー上書きを最優先。"draw-yell" → true、"note-live"／"none" → false。 */
+  const ov = getLiveSpecialBhOverride(no);
+  if (ov === "draw-yell") return true;
+  if (ov === "note-live" || ov === "none") return false;
   if (DRAW_YELL_EXPLICIT_CARD_NOS.has(no)) return true;
   const ab = String(card.ability || "");
   if (!ab.includes(LIVE_START_FOR_NOTE_LIVE)) return false;
@@ -619,8 +624,12 @@ export function cardIsDrawYellLiveCatalog(card) {
 export function cardIsNoteLiveCatalog(card) {
   if (!card || card.type !== T_LIVE) return false;
   if (liveCardHasExcludedAllBladeHeart(card)) return false;
-  if (cardIsDrawYellLiveCatalog(card)) return false;
   const no = normalizeCardCatalogLookupKey(card.card_no || "");
+  /** ユーザー上書きを最優先。"note-live" → true、"draw-yell"／"none" → false。 */
+  const ov = getLiveSpecialBhOverride(no);
+  if (ov === "note-live") return true;
+  if (ov === "draw-yell" || ov === "none") return false;
+  if (cardIsDrawYellLiveCatalog(card)) return false;
   if (NOTE_LIVE_EXPLICIT_CARD_NOS.has(no)) return true;
   const ab = String(card.ability || "");
   if (!ab.includes(LIVE_START_FOR_NOTE_LIVE)) return false;

@@ -352,6 +352,10 @@ function wireCloudAuthBar() {
     signOutCloud();
   });
 
+  /* Firebase 初期化前に直近ログインのキャッシュがあれば、ログインバーを即時表示して
+     仮にログイン中の名前を出す。初期化後に onCloudUserChange で正式な値で上書きされる。 */
+  bar.hidden = false;
+
   initCloudAuthIfConfigured()
     .then((ok) => {
       if (!ok) return;
@@ -362,7 +366,10 @@ function wireCloudAuthBar() {
     });
 
   onCloudUserChange((user) => {
-    if (!isCloudSyncAvailable()) return;
+    /* Firebase 初期化前でもキャッシュからユーザーが見えていれば表示する。
+       isCloudSyncAvailable() は初期化完了後 true。ただしキャッシュ user があるなら
+       「復元中」表示として常に出す。 */
+    if (!isCloudSyncAvailable() && !user) return;
     bar.hidden = false;
     if (user) {
       if (statusEl) {

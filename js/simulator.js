@@ -1484,7 +1484,29 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   /** カードDBの能力・BHと盤面上の実体を合成（card_no があれば優先結合） */
   function mergedCatalogCard(c) {
     const cat = getCard(c && c.card_no);
-    return cat && typeof cat === "object" ? Object.assign({}, cat, c) : c;
+    if (!cat || typeof cat !== "object") return c;
+    const merged = Object.assign({}, cat, c);
+    /* ライブカード効果で「自身の need_heart を減らす」運用に対応する補正。
+       インスタンス側の _needHeartDelta = { heart01: -1, ... } を catalog の need_heart に適用する。
+       減算後 0 以下のスロットは取り除く。負の need_heart は許可しない。 */
+    if (c && c._needHeartDelta && typeof c._needHeartDelta === "object" && !Array.isArray(c._needHeartDelta)) {
+      const base = cat.need_heart && typeof cat.need_heart === "object" && !Array.isArray(cat.need_heart) ? cat.need_heart : {};
+      /** @type {Record<string, number>} */
+      const eff = {};
+      for (const k of Object.keys(base)) {
+        const v = Number(base[k]);
+        if (Number.isFinite(v) && v > 0) eff[k] = v;
+      }
+      for (const k of Object.keys(c._needHeartDelta)) {
+        const delta = Number(c._needHeartDelta[k]) || 0;
+        const before = Number(eff[k]) || 0;
+        const after = Math.max(0, before + delta);
+        if (after > 0) eff[k] = after;
+        else delete eff[k];
+      }
+      merged.need_heart = eff;
+    }
+    return merged;
   }
 
   /** エール進行中に山札→解決へドローエール BH を置いたときのフラッシュ／待機ドロー計上。（ドロップ／旧フラグ）。 */
@@ -3497,6 +3519,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     }
     var nonBh = 0;
     var noteLive = 0;
+    var drawYell = 0;
     /** @type {Record<number, number>} */
     var slotCount = {};
     for (var i = 0; i < n; i++) {
@@ -3507,6 +3530,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         continue;
       }
       if (cat.type === T_LIVE && cardIsNoteLiveCatalog(cat)) noteLive++;
+      if (cat.type === T_LIVE && catalogLiveCardIsDrawYellBladeHeart(cat)) drawYell++;
       if (!cardHasBladeHeart(cat)) {
         nonBh++;
         continue;
@@ -3549,15 +3573,25 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
           escapeHtmlPlain(String(noteLive)) +
           "</strong></span>"
         : "";
+    var drawYellPill =
+      drawYell > 0
+        ? '<span class="deck-remain-bh-pill deck-remain-bh-pill--draw-yell deck-remain-bh-pill--art" data-bh-slot="draw-yell" title="ドローエール（BH）を持つライブ枚数">' +
+          '<span class="deck-remain-bh-pill__lab">' +
+          heartSlotArtIconHtml(0, { draw_yell: true, extraClass: "deck-remain-bh-pill__art-ico" }) +
+          '<span class="visually-hidden">ドローエール</span>' +
+          '</span><strong class="deck-remain-bh-pill__n">' +
+          escapeHtmlPlain(String(drawYell)) +
+          "</strong></span>"
+        : "";
     var bodyRow =
-      '<div class="deck-remain-bh-pill-row">' + nonBhPill + notePill + parts.join("") + "</div>";
+      '<div class="deck-remain-bh-pill-row">' + nonBhPill + notePill + drawYellPill + parts.join("") + "</div>";
     colorsHost.innerHTML = bodyRow;
     var deckRemHint = $("deck-remain-zone-hint");
     if (deckRemHint) {
       deckRemHint.textContent =
         "山札合計 " +
         n +
-        " 枚。色ピルはカード1枚につき複数色を持てる集計です（BHなし＝BH未記載、♪ライブ＝一覧の♪判定）。";
+        " 枚。色ピルはカード1枚につき複数色を持てる集計です（BHなし＝BH未記載、♪ライブ＝スコア系、ドローエール＝ドロー系の特殊BH）。";
     }
   }
 
@@ -3575,6 +3609,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     }
     var nonBh = 0;
     var noteLive = 0;
+    var drawYell = 0;
     /** @type {Record<number, number>} */
     var slotCount = {};
     for (var wi = 0; wi < n; wi++) {
@@ -3585,6 +3620,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         continue;
       }
       if (catW.type === T_LIVE && cardIsNoteLiveCatalog(catW)) noteLive++;
+      if (catW.type === T_LIVE && catalogLiveCardIsDrawYellBladeHeart(catW)) drawYell++;
       if (!cardHasBladeHeart(catW)) {
         nonBh++;
         continue;
@@ -3627,15 +3663,25 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
           escapeHtmlPlain(String(noteLive)) +
           "</strong></span>"
         : "";
+    var drawYellPillW =
+      drawYell > 0
+        ? '<span class="deck-remain-bh-pill deck-remain-bh-pill--draw-yell deck-remain-bh-pill--art" data-bh-slot="draw-yell" title="ドローエール（BH）を持つライブ枚数">' +
+          '<span class="deck-remain-bh-pill__lab">' +
+          heartSlotArtIconHtml(0, { draw_yell: true, extraClass: "deck-remain-bh-pill__art-ico" }) +
+          '<span class="visually-hidden">ドローエール</span>' +
+          '</span><strong class="deck-remain-bh-pill__n">' +
+          escapeHtmlPlain(String(drawYell)) +
+          "</strong></span>"
+        : "";
     var bodyRowW =
-      '<div class="deck-remain-bh-pill-row">' + nonBhPillW + notePillW + partsW.join("") + "</div>";
+      '<div class="deck-remain-bh-pill-row">' + nonBhPillW + notePillW + drawYellPillW + partsW.join("") + "</div>";
     colorsHost.innerHTML = bodyRowW;
     var wh = $("waiting-remain-zone-hint");
     if (wh) {
       wh.textContent =
         "控え室合計 " +
         n +
-        " 枚。色ピルはカード1枚につき複数色を持てる集計です（BHなし＝BH未記載、♪ライブ＝一覧の♪判定）。";
+        " 枚。色ピルはカード1枚につき複数色を持てる集計です（BHなし＝BH未記載、♪ライブ＝スコア系、ドローエール＝ドロー系の特殊BH）。";
     }
   }
 
@@ -3668,6 +3714,9 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     } else if (slotKey === "note") {
       slotLabel = "♪ライブ";
       pred = function (cat) { return cat && cat.type === T_LIVE && cardIsNoteLiveCatalog(cat); };
+    } else if (slotKey === "draw-yell") {
+      slotLabel = "ドローエール";
+      pred = function (cat) { return cat && cat.type === T_LIVE && catalogLiveCardIsDrawYellBladeHeart(cat); };
     } else {
       var slotNum = Number(slotKey);
       if (!Number.isFinite(slotNum) || slotNum < 1 || slotNum > 7) return;
@@ -6563,6 +6612,10 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     ["left", "center", "right"].forEach(function (k) {
       var la = state.liveArea[k];
       if (la && la.length) {
+        /* 必要ハート補正は「そのライブの効果適用中」のみ有効。控え室送りで自動解除する。 */
+        la.forEach(function (inst) {
+          if (inst && inst._needHeartDelta) delete inst._needHeartDelta;
+        });
         flushed.push.apply(flushed, la);
         la.length = 0;
       }
@@ -6754,6 +6807,200 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     state.liveScoreEffectBonus = Math.min(99, Math.floor(Number(state.liveScoreEffectBonus) || 0) + 1);
     render();
   });
+
+  /** ライブの必要ハート補正（need_heart の効果による減算）ダイアログ。 */
+  function openLiveNeedHeartAdjustDialog() {
+    var dlg = document.getElementById("dlg-live-need-heart-adjust");
+    var body = document.getElementById("dlg-live-need-heart-adjust-body");
+    if (!dlg || !body || typeof dlg.showModal !== "function") return;
+    renderLiveNeedHeartAdjustDialogBody();
+    try { dlg.showModal(); } catch (_) { /* noop */ }
+  }
+
+  function renderLiveNeedHeartAdjustDialogBody() {
+    var body = document.getElementById("dlg-live-need-heart-adjust-body");
+    if (!body) return;
+    /** liveArea の各枠を順に走査して、それぞれのライブカード instance に対する補正 UI を作る */
+    var html = "";
+    var anyLive = false;
+    ["left", "center", "right"].forEach(function (slotKey) {
+      var arr = (state.liveArea && state.liveArea[slotKey]) || [];
+      for (var i = 0; i < arr.length; i++) {
+        var inst = arr[i];
+        var cat = getCard(inst && inst.card_no);
+        if (!cat || cat.type !== T_LIVE) continue;
+        anyLive = true;
+        html += renderOneLiveNeedHeartAdjustRow(inst, cat, slotKey, i);
+      }
+    });
+    if (!anyLive) {
+      body.innerHTML = '<p class="muted">ライブエリアにライブカードがありません。</p>';
+      return;
+    }
+    body.innerHTML = html;
+  }
+
+  function renderOneLiveNeedHeartAdjustRow(inst, cat, slotKey, idx) {
+    var base = (cat.need_heart && typeof cat.need_heart === "object" && !Array.isArray(cat.need_heart)) ? cat.need_heart : {};
+    var delta = (inst && inst._needHeartDelta && typeof inst._needHeartDelta === "object") ? inst._needHeartDelta : {};
+    /* 表示は printed slot（1..6 と heart0）優先。少なくとも catalog に含まれていた slot は必ず出す。 */
+    var keysOrdered = ["heart0", "heart01", "heart02", "heart03", "heart04", "heart05", "heart06"];
+    var labelByKey = {
+      heart0: "ハート0",
+      heart01: "桃",
+      heart02: "赤",
+      heart03: "黄",
+      heart04: "緑",
+      heart05: "青",
+      heart06: "紫",
+    };
+    var slotByKey = { heart0: 0, heart01: 1, heart02: 2, heart03: 3, heart04: 4, heart05: 5, heart06: 6 };
+    var rows = "";
+    keysOrdered.forEach(function (k) {
+      var b = Number(base[k]) || 0;
+      var d = Number(delta[k]) || 0;
+      if (b <= 0 && d === 0) return;
+      var eff = Math.max(0, b + d);
+      var ico = "";
+      if (k === "heart0") ico = heartSlotArtIconHtml(0, { extraClass: "live-need-adjust-row__ico" });
+      else ico = heartSlotArtIconHtml(slotByKey[k], { extraClass: "live-need-adjust-row__ico" });
+      rows +=
+        '<tr class="live-need-adjust-row" data-inst-id="' + escapeHtmlPlain(String(inst.id || "")) + '" data-slot-key="' + escapeHtmlPlain(k) + '">' +
+        '<th scope="row">' + ico + '<span>' + escapeHtmlPlain(labelByKey[k]) + '</span></th>' +
+        '<td class="live-need-adjust-row__base">基本 ' + escapeHtmlPlain(String(b)) + '</td>' +
+        '<td class="live-need-adjust-row__ctl">' +
+          '<button type="button" class="btn xs secondary live-need-adjust-row__dec">−</button>' +
+          '<strong class="live-need-adjust-row__eff">' + escapeHtmlPlain(String(eff)) + '</strong>' +
+          '<button type="button" class="btn xs secondary live-need-adjust-row__inc">＋</button>' +
+        '</td>' +
+        '<td class="live-need-adjust-row__delta">' + (d !== 0 ? (d > 0 ? "+" + d : String(d)) : "") + '</td>' +
+        '</tr>';
+    });
+    var title = escapeHtmlPlain(String(cat.name || cat.card_no || "ライブカード"));
+    var slotLabelMap = { left: "左", center: "中央", right: "右" };
+    var locLab = slotLabelMap[slotKey] || slotKey;
+    return (
+      '<section class="live-need-adjust-card" data-inst-id="' + escapeHtmlPlain(String(inst.id || "")) + '">' +
+        '<header class="live-need-adjust-card__head">' +
+          '<span class="live-need-adjust-card__loc">' + escapeHtmlPlain(locLab) + ' #' + (idx + 1) + '</span>' +
+          '<span class="live-need-adjust-card__title">' + title + '</span>' +
+          '<button type="button" class="btn xs ghost live-need-adjust-card__reset">この1枚をリセット</button>' +
+        '</header>' +
+        (rows ? '<table class="live-need-adjust-card__tbl"><tbody>' + rows + '</tbody></table>' : '<p class="muted">必要ハートが定義されていません。</p>') +
+      '</section>'
+    );
+  }
+
+  function findLiveInstanceById(id) {
+    if (!id) return null;
+    var idStr = String(id);
+    var areas = ["left", "center", "right"];
+    for (var i = 0; i < areas.length; i++) {
+      var a = state.liveArea[areas[i]] || [];
+      for (var j = 0; j < a.length; j++) {
+        if (a[j] && String(a[j].id) === idStr) return a[j];
+      }
+    }
+    return null;
+  }
+
+  function bumpLiveNeedHeartDelta(instId, slotKey, step) {
+    var inst = findLiveInstanceById(instId);
+    if (!inst) return;
+    if (!inst._needHeartDelta || typeof inst._needHeartDelta !== "object") inst._needHeartDelta = {};
+    var cat = getCard(inst.card_no);
+    var base = cat && cat.need_heart && typeof cat.need_heart === "object" ? cat.need_heart : {};
+    var b = Number(base[slotKey]) || 0;
+    var cur = Number(inst._needHeartDelta[slotKey]) || 0;
+    /* step = -1 で need を増やす方向、step = +1 で減らす方向。
+       ただし effective = max(0, b + delta) なので、delta は -b 以下にしない。
+       (delta < 0 が「減らす」方向。これは UI 上の「＋」=減らすに対応。) */
+    /* step = +1（＋ボタン）→ deltaを-1する（必要ハート減）, step = -1（−ボタン）→ deltaを+1する */
+    var nextDelta = cur + (step > 0 ? -1 : 1);
+    /* 範囲制限: 基本 b に対し、effective = b + delta は [0, b + 9] で十分。 */
+    if (b + nextDelta < 0) nextDelta = -b;
+    if (b + nextDelta > b + 9) nextDelta = 9;
+    inst._needHeartDelta[slotKey] = nextDelta;
+  }
+
+  function resetLiveNeedHeartDeltaOne(instId) {
+    var inst = findLiveInstanceById(instId);
+    if (!inst) return;
+    if (inst._needHeartDelta) delete inst._needHeartDelta;
+  }
+
+  function resetAllLiveNeedHeartDelta() {
+    ["left", "center", "right"].forEach(function (k) {
+      (state.liveArea[k] || []).forEach(function (inst) {
+        if (inst && inst._needHeartDelta) delete inst._needHeartDelta;
+      });
+    });
+  }
+
+  /** ライブカードが解決ゾーン経由で控え室へ動くタイミングや盤面リセット時に呼ぶ */
+  function clearAllLiveNeedHeartDeltaMarkers() {
+    ["left", "center", "right"].forEach(function (k) {
+      (state.liveArea[k] || []).forEach(function (inst) {
+        if (inst && inst._needHeartDelta) delete inst._needHeartDelta;
+      });
+    });
+  }
+
+  $("btn-open-live-need-heart-adjust")?.addEventListener("click", function () {
+    if (!state.liveStatsAfterBegin) {
+      showToast("ライブ計算（ライブ開始後）モードのときに使えます");
+      return;
+    }
+    openLiveNeedHeartAdjustDialog();
+  });
+
+  var liveAdjustBody = document.getElementById("dlg-live-need-heart-adjust-body");
+  if (liveAdjustBody) {
+    liveAdjustBody.addEventListener("click", function (ev) {
+      var t = ev.target instanceof Element ? ev.target : null;
+      if (!t) return;
+      var row = t.closest(".live-need-adjust-row");
+      if (row) {
+        var instId = row.getAttribute("data-inst-id") || "";
+        var slotKey = row.getAttribute("data-slot-key") || "";
+        if (t.classList.contains("live-need-adjust-row__inc")) {
+          pushHistoryBefore("live-need-heart-adjust");
+          bumpLiveNeedHeartDelta(instId, slotKey, +1);
+          renderLiveNeedHeartAdjustDialogBody();
+          render();
+          return;
+        }
+        if (t.classList.contains("live-need-adjust-row__dec")) {
+          pushHistoryBefore("live-need-heart-adjust");
+          bumpLiveNeedHeartDelta(instId, slotKey, -1);
+          renderLiveNeedHeartAdjustDialogBody();
+          render();
+          return;
+        }
+      }
+      var card = t.closest(".live-need-adjust-card");
+      if (card && t.classList.contains("live-need-adjust-card__reset")) {
+        var iid = card.getAttribute("data-inst-id") || "";
+        pushHistoryBefore("live-need-heart-adjust-reset-one");
+        resetLiveNeedHeartDeltaOne(iid);
+        renderLiveNeedHeartAdjustDialogBody();
+        render();
+      }
+    });
+  }
+  $("dlg-live-need-heart-adjust-reset")?.addEventListener("click", function () {
+    pushHistoryBefore("live-need-heart-adjust-reset-all");
+    resetAllLiveNeedHeartDelta();
+    renderLiveNeedHeartAdjustDialogBody();
+    render();
+  });
+  $("dlg-live-need-heart-adjust-close")?.addEventListener("click", function () {
+    var dlg = document.getElementById("dlg-live-need-heart-adjust");
+    if (dlg && typeof dlg.close === "function") dlg.close();
+  });
+
+  /* 後で resolution-flush 系で呼べるよう window 経由でも参照可能にする（fallback） */
+  window.__llocgClearLiveNeedHeartDeltaMarkers = clearAllLiveNeedHeartDeltaMarkers;
 
   function doLiveTurnStart() {
     if (state.awaitingTurnStart) {
@@ -7161,8 +7408,10 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   });
 
   $("btn-undo")?.addEventListener("click", doUndo);
+  $("btn-undo-under-prob")?.addEventListener("click", doUndo);
 
   $("btn-redo")?.addEventListener("click", doRedo);
+  $("btn-redo-under-prob")?.addEventListener("click", doRedo);
 
   $("btn-help")?.addEventListener("click", () => {
     const dlg = document.getElementById("dlg-help");
@@ -7562,6 +7811,16 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     renderSynchronouslyOnce();
   };
   window.addEventListener("keydown", window.__llocgWaKeyHandler, true);
+
+  /* カタログ詳細から「特殊ハート」分類が手動上書きされたら、各種パネルを再計算 */
+  window.addEventListener("llocg:specialBhOverrideChanged", function () {
+    try {
+      syncDeckPickClassicOddsPanel();
+    } catch (_) { /* noop */ }
+    try {
+      syncLiveTurnStatsPanel();
+    } catch (_) { /* noop */ }
+  });
 
   const btnHandMask = $("toggle-hand-mask");
   if (sessionStorage.getItem("llocg_hide_hand_stream") === "1") {

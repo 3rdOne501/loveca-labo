@@ -41,8 +41,8 @@ export const SAMPLE_DECK_RECIPES_PUBLIC_FILENAME = "sample-deck-recipes.public.j
 /** カードDB の URL 上書き（UI からは変更不可。未設定・空なら既定 URL） */
 export const STORAGE_CARDS_JSON_OVERRIDE = "llocg_cards_json_override";
 
-/** カード一覧の「商品」絞り込み既定（DB の product と同一。無ければ「スタートデッキ」＋「ラブライブ」を含む商品。ページを開くたびに適用） */
-export const FIRST_VISIT_CATALOG_PRODUCT_EXACT = "スタートデッキラブライブ！";
+/** カード一覧の「商品」絞り込み既定（空文字なら「全商品」表示。ページを開くたびに適用） */
+export const FIRST_VISIT_CATALOG_PRODUCT_EXACT = "";
 
 /** レギュ・禁止メモ（デッキ構築用・任意） */
 export const STORAGE_REGULATION_NOTE = "llocg_regulation_note";

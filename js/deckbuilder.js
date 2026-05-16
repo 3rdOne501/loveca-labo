@@ -4014,6 +4014,8 @@ export function initDeckBuilder(root, { onStartGame }) {
 
   function applyStartupCatalogProductFilter() {
     const want = FIRST_VISIT_CATALOG_PRODUCT_EXACT;
+    /* 空文字なら「全商品」表示にしたいので何も適用しない（既定の "" 状態に任せる） */
+    if (!want) return;
     /** @type {Set<string>} */
     const products = new Set();
     cards.forEach(function (c) {
@@ -4021,12 +4023,6 @@ export function initDeckBuilder(root, { onStartGame }) {
     });
     var pick = "";
     if (products.has(want)) pick = want;
-    else {
-      products.forEach(function (p) {
-        if (pick) return;
-        if (p.indexOf("スタートデッキ") >= 0 && p.indexOf("ラブライブ") >= 0) pick = p;
-      });
-    }
     const sel = el("filter-product");
     if (pick && sel) {
       var ok = Array.prototype.some.call(sel.options, function (o) {
@@ -4049,6 +4045,11 @@ export function initDeckBuilder(root, { onStartGame }) {
   wireSampleRecipesDnDOnce();
   wirePeekListRoleEditorOnce();
   wireDeckPeekInlineStatusCloseOnce();
+  /* 特殊ハートのユーザー上書きが変わったらカードグリッドとデッキ集計を再描画 */
+  window.addEventListener("llocg:specialBhOverrideChanged", function () {
+    try { scheduleRenderCardGrid(); } catch (_) { /* noop */ }
+    try { renderCounts(); } catch (_) { /* noop */ }
+  });
   renderPresetSelect();
   renderCounts();
   renderDeckList();

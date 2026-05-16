@@ -21,8 +21,51 @@ const SYNC_KEYS = [STORAGE_DECK_LIBRARY, STORAGE_DECK];
 
 /** @typedef {{ uid: string, displayName: string|null, photoURL: string|null, email: string|null }} CloudUserSummary */
 
+/**
+ * 直近ログイン情報のローカルキャッシュキー。リロード直後、Firebase Auth が IndexedDB から
+ * 復元する前に「ログイン中表示」を仮表示するために使う。Firebase 側で確定したらこのキャッシュを更新する。
+ */
+const LOCAL_USER_CACHE_KEY = "llocg_cloud_user_cache";
+
+/** @returns {CloudUserSummary|null} */
+function loadCachedCloudUser() {
+  try {
+    const raw = localStorage.getItem(LOCAL_USER_CACHE_KEY);
+    if (!raw) return null;
+    const o = JSON.parse(raw);
+    if (o && typeof o === "object" && typeof o.uid === "string" && o.uid) {
+      return {
+        uid: String(o.uid),
+        displayName: o.displayName != null ? String(o.displayName) : null,
+        photoURL: o.photoURL != null ? String(o.photoURL) : null,
+        email: o.email != null ? String(o.email) : null,
+      };
+    }
+  } catch (_) {
+    /* noop */
+  }
+  return null;
+}
+
+function saveCachedCloudUser(u) {
+  try {
+    if (!u) {
+      localStorage.removeItem(LOCAL_USER_CACHE_KEY);
+    } else {
+      localStorage.setItem(LOCAL_USER_CACHE_KEY, JSON.stringify({
+        uid: u.uid,
+        displayName: u.displayName || null,
+        photoURL: u.photoURL || null,
+        email: u.email || null,
+      }));
+    }
+  } catch (_) {
+    /* noop */
+  }
+}
+
 /** @type {CloudUserSummary|null} */
-let currentUser = null;
+let currentUser = loadCachedCloudUser();
 /** @type {Set<(u: CloudUserSummary|null) => void>} */
 const userListeners = new Set();
 
@@ -111,6 +154,7 @@ async function loadFirebaseSdk(config) {
     authMod.onAuthStateChanged(_auth, (user) => {
       if (!user) {
         currentUser = null;
+        saveCachedCloudUser(null);
         notifyUserListeners();
         return;
       }
@@ -120,6 +164,7 @@ async function loadFirebaseSdk(config) {
         photoURL: user.photoURL || null,
         email: user.email || null,
       };
+      saveCachedCloudUser(currentUser);
       notifyUserListeners();
       pullCloudStateAndMerge().catch(function (err) {
         console.warn("[cloudAuth] pull failed:", err);
