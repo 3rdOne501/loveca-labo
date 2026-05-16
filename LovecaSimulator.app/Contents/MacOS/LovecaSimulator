@@ -1,11 +1,165 @@
 #!/usr/bin/env bash
-set -euo pipefail
+# LovecaSimulator.app — ローカル HTTP サーバを立ててブラウザで開く（単体起動・同梱 www 対応）
+set -uo pipefail
 
-HERE="$( cd "$( dirname "${BASH_SOURCE[0]:-$0}" )" && pwd )"
-SCRIPT="$( cd "$HERE/../../../scripts" && pwd )/start-oneclick.sh"
+LOG_DIR="${HOME}/Library/Logs/LovecaLabo"
+mkdir -p "$LOG_DIR" 2>/dev/null || true
+LOG="${LOG_DIR}/launcher.log"
+{
+  echo "=== $(date '+%Y-%m-%d %H:%M:%S') ==="
+  echo "argv: $*"
+  echo "pwd: $(pwd)"
+} >>"$LOG" 2>/dev/null
 
-if [[ ! -x "$SCRIPT" ]]; then
-  chmod +x "$SCRIPT" 2>/dev/null || true
+log() { echo "$*" >>"$LOG" 2>/dev/null; }
+
+alert_user() {
+  local msg="$1"
+  log "ALERT: $msg"
+  if command -v osascript >/dev/null 2>&1; then
+    osascript -e "display alert \"Loveca Labo\" message \"${msg//\"/\\\"}\" as warning" 2>/dev/null || true
+  fi
+  echo "Loveca Labo: $msg" >&2
+}
+
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+CONTENTS="$(cd "$HERE/.." && pwd)"
+BUNDLE="$(cd "$CONTENTS/.." && pwd)"
+
+# index.html と js/main.js があるディレクトリを上方向に探索
+find_site_root() {
+  local start="$1"
+  local d="$start"
+  local i=0
+  while [[ $i -lt 10 && -n "$d" ]]; do
+    if [[ -f "$d/index.html" && -f "$d/js/main.js" ]]; then
+      echo "$d"
+      return 0
+    fi
+    [[ "$d" == "/" ]] && break
+    d="$(dirname "$d")"
+    i=$((i + 1))
+  done
+  return 1
+}
+
+ROOT=""
+for candidate in \
+  "${LL_OCG_ROOT:-}" \
+  "$(find_site_root "$(dirname "$BUNDLE")")" \
+  "$(find_site_root "$CONTENTS/Resources/www")" \
+  "$(find_site_root "$(dirname "$BUNDLE")/ll-ocg-tools")"
+do
+  if [[ -n "$candidate" && -f "$candidate/index.html" ]]; then
+    ROOT="$candidate"
+    break
+  fi
+done
+
+log "ROOT=${ROOT:-（未検出）}"
+
+ONLINE_URL="${LL_OCG_ONLINE_URL:-https://3rdone501.github.io/loveca-labo/}"
+
+server_ok() {
+  local base="$1"
+  if ! command -v curl >/dev/null 2>&1; then
+    return 0
+  fi
+  local body=""
+  body="$(curl -sf --max-time 3 "${base}/index.html" 2>/dev/null)" || return 1
+  [[ "${#body}" -gt 200 ]] || return 1
+  case "$body" in
+    *"Loveca Labo"*|*"ll-ocg-tools"*|*"js/main.js"*) return 0 ;;
+  esac
+  return 1
+}
+
+port_busy() {
+  local p="$1"
+  if command -v lsof >/dev/null 2>&1; then
+    lsof -i ":${p}" -sTCP:LISTEN >/dev/null 2>&1
+  else
+    return 1
+  fi
+}
+
+start_python_server() {
+  local p="$1"
+  local root="$2"
+  if ! command -v python3 >/dev/null 2>&1; then
+    log "python3 not found"
+    return 1
+  fi
+  cd "$root" || return 1
+  if port_busy "$p"; then
+    lsof -ti ":${p}" 2>/dev/null | xargs kill -9 2>/dev/null || true
+    sleep 0.2
+  fi
+  # 古い Python でも動くよう cd + 素朴な http.server を優先
+  if python3 -m http.server --help 2>&1 | grep -q -- '--directory'; then
+    python3 -m http.server "$p" --bind 127.0.0.1 --directory "$root" >>"$LOG" 2>&1 &
+  else
+    python3 -m http.server "$p" >>"$LOG" 2>&1 &
+  fi
+  local pid=$!
+  echo "$pid" >"${TMPDIR:-/tmp}/loveca-labo-http-${p}.pid"
+  local n=0
+  while [[ $n -lt 15 ]]; do
+    if server_ok "http://127.0.0.1:${p}"; then
+      log "server up on $p pid=$pid"
+      return 0
+    fi
+    n=$((n + 1))
+    sleep 0.25
+  done
+  kill "$pid" 2>/dev/null || true
+  log "server failed on port $p"
+  return 1
+}
+
+open_url() {
+  local url="$1"
+  log "open $url"
+  if command -v open >/dev/null 2>&1; then
+    open "$url" 2>>"$LOG" || return 1
+    return 0
+  fi
+  return 1
+}
+
+# --- ローカルサイトが見つかった場合 ---
+if [[ -n "$ROOT" ]]; then
+  BASE_PORT="${LOCAL_PORT:-8844}"
+  URL=""
+  for try in $(seq 0 15); do
+    p=$((BASE_PORT + try))
+    base="http://127.0.0.1:${p}"
+    if port_busy "$p" && server_ok "$base"; then
+      URL="${base}/index.html"
+      break
+    fi
+    if ! port_busy "$p" && start_python_server "$p" "$ROOT"; then
+      URL="${base}/index.html"
+      break
+    fi
+  done
+  if [[ -n "$URL" ]]; then
+    if open_url "$URL"; then
+      exit 0
+    fi
+    alert_user "ブラウザを開けませんでした。次の URL を手動で開いてください:\n${URL}"
+    exit 1
+  fi
+  alert_user "ローカルサーバを起動できませんでした（ポート ${BASE_PORT} 付近が使用中かもしれません）。\nターミナルで lsof -ti :${BASE_PORT} | xargs kill を試すか、オンライン版を開きます。"
 fi
 
-exec /usr/bin/env bash "$SCRIPT"
+# --- フォールバック: GitHub Pages ---
+if open_url "$ONLINE_URL"; then
+  if [[ -z "$ROOT" ]]; then
+    alert_user "ローカルファイルが見つからなかったため、オンライン版（GitHub Pages）を開きました。\nオフライン利用時は LovecaSimulator.app を ll-ocg-tools フォルダ内に置くか、scripts/package-lovecasimulator-app.sh を実行して同梱データを作成してください。"
+  fi
+  exit 0
+fi
+
+alert_user "起動に失敗しました。ログ: ${LOG}"
+exit 1

@@ -8,6 +8,10 @@
     <string>dev.loveca.tools.oneclick</string>
     <key>CFBundleName</key>
     <string>ラブカシミュレーター</string>
+    <key>CFBundleDisplayName</key>
+    <string>Loveca Labo</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
