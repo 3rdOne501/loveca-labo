@@ -306,3 +306,39 @@ export function catalogDrawYellBadgeHtml() {
 export function catalogNoteLiveBadgeHtml() {
   return htmlStatusGameIconImg("音符ライブ／スコア", GAME_STATUS_ICON_ART_DIR + ART_FILE_BY_KEY.score, "dlg-card-catalog-badge-img");
 }
+
+var __gsiArtPrefetchStarted = false;
+
+/**
+ * ラブカデータ１ PNG を先読みし、ステータス欄での初出遅れを抑える。
+ */
+export function prefetchGameStatusArtBundledEarly() {
+  if (__gsiArtPrefetchStarted) return;
+  __gsiArtPrefetchStarted = true;
+  if (typeof document === "undefined") return;
+
+  /** @type {Record<string, 1>} */
+  var uniq = {};
+  Object.keys(ART_FILE_BY_KEY || {}).forEach(function (canon) {
+    var f = ART_FILE_BY_KEY[canon];
+    if (!f || uniq[f]) return;
+    uniq[f] = 1;
+    var href = resolveGameStatusBundledHref(GAME_STATUS_ICON_ART_DIR + f);
+    try {
+      var lk = document.createElement("link");
+      lk.rel = "preload";
+      lk.as = "image";
+      lk.href = href;
+      document.head.appendChild(lk);
+    } catch (_) {
+      /* noop */
+    }
+    try {
+      var im = new Image();
+      im.decoding = "async";
+      im.src = href;
+    } catch (_) {
+      /* noop */
+    }
+  });
+}

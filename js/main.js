@@ -1,8 +1,9 @@
 import { loadCardDatabase, prefetchDeckCardImagesFromMap, getCard } from "./cards.js";
-import { STORAGE_PLAY_RESUME } from "./config.js";
+import { STORAGE_PLAY_RESUME, STORAGE_BUILDER_UI_RESTORE_FLAG } from "./config.js";
 import { normalizeDeckMapCounts } from "./deckLibrary.js";
 import { initDeckBuilder, loadDeckBundleFromStorage } from "./deckbuilder.js";
 import { initPublishedSampleRecipes } from "./sampleDeckRecipes.js";
+import { prefetchGameStatusArtBundledEarly } from "./gameStatusIcons.js";
 import { mountSimulator, teardownDeckPileLayoutWatchers } from "./simulator.js";
 import { showToast } from "./ui.js";
 
@@ -136,6 +137,11 @@ function startApp(viewDeck, viewGame, statusEl) {
   hideBootToolbar();
   if (!appStarted) {
     appStarted = true;
+    try {
+      prefetchGameStatusArtBundledEarly();
+    } catch (_) {
+      /* noop */
+    }
     initDeckBuilder(viewDeck, {
       onStartGame: (deckMap) => {
         try {
@@ -192,8 +198,12 @@ function startApp(viewDeck, viewGame, statusEl) {
 
 function tryLoadDatabase(viewDeck, viewGame, statusEl) {
   showAppBootLoading();
-  loadCardDatabase(statusEl)
-    .then(() => initPublishedSampleRecipes())
+  Promise.all([
+    loadCardDatabase(statusEl),
+    initPublishedSampleRecipes().catch(function (e) {
+      console.warn("[ll-ocg-tools] sample recipes init failed:", e);
+    }),
+  ])
     .then(() => {
       try {
         const b = loadDeckBundleFromStorage();
@@ -201,7 +211,13 @@ function tryLoadDatabase(viewDeck, viewGame, statusEl) {
       } catch (_) {
         /* noop */
       }
-      startApp(viewDeck, viewGame, statusEl);
+      try {
+        startApp(viewDeck, viewGame, statusEl);
+      } catch (err) {
+        console.error(err);
+        hideAppBootLoading();
+        showBootToolbar("初期化に失敗しました。再読込または再試行してください。");
+      }
     })
     .catch((e) => {
       const msg = String(e.message || e);
@@ -291,6 +307,16 @@ function wirePageReloadButtons() {
       if (!el || typeof el.closest !== "function") return;
       const hit = el.closest("#btn-reload-builder, #btn-reload-play");
       if (!hit) return;
+      if (hit.id === "btn-reload-builder") {
+        try {
+          if (typeof window.__llocgPersistDeckBuilderUi === "function") {
+            window.__llocgPersistDeckBuilderUi();
+          }
+          sessionStorage.setItem(STORAGE_BUILDER_UI_RESTORE_FLAG, "1");
+        } catch (_) {
+          /* noop */
+        }
+      }
       doHardReload(ev);
     },
     { capture: true },

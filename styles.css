@@ -629,6 +629,31 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
   max-height: min(calc(100svh - 13rem), 42svh, 520px);
 }
 
+/* 登録デッキ統計を開いたときも一覧が十分残るように高さを抑える（サンプルとの併用可） */
+#view-deck.view-deck--deck-registration-open .card-panel-body-stack .card-grid-scroll {
+  flex: 1 1 52%;
+  min-height: min(220px, 44vh);
+  min-height: min(220px, 44dvh);
+  max-height: min(calc(100vh - 15rem), 54vh, 600px);
+  max-height: min(calc(100svh - 15rem), 54svh, 600px);
+}
+
+#view-deck.view-deck--deck-registration-open.view-deck--sample-panel-open .card-panel-body-stack .card-grid-scroll {
+  flex: 1 1 38%;
+  min-height: min(200px, 38vh);
+  min-height: min(200px, 38dvh);
+  max-height: min(calc(100vh - 16rem), 48vh, 520px);
+  max-height: min(calc(100svh - 16rem), 48svh, 520px);
+}
+
+#view-deck.view-deck--deck-registration-open.view-deck--sample-panel-open .card-panel-body-stack .sample-recipes-scroll {
+  flex: 1 1 36%;
+  min-height: min(180px, 32vh);
+  min-height: min(180px, 32dvh);
+  max-height: min(calc(100vh - 16rem), 40vh, 480px);
+  max-height: min(calc(100svh - 16rem), 40svh, 480px);
+}
+
 /* 開発者: サンプルサムネイルをカード画像から選択 */
 .sample-thumb-pick-backdrop {
   position: fixed;
@@ -3935,6 +3960,10 @@ table.deck-odds-grid {
   border-color: rgba(210, 210, 220, 0.45);
   background: rgba(205, 205, 220, 0.14);
 }
+.deck-remain-bh-pill--note-live {
+  border-color: rgba(255, 130, 200, 0.55);
+  background: rgba(255, 100, 180, 0.16);
+}
 .deck-remain-bh-note {
   margin: 0.45rem 0 0;
   font-size: 0.66rem !important;
@@ -5339,10 +5368,10 @@ dialog.app-dialog:not([open]) {
 }
 
 .dlg-status-icon-chip .status-inline-game-icon {
-  height: 1.38rem;
-  width: 1.38rem;
-  max-height: 1.38rem;
-  max-width: 1.38rem;
+  height: 1.05rem;
+  width: 1.05rem;
+  max-height: 1.05rem;
+  max-width: 1.05rem;
   margin: 0;
   vertical-align: middle;
 }
@@ -5360,10 +5389,10 @@ dialog.app-dialog:not([open]) {
 }
 
 .dlg-card-catalog-badge-img {
-  height: 1.75rem;
-  width: 1.75rem;
-  max-height: 2rem;
-  max-width: 2rem;
+  height: 1.28rem;
+  width: 1.28rem;
+  max-height: 1.45rem;
+  max-width: 1.45rem;
   object-fit: contain;
   vertical-align: middle;
   margin: 0 0.12rem 0 0;
@@ -5380,10 +5409,10 @@ dialog.app-dialog:not([open]) {
     max-height: 1.22rem;
   }
   .dlg-status-icon-chip .status-inline-game-icon {
-    height: 1.22rem;
-    width: 1.22rem;
-    max-height: 1.22rem;
-    max-width: 1.22rem;
+    height: 0.92rem;
+    width: 0.92rem;
+    max-height: 0.92rem;
+    max-width: 0.92rem;
   }
   .dlg-card-catalog-ability {
     line-height: 1.72;

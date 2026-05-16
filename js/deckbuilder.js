@@ -11,6 +11,8 @@ import {
   MAIN_SIZE,
   SAMPLE_DECK_RECIPES_PUBLIC_FILENAME,
   STORAGE_ACTIVE_PRESET_ID,
+  STORAGE_BUILDER_UI_RELOAD,
+  STORAGE_BUILDER_UI_RESTORE_FLAG,
   STORAGE_CARD_FAVORITES,
   STORAGE_DECK,
   T_LIVE,
@@ -40,6 +42,7 @@ import {
   uniqueSeries,
   uniqueUnits,
   isHandDependentCost20Member,
+  cardIsNoteLiveCatalog,
 } from "./cards.js";
 import { openCardCatalogDialog } from "./cardCatalogDialog.js";
 import { parseDeckTextRecipe } from "./decklogImport.js";
@@ -100,12 +103,13 @@ function accumulateBladeHeartWeighted(deckMap) {
 }
 
 /**
- * BH 色ピルと同系の見た目で、非BH メンバー／非BH ライブ／♪ライブ BH 枚数を出す。
+ * BH 色ピルと同系の見た目で、非BH メンバー／BH なしライブ／♪ライブ／ライブ BH の集計を出す。
  * @param {number} nonBhMemberCopies
- * @param {number} nonBhLiveCopies
+ * @param {number} nonBhLiveCopies BH 記載のないライブ枚数
  * @param {number} liveBhCopies BH 記載のライブ枚数（♪由来分は色ピル側の title で示す）
+ * @param {number} noteLiveCopies 音符ライブ（♪）と判定されたライブ枚数
  */
-function formatDeckPeekSyntheticBhPillsHtml(nonBhMemberCopies, nonBhLiveCopies, liveBhCopies) {
+function formatDeckPeekSyntheticBhPillsHtml(nonBhMemberCopies, nonBhLiveCopies, liveBhCopies, noteLiveCopies) {
   let html = "";
   if (nonBhMemberCopies > 0) {
     html +=
@@ -119,8 +123,16 @@ function formatDeckPeekSyntheticBhPillsHtml(nonBhMemberCopies, nonBhLiveCopies, 
     html +=
       '<span class="deck-peek-bh-color-pill deck-peek-bh-pill--nonbh-live" title="' +
       escapeHtml("ライブカードで BH 記載なし") +
-      '"><span class="deck-peek-bh-kanji">ライブ非BH</span><span class="deck-peek-bh-pill-qty">× ' +
+      '"><span class="deck-peek-bh-kanji">BHなしライブ</span><span class="deck-peek-bh-pill-qty">× ' +
       nonBhLiveCopies +
+      "</span></span>";
+  }
+  if (noteLiveCopies > 0) {
+    html +=
+      '<span class="deck-peek-bh-color-pill deck-peek-bh-pill--note-live-pill" title="' +
+      escapeHtml("♪ライブ（一覧の♪判定）") +
+      '"><span class="deck-peek-bh-kanji">♪ライブ</span><span class="deck-peek-bh-pill-qty">× ' +
+      noteLiveCopies +
       "</span></span>";
   }
   if (liveBhCopies > 0) {
@@ -141,6 +153,7 @@ function formatDeckPeekSyntheticBhPillsHtml(nonBhMemberCopies, nonBhLiveCopies, 
  * @param {number} bhLiveCopies
  * @param {number} nonBhMemberCopies
  * @param {number} nonBhLiveCopies
+ * @param {number} noteLiveCopies
  */
 function formatBladeHeartBlockHtml(
   byKey,
@@ -149,6 +162,7 @@ function formatBladeHeartBlockHtml(
   bhLiveCopies,
   nonBhMemberCopies,
   nonBhLiveCopies,
+  noteLiveCopies,
   byKeyAdditive,
 ) {
   const entries = Object.entries(byKey).sort(function (a, b) {
@@ -159,13 +173,15 @@ function formatBladeHeartBlockHtml(
     bhMemberCopies +
     '</span> · ライブ <span class="deck-peek-accent">' +
     bhLiveCopies +
-    '</span> · 非BH メンバー <span class="deck-peek-muted-num">' +
+    '</span> · BHなし メンバー <span class="deck-peek-muted-num">' +
     nonBhMemberCopies +
-    '</span> · 非BHライブ <span class="deck-peek-muted-num">' +
+    '</span> · BHなしライブ <span class="deck-peek-muted-num">' +
     nonBhLiveCopies +
+    '</span> · ♪ライブ <span class="deck-peek-muted-num">' +
+    noteLiveCopies +
     "</span></div>";
 
-  const synthetic = formatDeckPeekSyntheticBhPillsHtml(nonBhMemberCopies, nonBhLiveCopies, bhLiveCopies);
+  const synthetic = formatDeckPeekSyntheticBhPillsHtml(nonBhMemberCopies, nonBhLiveCopies, liveBhCopies, noteLiveCopies);
 
   if (entries.length === 0) {
     let body = cardLine;
@@ -401,6 +417,8 @@ export function initDeckBuilder(root, { onStartGame }) {
     lastPanel: "",
     lastCount: -1,
     lastOrderedSig: "",
+    /** 一覧と役割編集・補助パネルの組み合わせが変わったらセルを作り直す */
+    lastLayoutSig: "",
   };
   /** これ未満だと仮想化しないが、フル描画は重いので低めに保つ */
   const CARD_GRID_VIRTUAL_MIN = 36;
@@ -414,10 +432,14 @@ export function initDeckBuilder(root, { onStartGame }) {
   let deckSummaryDebounceTimer = 0;
   /** @type {{ deckSummary: boolean }} */
   let pendingRenderCardGridOpts = { deckSummary: true };
-  /** @type {"catalog"|"deck"} メイン領域（上段）はカタログか登録デッキ */
-  let cardMainMode = "catalog";
+  /** 仮想グリッド用のパネル識別（一覧ビューは常にカタログ） */
+  const CARD_GRID_VIRTUAL_PANEL = "catalog";
   /** 下段サンプル一覧パネルを表示するか（上段と同時表示可） */
   let samplePanelOpen = false;
+  /** 登録デッキ統計（BH・♪など）パネルを表示するか */
+  let deckRegistrationPanelOpen = false;
+  /** 「再読込」復元時にスクロールを戻すための一次バッファ */
+  let pendingBuilderUiRestoreScroll = /** @type {{ card: number, sample: number } | null} */ (null);
   const cards = getAllCards();
   const allCosts = uniqueCosts(cards);
   const filterCosts = {};
@@ -426,6 +448,61 @@ export function initDeckBuilder(root, { onStartGame }) {
   });
 
   const el = (id) => root.querySelector("#" + id) || document.getElementById(id);
+
+  function persistDeckBuilderUiState() {
+    try {
+      var detFi = root.querySelector("#deck-search-panel-filters");
+      var cg = el("card-grid-scroll");
+      var sp = el("sample-recipes-scroll");
+      /** @type {{ v: number, samplePanelOpen: boolean, deckRegistrationPanelOpen: boolean, deckListOpen: boolean, deckSearchFiltersOpen?: boolean, cardGridScrollTop: number, sampleScrollTop: number }} */
+      var payload = {
+        v: 1,
+        samplePanelOpen: !!samplePanelOpen,
+        deckRegistrationPanelOpen: !!deckRegistrationPanelOpen,
+        deckListOpen: !!deckListOpen,
+        cardGridScrollTop: cg ? cg.scrollTop : 0,
+        sampleScrollTop: sp ? sp.scrollTop : 0,
+      };
+      if (detFi && detFi.tagName === "DETAILS") {
+        payload.deckSearchFiltersOpen = /** @type {HTMLDetailsElement} */ (detFi).open;
+      }
+      sessionStorage.setItem(STORAGE_BUILDER_UI_RELOAD, JSON.stringify(payload));
+    } catch (_) {
+      /* noop */
+    }
+  }
+  window.__llocgPersistDeckBuilderUi = persistDeckBuilderUiState;
+
+  function consumeBuilderUiRestoreFlag() {
+    try {
+      if (sessionStorage.getItem(STORAGE_BUILDER_UI_RESTORE_FLAG) !== "1") return;
+      sessionStorage.removeItem(STORAGE_BUILDER_UI_RESTORE_FLAG);
+      var raw = sessionStorage.getItem(STORAGE_BUILDER_UI_RELOAD);
+      if (!raw) return;
+      var o = JSON.parse(raw);
+      if (!o || o.v !== 1) return;
+      if (typeof o.samplePanelOpen === "boolean") samplePanelOpen = o.samplePanelOpen;
+      if (typeof o.deckRegistrationPanelOpen === "boolean") deckRegistrationPanelOpen = o.deckRegistrationPanelOpen;
+      if (typeof o.deckListOpen === "boolean") deckListOpen = o.deckListOpen;
+      var detR = root.querySelector("#deck-search-panel-filters");
+      if (detR && detR.tagName === "DETAILS" && typeof o.deckSearchFiltersOpen === "boolean") {
+        /** @type {HTMLDetailsElement} */ (detR).open = o.deckSearchFiltersOpen;
+      }
+      var wrapDl = el("deck-list-wrap");
+      var btnTl = el("btn-toggle-deck-list");
+      if (wrapDl) wrapDl.hidden = !deckListOpen;
+      if (btnTl) {
+        btnTl.setAttribute("aria-expanded", deckListOpen ? "true" : "false");
+        btnTl.textContent = deckListOpen ? "登録カード一覧を隠す" : "登録カード一覧を表示";
+      }
+      pendingBuilderUiRestoreScroll = {
+        card: typeof o.cardGridScrollTop === "number" ? o.cardGridScrollTop : 0,
+        sample: typeof o.sampleScrollTop === "number" ? o.sampleScrollTop : 0,
+      };
+    } catch (_) {
+      /* noop */
+    }
+  }
 
   const SESSION_SAMPLE_DEV_KEY = "llocg_sample_dev_mode_v1";
   /** 開発者モード・サンプル並べ替え DnD 用 drag 元インデックス */
@@ -689,15 +766,6 @@ export function initDeckBuilder(root, { onStartGame }) {
 
   /** カード一覧グリッド用のフィルタ済み配列（カタログ条件が変わらない限り filterCards を使い回す） */
   function computeFilteredCardListForGrid() {
-    if (cardMainMode === "deck") {
-      const filtered = [];
-      for (const no of Object.keys(deckMap)) {
-        if (!((deckMap[no] || 0) > 0)) continue;
-        const c = getCard(no);
-        if (c) filtered.push(c);
-      }
-      return applyCatalogSortToList(sortRegisteredDeckCards(filtered));
-    }
     if (filterProduct === FILTER_PRODUCT_TEST_CARD_LOG) {
       const key = buildCatalogFilterCacheKey();
       if (key === catalogFilterCacheKey && catalogFilterCached !== null) {
@@ -1614,6 +1682,7 @@ export function initDeckBuilder(root, { onStartGame }) {
     let liveAll = 0;
     let liveNonBh = 0;
     let liveBh = 0;
+    let liveNotePeek = 0;
     let unknownCopies = 0;
     /** @type {Record<string, number>} */
     const byCost = {};
@@ -1636,6 +1705,7 @@ export function initDeckBuilder(root, { onStartGame }) {
         liveAll += n;
         if (cardHasBladeHeart(c)) liveBh += n;
         else liveNonBh += n;
+        if (cardIsNoteLiveCatalog(c)) liveNotePeek += n;
       }
     }
 
@@ -1672,6 +1742,7 @@ export function initDeckBuilder(root, { onStartGame }) {
           liveBh,
           memNonBh,
           liveNonBh,
+          liveNotePeek,
           bhAgg.byKeyAdditive,
         );
     }
@@ -1945,7 +2016,7 @@ export function initDeckBuilder(root, { onStartGame }) {
 
   function writeDeckSummaryDom() {
     const deckSummary = el("card-deck-summary");
-    if (!deckSummary || cardMainMode !== "deck") return;
+    if (!deckSummary || !deckRegistrationPanelOpen) return;
     const costCount = {};
     let memTotal = 0;
     let liveTotal = 0;
@@ -1982,6 +2053,7 @@ export function initDeckBuilder(root, { onStartGame }) {
     let memNonBhCount = 0;
     let liveBhCount = 0;
     let liveNonBhCount = 0;
+    let liveNoteCount = 0;
     for (const [no, n] of Object.entries(deckMap)) {
       const qty = Number(n) || 0;
       if (qty <= 0) continue;
@@ -1993,6 +2065,7 @@ export function initDeckBuilder(root, { onStartGame }) {
       } else if (effectiveMainDeckCategory(c) === T_LIVE) {
         if (cardHasBladeHeart(c)) liveBhCount += qty;
         else liveNonBhCount += qty;
+        if (cardIsNoteLiveCatalog(c)) liveNoteCount += qty;
       }
     }
     if (chartCols.length) {
@@ -2038,6 +2111,7 @@ export function initDeckBuilder(root, { onStartGame }) {
         liveBhCount,
         memNonBhCount,
         liveNonBhCount,
+        liveNoteCount,
         bhAgg.byKeyAdditive,
       ) +
       "</div>" +
@@ -2050,14 +2124,21 @@ export function initDeckBuilder(root, { onStartGame }) {
     const hit = el("card-hit-count");
     if (!hit) return;
     let line = "";
-    if (cardMainMode === "deck") {
-      let sum = 0;
-      for (const no of Object.keys(deckMap)) sum += deckMap[no] || 0;
-      line = filtered.length + " 種 · 合計 " + sum + " 枚";
-    } else if (filtered.length === cards.length) {
+    let sumReg = 0;
+    const regKinds = Object.keys(deckMap).filter(function (no) {
+      return (deckMap[no] || 0) > 0;
+    }).length;
+    for (const no of Object.keys(deckMap)) sumReg += deckMap[no] || 0;
+    if (filtered.length === cards.length) {
       line = "全 " + cards.length + " 種";
     } else {
       line = "表示 " + filtered.length + " / 全 " + cards.length + " 種";
+    }
+    if (regKinds > 0) {
+      line += " · 登録 " + regKinds + " 種／" + sumReg + " 枚";
+    }
+    if (deckRegistrationPanelOpen) {
+      line += " · 登録統計表示";
     }
     if (samplePanelOpen) {
       var rl = getSampleDeckRecipes();
@@ -2115,12 +2196,13 @@ export function initDeckBuilder(root, { onStartGame }) {
     const cardScroll = el("card-grid-scroll");
 
     root.classList.toggle("view-deck--sample-panel-open", samplePanelOpen);
+    root.classList.toggle("view-deck--deck-registration-open", deckRegistrationPanelOpen);
 
     if (sampleScroll) sampleScroll.hidden = !samplePanelOpen;
     if (cardScroll) cardScroll.hidden = false;
 
     if (heading) {
-      heading.textContent = cardMainMode === "deck" ? "登録中のデッキ" : "カード一覧";
+      heading.textContent = "カード一覧";
     }
 
     if (samplePanelOpen) {
@@ -2129,9 +2211,11 @@ export function initDeckBuilder(root, { onStartGame }) {
 
     /** @type {typeof cards} */
     const filtered = computeFilteredCardListForGrid();
+    const layoutSig =
+      (deckRegistrationPanelOpen ? "reg1" : "reg0") + "|" + (samplePanelOpen ? "sam1" : "sam0");
     updateCardHitCountFromFiltered(filtered);
     if (deckSummary) {
-      if (cardMainMode !== "deck") {
+      if (!deckRegistrationPanelOpen) {
         deckSummary.hidden = true;
         deckSummary.innerHTML = "";
       } else if (opts.deckSummary) {
@@ -2149,11 +2233,12 @@ export function initDeckBuilder(root, { onStartGame }) {
       cardGridVirtual.active = false;
       if (topSp) topSp.style.height = "0px";
       if (botSp) botSp.style.height = "0px";
-      if (cardGridVirtual.lastPanel !== cardMainMode) {
+      if (cardGridVirtual.lastPanel !== CARD_GRID_VIRTUAL_PANEL || cardGridVirtual.lastLayoutSig !== layoutSig) {
         grid.innerHTML = "";
       }
       reuseOrCreateCardGridItems(grid, filtered);
-      cardGridVirtual.lastPanel = cardMainMode;
+      cardGridVirtual.lastPanel = CARD_GRID_VIRTUAL_PANEL;
+      cardGridVirtual.lastLayoutSig = layoutSig;
       cardGridVirtual.lastOrderedSig = filtered
         .map(function (c) {
           return c.card_no;
@@ -2163,24 +2248,26 @@ export function initDeckBuilder(root, { onStartGame }) {
     }
 
     const prevPanel = cardGridVirtual.lastPanel;
+    const prevLayoutSig = cardGridVirtual.lastLayoutSig;
     const needScrollReset =
       !cardGridVirtual.active ||
-      prevPanel !== cardMainMode ||
+      prevPanel !== CARD_GRID_VIRTUAL_PANEL ||
       cardGridVirtual.lastCount !== filtered.length;
     if (needScrollReset && scrollEl) {
       scrollEl.scrollTop = 0;
       cardGridVirtualMeasureGuard = 0;
     }
-    if (prevPanel !== cardMainMode) {
+    if (prevPanel !== CARD_GRID_VIRTUAL_PANEL || prevLayoutSig !== layoutSig) {
       grid.innerHTML = "";
       cardGridVirtual.w0 = -1;
     }
-    cardGridVirtual.lastPanel = cardMainMode;
+    cardGridVirtual.lastPanel = CARD_GRID_VIRTUAL_PANEL;
+    cardGridVirtual.lastLayoutSig = layoutSig;
     cardGridVirtual.lastCount = filtered.length;
     cardGridVirtual.active = true;
     cardGridVirtual.list = filtered;
-    if (prevPanel === cardMainMode) cardGridVirtual.w0 = -1;
-    cardGridVirtual.rowH = cardMainMode === "deck" ? 268 : 234;
+    if (prevPanel === CARD_GRID_VIRTUAL_PANEL && prevLayoutSig === layoutSig) cardGridVirtual.w0 = -1;
+    cardGridVirtual.rowH = deckRegistrationPanelOpen ? 268 : 234;
     syncVirtualCardGridWindow(true);
     cardGridVirtual.lastOrderedSig = filtered.map(function (c) {
       return c.card_no;
@@ -2224,10 +2311,9 @@ export function initDeckBuilder(root, { onStartGame }) {
     if (inDeck && middleCardNos.has(card.card_no))
       pills.push('<span class="card-thumb-role card-thumb-role--mid">中間</span>');
     const rolesHtml = pills.length ? '<div class="card-thumb-roles">' + pills.join("") + "</div>" : "";
+    var regQty = deckMap[card.card_no] || 0;
     const qtyBadge =
-      cardMainMode === "deck"
-        ? '<span class="thumb-deck-qty">' + (deckMap[card.card_no] || 0) + " 枚</span>"
-        : "";
+      regQty > 0 ? '<span class="thumb-deck-qty">' + regQty + " 枚</span>" : "";
     div.innerHTML =
       rolesHtml +
       qtyBadge +
@@ -2296,7 +2382,7 @@ export function initDeckBuilder(root, { onStartGame }) {
       })();
     });
     wrap.appendChild(div);
-    if (cardMainMode === "deck") {
+    if (deckRegistrationPanelOpen && inDeck) {
       const roleRow = document.createElement("div");
       roleRow.className = "card-thumb-role-edit-row";
       roleRow.innerHTML =
@@ -2477,20 +2563,18 @@ export function initDeckBuilder(root, { onStartGame }) {
       } else if (er) {
         er.remove();
       }
-      if (cardMainMode === "deck") {
-        const qn = deckMap[no] || 0;
-        let badge = thumb.querySelector(".thumb-deck-qty");
-        if (qn > 0) {
-          const qtyText = qn + " 枚";
-          if (badge) badge.textContent = qtyText;
-          else {
-            const typeSpan = thumb.querySelector(".thumb-type");
-            if (typeSpan)
-              typeSpan.insertAdjacentHTML("beforebegin", '<span class="thumb-deck-qty">' + qtyText + "</span>");
-          }
-        } else if (badge) {
-          badge.remove();
+      const qn = deckMap[no] || 0;
+      let badge = thumb.querySelector(".thumb-deck-qty");
+      if (qn > 0) {
+        const qtyText = qn + " 枚";
+        if (badge) badge.textContent = qtyText;
+        else {
+          const typeSpan = thumb.querySelector(".thumb-type");
+          if (typeSpan)
+            typeSpan.insertAdjacentHTML("beforebegin", '<span class="thumb-deck-qty">' + qtyText + "</span>");
         }
+      } else if (badge) {
+        badge.remove();
       }
     }
   }
@@ -2511,7 +2595,7 @@ export function initDeckBuilder(root, { onStartGame }) {
     }
     const filtered = computeFilteredCardListForGrid();
     updateCardHitCountFromFiltered(filtered);
-    if (cardMainMode === "deck") scheduleDeckSummaryDebounced();
+    if (deckRegistrationPanelOpen) scheduleDeckSummaryDebounced();
     const newSig = filtered
       .map(function (c) {
         return c.card_no;
@@ -2532,7 +2616,7 @@ export function initDeckBuilder(root, { onStartGame }) {
     scheduleRenderDeckList();
     const filtered = computeFilteredCardListForGrid();
     updateCardHitCountFromFiltered(filtered);
-    if (cardMainMode === "deck") scheduleDeckSummaryDebounced();
+    if (deckRegistrationPanelOpen) scheduleDeckSummaryDebounced();
     const newSig = filtered
       .map(function (c) {
         return c.card_no;
@@ -3268,7 +3352,7 @@ export function initDeckBuilder(root, { onStartGame }) {
       if (act === "copy") {
         applySampleRecipeToMainDeck(recipe);
         pruneOrphanRoleLabels();
-        setCardMainMode("deck");
+        deckRegistrationPanelOpen = true;
         showToast("「" + recipe.name + "」を編集中デッキに読み込みました（保存デッキ一覧には追加していません）");
         return;
       }
@@ -3381,15 +3465,16 @@ export function initDeckBuilder(root, { onStartGame }) {
     const bc = el("btn-card-panel-catalog");
     const bd = el("btn-card-panel-deck");
     const bs = el("btn-card-panel-samples");
+    const baseline = !samplePanelOpen && !deckRegistrationPanelOpen;
     if (bc) {
-      bc.setAttribute("aria-pressed", cardMainMode === "catalog" ? "true" : "false");
-      bc.classList.toggle("primary", cardMainMode === "catalog");
-      bc.classList.toggle("secondary", cardMainMode !== "catalog");
+      bc.setAttribute("aria-pressed", baseline ? "true" : "false");
+      bc.classList.toggle("primary", baseline);
+      bc.classList.toggle("secondary", !baseline);
     }
     if (bd) {
-      bd.setAttribute("aria-pressed", cardMainMode === "deck" ? "true" : "false");
-      bd.classList.toggle("primary", cardMainMode === "deck");
-      bd.classList.toggle("secondary", cardMainMode !== "deck");
+      bd.setAttribute("aria-pressed", deckRegistrationPanelOpen ? "true" : "false");
+      bd.classList.toggle("primary", deckRegistrationPanelOpen);
+      bd.classList.toggle("secondary", !deckRegistrationPanelOpen);
     }
     if (bs) {
       bs.setAttribute("aria-pressed", samplePanelOpen ? "true" : "false");
@@ -3397,14 +3482,6 @@ export function initDeckBuilder(root, { onStartGame }) {
       bs.classList.toggle("primary", samplePanelOpen);
       bs.classList.toggle("secondary", !samplePanelOpen);
     }
-  }
-
-  function setCardMainMode(mode) {
-    if (mode !== "catalog" && mode !== "deck") return;
-    invalidateCatalogFilterCache();
-    cardMainMode = mode;
-    syncCardPanelToggleButtons();
-    scheduleRenderCardGrid();
   }
 
   function toggleSamplePanel() {
@@ -3513,14 +3590,18 @@ export function initDeckBuilder(root, { onStartGame }) {
   if (root.dataset.cardPanelToggleWired !== "1") {
     root.dataset.cardPanelToggleWired = "1";
     el("btn-card-panel-catalog")?.addEventListener("click", function () {
-      setCardMainMode("catalog");
+      samplePanelOpen = false;
+      deckRegistrationPanelOpen = false;
+      syncCardPanelToggleButtons();
+      scheduleRenderCardGrid();
     });
     el("btn-card-panel-samples")?.addEventListener("click", function () {
       toggleSamplePanel();
     });
     el("btn-card-panel-deck")?.addEventListener("click", function () {
-      if (cardMainMode === "deck") setCardMainMode("catalog");
-      else setCardMainMode("deck");
+      deckRegistrationPanelOpen = !deckRegistrationPanelOpen;
+      syncCardPanelToggleButtons();
+      scheduleRenderCardGrid();
     });
   }
 
@@ -3668,6 +3749,9 @@ export function initDeckBuilder(root, { onStartGame }) {
     }
   }
 
+  consumeBuilderUiRestoreFlag();
+  syncCardPanelToggleButtons();
+
   fillSelects();
   applyStartupCatalogProductFilter();
   wireSampleRecipesGridOnce();
@@ -3677,6 +3761,18 @@ export function initDeckBuilder(root, { onStartGame }) {
   renderCounts();
   renderDeckList();
   renderCardGrid();
+  if (pendingBuilderUiRestoreScroll) {
+    var s = pendingBuilderUiRestoreScroll;
+    pendingBuilderUiRestoreScroll = null;
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        var cg = el("card-grid-scroll");
+        if (cg) cg.scrollTop = s.card;
+        var sp = el("sample-recipes-scroll");
+        if (sp) sp.scrollTop = s.sample;
+      });
+    });
+  }
 }
 
 function escapeHtml(s) {

@@ -76,6 +76,10 @@ export const STORAGE_STREAM_MASK_STRENGTH = "llocg_stream_mask_strength";
 /** デッキ構築: お気に入りカード番号（JSON 配列） */
 export const STORAGE_CARD_FAVORITES = "llocg_card_favorites";
 
+/** デッキ編集:「再読込」直前の UI（開閉・スクロール）を次読み込みで復元 */
+export const STORAGE_BUILDER_UI_RELOAD = "llocg_builder_ui_reload_v2";
+export const STORAGE_BUILDER_UI_RESTORE_FLAG = "llocg_builder_restore_ui_next_v1";
+
 /** テストカード（オリカ）採用時に保存するログ（同一ブラウザの localStorage） */
 export const STORAGE_TEST_CARD_LOG = "llocg_test_card_log_v1";
 /** 初回の「ログに保存しますか」の結果のみ記録（"1"＝今後も保存／"0"＝今後も保存しない） */

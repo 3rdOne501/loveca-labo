@@ -3409,7 +3409,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     syncLiveCenterScoreBar(b);
   }
 
-  /** 右下: 山札残りの非BH枚数と BH 色ごとの枚数 */
+  /** 右下: 山札残りの BH 記載なし枚数・♪ライブ枚数・BH 色ごとの枚数 */
   function syncDeckRemainBhPanel() {
     var nonEl = $("deck-remain-nonbh-line");
     var colorsHost = $("deck-remain-bh-colors");
@@ -3423,6 +3423,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       return;
     }
     var nonBh = 0;
+    var noteLive = 0;
     /** @type {Record<number, number>} */
     var slotCount = {};
     for (var i = 0; i < n; i++) {
@@ -3432,6 +3433,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         nonBh++;
         continue;
       }
+      if (cat.type === T_LIVE && cardIsNoteLiveCatalog(cat)) noteLive++;
       if (!cardHasBladeHeart(cat)) {
         nonBh++;
         continue;
@@ -3460,15 +3462,25 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     }
     var nonBhPill =
       '<span class="deck-remain-bh-pill deck-remain-bh-pill--nonbh" data-bh-slot="non">' +
-      '<span class="deck-remain-bh-pill__lab">非BH</span><strong class="deck-remain-bh-pill__n">' +
+      '<span class="deck-remain-bh-pill__lab">BHなし</span><strong class="deck-remain-bh-pill__n">' +
       escapeHtmlPlain(String(nonBh)) +
       "</strong></span>";
-    var bodyRow = '<div class="deck-remain-bh-pill-row">' + nonBhPill + parts.join("") + "</div>";
+    var notePill =
+      noteLive > 0
+        ? '<span class="deck-remain-bh-pill deck-remain-bh-pill--note-live" data-bh-slot="note">' +
+          '<span class="deck-remain-bh-pill__lab">♪ライブ</span><strong class="deck-remain-bh-pill__n">' +
+          escapeHtmlPlain(String(noteLive)) +
+          "</strong></span>"
+        : "";
+    var bodyRow =
+      '<div class="deck-remain-bh-pill-row">' + nonBhPill + notePill + parts.join("") + "</div>";
     colorsHost.innerHTML = bodyRow;
     var deckRemHint = $("deck-remain-zone-hint");
     if (deckRemHint) {
       deckRemHint.textContent =
-        "山札合計 " + n + " 枚。BH 色のピルはカード1枚につき複数色を持てる集計です（非BH は BH 記載のないカード枚数）。";
+        "山札合計 " +
+        n +
+        " 枚。色ピルはカード1枚につき複数色を持てる集計です（BHなし＝BH未記載、♪ライブ＝一覧の♪判定）。";
     }
   }
 
@@ -3485,6 +3497,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       return;
     }
     var nonBh = 0;
+    var noteLive = 0;
     /** @type {Record<number, number>} */
     var slotCount = {};
     for (var wi = 0; wi < n; wi++) {
@@ -3494,6 +3507,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         nonBh++;
         continue;
       }
+      if (catW.type === T_LIVE && cardIsNoteLiveCatalog(catW)) noteLive++;
       if (!cardHasBladeHeart(catW)) {
         nonBh++;
         continue;
@@ -3522,15 +3536,25 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     }
     var nonBhPillW =
       '<span class="deck-remain-bh-pill deck-remain-bh-pill--nonbh" data-bh-slot="non">' +
-      '<span class="deck-remain-bh-pill__lab">非BH</span><strong class="deck-remain-bh-pill__n">' +
+      '<span class="deck-remain-bh-pill__lab">BHなし</span><strong class="deck-remain-bh-pill__n">' +
       escapeHtmlPlain(String(nonBh)) +
       "</strong></span>";
-    var bodyRowW = '<div class="deck-remain-bh-pill-row">' + nonBhPillW + partsW.join("") + "</div>";
+    var notePillW =
+      noteLive > 0
+        ? '<span class="deck-remain-bh-pill deck-remain-bh-pill--note-live" data-bh-slot="note">' +
+          '<span class="deck-remain-bh-pill__lab">♪ライブ</span><strong class="deck-remain-bh-pill__n">' +
+          escapeHtmlPlain(String(noteLive)) +
+          "</strong></span>"
+        : "";
+    var bodyRowW =
+      '<div class="deck-remain-bh-pill-row">' + nonBhPillW + notePillW + partsW.join("") + "</div>";
     colorsHost.innerHTML = bodyRowW;
     var wh = $("waiting-remain-zone-hint");
     if (wh) {
       wh.textContent =
-        "控え室合計 " + n + " 枚。BH 色のピルはカード1枚につき複数色を持てる集計です（非BH は BH 記載のないカード枚数）。";
+        "控え室合計 " +
+        n +
+        " 枚。色ピルはカード1枚につき複数色を持てる集計です（BHなし＝BH未記載、♪ライブ＝一覧の♪判定）。";
     }
   }
 
@@ -4007,13 +4031,13 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       });
       var nonBhCountUser = strictNonBh.length + onpuBh.length;
       var bucketForTypes = strictNonBh.concat(onpuBh);
-      appendBlock("非BH（指定どおりの集計）", [
+      appendBlock("BHなし（指定どおりの集計）", [
         "枚数: " +
           nonBhCountUser +
-          "（BH 非記載のライブ ＋ ♪ライブを非BH枚数に含めます）",
+          "（BH 非記載のライブ ＋ ♪ライブを BHなし 枚数に含めます）",
         "種類内訳: " + (summarizeWaitingCardTypes(bucketForTypes) || "—"),
       ]);
-      appendBlock("音符BH（♪・ライブのブレードハート）", [
+      appendBlock("♪ライブBH（♪由来のライブブレードハート）", [
         "枚数: " + onpuBh.length,
         "種類内訳: " + (summarizeWaitingCardTypes(onpuBh) || "—"),
       ]);

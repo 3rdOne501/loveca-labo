@@ -50,6 +50,14 @@ function escapeHtmlPlain(s) {
     .replace(/"/g, "&quot;");
 }
 
+const TEXT_NONE_JA = "テキストなし";
+
+function wikiPlainEmpty(html) {
+  if (html == null) return true;
+  var t = String(html).replace(/<[^>]*>/g, "").replace(/\s|&nbsp;/g, "").trim();
+  return t.length === 0;
+}
+
 function mergedCatalogCard(c) {
   const cat = getCard(c && c.card_no);
   return cat && typeof cat === "object" ? Object.assign({}, cat, c) : c;
@@ -83,7 +91,12 @@ function wikiAbilityBladeIconHtmlFragment() {
 }
 
 function wikiAbilityToStatusHtml(raw) {
-  if (raw == null || typeof raw !== "string") return "";
+  if (raw == null || typeof raw !== "string") {
+    return '<span class="muted dlg-card-catalog-empty-wiki">' + escapeHtmlPlain(TEXT_NONE_JA) + "</span>";
+  }
+  if (String(raw).trim() === "") {
+    return '<span class="muted dlg-card-catalog-empty-wiki">' + escapeHtmlPlain(TEXT_NONE_JA) + "</span>";
+  }
 
   function escTxt(tx) {
     return escapeHtmlPlain(tx).replace(/\n/g, "<br>");
@@ -119,7 +132,9 @@ function wikiAbilityToStatusHtml(raw) {
   }
   if (!result) result = flushTextSegment(s);
 
-  return result;
+  return wikiPlainEmpty(result)
+    ? '<span class="muted dlg-card-catalog-empty-wiki">' + escapeHtmlPlain(TEXT_NONE_JA) + "</span>"
+    : result;
 }
 
 function formatBladeHeartStatusHtmlRow(bh) {
@@ -223,9 +238,14 @@ export function openCardCatalogDialog(c) {
     );
   }
 
-  var nm = mc.name || c.name || "カード情報";
+  function plainOrNone(v) {
+    var s = v == null ? "" : String(v).trim();
+    return s !== "" ? s : TEXT_NONE_JA;
+  }
+
+  var nm = plainOrNone(mc.name || c.name);
   if (h2) h2.textContent = nm;
-  if (sub) sub.textContent = mc.card_no || c.card_no || "";
+  if (sub) sub.textContent = plainOrNone(mc.card_no || c.card_no);
 
   if (imgCatalog) {
     var src = mc.img || c.img || "";
@@ -240,9 +260,9 @@ export function openCardCatalogDialog(c) {
     }
   }
 
-  var ty = mc.type || c.type || "—";
-  var isLive = ty === T_LIVE;
-  var isMember = ty === T_MEMBER;
+  var tyRaw = mc.type != null && String(mc.type).trim() !== "" ? mc.type : c.type;
+  var isLive = tyRaw === T_LIVE;
+  var isMember = tyRaw === T_MEMBER;
 
   if (badgeEl) {
     var bits = [];
@@ -253,29 +273,29 @@ export function openCardCatalogDialog(c) {
   }
 
   var rows = "";
-  rows += row("タイプ", esc(ty));
+  rows += row("タイプ", esc(plainOrNone(tyRaw)));
 
   var costN = mc.cost != null ? mc.cost : c.cost;
-  if (costN != null && String(costN) !== "") rows += row(isLive ? "スコア" : "コスト／スコア", esc(costN));
+  rows += row(isLive ? "スコア" : "コスト／スコア", esc(plainOrNone(costN)));
 
   var bladeN = mc.blade != null ? mc.blade : c.blade;
-  if (!isLive && bladeN != null && String(bladeN) !== "") rows += row("ブレード", esc(bladeN));
+  if (!isLive) rows += row("ブレード", esc(plainOrNone(bladeN)));
 
-  if (mc.unit) rows += row("ユニット", esc(mc.unit));
-  if (mc.series) rows += row("シリーズ", esc(mc.series));
-  if (mc.product) rows += row("商品", esc(mc.product));
-  if (mc.rare) rows += row("レアリティ", esc(mc.rare));
+  rows += row("ユニット", esc(plainOrNone(mc.unit)));
+  rows += row("シリーズ", esc(plainOrNone(mc.series)));
+  rows += row("商品", esc(plainOrNone(mc.product)));
+  rows += row("レアリティ", esc(plainOrNone(mc.rare)));
 
   var bhLine = formatBladeHeartStatusHtmlRow(mc.blade_heart);
-  if (bhLine) rows += row("BH", bhLine);
+  rows += row("BH", bhLine || escapeHtmlPlain(TEXT_NONE_JA));
 
   if (isMember) {
     var held = formatHeartRecordStatusHtmlRow(mc.base_heart);
-    if (held) rows += row("所持ハート", held);
+    rows += row("所持ハート", held || escapeHtmlPlain(TEXT_NONE_JA));
   }
   if (isLive) {
     var needL = formatHeartRecordStatusHtmlRow(mc.need_heart);
-    if (needL) rows += row("必要ハート", needL);
+    rows += row("必要ハート", needL || escapeHtmlPlain(TEXT_NONE_JA));
   }
 
   var abHtml = wikiAbilityToStatusHtml(mc.ability || "");
@@ -283,15 +303,10 @@ export function openCardCatalogDialog(c) {
   bodyEl.innerHTML = '<dl class="dlg-card-catalog-dl">' + rows + "</dl>";
 
   if (effectSlot) {
-    if (abHtml) {
-      effectSlot.innerHTML =
-        '<h3 class="dlg-card-catalog-ability-heading">効果テキスト</h3><div class="dlg-card-catalog-ability">' +
-        abHtml +
-        "</div>";
-    } else {
-      effectSlot.innerHTML =
-        '<p class="muted dlg-card-catalog-no-effect">効果テキストはカードDBに未定義または取得できませんでした。</p>';
-    }
+    effectSlot.innerHTML =
+      '<h3 class="dlg-card-catalog-ability-heading">効果テキスト</h3><div class="dlg-card-catalog-ability">' +
+      abHtml +
+      "</div>";
   }
 
   if (dlg.showModal) dlg.showModal();

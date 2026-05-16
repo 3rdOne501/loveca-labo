@@ -106,23 +106,33 @@ export async function loadCardDatabase(statusEl) {
   if (statusEl) statusEl.textContent = "";
   const detail = typeof document !== "undefined" ? document.getElementById("app-boot-detail") : null;
   if (detail) detail.textContent = url;
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error("カードデータの取得に失敗しました: " + res.status);
-  catalog = await res.json();
-  catalogKeyByNormalized = new Map();
-  for (const k of Object.keys(catalog)) {
-    if (k.startsWith("_")) continue;
-    const nk = normalizeCardCatalogLookupKey(k);
-    if (!nk) continue;
-    if (!catalogKeyByNormalized.has(nk)) catalogKeyByNormalized.set(nk, k);
+
+  async function loadOnce(cachePolicy) {
+    const res = await fetch(url, { cache: cachePolicy });
+    if (!res.ok) throw new Error("カードデータの取得に失敗しました: " + res.status);
+    catalog = await res.json();
+    catalogKeyByNormalized = new Map();
+    for (const k of Object.keys(catalog)) {
+      if (k.startsWith("_")) continue;
+      const nk = normalizeCardCatalogLookupKey(k);
+      if (!nk) continue;
+      if (!catalogKeyByNormalized.has(nk)) catalogKeyByNormalized.set(nk, k);
+    }
+    list = Object.entries(catalog)
+      .filter(([k]) => !k.startsWith("_"))
+      .map(([, v]) => v)
+      .filter(Boolean);
+    injectUnsetPlaceholderCards();
+    if (detail) detail.textContent = "";
+    return list;
   }
-  list = Object.entries(catalog)
-    .filter(([k]) => !k.startsWith("_"))
-    .map(([, v]) => v)
-    .filter(Boolean);
-  injectUnsetPlaceholderCards();
-  if (detail) detail.textContent = "";
-  return list;
+
+  try {
+    return await loadOnce("no-store");
+  } catch (err) {
+    if (detail) detail.textContent = url + "（再接続します…）";
+    return await loadOnce("default");
+  }
 }
 
 export const UNSET_PLACEHOLDER_PRODUCT = "未設定（テスト用）";
