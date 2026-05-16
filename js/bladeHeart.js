@@ -51,14 +51,28 @@ function escapeHtml(s) {
 }
 
 /**
- * ライブカード側のブレードハート（加点 BH／楽曲ライブ等に付く）。
- * DB に専用フラグは無く、カード種別がライブかつ blade_heart ありで判別する。
+ * ライブカードに BH があるかの粗い判定。**♪ライブ判定にはこの関数を使わないこと**。
+ *
+ * ♪ライブ（＝score 系の特殊ブレードハート）と、ドローエール等のその他特殊 BH を区別するには、
+ * `cards.js` の `cardIsNoteLiveCatalog` を使う必要がある。ここではあくまで「ライブカードで
+ * blade_heart が定義されている」だけを返すヘルパーで、ピル等の集計には適さない。
  */
 export function bladeHeartIsLiveAdditiveBladeHeart(card) {
   if (!card || card.type !== T_LIVE) return false;
   const bh = card.blade_heart;
   if (!bh || typeof bh !== "object" || Array.isArray(bh)) return false;
   return Object.keys(bh).length > 0;
+}
+
+/**
+ * `bladeHeartRowIconsHtml` の ♪ 表示判定を、bladeHeart.js → cards.js の循環参照を避けつつ
+ * 行うためのフック。`cards.js` 側から `setIsScoreLiveCheck(cardIsNoteLiveCatalog)` を渡しておく。
+ * 未登録なら旧仕様の loose check（ライブ＋BH あり）にフォールバックする。
+ * @type {((card: unknown) => boolean) | null}
+ */
+let isScoreLiveCheck = null;
+export function setIsScoreLiveCheck(fn) {
+  isScoreLiveCheck = typeof fn === "function" ? fn : null;
 }
 
 /**
@@ -466,7 +480,11 @@ export function bladeHeartRowIconsHtml(card) {
   });
   if (!keys.length) return "";
   keys.sort(compareBladeHeartDbKeys);
-  const note = bladeHeartIsLiveAdditiveBladeHeart(card);
+  /* ♪表示は「♪ライブ（＝score 系の特殊 BH）」のみ。ドローエール等の特殊 BH では出さない。
+     cards.js から登録されたチェックがあればそれを使い、未登録時のみ旧 loose 判定にフォールバック。 */
+  const note = isScoreLiveCheck
+    ? !!isScoreLiveCheck(card)
+    : bladeHeartIsLiveAdditiveBladeHeart(card);
   const icons = keys
     .map(function (k) {
       return wrapHeartGlyphWithNote(svgForBladeHeartKey(k, "blade-heart-svg blade-heart-svg--row"), note);

@@ -95,6 +95,12 @@ python3 -m http.server 8080</pre>
     <div id="view-deck" class="view">
       <header class="app-header">
         <h1>Loveca Labo</h1>
+        <div id="cloud-auth-bar" class="cloud-auth-bar" hidden>
+          <span id="cloud-auth-status" class="cloud-auth-bar__status muted">未ログイン</span>
+          <img id="cloud-auth-avatar" class="cloud-auth-bar__avatar" alt="" hidden />
+          <button type="button" id="cloud-auth-signin" class="btn sm secondary cloud-auth-bar__signin">Google でログイン</button>
+          <button type="button" id="cloud-auth-signout" class="btn sm secondary cloud-auth-bar__signout" hidden>ログアウト</button>
+        </div>
       </header>
 
       <div class="builder">
@@ -1447,6 +1453,15 @@ python3 -m http.server 8080</pre>
         </div>
       </div>
       <form method="dialog">
+        <button type="submit" class="btn primary wide">閉じる</button>
+      </form>
+    </dialog>
+
+    <dialog id="dlg-zone-bh-list" class="app-dialog dlg-zone-bh-list" aria-labelledby="dlg-zone-bh-list-title">
+      <h2 id="dlg-zone-bh-list-title" class="app-dialog__title">該当カード一覧</h2>
+      <p id="dlg-zone-bh-list-lead" class="hint zone-inline-help"></p>
+      <div id="dlg-zone-bh-list-body" class="dlg-zone-bh-list-body" role="list"></div>
+      <form method="dialog" class="app-dialog__actions">
         <button type="submit" class="btn primary wide">閉じる</button>
       </form>
     </dialog>

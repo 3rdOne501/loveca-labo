@@ -181,7 +181,7 @@ function formatBladeHeartBlockHtml(
     noteLiveCopies +
     "</span></div>";
 
-  const synthetic = formatDeckPeekSyntheticBhPillsHtml(nonBhMemberCopies, nonBhLiveCopies, liveBhCopies, noteLiveCopies);
+  const synthetic = formatDeckPeekSyntheticBhPillsHtml(nonBhMemberCopies, nonBhLiveCopies, bhLiveCopies, noteLiveCopies);
 
   if (entries.length === 0) {
     let body = cardLine;

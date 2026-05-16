@@ -42,7 +42,6 @@ import {
   addBladeHeartWeightsPerDisplaySlot,
   addNeedHeartToSlotAccum,
   bladeHeartDisplaySlotLabel,
-  bladeHeartIsLiveAdditiveBladeHeart,
   cardHasBladeHeart,
   evaluateNeedHeartFulfillment,
   formatBladeHeartSlotBreakdown,
@@ -3564,6 +3563,146 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     syncWaitingRemainBhPanel();
   }
 
+  /**
+   * 山札／控え室の残色ピル（`.deck-remain-bh-pill`）をクリックされたときに、
+   * 該当ゾーンのカードのうちピルに対応するカードだけを一覧で見せるダイアログを開く。
+   * @param {"deck"|"waiting"} zoneId
+   * @param {string} slotKey "1"〜"7" / "non" / "note"
+   */
+  function openZoneBhListDialogFor(zoneId, slotKey) {
+    var dlg = document.getElementById("dlg-zone-bh-list");
+    var title = document.getElementById("dlg-zone-bh-list-title");
+    var lead = document.getElementById("dlg-zone-bh-list-lead");
+    var body = document.getElementById("dlg-zone-bh-list-body");
+    if (!dlg || !body || typeof dlg.showModal !== "function") return;
+    var zoneLabel = zoneId === "waiting" ? "控え室" : "山札";
+    var source = zoneId === "waiting" ? state.waitingRoom : state.deck;
+    var slotLabel = "";
+    /** @type {(c: any) => boolean} */
+    var pred;
+    if (slotKey === "non") {
+      slotLabel = "BHなし";
+      pred = function (cat) { return !cardHasBladeHeart(cat); };
+    } else if (slotKey === "note") {
+      slotLabel = "♪ライブ";
+      pred = function (cat) { return cat && cat.type === T_LIVE && cardIsNoteLiveCatalog(cat); };
+    } else {
+      var slotNum = Number(slotKey);
+      if (!Number.isFinite(slotNum) || slotNum < 1 || slotNum > 7) return;
+      slotLabel = bladeHeartDisplaySlotLabel(slotNum);
+      pred = function (cat) {
+        if (!cat || !cardHasBladeHeart(cat)) return false;
+        return bladeHeartSlotsOnCard(cat).has(slotNum);
+      };
+    }
+    /** カードリスト: 該当カードのみ抽出（実体順、重複は集約して枚数表示） */
+    /** @type {Map<string, { card: any, count: number }>} */
+    var byNo = new Map();
+    for (var i = 0; i < source.length; i++) {
+      var inst = source[i];
+      var cat = getCard(inst && inst.card_no);
+      if (!cat) continue;
+      if (!pred(cat)) continue;
+      var key = String(cat.card_no || ("inst-" + i));
+      var rec = byNo.get(key);
+      if (rec) rec.count += 1;
+      else byNo.set(key, { card: cat, count: 1 });
+    }
+    if (title) title.textContent = zoneLabel + " — " + slotLabel + " のカード";
+    var totalCt = 0;
+    byNo.forEach(function (r) { totalCt += r.count; });
+    if (lead) {
+      lead.textContent =
+        zoneLabel + "の中で " + slotLabel + " に該当するカードは " + totalCt + " 枚（種類 " + byNo.size + "）です。";
+    }
+    body.innerHTML = "";
+    if (!byNo.size) {
+      var empty = document.createElement("p");
+      empty.className = "muted";
+      empty.style.margin = "0.5rem 0";
+      empty.textContent = "該当カードはありません。";
+      body.appendChild(empty);
+    } else {
+      var grid = document.createElement("div");
+      grid.className = "dlg-zone-bh-list__grid";
+      var entries = [...byNo.values()];
+      entries.sort(function (a, b) {
+        var an = String(a.card.card_no || "");
+        var bn = String(b.card.card_no || "");
+        return an.localeCompare(bn, "ja");
+      });
+      entries.forEach(function (rec) {
+        var tile = document.createElement("button");
+        tile.type = "button";
+        tile.className = "dlg-zone-bh-list__tile";
+        tile.setAttribute("data-card-no", String(rec.card.card_no || ""));
+        var img = document.createElement("img");
+        img.className = "dlg-zone-bh-list__img";
+        img.alt = rec.card.name || rec.card.card_no || "";
+        img.loading = "lazy";
+        img.decoding = "async";
+        img.draggable = false;
+        img.src = rec.card.img || "";
+        tile.appendChild(img);
+        var qty = document.createElement("span");
+        qty.className = "dlg-zone-bh-list__qty";
+        qty.textContent = "×" + rec.count;
+        tile.appendChild(qty);
+        var lab = document.createElement("span");
+        lab.className = "dlg-zone-bh-list__label";
+        lab.textContent = (rec.card.name || rec.card.card_no || "").toString();
+        tile.appendChild(lab);
+        tile.addEventListener("click", function () {
+          try {
+            dlg.close();
+          } catch (_) {
+            /* noop */
+          }
+          try {
+            openCardCatalogDialog(rec.card);
+          } catch (_) {
+            /* noop */
+          }
+        });
+        grid.appendChild(tile);
+      });
+      body.appendChild(grid);
+    }
+    try {
+      dlg.showModal();
+    } catch (_) {
+      /* noop */
+    }
+  }
+
+  /** `#deck-remain-bh-colors` / `#waiting-remain-bh-colors` のピルクリックを一括処理 */
+  function bindZoneBhPillClickDelegation() {
+    var deckHost = document.getElementById("deck-remain-bh-colors");
+    var waitHost = document.getElementById("waiting-remain-bh-colors");
+    function makeHandler(zoneId) {
+      return function (ev) {
+        var t = ev.target;
+        if (!t || !(t.closest)) return;
+        var pill = t.closest(".deck-remain-bh-pill");
+        if (!pill) return;
+        var slot = pill.getAttribute("data-bh-slot");
+        if (!slot) return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        openZoneBhListDialogFor(zoneId, String(slot));
+      };
+    }
+    if (deckHost && !deckHost.__zoneBhPillBound) {
+      deckHost.addEventListener("click", makeHandler("deck"));
+      deckHost.__zoneBhPillBound = true;
+    }
+    if (waitHost && !waitHost.__zoneBhPillBound) {
+      waitHost.addEventListener("click", makeHandler("waiting"));
+      waitHost.__zoneBhPillBound = true;
+    }
+  }
+  bindZoneBhPillClickDelegation();
+
   function renderDeckRoleCardStack(host, wrap, cardNos) {
     if (!host || !wrap) return false;
     var ordered = [];
@@ -4026,8 +4165,9 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       var strictNonBh = lives.filter(function (c) {
         return !cardHasBladeHeart(bhModel(c));
       });
+      /* ♪ライブは score 系の特殊 BH（cardIsNoteLiveCatalog）のみ。ドローエール等は含めない。 */
       var onpuBh = lives.filter(function (c) {
-        return bladeHeartIsLiveAdditiveBladeHeart(bhModel(c));
+        return cardIsNoteLiveCatalog(bhModel(c));
       });
       var nonBhCountUser = strictNonBh.length + onpuBh.length;
       var bucketForTypes = strictNonBh.concat(onpuBh);

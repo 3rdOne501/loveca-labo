@@ -6,6 +6,13 @@ import { initPublishedSampleRecipes } from "./sampleDeckRecipes.js";
 import { prefetchGameStatusArtBundledEarly } from "./gameStatusIcons.js";
 import { mountSimulator, teardownDeckPileLayoutWatchers } from "./simulator.js";
 import { showToast } from "./ui.js";
+import {
+  initCloudAuthIfConfigured,
+  isCloudSyncAvailable,
+  onCloudUserChange,
+  signInWithGoogle,
+  signOutCloud,
+} from "./cloudAuth.js";
 
 /** 強制リロード用の一時クエリをアドレスバーから外す（ブックマーク汚染防止） */
 function stripHardReloadQueryFromUrl() {
@@ -327,6 +334,67 @@ if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", wirePageReloadButtons);
 } else {
   wirePageReloadButtons();
+}
+
+function wireCloudAuthBar() {
+  const bar = document.getElementById("cloud-auth-bar");
+  const statusEl = document.getElementById("cloud-auth-status");
+  const avatarEl = /** @type {HTMLImageElement|null} */ (
+    document.getElementById("cloud-auth-avatar")
+  );
+  const signInBtn = document.getElementById("cloud-auth-signin");
+  const signOutBtn = document.getElementById("cloud-auth-signout");
+  if (!bar || !signInBtn || !signOutBtn) return;
+  signInBtn.addEventListener("click", () => {
+    signInWithGoogle();
+  });
+  signOutBtn.addEventListener("click", () => {
+    signOutCloud();
+  });
+
+  initCloudAuthIfConfigured()
+    .then((ok) => {
+      if (!ok) return;
+      bar.hidden = false;
+    })
+    .catch((err) => {
+      console.warn("[main] cloudAuth init failed:", err);
+    });
+
+  onCloudUserChange((user) => {
+    if (!isCloudSyncAvailable()) return;
+    bar.hidden = false;
+    if (user) {
+      if (statusEl) {
+        statusEl.textContent = user.displayName || user.email || "ログイン中";
+      }
+      if (avatarEl) {
+        if (user.photoURL) {
+          avatarEl.src = user.photoURL;
+          avatarEl.hidden = false;
+        } else {
+          avatarEl.removeAttribute("src");
+          avatarEl.hidden = true;
+        }
+      }
+      signInBtn.hidden = true;
+      signOutBtn.hidden = false;
+    } else {
+      if (statusEl) statusEl.textContent = "未ログイン";
+      if (avatarEl) {
+        avatarEl.removeAttribute("src");
+        avatarEl.hidden = true;
+      }
+      signInBtn.hidden = false;
+      signOutBtn.hidden = true;
+    }
+  });
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", wireCloudAuthBar);
+} else {
+  wireCloudAuthBar();
 }
 
 tryLoadDatabase(viewDeck, viewGame, status);

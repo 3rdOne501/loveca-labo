@@ -1,5 +1,10 @@
 import { CARDS_JSON_URL, STORAGE_CARDS_JSON_OVERRIDE, T_MEMBER, T_LIVE } from "./config.js";
-import { cardHasBladeHeart, parseBladeHeartSlotFromKey, parseHeartColorSlotFromKey } from "./bladeHeart.js";
+import {
+  cardHasBladeHeart,
+  parseBladeHeartSlotFromKey,
+  parseHeartColorSlotFromKey,
+  setIsScoreLiveCheck,
+} from "./bladeHeart.js";
 
 let catalog = {};
 let list = [];
@@ -598,6 +603,9 @@ export function cardIsNoteLiveCatalog(card) {
   if (!/スコア/.test(seg)) return false;
   return /[＋+]/.test(seg) || /プラス/.test(seg);
 }
+
+/* bladeHeart.js の ♪ 表示判定（カード一覧サムネ等の note 装飾）を、循環参照を避けて差し込む */
+setIsScoreLiveCheck(cardIsNoteLiveCatalog);
 
 /** @returns {Set<number>} blade_heart が寄与する表示スロット 1〜7（b_all は 7） */
 export function bladeHeartSlotsOnCard(card) {

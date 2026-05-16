@@ -5,13 +5,15 @@
 
 export const GAME_STATUS_ICON_BASE = "assets/game-icons/";
 
-/** macOS 等の APFS 上の実フォルダ名（NFD・合成文字）と一致させる */
-const GAME_STATUS_ICON_ART_SEGMENT =
-  "\u30e9\u30d5\u3099\u30ab\u30c6\u3099\u30fc\u30bf\uff11";
+/**
+ * 公式アイコン PNG 束（旧名「ラブカデータ１」）。
+ * 以前は日本語のフォルダ名にしていたが、GitHub Pages（Linux）で NFD と NFC の差が解決できず
+ * 画像が 404 になっていたため、ASCII の固定名 `loveca-data-1` に統一した。
+ */
+const GAME_STATUS_ICON_ART_SEGMENT = "loveca-data-1";
 
-/** 公式アイコン PNG 束へのパス（フォルダ名だけ URL エンコード） */
 export const GAME_STATUS_ICON_ART_DIR =
-  GAME_STATUS_ICON_BASE + encodeURIComponent(GAME_STATUS_ICON_ART_SEGMENT) + "/";
+  GAME_STATUS_ICON_BASE + GAME_STATUS_ICON_ART_SEGMENT + "/";
 
 /**
  * @type {Record<string, string>}
