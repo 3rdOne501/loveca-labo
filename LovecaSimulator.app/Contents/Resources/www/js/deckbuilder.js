@@ -612,10 +612,11 @@ export function initDeckBuilder(root, { onStartGame }) {
 
   function readBhFilterExtras() {
     const panel = root.querySelector("#filter-bh-slots");
-    if (!panel) return { nonBh: false, noteLive: false };
+    if (!panel) return { nonBh: false, noteLive: false, drawYell: false };
     return {
       nonBh: !!panel.querySelector("input[data-bh-filter='non-bh']:checked"),
       noteLive: !!panel.querySelector("input[data-bh-filter='note-live']:checked"),
+      drawYell: !!panel.querySelector("input[data-bh-filter='draw-yell']:checked"),
     };
   }
 
@@ -785,6 +786,7 @@ export function initDeckBuilder(root, { onStartGame }) {
       [...bh].sort().join(","),
       bx.nonBh ? "1" : "0",
       bx.noteLive ? "1" : "0",
+      bx.drawYell ? "1" : "0",
       [...hs].sort().join(","),
       costParts.join(","),
       narrowCostFilterExcludesLive(filterCosts) ? "1" : "0",
@@ -915,6 +917,7 @@ export function initDeckBuilder(root, { onStartGame }) {
         bhSlots: readBhSlotFilters(),
         bhNonBh: bx.nonBh,
         bhNoteLive: bx.noteLive,
+        bhDrawYell: bx.drawYell,
         heartSlots: readHeartSlotFilters(),
       });
       if (filterFavoritesOnly) {

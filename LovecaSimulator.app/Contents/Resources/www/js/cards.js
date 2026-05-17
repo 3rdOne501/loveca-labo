@@ -123,6 +123,7 @@ export async function loadCardDatabase(statusEl) {
       if (!nk) continue;
       if (!catalogKeyByNormalized.has(nk)) catalogKeyByNormalized.set(nk, k);
     }
+    normalizeRareListVariantsInCatalog(catalog);
     list = Object.entries(catalog)
       .filter(([k]) => !k.startsWith("_"))
       .map(([, v]) => v)
@@ -283,6 +284,160 @@ function testBhSlotLabel(slotNum) {
   if (n === 6) return "紫";
   if (n === 7) return "ALL";
   return "なし";
+}
+
+/**
+ * 同一 `rare_list` で繋がる「イラスト違い（同名カード扱い）」を正規化するための rarity 重み。
+ * 値が小さいほど「下のレア」＝公式テキスト・BH の確定版とみなす。未知のレアは中位扱い。
+ *
+ *   N / SD / L: 一般／スターターデッキ／基本ライブ（最も低い）
+ *   R / PR    : 通常レア / プロモ
+ *   R+ / L+ / P / PE
+ *   P+ / PE+
+ *   RM / AR / RE / SR / SRE / LLE / PR+ : 特殊枠（中〜高）
+ *   SEC / SEC+ / SECL / SECE            : シークレット系（最も高い）
+ */
+const RARE_RANK_TABLE = {
+  "N": 0, "SD": 0, "L": 0,
+  "R": 1, "PR": 1,
+  "R+": 2, "R＋": 2, "L+": 2, "L＋": 2, "P": 2, "PE": 2,
+  "P+": 3, "P＋": 3, "PE+": 3, "PE＋": 3,
+  "RM": 4, "AR": 4, "RE": 4, "SR": 4, "SRE": 4, "LLE": 4, "PR+": 4, "PR＋": 4,
+  "SEC": 5, "SEC+": 5, "SEC＋": 5, "SECL": 5, "SECE": 5,
+};
+
+function rareRankForVariantNormalization(rare) {
+  if (rare == null) return 99;
+  const k = String(rare).trim();
+  if (k === "") return 99;
+  if (Object.prototype.hasOwnProperty.call(RARE_RANK_TABLE, k)) return RARE_RANK_TABLE[k];
+  return 50;
+}
+
+function bladeHeartObjectIsEmpty(bh) {
+  return !bh || typeof bh !== "object" || Array.isArray(bh) || Object.keys(bh).length === 0;
+}
+
+function abilityStringIsEmpty(s) {
+  return s == null || String(s).trim() === "";
+}
+
+function plainObjectIsEmpty(o) {
+  return !o || typeof o !== "object" || Array.isArray(o) || Object.keys(o).length === 0;
+}
+
+/**
+ * カタログ内の `rare_list` を辿り、同一クラスタ（イラスト違い＝同名カード扱い）に属するカードを
+ * 「最も低レアリティ」のデータで揃える。揃える対象は効果に関わるフィールドのみ：
+ * `blade_heart` / `ability` / `base_heart` / `need_heart` / `blade` / `cost` / `score`。
+ *
+ * これにより、cards.json 上で L と L+ の BH が食い違っているケース（例: アオクハルカ・レディバグ）や、
+ * 同名で能力テキスト長が違うケース（村野さやか／矢澤にこ等）が、画面表示・特殊ハート判定で乖離せず一致する。
+ *
+ * 最低レアリティの基本値が空欄のときは、同クラスタ内で「空でない」値があればそれを採用する
+ * （cards.json 側でレアリティ低い側にだけ未記載が残っているケースの保険）。
+ *
+ * @param {Record<string, any>} cat
+ */
+export function normalizeRareListVariantsInCatalog(cat) {
+  if (!cat || typeof cat !== "object") return;
+  /** @type {Set<string>} */
+  const visited = new Set();
+  /** @type {string[][]} */
+  const groups = [];
+
+  function getRareListCardNos(card) {
+    const rl = card && card.rare_list;
+    if (!Array.isArray(rl)) return [];
+    const out = [];
+    for (const e of rl) {
+      if (!e || typeof e !== "object") continue;
+      const n = String(e.card_no || "").trim();
+      if (n) out.push(n);
+    }
+    return out;
+  }
+
+  for (const key of Object.keys(cat)) {
+    if (key.startsWith("_")) continue;
+    if (visited.has(key)) continue;
+    const card = cat[key];
+    if (!card || typeof card !== "object") {
+      visited.add(key);
+      continue;
+    }
+    /** @type {string[]} */
+    const stack = [key];
+    /** @type {Set<string>} */
+    const groupSet = new Set();
+    while (stack.length) {
+      const k = stack.pop();
+      if (!k || visited.has(k)) continue;
+      visited.add(k);
+      groupSet.add(k);
+      const cur = cat[k];
+      if (!cur) continue;
+      const linked = getRareListCardNos(cur);
+      for (const n of linked) {
+        if (!visited.has(n) && cat[n]) stack.push(n);
+      }
+    }
+    if (groupSet.size > 1) groups.push([...groupSet]);
+  }
+
+  for (const group of groups) {
+    const sortedNos = group.slice().sort(function (a, b) {
+      const ra = rareRankForVariantNormalization(cat[a] && cat[a].rare);
+      const rb = rareRankForVariantNormalization(cat[b] && cat[b].rare);
+      if (ra !== rb) return ra - rb;
+      return a < b ? -1 : a > b ? 1 : 0;
+    });
+    const canonNo = sortedNos[0];
+    const canon = cat[canonNo];
+    if (!canon || typeof canon !== "object") continue;
+
+    function pickFirstNonEmpty(getter, isEmptyFn) {
+      const c0 = getter(canon);
+      if (!isEmptyFn(c0)) return c0;
+      for (const n of sortedNos) {
+        const v = getter(cat[n]);
+        if (!isEmptyFn(v)) return v;
+      }
+      return c0;
+    }
+
+    const bh = pickFirstNonEmpty(function (c) { return c && c.blade_heart; }, bladeHeartObjectIsEmpty);
+    const ab = pickFirstNonEmpty(function (c) { return c && c.ability; }, abilityStringIsEmpty);
+    const baseH = pickFirstNonEmpty(function (c) { return c && c.base_heart; }, plainObjectIsEmpty);
+    const needH = pickFirstNonEmpty(function (c) { return c && c.need_heart; }, plainObjectIsEmpty);
+    const bladeN = pickFirstNonEmpty(
+      function (c) { return c && c.blade; },
+      function (v) { return v == null || v === ""; },
+    );
+    const costN = pickFirstNonEmpty(
+      function (c) { return c && c.cost; },
+      function (v) { return v == null || v === ""; },
+    );
+    const scoreN = pickFirstNonEmpty(
+      function (c) { return c && c.score; },
+      function (v) { return v == null || v === ""; },
+    );
+
+    for (const n of sortedNos) {
+      const c = cat[n];
+      if (!c || typeof c !== "object") continue;
+      if (!bladeHeartObjectIsEmpty(bh)) c.blade_heart = Object.assign({}, bh);
+      else if ("blade_heart" in c && bladeHeartObjectIsEmpty(c.blade_heart)) {
+        /* 全員 BH 空のクラスタは BH 無しのままでよい */
+      }
+      if (!abilityStringIsEmpty(ab)) c.ability = ab;
+      if (!plainObjectIsEmpty(baseH)) c.base_heart = Object.assign({}, baseH);
+      if (!plainObjectIsEmpty(needH)) c.need_heart = Object.assign({}, needH);
+      if (bladeN != null && bladeN !== "") c.blade = bladeN;
+      if (costN != null && costN !== "") c.cost = costN;
+      if (scoreN != null && scoreN !== "") c.score = scoreN;
+    }
+  }
 }
 
 /**
@@ -639,7 +794,15 @@ export function filterCards(cards, opts) {
   const bhSel = opts.bhSlots instanceof Set ? opts.bhSlots : null;
   const bhNonBh = !!opts.bhNonBh;
   const bhNoteLive = !!opts.bhNoteLive;
+  const bhDrawYell = !!opts.bhDrawYell;
   const heartSel = opts.heartSlots instanceof Set ? opts.heartSlots : null;
+  /* テキスト検索の特殊キーワード:
+       「ドローエール」 → cardIsDrawYellLiveCatalog
+       「音符ライブ」   → cardIsNoteLiveCatalog
+     ability 内には実際の文字列「ドローエール」が含まれない（icon 記号が使われている）ため、
+     ヒューリスティック判定の特殊カードを名前検索から見つけられるようにフックする。 */
+  const qHasDrawYellKeyword = q.length > 0 && q.indexOf("ドローエール") !== -1;
+  const qHasNoteLiveKeyword = q.length > 0 && q.indexOf("音符ライブ") !== -1;
   return cards.filter((c) => {
     if (opts.types[T_MEMBER] === false && c.type === T_MEMBER) return false;
     if (opts.types[T_LIVE] === false && c.type === T_LIVE) return false;
@@ -657,7 +820,7 @@ export function filterCards(cards, opts) {
       if (!opts.costs[co]) return false;
     }
     const bhAny =
-      (bhSel && bhSel.size > 0) || bhNonBh || bhNoteLive;
+      (bhSel && bhSel.size > 0) || bhNonBh || bhNoteLive || bhDrawYell;
     if (bhAny) {
       const bs = bladeHeartSlotsOnCard(c);
       const hasBh = cardHasBladeHeart(c);
@@ -669,6 +832,7 @@ export function filterCards(cards, opts) {
       }
       if (bhNonBh && !hasBh) hit = true;
       if (bhNoteLive && cardIsNoteLiveCatalog(c)) hit = true;
+      if (bhDrawYell && cardIsDrawYellLiveCatalog(c)) hit = true;
       if (!hit) return false;
     }
     if (heartSel && heartSel.size > 0) {
@@ -679,7 +843,14 @@ export function filterCards(cards, opts) {
       });
       if (!hit) return false;
     }
-    if (q && !String(c.name || "").toLowerCase().includes(q)) return false;
+    if (q) {
+      const inName = String(c.name || "").toLowerCase().includes(q);
+      const inAbility = String(c.ability || "").toLowerCase().includes(q);
+      let inSpecial = false;
+      if (qHasDrawYellKeyword && cardIsDrawYellLiveCatalog(c)) inSpecial = true;
+      if (qHasNoteLiveKeyword && cardIsNoteLiveCatalog(c)) inSpecial = true;
+      if (!inName && !inAbility && !inSpecial) return false;
+    }
     return c.type === T_MEMBER || c.type === T_LIVE;
   });
 }
