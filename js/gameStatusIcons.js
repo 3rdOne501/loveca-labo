@@ -304,9 +304,11 @@ export function catalogDrawYellBadgeHtml() {
   );
 }
 
-/** カード詳細: スコアライブ（バンドル icon_score.png） */
+/** カード詳細: 音符ライブ（♪） */
 export function catalogNoteLiveBadgeHtml() {
-  return htmlStatusGameIconImg("スコアライブ", GAME_STATUS_ICON_ART_DIR + ART_FILE_BY_KEY.score, "dlg-card-catalog-badge-img");
+  return (
+    '<span class="dlg-card-catalog-badge-note" role="img" aria-label="音符ライブ" title="音符ライブ">♪</span>'
+  );
 }
 
 var __gsiArtPrefetchStarted = false;

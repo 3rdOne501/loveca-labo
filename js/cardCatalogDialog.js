@@ -288,13 +288,13 @@ export function renderCardCatalogContentInto(c, targets) {
       specBits.push(
         '<span class="dlg-card-catalog-special-heart-pill dlg-card-catalog-special-heart-pill--note-live">' +
           Gsi.catalogNoteLiveBadgeHtml() +
-          '<span class="dlg-card-catalog-special-heart-pill__label">スコアライブ</span>' +
+          '<span class="dlg-card-catalog-special-heart-pill__label">音符ライブ</span>' +
           "</span>",
       );
     }
     var specRowHtml = specBits.length
       ? '<span class="dlg-card-catalog-special-heart-row">' + specBits.join("") + "</span>"
-      : '<span class="muted dlg-card-catalog-special-heart-row dlg-card-catalog-special-heart-row--none">（スコア／ドロー系の特殊BHではありません）</span>';
+      : '<span class="muted dlg-card-catalog-special-heart-row dlg-card-catalog-special-heart-row--none">（音符ライブ／ドローエールの特殊BHではありません）</span>';
     rows += row("特殊ハート", specRowHtml);
   }
 

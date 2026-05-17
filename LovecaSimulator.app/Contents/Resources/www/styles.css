@@ -6232,6 +6232,19 @@ body.play-mode .play-undo-redo-cluster--under-prob .play-undo-redo {
 .dlg-card-catalog-special-heart-pill__label {
   display: inline-block;
 }
+.dlg-card-catalog-badge-note {
+  display: inline-block;
+  font-size: 1.15rem;
+  line-height: 1;
+  font-weight: 700;
+  color: #ffc870;
+}
+.deck-remain-bh-pill__note-char {
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #ffc870;
+}
 
 @media (max-width: 900px) {
   .status-inline-game-icon {

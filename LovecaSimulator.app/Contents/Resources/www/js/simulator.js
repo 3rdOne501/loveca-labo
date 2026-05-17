@@ -34,6 +34,7 @@ import {
   bladeHeartSlotsOnCard,
   isHandDependentCost20Member,
   cardIsNoteLiveCatalog,
+  cardIsDrawYellLiveCatalog,
 } from "./cards.js";
 import { loadDeckLibrary, normalizeDeckMapCounts } from "./deckLibrary.js";
 import { openCardCatalogDialog, catalogLiveCardIsDrawYellBladeHeart } from "./cardCatalogDialog.js";
@@ -3622,9 +3623,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     var notePill =
       noteLive > 0
         ? '<span class="deck-remain-bh-pill deck-remain-bh-pill--note-live deck-remain-bh-pill--art" data-bh-slot="note">' +
-          '<span class="deck-remain-bh-pill__lab">' +
-          heartSlotArtIconHtml(0, { score: true, extraClass: "deck-remain-bh-pill__art-ico" }) +
-          '<span class="visually-hidden">スコアライブ</span>' +
+          '<span class="deck-remain-bh-pill__lab deck-remain-bh-pill__note-char" aria-hidden="true">♪</span>' +
+          '<span class="visually-hidden">音符ライブ</span>' +
           '</span><strong class="deck-remain-bh-pill__n">' +
           escapeHtmlPlain(String(noteLive)) +
           "</strong></span>"
@@ -3647,7 +3647,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       deckRemHint.textContent =
         "山札合計 " +
         n +
-        " 枚。色ピルはカード1枚につき複数色を持てる集計です（BHなし＝BH未記載、スコアライブ＝スコア系、ドローエール＝ドロー系の特殊BH）。";
+        " 枚。色ピルはカード1枚につき複数色を持てる集計です（BHなし＝BH未記載、音符ライブ＝DBにBHが無いライブ、ドローエール＝BH＋ドロー特殊）。";
     }
   }
 
@@ -3712,9 +3712,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     var notePillW =
       noteLive > 0
         ? '<span class="deck-remain-bh-pill deck-remain-bh-pill--note-live deck-remain-bh-pill--art" data-bh-slot="note">' +
-          '<span class="deck-remain-bh-pill__lab">' +
-          heartSlotArtIconHtml(0, { score: true, extraClass: "deck-remain-bh-pill__art-ico" }) +
-          '<span class="visually-hidden">スコアライブ</span>' +
+          '<span class="deck-remain-bh-pill__lab deck-remain-bh-pill__note-char" aria-hidden="true">♪</span>' +
+          '<span class="visually-hidden">音符ライブ</span>' +
           '</span><strong class="deck-remain-bh-pill__n">' +
           escapeHtmlPlain(String(noteLive)) +
           "</strong></span>"
@@ -3737,7 +3736,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       wh.textContent =
         "控え室合計 " +
         n +
-        " 枚。色ピルはカード1枚につき複数色を持てる集計です（BHなし＝BH未記載、スコアライブ＝スコア系、ドローエール＝ドロー系の特殊BH）。";
+        " 枚。色ピルはカード1枚につき複数色を持てる集計です（BHなし＝BH未記載、音符ライブ＝DBにBHが無いライブ、ドローエール＝BH＋ドロー特殊）。";
     }
   }
 
@@ -3768,7 +3767,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       slotLabel = "BHなし";
       pred = function (cat) { return !cardHasBladeHeart(cat); };
     } else if (slotKey === "note") {
-      slotLabel = "スコアライブ";
+      slotLabel = "音符ライブ";
       pred = function (cat) { return cat && cat.type === T_LIVE && cardIsNoteLiveCatalog(cat); };
     } else if (slotKey === "draw-yell") {
       slotLabel = "ドローエール";
@@ -4349,24 +4348,19 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       var typeAll = summarizeWaitingCardTypes(lives);
       appendBlock("デッキに戻ったライブカード", [totalLine, "種類内訳: " + (typeAll || "—")]);
 
-      var strictNonBh = lives.filter(function (c) {
-        return !cardHasBladeHeart(bhModel(c));
-      });
-      /* ♪ライブは score 系の特殊 BH（cardIsNoteLiveCatalog）のみ。ドローエール等は含めない。 */
-      var onpuBh = lives.filter(function (c) {
+      var onpuLive = lives.filter(function (c) {
         return cardIsNoteLiveCatalog(bhModel(c));
       });
-      var nonBhCountUser = strictNonBh.length + onpuBh.length;
-      var bucketForTypes = strictNonBh.concat(onpuBh);
-      appendBlock("BHなし（指定どおりの集計）", [
-        "枚数: " +
-          nonBhCountUser +
-          "（BH 非記載のライブ ＋ ♪ライブを BHなし 枚数に含めます）",
-        "種類内訳: " + (summarizeWaitingCardTypes(bucketForTypes) || "—"),
+      var drawYellLive = lives.filter(function (c) {
+        return cardIsDrawYellLiveCatalog(bhModel(c));
+      });
+      appendBlock("音符ライブ（DBにBHなし）", [
+        "枚数: " + onpuLive.length,
+        "種類内訳: " + (summarizeWaitingCardTypes(onpuLive) || "—"),
       ]);
-      appendBlock("♪ライブBH（♪由来のライブブレードハート）", [
-        "枚数: " + onpuBh.length,
-        "種類内訳: " + (summarizeWaitingCardTypes(onpuBh) || "—"),
+      appendBlock("ドローエール（BH＋ドロー特殊）", [
+        "枚数: " + drawYellLive.length,
+        "種類内訳: " + (summarizeWaitingCardTypes(drawYellLive) || "—"),
       ]);
     }
     if (dlg && typeof dlg.showModal === "function") {

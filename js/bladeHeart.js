@@ -112,8 +112,8 @@ function escapeHtml(s) {
 /**
  * ライブカードに BH があるかの粗い判定。**♪ライブ判定にはこの関数を使わないこと**。
  *
- * ♪ライブ（＝score 系の特殊ブレードハート）と、ドローエール等のその他特殊 BH を区別するには、
- * `cards.js` の `cardIsNoteLiveCatalog` を使う必要がある。ここではあくまで「ライブカードで
+ * 音符ライブ（＝DB に blade_heart が無いライブ）と、ドローエール（BH＋ドロー特殊）を区別するには、
+ * `cards.js` の `cardIsNoteLiveCatalog` / `cardIsDrawYellLiveCatalog` を使う。ここではあくまで「ライブカードで
  * blade_heart が定義されている」だけを返すヘルパーで、ピル等の集計には適さない。
  */
 export function bladeHeartIsLiveAdditiveBladeHeart(card) {
@@ -607,7 +607,7 @@ export function bladeHeartRowIconsHtml(card) {
   });
   if (!keys.length) return "";
   keys.sort(compareBladeHeartDbKeys);
-  /* ♪表示は「♪ライブ（＝score 系の特殊 BH）」のみ。ドローエール等の特殊 BH では出さない。
+  /* ♪表示は音符ライブ（BH 非記載のライブ）のみ。BH ありのカード・ドローエールでは出さない。
      cards.js から登録されたチェックがあればそれを使い、未登録時のみ旧 loose 判定にフォールバック。 */
   const note = isScoreLiveCheck
     ? !!isScoreLiveCheck(card)

@@ -20,7 +20,6 @@ import {
 } from "./config.js";
 import {
   addDeckSlot,
-  canDismissBuiltInStarter,
   cloneDeckMap,
   duplicateDeckSlot,
   isBuiltInStarterDeckId,
@@ -30,6 +29,16 @@ import {
   restoreBuiltInStarterSlot,
   updateDeckSlot,
 } from "./deckLibrary.js";
+
+/** deckLibrary と同じ判定（古い deckLibrary.js がキャッシュされても deckbuilder 単体で動く） */
+function canDismissBuiltInStarter(lib) {
+  if (!lib || !Array.isArray(lib.slots)) return false;
+  for (let i = 0; i < lib.slots.length; i++) {
+    const s = lib.slots[i];
+    if (s && !isBuiltInStarterDeckId(s.id)) return true;
+  }
+  return false;
+}
 import {
   UNSET_PLACEHOLDER_PRODUCT,
   ensureTestCardVariant,
@@ -133,8 +142,8 @@ function formatDeckPeekSyntheticBhPillsHtml(nonBhMemberCopies, nonBhLiveCopies, 
   if (noteLiveCopies > 0) {
     html +=
       '<span class="deck-peek-bh-color-pill deck-peek-bh-pill--note-live-pill" title="' +
-      escapeHtml("スコアライブ（一覧のスコア判定）") +
-      '"><span class="deck-peek-bh-kanji">スコアライブ</span><span class="deck-peek-bh-pill-qty">× ' +
+      escapeHtml("音符ライブ（DBにBHなし）") +
+      '"><span class="deck-peek-bh-kanji">音符ライブ</span><span class="deck-peek-bh-pill-qty">× ' +
       noteLiveCopies +
       "</span></span>";
   }
@@ -142,7 +151,7 @@ function formatDeckPeekSyntheticBhPillsHtml(nonBhMemberCopies, nonBhLiveCopies, 
     html +=
       '<span class="deck-peek-bh-color-pill deck-peek-bh-pill--live-note" title="' +
       escapeHtml("ライブカードの BH（♪で追加カウントされる分を含む）") +
-      '"><span class="deck-peek-bh-kanji">スコアライブBH</span><span class="deck-peek-bh-pill-qty">× ' +
+      '"><span class="deck-peek-bh-kanji">音符ライブ</span><span class="deck-peek-bh-pill-qty">× ' +
       liveBhCopies +
       "</span></span>";
   }
@@ -180,7 +189,7 @@ function formatBladeHeartBlockHtml(
     nonBhMemberCopies +
     '</span> · BHなしライブ <span class="deck-peek-muted-num">' +
     nonBhLiveCopies +
-    '</span> · スコアライブ <span class="deck-peek-muted-num">' +
+    '</span> · 音符ライブ <span class="deck-peek-muted-num">' +
     noteLiveCopies +
     "</span></div>";
 

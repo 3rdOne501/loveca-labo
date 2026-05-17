@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""特殊BH分類: 音符ライブ（BHなしライブ）/ ドローエール（BHあり＋ドロー特殊）"""
 import json
 import re
 import sys
@@ -7,66 +8,42 @@ from pathlib import Path
 path = Path(sys.argv[1] if len(sys.argv) > 1 else "/tmp/llocg-cards.json")
 d = json.loads(path.read_text(encoding="utf-8"))
 
-LIVE_START = "{{live_start.png|ライブ開始時}}"
-LIVE_SUCCESS = "{{live_success.png|ライブ成功時}}"
-
 
 def has_bh(c):
     bh = c.get("blade_heart") or {}
-    if not isinstance(bh, dict):
-        return False
-    for v in bh.values():
-        try:
-            if float(v) > 0:
-                return True
-        except (TypeError, ValueError):
-            pass
-    return False
+    return isinstance(bh, dict) and len(bh) > 0
 
 
-def live_start_segment(ab):
-    if LIVE_START not in ab:
-        return ""
-    tail = ab.split(LIVE_START, 1)[1]
-    if LIVE_SUCCESS in tail:
-        return tail.split(LIVE_SUCCESS, 1)[0]
-    return tail[:800]
+def is_draw_yell(ab):
+    ab = ab or ""
+    if "ドローエール" in ab:
+        return True
+    if re.search(r"icon_draw\.png|icon_draw\b", ab, re.I):
+        return True
+    return "エールをすべて行った後" in ab and "ドロー" in ab
 
 
-draw_cards = []
-score_cards = []
-ambiguous = []
+note_live = []
+draw_yell = []
+bh_only = []
 
 for k, v in d.items():
     if str(k).startswith("_"):
         continue
-    if v.get("type") != "ライブ" or not has_bh(v):
+    if v.get("type") != "ライブ":
         continue
     ab = v.get("ability") or ""
-    seg = live_start_segment(ab)
+    if not has_bh(v):
+        note_live.append(k)
+    elif is_draw_yell(ab):
+        draw_yell.append(k)
+    else:
+        bh_only.append(k)
 
-    has_draw = bool(
-        re.search(r"icon_draw\.png|icon_draw\b", ab, re.I)
-        or re.search(r"エールをすべて行った後", ab)
-        or "ドローエール" in ab
-    )
-    has_score = bool(
-        re.search(r"icon_score\.png|icon_score\b", ab, re.I)
-        or (re.search(r"スコア", seg) and re.search(r"[＋+]|プラス", seg))
-    )
-
-    # Draw yell (icon_draw / post-yell draw) takes priority over score-in-live-start.
-    if has_draw:
-        draw_cards.append(k)
-    elif has_score:
-        score_cards.append(k)
-
-print("DRAW_YELL", len(draw_cards))
-for x in sorted(draw_cards):
+print("NOTE_LIVE (no blade_heart)", len(note_live))
+for x in sorted(note_live):
     print(x)
-print("SCORE_LIVE", len(score_cards))
-for x in sorted(score_cards):
+print("DRAW_YELL (BH + draw)", len(draw_yell))
+for x in sorted(draw_yell):
     print(x)
-print("AMBIGUOUS", len(ambiguous))
-for x in sorted(ambiguous):
-    print(x)
+print("BH_ONLY (not note, not draw)", len(bh_only))
