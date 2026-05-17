@@ -19,14 +19,14 @@
   </defs>
   <rect width="512" height="512" rx="112" fill="url(#bg)"/>
   <rect x="24" y="24" width="464" height="464" rx="96" fill="none" stroke="url(#accent)" stroke-width="6" opacity="0.85"/>
-  <!-- ÏüÈéÖ«	 -->
+  <!-- ï¿½ï¿½ï¿½ï¿½Ö«	 -->
   <path
     d="M256 392c-72-48-120-92-120-148 0-44 32-76 76-76 28 0 44 14 56 28 12-14 28-28 56-28 44 0 76 32 76 76 0 56-48 100-120 148z"
     fill="#ff8ec8"
     filter="url(#glow)"
     opacity="0.95"
   />
-  <!-- «üÉ¨nUjéb -->
+  <!-- ï¿½ï¿½É¨nUjï¿½b -->
   <rect x="156" y="118" width="200" height="132" rx="18" fill="rgba(255,255,255,0.08)" stroke="rgba(255,200,240,0.35)" stroke-width="4"/>
   <text
     x="256"
