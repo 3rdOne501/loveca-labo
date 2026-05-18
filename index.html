@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Loveca Labo" />
-    <meta name="loveca-build" content="2026051828" />
+    <meta name="loveca-build" content="2026051832" />
     <title>Loveca Labo</title>
     <!-- 万一以前のバージョンの Service Worker が登録された端末で取り残しが起きた場合に備え、
          先頭で SW 登録を一括解除する。SW 自体は本サイトでは使っていない。 -->
@@ -1484,6 +1484,23 @@ python3 -m http.server 8080</pre>
       <div class="dlg-card-catalog-shell">
         <div class="dlg-card-catalog-thumb-col">
           <img id="dlg-card-catalog-img" class="dlg-card-catalog-img" alt="" decoding="async" />
+          <div id="dlg-card-catalog-hand-stage-actions" class="dlg-card-catalog-hand-stage-actions" hidden>
+            <p class="dlg-card-catalog-hand-stage-hint">選択したエリアに登場</p>
+            <div class="dlg-card-catalog-hand-stage-row">
+            <button type="button" class="btn sm dlg-card-catalog-stage-btn" id="dlg-card-catalog-stage-left" aria-label="左サイドに登場">
+              <img class="dlg-card-catalog-stage-btn__ico" alt="左サイド" src="assets/game-icons/loveca-data-1/leftside.png" />
+              <span class="dlg-card-catalog-stage-btn__lab">左サイド</span>
+            </button>
+            <button type="button" class="btn sm dlg-card-catalog-stage-btn" id="dlg-card-catalog-stage-center" aria-label="センターに登場">
+              <img class="dlg-card-catalog-stage-btn__ico" alt="センター" src="assets/game-icons/loveca-data-1/center.png" />
+              <span class="dlg-card-catalog-stage-btn__lab">センター</span>
+            </button>
+            <button type="button" class="btn sm dlg-card-catalog-stage-btn" id="dlg-card-catalog-stage-right" aria-label="右サイドに登場">
+              <img class="dlg-card-catalog-stage-btn__ico" alt="右サイド" src="assets/game-icons/loveca-data-1/rightside.png" />
+              <span class="dlg-card-catalog-stage-btn__lab">右サイド</span>
+            </button>
+            </div>
+          </div>
           <div id="dlg-card-catalog-type-badges" class="dlg-card-catalog-type-badges"></div>
         </div>
         <div class="dlg-card-catalog-main-col">
@@ -1621,7 +1638,7 @@ python3 -m http.server 8080</pre>
     <dialog id="dlg-pick-ability-choice" class="app-dialog dlg-pick-ability-choice" aria-labelledby="dlg-pick-ability-choice-title">
       <h2 id="dlg-pick-ability-choice-title" class="app-dialog__title">効果を選ぶ</h2>
       <p id="dlg-pick-ability-choice-lead" class="hint zone-inline-help"></p>
-      <div id="dlg-pick-ability-choice-list" class="dlg-pick-ability-choice-list" role="group"></div>
+      <motionless id="dlg-pick-ability-choice-list" class="dlg-pick-ability-choice-list" role="group"></div>
       <div class="app-dialog__actions">
         <button type="button" class="btn secondary" id="dlg-pick-ability-choice-cancel">キャンセル</button>
         <button type="button" class="btn primary" id="dlg-pick-ability-choice-ok">選んだ効果を実行</button>
@@ -1667,28 +1684,29 @@ python3 -m http.server 8080</pre>
       {
         "scopes": {
           "/js/": {
-            "./abilityEffects.js": "./abilityEffects.js?v=2026051828",
-            "./bladeHeart.js": "./bladeHeart.js?v=2026051828",
-            "./cardCatalogDialog.js": "./cardCatalogDialog.js?v=2026051828",
-            "./cardGroups.js": "./cardGroups.js?v=2026051828",
-            "./cards.js": "./cards.js?v=2026051828",
-            "./cloudAuth.js": "./cloudAuth.js?v=2026051828",
-            "./config.js": "./config.js?v=2026051828",
-            "./deckLibrary.js": "./deckLibrary.js?v=2026051828",
-            "./deckbuilder.js": "./deckbuilder.js?v=2026051828",
-            "./decklogImport.js": "./decklogImport.js?v=2026051828",
-            "./firebaseConfig.js": "./firebaseConfig.js?v=2026051828",
-            "./gameStatusIcons.js": "./gameStatusIcons.js?v=2026051828",
-            "./liveSpecialBhOverride.js": "./liveSpecialBhOverride.js?v=2026051828",
-            "./main.js": "./main.js?v=2026051828",
-            "./sampleDeckRecipes.js": "./sampleDeckRecipes.js?v=2026051828",
-            "./simulator.js": "./simulator.js?v=2026051828",
-            "./testCardLog.js": "./testCardLog.js?v=2026051828",
-            "./ui.js": "./ui.js?v=2026051828"
+            "./abilityEffects.js": "./abilityEffects.js?v=2026051832",
+            "./bladeHeart.js": "./bladeHeart.js?v=2026051832",
+            "./cardCatalogDialog.js": "./cardCatalogDialog.js?v=2026051832",
+            "./cardGroups.js": "./cardGroups.js?v=2026051832",
+            "./cards.js": "./cards.js?v=2026051832",
+            "./cloudAuth.js": "./cloudAuth.js?v=2026051832",
+            "./config.js": "./config.js?v=2026051832",
+            "./deckLibrary.js": "./deckLibrary.js?v=2026051832",
+            "./deckbuilder.js": "./deckbuilder.js?v=2026051832",
+            "./decklogImport.js": "./decklogImport.js?v=2026051832",
+            "./firebaseConfig.js": "./firebaseConfig.js?v=2026051832",
+            "./gameStatusIcons.js": "./gameStatusIcons.js?v=2026051832",
+            "./joujiEffects.js": "./joujiEffects.js?v=2026051832",
+            "./liveSpecialBhOverride.js": "./liveSpecialBhOverride.js?v=2026051832",
+            "./main.js": "./main.js?v=2026051832",
+            "./sampleDeckRecipes.js": "./sampleDeckRecipes.js?v=2026051832",
+            "./simulator.js": "./simulator.js?v=2026051832",
+            "./testCardLog.js": "./testCardLog.js?v=2026051832",
+            "./ui.js": "./ui.js?v=2026051832"
           }
         }
       }
     </script>
-    <script type="module" src="js/main.js?v=2026051828"></script>
+    <script type="module" src="js/main.js?v=2026051832"></script>
   </body>
 </html>

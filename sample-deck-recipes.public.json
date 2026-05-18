@@ -41,11 +41,50 @@
       "PL!SP-bp5-001-R＋",
       "PL!N-bp1-003-R＋"
     ],
-    "thumbnailCardNo": "PL!N-bp5-027-L",
+    "thumbnailCardNo": "PL!SP-bp5-001-R＋",
     "noteLines": [
       "ツール同梱の大会向けサンプルデッキ。",
       "キー／キ②／キ③／中間は既定のままです。"
     ]
+  },
+  {
+    "id": "sample-dev-1779111108449",
+    "name": "5軸ミラステ",
+    "deck": {
+      "PL!-bp5-003-R＋": 4,
+      "PL!-bp5-007-R": 2,
+      "PL!-bp5-011-N": 4,
+      "PL!HS-bp5-001-P": 2,
+      "PL!HS-PR-022-PR": 4,
+      "PL!N-pb1-011-R": 4,
+      "PL!S-bp2-016-N": 4,
+      "PL!S-bp5-111-R": 4,
+      "PL!S-pb1-004-R": 1,
+      "PL!S-PR-026-PR": 4,
+      "PL!S-sd1-008-SD": 1,
+      "PL!SP-bp5-006-R": 3,
+      "PL!SP-pb1-014-N": 4,
+      "PL!SP-sd1-019-SD": 4,
+      "PL!N-bp1-026-L": 1,
+      "PL!N-bp3-030-L": 4,
+      "PL!N-bp4-030-L": 4,
+      "PL!N-bp5-027-L": 3,
+      "PL!N-bp5-001-SEC": 3
+    },
+    "keyCardNos": [
+      "PL!N-bp4-030-L"
+    ],
+    "keyCard2Nos": [
+      "PL!N-pb1-011-R"
+    ],
+    "keyCard3Nos": [
+      "PL!N-bp1-026-L"
+    ],
+    "middleCardNos": [
+      "PL!N-bp4-030-L",
+      "PL!N-bp5-001-SEC"
+    ],
+    "thumbnailCardNo": "PL!N-bp5-001-SEC"
   },
   {
     "id": "sample-dev-1778966562160",
@@ -54,12 +93,8 @@
       "PL!-sd1-005-RM": 4,
       "PL!HS-bp1-009-P": 4,
       "PL!HS-bp1-015-N": 3,
-      "PL!HS-bp2-005-P": 4,
-      "PL!HS-bp2-006-R": 3,
-      "PL!HS-bp5-003-P": 4,
       "PL!HS-bp5-006-P": 4,
       "PL!HS-bp5-014-N": 4,
-      "PL!HS-pb1-006-R": 4,
       "PL!HS-pb1-019-N": 4,
       "PL!HS-PR-018-RM": 4,
       "PL!HS-PR-021-RM": 4,
@@ -68,7 +103,11 @@
       "PL!HS-bp2-025-L": 2,
       "PL!HS-bp2-026-L": 2,
       "PL!HS-bp5-021-L": 3,
-      "PL!HS-sd1-020-SD": 1
+      "PL!HS-sd1-020-SD": 1,
+      "PL!HS-bp2-005-SEC": 4,
+      "PL!HS-bp2-006-P": 3,
+      "PL!HS-bp5-003-SEC": 4,
+      "PL!HS-pb1-006-P＋": 4
     },
     "keyCardNos": [
       "PL!HS-bp1-023-L"
@@ -80,74 +119,76 @@
       "PL!HS-sd1-020-SD"
     ],
     "middleCardNos": [
-      "PL!HS-bp2-005-P"
+      "PL!HS-bp2-005-SEC"
     ],
     "thumbnailCardNo": "PL!HS-bp1-023-L"
   },
   {
-    "id": "sample-dev-1778971435944",
-    "name": "Tiny Starsマルガレーテ",
+    "id": "sample-dev-1779111207567",
+    "name": "EdrlNote",
     "deck": {
-      "PL!-bp3-012-RM": 3,
-      "PL!HS-pb1-019-N": 3,
-      "PL!SP-bp1-005-P": 4,
-      "PL!SP-bp1-011-P": 1,
-      "PL!SP-bp2-001-SEC": 3,
-      "PL!SP-bp2-002-R": 4,
-      "PL!SP-bp2-010-SEC": 2,
-      "PL!SP-bp4-001-P": 2,
-      "PL!SP-bp4-002-P": 4,
-      "PL!SP-bp4-015-N": 1,
-      "PL!SP-bp5-001-SEC": 4,
-      "PL!SP-bp5-012-N": 4,
-      "PL!SP-pb1-001-P＋": 1,
-      "PL!SP-pb1-018-N": 2,
-      "PL!SP-PR-021-PR": 4,
-      "PL!SP-sd1-003-SD": 3,
-      "PL!SP-sd1-006-SD": 1,
-      "PL!-bp3-026-L": 2,
-      "PL!SP-bp1-024-L": 4,
-      "PL!SP-bp1-026-L": 4,
-      "PL!SP-bp2-024-L": 2,
-      "PL!SP-bp2-011-R": 2
+      "PL!HS-bp5-004-R": 2,
+      "PL!HS-bp1-007-R": 3,
+      "PL!HS-pb1-024-N": 4,
+      "PL!HS-PR-023-PR": 3,
+      "PL!HS-PR-026-PR": 1,
+      "PL!HS-PR-032-PR": 2,
+      "PL!HS-sd1-001-SD": 4,
+      "PL!HS-sd1-007-SD": 4,
+      "PL!HS-sd1-008-SD": 4,
+      "PL!HS-sd1-015-SD": 4,
+      "PL!HS-bp5-022-L": 4,
+      "PL!HS-pb1-030-L": 4,
+      "PL!S-bp5-020-L": 4,
+      "PL!HS-bp5-007-P": 4,
+      "PL!HS-pb1-015-P＋": 2,
+      "PL!HS-bp5-008-P": 4,
+      "PL!HS-bp2-004-P": 3,
+      "PL!HS-pb1-016-P＋": 4
     },
-    "keyCardNos": [],
-    "keyCard2Nos": [],
-    "keyCard3Nos": [],
-    "middleCardNos": [],
-    "thumbnailCardNo": "PL!SP-bp2-010-SEC"
+    "keyCardNos": [
+      "PL!HS-sd1-001-SD"
+    ],
+    "keyCard2Nos": [
+      "PL!HS-bp5-022-L"
+    ],
+    "keyCard3Nos": [
+      "PL!HS-pb1-030-L"
+    ],
+    "middleCardNos": [
+      "PL!HS-sd1-001-SD",
+      "PL!HS-pb1-015-P＋"
+    ],
+    "thumbnailCardNo": "PL!HS-pb1-016-P＋"
   },
   {
-    "id": "sample-dev-1779081976127",
-    "name": "Tiny Stars",
+    "id": "sample-dev-1779111818561",
+    "name": "君ココナッツ",
     "deck": {
-      "PL!-bp3-012-RM": 3,
-      "PL!HS-pb1-019-N": 3,
-      "PL!SP-bp1-005-P": 4,
-      "PL!SP-bp1-011-P": 1,
-      "PL!SP-bp2-001-SEC": 3,
-      "PL!SP-bp2-002-R": 4,
-      "PL!SP-bp2-010-SEC": 2,
-      "PL!SP-bp4-001-P": 2,
-      "PL!SP-bp4-015-N": 1,
-      "PL!SP-bp5-001-SEC": 4,
-      "PL!SP-bp5-012-N": 4,
-      "PL!SP-pb1-001-P＋": 1,
-      "PL!SP-pb1-018-N": 2,
-      "PL!SP-PR-021-PR": 4,
-      "PL!SP-sd1-003-SD": 3,
-      "PL!SP-sd1-006-SD": 1,
-      "PL!-bp3-026-L": 2,
-      "PL!SP-bp1-024-L": 4,
-      "PL!SP-bp1-026-L": 4,
-      "PL!SP-bp2-011-R": 2,
-      "PL!SP-bp4-002-P": 4,
-      "PL!SP-bp2-024-SECL": 2
+      "LL-bp2-001-R＋": 2,
+      "PL!-pb1-011-R": 4,
+      "PL!-pb1-024-N": 4,
+      "PL!HS-bp1-008-P": 4,
+      "PL!HS-PR-026-PR": 4,
+      "PL!N-bp4-017-N": 4,
+      "PL!N-pb1-011-R": 1,
+      "PL!S-bp2-016-N": 4,
+      "PL!SP-bp2-009-P": 4,
+      "PL!SP-bp4-015-N": 4,
+      "PL!SP-sd1-020-SD": 2,
+      "PL!-bp4-021-L": 1,
+      "PL!N-bp4-030-L": 2,
+      "PL!N-bp5-027-L": 4,
+      "PL!S-bp2-024-L": 4,
+      "PL!SP-bp2-024-L": 1,
+      "PL!SP-bp5-002-AR": 4,
+      "PL!-pb1-018-P＋": 4,
+      "PL!N-bp5-004-AR": 3
     },
     "keyCardNos": [],
     "keyCard2Nos": [],
     "keyCard3Nos": [],
     "middleCardNos": [],
-    "thumbnailCardNo": "PL!SP-bp1-024-L"
+    "thumbnailCardNo": "LL-bp2-001-R＋"
   }
 ]

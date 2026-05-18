@@ -211,6 +211,14 @@ export {
   cardAbilityRawText,
 } from "./abilityEffects.js";
 
+export {
+  evaluateMemberJouji,
+  joujiHeartSlotRead,
+  listNativeJoujiSegmentRaws,
+} from "./joujiEffects.js";
+
+export { listNativeToujouSegmentRaws, listNativeLiveStartSegmentRaws } from "./abilityEffects.js";
+
 export const UNSET_PLACEHOLDER_PRODUCT = "未設定（テスト用）";
 const UNSET_PLACEHOLDER_PREFIX = "UNSET-M-";
 const TEST_BH_VARIANT_SEP = "__BH";
