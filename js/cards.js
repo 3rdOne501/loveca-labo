@@ -99,11 +99,95 @@ export function catalogListThumbnailUrl(originalUrl, opts) {
  * @param {string} cardNo
  */
 export function isHandDependentCost20Member(cardNo) {
-  const s = normalizeCardCatalogLookupKey(String(cardNo || ""))
-    .replace(/＋/g, "+")
-    .toLowerCase();
-  if (!s.includes("bp2-001")) return false;
-  return /bp2-001-r\+?$/.test(s);
+  return (
+    catalogCardNosShareIdentity(cardNo, "LL-bp2-001-R＋") ||
+    catalogCardNosShareIdentity(cardNo, "LL-bp2-001-R+")
+  );
+}
+
+/** @type {Map<string, string>} */
+let catalogIdentityByCardNo = new Map();
+
+/**
+ * rare_list クラスタごとに最低レアの card_no を同一カード ID として登録する。
+ * @param {Record<string, any>} cat
+ */
+export function rebuildCatalogIdentityIndex(cat) {
+  catalogIdentityByCardNo = new Map();
+  if (!cat || typeof cat !== "object") return;
+  /** @type {Set<string>} */
+  const visited = new Set();
+  function getRareListCardNos(card) {
+    const rl = card && card.rare_list;
+    if (!Array.isArray(rl)) return [];
+    const out = [];
+    for (const e of rl) {
+      if (!e || typeof e !== "object") continue;
+      const n = String(e.card_no || "").trim();
+      if (n) out.push(n);
+    }
+    return out;
+  }
+  for (const key of Object.keys(cat)) {
+    if (key.startsWith("_")) continue;
+    if (visited.has(key)) continue;
+    const card = cat[key];
+    if (!card || typeof card !== "object") {
+      visited.add(key);
+      continue;
+    }
+    /** @type {string[]} */
+    const stack = [key];
+    /** @type {Set<string>} */
+    const groupSet = new Set();
+    while (stack.length) {
+      const k = stack.pop();
+      if (!k || visited.has(k)) continue;
+      visited.add(k);
+      groupSet.add(k);
+      const cur = cat[k];
+      if (!cur) continue;
+      for (const n of getRareListCardNos(cur)) {
+        if (!visited.has(n) && cat[n]) stack.push(n);
+      }
+    }
+    const sorted = [...groupSet].sort(function (a, b) {
+      const ra = rareRankForVariantNormalization(cat[a] && cat[a].rare);
+      const rb = rareRankForVariantNormalization(cat[b] && cat[b].rare);
+      if (ra !== rb) return ra - rb;
+      return a < b ? -1 : a > b ? 1 : 0;
+    });
+    const canon = sorted[0] || key;
+    for (const n of sorted) {
+      catalogIdentityByCardNo.set(n, canon);
+      const nk = normalizeCardCatalogLookupKey(n);
+      if (nk) catalogIdentityByCardNo.set(nk, canon);
+    }
+  }
+}
+
+/** イラスト違い（rare_list クラスタ）を含む同一カードの代表 card_no */
+export function catalogCardIdentityKey(cardNo) {
+  if (cardNo == null || String(cardNo).trim() === "") return "";
+  const s = String(cardNo);
+  const hit = catalogIdentityByCardNo.get(s);
+  if (hit) return hit;
+  const nk = normalizeCardCatalogLookupKey(s);
+  if (nk && catalogIdentityByCardNo.has(nk)) return catalogIdentityByCardNo.get(nk) || s;
+  const resolved = getCard(s);
+  if (resolved && resolved.card_no != null) {
+    const r = String(resolved.card_no);
+    const hit2 = catalogIdentityByCardNo.get(r);
+    if (hit2) return hit2;
+    return r;
+  }
+  return s;
+}
+
+/** 別レアリティ・別イラストでも rare_list 上同一なら true */
+export function catalogCardNosShareIdentity(cardNoA, cardNoB) {
+  if (cardNoA == null || cardNoB == null) return false;
+  return catalogCardIdentityKey(cardNoA) === catalogCardIdentityKey(cardNoB);
 }
 
 /**
@@ -145,6 +229,7 @@ function ingestCardCatalogJson(raw) {
     if (!catalogKeyByNormalized.has(nk)) catalogKeyByNormalized.set(nk, k);
   }
   normalizeRareListVariantsInCatalog(catalog);
+  rebuildCatalogIdentityIndex(catalog);
   list = Object.entries(catalog)
     .filter(([k]) => !k.startsWith("_"))
     .map(([, v]) => v)
