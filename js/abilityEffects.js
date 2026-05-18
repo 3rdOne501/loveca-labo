@@ -21,6 +21,7 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  *   |'toujou_wait_pick_hand'
  *   |'toujou_success_live_pick_hand'
  *   |'draw_from_deck'
+ *   |'draw_then_hand_discard'
  *   |'passive_track'
  *   |'guided_manual'} AbilityTemplate
  */
@@ -29,10 +30,12 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  * @typedef {object} AbilityPickFilters
  * @property {string | null} [pickType] T_MEMBER | T_LIVE
  * @property {number | null} [maxCost]
+ * @property {number | null} [minCost]
  * @property {string | null} [seriesTag] 『…』の中身
  * @property {number | null} [minSuccessLiveCount]
  * @property {number | null} [minNeedHeartSlot] 1-6
  * @property {number | null} [minNeedHeartValue]
+ * @property {number | null} [minTotalNeedHeart]
  */
 
 /**
@@ -51,6 +54,8 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  * @property {boolean} [costSelfWait]
  * @property {number}  [bladeGain]
  * @property {boolean} [hasOptionalCost]
+ * @property {boolean} [costOrAlt] ウェイト「か」手札捨てなど、どちらか一方でよいコスト
+ * @property {number} [costEnergyCount] E／エネルギー支払い枚数
  */
 
 export function cardAbilityRawText(card) {
@@ -139,6 +144,18 @@ function parsePerTurnLimit(raw, keys) {
   return 0;
 }
 
+/** @param {string} costPart @returns {number} */
+function parseCostEnergyCount(costPart) {
+  if (!costPart) return 1;
+  var m = costPart.match(/Eを?(\d+)枚?支払/);
+  if (m) return Math.max(1, Number(m[1]) || 1);
+  if (/E支払/.test(costPart)) return 1;
+  var m2 = costPart.match(/エネルギー(?:を)?(\d+)枚/);
+  if (m2) return Math.max(1, Number(m2[1]) || 1);
+  if (/エネルギー.*支払/.test(costPart)) return 1;
+  return 1;
+}
+
 /** @param {string} p @returns {number} 「ブレード」を得る個数（ヒューリスティック） */
 function parseBladeGainCount(p) {
   if (!/ブレード.*得る/.test(p)) return 0;
@@ -158,15 +175,19 @@ export function parseAbilityPickFilters(p) {
   var f = {
     pickType: null,
     maxCost: null,
+    minCost: null,
     seriesTag: null,
     minSuccessLiveCount: null,
     minNeedHeartSlot: null,
     minNeedHeartValue: null,
+    minTotalNeedHeart: null,
   };
   if (/メンバーカード/.test(p)) f.pickType = T_MEMBER;
   else if (/ライブカード/.test(p)) f.pickType = T_LIVE;
   var costM = p.match(/コスト(\d+)以下/);
   if (costM) f.maxCost = Number(costM[1]);
+  var minCostM = p.match(/コスト(\d+)以上/);
+  if (minCostM) f.minCost = Number(minCostM[1]);
   var seriesM = p.match(/『([^』]+)』/);
   if (seriesM) f.seriesTag = seriesM[1];
   var slM = p.match(/成功ライブ(?:カード)?置き場にカードが(\d+)枚以上/);
@@ -179,7 +200,21 @@ export function parseAbilityPickFilters(p) {
     var colorMap = { 桃: 1, 赤: 2, 黄: 3, 緑: 4, 青: 5, 紫: 6 };
     if (colorMap[color] != null) f.minNeedHeartSlot = colorMap[color];
   }
+  var totalNeedM = p.match(/必要ハートの合計が(\d+)以上/);
+  if (totalNeedM) f.minTotalNeedHeart = Number(totalNeedM[1]);
   return f;
+}
+
+/** @param {*} cat */
+function sumNeedHeartOnCard(cat) {
+  var need = cat && cat.need_heart;
+  if (!need || typeof need !== "object") return 0;
+  var sum = 0;
+  Object.keys(need).forEach(function (k) {
+    var v = Number(need[k]);
+    if (Number.isFinite(v) && v > 0) sum += v;
+  });
+  return sum;
 }
 
 /**
@@ -191,11 +226,17 @@ export function catalogCardMatchesSeriesTag(cat, tag) {
   if (!cat || !tag) return true;
   var t = String(tag).trim();
   if (!t) return true;
-  var hay = [cat.series, cat.product, cat.unit, cat.name]
-    .filter(Boolean)
-    .join(" ");
+  var unit = cat.unit != null ? String(cat.unit) : "";
+  var series = cat.series != null ? String(cat.series) : "";
+  var product = cat.product != null ? String(cat.product) : "";
+  if (unit && (unit === t || unit.includes(t) || t.includes(unit))) return true;
+  if (series && (series.includes(t) || t.includes(series))) return true;
+  if (product && product.includes(t)) return true;
+  var hay = [series, product, unit, cat.name].filter(Boolean).join(" ");
   if (hay.includes(t)) return true;
   if (t === "μ's" && /ラブライブ|μ|m's|mus/i.test(hay)) return true;
+  if (t === "Liella!" && /Liella|リエラ/i.test(hay)) return true;
+  if (t === "虹ヶ咲" && /虹ヶ咲|ニジガク/i.test(hay)) return true;
   return false;
 }
 
@@ -210,6 +251,10 @@ export function catalogCardMatchesPickFilters(cat, filters) {
     var cost = Number(cat.cost != null ? cat.cost : cat.score);
     if (!Number.isFinite(cost) || cost > filters.maxCost) return false;
   }
+  if (filters.minCost != null) {
+    var costMin = Number(cat.cost != null ? cat.cost : cat.score);
+    if (!Number.isFinite(costMin) || costMin < filters.minCost) return false;
+  }
   if (filters.seriesTag && !catalogCardMatchesSeriesTag(cat, filters.seriesTag)) return false;
   if (filters.minNeedHeartSlot != null && filters.minNeedHeartValue != null) {
     var need = cat.need_heart;
@@ -218,6 +263,9 @@ export function catalogCardMatchesPickFilters(cat, filters) {
     var alt = "heart_" + String(filters.minNeedHeartSlot).padStart(2, "0");
     var v = Number(need[key] != null ? need[key] : need[alt]);
     if (!Number.isFinite(v) || v < filters.minNeedHeartValue) return false;
+  }
+  if (filters.minTotalNeedHeart != null) {
+    if (sumNeedHeartOnCard(cat) < filters.minTotalNeedHeart) return false;
   }
   return true;
 }
@@ -279,7 +327,12 @@ export function classifyCardAbility(card, trigger) {
   var costPart = p.split("：")[0] || "";
   base.hasOptionalCost = /もよい/.test(costPart);
   base.costEnergy = /(エネルギー|E)を?(\d+)?枚?支払/.test(costPart) || /E支払/.test(costPart);
-  base.costSelfWait = /このメンバーをウェイト/.test(costPart);
+  base.costEnergyCount = base.costEnergy ? parseCostEnergyCount(costPart) : 0;
+  base.costSelfWait =
+    /このメンバーをウェイト/.test(costPart) || /メンバーをウェイトにし/.test(costPart);
+  base.costOrAlt =
+    /ウェイトにするか/.test(costPart) ||
+    (/手札.*控え室/.test(costPart) && /か/.test(costPart) && base.costSelfWait);
   base.handDiscardToWaiting = (function () {
     var m = costPart.match(/手札を(\d+)枚控え室に置/);
     if (m) return Number(m[1]) || null;
@@ -402,6 +455,15 @@ export function classifyCardAbility(card, trigger) {
   }
 
   if (enterLiveSuccess) {
+    var lsCombo = p.match(/カードを(\d+)枚引き[、,]?手札を(\d+)枚控え室に置/);
+    if (!lsCombo) lsCombo = p.match(/カードを(\d+)枚引[^：]*手札を(\d+)枚控え室に置/);
+    if (lsCombo) {
+      return withTrigger("live_success", {
+        template: "draw_then_hand_discard",
+        deckDrawCount: Number(lsCombo[1]) || 1,
+        handDiscardToWaiting: Number(lsCombo[2]) || 1,
+      });
+    }
     var lsPick = parseDeckTopCount(p);
     if (lsPick != null && /手札に加/.test(p) && /公開/.test(p)) {
       return withTrigger("live_success", {
@@ -521,6 +583,7 @@ export function abilityEffectIsAutomated(template) {
     template === "deck_top_pick_recover" ||
     template === "toujou_wait_pick_hand" ||
     template === "toujou_success_live_pick_hand" ||
-    template === "draw_from_deck"
+    template === "draw_from_deck" ||
+    template === "draw_then_hand_discard"
   );
 }

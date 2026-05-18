@@ -318,7 +318,7 @@ export function renderCardCatalogContentInto(c, targets, options) {
     effectSlot.innerHTML =
       '<h3 class="dlg-card-catalog-ability-heading">効果テキスト</h3><div class="dlg-card-catalog-ability">' +
       abHtml +
-      "</div>";
+      '</div><div id="dlg-card-catalog-stage-mount" class="dlg-card-catalog-stage-mount" hidden></div>';
   }
 
   /* 後でクリック時に「最新の」カード／ターゲットで再描画できるよう、body 要素に紐づけて保存。 */
@@ -424,6 +424,49 @@ function wireCatalogVariantsRowOnce(bodyEl) {
  * @param {*} c カード実体または card_no を含むオブジェクト
  * @param {{ onVariantSelected?: (cardNo: string) => boolean | void }} [options]
  */
+function mountHandStageActionsInEffectSlot(act, dlg) {
+  var mount = document.getElementById("dlg-card-catalog-stage-mount");
+  if (!mount) return;
+  if (!act || typeof act.onStage !== "function") {
+    mount.hidden = true;
+    mount.innerHTML = "";
+    return;
+  }
+  mount.hidden = false;
+  mount.innerHTML =
+    '<p class="dlg-card-catalog-hand-stage-hint">選択したエリアに登場</p>' +
+    '<div class="dlg-card-catalog-hand-stage-row">' +
+    '<button type="button" class="dlg-card-catalog-stage-btn" data-stage-side="left" aria-label="左サイドに登場">' +
+    '<img class="dlg-card-catalog-stage-btn__ico" alt="" src="assets/game-icons/loveca-data-1/leftside.png" decoding="async" />' +
+    '<span class="dlg-card-catalog-stage-btn__lab">左サイド</span></button>' +
+    '<button type="button" class="dlg-card-catalog-stage-btn" data-stage-side="center" aria-label="センターに登場">' +
+    '<img class="dlg-card-catalog-stage-btn__ico" alt="" src="assets/game-icons/loveca-data-1/center.png" decoding="async" />' +
+    '<span class="dlg-card-catalog-stage-btn__lab">センター</span></button>' +
+    '<button type="button" class="dlg-card-catalog-stage-btn" data-stage-side="right" aria-label="右サイドに登場">' +
+    '<img class="dlg-card-catalog-stage-btn__ico" alt="" src="assets/game-icons/loveca-data-1/rightside.png" decoding="async" />' +
+    '<span class="dlg-card-catalog-stage-btn__lab">右サイド</span></button>' +
+    "</div>";
+  mount.querySelectorAll("[data-stage-side]").forEach(function (btn) {
+    var side = btn.getAttribute("data-stage-side");
+    if (!side) return;
+    var canGlow = !act.sideGlow || act.sideGlow[side] === true;
+    btn.classList.toggle("dlg-card-catalog-stage-btn--glow", canGlow);
+    btn.classList.toggle("dlg-card-catalog-stage-btn--dim", !canGlow);
+    btn.addEventListener("click", function () {
+      try {
+        dlg.close();
+      } catch (_) {
+        /* noop */
+      }
+      try {
+        act.onStage(side);
+      } catch (e) {
+        console.error(e);
+      }
+    });
+  });
+}
+
 export function openCardCatalogDialog(c, options) {
   var dlg = document.getElementById("dlg-card-catalog");
   if (!dlg) return;
@@ -442,24 +485,8 @@ export function openCardCatalogDialog(c, options) {
   if (options && options.playMode) renderOpts.hideVariants = true;
   var rendered = renderCardCatalogContentInto(c, targets, renderOpts);
   if (!rendered) return;
-  var handStageHost = document.getElementById("dlg-card-catalog-hand-stage-actions");
-  if (handStageHost) {
-    var act = options && options.handStageActions;
-    if (act && typeof act.onStage === "function") {
-      handStageHost.hidden = false;
-      ["left", "center", "right"].forEach(function (side) {
-        var btn = document.getElementById("dlg-card-catalog-stage-" + side);
-        if (!btn) return;
-        var fresh = btn.cloneNode(true);
-        btn.parentNode.replaceChild(fresh, btn);
-        fresh.addEventListener("click", function () {
-          try { dlg.close(); } catch (_) { /* noop */ }
-          try { act.onStage(side); } catch (e) { console.error(e); }
-        });
-      });
-    } else {
-      handStageHost.hidden = true;
-    }
-  }
+  var legacyHost = document.getElementById("dlg-card-catalog-hand-stage-actions");
+  if (legacyHost) legacyHost.hidden = true;
+  mountHandStageActionsInEffectSlot(options && options.handStageActions, dlg);
   if (dlg.showModal) dlg.showModal();
 }

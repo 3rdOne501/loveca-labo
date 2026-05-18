@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Loveca Labo" />
-    <meta name="loveca-build" content="2026051820" />
+    <meta name="loveca-build" content="2026051823" />
     <title>Loveca Labo</title>
     <!-- 万一以前のバージョンの Service Worker が登録された端末で取り残しが起きた場合に備え、
          先頭で SW 登録を一括解除する。SW 自体は本サイトでは使っていない。 -->
@@ -488,7 +488,15 @@ python3 -m http.server 8080</pre>
           <button type="button" class="btn sm secondary" id="btn-layout-16-9" aria-pressed="false" title="プレイ画面全体を通常の約 85% の表示倍率に縮小します（再押しで解除）">
             16:9
           </button>
-          <button type="button" class="btn sm secondary" id="btn-export-replay">ログ書き出し</button>
+          <button
+            type="button"
+            class="btn sm secondary"
+            id="btn-play-manual-mode"
+            aria-pressed="false"
+            title="ONにすると効果の自動条件チェック・強制処理を行わず、手動で盤面操作します"
+          >
+            手動モード
+          </button>
           <button type="button" class="btn sm secondary" id="btn-zone-hints" aria-pressed="false">
             ゾーン説明を表示
           </button>
@@ -1477,6 +1485,8 @@ python3 -m http.server 8080</pre>
         <div class="dlg-card-catalog-thumb-col">
           <img id="dlg-card-catalog-img" class="dlg-card-catalog-img" alt="" decoding="async" />
           <div id="dlg-card-catalog-hand-stage-actions" class="dlg-card-catalog-hand-stage-actions" hidden>
+            <p class="dlg-card-catalog-hand-stage-hint">選択したエリアに登場</p>
+            <div class="dlg-card-catalog-hand-stage-row">
             <button type="button" class="btn sm dlg-card-catalog-stage-btn" id="dlg-card-catalog-stage-left" aria-label="左サイドに登場">
               <img class="dlg-card-catalog-stage-btn__ico" alt="左サイド" src="assets/game-icons/loveca-data-1/leftside.png" />
               <span class="dlg-card-catalog-stage-btn__lab">左サイド</span>
@@ -1489,6 +1499,7 @@ python3 -m http.server 8080</pre>
               <img class="dlg-card-catalog-stage-btn__ico" alt="右サイド" src="assets/game-icons/loveca-data-1/rightside.png" />
               <span class="dlg-card-catalog-stage-btn__lab">右サイド</span>
             </button>
+            </div>
           </div>
           <div id="dlg-card-catalog-type-badges" class="dlg-card-catalog-type-badges"></div>
         </div>
@@ -1659,41 +1670,6 @@ python3 -m http.server 8080</pre>
     </dialog>
 
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
-    <script>
-      (function () {
-        var meta = document.querySelector('meta[name="loveca-build"]');
-        var v = meta && meta.content ? String(meta.content).trim() : "";
-        if (!v) return;
-        var mods = [
-          "abilityEffects.js",
-          "bladeHeart.js",
-          "cardCatalogDialog.js",
-          "cards.js",
-          "cloudAuth.js",
-          "config.js",
-          "deckbuilder.js",
-          "deckLibrary.js",
-          "decklogImport.js",
-          "firebaseConfig.js",
-          "firebaseConfig.example.js",
-          "gameStatusIcons.js",
-          "liveSpecialBhOverride.js",
-          "main.js",
-          "sampleDeckRecipes.js",
-          "simulator.js",
-          "testCardLog.js",
-          "ui.js",
-        ];
-        var scope = {};
-        for (var i = 0; i < mods.length; i++) {
-          scope["./" + mods[i]] = "./" + mods[i] + "?v=" + v;
-        }
-        var el = document.createElement("script");
-        el.type = "importmap";
-        el.textContent = JSON.stringify({ scopes: { "/js/": scope } });
-        document.head.appendChild(el);
-      })();
-    </script>
-    <script type="module" src="js/main.js?v=2026051820"></script>
+    <script type="module" src="js/main.js?v=2026051823"></script>
   </body>
 </html>

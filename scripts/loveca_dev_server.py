@@ -8,6 +8,10 @@ import socketserver
 import sys
 
 
+class LovecaDevTCPServer(socketserver.TCPServer):
+    allow_reuse_address = True
+
+
 class LovecaDevHandler(http.server.SimpleHTTPRequestHandler):
     def end_headers(self) -> None:
         path = self.path.split("?", 1)[0]
@@ -27,7 +31,7 @@ def main() -> None:
     port = int(sys.argv[1])
     root = os.path.abspath(sys.argv[2])
     os.chdir(root)
-    with socketserver.TCPServer(("127.0.0.1", port), LovecaDevHandler) as httpd:
+    with LovecaDevTCPServer(("127.0.0.1", port), LovecaDevHandler) as httpd:
         httpd.serve_forever()
 
 

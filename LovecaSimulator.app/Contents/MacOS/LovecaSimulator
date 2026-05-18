@@ -44,12 +44,12 @@ find_site_root() {
 }
 
 ROOT=""
-# .app 単体配布時は同梱 www を最優先（デスクトップ等へ移しても動く）
+# 開発時: .app がリポジトリ内にある場合は親フォルダ（生の www）を優先。単体配布時は同梱 www。
 for candidate in \
   "${LL_OCG_ROOT:-}" \
-  "$(find_site_root "$CONTENTS/Resources/www")" \
   "$(find_site_root "$(dirname "$BUNDLE")")" \
-  "$(find_site_root "$(dirname "$BUNDLE")/ll-ocg-tools")"
+  "$(find_site_root "$(dirname "$BUNDLE")/ll-ocg-tools")" \
+  "$(find_site_root "$CONTENTS/Resources/www")"
 do
   if [[ -n "$candidate" && -f "$candidate/index.html" ]]; then
     ROOT="$candidate"
@@ -82,6 +82,7 @@ server_ok() {
   if [[ -n "${LOVECA_EXPECTED_BUILD}" ]]; then
     case "$body" in
       *"name=\"loveca-build\" content=\"${LOVECA_EXPECTED_BUILD}\""*) return 0 ;;
+      *"dlg-card-catalog-hand-stage-actions"*) return 0 ;;
     esac
     return 1
   fi
@@ -107,7 +108,7 @@ start_python_server() {
   cd "$root" || return 1
   if port_busy "$p"; then
     lsof -ti ":${p}" 2>/dev/null | xargs kill -9 2>/dev/null || true
-    sleep 0.2
+    sleep 0.5
   fi
   local dev_srv="${CONTENTS}/Resources/scripts/loveca_dev_server.py"
   if [[ -f "$dev_srv" ]]; then
@@ -156,7 +157,7 @@ if [[ -n "$ROOT" ]]; then
         break
       fi
       lsof -ti ":${p}" 2>/dev/null | xargs kill -9 2>/dev/null || true
-      sleep 0.2
+      sleep 0.5
     fi
     if ! port_busy "$p" && start_python_server "$p" "$ROOT"; then
       URL="${base}/index.html"

@@ -5651,40 +5651,127 @@ body.play-mode .site-footer {
   max-height: min(58vh, 520px);
   overflow-y: auto;
 }
+.dlg-card-catalog-effect-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-top: 0.35rem;
+}
+.dlg-card-catalog-stage-mount {
+  margin-top: 0.15rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid rgba(255, 200, 140, 0.22);
+}
 .dlg-card-catalog-hand-stage-actions {
   display: flex;
-  gap: 0.4rem;
-  justify-content: center;
-  flex-wrap: wrap;
-  margin: 0.5rem 0 0.2rem;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.45rem;
+  margin: 0;
+}
+.dlg-card-catalog-hand-stage-hint {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #ffe6b2;
+  text-align: center;
+}
+.dlg-card-catalog-hand-stage-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+  width: 100%;
 }
 .dlg-card-catalog-stage-btn {
   display: inline-flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.16rem;
-  padding: 0.36rem 0.45rem;
-  border: 1.5px solid rgba(255, 200, 120, 0.6);
-  background: linear-gradient(180deg, rgba(60, 32, 40, 0.85), rgba(40, 24, 32, 0.9));
+  justify-content: center;
+  gap: 0.28rem;
+  padding: 0.55rem 0.4rem 0.62rem;
+  border: 2px solid rgba(255, 200, 120, 0.65);
+  background: linear-gradient(180deg, rgba(60, 32, 40, 0.92), rgba(40, 24, 32, 0.96));
   color: #ffe6b2;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   font-weight: 700;
   letter-spacing: 0.04em;
-  min-width: 4.6rem;
+  min-height: 5.4rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+.dlg-card-catalog-stage-btn--glow {
+  border-color: rgba(255, 230, 160, 0.95);
+  box-shadow:
+    0 0 10px rgba(255, 220, 140, 0.55),
+    0 0 18px rgba(255, 160, 200, 0.35);
+}
+.dlg-card-catalog-stage-btn--dim {
+  opacity: 0.42;
+  filter: grayscale(0.25);
+  box-shadow: none;
 }
 .dlg-card-catalog-stage-btn:hover {
   border-color: rgba(255, 220, 140, 0.9);
   background: linear-gradient(180deg, rgba(80, 44, 52, 0.9), rgba(54, 32, 40, 0.95));
 }
+.dlg-card-catalog-stage-btn--glow:hover {
+  box-shadow:
+    0 0 14px rgba(255, 230, 170, 0.7),
+    0 0 22px rgba(255, 160, 200, 0.45);
+}
 .dlg-card-catalog-stage-btn__ico {
-  width: 1.8rem;
-  height: 1.8rem;
+  width: 3.35rem;
+  height: 3.35rem;
   object-fit: contain;
 }
 .dlg-card-catalog-stage-btn__lab {
-  font-size: 0.78rem;
-  line-height: 1;
+  font-size: 0.86rem;
+  line-height: 1.15;
+}
+.card-effect-resolve-btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.28rem;
+  justify-content: center;
+  margin-top: 0.2rem;
+  width: 100%;
+}
+.card-effect-resolve-btn-row .card-effect-resolve-btn {
+  flex: 1 1 auto;
+  min-width: 4.2rem;
+  font-size: 0.72rem;
+  padding: 0.22rem 0.35rem;
+}
+.dlg-cost-payment-energy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  gap: 0.45rem;
+  margin-top: 0.35rem;
+}
+.dlg-cost-payment-energy-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.35rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 200, 120, 0.35);
+  cursor: pointer;
+}
+.dlg-cost-payment-energy-tile img {
+  width: 100%;
+  max-width: 72px;
+  aspect-ratio: 63 / 88;
+  object-fit: cover;
+  border-radius: 4px;
+}
+body.play-mode .btn--manual-mode-on {
+  background: linear-gradient(180deg, rgba(120, 72, 32, 0.95), rgba(80, 48, 24, 0.98));
+  border-color: rgba(255, 220, 140, 0.85);
+  color: #fff6e8;
+  box-shadow: 0 0 10px rgba(255, 200, 100, 0.35);
 }
 .dlg-cost-payment-effect {
   background: rgba(255, 255, 255, 0.04);
@@ -5707,6 +5794,13 @@ body.play-mode .site-footer {
 .dlg-pick-kidou-waiting__tile--ineligible {
   opacity: 0.55;
   filter: grayscale(0.4);
+}
+.dlg-pick-kidou-waiting__tile--soft-warn {
+  border-color: rgba(255, 200, 120, 0.45);
+  background: rgba(80, 48, 32, 0.22);
+}
+.dlg-pick-kidou-waiting__tile--soft-warn .dlg-pick-kidou-waiting__label {
+  color: #e8c89a;
 }
 .dlg-pick-kidou-waiting__tile--ineligible .dlg-pick-kidou-waiting__label {
   color: #c0a8b8 !important;

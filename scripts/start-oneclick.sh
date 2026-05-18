@@ -63,6 +63,7 @@ server_serves_loveca() {
     case "$body" in
       *"loveca-build\" content=\"${LOVECA_EXPECTED_BUILD}\""*) return 0 ;;
       *"name=\"loveca-build\" content=\"${LOVECA_EXPECTED_BUILD}\""*) return 0 ;;
+      *"dlg-card-catalog-hand-stage-actions"*) return 0 ;;
     esac
     return 1
   fi
@@ -86,7 +87,7 @@ start_server_on_port() {
   cd "$ROOT"
   if command -v lsof >/dev/null 2>&1 && lsof -i ":${p}" -sTCP:LISTEN >/dev/null 2>&1; then
     lsof -ti ":${p}" 2>/dev/null | xargs kill -9 2>/dev/null || true
-    sleep 0.2
+    sleep 0.5
   fi
   local dev_srv="${SCRIPT_DIR}/loveca_dev_server.py"
   if [[ -f "$dev_srv" ]]; then
@@ -125,7 +126,7 @@ for try in $(seq 0 10); do
     fi
     if command -v lsof >/dev/null 2>&1; then
       lsof -ti ":${candidate}" 2>/dev/null | xargs kill -9 2>/dev/null || true
-      sleep 0.2
+      sleep 0.5
     fi
   fi
   if start_server_on_port "$candidate"; then
