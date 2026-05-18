@@ -69,9 +69,14 @@ export const CARD_GROUP_RULES = [
   },
 ];
 
+/** 表示用：感嘆符・疑問符を全角に揃える（みらくらぱーく！ 等） */
+export function canonicalizeDisplayPunctuation(s) {
+  return String(s == null ? "" : s).replace(/!/g, "！").replace(/\?/g, "？");
+}
+
 /** 全角／半角の記号ゆれを吸収（！! ・ 空白 等） */
 export function normalizeCardGroupText(s) {
-  return String(s == null ? "" : s)
+  return canonicalizeDisplayPunctuation(s)
     .replace(/\u3000/g, " ")
     .replace(/[！!？?．.・･]/g, "")
     .replace(/\s+/g, "")

@@ -3068,15 +3068,34 @@ body.play-mode .stage-slot.card-strip .card-effect-resolve-btn-row .card-effect-
   border-width: 1.5px;
 }
 body.play-mode .stage-slot.card-strip .card-effect-resolve-btn--live_start,
-body.play-mode .stage-slot.card-strip .card-effect-resolve-btn-row .card-effect-resolve-btn--live_start,
-body.play-mode .stage-slot.card-strip .card-effect-resolve-btn--live_success,
-body.play-mode .stage-slot.card-strip .card-effect-resolve-btn-row .card-effect-resolve-btn--live_success {
+body.play-mode .stage-slot.card-strip .card-effect-resolve-btn-row .card-effect-resolve-btn--live_start {
   font-size: 0.92rem;
   padding: 0.34rem 0.95rem;
   top: -4px;
   border-width: 1.5px;
   letter-spacing: normal;
   min-width: 0;
+}
+body.play-mode .stage-slot.card-strip .card-effect-resolve-btn--live_success,
+body.play-mode .stage-slot.card-strip .card-effect-resolve-btn-row .card-effect-resolve-btn--live_success {
+  font-size: 1.02rem;
+  padding: 0.42rem 1.12rem;
+  top: -4px;
+  border-width: 1.5px;
+  letter-spacing: normal;
+  min-width: 0;
+}
+body.play-mode .waiting-zone-strip .card-effect-resolve-btn--live_start,
+body.play-mode .waiting-zone-strip .card-effect-resolve-btn--live_success,
+body.play-mode .waiting-zone-strip .card-effect-resolve-btn-row .card-effect-resolve-btn {
+  font-size: 0.88rem;
+  padding: 0.3rem 0.65rem;
+  top: -2px;
+  z-index: 12;
+}
+body.play-mode .waiting-zone-strip .card-effect-resolve-btn--live_success {
+  font-size: 0.96rem;
+  padding: 0.36rem 0.78rem;
 }
 
 /* ライブ枠（横向きライブカード）のボタン／アイコン拡大配置 */
@@ -3093,11 +3112,18 @@ body.play-mode .live-slot .card-item.card-item--live-h .card-effect-resolve-btn-
   z-index: 9;
 }
 body.play-mode .live-slot .card-item.card-item--live-h .card-effect-resolve-btn--live_start,
-body.play-mode .live-slot .card-item.card-item--live-h .card-effect-resolve-btn-row .card-effect-resolve-btn--live_start,
-body.play-mode .live-slot .card-item.card-item--live-h .card-effect-resolve-btn--live_success,
-body.play-mode .live-slot .card-item.card-item--live-h .card-effect-resolve-btn-row .card-effect-resolve-btn--live_success {
+body.play-mode .live-slot .card-item.card-item--live-h .card-effect-resolve-btn-row .card-effect-resolve-btn--live_start {
   font-size: 0.95rem;
   padding: 0.22rem 0.7rem;
+  top: -40px;
+  border-width: 1.5px;
+  letter-spacing: 0.03em;
+  min-width: 0;
+}
+body.play-mode .live-slot .card-item.card-item--live-h .card-effect-resolve-btn--live_success,
+body.play-mode .live-slot .card-item.card-item--live-h .card-effect-resolve-btn-row .card-effect-resolve-btn--live_success {
+  font-size: 1.08rem;
+  padding: 0.32rem 0.88rem;
   top: -40px;
   border-width: 1.5px;
   letter-spacing: 0.03em;
@@ -6896,21 +6922,46 @@ body.play-mode .card-art-wrap .card-img {
   background: rgba(32, 36, 52, 0.88);
 }
 body.play-mode .live-slot .card-effect-resolve-btn--live_start,
-body.play-mode .live-slot .card-effect-resolve-btn-row .card-effect-resolve-btn--live_start,
-body.play-mode .live-slot .card-effect-resolve-btn--live_success,
-body.play-mode .live-slot .card-effect-resolve-btn-row .card-effect-resolve-btn--live_success {
+body.play-mode .live-slot .card-effect-resolve-btn-row .card-effect-resolve-btn--live_start {
   font-size: 0.95rem;
   padding: 0.22rem 0.7rem;
   border-width: 1.5px;
   letter-spacing: 0.03em;
   min-width: 0;
 }
-body.play-mode .live-slot .card-effect-resolve-btn-row .card-effect-resolve-btn--live_start,
+body.play-mode .live-slot .card-effect-resolve-btn--live_success,
 body.play-mode .live-slot .card-effect-resolve-btn-row .card-effect-resolve-btn--live_success {
+  font-size: 1.06rem;
+  padding: 0.3rem 0.82rem;
+  border-width: 1.5px;
+  letter-spacing: 0.03em;
+  min-width: 0;
+}
+body.play-mode .live-slot .card-effect-resolve-btn-row .card-effect-resolve-btn--live_start {
   flex: 1 1 auto;
   min-width: 4.2rem;
   font-size: 0.88rem;
   padding: 0.2rem 0.45rem;
+}
+body.play-mode .live-slot .card-effect-resolve-btn-row .card-effect-resolve-btn--live_success {
+  flex: 1 1 auto;
+  min-width: 4.6rem;
+  font-size: 0.98rem;
+  padding: 0.28rem 0.55rem;
+}
+.dlg-pick-kidou-waiting__zone {
+  font-size: 0.62rem;
+  line-height: 1.2;
+  color: rgba(255, 220, 240, 0.88);
+}
+.effect-dialog-resume-chip {
+  position: fixed;
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  z-index: 12050;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  font-size: 1rem;
+  padding: 0.55rem 1.1rem;
 }
 body.play-mode .card-item {
   position: relative;
