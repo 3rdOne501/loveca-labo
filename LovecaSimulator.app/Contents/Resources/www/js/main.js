@@ -49,6 +49,13 @@ window.addEventListener("resize", applyPageAutoScale);
 try {
   var buildMeta = document.querySelector('meta[name="loveca-build"]');
   var buildTag = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "";
+  if (buildTag && APP_MODULE_CACHE_BUST && buildTag !== APP_MODULE_CACHE_BUST) {
+    var uMismatch = new URL(window.location.href);
+    if (!uMismatch.searchParams.has("_reload")) {
+      uMismatch.searchParams.set("_reload", String(Date.now()));
+      window.location.replace(uMismatch.toString());
+    }
+  }
   console.info("[Loveca Labo] build=" + (buildTag || APP_MODULE_CACHE_BUST || "?"));
 } catch (_) {
   /* noop */

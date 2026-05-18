@@ -3,6 +3,7 @@
  * ソロプレイの自動処理テンプレートと、手動ガイドへの振り分けに使う。
  */
 import { T_LIVE, T_MEMBER } from "./config.js";
+import { catalogCardMatchesGroupTag } from "./cardGroups.js";
 import { abilityWikiCanonicalKeys, wikiAbilityStemToCanonical } from "./gameStatusIcons.js";
 
 /** トリガーアイコン（能力の発動契機）として扱う canonical キー */
@@ -23,6 +24,13 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  *   |'draw_from_deck'
  *   |'draw_then_hand_discard'
  *   |'passive_track'
+ *   |'blade_gain_only'
+ *   |'ability_pick_one'
+ *   |'live_success_pick_options'
+ *   |'pay_energy_pick_one'
+ *   |'optional_energy_blade_until_live_end'
+ *   |'kidou_wait_or_hand_for_energy'
+ *   |'toujou_liella_double_baton_center'
  *   |'guided_manual'} AbilityTemplate
  */
 
@@ -56,6 +64,14 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  * @property {boolean} [hasOptionalCost]
  * @property {boolean} [costOrAlt] ウェイト「か」手札捨てなど、どちらか一方でよいコスト
  * @property {number} [costEnergyCount] E／エネルギー支払い枚数
+ * @property {string[]} [abilityChoices]
+ * @property {number} [choiceMin]
+ * @property {number} [choiceMax]
+ * @property {string | null} [choiceBoostSeriesTag]
+ * @property {number} [choiceBoostMin]
+ * @property {number} [choiceBoostMax]
+ * @property {'left'|'center'|'right'|null} [stageArea]
+ * @property {Array<'left'|'center'|'right'>} [stageAreas]
  */
 
 export function cardAbilityRawText(card) {
@@ -157,8 +173,75 @@ function parseCostEnergyCount(costPart) {
 }
 
 /** @param {string} p @returns {number} 「ブレード」を得る個数（ヒューリスティック） */
+/** @param {string} segRaw トリガーセグメント原文 */
+function parseStageAreaConstraint(segRaw) {
+  var areas = parseStageAreaConstraints(segRaw);
+  return areas.length ? areas[0] : null;
+}
+
+/** @param {string} segRaw @returns {Array<'left'|'center'|'right'>} */
+function parseStageAreaConstraints(segRaw) {
+  var s = String(segRaw || "");
+  /** @type {Array<'left'|'center'|'right'>} */
+  var areas = [];
+  if (/\{\{center\.png\|センター\}\}/.test(s) || /\|センター\}\}/.test(s)) areas.push("center");
+  if (/\{\{leftside\.png\|左サイド\}\}/.test(s) || /\|左サイド\}\}/.test(s)) areas.push("left");
+  if (/\{\{rightside\.png\|右サイド\}\}/.test(s) || /\|右サイド\}\}/.test(s)) areas.push("right");
+  return areas;
+}
+
+/** @param {'left'|'center'|'right'|null|undefined} memberColumn @param {ClassifiedAbility|null|undefined} cl */
+export function abilityInstMatchesStageArea(memberColumn, cl) {
+  if (!cl) return true;
+  if (cl.stageAreas && cl.stageAreas.length) {
+    return !!memberColumn && cl.stageAreas.indexOf(memberColumn) >= 0;
+  }
+  if (cl.stageArea) return memberColumn === cl.stageArea;
+  return true;
+}
+
+/** 登場／ライブ開始時の共有「E支払い＋2択」本文（PL!SP-bp5-001 等） */
+function classifyPayEnergyPickOne(card, trigger) {
+  var raw = cardAbilityRawText(card);
+  if (!/E支払ってもよい：以下から1つを選ぶ/.test(raw)) return null;
+  if (!cardHasTrigger(card, "toujyou") && !cardHasTrigger(card, "live_start")) return null;
+  if (trigger && trigger !== "toujyou" && trigger !== "live_start") return null;
+  var choices = parseAbilityBulletChoices(raw);
+  return {
+    template: "pay_energy_pick_one",
+    abilityChoices: choices.length ? choices : parseAbilityBulletChoices(raw),
+    optional: true,
+    hasOptionalCost: true,
+    costEnergy: true,
+    costEnergyCount: 1,
+  };
+}
+
+/** @param {string} rawOrPlain 能力セグメント原文またはプレーンテキスト */
+export function parseAbilityBulletChoices(rawOrPlain) {
+  var s = String(rawOrPlain == null ? "" : rawOrPlain);
+  var lines = s.split(/\n/);
+  /** @type {string[]} */
+  var out = [];
+  lines.forEach(function (line) {
+    var t = line.replace(/\{\{[^}]+\}\}/g, "").trim();
+    if (!t) return;
+    var m = t.match(/^[・•]\s*(.+)$/);
+    if (m) out.push(m[1].trim());
+  });
+  if (!out.length) {
+    var re = /[・•]\s*([^・•\n]+)/g;
+    var mm;
+    while ((mm = re.exec(s)) !== null) {
+      var bit = String(mm[1] || "").trim();
+      if (bit) out.push(bit);
+    }
+  }
+  return out;
+}
+
 function parseBladeGainCount(p) {
-  if (!/ブレード.*得る/.test(p)) return 0;
+  if (!/ブレード.*得る/.test(p) && !/得る/.test(p)) return 0;
   var m = p.match(/ブレード(?:\s*ブレード)*\s*を得る/);
   if (m) {
     return (m[0].match(/ブレード/g) || []).length;
@@ -167,6 +250,61 @@ function parseBladeGainCount(p) {
   if (n) return Number(n[1]) || 0;
   if (/ブレードを得る/.test(p)) return 1;
   return 0;
+}
+
+/** @param {string} segRaw */
+function countWikiEnergyIcons(segRaw) {
+  return (String(segRaw || "").match(/\{\{icon_energy\.png\|E\}\}/g) || []).length;
+}
+
+/** @param {string} segRaw */
+function countWikiBladeIcons(segRaw) {
+  return (String(segRaw || "").match(/\{\{[^}]*blade[^}]*\}\}/gi) || []).length;
+}
+
+/** @param {string} segRaw @param {string} p */
+function bladeGainFromIcons(segRaw, p) {
+  var fromP = parseBladeGainCount(p);
+  if (fromP > 0) return fromP;
+  if (/ライブ終了時まで/.test(p) && /得る/.test(p)) return countWikiBladeIcons(segRaw);
+  return 0;
+}
+
+/** @param {ClassifiedAbility} base @param {string} segRaw */
+function applyOptionalEnergyCostFromSegment(base, segRaw) {
+  var n = countWikiEnergyIcons(segRaw);
+  if (n > 0) {
+    base.costEnergy = true;
+    base.costEnergyCount = Math.max(base.costEnergyCount || 0, n);
+    if (/もよい/.test(segRaw)) base.hasOptionalCost = true;
+  }
+}
+
+/**
+ * ライブ開始時など「E支払ってもよい：ライブ終了時までブレード得る」
+ * @param {string} segRaw
+ * @param {string} p
+ * @param {ClassifiedAbility} base
+ */
+function classifyOptionalEnergyBladeUntilLiveEnd(segRaw, p, base) {
+  if (!/ライブ終了時まで/.test(p)) return null;
+  if (!/得る/.test(p) && !/得る/.test(segRaw)) return null;
+  var bladeGain = parseBladeGainCount(p);
+  if (bladeGain <= 0) bladeGain = countWikiBladeIcons(segRaw);
+  if (bladeGain <= 0) return null;
+  var energyN = countWikiEnergyIcons(segRaw);
+  var hasEnergy =
+    energyN > 0 || base.costEnergy === true || /E支払/.test(p) || /エネルギー.*支払/.test(p);
+  if (!hasEnergy) return null;
+  if (!/もよい/.test(segRaw) && !base.hasOptionalCost) return null;
+  return {
+    template: "optional_energy_blade_until_live_end",
+    optional: true,
+    hasOptionalCost: true,
+    costEnergy: true,
+    costEnergyCount: energyN > 0 ? energyN : base.costEnergyCount || 1,
+    bladeGain: bladeGain,
+  };
 }
 
 /** @param {string} p @returns {AbilityPickFilters} */
@@ -223,21 +361,7 @@ function sumNeedHeartOnCard(cat) {
  * @param {string} tag
  */
 export function catalogCardMatchesSeriesTag(cat, tag) {
-  if (!cat || !tag) return true;
-  var t = String(tag).trim();
-  if (!t) return true;
-  var unit = cat.unit != null ? String(cat.unit) : "";
-  var series = cat.series != null ? String(cat.series) : "";
-  var product = cat.product != null ? String(cat.product) : "";
-  if (unit && (unit === t || unit.includes(t) || t.includes(unit))) return true;
-  if (series && (series.includes(t) || t.includes(series))) return true;
-  if (product && product.includes(t)) return true;
-  var hay = [series, product, unit, cat.name].filter(Boolean).join(" ");
-  if (hay.includes(t)) return true;
-  if (t === "μ's" && /ラブライブ|μ|m's|mus/i.test(hay)) return true;
-  if (t === "Liella!" && /Liella|リエラ/i.test(hay)) return true;
-  if (t === "虹ヶ咲" && /虹ヶ咲|ニジガク/i.test(hay)) return true;
-  return false;
+  return catalogCardMatchesGroupTag(cat, tag);
 }
 
 /**
@@ -340,6 +464,10 @@ export function classifyCardAbility(card, trigger) {
     return null;
   })();
   base.bladeGain = parseBladeGainCount(p);
+  if (bladeGainFromIcons(segRaw, p) > base.bladeGain) {
+    base.bladeGain = bladeGainFromIcons(segRaw, p);
+  }
+  applyOptionalEnergyCostFromSegment(base, segRaw);
 
   function withTrigger(trig, patch) {
     return Object.assign({}, base, patch, { trigger: trig });
@@ -362,6 +490,16 @@ export function classifyCardAbility(card, trigger) {
   var enterJidou = trigger === "jidou" || (!trigger && (keys.has("jidou") || p.includes("自動")));
 
   if (enterKidou) {
+    if (/エネルギーを1枚アクティブにする/.test(p) && /ウェイトにするか/.test(p) && /手札.*控え室/.test(p)) {
+      return withTrigger("kidou", {
+        template: "kidou_wait_or_hand_for_energy",
+        requiresOnStage: true,
+        costOrAlt: true,
+        costSelfWait: true,
+        handDiscardToWaiting: 1,
+        perTurnLimit: perTurn || 1,
+      });
+    }
     if (/控え室にある場合のみ起動/.test(p) && /控え室からステージに登場/.test(p)) {
       return withTrigger("kidou", {
         template: "kidou_wait_to_stage",
@@ -405,13 +543,63 @@ export function classifyCardAbility(card, trigger) {
         requiresOnStage: true,
       });
     }
+    if (base.bladeGain > 0 && !/手札|控え室|山札|見る|引|公開|以下から/.test(p)) {
+      return withTrigger("kidou", {
+        template: "blade_gain_only",
+        bladeGain: base.bladeGain,
+        requiresOnStage: true,
+      });
+    }
     return withTrigger("kidou", { template: "guided_manual" });
   }
 
   if (enterToujyou) {
+    var stageAreaMeta = (function () {
+      var areas = parseStageAreaConstraints(segRaw);
+      if (areas.length === 1) return { stageArea: areas[0] };
+      if (areas.length > 1) return { stageAreas: areas };
+      return {};
+    })();
+    function twT(obj) {
+      return withTrigger("toujyou", Object.assign({}, stageAreaMeta, obj));
+    }
+    var payPick = classifyPayEnergyPickOne(card, "toujyou");
+    if (payPick) {
+      return twT(Object.assign({ requiresOnStage: true }, payPick));
+    }
+    if (
+      parseStageAreaConstraint(segRaw) === "center" &&
+      /『Liella!』.*バトンタッチ/.test(p) &&
+      /カードを2枚引き/.test(p)
+    ) {
+      return twT({
+        template: "toujou_liella_double_baton_center",
+        requiresOnStage: true,
+        stageArea: "center",
+        filters: Object.assign(parseAbilityPickFilters(p), { seriesTag: "Liella!", maxCost: 4 }),
+        deckDrawCount: 2,
+      });
+    }
+    if (/以下から1つを選ぶ/.test(p)) {
+      var tChoices = parseAbilityBulletChoices(segRaw);
+      return twT({
+        template: "ability_pick_one",
+        abilityChoices: tChoices.length ? tChoices : parseAbilityBulletChoices(p),
+        choiceMin: 1,
+        choiceMax: 1,
+        requiresOnStage: true,
+      });
+    }
+    if (base.bladeGain > 0 && !/手札|控え室|山札|見る|引|公開|成功ライブ|以下から/.test(p)) {
+      return twT({
+        template: "blade_gain_only",
+        bladeGain: base.bladeGain,
+        requiresOnStage: true,
+      });
+    }
     var topPick = parseDeckTopCount(p);
     if (topPick != null && /手札に加/.test(p) && /公開/.test(p)) {
-      return withTrigger("toujyou", {
+      return twT({
         template: "deck_top_pick_recover",
         deckTopCount: topPick,
         requiresOnStage: true,
@@ -421,7 +609,7 @@ export function classifyCardAbility(card, trigger) {
     var drawM = p.match(/カードを(\d+)枚引/);
     if (!drawM) drawM = p.match(/デッキから(?:カードを)?(\d+)枚.*手札/);
     if (drawM && !p.includes("控え室から") && !p.includes("山札の上からカードを")) {
-      return withTrigger("toujyou", {
+      return twT({
         template: "draw_from_deck",
         deckDrawCount: Number(drawM[1]) || 1,
         requiresOnStage: true,
@@ -431,13 +619,13 @@ export function classifyCardAbility(card, trigger) {
       (/成功ライブ/.test(p) && /手札に加/.test(p)) ||
       (/手札.*公開/.test(p) && /成功ライブ/.test(p))
     ) {
-      return withTrigger("toujyou", {
+      return twT({
         template: "toujou_success_live_pick_hand",
         requiresOnStage: true,
       });
     }
     if (/控え室から/.test(p) && /手札に加/.test(p)) {
-      return withTrigger("toujyou", {
+      return twT({
         template: "toujou_wait_pick_hand",
         requiresOnStage: true,
         filters: parseAbilityPickFilters(p),
@@ -445,16 +633,29 @@ export function classifyCardAbility(card, trigger) {
     }
     var td = parseDeckTopCount(p);
     if (td != null && p.includes("控え室")) {
-      return withTrigger("toujyou", {
+      return twT({
         template: "deck_top_to_waiting",
         deckTopCount: td,
         requiresOnStage: true,
       });
     }
-    return withTrigger("toujyou", { template: "guided_manual", requiresOnStage: true });
+    return twT({ template: "guided_manual", requiresOnStage: true });
   }
 
   if (enterLiveSuccess) {
+    if (/以下から1つを選ぶ/.test(p)) {
+      var lsChoices = parseAbilityBulletChoices(segRaw);
+      var boostM = p.match(/成功ライブカード置き場に『([^』]+)』のカードがある場合/);
+      return withTrigger("live_success", {
+        template: "live_success_pick_options",
+        abilityChoices: lsChoices.length ? lsChoices : parseAbilityBulletChoices(p),
+        choiceMin: 1,
+        choiceMax: 1,
+        choiceBoostSeriesTag: boostM ? boostM[1] : null,
+        choiceBoostMin: boostM ? 1 : null,
+        choiceBoostMax: boostM ? Math.max(1, lsChoices.length || 2) : null,
+      });
+    }
     var lsCombo = p.match(/カードを(\d+)枚引き[、,]?手札を(\d+)枚控え室に置/);
     if (!lsCombo) lsCombo = p.match(/カードを(\d+)枚引[^：]*手札を(\d+)枚控え室に置/);
     if (lsCombo) {
@@ -490,8 +691,27 @@ export function classifyCardAbility(card, trigger) {
   }
 
   if (enterLiveStart) {
+    var payPickLs = classifyPayEnergyPickOne(card, "live_start");
+    if (payPickLs) {
+      return withTrigger("live_start", payPickLs);
+    }
+    var energyBladeLs = classifyOptionalEnergyBladeUntilLiveEnd(segRaw, p, base);
+    if (energyBladeLs) {
+      return withTrigger("live_start", energyBladeLs);
+    }
+    if (base.bladeGain > 0 && !/手札|控え室|山札|見る|引|公開|以下から/.test(p)) {
+      return withTrigger("live_start", Object.assign(
+        {
+          template: base.costEnergy ? "optional_energy_blade_until_live_end" : "blade_gain_only",
+          bladeGain: base.bladeGain,
+        },
+        base.costEnergy
+          ? { optional: true, hasOptionalCost: true, costEnergy: true, costEnergyCount: base.costEnergyCount || 1 }
+          : {},
+      ));
+    }
     if (parseBladeGainCount(p) > 0) {
-      return withTrigger("live_start", { template: "passive_track" });
+      return withTrigger("live_start", { template: "passive_track", bladeGain: base.bladeGain });
     }
     var lsDraw2 = p.match(/カードを(\d+)枚引/);
     if (lsDraw2) {
@@ -584,6 +804,20 @@ export function abilityEffectIsAutomated(template) {
     template === "toujou_wait_pick_hand" ||
     template === "toujou_success_live_pick_hand" ||
     template === "draw_from_deck" ||
-    template === "draw_then_hand_discard"
+    template === "draw_then_hand_discard" ||
+    template === "blade_gain_only" ||
+    template === "ability_pick_one" ||
+    template === "live_success_pick_options" ||
+    template === "pay_energy_pick_one" ||
+    template === "optional_energy_blade_until_live_end" ||
+    template === "kidou_wait_or_hand_for_energy" ||
+    template === "toujou_liella_double_baton_center"
   );
+}
+
+/** 常時: 2人バトンタッチ登場可（PL!SP-bp4-004） */
+export function cardAllowsTwoMemberBaton(card) {
+  if (!card) return false;
+  var raw = cardAbilityRawText(card);
+  return /2人のメンバーとバトンタッチしてもよい/.test(raw);
 }

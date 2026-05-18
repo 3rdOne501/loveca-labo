@@ -3059,10 +3059,11 @@ body.play-mode .stage-slot.card-strip .card-item[data-type="メンバー"] .card
   margin-right: auto;
   display: block;
 }
-body.play-mode .stage-slot.card-strip .card-effect-resolve-btn {
-  font-size: 0.84rem;
-  padding: 0.28rem 0.82rem;
-  top: 5px;
+body.play-mode .stage-slot.card-strip .card-effect-resolve-btn,
+body.play-mode .stage-slot.card-strip .card-effect-resolve-btn-row .card-effect-resolve-btn {
+  font-size: 0.92rem;
+  padding: 0.34rem 0.95rem;
+  top: -4px;
   border-width: 1.5px;
 }
 
@@ -3070,21 +3071,25 @@ body.play-mode .stage-slot.card-strip .card-effect-resolve-btn {
 body.play-mode .live-slot .card-art-wrap {
   position: relative;
 }
-body.play-mode .live-slot .card-item.card-item--live-h .card-effect-resolve-btn {
-  font-size: 1rem;
-  padding: 0.32rem 1.0rem;
+body.play-mode .live-slot .card-item.card-item--live-h .card-effect-resolve-btn,
+body.play-mode .live-slot .card-item.card-item--live-h .card-effect-resolve-btn-row .card-effect-resolve-btn {
+  font-size: 1.28rem;
+  padding: 0.5rem 1.35rem;
   border-width: 2px;
   letter-spacing: 0.04em;
-  top: -10px;
+  top: -22px;
   z-index: 9;
 }
+body.play-mode .live-slot .card-item.card-item--live-h .card-effect-resolve-btn-row {
+  top: -22px;
+}
 body.play-mode .live-slot .card-item.card-item--live-h .card-effect-icon-host {
-  bottom: -12px;
+  bottom: -28px;
   z-index: 8;
 }
 body.play-mode .live-slot .card-item.card-item--live-h .card-effect-icon-host .card-member-effect-foot-ico {
-  height: 2.8rem;
-  max-width: 7rem;
+  height: 4.2rem;
+  max-width: 9.5rem;
 }
 body.play-mode .live-slot,
 body.play-mode .live-slot .card-item,
@@ -6091,12 +6096,12 @@ dialog.app-dialog:not([open]) {
 }
 
 .dlg-card-catalog {
-  max-width: min(780px, calc(100vw - 1rem));
+  max-width: min(920px, calc(100vw - 1rem));
 }
 .dlg-card-catalog-shell {
   display: grid;
-  grid-template-columns: minmax(0, 13.5rem) minmax(0, 1fr);
-  gap: 0.65rem 0.85rem;
+  grid-template-columns: minmax(0, 11.5rem) minmax(0, 1fr);
+  gap: 0.65rem 1rem;
   align-items: start;
 }
 @media (max-width: 520px) {
@@ -6106,10 +6111,11 @@ dialog.app-dialog:not([open]) {
 }
 .dlg-card-catalog-thumb-col {
   min-width: 0;
+  padding-top: 1.15rem;
 }
 .dlg-card-catalog-img {
   width: 100%;
-  max-height: min(62vh, 31rem);
+  max-height: min(58vh, 28rem);
   object-fit: contain;
   border-radius: 10px;
   border: 1px solid rgba(255, 160, 200, 0.28);
@@ -6119,7 +6125,10 @@ dialog.app-dialog:not([open]) {
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
-  margin-top: 0.35rem;
+  margin-top: 0.5rem;
+}
+.dlg-card-catalog-hand-stage-actions {
+  display: none !important;
 }
 .dlg-card-catalog-badge {
   font-size: 1.35rem;
@@ -6133,6 +6142,22 @@ dialog.app-dialog:not([open]) {
 }
 .dlg-card-catalog-effect-slot {
   margin-top: 0.35rem;
+  width: 100%;
+}
+.dlg-card-catalog-ability {
+  width: 100%;
+  max-width: none;
+}
+.dlg-card-catalog-stage-mount {
+  width: 100%;
+}
+.dlg-card-catalog-stage-mount .dlg-card-catalog-hand-stage-row {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+  width: 100%;
+}
+.dlg-card-catalog-stage-mount .dlg-card-catalog-stage-btn {
+  min-height: 5.8rem;
 }
 .dlg-card-catalog-close-row {
   margin-top: 0.85rem;
@@ -6848,6 +6873,26 @@ body.play-mode .card-art-wrap .card-img {
 .card-effect-icon-glow--hand_playable .card-member-effect-foot-ico {
   filter: drop-shadow(0 0 5px #fff) drop-shadow(0 0 12px rgba(255, 255, 255, 0.92))
     drop-shadow(0 0 20px rgba(255, 255, 255, 0.55));
+}
+.dlg-pick-ability-choice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin: 0.75rem 0 1rem;
+}
+.dlg-pick-ability-choice__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+}
+.dlg-pick-ability-choice__label {
+  font-size: 0.92rem;
+  line-height: 1.45;
 }
 body.play-mode .card-stance-bar,
 body.play-mode .card-member-hb-bar {

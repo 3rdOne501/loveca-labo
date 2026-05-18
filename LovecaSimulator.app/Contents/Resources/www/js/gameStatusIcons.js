@@ -44,6 +44,7 @@ const ART_FILE_BY_KEY = /** @type {Record<string, string>} */ ({
   toujyou: "toujyou.png",
   leftside: "leftside.png",
   rightside: "rightside.png",
+  center: "center.png",
 });
 
 export function wikiAbilityStemNormalize(stem) {
@@ -130,6 +131,8 @@ const STEM_ALIAS = /** @type {Record<string, string>} */ ({
   rightside: "rightside",
   right_side: "rightside",
   右サイド: "rightside",
+  center: "center",
+  センター: "center",
 });
 
 /** 横長ラベル系（効果テキスト内で拡大表示） */
@@ -145,6 +148,7 @@ const PILL_ICON_KEYS = /** @type {Record<string, 1>} */ ({
   toujyou: 1,
   leftside: 1,
   rightside: 1,
+  center: 1,
 });
 
 function svgDoc(children) {

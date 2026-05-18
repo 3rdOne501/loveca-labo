@@ -954,18 +954,6 @@ export function initDeckBuilder(root, { onStartGame }) {
 
   /** クリックされた BH ピルが属する文脈（覗き見ダイアログ／メインデッキ）に応じて deckMap を返す。 */
   function activeEditedDeckMap() {
-    try {
-      if (
-        document.body &&
-        document.body.classList.contains("play-mode") &&
-        typeof window.__lovecaGetPlayActiveDeckMap === "function"
-      ) {
-        var playMap = window.__lovecaGetPlayActiveDeckMap();
-        if (playMap && typeof playMap === "object") return playMap;
-      }
-    } catch (_) {
-      /* noop */
-    }
     var peekDlg = document.getElementById("dlg-deck-peek");
     if (peekDlg && peekDlg.open && lastPeekDeckMap) return lastPeekDeckMap;
     return deckMap;

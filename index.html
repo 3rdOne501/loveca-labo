@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Loveca Labo" />
-    <meta name="loveca-build" content="2026051823" />
+    <meta name="loveca-build" content="2026051828" />
     <title>Loveca Labo</title>
     <!-- 万一以前のバージョンの Service Worker が登録された端末で取り残しが起きた場合に備え、
          先頭で SW 登録を一括解除する。SW 自体は本サイトでは使っていない。 -->
@@ -1618,6 +1618,16 @@ python3 -m http.server 8080</pre>
       </div>
     </dialog>
 
+    <dialog id="dlg-pick-ability-choice" class="app-dialog dlg-pick-ability-choice" aria-labelledby="dlg-pick-ability-choice-title">
+      <h2 id="dlg-pick-ability-choice-title" class="app-dialog__title">効果を選ぶ</h2>
+      <p id="dlg-pick-ability-choice-lead" class="hint zone-inline-help"></p>
+      <div id="dlg-pick-ability-choice-list" class="dlg-pick-ability-choice-list" role="group"></div>
+      <div class="app-dialog__actions">
+        <button type="button" class="btn secondary" id="dlg-pick-ability-choice-cancel">キャンセル</button>
+        <button type="button" class="btn primary" id="dlg-pick-ability-choice-ok">選んだ効果を実行</button>
+      </div>
+    </dialog>
+
     <dialog id="dlg-pick-effect-order" class="app-dialog dlg-pick-effect-order" aria-labelledby="dlg-pick-effect-order-title">
       <h2 id="dlg-pick-effect-order-title" class="app-dialog__title">どの効果から解決しますか？</h2>
       <p id="dlg-pick-effect-order-lead" class="hint zone-inline-help">
@@ -1653,6 +1663,32 @@ python3 -m http.server 8080</pre>
     </dialog>
 
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
-    <script type="module" src="js/main.js?v=2026051823"></script>
+    <script type="importmap">
+      {
+        "scopes": {
+          "/js/": {
+            "./abilityEffects.js": "./abilityEffects.js?v=2026051828",
+            "./bladeHeart.js": "./bladeHeart.js?v=2026051828",
+            "./cardCatalogDialog.js": "./cardCatalogDialog.js?v=2026051828",
+            "./cardGroups.js": "./cardGroups.js?v=2026051828",
+            "./cards.js": "./cards.js?v=2026051828",
+            "./cloudAuth.js": "./cloudAuth.js?v=2026051828",
+            "./config.js": "./config.js?v=2026051828",
+            "./deckLibrary.js": "./deckLibrary.js?v=2026051828",
+            "./deckbuilder.js": "./deckbuilder.js?v=2026051828",
+            "./decklogImport.js": "./decklogImport.js?v=2026051828",
+            "./firebaseConfig.js": "./firebaseConfig.js?v=2026051828",
+            "./gameStatusIcons.js": "./gameStatusIcons.js?v=2026051828",
+            "./liveSpecialBhOverride.js": "./liveSpecialBhOverride.js?v=2026051828",
+            "./main.js": "./main.js?v=2026051828",
+            "./sampleDeckRecipes.js": "./sampleDeckRecipes.js?v=2026051828",
+            "./simulator.js": "./simulator.js?v=2026051828",
+            "./testCardLog.js": "./testCardLog.js?v=2026051828",
+            "./ui.js": "./ui.js?v=2026051828"
+          }
+        }
+      }
+    </script>
+    <script type="module" src="js/main.js?v=2026051828"></script>
   </body>
 </html>

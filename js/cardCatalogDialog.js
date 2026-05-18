@@ -3,6 +3,7 @@
  */
 
 import { T_LIVE, T_MEMBER } from "./config.js";
+import { catalogCardSchoolLabel } from "./cardGroups.js";
 import { getCard, cardIsNoteLiveCatalog, cardIsDrawYellLiveCatalog } from "./cards.js";
 import {
   cardHasBladeHeart,
@@ -264,13 +265,25 @@ export function renderCardCatalogContentInto(c, targets, options) {
   var rows = "";
   rows += row("タイプ", esc(plainOrNone(tyRaw)));
 
-  var costN = mc.cost != null ? mc.cost : c.cost;
-  rows += row(isLive ? "スコア" : "コスト／スコア", esc(plainOrNone(costN)));
+  var scoreOrCost = isLive
+    ? mc.score != null
+      ? mc.score
+      : c.score != null
+        ? c.score
+        : mc.cost != null
+          ? mc.cost
+          : c.cost
+    : mc.cost != null
+      ? mc.cost
+      : c.cost;
+  rows += row(isLive ? "スコア" : "コスト／スコア", esc(plainOrNone(scoreOrCost)));
 
   var bladeN = mc.blade != null ? mc.blade : c.blade;
   if (!isLive) rows += row("ブレード", esc(plainOrNone(bladeN)));
 
-  rows += row("ユニット", esc(plainOrNone(mc.unit)));
+  var schoolLabel = catalogCardSchoolLabel(mc);
+  rows += row("ユニット", esc(plainOrNone(schoolLabel)));
+  rows += row("サブユニット", esc(plainOrNone(mc.unit || c.unit)));
   rows += row("シリーズ", esc(plainOrNone(mc.series)));
   rows += row("商品", esc(plainOrNone(mc.product)));
   rows += row("レアリティ", esc(plainOrNone(mc.rare)));
