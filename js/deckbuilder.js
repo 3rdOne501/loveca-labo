@@ -2750,6 +2750,8 @@ export function initDeckBuilder(root, { onStartGame }) {
     if (heading) {
       heading.textContent = currentDeckPanelOpen ? "現在のデッキ" : "カード一覧";
     }
+    const btnClearDeck = el("btn-clear-current-deck");
+    if (btnClearDeck) btnClearDeck.hidden = !currentDeckPanelOpen;
 
     if (samplePanelOpen) {
       renderSampleRecipesTiles(getSampleDeckRecipes());
@@ -4377,6 +4379,26 @@ export function initDeckBuilder(root, { onStartGame }) {
       currentDeckPanelOpen = !currentDeckPanelOpen;
       syncCardPanelToggleButtons();
       scheduleRenderCardGrid();
+    });
+    el("btn-clear-current-deck")?.addEventListener("click", function () {
+      if (!currentDeckPanelOpen) return;
+      if (
+        !window.confirm(
+          "現在のデッキに入っているカードをすべて0枚にします。\nこの操作は元に戻せません。続行しますか？",
+        )
+      ) {
+        return;
+      }
+      Object.keys(deckMap).forEach(function (no) {
+        delete deckMap[no];
+      });
+      keyCardNos.clear();
+      keyCard2Nos.clear();
+      keyCard3Nos.clear();
+      middleCardNos.clear();
+      persistDeckState();
+      scheduleRenderCardGrid();
+      showToast("デッキをクリアしました");
     });
   }
 

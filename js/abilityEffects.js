@@ -49,6 +49,7 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  *   |'live_start_hand_discard_blade_per'
  *   |'live_start_hand_blade_per'
  *   |'toujou_deck_top_wait_if_all_members'
+ *   |'toujou_deck_top_wait_if_all_heart'
  *   |'toujou_both_wait_to_empty_stage'
  *   |'guided_manual'} AbilityTemplate
  */
@@ -833,6 +834,22 @@ export function classifyCardAbility(card, trigger, segmentRawOverride) {
         requiresOnStage: true,
       });
     }
+    if (deckTopMem && /すべて.*heart04.*メンバー/.test(p)) {
+      return twT({
+        template: "toujou_deck_top_wait_if_all_heart",
+        deckTopCount: deckTopMem ? Number(deckTopMem[1]) : 3,
+        requiredHeartSlot: 4,
+        requiresOnStage: true,
+      });
+    }
+    if (deckTopMem && /すべて.*heart01.*メンバー/.test(p)) {
+      return twT({
+        template: "toujou_deck_top_wait_if_all_heart",
+        deckTopCount: deckTopMem ? Number(deckTopMem[1]) : 3,
+        requiredHeartSlot: 1,
+        requiresOnStage: true,
+      });
+    }
     if (
       /自分と相手はそれぞれ/.test(p) &&
       /控え室からコスト(\d+)以下のメンバーカードを1枚/.test(p) &&
@@ -1400,6 +1417,7 @@ export function abilityEffectIsAutomated(template) {
     template === "live_start_hand_discard_blade_per" ||
     template === "live_start_hand_blade_per" ||
     template === "toujou_deck_top_wait_if_all_members" ||
+    template === "toujou_deck_top_wait_if_all_heart" ||
     template === "toujou_both_wait_to_empty_stage"
   );
 }

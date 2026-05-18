@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Loveca Labo" />
-    <meta name="loveca-build" content="2026051847" />
+    <meta name="loveca-build" content="2026051848" />
     <title>Loveca Labo</title>
     <!-- 万一以前のバージョンの Service Worker が登録された端末で取り残しが起きた場合に備え、
          先頭で SW 登録を一括解除する。SW 自体は本サイトでは使っていない。 -->
@@ -224,6 +224,15 @@ python3 -m http.server 8080</pre>
         <section class="card-panel">
           <div class="panel-title-row">
             <h2 id="card-panel-heading">カード一覧</h2>
+            <button
+              type="button"
+              class="btn sm danger"
+              id="btn-clear-current-deck"
+              hidden
+              title="編集中メインデッキの枚数をすべて0にします"
+            >
+              デッキクリア
+            </button>
             <label class="field card-panel-search-field">
               <span class="sr-only">カード名・能力</span>
               <input
@@ -1684,29 +1693,29 @@ python3 -m http.server 8080</pre>
       {
         "scopes": {
           "/js/": {
-            "./abilityEffects.js": "./abilityEffects.js?v=2026051847",
-            "./bladeHeart.js": "./bladeHeart.js?v=2026051847",
-            "./cardCatalogDialog.js": "./cardCatalogDialog.js?v=2026051847",
-            "./cardGroups.js": "./cardGroups.js?v=2026051847",
-            "./cards.js": "./cards.js?v=2026051847",
-            "./cloudAuth.js": "./cloudAuth.js?v=2026051847",
-            "./config.js": "./config.js?v=2026051847",
-            "./deckLibrary.js": "./deckLibrary.js?v=2026051847",
-            "./deckbuilder.js": "./deckbuilder.js?v=2026051847",
-            "./decklogImport.js": "./decklogImport.js?v=2026051847",
-            "./firebaseConfig.js": "./firebaseConfig.js?v=2026051847",
-            "./gameStatusIcons.js": "./gameStatusIcons.js?v=2026051847",
-            "./joujiEffects.js": "./joujiEffects.js?v=2026051847",
-            "./liveSpecialBhOverride.js": "./liveSpecialBhOverride.js?v=2026051847",
-            "./main.js": "./main.js?v=2026051847",
-            "./sampleDeckRecipes.js": "./sampleDeckRecipes.js?v=2026051847",
-            "./simulator.js": "./simulator.js?v=2026051847",
-            "./testCardLog.js": "./testCardLog.js?v=2026051847",
-            "./ui.js": "./ui.js?v=2026051847"
+            "./abilityEffects.js": "./abilityEffects.js?v=2026051848",
+            "./bladeHeart.js": "./bladeHeart.js?v=2026051848",
+            "./cardCatalogDialog.js": "./cardCatalogDialog.js?v=2026051848",
+            "./cardGroups.js": "./cardGroups.js?v=2026051848",
+            "./cards.js": "./cards.js?v=2026051848",
+            "./cloudAuth.js": "./cloudAuth.js?v=2026051848",
+            "./config.js": "./config.js?v=2026051848",
+            "./deckLibrary.js": "./deckLibrary.js?v=2026051848",
+            "./deckbuilder.js": "./deckbuilder.js?v=2026051848",
+            "./decklogImport.js": "./decklogImport.js?v=2026051848",
+            "./firebaseConfig.js": "./firebaseConfig.js?v=2026051848",
+            "./gameStatusIcons.js": "./gameStatusIcons.js?v=2026051848",
+            "./joujiEffects.js": "./joujiEffects.js?v=2026051848",
+            "./liveSpecialBhOverride.js": "./liveSpecialBhOverride.js?v=2026051848",
+            "./main.js": "./main.js?v=2026051848",
+            "./sampleDeckRecipes.js": "./sampleDeckRecipes.js?v=2026051848",
+            "./simulator.js": "./simulator.js?v=2026051848",
+            "./testCardLog.js": "./testCardLog.js?v=2026051848",
+            "./ui.js": "./ui.js?v=2026051848"
           }
         }
       }
     </script>
-    <script type="module" src="js/main.js?v=2026051847"></script>
+    <script type="module" src="js/main.js?v=2026051848"></script>
   </body>
 </html>
