@@ -1,4 +1,11 @@
-import { CARDS_JSON_URL, STORAGE_CARDS_JSON_OVERRIDE, T_MEMBER, T_LIVE } from "./config.js";
+import {
+  CARDS_JSON_BUNDLED_PATH,
+  CARDS_JSON_REMOTE_URLS,
+  CARDS_JSON_URL,
+  STORAGE_CARDS_JSON_OVERRIDE,
+  T_MEMBER,
+  T_LIVE,
+} from "./config.js";
 import { abilityWikiCanonicalKeys } from "./gameStatusIcons.js";
 import {
   cardHasBladeHeart,
@@ -27,6 +34,25 @@ export function getEffectiveCardsJsonUrl() {
   const o = localStorage.getItem(STORAGE_CARDS_JSON_OVERRIDE);
   if (o != null && String(o).trim() !== "") return String(o).trim();
   return CARDS_JSON_URL;
+}
+
+/** @returns {string[]} 取得を試す URL（上書き → 同梱 data → CDN） */
+export function getCardsJsonLoadUrls() {
+  /** @type {string[]} */
+  const urls = [];
+  const o = localStorage.getItem(STORAGE_CARDS_JSON_OVERRIDE);
+  if (o != null && String(o).trim() !== "") urls.push(String(o).trim());
+  try {
+    if (typeof document !== "undefined" && document.baseURI) {
+      urls.push(new URL(CARDS_JSON_BUNDLED_PATH, document.baseURI).href);
+    }
+  } catch (_) {
+    /* noop */
+  }
+  for (const remote of CARDS_JSON_REMOTE_URLS) {
+    if (remote && urls.indexOf(remote) < 0) urls.push(remote);
+  }
+  return urls;
 }
 
 /** 空文字で上書き解除（画面からは呼ばない。コンソール・手動復旧用に残す） */
@@ -109,40 +135,77 @@ export function prefetchDeckCardImagesFromMap(deckMap, getCardFn) {
   }
 }
 
+function ingestCardCatalogJson(raw) {
+  catalog = raw;
+  catalogKeyByNormalized = new Map();
+  for (const k of Object.keys(catalog)) {
+    if (k.startsWith("_")) continue;
+    const nk = normalizeCardCatalogLookupKey(k);
+    if (!nk) continue;
+    if (!catalogKeyByNormalized.has(nk)) catalogKeyByNormalized.set(nk, k);
+  }
+  normalizeRareListVariantsInCatalog(catalog);
+  list = Object.entries(catalog)
+    .filter(([k]) => !k.startsWith("_"))
+    .map(([, v]) => v)
+    .filter(Boolean);
+  injectUnsetPlaceholderCards();
+}
+
 export async function loadCardDatabase(statusEl) {
-  const url = getEffectiveCardsJsonUrl();
   if (statusEl) statusEl.textContent = "";
   const detail = typeof document !== "undefined" ? document.getElementById("app-boot-detail") : null;
-  if (detail) detail.textContent = url;
+  const urls = getCardsJsonLoadUrls();
+  /** @type {Error | null} */
+  let lastErr = null;
 
-  async function loadOnce(cachePolicy) {
+  async function loadOnce(url, cachePolicy) {
     const res = await fetch(url, { cache: cachePolicy });
-    if (!res.ok) throw new Error("カードデータの取得に失敗しました: " + res.status);
-    catalog = await res.json();
-    catalogKeyByNormalized = new Map();
-    for (const k of Object.keys(catalog)) {
-      if (k.startsWith("_")) continue;
-      const nk = normalizeCardCatalogLookupKey(k);
-      if (!nk) continue;
-      if (!catalogKeyByNormalized.has(nk)) catalogKeyByNormalized.set(nk, k);
-    }
-    normalizeRareListVariantsInCatalog(catalog);
-    list = Object.entries(catalog)
-      .filter(([k]) => !k.startsWith("_"))
-      .map(([, v]) => v)
-      .filter(Boolean);
-    injectUnsetPlaceholderCards();
+    if (!res.ok) throw new Error("カードデータの取得に失敗しました: " + res.status + " (" + url + ")");
+    const json = await res.json();
+    if (!json || typeof json !== "object") throw new Error("カードデータの形式が不正です: " + url);
+    ingestCardCatalogJson(json);
     if (detail) detail.textContent = "";
     return list;
   }
 
-  try {
-    return await loadOnce("no-store");
-  } catch (err) {
-    if (detail) detail.textContent = url + "（再接続します…）";
-    return await loadOnce("default");
+  for (const cachePolicy of ["no-store", "default"]) {
+    for (const url of urls) {
+      try {
+        if (detail) {
+          detail.textContent =
+            cachePolicy === "default" && lastErr
+              ? url + "（別経路で再接続…）"
+              : url;
+        }
+        return await loadOnce(url, cachePolicy);
+      } catch (err) {
+        lastErr = err instanceof Error ? err : new Error(String(err));
+      }
+    }
   }
+
+  const msg =
+    "カードデータを取得できませんでした。ネットワークとローカルサーバ（http://127.0.0.1:…）を確認し、data/cards.json があるかも確認してください。";
+  if (lastErr && lastErr.message) throw new Error(msg + " 詳細: " + lastErr.message);
+  throw new Error(msg);
 }
+
+export {
+  classifyCardAbility,
+  abilityPlainText,
+  catalogCardMatchesPickFilters,
+  catalogCardMatchesSeriesTag,
+  memberHasKidouAbility,
+  memberKidouRecoverHandType,
+  memberHasKidouStageToWaitingPickAbility,
+  memberHasToujouAbility,
+  memberHasOptionalToujouAbility,
+  memberHasLiveStartAbility,
+  memberHasOptionalLiveStartAbility,
+  memberHasLiveSuccessAbility,
+  abilityEffectIsAutomated,
+} from "./abilityEffects.js";
 
 export const UNSET_PLACEHOLDER_PRODUCT = "未設定（テスト用）";
 const UNSET_PLACEHOLDER_PREFIX = "UNSET-M-";
@@ -766,70 +829,6 @@ export function cardIsNoteLiveCatalog(card) {
 
 /** @deprecated 互換エイリアス */
 export const cardIsScoreLiveCatalog = cardIsNoteLiveCatalog;
-
-function memberAbilityText(card) {
-  return String((card && card.ability) || "");
-}
-
-/** 起動効果を能力文が示すメンバー */
-export function memberHasKidouAbility(card) {
-  return abilityWikiCanonicalKeys(card).has("kidou");
-}
-
-function memberAbilityPlainText(card) {
-  return String((card && card.ability) || "")
-    .replace(/\{\{[^}]+\}\}/g, "")
-    .replace(/\s+/g, "");
-}
-
-/**
- * 起動「ステージ→控え室＋控え室から手札」の回収種別。
- * @returns {typeof T_MEMBER | typeof T_LIVE | null}
- */
-export function memberKidouRecoverHandType(card) {
-  if (!memberHasKidouAbility(card)) return null;
-  const t = memberAbilityPlainText(card);
-  if (!/控え室/.test(t) || !/手札/.test(t)) return null;
-  if (!/ステージから控え室/.test(t) && !/起動/.test(t)) return null;
-  if (/メンバーカード/.test(t) && /手札に加/.test(t)) return T_MEMBER;
-  if (/ライブカード/.test(t) && /手札に加/.test(t)) return T_LIVE;
-  return null;
-}
-
-/** 起動で控え室回収→手札が可能なメンバー */
-export function memberHasKidouStageToWaitingPickAbility(card) {
-  return memberKidouRecoverHandType(card) != null;
-}
-
-/** 登場時効果を能力文が示すメンバー */
-export function memberHasToujouAbility(card) {
-  if (abilityWikiCanonicalKeys(card).has("toujyou")) return true;
-  return /登場時/.test(memberAbilityText(card));
-}
-
-/** 登場時効果で「〜もよい」任意発動があるメンバー */
-export function memberHasOptionalToujouAbility(card) {
-  if (!memberHasToujouAbility(card)) return false;
-  return /もよい/.test(memberAbilityText(card));
-}
-
-/** ライブ開始時効果（メンバー／ライブ共通） */
-export function memberHasLiveStartAbility(card) {
-  if (abilityWikiCanonicalKeys(card).has("live_start")) return true;
-  return /ライブ開始時/.test(memberAbilityText(card));
-}
-
-/** ライブ開始時効果で「〜もよい」任意発動 */
-export function memberHasOptionalLiveStartAbility(card) {
-  if (!memberHasLiveStartAbility(card)) return false;
-  return /もよい/.test(memberAbilityText(card));
-}
-
-/** ライブ成功時効果（メンバー／ライブ共通） */
-export function memberHasLiveSuccessAbility(card) {
-  if (abilityWikiCanonicalKeys(card).has("live_success")) return true;
-  return /ライブ成功時/.test(memberAbilityText(card));
-}
 
 /* bladeHeart.js のスコア装飾判定を、循環参照を避けて差し込む */
 setIsScoreLiveCheck(cardIsNoteLiveCatalog);

@@ -28,6 +28,15 @@ export const T_ENERGY = "エネルギー";
  */
 export const CARDS_JSON_URL = "https://raw.githubusercontent.com/wlt233/llocg_db/master/json/cards.json";
 
+/** リモート取得失敗時に順に試す URL（jsDelivr → raw GitHub） */
+export const CARDS_JSON_REMOTE_URLS = [
+  "https://cdn.jsdelivr.net/gh/wlt233/llocg_db@master/json/cards.json",
+  CARDS_JSON_URL,
+];
+
+/** 同一オリジンに置くオフライン用コピー（`data/cards.json`） */
+export const CARDS_JSON_BUNDLED_PATH = "data/cards.json";
+
 export const STORAGE_DECK = "llocg_deck";
 
 /** 名前付きデッキ一覧（複数保存） */
@@ -107,7 +116,7 @@ export const HISTORY_MAX_STEPS = 35;
 export const DECK_EXPORT_VERSION = 1;
 
 /** index.html の main.js クエリと揃える（JS モジュールのブラウザキャッシュ対策） */
-export const APP_MODULE_CACHE_BUST = "2026051815";
+export const APP_MODULE_CACHE_BUST = "2026051818";
 
 /**
  * 組み込みプリセット・初回メインデッキ用（リポジトリ既定の大会用例。カード DB に番号が無い場合はデッキ構築で警告になります）

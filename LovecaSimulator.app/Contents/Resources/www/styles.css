@@ -3011,14 +3011,14 @@ body.play-mode .energy-under-stage {
   transform: scale(0.82);
   transform-origin: top center;
 }
-body.play-mode .stage-slot.card-strip .card-item {
+body.play-mode #view-game .stage-slot.card-strip .card-item[data-type="メンバー"] {
   width: calc(var(--loveca-play-w) * 1.26);
 }
-body.play-mode .stage-slot.card-strip .card-img {
+body.play-mode .stage-slot.card-strip .card-item[data-type="メンバー"] .card-img {
   width: calc(var(--loveca-play-w) * 1.26);
   height: auto;
 }
-body.play-mode .stage-slot.card-strip .card-img.rotated {
+body.play-mode .stage-slot.card-strip .card-item[data-type="メンバー"] .card-img.rotated {
   width: calc(var(--loveca-play-w) * 1.26);
 }
 body.play-mode .stage-slot .card-item[data-type="エネルギー"] {
@@ -3048,14 +3048,16 @@ body.play-mode .stage-slot.card-strip .card-member-bonus-blade-ico {
   height: 20px;
 }
 body.play-mode .stage-slot.card-strip .card-item[data-type="メンバー"] .card-art-wrap {
-  display: block;
+  display: flex;
   width: 100%;
   margin: 0 auto;
-  text-align: center;
+  justify-content: center;
+  align-items: center;
 }
 body.play-mode .stage-slot.card-strip .card-item[data-type="メンバー"] .card-art-wrap .card-img {
   margin-left: auto;
   margin-right: auto;
+  display: block;
 }
 body.play-mode .stage-slot.card-strip .card-effect-resolve-btn {
   font-size: 0.84rem;
@@ -5673,6 +5675,176 @@ body.play-mode .site-footer {
   line-height: 1.2;
   color: var(--ink, #ffd6ef);
   word-break: break-word;
+}
+
+.dlg-deck-look-reorder {
+  max-width: min(640px, 96vw);
+}
+.dlg-deck-look-reorder-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0.55rem 0;
+  max-height: min(52vh, 480px);
+  overflow-y: auto;
+}
+.dlg-deck-look-reorder__row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.4rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 160, 200, 0.22);
+  cursor: pointer;
+}
+.dlg-deck-look-reorder__ord {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #ffd6ef;
+  min-width: 1.4rem;
+}
+.dlg-deck-look-reorder__img {
+  width: 52px;
+  aspect-ratio: 63 / 88;
+  object-fit: cover;
+  border-radius: 5px;
+}
+.dlg-deck-look-reorder__label {
+  font-size: 0.74rem;
+  line-height: 1.25;
+  color: var(--ink, #ffd6ef);
+}
+.dlg-ability-guided-body {
+  margin: 0.5rem 0 0.75rem;
+  max-height: min(46vh, 360px);
+  overflow-y: auto;
+}
+.dlg-pick-effect-order-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0.6rem 0;
+  max-height: min(52vh, 480px);
+  overflow-y: auto;
+}
+.dlg-pick-effect-order__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 160, 200, 0.22);
+  cursor: pointer;
+}
+.dlg-pick-effect-order__row:hover {
+  background: rgba(255, 200, 230, 0.1);
+}
+.dlg-pick-effect-order__radio {
+  margin-top: 0.18rem;
+}
+.dlg-pick-effect-order__img {
+  width: 52px;
+  aspect-ratio: 63 / 88;
+  object-fit: cover;
+  border-radius: 5px;
+  flex-shrink: 0;
+}
+.dlg-pick-effect-order__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+.dlg-pick-effect-order__title {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #ffd6ef;
+}
+.dlg-pick-effect-order__sub {
+  font-size: 0.72rem;
+  color: #ffe6f5cc;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.dlg-pick-effect-order__chip {
+  display: inline-block;
+  font-size: 0.66rem;
+  padding: 0.08rem 0.36rem;
+  border-radius: 999px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  margin-right: 0.2rem;
+}
+.dlg-pick-effect-order__chip--mand {
+  background: #c2185b;
+  color: #fff;
+}
+.dlg-pick-effect-order__chip--opt {
+  background: #455a64;
+  color: #ecf0f4;
+}
+.dlg-cost-payment-body {
+  margin: 0.5rem 0 0.75rem;
+  max-height: min(46vh, 360px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.dlg-cost-payment-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  color: #ffe8f4;
+}
+.dlg-cost-payment-row label {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+.dlg-cost-payment-hand-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
+  gap: 0.4rem;
+  margin-top: 0.3rem;
+}
+.dlg-cost-payment-hand-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+  align-items: center;
+  padding: 0.3rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 160, 200, 0.2);
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.2);
+}
+.dlg-cost-payment-hand-tile img {
+  width: 100%;
+  aspect-ratio: 63 / 88;
+  object-fit: cover;
+  border-radius: 4px;
+}
+.dlg-cost-payment-hand-tile span {
+  font-size: 0.7rem;
+  text-align: center;
+  color: #ffd6ef;
+  line-height: 1.2;
+}
+.dlg-cost-payment-hand-tile input[type="checkbox"] {
+  accent-color: #ec407a;
+}
+
+.dlg-ability-guided-plain {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #ffe8f4;
 }
 
 dialog.app-dialog:not([open]) {

@@ -75,12 +75,8 @@ start_server_on_port() {
   PID_FILE="${TMPDIR:-/tmp}/loveca-local-http.${p}.pid"
   cd "$ROOT"
   if command -v lsof >/dev/null 2>&1 && lsof -i ":${p}" -sTCP:LISTEN >/dev/null 2>&1; then
-  if [[ -n "${LL_OCG_KILL_EXISTING_PORT:-}" ]]; then
-      lsof -ti ":${p}" 2>/dev/null | xargs kill -9 2>/dev/null || true
-      sleep 0.15
-    else
-      return 1
-    fi
+    lsof -ti ":${p}" 2>/dev/null | xargs kill -9 2>/dev/null || true
+    sleep 0.2
   fi
   python3 -m http.server "$p" --bind 127.0.0.1 --directory "$ROOT" >/dev/null 2>&1 &
   echo $! >"$PID_FILE"

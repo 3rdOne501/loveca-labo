@@ -1577,6 +1577,28 @@ python3 -m http.server 8080</pre>
       </div>
     </dialog>
 
+    <dialog id="dlg-deck-look-reorder" class="app-dialog dlg-deck-look-reorder" aria-labelledby="dlg-deck-look-reorder-title">
+      <h2 id="dlg-deck-look-reorder-title" class="app-dialog__title">山札の上から見たカード</h2>
+      <p id="dlg-deck-look-reorder-lead" class="hint zone-inline-help"></p>
+      <div id="dlg-deck-look-reorder-list" class="dlg-deck-look-reorder-list"></div>
+      <div class="app-dialog__actions">
+        <button type="button" class="btn secondary" id="dlg-deck-look-reorder-cancel">キャンセル</button>
+        <button type="button" class="btn primary" id="dlg-deck-look-reorder-ok">この順で山札の上に戻す</button>
+      </div>
+    </dialog>
+
+    <dialog id="dlg-ability-guided" class="app-dialog dlg-ability-guided" aria-labelledby="dlg-ability-guided-title">
+      <h2 id="dlg-ability-guided-title" class="app-dialog__title">効果の処理</h2>
+      <p id="dlg-ability-guided-lead" class="hint zone-inline-help">
+        この効果は自動処理に未対応です。テキストを確認し、盤面を手動で整えたうえで「効果を処理済みにする」を押してください。
+      </p>
+      <div id="dlg-ability-guided-body" class="dlg-ability-guided-body"></div>
+      <div class="app-dialog__actions">
+        <button type="button" class="btn secondary" id="dlg-ability-guided-cancel">閉じる</button>
+        <button type="button" class="btn primary" id="dlg-ability-guided-done">効果を処理済みにする</button>
+      </div>
+    </dialog>
+
     <dialog id="dlg-pick-kidou-waiting" class="app-dialog dlg-pick-kidou-waiting" aria-labelledby="dlg-pick-kidou-waiting-title">
       <h2 id="dlg-pick-kidou-waiting-title" class="app-dialog__title">回収対象カード — 1枚を手札に加える</h2>
       <p id="dlg-pick-kidou-waiting-lead" class="hint zone-inline-help"></p>
@@ -1584,6 +1606,28 @@ python3 -m http.server 8080</pre>
       <div class="app-dialog__actions dlg-pick-kidou-waiting-actions">
         <button type="button" class="btn secondary" id="dlg-pick-kidou-waiting-cancel">キャンセル</button>
         <button type="button" class="btn primary" id="dlg-pick-kidou-waiting-ok">選択した1枚を手札に加える</button>
+      </div>
+    </dialog>
+
+    <dialog id="dlg-pick-effect-order" class="app-dialog dlg-pick-effect-order" aria-labelledby="dlg-pick-effect-order-title">
+      <h2 id="dlg-pick-effect-order-title" class="app-dialog__title">どの効果から解決しますか？</h2>
+      <p id="dlg-pick-effect-order-lead" class="hint zone-inline-help">
+        誘発した効果が複数あります。次に解決する効果を選択してください。
+      </p>
+      <div id="dlg-pick-effect-order-list" class="dlg-pick-effect-order-list" role="list"></div>
+      <div class="app-dialog__actions">
+        <button type="button" class="btn secondary" id="dlg-pick-effect-order-cancel">あとで処理する</button>
+        <button type="button" class="btn primary" id="dlg-pick-effect-order-ok">この効果を解決</button>
+      </div>
+    </dialog>
+
+    <dialog id="dlg-cost-payment" class="app-dialog dlg-cost-payment" aria-labelledby="dlg-cost-payment-title">
+      <h2 id="dlg-cost-payment-title" class="app-dialog__title">コスト支払い</h2>
+      <p id="dlg-cost-payment-lead" class="hint zone-inline-help"></p>
+      <div id="dlg-cost-payment-body" class="dlg-cost-payment-body"></div>
+      <div class="app-dialog__actions">
+        <button type="button" class="btn secondary" id="dlg-cost-payment-skip">支払わない</button>
+        <button type="button" class="btn primary" id="dlg-cost-payment-pay">支払って効果を解決</button>
       </div>
     </dialog>
 
@@ -1600,6 +1644,6 @@ python3 -m http.server 8080</pre>
     </dialog>
 
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
-    <script type="module" src="js/main.js?v=2026051815"></script>
+    <script type="module" src="js/main.js?v=2026051818"></script>
   </body>
 </html>

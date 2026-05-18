@@ -42,6 +42,8 @@ const ART_FILE_BY_KEY = /** @type {Record<string, string>} */ ({
   jidou: "jidou.png",
   turn1: "turn1.png",
   toujyou: "toujyou.png",
+  leftside: "leftside.png",
+  rightside: "rightside.png",
 });
 
 export function wikiAbilityStemNormalize(stem) {
@@ -111,6 +113,10 @@ const STEM_ALIAS = /** @type {Record<string, string>} */ ({
   turn1: "turn1",
   turn_once: "turn1",
   "ターン1回": "turn1",
+  turn2: "turn2",
+  turn_twice: "turn2",
+  "ターン2回": "turn2",
+  "ターン２回": "turn2",
   toujyou: "toujyou",
   登場: "toujyou",
   live_success: "live_success",
@@ -118,6 +124,12 @@ const STEM_ALIAS = /** @type {Record<string, string>} */ ({
   draw_yell: "draw_yell",
   jidou: "jidou",
   自動: "jidou",
+  leftside: "leftside",
+  left_side: "leftside",
+  左サイド: "leftside",
+  rightside: "rightside",
+  right_side: "rightside",
+  右サイド: "rightside",
 });
 
 /** 横長ラベル系（効果テキスト内で拡大表示） */
@@ -129,7 +141,10 @@ const PILL_ICON_KEYS = /** @type {Record<string, 1>} */ ({
   draw_yell: 1,
   jidou: 1,
   turn1: 1,
+  turn2: 1,
   toujyou: 1,
+  leftside: 1,
+  rightside: 1,
 });
 
 function svgDoc(children) {
@@ -219,6 +234,24 @@ const SVG_BUILD = /** @type {Record<string, () => string>} */ ({
     return svgDoc(
       '<rect x="1" y="9" width="38" height="22" rx="7" fill="#ffeb3b" stroke="#f9a825" stroke-width="1.2"/>' +
         '<text x="20" y="24.8" font-size="8.2" font-weight="800" fill="#311b92" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif">ターン1回</text>',
+    );
+  },
+  turn2: function () {
+    return svgDoc(
+      '<rect x="1" y="9" width="38" height="22" rx="7" fill="#ffd54f" stroke="#ef6c00" stroke-width="1.2"/>' +
+        '<text x="20" y="24.8" font-size="8.2" font-weight="800" fill="#311b92" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif">ターン2回</text>',
+    );
+  },
+  leftside: function () {
+    return svgDoc(
+      '<rect x="2" y="9" width="36" height="22" rx="6" fill="#42a5f5" stroke="#0d47a1" stroke-width="1.2"/>' +
+        '<text x="20" y="25" font-size="9" font-weight="800" fill="#ffffff" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif">左サイド</text>',
+    );
+  },
+  rightside: function () {
+    return svgDoc(
+      '<rect x="2" y="9" width="36" height="22" rx="6" fill="#ec407a" stroke="#880e4f" stroke-width="1.2"/>' +
+        '<text x="20" y="25" font-size="9" font-weight="800" fill="#ffffff" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif">右サイド</text>',
     );
   },
 });

@@ -6,6 +6,20 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 APP="$ROOT/LovecaSimulator.app"
 WWW="$APP/Contents/Resources/www"
 RES="$APP/Contents/Resources"
+DATA_DIR="$ROOT/data"
+CARDS_JSON_SRC="${DATA_DIR}/cards.json"
+CARDS_JSON_URL="${LL_OCG_CARDS_JSON_URL:-https://cdn.jsdelivr.net/gh/wlt233/llocg_db@master/json/cards.json}"
+
+mkdir -p "$DATA_DIR"
+if [[ ! -s "$CARDS_JSON_SRC" ]]; then
+  echo "カード DB を取得: $CARDS_JSON_URL"
+  if ! curl -fsSL --max-time 120 "$CARDS_JSON_URL" -o "$CARDS_JSON_SRC.part"; then
+    echo "警告: data/cards.json の取得に失敗しました（オンライン時は CDN から取得します）" >&2
+    rm -f "$CARDS_JSON_SRC.part"
+  else
+    mv "$CARDS_JSON_SRC.part" "$CARDS_JSON_SRC"
+  fi
+fi
 
 echo "同梱先: $WWW"
 rm -rf "$WWW"
@@ -20,6 +34,7 @@ rsync -a --delete \
   "$ROOT/styles.css" \
   "$ROOT/site.webmanifest" \
   "$ROOT/sample-deck-recipes.public.json" \
+  "$ROOT/data" \
   "$ROOT/js" \
   "$ROOT/assets" \
   "$ROOT/icons" \
