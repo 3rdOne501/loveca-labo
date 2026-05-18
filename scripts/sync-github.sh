@@ -53,6 +53,14 @@ fi
 
 echo
 echo "GitHub に送っています (git push) ..."
-git push "$REMOTE" "$BRANCH"
+# .app 同梱などでパックが大きいと HTTP 400 になることがあるためバッファを拡大
+if ! git -c http.postBuffer=524288000 push "$REMOTE" "$BRANCH"; then
+  echo
+  echo "エラー: git push に失敗しました。"
+  echo "  - ネットワーク・GitHub ログイン（Personal Access Token 等）を確認"
+  echo "  - 再試行: git -c http.postBuffer=524288000 push $REMOTE $BRANCH"
+  exit 1
+fi
 echo
 echo "完了しました。"
+echo "  https://github.com/3rdOne501/loveca-labo （ブランチ: $BRANCH）"

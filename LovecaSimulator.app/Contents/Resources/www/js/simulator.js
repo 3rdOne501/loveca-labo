@@ -3622,8 +3622,9 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       "</strong></span>";
     var notePill =
       noteLive > 0
-        ? '<span class="deck-remain-bh-pill deck-remain-bh-pill--note-live deck-remain-bh-pill--art" data-bh-slot="note">' +
-          '<span class="deck-remain-bh-pill__lab deck-remain-bh-pill__note-char" aria-hidden="true">♪</span>' +
+        ? '<span class="deck-remain-bh-pill deck-remain-bh-pill--note-live deck-remain-bh-pill--art" data-bh-slot="note" title="スコア（BHなしのライブ）枚数">' +
+          '<span class="deck-remain-bh-pill__lab">' +
+          heartSlotArtIconHtml(0, { score: true, extraClass: "deck-remain-bh-pill__art-ico" }) +
           '<span class="visually-hidden">スコア</span>' +
           '</span><strong class="deck-remain-bh-pill__n">' +
           escapeHtmlPlain(String(noteLive)) +
@@ -3711,8 +3712,9 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       "</strong></span>";
     var notePillW =
       noteLive > 0
-        ? '<span class="deck-remain-bh-pill deck-remain-bh-pill--note-live deck-remain-bh-pill--art" data-bh-slot="note">' +
-          '<span class="deck-remain-bh-pill__lab deck-remain-bh-pill__note-char" aria-hidden="true">♪</span>' +
+        ? '<span class="deck-remain-bh-pill deck-remain-bh-pill--note-live deck-remain-bh-pill--art" data-bh-slot="note" title="スコア（BHなしのライブ）枚数">' +
+          '<span class="deck-remain-bh-pill__lab">' +
+          heartSlotArtIconHtml(0, { score: true, extraClass: "deck-remain-bh-pill__art-ico" }) +
           '<span class="visually-hidden">スコア</span>' +
           '</span><strong class="deck-remain-bh-pill__n">' +
           escapeHtmlPlain(String(noteLive)) +

@@ -48,9 +48,9 @@ export function catalogListThumbnailUrl(originalUrl, opts) {
   try {
     const u = new URL(originalUrl, typeof location !== "undefined" ? location.href : "https://local.invalid/");
     if (u.protocol !== "http:" && u.protocol !== "https:") return originalUrl;
-    const w = hi ? 240 : 112;
-    const h = hi ? 342 : 158;
-    const q = hi ? 88 : 65;
+    const w = hi ? 200 : 96;
+    const h = hi ? 286 : 136;
+    const q = hi ? 78 : 52;
     return (
       "https://wsrv.nl/?url=" +
       encodeURIComponent(u.href) +

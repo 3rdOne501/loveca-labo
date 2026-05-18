@@ -141,9 +141,11 @@ function formatDeckPeekSyntheticBhPillsHtml(nonBhMemberCopies, nonBhLiveCopies, 
   }
   if (noteLiveCopies > 0) {
     html +=
-      '<span class="deck-peek-bh-color-pill deck-peek-bh-pill--note-live-pill" title="' +
+      '<span class="deck-peek-bh-color-pill deck-peek-bh-pill--note-live-pill deck-peek-bh-pill--art" title="' +
       escapeHtml("スコア（DBにBHなし）") +
-      '"><span class="deck-peek-bh-kanji">スコア</span><span class="deck-peek-bh-pill-qty">× ' +
+      '"><span class="deck-peek-bh-kanji">' +
+      heartSlotArtIconHtml(0, { score: true, extraClass: "deck-peek-bh-pill-art-ico" }) +
+      '<span class="visually-hidden">スコア</span></span><span class="deck-peek-bh-pill-qty">× ' +
       noteLiveCopies +
       "</span></span>";
   }
