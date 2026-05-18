@@ -111,6 +111,13 @@ function segmentPlainText(rawSegment) {
     .replace(/\s+/g, "");
 }
 
+/** 全角数字を半角に（効果文の「＋１」「６」などをパターンに通す） */
+function normalizeFwDigits(s) {
+  return String(s || "").replace(/[０-９]/g, function (ch) {
+    return String.fromCharCode(ch.charCodeAt(0) - 0xfee0);
+  });
+}
+
 function countBladeIcons(segRaw) {
   return (String(segRaw || "").match(/\{\{[^}]*blade[^}]*\}\}/gi) || []).length;
 }
@@ -138,9 +145,10 @@ function countHeartIconsBySlot(segRaw) {
 }
 
 function parseScorePlus(p) {
-  var m = p.match(/ライブの合計スコアを[＋+](\d+)/);
+  var s = normalizeFwDigits(p);
+  var m = s.match(/ライブの合計スコアを[＋+](\d+)/);
   if (m) return Number(m[1]) || 0;
-  m = p.match(/合計スコアを[＋+](\d+)/);
+  m = s.match(/合計スコアを[＋+](\d+)/);
   if (m) return Number(m[1]) || 0;
   return 0;
 }
@@ -155,7 +163,13 @@ export function isNativeJoujiSegment(segs, index) {
   if (!seg || seg.trigger !== "jouji") return false;
   var plain = segmentPlainText(seg.text);
   if (plain === "を得る。" || plain === "を得る") return false;
-  if (/^ライブの合計スコア/.test(plain) && /」を得る/.test(plain)) return false;
+  if (/^ライブの合計スコア/.test(plain) && /」を得る/.test(plain)) {
+    if (index > 0) {
+      var prevPQ = segmentPlainText(String(segs[index - 1].text || ""));
+      if (/「[^」]*$/.test(prevPQ)) return true;
+    }
+    return false;
+  }
   if (index === 0) return true;
   var prev = segs[index - 1];
   if (!prev || !prev.trigger) return true;
@@ -171,15 +185,54 @@ export function listNativeJoujiSegmentRaws(card) {
   if (!card || !card.ability) return [];
   var segs = splitAbilityByTriggers(String(card.ability));
   var out = [];
+  /** Wiki のネストで「場合、「」と途中で次の {{jyouji}} に分断される */
+  function endsOpenQuote(plain) {
+    return /「[^」]*$/.test(plain);
+  }
   for (var i = 0; i < segs.length; i++) {
-    if (isNativeJoujiSegment(segs, i)) out.push(segs[i].text);
+    var seg = segs[i];
+    if (seg.trigger !== "jouji" || !isNativeJoujiSegment(segs, i)) continue;
+    var acc = String(seg.text || "");
+    while (true) {
+      var plain = segmentPlainText(acc);
+      var merged = false;
+      if (
+        i + 1 < segs.length &&
+        (segs[i + 1].trigger === "live_start" || segs[i + 1].trigger === "live_success") &&
+        !/を得る/.test(segmentPlainText(acc))
+      ) {
+        i++;
+        acc += String(segs[i].text || "");
+        merged = true;
+      } else if (
+        i + 1 < segs.length &&
+        segs[i + 1].trigger === "jouji" &&
+        isNativeJoujiSegment(segs, i + 1) &&
+        endsOpenQuote(plain)
+      ) {
+        i++;
+        acc += String(segs[i].text || "");
+        merged = true;
+      } else if (
+        i + 1 < segs.length &&
+        segs[i + 1].trigger === "live_success" &&
+        /が持つ$/.test(plain) &&
+        /能力をすべて得る/.test(String(segs[i + 1].text || ""))
+      ) {
+        i++;
+        acc += "ライブ成功時" + String(segs[i].text || "");
+        merged = true;
+      }
+      if (!merged) break;
+    }
+    out.push(acc);
   }
   return out;
 }
 
 /** @param {string} segRaw @returns {JoujiRule|null} */
 export function classifyJoujiSegment(segRaw) {
-  var p = segmentPlainText(segRaw);
+  var p = normalizeFwDigits(segmentPlainText(segRaw));
   if (!p) return null;
   var areas = parseStageAreaConstraints(segRaw);
   /** @type {Partial<JoujiRule>} */
@@ -187,6 +240,24 @@ export function classifyJoujiSegment(segRaw) {
     stageAreas: areas.length ? areas : undefined,
     requiresStageOnly: /ステージにいる/.test(p) && !/ライブエリア/.test(p),
   };
+
+  if (
+    /ステージのエリアすべてに『/.test(p) &&
+    /名前が異なる/.test(p) &&
+    /ライブの合計スコア/.test(p) &&
+    (/を得る/.test(p) || /」を得る/.test(p))
+  ) {
+    var serTagM = p.match(/ステージのエリアすべてに『([^』]+)』/);
+    var lap = parseScorePlus(p);
+    if (serTagM && lap > 0) {
+      return Object.assign({}, base, {
+        kind: "stage_all_areas_series_distinct_score",
+        seriesTag: serTagM[1],
+        liveScorePlus: lap,
+        requiresStageOnly: true,
+      });
+    }
+  }
 
   if (/2人のメンバーとバトンタッチしてもよい/.test(p)) {
     return Object.assign({}, base, { kind: "two_member_baton" });
@@ -210,9 +281,19 @@ export function classifyJoujiSegment(segRaw) {
 
   var scorePlus = parseScorePlus(p);
   if (scorePlus > 0 && /ライブの合計スコア/.test(p)) {
+    var ebBelow = p.match(/下にエネルギーカードが(\d+)枚以上置かれている/);
+    if (ebBelow) {
+      return Object.assign({}, base, {
+        kind: "live_score_if_energy_below",
+        liveScorePlus: scorePlus,
+        minEnergyBelowMember: Number(ebBelow[1]) || 2,
+        requiresStageOnly: true,
+      });
+    }
     /** @type {JoujiRule} */
     var scoreRule = Object.assign({}, base, { kind: "live_score_plus", liveScorePlus: scorePlus });
-    var em = p.match(/エネルギーが(\d+)枚以上/);
+    var em = p.match(/自分のエネルギーが(\d+)枚以上/);
+    if (!em) em = p.match(/エネルギーが(\d+)枚以上/);
     if (em) scoreRule.minEnergy = Number(em[1]);
     var emEx = p.match(/エネルギーがちょうど(\d+)枚/);
     if (emEx) scoreRule.exactEnergy = Number(emEx[1]);
@@ -221,6 +302,10 @@ export function classifyJoujiSegment(segRaw) {
     if (/センターエリアに登場している場合のみ/.test(p) || /センターエリアに登場した場合のみ/.test(p)) {
       scoreRule.stageAreas = ["center"];
     }
+    var ownSlSc = p.match(/自分の成功ライブカード置き場にあるカードのスコアの合計が(\d+)以上/);
+    if (ownSlSc) scoreRule.minSuccessLiveScoreSum = Number(ownSlSc[1]);
+    var oppSlSc = p.match(/相手の成功ライブカード置き場にあるカードのスコアの合計が(\d+)以上/);
+    if (oppSlSc) scoreRule.minOpponentSuccessLiveScoreSum = Number(oppSlSc[1]);
     return scoreRule;
   }
 
@@ -275,8 +360,10 @@ export function classifyJoujiSegment(segRaw) {
       stageCostPlus: sc ? Number(sc[1]) : 0,
       requiresStageOnly: true,
     });
-    var sl6 = p.match(/スコアの合計が６以上/);
-    if (sl6) stageCostRule.minSuccessLiveScoreSum = 6;
+    var ownSlSc = p.match(/自分の成功ライブカード置き場にあるカードのスコアの合計が(\d+)以上/);
+    if (ownSlSc) stageCostRule.minSuccessLiveScoreSum = Number(ownSlSc[1]);
+    var enKagi = p.match(/自分のエネルギーが(\d+)枚以上あるかぎり/);
+    if (enKagi) stageCostRule.minEnergy = Number(enKagi[1]);
     var perSl = p.match(/成功ライブカード置き場にあるカード1枚につき/);
     if (perSl) {
       stageCostRule.kind = "stage_cost_plus_per_success_live";
@@ -310,14 +397,6 @@ export function classifyJoujiSegment(segRaw) {
     });
   }
 
-  if (/下にエネルギーカードが2枚以上置かれているかぎり/.test(p) && scorePlus > 0) {
-    return Object.assign({}, base, {
-      kind: "live_score_if_energy_below",
-      liveScorePlus: scorePlus,
-      minEnergyBelowMember: 2,
-    });
-  }
-
   if (/このメンバーがウェイト状態であるかぎり/.test(p)) {
     return Object.assign({}, base, { kind: "blade_if_self_wait", bladeFlat: countBladeIcons(segRaw), selfWait: true });
   }
@@ -336,18 +415,25 @@ export function classifyJoujiSegment(segRaw) {
     var scoreOnlyRule = Object.assign({}, base, { kind: "live_score_plus", liveScorePlus: scoreOnly });
     var em8 = p.match(/エネルギーがちょうど(\d+)枚/);
     if (em8) scoreOnlyRule.exactEnergy = Number(em8[1]);
-    var em12 = p.match(/エネルギーが(\d+)枚以上/);
+    var em12 = p.match(/自分のエネルギーが(\d+)枚以上/);
+    if (!em12) em12 = p.match(/エネルギーが(\d+)枚以上/);
     if (em12) scoreOnlyRule.minEnergy = Number(em12[1]);
     if (/相手の余剰ハートが2つ以上/.test(p)) scoreOnlyRule.opponentExtraHeartSurplus = 2;
     if (/ほかのすべてのメンバーより多くのハート/.test(p)) scoreOnlyRule.mostHeartsOnBothStages = true;
+    var ownSlO2 = p.match(/自分の成功ライブカード置き場にあるカードのスコアの合計が(\d+)以上/);
+    if (ownSlO2) scoreOnlyRule.minSuccessLiveScoreSum = Number(ownSlO2[1]);
+    var oppSlO2 = p.match(/相手の成功ライブカード置き場にあるカードのスコアの合計が(\d+)以上/);
+    if (oppSlO2) scoreOnlyRule.minOpponentSuccessLiveScoreSum = Number(oppSlO2[1]);
     return scoreOnlyRule;
   }
 
   var bladeN = countBladeIcons(segRaw);
-  if (bladeN > 0 && (/を得る/.test(p) || /を失う/.test(p) || /かぎり/.test(p))) {
+  var heartMapEarly = countHeartIconsBySlot(segRaw);
+  var hasHeartReward = Object.keys(heartMapEarly).length > 0;
+  if ((bladeN > 0 || hasHeartReward) && (/を得る/.test(p) || /を失う/.test(p) || /かぎり/.test(p))) {
     /** @type {JoujiRule} */
     var bladeRule = Object.assign({}, base, { kind: "blade_conditional", bladeFlat: bladeN });
-    var heartMap = countHeartIconsBySlot(segRaw);
+    var heartMap = heartMapEarly;
     if (Object.keys(heartMap).length) bladeRule.heartFlat = heartMap;
 
     if (/成功ライブカード置き場のカードが0枚で.*相手の成功ライブ/.test(p)) {
@@ -372,12 +458,10 @@ export function classifyJoujiSegment(segRaw) {
     if (/自分と相手のステージにメンバーが合計6人/.test(p)) bladeRule.minTotalMembersBothStages = 6;
     var csl = p.match(/自分と相手の成功ライブカード置き場にカードが合計(\d+)枚以上/);
     if (csl) bladeRule.minCombinedSuccessLive = Number(csl[1]);
-    if (/自分の成功ライブカード置き場にあるカードのスコアの合計が６以上/.test(p)) {
-      bladeRule.minSuccessLiveScoreSum = 6;
-    }
-    if (/相手の成功ライブカード置き場にあるカードのスコアの合計が６以上/.test(p)) {
-      bladeRule.minOpponentSuccessLiveScoreSum = 6;
-    }
+    var ownSlBl = p.match(/自分の成功ライブカード置き場にあるカードのスコアの合計が(\d+)以上/);
+    if (ownSlBl) bladeRule.minSuccessLiveScoreSum = Number(ownSlBl[1]);
+    var oppSlBl = p.match(/相手の成功ライブカード置き場にあるカードのスコアの合計が(\d+)以上/);
+    if (oppSlBl) bladeRule.minOpponentSuccessLiveScoreSum = Number(oppSlBl[1]);
     if (/自分のステージにいるメンバーがちょうど2人/.test(p)) bladeRule.exactStageMemberCount = 2;
     if (/自分のステージに名前が異なるメンバーが3人以上/.test(p)) bladeRule.minDistinctNameStageMembers = 3;
     if (/自分のエネルギーが10枚以上あるかぎり/.test(p)) bladeRule.minEnergy = 10;
@@ -419,6 +503,18 @@ export function classifyJoujiSegment(segRaw) {
       bladeRule.kind = "stage_all_areas_series_distinct";
       bladeRule.seriesTag = "Aqours";
     }
+    if (
+      bladeRule.kind === "stage_all_areas_series_distinct" &&
+      /ライブの合計スコア/.test(p)
+    ) {
+      var lspAreas = parseScorePlus(p);
+      if (lspAreas > 0) {
+        bladeRule.kind = "stage_all_areas_series_distinct_score";
+        bladeRule.liveScorePlus = lspAreas;
+        bladeRule.bladeFlat = 0;
+        delete bladeRule.heartFlat;
+      }
+    }
     if (/センターエリアにいるメンバーが最も大きいコスト/.test(p)) bladeRule.centerHighestCost = true;
     if (/相手のステージにウェイト状態のメンバーが2人以上/.test(p)) bladeRule.minOpponentWaitOnStage = 2;
     if (/自分のステージにこのメンバー以外の/.test(p) && /がいるかぎり/.test(p) && /『/.test(p)) {
@@ -449,7 +545,7 @@ export function classifyJoujiSegment(segRaw) {
       bladeRule.characterNamesAny = [charAny[1], charAny[2], charAny[3]];
     }
 
-    if (/必要ハートの中に/.test(p) && bladeN > 0) {
+    if (/必要ハートの中に/.test(p) && (bladeN > 0 || hasHeartReward)) {
       bladeRule.kind = "blade_if_live_need_all_colors";
     }
 
@@ -460,6 +556,10 @@ export function classifyJoujiSegment(segRaw) {
     }
 
     return bladeRule;
+  }
+
+  if (/ライブ成功時/.test(p) && /能力をすべて得る/.test(p) && /が持つ/.test(p)) {
+    return null;
   }
 
   return null;
@@ -533,6 +633,13 @@ function evaluateJoujiRule(rule, inst, card, ctx) {
       out.handCostReduction = rule.handCostReduce || 0;
       return out;
     case "hand_cost_per_other_hand":
+      if (ctx.instInOwnHand && ctx.instInOwnHand(inst)) {
+        var others =
+          typeof ctx.ownHandCountExcluding === "function"
+            ? Math.max(0, Math.floor(Number(ctx.ownHandCountExcluding(inst)) || 0))
+            : Math.max(0, (typeof ctx.ownHandCount === "function" ? ctx.ownHandCount() : 1) - 1);
+        out.handCostReduction = others;
+      }
       return out;
     case "grant_hand_no_ability_cost_reduce":
     case "grant_hand_series_cost_reduce":
@@ -553,6 +660,10 @@ function evaluateJoujiRule(rule, inst, card, ctx) {
     } else {
       out.stageCostDelta = rule.stageCostPlus || 0;
     }
+    return out;
+  }
+  if (rule.kind === "stage_all_areas_series_distinct_score") {
+    out.liveScoreBonus = rule.liveScorePlus || 0;
     return out;
   }
   if (rule.loseBladeInstead) {
@@ -646,7 +757,10 @@ function conditionMet(rule, inst, card, ctx) {
       if (!ctx.liveFramesHave3PlusWithSeries()) return false;
     }
   }
-  if (rule.kind === "stage_all_areas_series_distinct" && rule.seriesTag) {
+  if (
+    (rule.kind === "stage_all_areas_series_distinct" || rule.kind === "stage_all_areas_series_distinct_score") &&
+    rule.seriesTag
+  ) {
     if (!ctx.stageHasAllAreasDistinctSeriesMembers(rule.seriesTag)) return false;
   }
   if (rule.kind === "blade_if_series_on_stage" && rule.seriesTag) {

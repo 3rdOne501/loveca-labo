@@ -3066,6 +3066,14 @@ body.play-mode .stage-slot.card-strip .card-effect-resolve-btn-row .card-effect-
   top: -4px;
   border-width: 1.5px;
 }
+body.play-mode .stage-slot.card-strip .card-effect-resolve-btn--live_start,
+body.play-mode .stage-slot.card-strip .card-effect-resolve-btn-row .card-effect-resolve-btn--live_start {
+  font-size: 2.75rem;
+  padding: 1rem 2.85rem;
+  top: -10px;
+  border-width: 2px;
+  letter-spacing: 0.05em;
+}
 
 /* ライブ枠（横向きライブカード）のボタン／アイコン拡大配置 */
 body.play-mode .live-slot .card-art-wrap {
@@ -3079,6 +3087,14 @@ body.play-mode .live-slot .card-item.card-item--live-h .card-effect-resolve-btn-
   letter-spacing: 0.04em;
   top: -22px;
   z-index: 9;
+}
+body.play-mode .live-slot .card-item.card-item--live-h .card-effect-resolve-btn--live_start,
+body.play-mode .live-slot .card-item.card-item--live-h .card-effect-resolve-btn-row .card-effect-resolve-btn--live_start {
+  font-size: 3.85rem;
+  padding: 1.5rem 4rem;
+  top: -32px;
+  border-width: 3px;
+  letter-spacing: 0.06em;
 }
 body.play-mode .live-slot .card-item.card-item--live-h .card-effect-resolve-btn-row {
   top: -22px;
@@ -6843,6 +6859,39 @@ body.play-mode .card-art-wrap .card-img {
 .card-effect-resolve-btn--live_success,
 .card-effect-resolve-btn--hand_playable {
   background: rgba(32, 36, 52, 0.88);
+}
+body.play-mode .card-effect-resolve-btn--live_start {
+  font-size: 1.85rem;
+  padding: 0.48rem 1.65rem;
+  border-width: 2px;
+  letter-spacing: 0.04em;
+  min-width: 8.5rem;
+}
+body.play-mode .card-effect-resolve-btn-row .card-effect-resolve-btn--live_start {
+  flex: 1 1 100%;
+  min-width: 9rem;
+  font-size: 1.65rem;
+  padding: 0.42rem 0.55rem;
+}
+body.play-mode .card-item {
+  position: relative;
+}
+.card-hand-cost-pill {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 8;
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1.15;
+  padding: 0.12rem 0.38rem;
+  border-radius: 999px;
+  background: rgba(12, 18, 36, 0.92);
+  color: #ffe8f8;
+  border: 1px solid rgba(255, 200, 230, 0.55);
+  pointer-events: none;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
 .card-effect-icon-host {
   position: absolute;
