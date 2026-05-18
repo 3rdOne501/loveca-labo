@@ -63,4 +63,4 @@ if ! git -c http.postBuffer=524288000 push "$REMOTE" "$BRANCH"; then
 fi
 echo
 echo "完了しました。"
-echo "  https://github.com/3rdOne501/loveca-labo （ブランチ: $BRANCH）"
+echo "  https://github.com/3rdOne501/loveca-labo (branch: ${BRANCH})"
