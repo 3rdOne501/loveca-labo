@@ -77,9 +77,12 @@ import { showToast } from "./ui.js";
 import {
   bladeHeartAggregatePillHtml,
   bladeHeartRowIconsHtml,
+  bladeHeartDisplaySlotLabel,
   cardHasBladeHeart,
   compareBladeHeartDbKeys,
   heartSlotArtIconHtml,
+  isBladeHeartDrawMarkerKey,
+  parseBladeHeartSlotFromKey,
 } from "./bladeHeart.js";
 
 let deckBuilderStorageFlushHooked = false;
@@ -142,15 +145,18 @@ function firstDeckMapCardNo(deckMap, predicate) {
   return null;
 }
 
-function deckPeekBhPillButton(innerHtml, cardNo, titleExtra) {
-  if (!cardNo) return innerHtml;
-  const t = titleExtra || "クリックでカード詳細";
+function deckPeekBhPillButton(innerHtml, cardNo, titleExtra, opts) {
+  opts = opts || {};
+  const dbKey = opts.dbKey || "";
+  const cohort = opts.cohort || "";
+  if (!cardNo && !dbKey && !cohort) return innerHtml;
+  const t = titleExtra || "クリックでカード一覧";
   return (
-    '<button type="button" class="deck-peek-bh-pill-btn" data-deck-bh-card-no="' +
-    escapeAttr(cardNo) +
-    '" title="' +
-    escapeAttr(t) +
-    '">' +
+    '<button type="button" class="deck-peek-bh-pill-btn"' +
+    (cardNo ? ' data-deck-bh-card-no="' + escapeAttr(cardNo) + '"' : "") +
+    (dbKey ? ' data-deck-bh-key="' + escapeAttr(dbKey) + '"' : "") +
+    (cohort ? ' data-deck-bh-cohort="' + escapeAttr(cohort) + '"' : "") +
+    ' title="' + escapeAttr(t) + '">' +
     innerHtml +
     "</button>"
   );
@@ -181,7 +187,8 @@ function formatDeckPeekSyntheticBhPillsHtml(nonBhMemberCopies, scoreLiveCopies, 
       firstDeckMapCardNo(deckMap, function (c) {
         return c.type === T_MEMBER && !cardHasBladeHeart(c);
       }),
-      "クリックでカード詳細（非BH メンバー）",
+      "クリックで非BH メンバー一覧",
+      { cohort: "nonbh_mem" },
     );
   }
   if (scoreLiveCopies > 0) {
@@ -198,7 +205,8 @@ function formatDeckPeekSyntheticBhPillsHtml(nonBhMemberCopies, scoreLiveCopies, 
       firstDeckMapCardNo(deckMap, function (c) {
         return cardIsNoteLiveCatalog(c);
       }),
-      "クリックでカード詳細（スコア）",
+      "クリックでスコア（BHなしライブ）一覧",
+      { cohort: "score_live" },
     );
   }
   if (drawLiveCopies > 0) {
@@ -215,7 +223,8 @@ function formatDeckPeekSyntheticBhPillsHtml(nonBhMemberCopies, scoreLiveCopies, 
       firstDeckMapCardNo(deckMap, function (c) {
         return cardIsDrawYellLiveCatalog(c);
       }),
-      "クリックでカード詳細（ドロー）",
+      "クリックでドロー（BH＋ドロー特殊ライブ）一覧",
+      { cohort: "draw_live" },
     );
   }
   return html;
@@ -276,8 +285,8 @@ function formatBladeHeartBlockHtml(
       const nos = deckMapCardNosWithBhKey(deckMap, ent[0]);
       const pill = bladeHeartAggregatePillHtml(ent[0], ent[1], byKeyAdditive[ent[0]] || 0, { showScoreBadge: false });
       const titleExtra =
-        nos.length > 1 ? "クリックでカード詳細（他 " + (nos.length - 1) + " 種）" : "クリックでカード詳細";
-      return deckPeekBhPillButton(pill, nos[0] || null, titleExtra);
+        nos.length > 1 ? "クリックでカード一覧（" + nos.length + " 種）" : "クリックでカード詳細";
+      return deckPeekBhPillButton(pill, nos[0] || null, titleExtra, { dbKey: ent[0] });
     })
     .join("");
 
@@ -427,6 +436,8 @@ export function initDeckBuilder(root, { onStartGame }) {
   }
   const initialBundle = loadDeckBundleFromStorage();
   let deckMap = initialBundle.map;
+  /** @type {Record<string, number> | null} 直近に開いた覗き見デッキの map（BH ピル一覧表示用） */
+  let lastPeekDeckMap = null;
   /** @type {Set<string>} */
   const keyCardNos = new Set(initialBundle.keyCardNos);
   /** @type {Set<string>} */
@@ -941,6 +952,121 @@ export function initDeckBuilder(root, { onStartGame }) {
     return true;
   }
 
+  /** クリックされた BH ピルが属する文脈（覗き見ダイアログ／メインデッキ）に応じて deckMap を返す。 */
+  function activeEditedDeckMap() {
+    var peekDlg = document.getElementById("dlg-deck-peek");
+    if (peekDlg && peekDlg.open && lastPeekDeckMap) return lastPeekDeckMap;
+    return deckMap;
+  }
+
+  /**
+   * デッキマップから「特定 BH キー／属性コホート」に該当するカード一覧を共通ダイアログで表示する。
+   * @param {Record<string, number>} map
+   * @param {string} dbKey b_heart01 / b_all / b_draw 等。空の場合は cohort で絞り込み。
+   * @param {string} cohort "nonbh_mem" | "score_live" | "draw_live" のいずれか／空。
+   */
+  function openDeckBhListDialogFor(map, dbKey, cohort) {
+    var dlg = document.getElementById("dlg-zone-bh-list");
+    var title = document.getElementById("dlg-zone-bh-list-title");
+    var lead = document.getElementById("dlg-zone-bh-list-lead");
+    var body = document.getElementById("dlg-zone-bh-list-body");
+    if (!dlg || !body || typeof dlg.showModal !== "function") return;
+    var slotLabel = "";
+    /** @type {(c: any) => boolean} */
+    var pred;
+    /** @type {(c: any) => number} */
+    var weight = function () { return 1; };
+    if (cohort === "nonbh_mem") {
+      slotLabel = "非BH メンバー";
+      pred = function (c) { return c && c.type === T_MEMBER && !cardHasBladeHeart(c); };
+    } else if (cohort === "score_live") {
+      slotLabel = "スコア";
+      pred = function (c) { return cardIsNoteLiveCatalog(c); };
+    } else if (cohort === "draw_live") {
+      slotLabel = "ドロー";
+      pred = function (c) { return cardIsDrawYellLiveCatalog(c); };
+    } else if (dbKey) {
+      if (isBladeHeartDrawMarkerKey(dbKey)) {
+        slotLabel = "ドロー BH";
+      } else {
+        var slotN = parseBladeHeartSlotFromKey(dbKey);
+        slotLabel = slotN != null ? bladeHeartDisplaySlotLabel(slotN) : dbKey;
+      }
+      pred = function (c) {
+        if (!c || !cardHasBladeHeart(c)) return false;
+        var bh = c.blade_heart;
+        if (!bh || typeof bh !== "object" || Array.isArray(bh)) return false;
+        var v = Number(bh[dbKey]);
+        return Number.isFinite(v) && v !== 0;
+      };
+    } else {
+      return;
+    }
+    /** @type {Map<string, { card: any, count: number }>} */
+    var byNo = new Map();
+    for (var no in map) {
+      if (!Object.prototype.hasOwnProperty.call(map, no)) continue;
+      var n = Number(map[no]);
+      if (!Number.isFinite(n) || n <= 0) continue;
+      var c = getCard(no);
+      if (!c) continue;
+      if (!pred(c)) continue;
+      byNo.set(String(no), { card: c, count: n * weight(c) });
+    }
+    if (title) title.textContent = "デッキ — " + slotLabel + " のカード";
+    var totalCt = 0;
+    byNo.forEach(function (r) { totalCt += r.count; });
+    if (lead) {
+      lead.textContent = "デッキの中で " + slotLabel + " に該当するカードは " + totalCt + " 枚（種類 " + byNo.size + "）です。";
+    }
+    body.innerHTML = "";
+    if (!byNo.size) {
+      var emp = document.createElement("p");
+      emp.className = "muted";
+      emp.style.margin = "0.5rem 0";
+      emp.textContent = "該当カードはありません。";
+      body.appendChild(emp);
+    } else {
+      var grid = document.createElement("div");
+      grid.className = "dlg-zone-bh-list__grid";
+      var entries = [...byNo.values()];
+      entries.sort(function (a, b) {
+        var an = String(a.card.card_no || "");
+        var bn = String(b.card.card_no || "");
+        return an.localeCompare(bn, "ja");
+      });
+      entries.forEach(function (rec) {
+        var tile = document.createElement("button");
+        tile.type = "button";
+        tile.className = "dlg-zone-bh-list__tile";
+        tile.setAttribute("data-card-no", String(rec.card.card_no || ""));
+        var img = document.createElement("img");
+        img.className = "dlg-zone-bh-list__img";
+        img.alt = rec.card.name || rec.card.card_no || "";
+        img.loading = "lazy";
+        img.decoding = "async";
+        img.draggable = false;
+        img.src = rec.card.img || "";
+        tile.appendChild(img);
+        var qty = document.createElement("span");
+        qty.className = "dlg-zone-bh-list__qty";
+        qty.textContent = "×" + rec.count;
+        tile.appendChild(qty);
+        var lab = document.createElement("span");
+        lab.className = "dlg-zone-bh-list__label";
+        lab.textContent = (rec.card.name || rec.card.card_no || "").toString();
+        tile.appendChild(lab);
+        tile.addEventListener("click", function () {
+          try { dlg.close(); } catch (_) { /* noop */ }
+          openCardCatalogDialogForDeckEdit(rec.card);
+        });
+        grid.appendChild(tile);
+      });
+      body.appendChild(grid);
+    }
+    try { dlg.showModal(); } catch (_) { /* noop */ }
+  }
+
   /** デッキ編集中、カード詳細を開く（イラスト違いの入れ替え機能つき）。 */
   function openCardCatalogDialogForDeckEdit(card) {
     if (!card) return;
@@ -957,11 +1083,18 @@ export function initDeckBuilder(root, { onStartGame }) {
     root.addEventListener("click", function (ev) {
       const btn = ev.target.closest(".deck-peek-bh-pill-btn");
       if (!btn) return;
+      ev.preventDefault();
+      const dbKey = btn.getAttribute("data-deck-bh-key");
+      const cohort = btn.getAttribute("data-deck-bh-cohort");
+      const deckMap = activeEditedDeckMap();
+      if (dbKey || cohort) {
+        openDeckBhListDialogFor(deckMap, dbKey || "", cohort || "");
+        return;
+      }
       const no = btn.getAttribute("data-deck-bh-card-no");
       if (!no) return;
       const card = getCard(no);
       if (!card) return;
-      ev.preventDefault();
       openCardCatalogDialogForDeckEdit(card);
     });
   }
@@ -1950,6 +2083,7 @@ export function initDeckBuilder(root, { onStartGame }) {
     }
 
     const map = slot.deck || {};
+    lastPeekDeckMap = map;
     var peekKey = new Set(sanitizeCardNoList(slot.keyCardNos));
     var peekKey2 = new Set(sanitizeCardNoList(slot.keyCard2Nos));
     var peekKey3 = new Set(sanitizeCardNoList(slot.keyCard3Nos));

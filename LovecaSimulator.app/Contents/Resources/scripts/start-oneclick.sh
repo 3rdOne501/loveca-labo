@@ -45,6 +45,8 @@ PORT=""
 PID_FILE=""
 URL=""
 
+LOVECA_EXPECTED_BUILD="$(grep -o 'name="loveca-build" content="[^"]*"' "$ROOT/index.html" 2>/dev/null | sed 's/.*content="//;s/"$//' || true)"
+
 server_serves_loveca() {
   local base="$1"
   if ! command -v curl >/dev/null 2>&1; then
@@ -54,9 +56,17 @@ server_serves_loveca() {
   body="$(curl -sf --max-time 2 "${base}/index.html" 2>/dev/null)" || return 1
   [[ "${#body}" -gt 200 ]] || return 1
   case "$body" in
-    *"Loveca Labo"*|*"loveca-labo"*|*"llocg"*|*"deckbuilder"*) return 0 ;;
+    *"Loveca Labo"*|*"loveca-labo"*|*"llocg"*|*"deckbuilder"*) ;;
+    *) return 1 ;;
   esac
-  return 1
+  if [[ -n "${LOVECA_EXPECTED_BUILD}" ]]; then
+    case "$body" in
+      *"loveca-build\" content=\"${LOVECA_EXPECTED_BUILD}\""*) return 0 ;;
+      *"name=\"loveca-build\" content=\"${LOVECA_EXPECTED_BUILD}\""*) return 0 ;;
+    esac
+    return 1
+  fi
+  return 0
 }
 
 port_listening() {
@@ -78,7 +88,14 @@ start_server_on_port() {
     lsof -ti ":${p}" 2>/dev/null | xargs kill -9 2>/dev/null || true
     sleep 0.2
   fi
-  python3 -m http.server "$p" --bind 127.0.0.1 --directory "$ROOT" >/dev/null 2>&1 &
+  local dev_srv="${SCRIPT_DIR}/loveca_dev_server.py"
+  if [[ -f "$dev_srv" ]]; then
+    python3 "$dev_srv" "$p" "$ROOT" >/dev/null 2>&1 &
+  elif python3 -m http.server --help 2>&1 | grep -q -- '--directory'; then
+    python3 -m http.server "$p" --bind 127.0.0.1 --directory "$ROOT" >/dev/null 2>&1 &
+  else
+    python3 -m http.server "$p" >/dev/null 2>&1 &
+  fi
   echo $! >"$PID_FILE"
   disown 2>/dev/null || true
   local n=0
@@ -96,7 +113,7 @@ start_server_on_port() {
   return 1
 }
 
-# 8844 から順に空き／正しいサーバを探す
+# 8844 から順に空き／正しいサーバを探す（古いビルドのサーバは kill して差し替え）
 for try in $(seq 0 10); do
   candidate=$((BASE_PORT + try))
   base="http://127.0.0.1:${candidate}"
@@ -106,7 +123,10 @@ for try in $(seq 0 10); do
       URL="${base}/index.html"
       break
     fi
-    continue
+    if command -v lsof >/dev/null 2>&1; then
+      lsof -ti ":${candidate}" 2>/dev/null | xargs kill -9 2>/dev/null || true
+      sleep 0.2
+    fi
   fi
   if start_server_on_port "$candidate"; then
     PORT="$candidate"

@@ -47,13 +47,21 @@ import {
   memberHasLiveStartAbility,
   memberHasOptionalLiveStartAbility,
   memberHasLiveSuccessAbility,
+  cardHasTrigger,
+  splitAbilityByTriggers,
+  abilityRawSegmentForTrigger,
+  cardAbilityRawText,
 } from "./cards.js";
 import {
   boardMemberEffectIconHtml,
   boardYellFloatIconHtml,
 } from "./gameStatusIcons.js";
 import { loadDeckLibrary, normalizeDeckMapCounts } from "./deckLibrary.js";
-import { openCardCatalogDialog, catalogLiveCardIsDrawYellBladeHeart } from "./cardCatalogDialog.js";
+import {
+  openCardCatalogDialog,
+  catalogLiveCardIsDrawYellBladeHeart,
+  wikiAbilityToStatusHtml,
+} from "./cardCatalogDialog.js";
 import {
   addBaseHeartToSlotAccum,
   addBladeHeartWeightsPerDisplaySlot,
@@ -5070,6 +5078,60 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     }
   }
 
+  /**
+   * 手札のメンバーを指定サイド（左／センター／右）に登場させる。
+   * ドラッグ操作と同じ後処理（登場効果・エネルギー回転・グロー更新など）を行う。
+   * @param {*} memberInst
+   * @param {"left"|"center"|"right"} side
+   * @returns {boolean} 成功したか
+   */
+  function placeHandMemberOnStageSide(memberInst, side) {
+    if (!memberInst || memberInst.type !== T_MEMBER) return false;
+    if (state.liveTurnPickMode === true || state.awaitingTurnStart === true) {
+      showToast("いまは手札メンバーをステージに置けません");
+      return false;
+    }
+    var validSides = { left: 1, center: 1, right: 1 };
+    if (!validSides[side]) return false;
+    var hi = state.hand.findIndex(function (h) { return h && String(h.id) === String(memberInst.id); });
+    if (hi < 0) {
+      showToast("そのカードは手札にありません");
+      return false;
+    }
+    var upright = countUprightEnergyInArea(state.energyArea);
+    var slot = state.stage[side] || [];
+    var incumbent = null;
+    for (var si = 0; si < slot.length; si++) {
+      if (slot[si] && slot[si].type === T_MEMBER) incumbent = slot[si];
+    }
+    var cost = effectiveStageAppearPrintedCost(memberInst, incumbent);
+    if (cost > upright) {
+      showToast("エネルギーが足りません（必要 " + cost + " / アクティブ " + upright + "）");
+      return false;
+    }
+    var snap = snapshotBoard();
+    pushHistoryBefore("hand-to-stage-" + side);
+    var inst = state.hand.splice(hi, 1)[0];
+    if (!state.stage[side]) state.stage[side] = [];
+    if (incumbent) {
+      var incIdx = state.stage[side].findIndex(function (c) { return c && String(c.id) === String(incumbent.id); });
+      if (incIdx >= 0) {
+        state.waitingRoom.push(state.stage[side].splice(incIdx, 1)[0]);
+      }
+    }
+    state.stage[side].push(inst);
+    try { stampNewStageMembersForGlow(snap); } catch (_) {}
+    try { maybeRotateEnergyCostForMembersNewOnStage(snap); } catch (_) {}
+    try { syncPlayBonusesAfterStageMembershipChange(snap); } catch (_) {}
+    try { activateToujouEffectsOnStageEntry(snap); } catch (_) {}
+    try { maybeHandleBp2001EntryPrompt(snap); } catch (_) {}
+    try { warnAfterStageBatonSameTurnPolicy(snap); } catch (_) {}
+    showToast((mergedCatalogCard(inst).name || "メンバー") + " を " +
+      (side === "left" ? "左サイド" : side === "right" ? "右サイド" : "センター") + " に登場させました");
+    render();
+    return true;
+  }
+
   function canHandMemberEnterStage(memberInst) {
     if (!memberInst || memberInst.type !== T_MEMBER) return false;
     if (state.liveTurnPickMode === true) return false;
@@ -5090,9 +5152,26 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     return false;
   }
 
+  function unresolvedMandatoryLiveStartEffectsExist() {
+    var pending = collectPendingTriggeredEffects(["live_start"]);
+    for (var i = 0; i < pending.length; i++) {
+      if (pending[i].mandatory) return true;
+    }
+    return false;
+  }
+
   function markPlayLiveYellStarted() {
     if (state.liveStatsAfterBegin !== true) return;
     if (state.playLiveYellStarted === true) return;
+    if (state.__liveYellWarnAck !== true && unresolvedMandatoryLiveStartEffectsExist()) {
+      var ok = window.confirm(
+        "未解決のライブ開始時 “強制効果” が残っています。\n" +
+        "効果解決を先に行うか、強制効果に従って解決してください。\n" +
+        "それでもこのままエールを始めますか？",
+      );
+      if (!ok) return;
+      state.__liveYellWarnAck = true;
+    }
     state.playLiveYellStarted = true;
     state.playLiveStartGlowActive = false;
     setTimeout(function () {
@@ -5131,7 +5210,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     }
     c._playEffectResolved[kind] = true;
     var mc = mergedCatalogCard(c);
-    var cl = classifyCardAbility(mc);
+    var cl = classifyCardAbility(mc, kind);
     if (cl && cl.perTurnLimit) perTurnIncrement(c, kind);
     if (cl && cl.perTurnLimit === 2 && Number((c._perTurnAbilityUsed || {})[kind] || 0) < 2) {
       delete c._playEffectResolved[kind];
@@ -5143,8 +5222,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (!c || !kind) return;
     ensureCardBoardFields(c);
     var mc = mergedCatalogCard(c);
-    var cl = classifyCardAbility(mc);
-    if (cl.trigger !== kind && kind !== "toujyou" && cl.trigger !== "toujyou") {
+    var cl = classifyCardAbility(mc, kind);
+    if (cl.trigger !== kind) {
       markPlayEffectResolved(c, kind);
       render();
       return;
@@ -5173,14 +5252,13 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         c._perTurnAbilityUsed = {};
         c._perTurnAbilityUsedTurn = state.turnCount;
         if (c._playEffectResolved) {
-          var mc = mergedCatalogCard(c);
-          var cl = classifyCardAbility(mc);
-          if (cl && cl.perTurnLimit) {
-            ["kidou", "toujyou", "live_start", "live_success"].forEach(function (k) {
-              if (k === "toujyou") return;
+          var mcRst = mergedCatalogCard(c);
+          ["kidou", "live_start", "live_success"].forEach(function (k) {
+            var clk = classifyCardAbility(mcRst, k);
+            if (clk && clk.perTurnLimit) {
               if (c._playEffectResolved[k]) delete c._playEffectResolved[k];
-            });
-          }
+            }
+          });
         }
       });
     }
@@ -5242,6 +5320,102 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   function checkAbilitySuccessLivePrecondition(filters) {
     if (filters.minSuccessLiveCount == null) return true;
     return state.successfulLiveArea.length >= filters.minSuccessLiveCount;
+  }
+
+  /** ピックフィルタを日本語で簡潔に説明する */
+  function describePickFilters(f) {
+    if (!f || typeof f !== "object") return "";
+    var parts = [];
+    if (f.pickType === T_MEMBER) parts.push("メンバー");
+    else if (f.pickType === T_LIVE) parts.push("ライブ");
+    if (f.maxCost != null) parts.push("コスト" + f.maxCost + "以下");
+    if (f.seriesTag) parts.push("『" + f.seriesTag + "』");
+    if (f.minNeedHeartSlot != null && f.minNeedHeartValue != null) {
+      var colorNames = { 1: "桃", 2: "赤", 3: "黄", 4: "緑", 5: "青", 6: "紫" };
+      parts.push("必要ハート" + (colorNames[f.minNeedHeartSlot] || "") + f.minNeedHeartValue + "以上");
+    }
+    return parts.join(" / ");
+  }
+
+  /**
+   * 山札からめくったカード一覧を全件表示し、条件に合うカードのみ選択可能なダイアログ。
+   * 条件に合わないカードは選択不可（または選択しても自動で控え室へ）。
+   * @param {any[]} cards
+   * @param {object} filters
+   * @param {string} leadText
+   * @param {(pickedId: string | null) => void} onDone
+   */
+  function openPickFromDeckLookDialog(cards, filters, leadText, onDone) {
+    var dlg = document.getElementById("dlg-pick-kidou-waiting");
+    var list = document.getElementById("dlg-pick-kidou-waiting-list");
+    var lead = document.getElementById("dlg-pick-kidou-waiting-lead");
+    var btnOk = document.getElementById("dlg-pick-kidou-waiting-ok");
+    var btnCx = document.getElementById("dlg-pick-kidou-waiting-cancel");
+    if (!dlg || !list || !btnOk || typeof dlg.showModal !== "function") {
+      onDone(null);
+      return;
+    }
+    if (lead) lead.textContent = leadText || "見たカードから 1 枚を選びます。";
+    list.innerHTML = "";
+    var grid = document.createElement("div");
+    grid.className = "dlg-pick-kidou-waiting__grid";
+    cards.forEach(function (c, i) {
+      var mc = mergedCatalogCard(c);
+      var lab = ((mc.card_no != null ? String(mc.card_no) + " " : "") + (mc.name || c.name || "")).trim();
+      var thumb = mc.img || c.img || "";
+      var eligible = catalogCardMatchesPickFilters(mc, filters || {});
+      var labEl = document.createElement("label");
+      labEl.className =
+        "dlg-pick-kidou-waiting__tile" + (eligible ? "" : " dlg-pick-kidou-waiting__tile--ineligible");
+      var radio = document.createElement("input");
+      radio.type = "radio";
+      radio.name = "pickKidouWait";
+      radio.value = String(c.id);
+      radio.className = "dlg-pick-kidou-waiting__radio";
+      if (!eligible) radio.title = "条件に合わないため、選択しても控え室へ送られます";
+      var img = document.createElement("img");
+      img.className = "dlg-pick-kidou-waiting__img";
+      img.alt = lab;
+      img.loading = "lazy";
+      img.decoding = "async";
+      if (thumb) img.src = thumb;
+      var cap = document.createElement("span");
+      cap.className = "dlg-pick-kidou-waiting__label";
+      cap.textContent = (i + 1) + ". " + lab + (eligible ? "" : "（対象外）");
+      labEl.appendChild(radio);
+      labEl.appendChild(img);
+      labEl.appendChild(cap);
+      grid.appendChild(labEl);
+    });
+    list.appendChild(grid);
+    function cleanup() {
+      btnOk.removeEventListener("click", onOk);
+      if (btnCx) btnCx.removeEventListener("click", onCx);
+      dlg.removeEventListener("cancel", onDismiss);
+    }
+    function onOk() {
+      var r = list.querySelector('input[name="pickKidouWait"]:checked');
+      cleanup();
+      try {
+        dlg.close();
+      } catch (_) {}
+      onDone(r && r.value ? String(r.value) : null);
+    }
+    function onCx() {
+      cleanup();
+      try {
+        dlg.close();
+      } catch (_) {}
+      onDone(null);
+    }
+    function onDismiss() {
+      cleanup();
+      onDone(null);
+    }
+    btnOk.addEventListener("click", onOk);
+    if (btnCx) btnCx.addEventListener("click", onCx);
+    dlg.addEventListener("cancel", onDismiss);
+    dlg.showModal();
   }
 
   function applyDeckTopToWaiting(count) {
@@ -5688,6 +5862,10 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (lead) lead.textContent = (mc.name || "カード") + " のコストを支払って効果を解決します。";
     body.innerHTML = "";
     var html = "";
+    var segRawCost = abilityRawSegmentForTrigger(mc, cl && cl.trigger ? cl.trigger : "") || cardAbilityRawText(mc);
+    if (segRawCost) {
+      html += '<div class="dlg-cost-payment-row dlg-cost-payment-effect">' + wikiAbilityToStatusHtml(segRawCost) + '</div>';
+    }
     if (cl.costEnergy) {
       html += '<div class="dlg-cost-payment-row"><label><input type="checkbox" id="cost-pay-energy" checked /> エネルギー1枚を支払う（手動でアクティブ→ウェイトしてください）</label></div>';
     }
@@ -5882,42 +6060,37 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       pushHistoryBefore("ability-deck-pick-recover");
       var lookedRecover = state.deck.splice(0, pickN);
       render();
-      var eligible = lookedRecover.filter(function (c) {
-        return catalogCardMatchesPickFilters(mergedCatalogCard(c), cl.filters || {});
-      });
-      if (!eligible.length) {
+      var filterHint = describePickFilters(cl.filters || {});
+      var leadText =
+        "山札の上 " +
+        lookedRecover.length +
+        " 枚を見ました。1 枚（任意）を選んで手札に加え、残りは控え室へ置きます。" +
+        (filterHint ? "条件: " + filterHint + "（合わないカードを選んでも自動で控え室に置かれます）" : "");
+      openPickFromDeckLookDialog(lookedRecover, cl.filters || {}, leadText, function (pickedId) {
+        var added = null;
+        if (pickedId) {
+          for (var li = 0; li < lookedRecover.length; li++) {
+            if (lookedRecover[li] && String(lookedRecover[li].id) === String(pickedId)) {
+              if (catalogCardMatchesPickFilters(mergedCatalogCard(lookedRecover[li]), cl.filters || {})) {
+                added = lookedRecover.splice(li, 1)[0];
+              } else {
+                showToast("選んだカードは条件に合いません。控え室へ置きます。");
+              }
+              break;
+            }
+          }
+        }
+        if (added) state.hand.push(added);
         lookedRecover.forEach(function (c) {
           state.waitingRoom.push(c);
         });
-        showToast("条件に合うカードがなかったため、すべて控え室に置きました");
+        showToast(
+          added
+            ? (mergedCatalogCard(added).name || "カード") + " を手札に加え、残りを控え室へ置きました"
+            : "見たカードをすべて控え室に置きました",
+        );
         finishResolved();
-        return;
-      }
-      openPickFromWaitingDialog(
-        eligible,
-        "見たカードから 1 枚（任意）を手札に加えます。残りは控え室へ置きます。",
-        function (pickedId) {
-          var added = null;
-          if (pickedId) {
-            for (var li = 0; li < lookedRecover.length; li++) {
-              if (lookedRecover[li] && String(lookedRecover[li].id) === String(pickedId)) {
-                added = lookedRecover.splice(li, 1)[0];
-                break;
-              }
-            }
-          }
-          if (added) state.hand.push(added);
-          lookedRecover.forEach(function (c) {
-            state.waitingRoom.push(c);
-          });
-          showToast(
-            added
-              ? (mergedCatalogCard(added).name || "カード") + " を手札に加え、残りを控え室へ置きました"
-              : "見たカードをすべて控え室に置きました",
-          );
-          finishResolved();
-        },
-      );
+      });
       return;
     }
 
@@ -6251,7 +6424,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   function resolveKidouStageToWaitingEffect(memberInst) {
     if (!memberInst) return;
     var mc = mergedCatalogCard(memberInst);
-    var cl = classifyCardAbility(mc);
+    var cl = classifyCardAbility(mc, "kidou");
     var recoverType = cl.filters.pickType || memberKidouRecoverHandType(mc);
     if (!recoverType || cl.template !== "kidou_stage_wait_pick_hand") {
       runClassifiedCardAbility(memberInst, cl, "kidou");
@@ -6313,7 +6486,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (mc.type !== T_MEMBER || !stageColumnKeyHostingMember(cardInst.id)) return false;
     if (isPlayEffectResolved(cardInst, "kidou")) return false;
     if (isInLiveTurnContext()) return false;
-    var cl = classifyCardAbility(mc);
+    if (!memberHasKidouAbility(mc)) return false;
+    var cl = classifyCardAbility(mc, "kidou");
     if (cl.perTurnLimit && perTurnLimitExhausted(cardInst, "kidou", cl.perTurnLimit)) return false;
     return (
       cl.template === "kidou_stage_wait_pick_hand" ||
@@ -6336,7 +6510,23 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     return list;
   }
 
+  function liveAreaHasLiveCard() {
+    var keys = ["left", "center", "right"];
+    for (var i = 0; i < keys.length; i++) {
+      var arr = state.liveArea && state.liveArea[keys[i]];
+      if (!arr) continue;
+      for (var j = 0; j < arr.length; j++) {
+        if (arr[j] && arr[j].type === T_LIVE) return true;
+      }
+    }
+    return false;
+  }
+
   function activateLiveStartEffectsAfterBegin() {
+    if (!liveAreaHasLiveCard()) {
+      state.playLiveStartGlowActive = false;
+      return;
+    }
     var cards = collectStageAndLiveBoardCards();
     var withStart = cards.filter(function (c) {
       return memberHasLiveStartAbility(mergedCatalogCard(c));
@@ -6385,8 +6575,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       if (cardNoIsBp1002(mc.card_no || c.card_no)) {
         out.glowClasses.push("card-item--bp1002-waiting-top-glow");
       }
-      if (mc.type === T_MEMBER && !isInLiveTurnContext()) {
-        var clWait = classifyCardAbility(mc);
+      if (mc.type === T_MEMBER && !isInLiveTurnContext() && memberHasKidouAbility(mc)) {
+        var clWait = classifyCardAbility(mc, "kidou");
         var perTurnExhausted = clWait.perTurnLimit
           ? perTurnLimitExhausted(c, "kidou", clWait.perTurnLimit)
           : false;
@@ -6426,7 +6616,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       c._liveStartEffectActive === true &&
       state.playLiveYellStarted !== true &&
       memberHasLiveStartAbility(mc) &&
-      !isPlayEffectResolved(c, "live_start");
+      !isPlayEffectResolved(c, "live_start") &&
+      liveAreaHasLiveCard();
     var pendingLiveSuccess =
       state.liveStatsAfterBegin === true &&
       playLiveSuccessJudgmentVisible() &&
@@ -6480,7 +6671,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       var mc = mergedCatalogCard(inst);
       if (!memberHasToujouAbility(mc)) return;
       if (inst._toujouEffectActive === true || inst._toujouEffectDeclined === true) return;
-      var cl = classifyCardAbility(mc);
+      var cl = classifyCardAbility(mc, "toujyou");
       var optional = cl.optional || cl.hasOptionalCost;
       if (optional) {
         inst._toujouEffectActive = true;
@@ -6506,8 +6697,6 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     function visit(c) {
       if (!c || c.type !== T_MEMBER) return;
       var mc = mergedCatalogCard(c);
-      var cl = classifyCardAbility(mc);
-      if (cl.trigger === "none") return;
       var kindAct = {
         toujyou: c._toujouEffectActive === true,
         live_start: c._liveStartEffectActive === true,
@@ -6520,14 +6709,15 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       };
       ["toujyou", "live_start", "live_success"].forEach(function (k) {
         if (!seenKinds.has(k)) return;
-        if (cl.trigger !== k) return;
+        if (!cardHasTrigger(mc, k)) return;
         if (!kindAct[k]) return;
         if (kindDeclined[k]) return;
         if (isPlayEffectResolved(c, k)) return;
-        var mandatory = !cl.optional && !cl.hasOptionalCost;
+        var clK = classifyCardAbility(mc, k);
+        var mandatory = !clK.optional && !clK.hasOptionalCost;
         result.push({
           inst: c,
-          cl: cl,
+          cl: clK,
           kind: k,
           mandatory: mandatory,
           label: (mc.name || c.name || "カード") + " — " + abilityKindLabel(k),
@@ -6616,7 +6806,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       title.appendChild(titleText);
       var sub = document.createElement("div");
       sub.className = "dlg-pick-effect-order__sub";
-      sub.textContent = abilityPlainText(mc) || "";
+      var segRaw = abilityRawSegmentForTrigger(mc, it.kind) || cardAbilityRawText(mc);
+      sub.innerHTML = wikiAbilityToStatusHtml(segRaw || "");
       meta.appendChild(title);
       meta.appendChild(sub);
       row.appendChild(radio);
@@ -6655,7 +6846,16 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
   }
 
   function openCardCatalogDetail(c) {
-    openCardCatalogDialog(c, { playMode: true });
+    var inHand = !!(c && state.hand.some(function (h) { return h && String(h.id) === String(c.id); }));
+    var memberInHand = inHand && c && c.type === T_MEMBER;
+    var actions = memberInHand
+      ? {
+          onStage: function (side) {
+            placeHandMemberOnStageSide(c, side);
+          },
+        }
+      : null;
+    openCardCatalogDialog(c, { playMode: true, handStageActions: actions });
     logReplay("card-catalog-detail-open");
   }
 
@@ -8990,6 +9190,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     state.pendingDrawYellHandDraws = 0;
     state.liveStatsAfterBegin = true;
     state.playLiveYellStarted = false;
+    state.__liveYellWarnAck = false;
     activateLiveStartEffectsAfterBegin();
     logReplay("live-turn-begin", { nonLiveMoved: movedNonLive });
     showToast(

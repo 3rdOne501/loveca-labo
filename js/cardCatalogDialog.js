@@ -65,7 +65,7 @@ function wikiAbilityBladeIconHtmlFragment() {
   return Gsi.wikiAbilityFileStemToIconHtml("ブレード", "icon_blade") || "";
 }
 
-function wikiAbilityToStatusHtml(raw) {
+export function wikiAbilityToStatusHtml(raw) {
   if (raw == null || typeof raw !== "string") {
     return '<span class="muted dlg-card-catalog-empty-wiki">' + escapeHtmlPlain(TEXT_NONE_JA) + "</span>";
   }
@@ -442,5 +442,24 @@ export function openCardCatalogDialog(c, options) {
   if (options && options.playMode) renderOpts.hideVariants = true;
   var rendered = renderCardCatalogContentInto(c, targets, renderOpts);
   if (!rendered) return;
+  var handStageHost = document.getElementById("dlg-card-catalog-hand-stage-actions");
+  if (handStageHost) {
+    var act = options && options.handStageActions;
+    if (act && typeof act.onStage === "function") {
+      handStageHost.hidden = false;
+      ["left", "center", "right"].forEach(function (side) {
+        var btn = document.getElementById("dlg-card-catalog-stage-" + side);
+        if (!btn) return;
+        var fresh = btn.cloneNode(true);
+        btn.parentNode.replaceChild(fresh, btn);
+        fresh.addEventListener("click", function () {
+          try { dlg.close(); } catch (_) { /* noop */ }
+          try { act.onStage(side); } catch (e) { console.error(e); }
+        });
+      });
+    } else {
+      handStageHost.hidden = true;
+    }
+  }
   if (dlg.showModal) dlg.showModal();
 }

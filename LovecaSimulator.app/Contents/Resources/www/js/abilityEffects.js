@@ -3,7 +3,10 @@
  * ソロプレイの自動処理テンプレートと、手動ガイドへの振り分けに使う。
  */
 import { T_LIVE, T_MEMBER } from "./config.js";
-import { abilityWikiCanonicalKeys } from "./gameStatusIcons.js";
+import { abilityWikiCanonicalKeys, wikiAbilityStemToCanonical } from "./gameStatusIcons.js";
+
+/** トリガーアイコン（能力の発動契機）として扱う canonical キー */
+const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "jouji", "jidou"];
 
 /** @typedef {'kidou'|'toujyou'|'live_start'|'live_success'|'jouji'|'jidou'|'none'} AbilityTrigger */
 /**
@@ -62,6 +65,62 @@ export function abilityPlainText(card) {
 
 export function abilityWikiKeys(card) {
   return abilityWikiCanonicalKeys(card);
+}
+
+/**
+ * raw を「トリガーアイコン」ごとのセグメントに分割。
+ * トリガー直後の本文（次のトリガーまで／文末まで）を `text` に保持する。
+ * @param {string} raw
+ * @returns {Array<{trigger: string|null, text: string, tokenStart: number, tokenEnd: number}>}
+ */
+export function splitAbilityByTriggers(raw) {
+  var s = String(raw == null ? "" : raw);
+  if (!s) return [];
+  var re = /\{\{([^}|]+)(?:\|([^}]*))?\}\}/g;
+  /** @type {Array<{trigger: string|null, start: number, end: number}>} */
+  var tokens = [];
+  var m;
+  while ((m = re.exec(s)) !== null) {
+    var k1 = wikiAbilityStemToCanonical(m[1]);
+    var k2 = m[2] != null && String(m[2]).trim() !== "" ? wikiAbilityStemToCanonical(m[2]) : null;
+    var canon = TRIGGER_CANON_KEYS.indexOf(k1) >= 0 ? k1 : TRIGGER_CANON_KEYS.indexOf(k2) >= 0 ? k2 : null;
+    if (canon) tokens.push({ trigger: canon, start: m.index, end: m.index + m[0].length });
+  }
+  if (!tokens.length) return [{ trigger: null, text: s, tokenStart: 0, tokenEnd: 0 }];
+  /** @type {Array<{trigger: string|null, text: string, tokenStart: number, tokenEnd: number}>} */
+  var segments = [];
+  if (tokens[0].start > 0) {
+    segments.push({ trigger: null, text: s.slice(0, tokens[0].start), tokenStart: 0, tokenEnd: 0 });
+  }
+  for (var i = 0; i < tokens.length; i++) {
+    var t = tokens[i];
+    var nextStart = i + 1 < tokens.length ? tokens[i + 1].start : s.length;
+    segments.push({
+      trigger: t.trigger,
+      text: s.slice(t.end, nextStart),
+      tokenStart: t.start,
+      tokenEnd: t.end,
+    });
+  }
+  return segments;
+}
+
+/** トリガー絞り込み: 同じ trigger を持つセグメントの text を連結する */
+export function abilityRawSegmentForTrigger(card, trigger) {
+  if (!trigger) return cardAbilityRawText(card);
+  var segs = splitAbilityByTriggers(cardAbilityRawText(card));
+  var parts = [];
+  for (var i = 0; i < segs.length; i++) {
+    if (segs[i].trigger === trigger) parts.push(segs[i].text);
+  }
+  return parts.join("");
+}
+
+/** セグメント raw → プレーンテキスト（トークン除去・空白除去） */
+function segmentPlainText(rawSegment) {
+  return String(rawSegment || "")
+    .replace(/\{\{[^}]+\}\}/g, "")
+    .replace(/\s+/g, "");
 }
 
 /** @param {string} p */
@@ -165,15 +224,16 @@ export function catalogCardMatchesPickFilters(cat, filters) {
 
 /**
  * @param {*} card カタログカード
+ * @param {string} [trigger] 指定時、そのトリガーセグメントだけを分類する
  * @returns {ClassifiedAbility}
  */
-export function classifyCardAbility(card) {
+export function classifyCardAbility(card, trigger) {
   /** @type {ClassifiedAbility} */
   var base = {
     trigger: "none",
     template: "none",
-    optional: /もよい/.test(cardAbilityRawText(card)),
-    filters: parseAbilityPickFilters(abilityPlainText(card)),
+    optional: false,
+    filters: parseAbilityPickFilters(""),
     deckTopCount: null,
     handDiscardToWaiting: null,
     deckDrawCount: null,
@@ -182,10 +242,39 @@ export function classifyCardAbility(card) {
   };
   if (!card) return base;
 
-  var keys = abilityWikiKeys(card);
-  var p = abilityPlainText(card);
   var raw = cardAbilityRawText(card);
-  var perTurn = parsePerTurnLimit(raw, keys);
+  /** @type {Set<string>} */
+  var keys;
+  /** @type {string} */
+  var p;
+  /** @type {string} */
+  var segRaw;
+  if (trigger) {
+    segRaw = abilityRawSegmentForTrigger(card, trigger);
+    if (!segRaw) {
+      base.trigger = /** @type {AbilityTrigger} */ (trigger);
+      return base;
+    }
+    p = segmentPlainText(segRaw);
+    keys = new Set();
+    var reSeg = /\{\{([^}|]+)(?:\|([^}]*))?\}\}/g;
+    var mSeg;
+    while ((mSeg = reSeg.exec(segRaw)) !== null) {
+      var sk1 = wikiAbilityStemToCanonical(mSeg[1]);
+      var sk2 = mSeg[2] != null && String(mSeg[2]).trim() !== "" ? wikiAbilityStemToCanonical(mSeg[2]) : null;
+      if (sk1) keys.add(sk1);
+      if (sk2) keys.add(sk2);
+    }
+    keys.add(trigger);
+  } else {
+    segRaw = raw;
+    p = abilityPlainText(card);
+    keys = abilityWikiKeys(card);
+  }
+  base.optional = /もよい/.test(segRaw);
+  base.filters = parseAbilityPickFilters(p);
+
+  var perTurn = parsePerTurnLimit(segRaw, keys);
   base.perTurnLimit = perTurn;
   var costPart = p.split("：")[0] || "";
   base.hasOptionalCost = /もよい/.test(costPart);
@@ -199,11 +288,27 @@ export function classifyCardAbility(card) {
   })();
   base.bladeGain = parseBladeGainCount(p);
 
-  function withTrigger(trigger, patch) {
-    return Object.assign({}, base, patch, { trigger: trigger });
+  function withTrigger(trig, patch) {
+    return Object.assign({}, base, patch, { trigger: trig });
   }
 
-  if (keys.has("kidou") || p.includes("起動")) {
+  /** トリガー絞り込み時は、必ずそのトリガー用ブランチに分岐させる。 */
+  var enterKidou =
+    trigger === "kidou" ||
+    (!trigger && (keys.has("kidou") || p.includes("起動")));
+  var enterToujyou =
+    trigger === "toujyou" ||
+    (!trigger && (keys.has("toujyou") || p.includes("登場時") || /登場/.test(raw)));
+  var enterLiveSuccess =
+    trigger === "live_success" ||
+    (!trigger && (keys.has("live_success") || p.includes("ライブ成功時")));
+  var enterLiveStart =
+    trigger === "live_start" ||
+    (!trigger && (keys.has("live_start") || p.includes("ライブ開始時")));
+  var enterJouji = trigger === "jouji" || (!trigger && (keys.has("jouji") || p.includes("常時")));
+  var enterJidou = trigger === "jidou" || (!trigger && (keys.has("jidou") || p.includes("自動")));
+
+  if (enterKidou) {
     if (/控え室にある場合のみ起動/.test(p) && /控え室からステージに登場/.test(p)) {
       return withTrigger("kidou", {
         template: "kidou_wait_to_stage",
@@ -250,7 +355,7 @@ export function classifyCardAbility(card) {
     return withTrigger("kidou", { template: "guided_manual" });
   }
 
-  if (keys.has("toujyou") || p.includes("登場時") || /登場/.test(cardAbilityRawText(card))) {
+  if (enterToujyou) {
     var topPick = parseDeckTopCount(p);
     if (topPick != null && /手札に加/.test(p) && /公開/.test(p)) {
       return withTrigger("toujyou", {
@@ -296,7 +401,7 @@ export function classifyCardAbility(card) {
     return withTrigger("toujyou", { template: "guided_manual", requiresOnStage: true });
   }
 
-  if (keys.has("live_success") || p.includes("ライブ成功時")) {
+  if (enterLiveSuccess) {
     var lsPick = parseDeckTopCount(p);
     if (lsPick != null && /手札に加/.test(p) && /公開/.test(p)) {
       return withTrigger("live_success", {
@@ -322,7 +427,7 @@ export function classifyCardAbility(card) {
     return withTrigger("live_success", { template: "guided_manual" });
   }
 
-  if (keys.has("live_start") || p.includes("ライブ開始時")) {
+  if (enterLiveStart) {
     if (parseBladeGainCount(p) > 0) {
       return withTrigger("live_start", { template: "passive_track" });
     }
@@ -335,10 +440,10 @@ export function classifyCardAbility(card) {
     }
     return withTrigger("live_start", { template: "passive_track" });
   }
-  if (keys.has("jouji") || p.includes("常時")) {
+  if (enterJouji) {
     return withTrigger("jouji", { template: "passive_track" });
   }
-  if (keys.has("jidou") || p.includes("自動")) {
+  if (enterJidou) {
     return withTrigger("jidou", { template: "passive_track" });
   }
 
@@ -355,43 +460,54 @@ export function classifyCardAbility(card) {
 
 /** @param {*} card */
 export function memberHasKidouAbility(card) {
-  return abilityWikiKeys(card).has("kidou");
+  return cardHasTrigger(card, "kidou");
 }
 
 /** @deprecated classifyCardAbility を使用 */
 export function memberKidouRecoverHandType(card) {
-  var cl = classifyCardAbility(card);
+  var cl = classifyCardAbility(card, "kidou");
   if (cl.template !== "kidou_stage_wait_pick_hand") return null;
   return cl.filters.pickType || null;
 }
 
 /** @param {*} card */
 export function memberHasKidouStageToWaitingPickAbility(card) {
-  var cl = classifyCardAbility(card);
+  var cl = classifyCardAbility(card, "kidou");
   return cl.template === "kidou_stage_wait_pick_hand";
 }
 
 export function memberHasToujouAbility(card) {
-  var cl = classifyCardAbility(card);
-  return cl.trigger === "toujyou";
+  return cardHasTrigger(card, "toujyou");
 }
 
 export function memberHasOptionalToujouAbility(card) {
-  return memberHasToujouAbility(card) && classifyCardAbility(card).optional;
+  if (!memberHasToujouAbility(card)) return false;
+  var cl = classifyCardAbility(card, "toujyou");
+  return cl.optional || cl.hasOptionalCost;
 }
 
 export function memberHasLiveStartAbility(card) {
-  var cl = classifyCardAbility(card);
-  return cl.trigger === "live_start";
+  return cardHasTrigger(card, "live_start");
 }
 
 export function memberHasOptionalLiveStartAbility(card) {
-  return memberHasLiveStartAbility(card) && classifyCardAbility(card).optional;
+  if (!memberHasLiveStartAbility(card)) return false;
+  var cl = classifyCardAbility(card, "live_start");
+  return cl.optional || cl.hasOptionalCost;
 }
 
 export function memberHasLiveSuccessAbility(card) {
-  var cl = classifyCardAbility(card);
-  return cl.trigger === "live_success";
+  return cardHasTrigger(card, "live_success");
+}
+
+/** カードが指定 trigger の能力を 1 つ以上持つか（trigger アイコンで判定） */
+export function cardHasTrigger(card, trigger) {
+  if (!card || !trigger) return false;
+  var segs = splitAbilityByTriggers(cardAbilityRawText(card));
+  for (var i = 0; i < segs.length; i++) {
+    if (segs[i].trigger === trigger) return true;
+  }
+  return false;
 }
 
 export function abilityEffectIsAutomated(template) {

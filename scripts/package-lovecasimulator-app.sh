@@ -41,6 +41,8 @@ rsync -a --delete \
   "$WWW/"
 
 cp "$ROOT/scripts/start-oneclick.sh" "$RES/scripts/start-oneclick.sh"
+cp "$ROOT/scripts/loveca_dev_server.py" "$RES/scripts/loveca_dev_server.py"
+chmod +x "$RES/scripts/loveca_dev_server.py" 2>/dev/null || true
 chmod +x "$ROOT/LovecaSimulator.app/Contents/MacOS/LovecaSimulator"
 chmod +x "$RES/scripts/start-oneclick.sh"
 

@@ -61,6 +61,12 @@ log "ROOT=${ROOT:-（未検出）}"
 
 ONLINE_URL="${LL_OCG_ONLINE_URL:-https://3rdone501.github.io/loveca-labo/}"
 
+LOVECA_EXPECTED_BUILD=""
+if [[ -n "$ROOT" && -f "$ROOT/index.html" ]]; then
+  LOVECA_EXPECTED_BUILD="$(grep -o 'name="loveca-build" content="[^"]*"' "$ROOT/index.html" 2>/dev/null | sed 's/.*content="//;s/"$//' || true)"
+  log "expected build=${LOVECA_EXPECTED_BUILD:-?}"
+fi
+
 server_ok() {
   local base="$1"
   if ! command -v curl >/dev/null 2>&1; then
@@ -70,9 +76,16 @@ server_ok() {
   body="$(curl -sf --max-time 3 "${base}/index.html" 2>/dev/null)" || return 1
   [[ "${#body}" -gt 200 ]] || return 1
   case "$body" in
-    *"Loveca Labo"*|*"ll-ocg-tools"*|*"js/main.js"*) return 0 ;;
+    *"Loveca Labo"*|*"ll-ocg-tools"*|*"js/main.js"*) ;;
+    *) return 1 ;;
   esac
-  return 1
+  if [[ -n "${LOVECA_EXPECTED_BUILD}" ]]; then
+    case "$body" in
+      *"name=\"loveca-build\" content=\"${LOVECA_EXPECTED_BUILD}\""*) return 0 ;;
+    esac
+    return 1
+  fi
+  return 0
 }
 
 port_busy() {
@@ -96,8 +109,10 @@ start_python_server() {
     lsof -ti ":${p}" 2>/dev/null | xargs kill -9 2>/dev/null || true
     sleep 0.2
   fi
-  # 古い Python でも動くよう cd + 素朴な http.server を優先
-  if python3 -m http.server --help 2>&1 | grep -q -- '--directory'; then
+  local dev_srv="${CONTENTS}/Resources/scripts/loveca_dev_server.py"
+  if [[ -f "$dev_srv" ]]; then
+    python3 "$dev_srv" "$p" "$root" >>"$LOG" 2>&1 &
+  elif python3 -m http.server --help 2>&1 | grep -q -- '--directory'; then
     python3 -m http.server "$p" --bind 127.0.0.1 --directory "$root" >>"$LOG" 2>&1 &
   else
     python3 -m http.server "$p" >>"$LOG" 2>&1 &
@@ -135,9 +150,13 @@ if [[ -n "$ROOT" ]]; then
   for try in $(seq 0 15); do
     p=$((BASE_PORT + try))
     base="http://127.0.0.1:${p}"
-    if port_busy "$p" && server_ok "$base"; then
-      URL="${base}/index.html"
-      break
+    if port_busy "$p"; then
+      if server_ok "$base"; then
+        URL="${base}/index.html"
+        break
+      fi
+      lsof -ti ":${p}" 2>/dev/null | xargs kill -9 2>/dev/null || true
+      sleep 0.2
     fi
     if ! port_busy "$p" && start_python_server "$p" "$ROOT"; then
       URL="${base}/index.html"

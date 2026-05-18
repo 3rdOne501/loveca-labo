@@ -3066,6 +3066,32 @@ body.play-mode .stage-slot.card-strip .card-effect-resolve-btn {
   border-width: 1.5px;
 }
 
+/* ライブ枠（横向きライブカード）のボタン／アイコン拡大配置 */
+body.play-mode .live-slot .card-art-wrap {
+  position: relative;
+}
+body.play-mode .live-slot .card-item.card-item--live-h .card-effect-resolve-btn {
+  font-size: 1rem;
+  padding: 0.32rem 1.0rem;
+  border-width: 2px;
+  letter-spacing: 0.04em;
+  top: -10px;
+  z-index: 9;
+}
+body.play-mode .live-slot .card-item.card-item--live-h .card-effect-icon-host {
+  bottom: -12px;
+  z-index: 8;
+}
+body.play-mode .live-slot .card-item.card-item--live-h .card-effect-icon-host .card-member-effect-foot-ico {
+  height: 2.8rem;
+  max-width: 7rem;
+}
+body.play-mode .live-slot,
+body.play-mode .live-slot .card-item,
+body.play-mode .live-slot .card-art-wrap {
+  overflow: visible;
+}
+
 body.play-mode .card-strip.tall {
   min-height: min(132px, 22vh);
 }
@@ -5624,6 +5650,66 @@ body.play-mode .site-footer {
   margin: 0.5rem 0 0.2rem;
   max-height: min(58vh, 520px);
   overflow-y: auto;
+}
+.dlg-card-catalog-hand-stage-actions {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 0.5rem 0 0.2rem;
+}
+.dlg-card-catalog-stage-btn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.16rem;
+  padding: 0.36rem 0.45rem;
+  border: 1.5px solid rgba(255, 200, 120, 0.6);
+  background: linear-gradient(180deg, rgba(60, 32, 40, 0.85), rgba(40, 24, 32, 0.9));
+  color: #ffe6b2;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  min-width: 4.6rem;
+}
+.dlg-card-catalog-stage-btn:hover {
+  border-color: rgba(255, 220, 140, 0.9);
+  background: linear-gradient(180deg, rgba(80, 44, 52, 0.9), rgba(54, 32, 40, 0.95));
+}
+.dlg-card-catalog-stage-btn__ico {
+  width: 1.8rem;
+  height: 1.8rem;
+  object-fit: contain;
+}
+.dlg-card-catalog-stage-btn__lab {
+  font-size: 0.78rem;
+  line-height: 1;
+}
+.dlg-cost-payment-effect {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 220, 140, 0.18);
+  border-radius: 6px;
+  padding: 0.5rem 0.6rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.65;
+  font-size: 0.94rem;
+  color: #f4e7d6;
+}
+.dlg-cost-payment-effect .status-inline-game-icon {
+  vertical-align: middle;
+  height: 1.15em;
+}
+.dlg-pick-effect-order__sub .status-inline-game-icon {
+  vertical-align: middle;
+  height: 1.1em;
+}
+.dlg-pick-kidou-waiting__tile--ineligible {
+  opacity: 0.55;
+  filter: grayscale(0.4);
+}
+.dlg-pick-kidou-waiting__tile--ineligible .dlg-pick-kidou-waiting__label {
+  color: #c0a8b8 !important;
 }
 .dlg-pick-kidou-waiting__grid {
   display: grid;

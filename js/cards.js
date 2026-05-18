@@ -205,6 +205,10 @@ export {
   memberHasOptionalLiveStartAbility,
   memberHasLiveSuccessAbility,
   abilityEffectIsAutomated,
+  cardHasTrigger,
+  splitAbilityByTriggers,
+  abilityRawSegmentForTrigger,
+  cardAbilityRawText,
 } from "./abilityEffects.js";
 
 export const UNSET_PLACEHOLDER_PRODUCT = "未設定（テスト用）";
@@ -841,6 +845,8 @@ export function bladeHeartSlotsOnCard(card) {
   if (!bh || typeof bh !== "object" || Array.isArray(bh)) return out;
   for (const key of Object.keys(bh)) {
     if (isBladeHeartDrawMarkerKey(key)) continue;
+    const v = Number(bh[key]);
+    if (!Number.isFinite(v) || v === 0) continue;
     const slot = parseBladeHeartSlotFromKey(key);
     if (slot != null) out.add(slot);
   }

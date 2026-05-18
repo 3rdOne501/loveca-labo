@@ -1,5 +1,5 @@
 import { loadCardDatabase, prefetchDeckCardImagesFromMap, getCard } from "./cards.js";
-import { STORAGE_PLAY_RESUME, STORAGE_BUILDER_UI_RESTORE_FLAG } from "./config.js";
+import { STORAGE_PLAY_RESUME, STORAGE_BUILDER_UI_RESTORE_FLAG, APP_MODULE_CACHE_BUST } from "./config.js";
 import { normalizeDeckMapCounts } from "./deckLibrary.js";
 import { initDeckBuilder, loadDeckBundleFromStorage } from "./deckbuilder.js";
 import { initPublishedSampleRecipes } from "./sampleDeckRecipes.js";
@@ -45,6 +45,14 @@ function applyPageAutoScale() {
 }
 applyPageAutoScale();
 window.addEventListener("resize", applyPageAutoScale);
+
+try {
+  var buildMeta = document.querySelector('meta[name="loveca-build"]');
+  var buildTag = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "";
+  console.info("[Loveca Labo] build=" + (buildTag || APP_MODULE_CACHE_BUST || "?"));
+} catch (_) {
+  /* noop */
+}
 
 let appStarted = false;
 
