@@ -105,6 +105,15 @@ export function isHandDependentCost20Member(cardNo) {
   );
 }
 
+/** 平安名すみれ（PL!SP-bp4-004 系） */
+export function cardIsSpBp4004Sumire(cardNo) {
+  if (!cardNo) return false;
+  return (
+    catalogCardNosShareIdentity(cardNo, "PL!SP-bp4-004-P") ||
+    catalogCardNosShareIdentity(cardNo, "PL!SP-bp4-004-P＋")
+  );
+}
+
 /** @type {Map<string, string>} */
 let catalogIdentityByCardNo = new Map();
 

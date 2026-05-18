@@ -33,6 +33,7 @@ import {
   effectiveMainDeckCategory,
   bladeHeartSlotsOnCard,
   isHandDependentCost20Member,
+  cardIsSpBp4004Sumire,
   catalogCardNosShareIdentity,
   cardIsNoteLiveCatalog,
   cardIsDrawYellLiveCatalog,
@@ -1703,10 +1704,35 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     flashDrawBeamsBetweenElements(pickDeckBeamOriginEl(), $("zone-hand"), n);
   }
 
+  function pickCardDomElForInst(inst) {
+    if (!inst || inst.id == null) return null;
+    var id = String(inst.id).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+    var zoneIds = [
+      "zone-hand",
+      "zone-stage-left",
+      "zone-stage-center",
+      "zone-stage-right",
+      "zone-live-left",
+      "zone-live-center",
+      "zone-live-right",
+      "zone-resolution",
+      "zone-waiting",
+    ];
+    for (var zi = 0; zi < zoneIds.length; zi++) {
+      var z = $(zoneIds[zi]);
+      if (!z) continue;
+      var el = z.querySelector('[data-id="' + id + '"]');
+      if (el && el.getBoundingClientRect().width > 4) return el;
+    }
+    return null;
+  }
+
   /** 効果テキストによる山札→手札ドロー（エール処理のビーム＋「+1ドロー」表示） */
-  function presentAbilityDrawsToHand(drawnCards) {
+  function presentAbilityDrawsToHand(drawnCards, sourceInst) {
     if (!drawnCards || !drawnCards.length) return;
-    flashDrawBeamsFromDeckToHand(drawnCards.length);
+    var fromEl = sourceInst ? pickCardDomElForInst(sourceInst) : null;
+    if (!fromEl) fromEl = pickDeckBeamOriginEl();
+    flashDrawBeamsBetweenElements(fromEl, $("zone-hand"), drawnCards.length);
     drawnCards.forEach(function (c) {
       if (!c || typeof c !== "object") return;
       markCardFlashDraw(c, FLASH_LABEL_PLUS_DRAW);
@@ -2244,6 +2270,43 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     return Math.max(0, w - memberFlooredPrintedCost(incumbentMaybe, costOpts));
   }
 
+  function sumireCenterDoubleBatonEnergyCost(enteringInst, centerMem, sideMem) {
+    var base = memberFlooredPrintedCost(enteringInst);
+    if (!centerMem || !sideMem) return base;
+    return Math.max(0, base - memberFlooredPrintedCost(centerMem) - memberFlooredPrintedCost(sideMem));
+  }
+
+  function sumireCenterDoubleBatonPreviewCost(enteringInst) {
+    var centerMem = stageColumnIncumbentMember("center");
+    var leftMem = stageColumnIncumbentMember("left");
+    var rightMem = stageColumnIncumbentMember("right");
+    if (!centerMem || (!leftMem && !rightMem)) {
+      return effectiveStageAppearPrintedCost(enteringInst, centerMem);
+    }
+    if (leftMem && rightMem) {
+      return Math.min(
+        sumireCenterDoubleBatonEnergyCost(enteringInst, centerMem, leftMem),
+        sumireCenterDoubleBatonEnergyCost(enteringInst, centerMem, rightMem),
+      );
+    }
+    return sumireCenterDoubleBatonEnergyCost(enteringInst, centerMem, leftMem || rightMem);
+  }
+
+  function removeStageMemberToWaiting(memberInst) {
+    if (!memberInst || memberInst.id == null) return false;
+    var col = stageColumnKeyHostingMember(memberInst.id);
+    if (!col) return false;
+    var slot = state.stage[col] || [];
+    var idx = slot.findIndex(function (c) {
+      return c && c.type === T_MEMBER && String(c.id) === String(memberInst.id);
+    });
+    if (idx < 0) return false;
+    var removed = slot.splice(idx, 1)[0];
+    clearToujouEffectStateOnLeaveStage(removed);
+    state.waitingRoom.push(removed);
+    return true;
+  }
+
   /** メンバーが載っている列（ステージ優先、無ければライブ枠） */
   function boardColumnKeyHostingCard(cardId) {
     return stageColumnKeyHostingCard(cardId) || liveSlotColumnKeyHostingCard(cardId);
@@ -2404,7 +2467,11 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     if (!stageColumnAllowsMemberEntry(col)) return false;
     var incumbent = stageColumnIncumbentMember(col);
     var upright = countUprightEnergyInArea(state.energyArea);
-    var cost = effectiveStageAppearPrintedCost(memberInst, incumbent);
+    var mc = mergedCatalogCard(memberInst);
+    var cost =
+      col === "center" && cardIsSpBp4004Sumire(mc.card_no)
+        ? sumireCenterDoubleBatonPreviewCost(memberInst)
+        : effectiveStageAppearPrintedCost(memberInst, incumbent);
     return cost <= upright;
   }
 
@@ -5201,8 +5268,14 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       var col = stageColumnKeyHostingMember(mid);
       var prevMem = col ? incumbentFromSnapStageSlot(snapBeforeDrag, col, mid) : null;
       var appearCostOpts = { handSnap: snapBeforeDrag };
-      var wanted = effectiveStageAppearPrintedCost(inst, prevMem, appearCostOpts);
-      if (!(wanted > 0)) return;
+      var wanted =
+        typeof inst._appearEnergyOverride === "number" && Number.isFinite(inst._appearEnergyOverride)
+          ? Math.max(0, Math.floor(inst._appearEnergyOverride))
+          : effectiveStageAppearPrintedCost(inst, prevMem, appearCostOpts);
+      if (!(wanted > 0)) {
+        if (typeof inst._appearEnergyOverride === "number") delete inst._appearEnergyOverride;
+        return;
+      }
       var uprightBefore = snapBeforeDrag.energyArea
         ? countUprightEnergyInArea(snapBeforeDrag.energyArea)
         : 0;
@@ -5249,6 +5322,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         }
         showToast(msg, { duration: 6000 });
       }
+      if (typeof inst._appearEnergyOverride === "number") delete inst._appearEnergyOverride;
     });
   }
 
@@ -5595,7 +5669,11 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     for (var si = 0; si < slot.length; si++) {
       if (slot[si] && slot[si].type === T_MEMBER) incumbent = slot[si];
     }
-    info.cost = effectiveStageAppearPrintedCost(memberInst, incumbent);
+    var mcHand = mergedCatalogCard(memberInst);
+    info.cost =
+      side === "center" && cardIsSpBp4004Sumire(mcHand.card_no)
+        ? sumireCenterDoubleBatonPreviewCost(memberInst)
+        : effectiveStageAppearPrintedCost(memberInst, incumbent);
     info.canEnter = stageColumnAllowsMemberEntry(side);
     info.lacksEnergy = info.canEnter && info.cost > info.upright;
     return info;
@@ -5677,7 +5755,23 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     pushHistoryBefore("hand-to-stage-" + side);
     var inst = state.hand.splice(hi, 1)[0];
     if (!state.stage[side]) state.stage[side] = [];
-    if (incumbent) {
+    var mcEnter = mergedCatalogCard(inst);
+    var batonIds = Array.isArray(inst._soloBatonMemberIds) ? inst._soloBatonMemberIds.slice() : [];
+    if (
+      side === "center" &&
+      cardIsSpBp4004Sumire(mcEnter.card_no) &&
+      batonIds.length >= 2
+    ) {
+      var batonSum = 0;
+      batonIds.slice(0, 2).forEach(function (bid) {
+        var b = findCardInstById(bid);
+        if (!b) return;
+        batonSum += memberFlooredPrintedCost(b);
+        removeStageMemberToWaiting(b);
+      });
+      inst._appearEnergyOverride = Math.max(0, memberFlooredPrintedCost(inst) - batonSum);
+      incumbent = null;
+    } else if (incumbent) {
       var incIdx = state.stage[side].findIndex(function (c) { return c && String(c.id) === String(incumbent.id); });
       if (incIdx >= 0) {
         var replaced = state.stage[side].splice(incIdx, 1)[0];
@@ -5727,8 +5821,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       showToast("エネルギー不足のまま登場しました（必要 " + sideInfo.cost + " / アクティブ " + sideInfo.upright + "）");
     }
     var mcPlace = mergedCatalogCard(memberInst);
-    if (cardAllowsTwoMemberBaton(mcPlace)) {
-      openTwoMemberBatonPickDialog(memberInst, function (proceed, batonIds) {
+    if (cardAllowsTwoMemberBaton(mcPlace) && side === "center" && cardIsSpBp4004Sumire(mcPlace.card_no)) {
+      openSumireCenterDoubleBatonDialog(memberInst, function (proceed, batonIds) {
         if (!proceed) return;
         if (batonIds && batonIds.length) memberInst._soloBatonMemberIds = batonIds.slice(0, 2);
         else delete memberInst._soloBatonMemberIds;
@@ -7064,6 +7158,89 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
    * @param {*} enteringInst
    * @param {(proceed: boolean, batonIds: string[]) => void} onDone
    */
+  function openSumireCenterDoubleBatonDialog(enteringInst, onDone) {
+    var centerMem = stageColumnIncumbentMember("center");
+    var leftMem = stageColumnIncumbentMember("left");
+    var rightMem = stageColumnIncumbentMember("right");
+    if (!centerMem) {
+      var okEmpty = window.confirm(
+        "センターにメンバーがいません。\nバトンタッチなしで登場しますか？",
+      );
+      onDone(!!okEmpty, []);
+      return;
+    }
+    if (memberIsStageFreshThisTurn(centerMem)) {
+      showToast(
+        (mergedCatalogCard(centerMem).name || "メンバー") +
+          " はこのターンにステージへ載せたばかりのため、バトンタッチできません",
+      );
+      onDone(false, []);
+      return;
+    }
+    if (centerMem._joujiCannotBatonToWaiting === true) {
+      showToast(
+        (mergedCatalogCard(centerMem).name || "メンバー") +
+          " はバトンタッチで控え室に置けないため、登場できません",
+      );
+      onDone(false, []);
+      return;
+    }
+    if (!leftMem && !rightMem) {
+      var okOne = window.confirm(
+        "左右サイドにメンバーがいません。\nセンターの " +
+          (mergedCatalogCard(centerMem).name || "メンバー") +
+          " 1人とバトンタッチして登場しますか？",
+      );
+      onDone(!!okOne, okOne ? [String(centerMem.id)] : []);
+      return;
+    }
+    function finishWithSide(sideCol) {
+      var sideMem = sideCol === "left" ? leftMem : rightMem;
+      if (!sideMem) {
+        onDone(false, []);
+        return;
+      }
+      if (memberIsStageFreshThisTurn(sideMem)) {
+        showToast(
+          (mergedCatalogCard(sideMem).name || "メンバー") +
+            " はこのターンにステージへ載せたばかりのため、バトンタッチできません",
+        );
+        onDone(false, []);
+        return;
+      }
+      if (sideMem._joujiCannotBatonToWaiting === true) {
+        showToast(
+          (mergedCatalogCard(sideMem).name || "メンバー") +
+            " はバトンタッチで控え室に置けないため、登場できません",
+        );
+        onDone(false, []);
+        return;
+      }
+      onDone(true, [String(centerMem.id), String(sideMem.id)]);
+    }
+    if (leftMem && rightMem) {
+      var sideLabels = [
+        "左サイド／" + (mergedCatalogCard(leftMem).name || "メンバー"),
+        "右サイド／" + (mergedCatalogCard(rightMem).name || "メンバー"),
+      ];
+      openAbilityMultiChoiceDialog(
+        sideLabels,
+        1,
+        1,
+        "センターのメンバーとバトンタッチするサイドを選んでください。",
+        function (selected) {
+          if (!selected || !selected.length) {
+            onDone(false, []);
+            return;
+          }
+          finishWithSide(selected[0].indexOf("左") >= 0 ? "left" : "right");
+        },
+      );
+      return;
+    }
+    finishWithSide(leftMem ? "left" : "right");
+  }
+
   function openTwoMemberBatonPickDialog(enteringInst, onDone) {
     /** @type {Array<{inst:any, col:string}>} */
     var mems = [];
@@ -7174,6 +7351,8 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     drawn.forEach(function (c) {
       state.hand.push(c);
     });
+    render();
+    presentAbilityDrawsToHand(drawn, inst);
     var cand = waitingPickCandidates(cl.filters || {}, null);
     if (!cand.length) {
       showToast("山札から " + drawn.length + " 枚引きましたが、控え室に登場させられる『Liella!』メンバーがありません");
@@ -8100,7 +8279,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       drawnPm.forEach(function (c) {
         state.hand.push(c);
       });
-      presentAbilityDrawsToHand(drawnPm);
+      presentAbilityDrawsToHand(drawnPm, inst);
       render();
       var discPm = cl.effectDiscardCount || cl.handDiscardToWaiting || 0;
       if (discPm > 0 && state.hand.length >= discPm) {
@@ -8126,7 +8305,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         drawnUt.push(pulledUt);
         drewUt++;
       }
-      presentAbilityDrawsToHand(drawnUt);
+      presentAbilityDrawsToHand(drawnUt, inst);
       render();
       showToast("手札が " + tgtHand + " 枚になるまで " + drewUt + " 枚引きました");
       finishResolved();
@@ -8251,7 +8430,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       drawn.forEach(function (c) {
         state.hand.push(c);
       });
-      presentAbilityDrawsToHand(drawn);
+      presentAbilityDrawsToHand(drawn, inst);
       render();
       showToast("山札から " + drawn.length + " 枚引きました");
       finishResolved();
@@ -8283,7 +8462,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       drawn2.forEach(function (c) {
         state.hand.push(c);
       });
-      presentAbilityDrawsToHand(drawn2);
+      presentAbilityDrawsToHand(drawn2, inst);
       render();
       if (state.hand.length < discardN) {
         showToast("手札が " + discardN + " 枚なく、捨てられません（引いた後 " + state.hand.length + " 枚）");
@@ -10071,7 +10250,28 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
         lastDragEndAt = Date.now();
         restoreCardFaceAfterDragging(evt.item);
         var droppedToSuccessLive = evt.to && evt.to.id === "zone-success-live";
+        var dragIdEnd =
+          evt.item && evt.item.dataset && evt.item.dataset.id != null ? String(evt.item.dataset.id) : "";
+        var fromHandDrop = evt.from && evt.from.id === "zone-hand";
+        var toStageCol = stageColumnFromZoneEl(evt.to);
         readAllFromDom();
+        if (fromHandDrop && toStageCol === "center" && dragIdEnd && dragUndoSnap) {
+          var dragInstCenter = findCardInstById(dragIdEnd);
+          var dragMcCenter = dragInstCenter ? mergedCatalogCard(dragInstCenter) : null;
+          if (
+            dragInstCenter &&
+            dragMcCenter &&
+            cardIsSpBp4004Sumire(dragMcCenter.card_no) &&
+            cardAllowsTwoMemberBaton(dragMcCenter)
+          ) {
+            applyBoard(dragUndoSnap);
+            render();
+            placeHandMemberOnStageSide(dragInstCenter, "center", {});
+            restoreCardFaceAfterDragging(evt.item);
+            clearEnergyDropHints();
+            return;
+          }
+        }
         maybeFlushResolutionToWaitingOnVerdictLiveMove(evt);
         maybeFlashDrawYellOnResolutionDrop(evt, dragUndoSnap);
         if (droppedToSuccessLive) {
