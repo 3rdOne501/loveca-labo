@@ -54,6 +54,7 @@ import {
   uniqueUnits,
   isHandDependentCost20Member,
   cardIsNoteLiveCatalog,
+  cardIsDrawYellLiveCatalog,
 } from "./cards.js";
 import { openCardCatalogDialog, renderCardCatalogContentInto } from "./cardCatalogDialog.js";
 import { parseDeckTextRecipe } from "./decklogImport.js";
@@ -114,48 +115,108 @@ function accumulateBladeHeartWeighted(deckMap) {
   return { byKey, byKeyAdditive, totalWeighted };
 }
 
+/** @param {Record<string, number>} deckMap @param {string} dbKey */
+function deckMapCardNosWithBhKey(deckMap, dbKey) {
+  const out = [];
+  if (!deckMap || !dbKey) return out;
+  for (const [no, n] of Object.entries(deckMap)) {
+    if (typeof n !== "number" || !Number.isInteger(n) || n <= 0) continue;
+    const c = getCard(no);
+    if (!c || !cardHasBladeHeart(c)) continue;
+    const bh = c.blade_heart;
+    if (!bh || typeof bh !== "object" || Array.isArray(bh)) continue;
+    const v = Number(bh[dbKey]);
+    if (Number.isFinite(v) && v !== 0) out.push(no);
+  }
+  return out;
+}
+
+/** @param {Record<string, number>} deckMap @param {(card: import("./cards.js").CardRecord, no: string) => boolean} predicate */
+function firstDeckMapCardNo(deckMap, predicate) {
+  if (!deckMap) return null;
+  for (const [no, n] of Object.entries(deckMap)) {
+    if (typeof n !== "number" || !Number.isInteger(n) || n <= 0) continue;
+    const c = getCard(no);
+    if (c && predicate(c, no)) return no;
+  }
+  return null;
+}
+
+function deckPeekBhPillButton(innerHtml, cardNo, titleExtra) {
+  if (!cardNo) return innerHtml;
+  const t = titleExtra || "クリックでカード詳細";
+  return (
+    '<button type="button" class="deck-peek-bh-pill-btn" data-deck-bh-card-no="' +
+    escapeAttr(cardNo) +
+    '" title="' +
+    escapeAttr(t) +
+    '">' +
+    innerHtml +
+    "</button>"
+  );
+}
+
+function formatDeckPeekDeckNameHtml(deckName) {
+  const nm = String(deckName || "").trim() || "（名称未設定）";
+  return '<div class="deck-peek-deck-name" role="heading" aria-level="3">' + escapeHtml(nm) + "</div>";
+}
+
 /**
- * BH 色ピルと同系の見た目で、非BH メンバー／BH なしライブ／♪ライブ／ライブ BH の集計を出す。
+ * BH 色ピルと同系の見た目で、非BH メンバー／スコア／ドロー の集計ピルを出す。
  * @param {number} nonBhMemberCopies
- * @param {number} nonBhLiveCopies BH 記載のないライブ枚数
- * @param {number} liveBhCopies BH 記載のライブ枚数（♪由来分は色ピル側の title で示す）
- * @param {number} noteLiveCopies 音符ライブ（♪）と判定されたライブ枚数
+ * @param {number} scoreLiveCopies スコア（BH なしライブ＝同一）
+ * @param {number} drawLiveCopies ドロー特殊ハートのライブ枚数
  */
-function formatDeckPeekSyntheticBhPillsHtml(nonBhMemberCopies, nonBhLiveCopies, liveBhCopies, noteLiveCopies) {
+function formatDeckPeekSyntheticBhPillsHtml(nonBhMemberCopies, scoreLiveCopies, drawLiveCopies, deckMap) {
   let html = "";
   if (nonBhMemberCopies > 0) {
-    html +=
+    const pill =
       '<span class="deck-peek-bh-color-pill deck-peek-bh-pill--nonbh-mem" title="' +
       escapeHtml("メンバーカードで BH 記載なし") +
-      '"><span class="deck-peek-bh-kanji">メン非BH</span><span class="deck-peek-bh-pill-qty">× ' +
+      '"><span class="deck-peek-bh-kanji">非BH</span><span class="deck-peek-bh-pill-qty">× ' +
       nonBhMemberCopies +
       "</span></span>";
+    html += deckPeekBhPillButton(
+      pill,
+      firstDeckMapCardNo(deckMap, function (c) {
+        return c.type === T_MEMBER && !cardHasBladeHeart(c);
+      }),
+      "クリックでカード詳細（非BH メンバー）",
+    );
   }
-  if (nonBhLiveCopies > 0) {
-    html +=
-      '<span class="deck-peek-bh-color-pill deck-peek-bh-pill--nonbh-live" title="' +
-      escapeHtml("ライブカードで BH 記載なし") +
-      '"><span class="deck-peek-bh-kanji">BHなしライブ</span><span class="deck-peek-bh-pill-qty">× ' +
-      nonBhLiveCopies +
-      "</span></span>";
-  }
-  if (noteLiveCopies > 0) {
-    html +=
+  if (scoreLiveCopies > 0) {
+    const pill =
       '<span class="deck-peek-bh-color-pill deck-peek-bh-pill--note-live-pill deck-peek-bh-pill--art" title="' +
-      escapeHtml("スコア（DBにBHなし）") +
-      '"><span class="deck-peek-bh-kanji">' +
+      escapeHtml("スコア（BH なしのライブ）") +
+      '"><span class="deck-peek-bh-kanji deck-peek-bh-pill-icon-only">' +
       heartSlotArtIconHtml(0, { score: true, extraClass: "deck-peek-bh-pill-art-ico" }) +
       '<span class="visually-hidden">スコア</span></span><span class="deck-peek-bh-pill-qty">× ' +
-      noteLiveCopies +
+      scoreLiveCopies +
       "</span></span>";
+    html += deckPeekBhPillButton(
+      pill,
+      firstDeckMapCardNo(deckMap, function (c) {
+        return cardIsNoteLiveCatalog(c);
+      }),
+      "クリックでカード詳細（スコア）",
+    );
   }
-  if (liveBhCopies > 0) {
-    html +=
-      '<span class="deck-peek-bh-color-pill deck-peek-bh-pill--live-note" title="' +
-      escapeHtml("ライブカードの BH（スコア装飾で追加カウントされる分を含む）") +
-      '"><span class="deck-peek-bh-kanji">ライブBH</span><span class="deck-peek-bh-pill-qty">× ' +
-      liveBhCopies +
+  if (drawLiveCopies > 0) {
+    const pill =
+      '<span class="deck-peek-bh-color-pill deck-peek-bh-pill--draw-yell deck-peek-bh-pill--art" title="' +
+      escapeHtml("ドロー（色 BH あり・ALL なしのライブ）") +
+      '"><span class="deck-peek-bh-kanji deck-peek-bh-pill-icon-only">' +
+      heartSlotArtIconHtml(0, { draw_yell: true, extraClass: "deck-peek-bh-pill-art-ico" }) +
+      '<span class="visually-hidden">ドロー</span></span><span class="deck-peek-bh-pill-qty">× ' +
+      drawLiveCopies +
       "</span></span>";
+    html += deckPeekBhPillButton(
+      pill,
+      firstDeckMapCardNo(deckMap, function (c) {
+        return cardIsDrawYellLiveCatalog(c);
+      }),
+      "クリックでカード詳細（ドロー）",
+    );
   }
   return html;
 }
@@ -166,8 +227,8 @@ function formatDeckPeekSyntheticBhPillsHtml(nonBhMemberCopies, nonBhLiveCopies, 
  * @param {number} bhMemberCopies
  * @param {number} bhLiveCopies
  * @param {number} nonBhMemberCopies
- * @param {number} nonBhLiveCopies
- * @param {number} noteLiveCopies
+ * @param {number} scoreLiveCopies
+ * @param {number} drawLiveCopies
  */
 function formatBladeHeartBlockHtml(
   byKey,
@@ -175,9 +236,10 @@ function formatBladeHeartBlockHtml(
   bhMemberCopies,
   bhLiveCopies,
   nonBhMemberCopies,
-  nonBhLiveCopies,
-  noteLiveCopies,
+  scoreLiveCopies,
+  drawLiveCopies,
   byKeyAdditive,
+  deckMap,
 ) {
   const entries = Object.entries(byKey).sort(function (a, b) {
     return compareBladeHeartDbKeys(a[0], b[0]);
@@ -189,13 +251,11 @@ function formatBladeHeartBlockHtml(
     bhLiveCopies +
     '</span> · BHなし メンバー <span class="deck-peek-muted-num">' +
     nonBhMemberCopies +
-    '</span> · BHなしライブ <span class="deck-peek-muted-num">' +
-    nonBhLiveCopies +
     '</span> · スコア <span class="deck-peek-muted-num">' +
-    noteLiveCopies +
+    scoreLiveCopies +
     "</span></div>";
 
-  const synthetic = formatDeckPeekSyntheticBhPillsHtml(nonBhMemberCopies, nonBhLiveCopies, bhLiveCopies, noteLiveCopies);
+  const synthetic = formatDeckPeekSyntheticBhPillsHtml(nonBhMemberCopies, scoreLiveCopies, drawLiveCopies, deckMap);
 
   if (entries.length === 0) {
     let body = cardLine;
@@ -213,7 +273,11 @@ function formatBladeHeartBlockHtml(
 
   const pills = entries
     .map(function (ent) {
-      return bladeHeartAggregatePillHtml(ent[0], ent[1], byKeyAdditive[ent[0]] || 0);
+      const nos = deckMapCardNosWithBhKey(deckMap, ent[0]);
+      const pill = bladeHeartAggregatePillHtml(ent[0], ent[1], byKeyAdditive[ent[0]] || 0, { showScoreBadge: false });
+      const titleExtra =
+        nos.length > 1 ? "クリックでカード詳細（他 " + (nos.length - 1) + " 種）" : "クリックでカード詳細";
+      return deckPeekBhPillButton(pill, nos[0] || null, titleExtra);
     })
     .join("");
 
@@ -885,6 +949,20 @@ export function initDeckBuilder(root, { onStartGame }) {
       onVariantSelected: function (toNo, fromNoArg) {
         return swapDeckCardVariantInPlace(toNo, fromNoArg);
       },
+    });
+  }
+
+  if (root && !root.dataset.deckBhPillWired) {
+    root.dataset.deckBhPillWired = "1";
+    root.addEventListener("click", function (ev) {
+      const btn = ev.target.closest(".deck-peek-bh-pill-btn");
+      if (!btn) return;
+      const no = btn.getAttribute("data-deck-bh-card-no");
+      if (!no) return;
+      const card = getCard(no);
+      if (!card) return;
+      ev.preventDefault();
+      openCardCatalogDialogForDeckEdit(card);
     });
   }
 
@@ -1930,6 +2008,7 @@ export function initDeckBuilder(root, { onStartGame }) {
     let liveNonBh = 0;
     let liveBh = 0;
     let liveNotePeek = 0;
+    let liveDrawPeek = 0;
     let unknownCopies = 0;
     /** @type {Record<string, number>} */
     const byCost = {};
@@ -1953,44 +2032,35 @@ export function initDeckBuilder(root, { onStartGame }) {
         if (cardHasBladeHeart(c)) liveBh += n;
         else liveNonBh += n;
         if (cardIsNoteLiveCatalog(c)) liveNotePeek += n;
+        if (cardIsDrawYellLiveCatalog(c)) liveDrawPeek += n;
       }
     }
 
     const bhAgg = accumulateBladeHeartWeighted(map);
+    const peekDeckName =
+      roleMode === "main"
+        ? "現在のメインデッキ"
+        : String(slot.name || "").trim() || "（名称未設定）";
 
     const stats = el("deck-peek-stats");
     if (stats) {
       stats.innerHTML =
-        '<div class="deck-peek-stat-grid">' +
-        "<div><strong>メンバー</strong> 計 " +
-        memAll +
-        "枚 — BH なし <span class=\"deck-peek-accent\">" +
-        memNonBh +
-        '</span>枚 / BH あり <span class="deck-peek-muted-num">' +
-        memBh +
-        "</span>枚</div>" +
-        "<div><strong>ライブ</strong> 計 " +
-        liveAll +
-        "枚 — BH なし <span class=\"deck-peek-accent\">" +
-        liveNonBh +
-        '</span>枚 / BH あり <span class="deck-peek-muted-num">' +
-        liveBh +
-        "</span>枚</div>" +
+        formatDeckPeekDeckNameHtml(peekDeckName) +
         (unknownCopies
           ? '<div class="deck-peek-warn">カードDBに無い番号が <strong>' +
             unknownCopies +
             "</strong>枚あります（一覧・グラフの集計から除外）。</div>"
           : "") +
-        "</div>" +
         formatBladeHeartBlockHtml(
           bhAgg.byKey,
           bhAgg.totalWeighted,
           memBh,
           liveBh,
           memNonBh,
-          liveNonBh,
           liveNotePeek,
+          liveDrawPeek,
           bhAgg.byKeyAdditive,
+          map,
         );
     }
 
@@ -2340,6 +2410,18 @@ export function initDeckBuilder(root, { onStartGame }) {
     });
   }
 
+  function getActiveDeckDisplayName() {
+    const sel = el("deck-preset-select");
+    if (!sel || !sel.value) return "編集中のデッキ";
+    const library = loadDeckLibrary();
+    const slot = library.slots.find(function (s) {
+      return s.id === sel.value;
+    });
+    if (slot && slot.name) return slot.name;
+    const opt = sel.options[sel.selectedIndex];
+    return opt ? String(opt.textContent || "").trim() : "編集中のデッキ";
+  }
+
   function writeDeckSummaryDom() {
     const deckSummary = el("card-deck-summary");
     if (!deckSummary) return;
@@ -2381,6 +2463,7 @@ export function initDeckBuilder(root, { onStartGame }) {
     let liveBhCount = 0;
     let liveNonBhCount = 0;
     let liveNoteCount = 0;
+    let liveDrawCount = 0;
     for (const [no, n] of Object.entries(deckMap)) {
       const qty = Number(n) || 0;
       if (qty <= 0) continue;
@@ -2393,6 +2476,7 @@ export function initDeckBuilder(root, { onStartGame }) {
         if (cardHasBladeHeart(c)) liveBhCount += qty;
         else liveNonBhCount += qty;
         if (cardIsNoteLiveCatalog(c)) liveNoteCount += qty;
+        if (cardIsDrawYellLiveCatalog(c)) liveDrawCount += qty;
       }
     }
     if (chartCols.length) {
@@ -2423,23 +2507,21 @@ export function initDeckBuilder(root, { onStartGame }) {
     }
     deckSummary.hidden = false;
     deckSummary.innerHTML =
-      '<div class="card-deck-summary-grid"><div class="deck-peek-stats"><div class="deck-peek-stat-grid compact">' +
-      '<div><strong>メンバー</strong> <span class="deck-peek-accent">' +
-      memTotal +
-      '</span>枚</div><div><strong>ライブ</strong> <span class="deck-peek-accent">' +
-      liveTotal +
-      "</span>枚" +
-      (unknown > 0 ? ' <span class="deck-peek-warn">DB未登録 <strong>' + unknown + "</strong>枚</span>" : "") +
-      "</div></div>" +
+      '<div class="card-deck-summary-grid"><div class="deck-peek-stats">' +
+      formatDeckPeekDeckNameHtml(getActiveDeckDisplayName()) +
+      (unknown > 0
+        ? '<div class="deck-peek-warn">DB未登録 <strong>' + unknown + "</strong>枚</div>"
+        : "") +
       formatBladeHeartBlockHtml(
         bhAgg.byKey,
         bhAgg.totalWeighted,
         memBhCount,
         liveBhCount,
         memNonBhCount,
-        liveNonBhCount,
         liveNoteCount,
+        liveDrawCount,
         bhAgg.byKeyAdditive,
+        deckMap,
       ) +
       "</div>" +
       '<div class="deck-peek-chart-section compact"><h4 class="deck-peek-section-h">コスト分布</h4>' +

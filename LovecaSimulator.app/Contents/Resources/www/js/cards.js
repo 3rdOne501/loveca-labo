@@ -1,4 +1,5 @@
 import { CARDS_JSON_URL, STORAGE_CARDS_JSON_OVERRIDE, T_MEMBER, T_LIVE } from "./config.js";
+import { abilityWikiCanonicalKeys } from "./gameStatusIcons.js";
 import {
   cardHasBladeHeart,
   isBladeHeartDrawMarkerKey,
@@ -765,6 +766,70 @@ export function cardIsNoteLiveCatalog(card) {
 
 /** @deprecated 互換エイリアス */
 export const cardIsScoreLiveCatalog = cardIsNoteLiveCatalog;
+
+function memberAbilityText(card) {
+  return String((card && card.ability) || "");
+}
+
+/** 起動効果を能力文が示すメンバー */
+export function memberHasKidouAbility(card) {
+  return abilityWikiCanonicalKeys(card).has("kidou");
+}
+
+function memberAbilityPlainText(card) {
+  return String((card && card.ability) || "")
+    .replace(/\{\{[^}]+\}\}/g, "")
+    .replace(/\s+/g, "");
+}
+
+/**
+ * 起動「ステージ→控え室＋控え室から手札」の回収種別。
+ * @returns {typeof T_MEMBER | typeof T_LIVE | null}
+ */
+export function memberKidouRecoverHandType(card) {
+  if (!memberHasKidouAbility(card)) return null;
+  const t = memberAbilityPlainText(card);
+  if (!/控え室/.test(t) || !/手札/.test(t)) return null;
+  if (!/ステージから控え室/.test(t) && !/起動/.test(t)) return null;
+  if (/メンバーカード/.test(t) && /手札に加/.test(t)) return T_MEMBER;
+  if (/ライブカード/.test(t) && /手札に加/.test(t)) return T_LIVE;
+  return null;
+}
+
+/** 起動で控え室回収→手札が可能なメンバー */
+export function memberHasKidouStageToWaitingPickAbility(card) {
+  return memberKidouRecoverHandType(card) != null;
+}
+
+/** 登場時効果を能力文が示すメンバー */
+export function memberHasToujouAbility(card) {
+  if (abilityWikiCanonicalKeys(card).has("toujyou")) return true;
+  return /登場時/.test(memberAbilityText(card));
+}
+
+/** 登場時効果で「〜もよい」任意発動があるメンバー */
+export function memberHasOptionalToujouAbility(card) {
+  if (!memberHasToujouAbility(card)) return false;
+  return /もよい/.test(memberAbilityText(card));
+}
+
+/** ライブ開始時効果（メンバー／ライブ共通） */
+export function memberHasLiveStartAbility(card) {
+  if (abilityWikiCanonicalKeys(card).has("live_start")) return true;
+  return /ライブ開始時/.test(memberAbilityText(card));
+}
+
+/** ライブ開始時効果で「〜もよい」任意発動 */
+export function memberHasOptionalLiveStartAbility(card) {
+  if (!memberHasLiveStartAbility(card)) return false;
+  return /もよい/.test(memberAbilityText(card));
+}
+
+/** ライブ成功時効果（メンバー／ライブ共通） */
+export function memberHasLiveSuccessAbility(card) {
+  if (abilityWikiCanonicalKeys(card).has("live_success")) return true;
+  return /ライブ成功時/.test(memberAbilityText(card));
+}
 
 /* bladeHeart.js のスコア装飾判定を、循環参照を避けて差し込む */
 setIsScoreLiveCheck(cardIsNoteLiveCatalog);

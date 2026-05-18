@@ -51,6 +51,32 @@ export function wikiAbilityStemNormalize(stem) {
     .toLowerCase();
 }
 
+/** wiki トークン茎・ラベル → canonical key（`ART_FILE_BY_KEY` のキー） */
+export function wikiAbilityStemToCanonical(stem) {
+  var norm = wikiAbilityStemNormalize(stem);
+  return STEM_ALIAS[norm] || null;
+}
+
+/**
+ * 能力文 `{{stem|label}}` から canonical アイコンキー集合を抽出する。
+ * @param {*} card
+ * @returns {Set<string>}
+ */
+export function abilityWikiCanonicalKeys(card) {
+  /** @type {Set<string>} */
+  var keys = new Set();
+  var ab = card && card.ability != null ? String(card.ability) : "";
+  var re = /\{\{([^}|]+)(?:\|([^}]*))?\}\}/g;
+  var m;
+  while ((m = re.exec(ab)) !== null) {
+    var k1 = wikiAbilityStemToCanonical(m[1]);
+    var k2 = m[2] != null && String(m[2]).trim() !== "" ? wikiAbilityStemToCanonical(m[2]) : null;
+    if (k1) keys.add(k1);
+    if (k2) keys.add(k2);
+  }
+  return keys;
+}
+
 /** @type {Record<string, string>} */
 const STEM_ALIAS = /** @type {Record<string, string>} */ ({
   heart_00: "h00",
@@ -306,6 +332,51 @@ export function catalogDrawYellBadgeHtml() {
 
 /** @deprecated 互換 */
 export const catalogDrawLiveBadgeHtml = catalogDrawYellBadgeHtml;
+
+/** 盤面カードイラスト下部の効果アイコン（起動／登場時／ライブ開始時／ライブ成功時） */
+export function boardMemberEffectIconHtml(canonKey, glowKind) {
+  var labels = {
+    kidou: "起動",
+    toujyou: "登場時",
+    live_start: "ライブ開始時",
+    live_success: "ライブ成功時",
+  };
+  var label = labels[canonKey] || canonKey;
+  var inner = wikiAbilityFileStemToIconHtml(label, canonKey);
+  if (!inner) return "";
+  var glowCls = glowKind ? " card-effect-icon-glow--" + String(glowKind).replace(/[^a-z0-9_-]/gi, "") : "";
+  return (
+    '<span class="card-effect-icon-below-art' +
+    glowCls +
+    '" role="img" aria-label="' +
+    escapeAttrHtml(label) +
+    '">' +
+    inner.replace(
+      /class="status-inline-game-icon/,
+      'class="status-inline-game-icon card-member-effect-foot-ico status-inline-game-icon--pill',
+    ) +
+    "</span>"
+  );
+}
+
+/** エール処理で浮かび上がるアイコン（スコア／ドロー） */
+export function boardYellFloatIconHtml(kind) {
+  if (kind === "score") {
+    return htmlStatusGameIconImg(
+      "スコア",
+      GAME_STATUS_ICON_ART_DIR + ART_FILE_BY_KEY.score,
+      "card-yell-float-ico card-yell-float-ico--score",
+    );
+  }
+  if (kind === "draw_yell") {
+    return htmlStatusGameIconImg(
+      "ドロー",
+      GAME_STATUS_ICON_ART_DIR + ART_FILE_BY_KEY.draw_yell,
+      "card-yell-float-ico card-yell-float-ico--draw-yell",
+    );
+  }
+  return "";
+}
 
 /** カード詳細: スコア（旧音符ライブ） */
 export function catalogNoteLiveBadgeHtml() {

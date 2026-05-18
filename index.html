@@ -890,15 +890,6 @@ python3 -m http.server 8080</pre>
 
           <div class="stage-title-bar mt">
             <h3 class="stage-title-bar__h">ステージ</h3>
-            <button
-              type="button"
-              class="btn-stage-member-emphasis"
-              id="btn-stage-member-emphasis"
-              aria-pressed="false"
-              title="メンバーカードを大きく表示（ライブ枠・側面エネをやや縮小）"
-            >
-              メンバー拡大
-            </button>
           </div>
           <div class="three-cols">
             <div class="slot-wrap">
@@ -1586,6 +1577,16 @@ python3 -m http.server 8080</pre>
       </div>
     </dialog>
 
+    <dialog id="dlg-pick-kidou-waiting" class="app-dialog dlg-pick-kidou-waiting" aria-labelledby="dlg-pick-kidou-waiting-title">
+      <h2 id="dlg-pick-kidou-waiting-title" class="app-dialog__title">回収対象カード — 1枚を手札に加える</h2>
+      <p id="dlg-pick-kidou-waiting-lead" class="hint zone-inline-help"></p>
+      <div id="dlg-pick-kidou-waiting-list" class="dlg-pick-kidou-waiting-list" role="list"></div>
+      <div class="app-dialog__actions dlg-pick-kidou-waiting-actions">
+        <button type="button" class="btn secondary" id="dlg-pick-kidou-waiting-cancel">キャンセル</button>
+        <button type="button" class="btn primary" id="dlg-pick-kidou-waiting-ok">選択した1枚を手札に加える</button>
+      </div>
+    </dialog>
+
     <dialog id="dlg-pick-success-live" class="app-dialog dlg-pick-success-live" aria-labelledby="dlg-pick-success-live-title">
       <h2 id="dlg-pick-success-live-title" class="app-dialog__title">成功ライブ置き場へ置くライブを1枚選ぶ</h2>
       <p class="hint zone-inline-help">
@@ -1599,6 +1600,6 @@ python3 -m http.server 8080</pre>
     </dialog>
 
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
-    <script type="module" src="js/main.js?v=2026051810"></script>
+    <script type="module" src="js/main.js?v=2026051815"></script>
   </body>
 </html>

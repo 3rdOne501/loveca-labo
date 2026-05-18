@@ -10,14 +10,14 @@
  * セットアップ手順は README を参照。
  */
 
-import { STORAGE_DECK_LIBRARY, STORAGE_DECK } from "./config.js";
+import { STORAGE_DECK_LIBRARY, STORAGE_DECK, STORAGE_PLAY_ENERGY_CARD_NO } from "./config.js";
 import { showToast } from "./ui.js";
 
 const FIREBASE_APP_URL = "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 const FIREBASE_AUTH_URL = "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 const FIREBASE_FIRESTORE_URL = "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-const SYNC_KEYS = [STORAGE_DECK_LIBRARY, STORAGE_DECK];
+const SYNC_KEYS = [STORAGE_DECK_LIBRARY, STORAGE_DECK, STORAGE_PLAY_ENERGY_CARD_NO];
 
 /** @typedef {{ uid: string, displayName: string|null, photoURL: string|null, email: string|null }} CloudUserSummary */
 
@@ -260,6 +260,11 @@ async function pullCloudStateAndMerge() {
   if (mutated) {
     try {
       showToast("クラウドに保存していたデッキを取り込みました。再読込で反映されます。");
+    } catch (_) {
+      /* noop */
+    }
+    try {
+      window.dispatchEvent(new CustomEvent("llocg-cloud-state-merged", { detail: { keys: SYNC_KEYS.slice() } }));
     } catch (_) {
       /* noop */
     }

@@ -602,7 +602,9 @@ export function svgForBladeHeartKey(dbKey, className) {
  * @param {number} quantity
  * @param {number} [additiveQty] ライブカード由来（♪）の重み
  */
-export function bladeHeartAggregatePillHtml(dbKey, quantity, additiveQty) {
+export function bladeHeartAggregatePillHtml(dbKey, quantity, additiveQty, opts) {
+  opts = opts || {};
+  const showScoreBadge = opts.showScoreBadge === true;
   const addP = typeof additiveQty === "number" && Number.isFinite(additiveQty) ? Math.max(0, additiveQty) : 0;
   const slot = parseBladeHeartSlotFromKey(dbKey);
   const slotClass = slot != null ? "bh-slot-" + slot : "bh-slot-unknown";
@@ -619,7 +621,7 @@ export function bladeHeartAggregatePillHtml(dbKey, quantity, additiveQty) {
   } else {
     iconHtml = svgForBladeHeartKey(dbKey, "blade-heart-svg");
   }
-  const iconWrap = wrapHeartGlyphWithScoreBadge(iconHtml, addP > 0);
+  const iconWrap = showScoreBadge ? wrapHeartGlyphWithScoreBadge(iconHtml, addP > 0) : iconHtml;
   return (
     '<span class="deck-peek-bh-color-pill deck-peek-bh-color-pill--art ' +
     slotClass +

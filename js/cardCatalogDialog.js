@@ -194,7 +194,8 @@ function formatHeartRecordStatusHtmlRow(h) {
  * @param {*} c
  * @param {{ title?: HTMLElement | null, subtitle?: HTMLElement | null, body?: HTMLElement | null, effectSlot?: HTMLElement | null, img?: HTMLImageElement | null, badge?: HTMLElement | null }} targets
  */
-export function renderCardCatalogContentInto(c, targets) {
+export function renderCardCatalogContentInto(c, targets, options) {
+  options = options || {};
   if (!c || typeof c !== "object") return null;
   var mc = mergedCatalogCard(c);
   if (!mc) return null;
@@ -281,7 +282,7 @@ export function renderCardCatalogContentInto(c, targets) {
     var held = formatHeartRecordStatusHtmlRow(mc.base_heart);
     rows += row("所持ハート", held || escapeHtmlPlain(TEXT_NONE_JA));
   }
-  if (isLive) {
+  if (isLive && (isDrawYellLive || isNoteLive)) {
     var needL = formatHeartRecordStatusHtmlRow(mc.need_heart);
     rows += row("必要ハート", needL || escapeHtmlPlain(TEXT_NONE_JA));
     var specBits = [];
@@ -301,16 +302,15 @@ export function renderCardCatalogContentInto(c, targets) {
           "</span>",
       );
     }
-    var specRowHtml = specBits.length
-      ? '<span class="dlg-card-catalog-special-heart-row">' + specBits.join("") + "</span>"
-      : '<span class="muted dlg-card-catalog-special-heart-row dlg-card-catalog-special-heart-row--none">（スコア／ドローの特殊BHではありません）</span>';
-    rows += row("特殊ハート", specRowHtml);
+  } else if (isLive) {
+    var needLPlain = formatHeartRecordStatusHtmlRow(mc.need_heart);
+    rows += row("必要ハート", needLPlain || escapeHtmlPlain(TEXT_NONE_JA));
   }
 
   var abHtml = wikiAbilityToStatusHtml(mc.ability || "");
 
   /** 同名カードのイラスト違い一覧（rare_list）を小さな thumbnail として並べる */
-  var variantsHtml = buildCardVariantsRowHtml(mc, targets);
+  var variantsHtml = options.hideVariants ? "" : buildCardVariantsRowHtml(mc, targets);
 
   bodyEl.innerHTML = '<dl class="dlg-card-catalog-dl">' + rows + "</dl>" + variantsHtml;
 
@@ -438,7 +438,9 @@ export function openCardCatalogDialog(c, options) {
   if (options && typeof options.onVariantSelected === "function") {
     targets.onVariantSelected = options.onVariantSelected;
   }
-  var rendered = renderCardCatalogContentInto(c, targets);
+  var renderOpts = {};
+  if (options && options.playMode) renderOpts.hideVariants = true;
+  var rendered = renderCardCatalogContentInto(c, targets, renderOpts);
   if (!rendered) return;
   if (dlg.showModal) dlg.showModal();
 }

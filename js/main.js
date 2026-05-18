@@ -28,6 +28,24 @@ function stripHardReloadQueryFromUrl() {
 }
 stripHardReloadQueryFromUrl();
 
+/** 狭い画面で UI が収まるよう控えめに縮小（ブラウザのページズームそのものは変更しない） */
+function applyPageAutoScale() {
+  try {
+    var w = window.innerWidth;
+    var s = 1;
+    if (w < 360) s = 0.86;
+    else if (w < 420) s = 0.9;
+    else if (w < 520) s = 0.94;
+    else if (w < 720) s = 0.97;
+    document.documentElement.style.setProperty("--ll-page-scale", String(s));
+    document.body.classList.toggle("ll-page-auto-scaled", s < 0.999);
+  } catch (_) {
+    /* noop */
+  }
+}
+applyPageAutoScale();
+window.addEventListener("resize", applyPageAutoScale);
+
 let appStarted = false;
 
 function clearPlayResumeStorage() {
@@ -76,7 +94,6 @@ function tryResumePlaySession(viewDeck, viewGame) {
               document.body.classList.remove("play-mode");
               document.body.classList.remove("live-turn-pick-mode");
               document.body.classList.remove("zone-hints-visible");
-              document.body.classList.remove("stage-member-emphasis");
               try {
                 if (typeof window.__llocgRestoreDeckBuilderUi === "function") {
                   window.__llocgRestoreDeckBuilderUi({ reopenCatalog: true });
@@ -98,7 +115,6 @@ function tryResumePlaySession(viewDeck, viewGame) {
           teardownDeckPileLayoutWatchers();
           clearPlayResumeStorage();
           document.body.classList.remove("play-mode");
-          document.body.classList.remove("stage-member-emphasis");
           viewGame.hidden = true;
           viewDeck.hidden = false;
           showToast("前回の盤面の復元に失敗しました。デッキ画面からやり直してください。");
@@ -180,7 +196,6 @@ function startApp(viewDeck, viewGame, statusEl) {
                   document.body.classList.remove("play-mode");
                   document.body.classList.remove("live-turn-pick-mode");
                   document.body.classList.remove("zone-hints-visible");
-                  document.body.classList.remove("stage-member-emphasis");
                   try {
                     if (typeof window.__llocgRestoreDeckBuilderUi === "function") {
                       window.__llocgRestoreDeckBuilderUi({ reopenCatalog: true });
@@ -202,7 +217,6 @@ function startApp(viewDeck, viewGame, statusEl) {
               document.body.classList.remove("play-mode");
               document.body.classList.remove("live-turn-pick-mode");
               document.body.classList.remove("zone-hints-visible");
-              document.body.classList.remove("stage-member-emphasis");
               viewGame.hidden = true;
               viewDeck.hidden = false;
               showToast("プレイ画面の初期化に失敗しました。ページを再読み込みしてお試しください。");
