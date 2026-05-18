@@ -485,8 +485,6 @@ export function openCardCatalogDialog(c, options) {
   if (options && options.playMode) renderOpts.hideVariants = true;
   var rendered = renderCardCatalogContentInto(c, targets, renderOpts);
   if (!rendered) return;
-  var legacyHost = document.getElementById("dlg-card-catalog-hand-stage-actions");
-  if (legacyHost) legacyHost.hidden = true;
   mountHandStageActionsInEffectSlot(options && options.handStageActions, dlg);
   if (dlg.showModal) dlg.showModal();
 }
