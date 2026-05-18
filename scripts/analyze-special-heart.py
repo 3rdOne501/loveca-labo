@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""特殊BH分類: 音符ライブ（BHなしライブ）/ ドローエール（BHあり＋ドロー特殊）"""
+"""特殊BH分類: スコア（BHなしライブ）/ ドロー（色BHあり・ALLなしライブ）/ その他（ALLのみ等）"""
 import json
 import re
 import sys
@@ -9,22 +9,42 @@ path = Path(sys.argv[1] if len(sys.argv) > 1 else "/tmp/llocg-cards.json")
 d = json.loads(path.read_text(encoding="utf-8"))
 
 
-def has_bh(c):
+def parse_slot(key):
+    k = str(key).strip()
+    if k == "b_all":
+        return 7
+    m = re.match(r"^b_heart0*(\d+)$", k, re.I)
+    if not m:
+        return None
+    n = int(m.group(1))
+    return n if 1 <= n <= 7 else None
+
+
+def pos(v):
+    try:
+        return float(v) > 0
+    except (TypeError, ValueError):
+        return False
+
+
+def is_draw_live(c):
     bh = c.get("blade_heart") or {}
-    return isinstance(bh, dict) and len(bh) > 0
-
-
-def is_draw_yell(ab):
-    ab = ab or ""
-    if "ドローエール" in ab:
-        return True
-    if re.search(r"icon_draw\.png|icon_draw\b", ab, re.I):
-        return True
-    return "エールをすべて行った後" in ab and "ドロー" in ab
+    if not isinstance(bh, dict) or not bh:
+        return False
+    has_colored = False
+    for k, v in bh.items():
+        slot = parse_slot(k)
+        if not pos(v):
+            continue
+        if slot == 7:
+            return False
+        if slot is not None and 1 <= slot <= 6:
+            has_colored = True
+    return has_colored
 
 
 note_live = []
-draw_yell = []
+draw_live = []
 bh_only = []
 
 for k, v in d.items():
@@ -32,18 +52,18 @@ for k, v in d.items():
         continue
     if v.get("type") != "ライブ":
         continue
-    ab = v.get("ability") or ""
-    if not has_bh(v):
+    bh = v.get("blade_heart") or {}
+    if not isinstance(bh, dict) or not bh:
         note_live.append(k)
-    elif is_draw_yell(ab):
-        draw_yell.append(k)
+    elif is_draw_live(v):
+        draw_live.append(k)
     else:
         bh_only.append(k)
 
-print("NOTE_LIVE (no blade_heart)", len(note_live))
+print("SCORE (no blade_heart)", len(note_live))
 for x in sorted(note_live):
     print(x)
-print("DRAW_YELL (BH + draw)", len(draw_yell))
-for x in sorted(draw_yell):
+print("DRAW (colored BH, no ALL)", len(draw_live))
+for x in sorted(draw_live):
     print(x)
-print("BH_ONLY (not note, not draw)", len(bh_only))
+print("BH_OTHER (e.g. ALL only)", len(bh_only))

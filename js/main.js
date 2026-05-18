@@ -77,6 +77,13 @@ function tryResumePlaySession(viewDeck, viewGame) {
               document.body.classList.remove("live-turn-pick-mode");
               document.body.classList.remove("zone-hints-visible");
               document.body.classList.remove("stage-member-emphasis");
+              try {
+                if (typeof window.__llocgRestoreDeckBuilderUi === "function") {
+                  window.__llocgRestoreDeckBuilderUi({ reopenCatalog: true });
+                }
+              } catch (_) {
+                /* noop */
+              }
             },
             deckRoleLabels: {
               keyCardNos: Array.isArray(dm.keyCardNos) ? dm.keyCardNos : [],
@@ -174,6 +181,13 @@ function startApp(viewDeck, viewGame, statusEl) {
                   document.body.classList.remove("live-turn-pick-mode");
                   document.body.classList.remove("zone-hints-visible");
                   document.body.classList.remove("stage-member-emphasis");
+                  try {
+                    if (typeof window.__llocgRestoreDeckBuilderUi === "function") {
+                      window.__llocgRestoreDeckBuilderUi({ reopenCatalog: true });
+                    }
+                  } catch (_) {
+                    /* noop */
+                  }
                 },
                 deckRoleLabels: {
                   keyCardNos: bundle.keyCardNos,

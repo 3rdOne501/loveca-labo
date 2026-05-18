@@ -1313,9 +1313,9 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     liveStatsAfterBegin: false,
     /** ライブの計算パネル上の「固有ボーナス点」（打点に手動加算・Undo 可。負も可） */
     liveScoreEffectBonus: 0,
-    /** エールで山札→解決にめくった音符ライブの実体 id（成功時のみ打点に＋1／枚） */
+    /** エールで山札→解決にめくったスコアの実体 id（成功時のみ打点に＋1／枚） */
     ealeNoteLiveHitIds: [],
-    /** ドローエールを解決にめくった回数ぶん、ブレード捲り上限到達後に手札へ入るドロー（Undo 対象） */
+    /** ドローを解決にめくった回数ぶん、ブレード捲り上限到達後に手札へ入るドロー（Undo 対象） */
     pendingDrawYellHandDraws: 0,
     liveTurnSelectedIds: [],
   };
@@ -1388,13 +1388,13 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
 
   /** 1ドロー直後のフラッシュ表示の継続時間（ms） */
   const FLASH_DRAW_DURATION_MS = 1000;
-  /** ドローエール由来のフラッシュ／カード発光を少し長めに（約2〜3秒） */
+  /** ドロー由来のフラッシュ／カード発光を少し長めに（約2〜3秒） */
   const FLASH_DRAW_YELL_DURATION_MS = 2600;
   const FLASH_LABEL_PLUS_DRAW = "+1ドロー";
   /** ライブ進行中「山札→解決」や旧「エール+1」を解決へ置いた場合のフラッシュ文言 */
   const FLASH_LABEL_PLUS_DRAW_RESOLUTION = "+１ドロー";
-  /** ドローエール（BH）で解決にめくった／遅延ドローで手札に入ったカードのフラッシュ（ピンク） */
-  const FLASH_LABEL_DRAW_YELL_PLUS_ONE = "ドローエール+1";
+  /** ドロー（BH）で解決にめくった／遅延ドローで手札に入ったカードのフラッシュ（ピンク） */
+  const FLASH_LABEL_DRAW_YELL_PLUS_ONE = "ドロー+1";
   const FLASH_LABEL_LIVE_YELL_RESOLUTION_OLD = "エール+1";
   function markCardFlashDraw(c, label) {
     if (!c || typeof c !== "object") return;
@@ -1510,7 +1510,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     return merged;
   }
 
-  /** エール進行中に山札→解決へドローエール BH を置いたときのフラッシュ／待機ドロー計上。（ドロップ／旧フラグ）。 */
+  /** エール進行中に山札→解決へドロー BH を置いたときのフラッシュ／待機ドロー計上。（ドロップ／旧フラグ）。 */
   function maybeFlashDrawYellOnResolutionDrop(evt, snapBeforeDrag) {
     if (!evt || !evt.from || !evt.to || !snapBeforeDrag) return;
     if (evt.to.id !== "zone-resolution") return;
@@ -1536,7 +1536,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     }
   }
 
-  /** ブレードで捲れる枚数が尽きたタイミング（解決枚数が bladeK に到達）で、ドローエール待ちドローを手札へ */
+  /** ブレードで捲れる枚数が尽きたタイミング（解決枚数が bladeK に到達）で、ドロー待ちドローを手札へ */
   function flashDrawYellBeamsFromResolutionToHand(n) {
     n = Math.max(0, Math.floor(Number(n) || 0));
     if (n <= 0) return;
@@ -1599,7 +1599,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       if (!state.deck.length) break;
       var card = state.deck.shift();
       markCardFlashDraw(card, FLASH_LABEL_DRAW_YELL_PLUS_ONE);
-      /* 「デッキ上に戻す」「戻してシャッフル」操作で、ドローエール由来の手札カードも併せて戻せるようにする目印 */
+      /* 「デッキ上に戻す」「戻してシャッフル」操作で、ドロー由来の手札カードも併せて戻せるようにする目印 */
       if (card && typeof card === "object") card._fromDrawYellHand = true;
       state.hand.push(card);
       drew++;
@@ -1607,7 +1607,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     state.pendingDrawYellHandDraws = Math.max(0, n - drew);
     if (drew > 0) {
       showToast(
-        "ドローエール — 手札に " +
+        "ドロー — 手札に " +
           drew +
           " 枚ドローしました" +
           (drew < n ? "（山札が足りず " + (n - drew) + " 枚は待機のまま）" : ""),
@@ -1740,7 +1740,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     var flushed = state.resolutionArea.slice();
     state.resolutionArea.length = 0;
     state.waitingRoom.push.apply(state.waitingRoom, flushed);
-    /* 別経路で解決を片付けたら、ドローエール由来の手札マーカーも掃除（残ると次回 戻す で誤回収される） */
+    /* 別経路で解決を片付けたら、ドロー由来の手札マーカーも掃除（残ると次回 戻す で誤回収される） */
     state.pendingDrawYellHandDraws = 0;
     clearAllDrawYellHandMarkers();
     showToast("ライブを移動したため、解決の " + flushed.length + " 枚を控え室へ送りました");
@@ -3624,17 +3624,17 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       noteLive > 0
         ? '<span class="deck-remain-bh-pill deck-remain-bh-pill--note-live deck-remain-bh-pill--art" data-bh-slot="note">' +
           '<span class="deck-remain-bh-pill__lab deck-remain-bh-pill__note-char" aria-hidden="true">♪</span>' +
-          '<span class="visually-hidden">音符ライブ</span>' +
+          '<span class="visually-hidden">スコア</span>' +
           '</span><strong class="deck-remain-bh-pill__n">' +
           escapeHtmlPlain(String(noteLive)) +
           "</strong></span>"
         : "";
     var drawYellPill =
       drawYell > 0
-        ? '<span class="deck-remain-bh-pill deck-remain-bh-pill--draw-yell deck-remain-bh-pill--art" data-bh-slot="draw-yell" title="ドローエール（BH）を持つライブ枚数">' +
+        ? '<span class="deck-remain-bh-pill deck-remain-bh-pill--draw-yell deck-remain-bh-pill--art" data-bh-slot="draw-yell" title="ドロー（BH）を持つライブ枚数">' +
           '<span class="deck-remain-bh-pill__lab">' +
           heartSlotArtIconHtml(0, { draw_yell: true, extraClass: "deck-remain-bh-pill__art-ico" }) +
-          '<span class="visually-hidden">ドローエール</span>' +
+          '<span class="visually-hidden">ドロー</span>' +
           '</span><strong class="deck-remain-bh-pill__n">' +
           escapeHtmlPlain(String(drawYell)) +
           "</strong></span>"
@@ -3647,7 +3647,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       deckRemHint.textContent =
         "山札合計 " +
         n +
-        " 枚。色ピルはカード1枚につき複数色を持てる集計です（BHなし＝BH未記載、音符ライブ＝DBにBHが無いライブ、ドローエール＝BH＋ドロー特殊）。";
+        " 枚。色ピルはカード1枚につき複数色を持てる集計です（BHなし＝BH未記載、スコア＝DBにBHが無いライブ、ドロー＝BH＋ドロー特殊）。";
     }
   }
 
@@ -3713,17 +3713,17 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       noteLive > 0
         ? '<span class="deck-remain-bh-pill deck-remain-bh-pill--note-live deck-remain-bh-pill--art" data-bh-slot="note">' +
           '<span class="deck-remain-bh-pill__lab deck-remain-bh-pill__note-char" aria-hidden="true">♪</span>' +
-          '<span class="visually-hidden">音符ライブ</span>' +
+          '<span class="visually-hidden">スコア</span>' +
           '</span><strong class="deck-remain-bh-pill__n">' +
           escapeHtmlPlain(String(noteLive)) +
           "</strong></span>"
         : "";
     var drawYellPillW =
       drawYell > 0
-        ? '<span class="deck-remain-bh-pill deck-remain-bh-pill--draw-yell deck-remain-bh-pill--art" data-bh-slot="draw-yell" title="ドローエール（BH）を持つライブ枚数">' +
+        ? '<span class="deck-remain-bh-pill deck-remain-bh-pill--draw-yell deck-remain-bh-pill--art" data-bh-slot="draw-yell" title="ドロー（BH）を持つライブ枚数">' +
           '<span class="deck-remain-bh-pill__lab">' +
           heartSlotArtIconHtml(0, { draw_yell: true, extraClass: "deck-remain-bh-pill__art-ico" }) +
-          '<span class="visually-hidden">ドローエール</span>' +
+          '<span class="visually-hidden">ドロー</span>' +
           '</span><strong class="deck-remain-bh-pill__n">' +
           escapeHtmlPlain(String(drawYell)) +
           "</strong></span>"
@@ -3736,7 +3736,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       wh.textContent =
         "控え室合計 " +
         n +
-        " 枚。色ピルはカード1枚につき複数色を持てる集計です（BHなし＝BH未記載、音符ライブ＝DBにBHが無いライブ、ドローエール＝BH＋ドロー特殊）。";
+        " 枚。色ピルはカード1枚につき複数色を持てる集計です（BHなし＝BH未記載、スコア＝DBにBHが無いライブ、ドロー＝BH＋ドロー特殊）。";
     }
   }
 
@@ -3767,10 +3767,10 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       slotLabel = "BHなし";
       pred = function (cat) { return !cardHasBladeHeart(cat); };
     } else if (slotKey === "note") {
-      slotLabel = "音符ライブ";
+      slotLabel = "スコア";
       pred = function (cat) { return cat && cat.type === T_LIVE && cardIsNoteLiveCatalog(cat); };
     } else if (slotKey === "draw-yell") {
-      slotLabel = "ドローエール";
+      slotLabel = "ドロー";
       pred = function (cat) { return cat && cat.type === T_LIVE && catalogLiveCardIsDrawYellBladeHeart(cat); };
     } else {
       var slotNum = Number(slotKey);
@@ -4354,11 +4354,11 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       var drawYellLive = lives.filter(function (c) {
         return cardIsDrawYellLiveCatalog(bhModel(c));
       });
-      appendBlock("音符ライブ（DBにBHなし）", [
+      appendBlock("スコア（DBにBHなし）", [
         "枚数: " + onpuLive.length,
         "種類内訳: " + (summarizeWaitingCardTypes(onpuLive) || "—"),
       ]);
-      appendBlock("ドローエール（BH＋ドロー特殊）", [
+      appendBlock("ドロー（BH＋ドロー特殊）", [
         "枚数: " + drawYellLive.length,
         "種類内訳: " + (summarizeWaitingCardTypes(drawYellLive) || "—"),
       ]);
@@ -5196,7 +5196,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
       if (bonFoot) div.appendChild(bonFoot);
     }
 
-    // 1ドロー直後のフラッシュ（ドローエールのみやや長め＋カード枠の発光）
+    // 1ドロー直後のフラッシュ（ドローのみやや長め＋カード枠の発光）
     var isDrawYellFlash = c._flashDrawLabel === FLASH_LABEL_DRAW_YELL_PLUS_ONE;
     var flashDur = isDrawYellFlash ? FLASH_DRAW_YELL_DURATION_MS : FLASH_DRAW_DURATION_MS;
     var flashUntil = (Number(c._flashDrawAt) || 0) + flashDur;
@@ -7287,7 +7287,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     pushHistoryBefore("draw-res");
     var prevResLen = state.resolutionArea.length;
     var drawnR = state.deck.shift();
-    /* ドローエール BH のライブのみ、エール進行中に解決へめくったとき「ドローエール+1」（ピンク）と待機ドロー計上。 */
+    /* ドロー BH のライブのみ、エール進行中に解決へめくったとき「ドロー+1」（ピンク）と待機ドロー計上。 */
     var inLive = state.liveStatsAfterBegin === true || state.liveTurnPickMode === true;
     var drawYellBh = catalogLiveCardIsDrawYellBladeHeart(mergedCatalogCard(drawnR));
     if (inLive && drawYellBh) {
@@ -7322,7 +7322,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     render();
   });
 
-  /** 「デッキ上に戻す」「戻してシャッフル」で、ドローエール由来の手札カードを一緒に回収する */
+  /** 「デッキ上に戻す」「戻してシャッフル」で、ドロー由来の手札カードを一緒に回収する */
   function harvestDrawYellHandCardsForReturn() {
     if (!Array.isArray(state.hand)) return [];
     var kept = [];
@@ -7348,7 +7348,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     return returned;
   }
 
-  /** 別経路（控え送り・マリガン等）で解決エリアが空になった時点で、ドローエール由来の手札マークも掃除 */
+  /** 別経路（控え送り・マリガン等）で解決エリアが空になった時点で、ドロー由来の手札マークも掃除 */
   function clearAllDrawYellHandMarkers() {
     if (!Array.isArray(state.hand)) return;
     for (var i = 0; i < state.hand.length; i++) {
@@ -7371,14 +7371,14 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     pushHistoryBefore("res-to-deck-top");
     state.pendingDrawYellHandDraws = 0;
     var handReturned = harvestDrawYellHandCardsForReturn();
-    /** 戻す順: 手札からのドローエールカード → 解決エリア の順でデッキ上に積み戻す。 */
+    /** 戻す順: 手札からのドローカード → 解決エリア の順でデッキ上に積み戻す。 */
     var moved = handReturned.concat(state.resolutionArea);
     state.deck.unshift(...moved);
     state.resolutionArea = [];
     var nu = moved.length;
     var msg = nu + " 枚をデッキの上に戻しました";
     if (handReturned.length) {
-      msg += "（うち手札に来ていたドローエール " + handReturned.length + " 枚を含む）";
+      msg += "（うち手札に来ていたドロー " + handReturned.length + " 枚を含む）";
     }
     showToast(msg);
     render();
@@ -7397,7 +7397,7 @@ export function mountSimulator(root, deckMap, { onBackToDeck, deckRoleLabels, re
     state.deck = shuffle(state.deck);
     var msg = "解決をデッキに戻してシャッフルしました";
     if (handReturned.length) {
-      msg += "（手札のドローエール " + handReturned.length + " 枚も一緒に戻しました）";
+      msg += "（手札のドロー " + handReturned.length + " 枚も一緒に戻しました）";
     }
     showToast(msg);
     render();

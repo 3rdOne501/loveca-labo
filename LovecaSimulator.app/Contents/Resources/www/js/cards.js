@@ -1,6 +1,8 @@
 import { CARDS_JSON_URL, STORAGE_CARDS_JSON_OVERRIDE, T_MEMBER, T_LIVE } from "./config.js";
 import {
   cardHasBladeHeart,
+  isBladeHeartDrawMarkerKey,
+  liveCardHasColoredBhWithoutAll,
   parseBladeHeartSlotFromKey,
   parseHeartColorSlotFromKey,
   setIsScoreLiveCheck,
@@ -733,22 +735,27 @@ export function liveCardHasExcludedAllBladeHeart(card) {
 }
 
 /**
- * ドローエール: DB に blade_heart（BH）があり、かつ能力文にドロー系特殊効果があるライブ。
- * BH あり＋スコア＋のみのカードはドローエールではない（色 BH の通常ライブ）。
+ * 能力文に DB 既定の wiki トークン `{{icon_draw.png|ドロー}}` があるか（表示用・参考）。
  */
-export function cardIsDrawYellLiveCatalog(card) {
-  if (!card || card.type !== T_LIVE) return false;
-  if (!cardHasBladeHeart(card)) return false;
+export function abilityHasDrawSpecialHeartWikiToken(card) {
+  if (!card) return false;
   const ab = String(card.ability || "");
-  if (/ドローエール/.test(ab)) return true;
-  if (/icon_draw\.png|icon_draw\b/i.test(ab)) return true;
-  if (/エールをすべて行った後/.test(ab) && /ドロー/.test(ab)) return true;
-  return false;
+  return /\{\{\s*icon_draw\.png\s*\|\s*ドロー\s*\}\}/i.test(ab);
 }
 
 /**
- * 音符ライブ: DB に blade_heart が無いライブのみ（♪起源）。
- * BH 記載があるカードに音符ライブは付けない。
+ * ドロー特殊ハートのライブ: ALL（b_all）BH を持たず、桃〜紫の色 BH を 1 つ以上持つライブ。
+ */
+export function cardIsDrawYellLiveCatalog(card) {
+  return liveCardHasColoredBhWithoutAll(card);
+}
+
+/** @deprecated 互換エイリアス */
+export const cardIsDrawLiveCatalog = cardIsDrawYellLiveCatalog;
+
+/**
+ * スコア（旧称音符ライブ）: DB に blade_heart が無いライブのみ。
+ * BH 記載があるカードにスコア特殊 BH は付けない。
  */
 export function cardIsNoteLiveCatalog(card) {
   if (!card || card.type !== T_LIVE) return false;
@@ -756,7 +763,10 @@ export function cardIsNoteLiveCatalog(card) {
   return true;
 }
 
-/* bladeHeart.js の ♪ 表示判定（カード一覧サムネ等の note 装飾）を、循環参照を避けて差し込む */
+/** @deprecated 互換エイリアス */
+export const cardIsScoreLiveCatalog = cardIsNoteLiveCatalog;
+
+/* bladeHeart.js のスコア装飾判定を、循環参照を避けて差し込む */
 setIsScoreLiveCheck(cardIsNoteLiveCatalog);
 
 /** @returns {Set<number>} blade_heart が寄与する表示スロット 1〜7（b_all は 7） */
@@ -766,6 +776,7 @@ export function bladeHeartSlotsOnCard(card) {
   const bh = card && card.blade_heart;
   if (!bh || typeof bh !== "object" || Array.isArray(bh)) return out;
   for (const key of Object.keys(bh)) {
+    if (isBladeHeartDrawMarkerKey(key)) continue;
     const slot = parseBladeHeartSlotFromKey(key);
     if (slot != null) out.add(slot);
   }
@@ -796,13 +807,13 @@ export function filterCards(cards, opts) {
   const bhNoteLive = !!opts.bhNoteLive;
   const bhDrawYell = !!opts.bhDrawYell;
   const heartSel = opts.heartSlots instanceof Set ? opts.heartSlots : null;
-  /* テキスト検索の特殊キーワード:
-       「ドローエール」 → cardIsDrawYellLiveCatalog
-       「音符ライブ」   → cardIsNoteLiveCatalog
-     ability 内には実際の文字列「ドローエール」が含まれない（icon 記号が使われている）ため、
-     ヒューリスティック判定の特殊カードを名前検索から見つけられるようにフックする。 */
-  const qHasDrawYellKeyword = q.length > 0 && q.indexOf("ドローエール") !== -1;
-  const qHasNoteLiveKeyword = q.length > 0 && q.indexOf("音符ライブ") !== -1;
+  /* テキスト検索の特殊キーワード（表示名「ドロー」「スコア」および旧称） */
+  const qHasDrawKeyword =
+    q.length > 0 &&
+    (q.indexOf("ドロー") !== -1 || q.indexOf("ドローエール") !== -1 || q.indexOf("drow") !== -1);
+  const qHasScoreKeyword =
+    q.length > 0 &&
+    (q.indexOf("スコア") !== -1 || q.indexOf("音符ライブ") !== -1 || q.indexOf("音符") !== -1);
   return cards.filter((c) => {
     if (opts.types[T_MEMBER] === false && c.type === T_MEMBER) return false;
     if (opts.types[T_LIVE] === false && c.type === T_LIVE) return false;
@@ -847,8 +858,8 @@ export function filterCards(cards, opts) {
       const inName = String(c.name || "").toLowerCase().includes(q);
       const inAbility = String(c.ability || "").toLowerCase().includes(q);
       let inSpecial = false;
-      if (qHasDrawYellKeyword && cardIsDrawYellLiveCatalog(c)) inSpecial = true;
-      if (qHasNoteLiveKeyword && cardIsNoteLiveCatalog(c)) inSpecial = true;
+      if (qHasDrawKeyword && cardIsDrawYellLiveCatalog(c)) inSpecial = true;
+      if (qHasScoreKeyword && cardIsNoteLiveCatalog(c)) inSpecial = true;
       if (!inName && !inAbility && !inSpecial) return false;
     }
     return c.type === T_MEMBER || c.type === T_LIVE;

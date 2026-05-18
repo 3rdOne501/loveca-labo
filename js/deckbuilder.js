@@ -142,16 +142,16 @@ function formatDeckPeekSyntheticBhPillsHtml(nonBhMemberCopies, nonBhLiveCopies, 
   if (noteLiveCopies > 0) {
     html +=
       '<span class="deck-peek-bh-color-pill deck-peek-bh-pill--note-live-pill" title="' +
-      escapeHtml("音符ライブ（DBにBHなし）") +
-      '"><span class="deck-peek-bh-kanji">音符ライブ</span><span class="deck-peek-bh-pill-qty">× ' +
+      escapeHtml("スコア（DBにBHなし）") +
+      '"><span class="deck-peek-bh-kanji">スコア</span><span class="deck-peek-bh-pill-qty">× ' +
       noteLiveCopies +
       "</span></span>";
   }
   if (liveBhCopies > 0) {
     html +=
       '<span class="deck-peek-bh-color-pill deck-peek-bh-pill--live-note" title="' +
-      escapeHtml("ライブカードの BH（♪で追加カウントされる分を含む）") +
-      '"><span class="deck-peek-bh-kanji">音符ライブ</span><span class="deck-peek-bh-pill-qty">× ' +
+      escapeHtml("ライブカードの BH（スコア装飾で追加カウントされる分を含む）") +
+      '"><span class="deck-peek-bh-kanji">ライブBH</span><span class="deck-peek-bh-pill-qty">× ' +
       liveBhCopies +
       "</span></span>";
   }
@@ -189,7 +189,7 @@ function formatBladeHeartBlockHtml(
     nonBhMemberCopies +
     '</span> · BHなしライブ <span class="deck-peek-muted-num">' +
     nonBhLiveCopies +
-    '</span> · 音符ライブ <span class="deck-peek-muted-num">' +
+    '</span> · スコア <span class="deck-peek-muted-num">' +
     noteLiveCopies +
     "</span></div>";
 
@@ -463,61 +463,194 @@ export function initDeckBuilder(root, { onStartGame }) {
 
   const el = (id) => root.querySelector("#" + id) || document.getElementById(id);
 
+  function captureDeckBuilderUiPayload() {
+    var detFi = root.querySelector("#deck-search-panel-filters");
+    var cg = el("card-grid-scroll");
+    var sp = el("sample-recipes-scroll");
+    var bh = readBhSlotFilters();
+    var bx = readBhFilterExtras();
+    var hs = readHeartSlotFilters();
+    /** @type {Record<string, boolean>} */
+    var costSnap = {};
+    Object.keys(filterCosts).forEach(function (k) {
+      costSnap[k] = !!filterCosts[k];
+    });
+    var dlgCatalogOpen = false;
+    var catalogCardNo = "";
+    var dlgCat = document.getElementById("dlg-card-catalog");
+    if (dlgCat && typeof dlgCat.open === "boolean" && dlgCat.open) {
+      dlgCatalogOpen = true;
+      var sub = document.getElementById("dlg-card-catalog-subtitle");
+      catalogCardNo = sub && sub.textContent ? String(sub.textContent).trim() : "";
+    }
+    /** @type {Record<string, unknown>} */
+    var payload = {
+      v: 2,
+      samplePanelOpen: !!samplePanelOpen,
+      deckRegistrationPanelOpen: !!deckRegistrationPanelOpen,
+      currentDeckPanelOpen: !!currentDeckPanelOpen,
+      deckListOpen: !!deckListOpen,
+      cardGridScrollTop: cg ? cg.scrollTop : 0,
+      sampleScrollTop: sp ? sp.scrollTop : 0,
+      searchText: searchText,
+      filterProduct: filterProduct,
+      filterSeries: filterSeries,
+      filterUnit: filterUnit,
+      filterTypes: { [T_MEMBER]: !!filterTypes[T_MEMBER], [T_LIVE]: !!filterTypes[T_LIVE] },
+      filterCosts: costSnap,
+      bhSlots: [...bh],
+      bhNonBh: !!bx.nonBh,
+      bhNoteLive: !!bx.noteLive,
+      bhDrawYell: !!bx.drawYell,
+      heartSlots: [...hs],
+      catalogSortOrder: catalogSortOrder,
+      filterFavoritesOnly: !!filterFavoritesOnly,
+      catalogDialogOpen: dlgCatalogOpen,
+      catalogDialogCardNo: catalogCardNo,
+    };
+    if (detFi && detFi.tagName === "DETAILS") {
+      payload.deckSearchFiltersOpen = /** @type {HTMLDetailsElement} */ (detFi).open;
+    }
+    return payload;
+  }
+
   function persistDeckBuilderUiState() {
     try {
-      var detFi = root.querySelector("#deck-search-panel-filters");
-      var cg = el("card-grid-scroll");
-      var sp = el("sample-recipes-scroll");
-      /** @type {{ v: number, samplePanelOpen: boolean, deckRegistrationPanelOpen: boolean, currentDeckPanelOpen?: boolean, deckListOpen: boolean, deckSearchFiltersOpen?: boolean, cardGridScrollTop: number, sampleScrollTop: number }} */
-      var payload = {
-        v: 1,
-        samplePanelOpen: !!samplePanelOpen,
-        deckRegistrationPanelOpen: !!deckRegistrationPanelOpen,
-        currentDeckPanelOpen: !!currentDeckPanelOpen,
-        deckListOpen: !!deckListOpen,
-        cardGridScrollTop: cg ? cg.scrollTop : 0,
-        sampleScrollTop: sp ? sp.scrollTop : 0,
-      };
-      if (detFi && detFi.tagName === "DETAILS") {
-        payload.deckSearchFiltersOpen = /** @type {HTMLDetailsElement} */ (detFi).open;
-      }
-      sessionStorage.setItem(STORAGE_BUILDER_UI_RELOAD, JSON.stringify(payload));
+      sessionStorage.setItem(STORAGE_BUILDER_UI_RELOAD, JSON.stringify(captureDeckBuilderUiPayload()));
     } catch (_) {
       /* noop */
     }
   }
   window.__llocgPersistDeckBuilderUi = persistDeckBuilderUiState;
 
-  function consumeBuilderUiRestoreFlag() {
+  function applyDeckBuilderUiPayload(o) {
+    if (!o || (o.v !== 1 && o.v !== 2)) return;
+    if (typeof o.samplePanelOpen === "boolean") samplePanelOpen = o.samplePanelOpen;
+    if (typeof o.deckRegistrationPanelOpen === "boolean") deckRegistrationPanelOpen = o.deckRegistrationPanelOpen;
+    if (typeof o.currentDeckPanelOpen === "boolean") currentDeckPanelOpen = o.currentDeckPanelOpen;
+    if (typeof o.deckListOpen === "boolean") deckListOpen = o.deckListOpen;
+    if (o.v >= 2) {
+      if (typeof o.searchText === "string") searchText = o.searchText;
+      if (typeof o.filterProduct === "string") filterProduct = o.filterProduct;
+      if (typeof o.filterSeries === "string") filterSeries = o.filterSeries;
+      if (typeof o.filterUnit === "string") filterUnit = o.filterUnit;
+      if (o.filterTypes && typeof o.filterTypes === "object") {
+        if (typeof o.filterTypes[T_MEMBER] === "boolean") filterTypes[T_MEMBER] = o.filterTypes[T_MEMBER];
+        if (typeof o.filterTypes[T_LIVE] === "boolean") filterTypes[T_LIVE] = o.filterTypes[T_LIVE];
+      }
+      if (o.filterCosts && typeof o.filterCosts === "object") {
+        Object.keys(filterCosts).forEach(function (k) {
+          var n = Number(k);
+          if (Object.prototype.hasOwnProperty.call(o.filterCosts, k)) {
+            filterCosts[n] = !!o.filterCosts[k];
+          } else if (Object.prototype.hasOwnProperty.call(o.filterCosts, String(n))) {
+            filterCosts[n] = !!o.filterCosts[String(n)];
+          }
+        });
+      }
+      if (typeof o.catalogSortOrder === "string") catalogSortOrder = o.catalogSortOrder;
+      if (typeof o.filterFavoritesOnly === "boolean") filterFavoritesOnly = o.filterFavoritesOnly;
+    }
+    var detR = root.querySelector("#deck-search-panel-filters");
+    if (detR && detR.tagName === "DETAILS" && typeof o.deckSearchFiltersOpen === "boolean") {
+      /** @type {HTMLDetailsElement} */ (detR).open = o.deckSearchFiltersOpen;
+    }
+    pendingBuilderUiRestoreScroll = {
+      card: typeof o.cardGridScrollTop === "number" ? o.cardGridScrollTop : 0,
+      sample: typeof o.sampleScrollTop === "number" ? o.sampleScrollTop : 0,
+    };
+    return o;
+  }
+
+  function applyDeckBuilderUiPayloadToDom(o) {
+    if (!o) return;
+    var inp = el("search-text");
+    if (inp) inp.value = searchText;
+    var fp = el("filter-product");
+    if (fp) fp.value = filterProduct || "";
+    var fs = el("filter-series");
+    if (fs) fs.value = filterSeries || "";
+    var fu = el("filter-unit");
+    if (fu) fu.value = filterUnit || "";
+    syncCheckboxesFromFilterTypes();
+    var sortEl = el("catalog-sort-order");
+    if (sortEl) sortEl.value = catalogSortOrder || "default";
+    var fo = el("filter-favorites-only");
+    if (fo) fo.checked = !!filterFavoritesOnly;
+    root.querySelectorAll("#filter-costs input[data-cost]").forEach(function (inpCost) {
+      var n = Number(inpCost.getAttribute("data-cost"));
+      if (Number.isFinite(n)) inpCost.checked = !!filterCosts[n];
+    });
+    var bhPanel = root.querySelector("#filter-bh-slots");
+    if (bhPanel && o.v >= 2 && Array.isArray(o.bhSlots)) {
+      var bhSet = new Set(o.bhSlots.map(Number));
+      bhPanel.querySelectorAll("input[data-bh-slot]").forEach(function (inp) {
+        var s = Number(inp.getAttribute("data-bh-slot"));
+        inp.checked = bhSet.has(s);
+      });
+      var nb = bhPanel.querySelector("input[data-bh-filter='non-bh']");
+      if (nb) nb.checked = !!o.bhNonBh;
+      var nl = bhPanel.querySelector("input[data-bh-filter='note-live']");
+      if (nl) nl.checked = !!o.bhNoteLive;
+      var dy = bhPanel.querySelector("input[data-bh-filter='draw-yell']");
+      if (dy) dy.checked = !!o.bhDrawYell;
+    }
+    var heartPanel = root.querySelector("#filter-heart-slots");
+    if (heartPanel && o.v >= 2 && Array.isArray(o.heartSlots)) {
+      var hsSet = new Set(o.heartSlots.map(Number));
+      heartPanel.querySelectorAll("input[data-heart-slot]").forEach(function (inp) {
+        var s = Number(inp.getAttribute("data-heart-slot"));
+        inp.checked = hsSet.has(s);
+      });
+    }
+    var wrapDl = el("deck-list-wrap");
+    var btnTl = el("btn-toggle-deck-list");
+    if (wrapDl) wrapDl.hidden = !deckListOpen;
+    if (btnTl) {
+      btnTl.setAttribute("aria-expanded", deckListOpen ? "true" : "false");
+      btnTl.textContent = deckListOpen ? "登録カード一覧を隠す" : "登録カード一覧を表示";
+    }
+    invalidateCatalogFilterCache();
+  }
+
+  function restoreDeckBuilderUiFromSession(opts) {
+    opts = opts || {};
     try {
-      if (sessionStorage.getItem(STORAGE_BUILDER_UI_RESTORE_FLAG) !== "1") return;
-      sessionStorage.removeItem(STORAGE_BUILDER_UI_RESTORE_FLAG);
+      if (sessionStorage.getItem(STORAGE_BUILDER_UI_RESTORE_FLAG) === "1") {
+        sessionStorage.removeItem(STORAGE_BUILDER_UI_RESTORE_FLAG);
+      }
       var raw = sessionStorage.getItem(STORAGE_BUILDER_UI_RELOAD);
       if (!raw) return;
-      var o = JSON.parse(raw);
-      if (!o || o.v !== 1) return;
-      if (typeof o.samplePanelOpen === "boolean") samplePanelOpen = o.samplePanelOpen;
-      if (typeof o.deckRegistrationPanelOpen === "boolean") deckRegistrationPanelOpen = o.deckRegistrationPanelOpen;
-      if (typeof o.currentDeckPanelOpen === "boolean") currentDeckPanelOpen = o.currentDeckPanelOpen;
-      if (typeof o.deckListOpen === "boolean") deckListOpen = o.deckListOpen;
-      var detR = root.querySelector("#deck-search-panel-filters");
-      if (detR && detR.tagName === "DETAILS" && typeof o.deckSearchFiltersOpen === "boolean") {
-        /** @type {HTMLDetailsElement} */ (detR).open = o.deckSearchFiltersOpen;
+      var o = applyDeckBuilderUiPayload(JSON.parse(raw));
+      if (!o) return;
+      applyDeckBuilderUiPayloadToDom(o);
+      syncCardPanelToggleButtons();
+      renderCardGrid();
+      if (opts.reopenCatalog && o.v >= 2 && o.catalogDialogOpen && o.catalogDialogCardNo) {
+        var card = getCard(o.catalogDialogCardNo);
+        if (card) {
+          requestAnimationFrame(function () {
+            openCardCatalogDialogForDeckEdit(card);
+          });
+        }
       }
-      var wrapDl = el("deck-list-wrap");
-      var btnTl = el("btn-toggle-deck-list");
-      if (wrapDl) wrapDl.hidden = !deckListOpen;
-      if (btnTl) {
-        btnTl.setAttribute("aria-expanded", deckListOpen ? "true" : "false");
-        btnTl.textContent = deckListOpen ? "登録カード一覧を隠す" : "登録カード一覧を表示";
-      }
-      pendingBuilderUiRestoreScroll = {
-        card: typeof o.cardGridScrollTop === "number" ? o.cardGridScrollTop : 0,
-        sample: typeof o.sampleScrollTop === "number" ? o.sampleScrollTop : 0,
-      };
     } catch (_) {
       /* noop */
     }
+  }
+  window.__llocgRestoreDeckBuilderUi = restoreDeckBuilderUiFromSession;
+
+  function consumeBuilderUiRestoreFlag() {
+    restoreDeckBuilderUiFromSession({ reopenCatalog: true });
+  }
+
+  var builderUiPersistDebounce = 0;
+  function schedulePersistDeckBuilderUiState() {
+    if (builderUiPersistDebounce) clearTimeout(builderUiPersistDebounce);
+    builderUiPersistDebounce = setTimeout(function () {
+      builderUiPersistDebounce = 0;
+      persistDeckBuilderUiState();
+    }, 280);
   }
 
   const SESSION_SAMPLE_DEV_KEY = "llocg_sample_dev_mode_v1";
@@ -2905,6 +3038,7 @@ export function initDeckBuilder(root, { onStartGame }) {
 
   el("search-text")?.addEventListener("input", (e) => {
     searchText = e.target.value;
+    schedulePersistDeckBuilderUiState();
     renderCardGrid();
   });
   el("filter-show-member")?.addEventListener("change", () => {
@@ -2919,24 +3053,29 @@ export function initDeckBuilder(root, { onStartGame }) {
   });
   el("catalog-sort-order")?.addEventListener("change", (e) => {
     catalogSortOrder = /** @type {{ value: string }} */ (e.target).value || "default";
+    schedulePersistDeckBuilderUiState();
     invalidateCatalogFilterCache();
     renderCardGrid();
   });
   el("filter-favorites-only")?.addEventListener("change", (e) => {
     filterFavoritesOnly = !!(/** @type {HTMLInputElement} */ (e.target).checked);
+    schedulePersistDeckBuilderUiState();
     invalidateCatalogFilterCache();
     renderCardGrid();
   });
   el("filter-product")?.addEventListener("change", (e) => {
     filterProduct = e.target.value;
+    schedulePersistDeckBuilderUiState();
     renderCardGrid();
   });
   el("filter-series")?.addEventListener("change", (e) => {
     filterSeries = e.target.value;
+    schedulePersistDeckBuilderUiState();
     renderCardGrid();
   });
   el("filter-unit")?.addEventListener("change", (e) => {
     filterUnit = e.target.value;
+    schedulePersistDeckBuilderUiState();
     renderCardGrid();
   });
   el("cost-all-on")?.addEventListener("click", () => {
@@ -3229,6 +3368,7 @@ export function initDeckBuilder(root, { onStartGame }) {
       persistDeckTimer = 0;
     }
     flushPersistDeckToStorage();
+    persistDeckBuilderUiState();
     onStartGame(deckMap);
   });
 
@@ -3340,8 +3480,14 @@ export function initDeckBuilder(root, { onStartGame }) {
     scheduleRenderDeckList();
   });
 
-  el("filter-bh-slots")?.addEventListener("change", scheduleRenderCardGrid);
-  el("filter-heart-slots")?.addEventListener("change", scheduleRenderCardGrid);
+  el("filter-bh-slots")?.addEventListener("change", function () {
+    schedulePersistDeckBuilderUiState();
+    scheduleRenderCardGrid();
+  });
+  el("filter-heart-slots")?.addEventListener("change", function () {
+    schedulePersistDeckBuilderUiState();
+    scheduleRenderCardGrid();
+  });
   el("btn-filter-bh-heart-clear")?.addEventListener("click", function () {
     root.querySelectorAll("#filter-bh-slots input[type=checkbox]").forEach(function (x) {
       x.checked = false;
@@ -3884,6 +4030,7 @@ export function initDeckBuilder(root, { onStartGame }) {
       bcur.classList.toggle("primary", currentDeckPanelOpen);
       bcur.classList.toggle("secondary", !currentDeckPanelOpen);
     }
+    schedulePersistDeckBuilderUiState();
   }
 
   function toggleSamplePanel() {
@@ -4157,11 +4304,11 @@ export function initDeckBuilder(root, { onStartGame }) {
     }
   }
 
-  consumeBuilderUiRestoreFlag();
   syncCardPanelToggleButtons();
 
   fillSelects();
   applyStartupCatalogProductFilter();
+  consumeBuilderUiRestoreFlag();
   wireSampleRecipesGridOnce();
   wireSampleRecipesDnDOnce();
   wirePeekListRoleEditorOnce();
@@ -4187,6 +4334,24 @@ export function initDeckBuilder(root, { onStartGame }) {
       });
     });
   }
+
+  window.addEventListener("beforeunload", persistDeckBuilderUiState);
+  window.addEventListener("pagehide", persistDeckBuilderUiState);
+  el("card-grid-scroll")?.addEventListener(
+    "scroll",
+    function () {
+      schedulePersistDeckBuilderUiState();
+    },
+    { passive: true },
+  );
+  el("sample-recipes-scroll")?.addEventListener(
+    "scroll",
+    function () {
+      schedulePersistDeckBuilderUiState();
+    },
+    { passive: true },
+  );
+  persistDeckBuilderUiState();
 }
 
 function escapeHtml(s) {

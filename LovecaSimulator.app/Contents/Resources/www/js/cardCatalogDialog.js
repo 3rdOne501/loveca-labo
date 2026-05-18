@@ -6,6 +6,7 @@ import { T_LIVE, T_MEMBER } from "./config.js";
 import { getCard, cardIsNoteLiveCatalog, cardIsDrawYellLiveCatalog } from "./cards.js";
 import {
   cardHasBladeHeart,
+  isBladeHeartDrawMarkerKey,
   parseBladeHeartSlotFromKey,
   parseHeartColorSlotFromKey,
 } from "./bladeHeart.js";
@@ -118,13 +119,21 @@ function formatBladeHeartStatusHtmlRow(bh) {
     var slot = parseBladeHeartSlotFromKey(k);
     var v = Number(bh[k]);
     if (!Number.isFinite(v) || v === 0) return;
-    var stem =
-      slot === 7
+    var stem = isBladeHeartDrawMarkerKey(k)
+      ? "icon_draw"
+      : slot === 7
         ? "icon_all"
         : slot != null && slot >= 1 && slot <= 6
           ? "heart_" + String(slot).padStart(2, "0")
           : null;
-    var lbl = stem === "icon_all" ? "ALL" : stem != null ? stem : "?";
+    var lbl =
+      stem === "icon_draw"
+        ? "ドロー"
+        : stem === "icon_all"
+          ? "ALL"
+          : stem != null
+            ? stem
+            : "?";
     var icon = stem != null ? Gsi.wikiAbilityFileStemToIconHtml(lbl, stem) : null;
     var chip =
       icon != null
@@ -280,7 +289,7 @@ export function renderCardCatalogContentInto(c, targets) {
       specBits.push(
         '<span class="dlg-card-catalog-special-heart-pill dlg-card-catalog-special-heart-pill--draw-yell">' +
           Gsi.catalogDrawYellBadgeHtml() +
-          '<span class="dlg-card-catalog-special-heart-pill__label">ドローエール</span>' +
+          '<span class="dlg-card-catalog-special-heart-pill__label">ドロー</span>' +
           "</span>",
       );
     }
@@ -288,13 +297,13 @@ export function renderCardCatalogContentInto(c, targets) {
       specBits.push(
         '<span class="dlg-card-catalog-special-heart-pill dlg-card-catalog-special-heart-pill--note-live">' +
           Gsi.catalogNoteLiveBadgeHtml() +
-          '<span class="dlg-card-catalog-special-heart-pill__label">音符ライブ</span>' +
+          '<span class="dlg-card-catalog-special-heart-pill__label">スコア</span>' +
           "</span>",
       );
     }
     var specRowHtml = specBits.length
       ? '<span class="dlg-card-catalog-special-heart-row">' + specBits.join("") + "</span>"
-      : '<span class="muted dlg-card-catalog-special-heart-row dlg-card-catalog-special-heart-row--none">（音符ライブ／ドローエールの特殊BHではありません）</span>';
+      : '<span class="muted dlg-card-catalog-special-heart-row dlg-card-catalog-special-heart-row--none">（スコア／ドローの特殊BHではありません）</span>';
     rows += row("特殊ハート", specRowHtml);
   }
 

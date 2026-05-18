@@ -14,7 +14,7 @@ import { GAME_STATUS_ICON_ART_DIR, resolveGameStatusBundledHref, escapeAttrHtml 
  *   slot = 1〜6 → heart_01.png〜heart_06.png（桃／赤／黄／緑／青／紫）
  *   slot = 7   → icon_all.png（ALL）
  *   opts.score: true → icon_score.png（スコア）
- *   opts.draw_yell: true → icon_draw.png（ドローエール）
+ *   opts.draw_yell: true → icon_draw.png（ドロー）
  *   opts.blade: true → icon_blade.png（ブレードハート）
  *
  * @param {number} slot
@@ -31,7 +31,7 @@ export function heartSlotArtIconHtml(slot, opts) {
     slotCls = "heart-slot-art-ico--score";
   } else if (opts.draw_yell) {
     file = "icon_draw.png";
-    alt = "ドローエール";
+    alt = "ドロー";
     slotCls = "heart-slot-art-ico--draw-yell";
   } else if (opts.blade) {
     file = "icon_blade.png";
@@ -63,6 +63,45 @@ export function heartSlotArtIconHtml(slot, opts) {
     ' class="' + escapeAttrHtml(cls) + '"' +
     ' draggable="false" loading="lazy" decoding="async" />'
   );
+}
+
+/** blade_heart キーが DB 上の「ドロー」特殊 BH（draw / drow 表記ゆれ）か */
+export function isBladeHeartDrawMarkerKey(key) {
+  const k = String(key || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\.(png|gif|webp|jpg|jpeg)$/i, "");
+  return k === "b_draw" || k === "b_drow" || k === "draw" || k === "drow";
+}
+
+/** カードの blade_heart にドロー特殊 BH（b_draw / b_drow 等）が 1 つ以上ある */
+export function bladeHeartHasDrawMarker(card) {
+  const bh = card && card.blade_heart;
+  if (!bh || typeof bh !== "object" || Array.isArray(bh)) return false;
+  return Object.keys(bh).some(function (k) {
+    const v = Number(bh[k]);
+    return isBladeHeartDrawMarkerKey(k) && Number.isFinite(v) && v > 0;
+  });
+}
+
+/**
+ * ライブかつ ALL（b_all）BH を持たず、桃〜紫（b_heart01〜06）のいずれかの色 BH を 1 つ以上持つ。
+ * 公式ルール上これらはすべて「ドロー」特殊ハートのライブ。
+ */
+export function liveCardHasColoredBhWithoutAll(card) {
+  if (!card || card.type !== T_LIVE) return false;
+  const bh = card.blade_heart;
+  if (!bh || typeof bh !== "object" || Array.isArray(bh)) return false;
+  let hasColored = false;
+  for (const key of Object.keys(bh)) {
+    if (isBladeHeartDrawMarkerKey(key)) continue;
+    const slot = parseBladeHeartSlotFromKey(key);
+    const v = Number(bh[key]);
+    if (!Number.isFinite(v) || v <= 0) continue;
+    if (slot === 7) return false;
+    if (slot != null && slot >= 1 && slot <= 6) hasColored = true;
+  }
+  return hasColored;
 }
 
 /** メンバー・ライブ共通: DB に blade_heart オブジェクトがあり 1 キー以上あれば BH あり */
@@ -138,12 +177,16 @@ export function setIsScoreLiveCheck(fn) {
  * @param {string} svgHtml svgForBladeHeartKey の結果
  * @param {boolean} showNote
  */
-function wrapHeartGlyphWithNote(svgHtml, showNote) {
-  if (!showNote) return svgHtml;
+function wrapHeartGlyphWithScoreBadge(svgHtml, showScore) {
+  if (!showScore) return svgHtml;
+  const scoreIco = heartSlotArtIconHtml(0, { score: true, extraClass: "blade-bh-score-char" });
   return (
-    '<span class="blade-heart-with-note" role="img" aria-label="\u30e9\u30a4\u30d6\u306e\u30d6\u30ec\u30fc\u30c9\u30cf\u30fc\u30c8">' +
+    '<span class="blade-heart-with-note blade-heart-with-score" role="img" aria-label="\u30b9\u30b3\u30a2\u30e9\u30a4\u30d6\u306e\u30d6\u30ec\u30fc\u30c9\u30cf\u30fc\u30c8">' +
     svgHtml +
-    '<span class="blade-bh-note-char" aria-hidden="true">\u266A</span></span>'
+    (scoreIco
+      ? '<span class="blade-bh-note-char blade-bh-score-char-wrap" aria-hidden="true">' + scoreIco + "</span>"
+      : '<span class="blade-bh-note-char" aria-hidden="true">\u266A</span>') +
+    "</span>"
   );
 }
 
@@ -576,7 +619,7 @@ export function bladeHeartAggregatePillHtml(dbKey, quantity, additiveQty) {
   } else {
     iconHtml = svgForBladeHeartKey(dbKey, "blade-heart-svg");
   }
-  const iconWrap = wrapHeartGlyphWithNote(iconHtml, addP > 0);
+  const iconWrap = wrapHeartGlyphWithScoreBadge(iconHtml, addP > 0);
   return (
     '<span class="deck-peek-bh-color-pill deck-peek-bh-color-pill--art ' +
     slotClass +
@@ -614,12 +657,19 @@ export function bladeHeartRowIconsHtml(card) {
     : bladeHeartIsLiveAdditiveBladeHeart(card);
   const icons = keys
     .map(function (k) {
-      return wrapHeartGlyphWithNote(svgForBladeHeartKey(k, "blade-heart-svg blade-heart-svg--row"), note);
+      if (isBladeHeartDrawMarkerKey(k)) {
+        return (
+          '<span class="blade-heart-row-draw-marker" title="ドロー">' +
+          heartSlotArtIconHtml(0, { draw_yell: true, extraClass: "blade-heart-svg blade-heart-svg--row" }) +
+          "</span>"
+        );
+      }
+      return wrapHeartGlyphWithScoreBadge(svgForBladeHeartKey(k, "blade-heart-svg blade-heart-svg--row"), note);
     })
     .join("");
   /** @type {string[]} */
   const titleParts = [];
-  if (note) titleParts.push("\u266A\u30e9\u30a4\u30d6BH");
+  if (note) titleParts.push("\u30b9\u30b3\u30a2\u30e9\u30a4\u30d6BH");
   keys.forEach(function (k) {
     titleParts.push(k + "=" + bh[k]);
   });

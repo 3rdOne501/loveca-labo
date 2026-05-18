@@ -36,7 +36,7 @@ const ART_FILE_BY_KEY = /** @type {Record<string, string>} */ ({
   live_start: "live_start.png",
   /** 効果文中のライブ成功時トークン */
   live_success: "live_success.png",
-  /** ドローエール等 */
+  /** ドロー（旧ドローエール） */
   draw_yell: "icon_draw.png",
   /** 自動 */
   jidou: "jidou.png",
@@ -295,21 +295,29 @@ export function wikiAbilityFileStemToIconHref(stem) {
   return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(build());
 }
 
-/** カード詳細: ドローエール（BH）バッジ */
+/** カード詳細: ドロー（BH）バッジ */
 export function catalogDrawYellBadgeHtml() {
   return htmlStatusGameIconImg(
-    "ドローエール（BH）",
+    "ドロー（BH）",
     GAME_STATUS_ICON_ART_DIR + ART_FILE_BY_KEY.draw_yell,
     "dlg-card-catalog-badge-img",
   );
 }
 
-/** カード詳細: 音符ライブ（♪） */
+/** @deprecated 互換 */
+export const catalogDrawLiveBadgeHtml = catalogDrawYellBadgeHtml;
+
+/** カード詳細: スコア（旧音符ライブ） */
 export function catalogNoteLiveBadgeHtml() {
-  return (
-    '<span class="dlg-card-catalog-badge-note" role="img" aria-label="音符ライブ" title="音符ライブ">♪</span>'
+  return htmlStatusGameIconImg(
+    "スコア",
+    GAME_STATUS_ICON_ART_DIR + ART_FILE_BY_KEY.score,
+    "dlg-card-catalog-badge-img dlg-card-catalog-badge-img--score",
   );
 }
+
+/** @deprecated 互換 */
+export const catalogScoreLiveBadgeHtml = catalogNoteLiveBadgeHtml;
 
 var __gsiArtPrefetchStarted = false;
 
