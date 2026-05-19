@@ -93,7 +93,55 @@ let suppressLocalWriteSync = false;
 let pendingPush = null;
 let lastPushedJson = "";
 let authStateReadyDone = false;
-let autoSignInAttemptedThisPage = false;
+
+/** http(s) ではリダイレクト、file://（オフラインアプリ）ではポップアップ */
+export function isCloudAuthEnvironmentSupported() {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.location.protocol !== "file:";
+  } catch (_) {
+    return true;
+  }
+}
+
+function prefersGooglePopupAuth() {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.location.protocol === "file:";
+  } catch (_) {
+    return false;
+  }
+}
+
+/** @returns {Promise<Record<string, string>|null>} */
+async function loadFirebaseConfigObject() {
+  try {
+    const mod = await import(/* @vite-ignore */ "./firebaseConfig.js");
+    const cfg = mod && mod.firebaseConfig;
+    if (cfg && typeof cfg === "object" && cfg.apiKey && cfg.authDomain && cfg.projectId) {
+      return cfg;
+    }
+  } catch (err) {
+    console.warn("[cloudAuth] firebaseConfig.js import failed:", err);
+  }
+  try {
+    const el = document.getElementById("llocg-firebase-config-json");
+    if (el && el.textContent) {
+      const cfg = JSON.parse(el.textContent.trim());
+      if (cfg && cfg.apiKey && cfg.authDomain && cfg.projectId) {
+        return cfg;
+      }
+    }
+  } catch (err) {
+    console.warn("[cloudAuth] inline firebase config parse failed:", err);
+  }
+  return null;
+}
+
+async function ensureCloudAuthReady() {
+  if (cloudSyncEnabled && _auth && _authApi && _gp) return true;
+  return !!(await initCloudAuthIfConfigured());
+}
 
 function loadPreferGoogleAutoLogin() {
   try {
@@ -138,19 +186,7 @@ async function waitForAuthStateReady() {
   authStateReadyDone = true;
 }
 
-function canAttemptAutoRedirectNow() {
-  if (autoSignInAttemptedThisPage) return false;
-  try {
-    var ts = Number(sessionStorage.getItem(AUTO_REDIRECT_TS_KEY) || 0);
-    if (ts > 0 && Date.now() - ts < 60000) return false;
-  } catch (_) {
-    /* noop */
-  }
-  return true;
-}
-
-function markAutoRedirectAttempt() {
-  autoSignInAttemptedThisPage = true;
+function markRedirectLoginAttempt() {
   try {
     sessionStorage.setItem(AUTO_REDIRECT_TS_KEY, String(Date.now()));
   } catch (_) {
@@ -158,39 +194,72 @@ function markAutoRedirectAttempt() {
   }
 }
 
-/**
- * サードパーティ Cookie 不要のリダイレクトログイン（ポップアップは使わない）
- * @param {{ silent?: boolean }} [opts]
- */
-async function signInWithGoogleRedirect(opts) {
-  if (!cloudSyncEnabled || !_auth || !_gp || !_authApi) {
-    showToast("Google ログインの設定が見つかりません。`js/firebaseConfig.js` を確認してください。");
+function cookieHelpMessage() {
+  return (
+    "Google ログインには Cookie が必要です。Safari: 設定→プライバシー→「すべての Cookie をブロック」をオフ。" +
+    " Chrome: アドレスバー左の鍵→Cookie→このサイトを許可。簡易対戦だけならログイン不要です。"
+  );
+}
+
+function applySignedInUser(user) {
+  currentUser = userFromFirebaseAuthUser(user);
+  setPreferGoogleAutoLogin(true);
+  saveCachedCloudUser(currentUser);
+  notifyUserListeners();
+  pullCloudStateAndMerge().catch(function (err) {
+    console.warn("[cloudAuth] pull failed:", err);
+  });
+}
+
+/** 手動ログイン（file:// はポップアップ、http(s) はリダイレクト） */
+async function signInWithGoogleInteractive() {
+  if (!(await ensureCloudAuthReady())) {
+    showToast(
+      "Google ログインを準備できません。`js/firebaseConfig.js` があるか、ネットワーク接続を確認してください。",
+      { duration: 7000 },
+    );
     return null;
+  }
+  if (!_auth || !_gp || !_authApi) {
+    showToast("Google ログインを準備できません。ページを再読込してください。", { duration: 6000 });
+    return null;
+  }
+  if (prefersGooglePopupAuth() && typeof _authApi.signInWithPopup === "function") {
+    showToast("Google ログイン（ポップアップ）", { duration: 2800 });
+    try {
+      const cred = await _authApi.signInWithPopup(_auth, _gp);
+      if (cred && cred.user) {
+        applySignedInUser(cred.user);
+        showToast("ログインしました", { duration: 3200 });
+      }
+      return cred;
+    } catch (err) {
+      console.warn("[cloudAuth] signInWithPopup failed:", err);
+      showToast(cookieHelpMessage() + " ポップアップがブロックされていないか確認してください。", {
+        duration: 8000,
+      });
+      return null;
+    }
   }
   if (typeof _authApi.signInWithRedirect !== "function") {
-    showToast("このブラウザではリダイレクトログインに対応していません。");
+    showToast("このブラウザでは Google ログインに対応していません。");
     return null;
   }
-  if (!opts || !opts.silent) {
-    showToast("Google ログインへ移動します（サードパーティ Cookie 不要）", { duration: 3200 });
-  }
-  markAutoRedirectAttempt();
+  showToast("Google ログインへ移動します", { duration: 3200 });
+  markRedirectLoginAttempt();
   try {
     await _authApi.signInWithRedirect(_auth, _gp);
   } catch (err) {
     console.warn("[cloudAuth] signInWithRedirect failed:", err);
-    showToast("ログイン画面を開けませんでした。ブラウザの Cookie を許可して再試行してください。");
+    showToast(cookieHelpMessage(), { duration: 8000 });
   }
   return null;
 }
 
-async function tryRestoreGoogleSessionAfterInit() {
+/** 起動時: IndexedDB からの復元のみ（自動リダイレクトはしない） */
+async function restoreGoogleSessionQuietly() {
   if (!cloudSyncEnabled || !_auth || !_authApi) return;
   await waitForAuthStateReady();
-  if (_auth.currentUser) return;
-  if (!loadPreferGoogleAutoLogin()) return;
-  if (!canAttemptAutoRedirectNow()) return;
-  await signInWithGoogleRedirect({ silent: true });
 }
 
 export function onCloudUserChange(fn) {
@@ -317,8 +386,6 @@ async function loadFirebaseSdk(config) {
           console.warn("[cloudAuth] pull failed:", err);
         });
       }
-    } else if (!currentUser) {
-      tryRestoreGoogleSessionAfterInit();
     }
     return app;
   })();
@@ -442,19 +509,8 @@ let lastConfig = null;
 
 export async function initCloudAuthIfConfigured() {
   if (typeof window === "undefined") return false;
-  let config = null;
-  try {
-    const mod = await import(/* @vite-ignore */ "./firebaseConfig.js");
-    if (mod && mod.firebaseConfig && typeof mod.firebaseConfig === "object") {
-      const cfg = mod.firebaseConfig;
-      if (cfg.apiKey && cfg.authDomain && cfg.projectId) {
-        config = cfg;
-      }
-    }
-  } catch (_) {
-    /* config file missing — feature disabled */
-    return false;
-  }
+  if (cloudSyncEnabled && _auth) return true;
+  const config = await loadFirebaseConfigObject();
   if (!config) return false;
   lastConfig = config;
   cloudSyncEnabled = true;
@@ -483,25 +539,22 @@ export function getCurrentCloudUser() {
   return currentUser;
 }
 
-/** Firebase セッション復元または自動ログインを試みる（設定済みのとき） */
+/** Firebase セッション復元のみ（自動で Google へ飛ばさない） */
 export async function ensureGoogleSession() {
   if (!cloudSyncEnabled || !_auth || !_authApi) return getEffectiveCloudUser();
-  await waitForAuthStateReady();
+  await restoreGoogleSessionQuietly();
   if (_auth && _auth.currentUser) {
     currentUser = userFromFirebaseAuthUser(_auth.currentUser);
     saveCachedCloudUser(currentUser);
     notifyUserListeners();
     return currentUser;
   }
-  if (!currentUser && loadPreferGoogleAutoLogin()) {
-    await tryRestoreGoogleSessionAfterInit();
-  }
   return getEffectiveCloudUser();
 }
 
-/** Google ログイン（常にページ遷移方式・サードパーティ Cookie 非依存） */
+/** Google ログイン（ボタン押下時のみ） */
 export async function signInWithGoogle() {
-  return signInWithGoogleRedirect({ silent: false });
+  return signInWithGoogleInteractive();
 }
 
 export async function signOutCloud() {

@@ -14,6 +14,7 @@ import {
   getCurrentCloudUser,
   getEffectiveCloudUser,
   ensureGoogleSession,
+  isCloudAuthEnvironmentSupported,
   signInWithGoogle,
   signOutCloud,
 } from "./cloudAuth.js";
@@ -86,6 +87,7 @@ try {
 }
 
 let appStarted = false;
+let versusModeReady = false;
 /** @type {string|null} */
 let activeVersusRoomMounted = null;
 
@@ -300,14 +302,6 @@ function startApp(viewDeck, viewGame, statusEl) {
     } catch (_) {
       /* noop */
     }
-    initVersusMode({
-      onEnterVersusPlay: function (payload) {
-        enterVersusPlay(viewDeck, viewGame, payload);
-      },
-      getCurrentDeckMap: function () {
-        return loadDeckBundleFromStorage().map;
-      },
-    });
     initDeckBuilder(viewDeck, {
       onStartGame: (deckMap) => {
         try {
@@ -500,6 +494,30 @@ if (document.readyState === "loading") {
   wirePageReloadButtons();
 }
 
+function initVersusModeEarly() {
+  if (versusModeReady) return;
+  versusModeReady = true;
+  try {
+    initVersusMode({
+      onEnterVersusPlay: function (payload) {
+        if (!appStarted) {
+          showToast("カードデータの読み込み完了後に対戦を開始してください（あと数秒）", {
+            duration: 5000,
+          });
+          return;
+        }
+        enterVersusPlay(viewDeck, viewGame, payload);
+      },
+      getCurrentDeckMap: function () {
+        return loadDeckBundleFromStorage().map;
+      },
+    });
+  } catch (err) {
+    console.error("[versus] initVersusMode failed:", err);
+    versusModeReady = false;
+  }
+}
+
 function wireCloudAuthBar() {
   const bar = document.getElementById("cloud-auth-bar");
   const statusEl = document.getElementById("cloud-auth-status");
@@ -522,7 +540,17 @@ function wireCloudAuthBar() {
 
   function paintAuthBar(user) {
     const effective = user || getEffectiveCloudUser();
-    if (!isCloudSyncAvailable() && !effective) return;
+    if (!isCloudSyncAvailable() && !effective) {
+      if (statusEl) statusEl.textContent = "未ログイン";
+      signInBtn.hidden = false;
+      signOutBtn.hidden = true;
+      if (!isCloudAuthEnvironmentSupported()) {
+        signInBtn.title = "オフラインアプリではポップアップで Google ログインします";
+      } else {
+        signInBtn.title = "Google でログイン";
+      }
+      return;
+    }
     bar.hidden = false;
     if (effective) {
       if (statusEl) {
@@ -577,4 +605,5 @@ if (document.readyState === "loading") {
   wireCloudAuthBar();
 }
 
+initVersusModeEarly();
 tryLoadDatabase(viewDeck, viewGame, status);

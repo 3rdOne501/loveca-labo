@@ -80,6 +80,34 @@ function setLobbyStatus(text) {
   if (st) st.textContent = text || "";
 }
 
+function openVersusLobbyDialog() {
+  var dlg = /** @type {HTMLDialogElement|null} */ (el("dlg-versus-lobby"));
+  if (!dlg) {
+    showToast("対戦ダイアログが見つかりません。ページを再読込してください。");
+    return false;
+  }
+  var uOpen = getEffectiveCloudUser();
+  setLobbyStatus(
+    (uOpen ? "ログイン: " + (uOpen.displayName || uOpen.email || "Google") + " · " : "") +
+      "対面・オンラインどちらでも各プレイヤーが自分の端末で盤面を操作。勝敗は成功ライブ3枚（相手2枚以下）。",
+  );
+  setLobbyRoomCode("");
+  updateVersusLobbyButtons(null, null);
+  setOnlineSectionVisible();
+  try {
+    if (dlg.open) {
+      dlg.focus();
+      return true;
+    }
+    dlg.showModal();
+    return true;
+  } catch (err) {
+    console.warn("[versus] showModal failed:", err);
+    showToast("対戦ウィンドウを開けませんでした。ブラウザを再読込してください。");
+    return false;
+  }
+}
+
 function setLobbyRoomCode(code) {
   var inp = /** @type {HTMLInputElement|null} */ (el("dlg-versus-room-code"));
   if (inp && code) inp.value = code;
@@ -214,6 +242,10 @@ function startLocalVersus() {
 export function initVersusMode(opts) {
   onEnterVersusPlay = opts.onEnterVersusPlay;
   getCurrentDeckMap = opts.getCurrentDeckMap;
+  window.__llocgStartLocalVersus = function () {
+    startLocalVersus();
+  };
+  window.__llocgOpenVersusLobby = openVersusLobbyDialog;
 
   var dlg = /** @type {HTMLDialogElement|null} */ (el("dlg-versus-lobby"));
   var btnOpen = el("btn-start-versus");
@@ -239,23 +271,20 @@ export function initVersusMode(opts) {
   onCloudUserChange(refreshVersusButton);
   refreshVersusButton();
 
-  btnOpen?.addEventListener("click", function () {
-    if (!dlg || typeof dlg.showModal !== "function") {
-      showToast("対戦ダイアログが見つかりません。ページを再読込してください。");
-      return;
-    }
-    var uOpen = getEffectiveCloudUser();
-    setLobbyStatus(
-      (uOpen
-        ? "ログイン: " + (uOpen.displayName || uOpen.email || "Google") + " · "
-        : "") +
-        "対面・オンラインどちらでも各プレイヤーが自分の端末で盤面を操作。勝敗は成功ライブ3枚（相手2枚以下）。",
+  if (!window.__llocgVersusOpenDelegated) {
+    window.__llocgVersusOpenDelegated = true;
+    document.addEventListener(
+      "click",
+      function (ev) {
+        var t = ev.target;
+        if (!(t instanceof Element)) return;
+        var hit = t.closest("#btn-start-versus");
+        if (!hit || hit.disabled) return;
+        openVersusLobbyDialog();
+      },
+      true,
     );
-    setLobbyRoomCode("");
-    updateVersusLobbyButtons(null, null);
-    setOnlineSectionVisible();
-    dlg.showModal();
-  });
+  }
 
   btnClose?.addEventListener("click", function () {
     dlg?.close();

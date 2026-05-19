@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Loveca Labo" />
-    <meta name="loveca-build" content="2026051858" />
+    <meta name="loveca-build" content="2026051860" />
     <title>Loveca Labo</title>
     <!-- 万一以前のバージョンの Service Worker が登録された端末で取り残しが起きた場合に備え、
          先頭で SW 登録を一括解除する。SW 自体は本サイトでは使っていない。 -->
@@ -83,6 +83,68 @@ python3 -m http.server 8080</pre>
           var el = document.getElementById("file-open-hint");
           if (el) el.style.display = "block";
         }
+      })();
+    </script>
+    <script type="application/json" id="llocg-firebase-config-json">
+      {
+        "apiKey": "AIzaSyA3Hvs131VBdhZ05fJe8yzAS1M-KMUa95c",
+        "authDomain": "loveca-labo.firebaseapp.com",
+        "projectId": "loveca-labo",
+        "storageBucket": "loveca-labo.firebasestorage.app",
+        "messagingSenderId": "298830141228",
+        "appId": "1:298830141228:web:c4a342bec466f361017e89",
+        "measurementId": "G-4WFPM24NLN"
+      }
+    </script>
+    <script>
+      (function () {
+        function openVersusLobby() {
+          var dlg = document.getElementById("dlg-versus-lobby");
+          if (!dlg) {
+            window.alert("対戦画面の準備ができていません。ページを再読込してください。");
+            return;
+          }
+          try {
+            if (!dlg.open && typeof dlg.showModal === "function") {
+              dlg.showModal();
+            }
+          } catch (e) {
+            console.warn("[versus-boot]", e);
+            window.alert("対戦ウィンドウを開けませんでした。ブラウザを再読込してください。");
+          }
+        }
+        window.__llocgOpenVersusLobby = openVersusLobby;
+        document.addEventListener(
+          "click",
+          function (ev) {
+            var t = ev.target;
+            if (!t || !t.closest) return;
+            if (t.closest("#btn-start-versus")) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              openVersusLobby();
+              return;
+            }
+            if (t.closest("#dlg-versus-start-local")) {
+              ev.preventDefault();
+              if (typeof window.__llocgStartLocalVersus === "function") {
+                window.__llocgStartLocalVersus();
+              } else {
+                window.alert(
+                  "アプリの読み込みが完了してからお試しください（数秒待ってからもう一度押してください）",
+                );
+              }
+              return;
+            }
+            if (t.closest("#dlg-versus-lobby-close")) {
+              var d = document.getElementById("dlg-versus-lobby");
+              try {
+                d && d.close();
+              } catch (_) {}
+            }
+          },
+          true,
+        );
       })();
     </script>
     <div id="toast-stack" class="toast-stack" aria-live="polite"></div>
@@ -537,23 +599,6 @@ python3 -m http.server 8080</pre>
           </button>
         </div>
       </header>
-
-      <div id="versus-match-bar" class="versus-match-bar" hidden>
-        <div class="versus-match-bar__info">
-          <span id="versus-match-bar-label" class="versus-match-bar__label">簡易対戦</span>
-          <span id="versus-match-bar-detail" class="versus-match-bar__detail muted"></span>
-        </div>
-        <div class="versus-match-bar__actions">
-          <span id="versus-opp-sl-controls" class="versus-opp-sl-controls" hidden>
-            <span class="muted">相手SL</span>
-            <button type="button" class="btn sm secondary" id="btn-versus-opp-sl-minus" title="相手の成功ライブ枚数を1減らす">−</button>
-            <strong id="versus-opp-sl-num" class="versus-opp-sl-num">0</strong>
-            <button type="button" class="btn sm secondary" id="btn-versus-opp-sl-plus" title="相手の成功ライブ枚数を1増やす">＋</button>
-          </span>
-          <button type="button" class="btn sm secondary" id="btn-versus-lobby" hidden title="対戦ロビーを開く">ロビー</button>
-          <button type="button" class="btn sm secondary" id="btn-versus-concede" hidden title="投了（総合ルール 1.2.3）">投了</button>
-        </div>
-      </div>
 
       <div class="game-board">
         <div class="col col-left">
