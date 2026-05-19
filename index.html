@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Loveca Labo" />
-    <meta name="loveca-build" content="2026051868" />
+    <meta name="loveca-build" content="2026051869" />
     <title>Loveca Labo</title>
     <!-- 万一以前のバージョンの Service Worker が登録された端末で取り残しが起きた場合に備え、
          先頭で SW 登録を一括解除する。SW 自体は本サイトでは使っていない。 -->
@@ -630,100 +630,66 @@ python3 -m http.server 8080</pre>
         </div>
       </header>
 
-            <div id="versus-opponent-board-wrap" class="versus-opponent-board" hidden aria-label="相手の公開盤面">
-        <p id="versus-opp-board-meta" class="versus-opp-board-meta muted versus-opp-legible"></p>
+                  <div id="versus-opponent-board-wrap" class="versus-opponent-board" hidden aria-label="相手の公開盤面">
+        <p id="versus-opp-board-meta" class="versus-opp-board-meta muted"></p>
         <div class="versus-opponent-board__flip">
           <div class="versus-opponent-board__surface">
-            <div class="versus-opponent-board__col-spacer col col-left" aria-hidden="true"></div>
-            <div class="versus-opponent-board__center col col-center">
-              <section class="zone-block versus-opp-top-strip">
-                <div class="versus-opp-top-strip__row">
-                  <section class="zone-block versus-opp-top-strip__sl">
-                    <h3 class="versus-opp-zone-heading versus-opp-legible">成功ライブ <span id="versus-opp-sl-count" class="badge">0</span></h3>
-                    <div id="versus-opp-zone-sl" class="card-strip zone-drop success-live-strip"></div>
-                  </section>
-                  <section class="zone-block versus-opp-top-strip__res">
-                    <h3 class="versus-opp-zone-heading versus-opp-legible">解決 <span id="versus-opp-resolution-count" class="badge">0</span></h3>
-                    <div id="versus-opp-zone-resolution" class="card-strip zone-drop resolution-zone-strip"></div>
-                  </section>
-                </div>
-              </section>
-              <section class="zone-block versus-opp-hand-secret">
-                <h3 class="versus-opp-zone-heading versus-opp-legible">
-                  手札
-                  <span class="muted versus-opp-hand-secret-label">（非公開）</span>
-                  <span id="versus-opp-hand-count" class="badge">0</span>
-                </h3>
+            <aside class="versus-opponent-board__rail versus-opponent-board__rail--end col">
+              <section class="zone-block versus-opp-rail-zone">
+                <h3 class="versus-opp-zone-heading versus-opp-legible">手札 <span id="versus-opp-hand-count" class="badge">0</span></h3>
                 <div id="versus-opp-zone-hand" class="card-strip zone-drop hand-zone versus-opp-hand-zone"></div>
-                <p class="hint zone-inline-help versus-opp-hand-hint muted versus-opp-legible">枚数のみ表示。中身は見えません。</p>
               </section>
-              <h3 class="versus-opp-zone-heading versus-opp-legible live-area-col-heading">ライブエリア</h3>
-              <div class="three-cols versus-opp-live-row">
-                <div class="slot-wrap">
-                  <span class="slot-label versus-opp-legible">左</span>
-                  <div id="versus-opp-live-left" class="card-strip zone-drop live-slot"></div>
-                </div>
-                <div class="slot-wrap slot-wrap--live-center">
-                  <span class="slot-label versus-opp-legible">中央</span>
-                  <div id="versus-opp-live-center" class="card-strip zone-drop live-slot"></div>
-                </div>
-                <div class="slot-wrap">
-                  <span class="slot-label versus-opp-legible">右</span>
-                  <div id="versus-opp-live-right" class="card-strip zone-drop live-slot"></div>
-                </div>
-              </div>
-              <div class="stage-title-bar mt">
-                <h3 class="stage-title-bar__h versus-opp-legible">ステージ</h3>
-              </div>
-              <div class="three-cols">
-                <div class="slot-wrap">
-                  <span class="slot-label versus-opp-legible">左</span>
-                  <div id="versus-opp-stage-left" class="card-strip zone-drop stage-slot"></div>
-                </div>
-                <div class="slot-wrap">
-                  <span class="slot-label versus-opp-legible">中央</span>
-                  <div id="versus-opp-stage-center" class="card-strip zone-drop stage-slot"></div>
-                </div>
-                <div class="slot-wrap">
-                  <span class="slot-label versus-opp-legible">右</span>
-                  <div id="versus-opp-stage-right" class="card-strip zone-drop stage-slot"></div>
-                </div>
-              </div>
-              <details class="zone-block energy-fold versus-opp-energy-fold" open>
+              <section class="zone-block versus-opp-rail-zone">
+                <h3 class="versus-opp-zone-heading versus-opp-legible">解決 <span id="versus-opp-resolution-count" class="badge">0</span></h3>
+                <div id="versus-opp-zone-resolution" class="card-strip zone-drop resolution-zone-strip"></div>
+              </section>
+            </aside>
+                        <div class="versus-opponent-board__center col col-center">
+              <details class="zone-block energy-fold versus-opp-energy-fold">
                 <summary class="energy-fold__summary versus-opp-legible">
-                  <h3 class="energy-fold__title versus-opp-zone-heading">
-                    エネルギー
-                    <span class="energy-fold__counts">
-                      <span class="energy-fold__count-pair">
-                        <span class="energy-fold__count-label">A</span>
-                        <span id="versus-opp-energy-active-count" class="badge">0</span>
-                      </span>
-                      <span class="energy-fold__count-sep" aria-hidden="true">／</span>
-                      <span class="energy-fold__count-pair">
-                        <span class="energy-fold__count-label">W</span>
-                        <span id="versus-opp-energy-wait-count" class="badge badge--wait">0</span>
-                      </span>
-                    </span>
-                  </h3>
+                  <span class="versus-opp-zone-heading">エネルギー</span>
+                  <span class="energy-fold__counts">
+                    <span class="energy-fold__count-label">A</span><span id="versus-opp-energy-active-count" class="badge">0</span>
+                    <span class="energy-fold__count-sep">／</span>
+                    <span class="energy-fold__count-label">W</span><span id="versus-opp-energy-wait-count" class="badge badge--wait">0</span>
+                  </span>
                 </summary>
                 <div id="versus-opp-zone-energy" class="card-strip zone-drop energy-zone"></div>
               </details>
+              <div class="stage-title-bar versus-opp-stage-bar"><h3 class="stage-title-bar__h versus-opp-legible">ステージ</h3></div>
+              <div class="three-cols versus-opp-stage-row">
+                <div class="slot-wrap"><span class="slot-label versus-opp-legible">左</span><div id="versus-opp-stage-left" class="card-strip zone-drop stage-slot"></div></div>
+                <div class="slot-wrap"><span class="slot-label versus-opp-legible">中</span><div id="versus-opp-stage-center" class="card-strip zone-drop stage-slot"></div></div>
+                <div class="slot-wrap"><span class="slot-label versus-opp-legible">右</span><div id="versus-opp-stage-right" class="card-strip zone-drop stage-slot"></div></div>
+              </div>
+              <h3 class="versus-opp-zone-heading versus-opp-legible live-area-col-heading">ライブ</h3>
+              <div class="three-cols versus-opp-live-row">
+                <div class="slot-wrap"><span class="slot-label versus-opp-legible">左</span><div id="versus-opp-live-left" class="card-strip zone-drop live-slot"></div></div>
+                <div class="slot-wrap slot-wrap--live-center"><span class="slot-label versus-opp-legible">中</span><div id="versus-opp-live-center" class="card-strip zone-drop live-slot"></div></div>
+                <div class="slot-wrap"><span class="slot-label versus-opp-legible">右</span><div id="versus-opp-live-right" class="card-strip zone-drop live-slot"></div></div>
+              </div>
             </div>
-            <aside class="versus-opponent-board__side col col-right">
-              <section class="zone-block deck-block">
+
+            <aside class="versus-opponent-board__rail versus-opponent-board__rail--start col">
+              <section class="zone-block versus-opp-rail-zone deck-block">
                 <h3 class="versus-opp-zone-heading versus-opp-legible">デッキ <span id="versus-opp-deck-count" class="badge">0</span></h3>
                 <div id="versus-opp-deck-pile" class="deck-pile versus-opp-deck-pile" aria-hidden="true"></div>
               </section>
-              <section class="zone-block">
+              <section class="zone-block versus-opp-rail-zone">
                 <h3 class="versus-opp-zone-heading versus-opp-legible">控え室 <span id="versus-opp-waiting-count" class="badge">0</span></h3>
                 <div id="versus-opp-zone-waiting" class="card-strip zone-drop waiting-zone-strip"></div>
+              </section>
+              <section class="zone-block versus-opp-rail-zone">
+                <h3 class="versus-opp-zone-heading versus-opp-legible">成功ライブ <span id="versus-opp-sl-count" class="badge">0</span></h3>
+                <div id="versus-opp-zone-sl" class="card-strip zone-drop success-live-strip"></div>
               </section>
             </aside>
           </div>
         </div>
       </div>
 
-<div class="game-board">
+
+      <div class="game-board">
         <div class="col col-left">
           <!-- デスクトップ専用（スマホ縦では空＋非表示）: JS が山札シミュ・成功ライブ・解決をここへ移します -->
           <div id="mount-desktop-sim-success-row" class="zone-sim-success-row chrome-play-mount-desktop" aria-hidden="true"></div>

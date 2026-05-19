@@ -570,27 +570,34 @@ body.play-versus-mode #view-game {
   min-height: 0;
 }
 body.play-versus-mode .versus-opponent-board {
-  flex: 1 1 50%;
-  min-height: min(44vh, 500px);
-  margin: 0 0 0.25rem;
-  padding: 0.3rem 0.45rem 0.4rem;
+  --versus-opp-card-w: calc(var(--loveca-play-w, 82px) * 0.62);
+  --versus-opp-card-h: calc(var(--loveca-play-h, var(--card-h)) * 0.62);
+  flex: 0 0 auto;
+  max-height: min(32vh, 300px);
+  min-height: 0;
+  margin: 0 0 0.2rem;
+  padding: 0.2rem 0.35rem 0.25rem;
   border-radius: var(--radius-md, 8px);
   border: 1px solid rgba(140, 170, 255, 0.28);
   background: linear-gradient(180deg, rgba(28, 36, 62, 0.92), rgba(16, 22, 40, 0.88));
-  max-height: none;
   overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 body.play-versus-mode .versus-opp-board-meta {
-  margin: 0 0 0.35rem;
-  font-size: 0.76rem;
+  margin: 0 0 0.15rem;
+  font-size: 0.7rem;
   text-align: center;
   flex: 0 0 auto;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 body.play-versus-mode .versus-opponent-board__flip {
   flex: 1 1 auto;
   min-height: 0;
+  max-height: 100%;
   transform: rotate(180deg);
   transform-origin: center center;
 }
@@ -600,83 +607,88 @@ body.play-versus-mode .versus-opponent-board__flip .versus-opp-legible {
 body.play-versus-mode .versus-opponent-board__flip summary.versus-opp-legible {
   display: list-item;
 }
-body.play-versus-mode .versus-opp-board-meta {
-  transform: none;
-}
 body.play-versus-mode .versus-opponent-board__surface {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.45fr) minmax(0, 1fr);
-  gap: 0.4rem;
-  min-height: min(46vh, 520px);
+  grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.55fr) minmax(0, 0.78fr);
+  gap: 0.28rem;
   height: 100%;
+  max-height: min(28vh, 260px);
+  min-height: 0;
   pointer-events: none;
   align-items: stretch;
 }
-body.play-versus-mode .versus-opponent-board__col-spacer {
+body.play-versus-mode .versus-opponent-board__rail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
   min-height: 0;
+  overflow: hidden;
 }
-body.play-versus-mode .versus-opp-top-strip__row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 0.4rem;
-}
-body.play-versus-mode .versus-opponent-board__side {
-  min-height: 0;
-  overflow-y: auto;
-  padding-right: 0.15rem;
+body.play-versus-mode .versus-opp-rail-zone {
+  margin: 0;
+  flex: 0 0 auto;
 }
 body.play-versus-mode .versus-opponent-board__center {
   min-height: 0;
-  overflow-y: auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.18rem;
+  justify-content: center;
 }
 body.play-versus-mode .versus-opp-zone-heading,
-body.play-versus-mode .versus-opponent-board .stage-title-bar__h,
-body.play-versus-mode .versus-opponent-board .energy-fold__title {
-  margin: 0 0 0.2rem;
+body.play-versus-mode .versus-opponent-board .stage-title-bar__h {
+  margin: 0 0 0.1rem;
   font-family: var(--font-display);
-  font-size: 0.82rem;
+  font-size: 0.68rem;
+  line-height: 1.2;
 }
-body.play-versus-mode .versus-opponent-board .zone-block {
-  margin-bottom: 0.35rem;
+body.play-versus-mode .versus-opponent-board .live-area-col-heading {
+  margin: 0;
+}
+body.play-versus-mode .versus-opp-stage-bar {
+  margin: 0;
 }
 body.play-versus-mode .versus-opponent-board .three-cols {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.35rem;
+  gap: 0.2rem;
 }
 body.play-versus-mode .versus-opponent-board .slot-label {
   display: block;
-  font-size: 0.68rem;
-  margin-bottom: 0.12rem;
-  opacity: 0.85;
+  font-size: 0.58rem;
+  margin-bottom: 0.06rem;
+  opacity: 0.8;
 }
 body.play-versus-mode .versus-opponent-board .card-strip {
-  min-height: calc(var(--loveca-play-h, var(--card-h)) + 8px);
-  padding: 4px 5px;
+  min-height: calc(var(--versus-opp-card-h) + 4px);
+  padding: 2px 3px;
   align-items: flex-end;
   justify-content: center;
 }
 body.play-versus-mode .versus-opponent-board .stage-slot.card-strip {
-  min-height: calc(var(--loveca-play-h, var(--card-h)) + 30px);
+  min-height: calc(var(--versus-opp-card-h) + 14px);
 }
 body.play-versus-mode .versus-opponent-board .live-slot.card-strip {
-  min-height: var(--loveca-play-h, var(--card-h));
+  min-height: var(--versus-opp-card-h);
 }
-body.play-versus-mode .versus-opponent-board .hand-zone.card-strip {
-  min-height: calc(var(--loveca-play-h, var(--card-h)) + 10px);
-  justify-content: center;
+body.play-versus-mode .versus-opponent-board .hand-zone.card-strip,
+body.play-versus-mode .versus-opponent-board .resolution-zone-strip,
+body.play-versus-mode .versus-opponent-board .waiting-zone-strip,
+body.play-versus-mode .versus-opponent-board .success-live-strip {
+  min-height: calc(var(--versus-opp-card-h) + 2px);
+}
+body.play-versus-mode .versus-opponent-board .energy-zone.card-strip {
+  min-height: calc(var(--versus-opp-card-h) + 2px);
 }
 body.play-versus-mode .versus-opponent-board .card-item {
-  width: var(--loveca-play-w, 82px);
+  width: var(--versus-opp-card-w);
   flex-shrink: 0;
   cursor: default;
   pointer-events: none;
 }
 body.play-versus-mode .versus-opponent-board .stage-slot .card-item[data-type="メンバー"] {
-  width: calc(var(--loveca-play-w, 82px) * 1.26);
+  width: calc(var(--versus-opp-card-w) * 1.22);
 }
 body.play-versus-mode .versus-opponent-board .card-item .card-img {
   width: 100%;
@@ -687,41 +699,44 @@ body.play-versus-mode .versus-opponent-board .card-item--live-h .card-img.rotate
 body.play-versus-mode .versus-opponent-board .card-item--energy-wait .card-img.rotated {
   transform: rotate(90deg);
 }
-body.play-versus-mode .versus-opponent-board .versus-opp-live-row {
-  transform: scale(0.84);
-  transform-origin: center center;
+body.play-versus-mode .versus-opponent-board .versus-opp-live-row,
+body.play-versus-mode .versus-opponent-board .versus-opp-stage-row {
+  transform: none;
 }
 body.play-versus-mode .versus-opp-hand-zone .card-item + .card-item {
-  margin-left: calc(var(--loveca-play-w, 82px) * -0.55);
+  margin-left: calc(var(--versus-opp-card-w) * -0.52);
 }
 body.play-versus-mode .versus-opp-hand-more {
   align-self: center;
-  font-size: 0.72rem;
-  margin-left: 0.25rem;
-}
-body.play-versus-mode .versus-opp-hand-hint {
-  margin: 0.15rem 0 0;
-  font-size: 0.68rem;
+  font-size: 0.62rem;
+  margin-left: 0.15rem;
 }
 body.play-versus-mode .versus-opp-deck-pile {
-  min-height: calc(var(--loveca-play-h, var(--card-h)) * 1.1);
+  min-height: calc(var(--versus-opp-card-h) * 0.95);
   display: flex;
   align-items: flex-end;
   justify-content: center;
 }
 body.play-versus-mode .versus-opp-deck-back {
-  width: var(--loveca-play-w, 82px);
+  width: var(--versus-opp-card-w);
   aspect-ratio: 63 / 88;
-  border-radius: 6px;
+  border-radius: 4px;
   background: center / cover no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 63 88'%3E%3Crect fill='%23222840' width='63' height='88' rx='4'/%3E%3C/svg%3E");
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+body.play-versus-mode .versus-opp-energy-fold {
+  margin: 0;
+}
+body.play-versus-mode .versus-opp-energy-fold .energy-fold__summary {
+  padding: 0.1rem 0;
+  font-size: 0.68rem;
 }
 body.play-versus-mode.versus-opponent-turn .versus-opponent-board {
   opacity: 0.97;
 }
 body.play-versus-mode .game-board {
-  flex: 1 1 50%;
-  min-height: min(44vh, 500px);
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: auto;
 }
 body.play-versus-mode .game-tools-row #btn-versus-end-turn:not([hidden]),
