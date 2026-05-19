@@ -16,6 +16,7 @@ export const VERSUS_BOARD_PUBLIC_V = 1;
  * @property {boolean} [lcWait]
  * @property {boolean} [lcInactive]
  * @property {boolean} [energyWait]
+ * @property {boolean} [hiddenFace]
  */
 
 /** @typedef {Object} VersusPublicBoard
@@ -23,6 +24,7 @@ export const VERSUS_BOARD_PUBLIC_V = 1;
  * @property {number} ts
  * @property {number} turnCount
  * @property {number} deckCount
+ * @property {number} handCount
  * @property {VersusPublicCard[]} hand
  * @property {VersusPublicCard[]} waitingRoom
  * @property {VersusPublicCard[]} resolutionArea
@@ -62,6 +64,15 @@ function stripCard(c, indexInZone) {
   let id = o.id != null && String(o.id) ? String(o.id) : "";
   if (!id && cardNo) id = cardNo + "@" + String(indexInZone);
   if (!id) return null;
+  if (o.hiddenFace === true) {
+    return {
+      id: id,
+      card_no: "",
+      name: "",
+      type: String(o.type || ""),
+      hiddenFace: true,
+    };
+  }
   /** @type {VersusPublicCard} */
   const out = {
     id: id,
@@ -113,6 +124,55 @@ function countTriple(trip) {
   );
 }
 
+/** ライブ置き場は枚数だけ共有（表面は非公開） */
+function stripLiveAreaPublic(trip) {
+  const t =
+    trip && typeof trip === "object"
+      ? /** @type {Record<string, unknown>} */ (trip)
+      : {};
+  function slot(arr) {
+    const list = arrayFromFirestoreValue(arr);
+    const out = [];
+    for (let i = 0; i < list.length; i++) {
+      out.push({
+        id: "opp-live-" + i,
+        card_no: "",
+        name: "",
+        type: "ライブ",
+        hiddenFace: true,
+      });
+    }
+    return out;
+  }
+  return {
+    left: slot(t.left),
+    center: slot(t.center),
+    right: slot(t.right),
+  };
+}
+
+function redactLiveAreaPublic(trip) {
+  if (!trip) {
+    return { left: [], center: [], right: [] };
+  }
+  function slot(list) {
+    return (list || []).map(function (c, i) {
+      return {
+        id: c.id || "opp-live-" + i,
+        card_no: "",
+        name: "",
+        type: "ライブ",
+        hiddenFace: true,
+      };
+    });
+  }
+  return {
+    left: slot(trip.left),
+    center: slot(trip.center),
+    right: slot(trip.right),
+  };
+}
+
 /**
  * @param {Record<string, unknown>} board
  * @returns {VersusPublicBoard}
@@ -120,8 +180,8 @@ function countTriple(trip) {
 export function boardToVersusPublic(board) {
   const b = board && typeof board === "object" ? board : {};
   const stage = stripTriple(b.stage);
-  const liveArea = stripTriple(b.liveArea);
-  const hand = stripCardList(b.hand);
+  const liveArea = stripLiveAreaPublic(b.liveArea);
+  const handCount = stripCardList(b.hand).length;
   return {
     v: VERSUS_BOARD_PUBLIC_V,
     ts: Date.now(),
@@ -135,12 +195,13 @@ export function boardToVersusPublic(board) {
         : Array.isArray(b.deck)
           ? b.deck.length
           : 0,
-    hand: hand,
+    handCount: handCount,
+    hand: [],
     waitingRoom: stripCardList(b.waitingRoom),
     resolutionArea: stripCardList(b.resolutionArea),
     successfulLiveArea: stripCardList(b.successfulLiveArea),
     energyArea: stripCardList(b.energyArea),
-    previewScratch: stripCardList(b.previewScratch),
+    previewScratch: [],
     stage: stage,
     liveArea: liveArea,
   };
@@ -185,17 +246,25 @@ export function fingerprintVersusPublicBoard(board) {
   function trip(t) {
     return ids(t && t.left) + "|" + ids(t && t.center) + "|" + ids(t && t.right);
   }
+  function liveCounts(t) {
+    return (
+      String(t && t.left ? t.left.length : 0) +
+      "," +
+      String(t && t.center ? t.center.length : 0) +
+      "," +
+      String(t && t.right ? t.right.length : 0)
+    );
+  }
   return [
     board.turnCount,
     board.deckCount,
-    ids(board.hand),
+    String(board.handCount || 0),
     ids(board.waitingRoom),
     ids(board.resolutionArea),
     ids(board.successfulLiveArea),
     ids(board.energyArea),
-    ids(board.previewScratch),
     trip(board.stage),
-    trip(board.liveArea),
+    liveCounts(board.liveArea),
   ].join("\x1e");
 }
 
@@ -226,16 +295,16 @@ export function buildVersusBoardFirestorePatch(role, board) {
       ts: safe.ts,
       deckCount: safe.deckCount,
       turnCount: safe.turnCount,
-      handCount: safe.hand.length,
+      handCount: safe.handCount,
       stageCount: countTriple(safe.stage),
       liveCount: countTriple(safe.liveArea),
     },
-    [pre + "HandPublic"]: safe.hand,
+    [pre + "HandPublic"]: [],
     [pre + "WaitingPublic"]: safe.waitingRoom,
     [pre + "ResolutionPublic"]: safe.resolutionArea,
     [pre + "SuccessLivePublic"]: safe.successfulLiveArea,
     [pre + "EnergyPublic"]: safe.energyArea,
-    [pre + "PreviewPublic"]: safe.previewScratch,
+    [pre + "PreviewPublic"]: [],
     [pre + "StagePublic"]: safe.stage,
     [pre + "LivePublic"]: safe.liveArea,
     [pre + "BoardAt"]: now,
@@ -259,13 +328,19 @@ function assemblePublicBoardFromMatchFields(match, pre) {
       ? /** @type {Record<string, unknown>} */ (match[pre + "BoardPublic"])
       : null;
 
-  const hand = stripCardList(
-    match[pre + "HandPublic"] != null ? match[pre + "HandPublic"] : nested && nested.hand,
+  const handCount = Math.max(
+    0,
+    Math.floor(
+      Number(meta.handCount) ||
+        (nested && nested.handCount) ||
+        (Array.isArray(nested && nested.hand) ? nested.hand.length : 0) ||
+        0,
+    ),
   );
   const stage = stripTriple(
     match[pre + "StagePublic"] != null ? match[pre + "StagePublic"] : nested && nested.stage,
   );
-  const liveArea = stripTriple(
+  const liveRaw = stripTriple(
     match[pre + "LivePublic"] != null ? match[pre + "LivePublic"] : nested && nested.liveArea,
   );
 
@@ -274,7 +349,8 @@ function assemblePublicBoardFromMatchFields(match, pre) {
     ts: Math.max(0, Math.floor(Number(meta.ts) || 0)),
     turnCount: Math.max(0, Math.floor(Number(meta.turnCount) || 0)),
     deckCount: Math.max(0, Math.floor(Number(meta.deckCount) || 0)),
-    hand: hand,
+    handCount: handCount,
+    hand: [],
     waitingRoom: stripCardList(
       match[pre + "WaitingPublic"] != null
         ? match[pre + "WaitingPublic"]
@@ -295,13 +371,9 @@ function assemblePublicBoardFromMatchFields(match, pre) {
         ? match[pre + "EnergyPublic"]
         : nested && nested.energyArea,
     ),
-    previewScratch: stripCardList(
-      match[pre + "PreviewPublic"] != null
-        ? match[pre + "PreviewPublic"]
-        : nested && nested.previewScratch,
-    ),
+    previewScratch: [],
     stage: stage,
-    liveArea: liveArea,
+    liveArea: redactLiveAreaPublic(liveRaw),
   };
 }
 
@@ -326,6 +398,7 @@ export function getOpponentBoardPublic(match, myRole) {
 
 /** @param {VersusPublicCard} c */
 function resolveCardImg(c) {
+  if (c.hiddenFace) return null;
   const cat = c.card_no ? getCard(c.card_no) : null;
   if (cat && cat.img) return String(cat.img);
   return null;
@@ -334,16 +407,24 @@ function resolveCardImg(c) {
 /**
  * @param {HTMLElement} container
  * @param {VersusPublicCard} c
+ * @param {{ forceLiveHorizontal?: boolean }} [opts]
  */
-function appendOppCardChip(container, c) {
+function appendOppCardItem(container, c, opts) {
+  opts = opts || {};
   const div = document.createElement("div");
-  div.className = "versus-opp-card";
-  div.title = (c.card_no ? c.card_no + " · " : "") + (c.name || "");
+  div.className = "card-item";
+  if (c.id) div.dataset.id = c.id;
   if (c.type) div.dataset.type = c.type;
-  if (c.lcWait) div.classList.add("versus-opp-card--lc-wait");
-  if (c.lcInactive) div.classList.add("versus-opp-card--lc-inactive");
-  if (c.energyWait) div.classList.add("versus-opp-card--energy-wait");
+  if (c.hiddenFace) div.classList.add("card-item--opp-secret");
+  if (c.lcWait) div.classList.add("card-item--lc-wait");
+  if (c.lcInactive) div.classList.add("card-item--lc-inactive");
+  if (c.energyWait) div.classList.add("card-item--energy-wait");
+  if (opts.forceLiveHorizontal) div.classList.add("card-item--live-h");
+
+  const artWrap = document.createElement("div");
+  artWrap.className = "card-art-wrap";
   const img = document.createElement("img");
+  img.className = "card-img";
   img.decoding = "async";
   img.loading = "lazy";
   img.draggable = false;
@@ -353,12 +434,15 @@ function appendOppCardChip(container, c) {
     img.alt = c.name || "";
   } else {
     img.src = CARD_BACK_DRAG_DATA_URI;
-    img.alt = c.card_no || "";
+    img.alt = c.hiddenFace ? "非公開" : c.card_no || "";
   }
-  div.appendChild(img);
-  if (c.type === T_MEMBER && c.cost != null) {
+  if (opts.forceLiveHorizontal || c.energyWait) img.classList.add("rotated");
+  artWrap.appendChild(img);
+  div.appendChild(artWrap);
+
+  if (c.type === T_MEMBER && c.cost != null && !c.hiddenFace) {
     const pill = document.createElement("span");
-    pill.className = "versus-opp-card__cost";
+    pill.className = "card-hand-cost-pill";
     pill.textContent = String(c.cost);
     div.appendChild(pill);
   }
@@ -368,20 +452,41 @@ function appendOppCardChip(container, c) {
 /**
  * @param {HTMLElement} strip
  * @param {VersusPublicCard[]} cards
+ * @param {{ forceLiveHorizontal?: boolean }} [opts]
  */
-function fillOppStrip(strip, cards) {
+function fillOppStrip(strip, cards, opts) {
   if (!strip) return;
   strip.replaceChildren();
   if (!cards || !cards.length) {
-    const empty = document.createElement("span");
-    empty.className = "versus-opp-empty muted";
-    empty.textContent = "—";
-    strip.appendChild(empty);
     return;
   }
   cards.forEach(function (c) {
-    appendOppCardChip(strip, c);
+    appendOppCardItem(strip, c, opts);
   });
+}
+
+/** @param {HTMLElement} strip @param {number} handCount */
+function fillOppSecretHand(strip, handCount) {
+  if (!strip) return;
+  strip.replaceChildren();
+  const n = Math.max(0, Math.floor(Number(handCount) || 0));
+  if (!n) return;
+  const show = Math.min(n, 10);
+  for (let i = 0; i < show; i++) {
+    appendOppCardItem(strip, {
+      id: "opp-hand-secret-" + i,
+      card_no: "",
+      name: "",
+      type: "",
+      hiddenFace: true,
+    });
+  }
+  if (n > show) {
+    const more = document.createElement("span");
+    more.className = "versus-opp-hand-more muted";
+    more.textContent = "+" + (n - show);
+    strip.appendChild(more);
+  }
 }
 
 /**
@@ -397,16 +502,14 @@ export function renderVersusOpponentBoard(board, opts) {
     const name = opts && opts.opponentName ? opts.opponentName : "相手";
     const at = opts && opts.updatedAt ? " · 更新 " + new Date(opts.updatedAt).toLocaleTimeString() : "";
     if (!board) {
-      meta.textContent = name + " の盤面を待機中…";
+      meta.textContent = name + " の公開盤面を待機中…";
     } else {
       meta.textContent =
         name +
-        " · 手札 " +
-        board.hand.length +
-        " · 山札 " +
+        "（向かい合わせ） · 手札 " +
+        (board.handCount || 0) +
+        " 枚（非公開） · 山札 " +
         board.deckCount +
-        " · ステージ " +
-        countTriple(board.stage) +
         at;
     }
   }
@@ -414,39 +517,73 @@ export function renderVersusOpponentBoard(board, opts) {
     const el = document.getElementById(id);
     if (el) el.textContent = String(Math.max(0, Math.floor(Number(n) || 0)));
   };
+  const clearStrip = function (id) {
+    const el = document.getElementById(id);
+    if (el) el.replaceChildren();
+  };
   if (!board) {
-    [
-      "versus-opp-zone-hand",
-      "versus-opp-zone-waiting",
-      "versus-opp-zone-resolution",
-      "versus-opp-zone-sl",
-      "versus-opp-zone-energy",
-      "versus-opp-zone-preview",
-    ].forEach(function (zid) {
-      fillOppStrip(document.getElementById(zid), []);
-    });
+    clearStrip("versus-opp-zone-hand");
+    clearStrip("versus-opp-zone-waiting");
+    clearStrip("versus-opp-zone-resolution");
+    clearStrip("versus-opp-zone-sl");
+    clearStrip("versus-opp-zone-energy");
     ["left", "center", "right"].forEach(function (side) {
-      fillOppStrip(document.getElementById("versus-opp-stage-" + side), []);
-      fillOppStrip(document.getElementById("versus-opp-live-" + side), []);
+      clearStrip("versus-opp-stage-" + side);
+      clearStrip("versus-opp-live-" + side);
     });
     setCount("versus-opp-hand-count", 0);
     setCount("versus-opp-deck-count", 0);
+    setCount("versus-opp-sl-count", 0);
+    setCount("versus-opp-waiting-count", 0);
+    setCount("versus-opp-resolution-count", 0);
+    setCount("versus-opp-energy-active-count", 0);
+    setCount("versus-opp-energy-wait-count", 0);
     return;
   }
-  setCount("versus-opp-hand-count", board.hand.length);
+
+  var energyActive = 0;
+  var energyWait = 0;
+  board.energyArea.forEach(function (c) {
+    if (c.energyWait) energyWait++;
+    else energyActive++;
+  });
+
+  setCount("versus-opp-hand-count", board.handCount || 0);
   setCount("versus-opp-deck-count", board.deckCount);
-  fillOppStrip(document.getElementById("versus-opp-zone-hand"), board.hand);
+  setCount("versus-opp-sl-count", board.successfulLiveArea.length);
+  setCount("versus-opp-waiting-count", board.waitingRoom.length);
+  setCount("versus-opp-resolution-count", board.resolutionArea.length);
+  setCount("versus-opp-energy-active-count", energyActive);
+  setCount("versus-opp-energy-wait-count", energyWait);
+
+  fillOppSecretHand(document.getElementById("versus-opp-zone-hand"), board.handCount || 0);
   fillOppStrip(document.getElementById("versus-opp-zone-waiting"), board.waitingRoom);
   fillOppStrip(document.getElementById("versus-opp-zone-resolution"), board.resolutionArea);
   fillOppStrip(document.getElementById("versus-opp-zone-sl"), board.successfulLiveArea);
   fillOppStrip(document.getElementById("versus-opp-zone-energy"), board.energyArea);
-  fillOppStrip(document.getElementById("versus-opp-zone-preview"), board.previewScratch);
   fillOppStrip(document.getElementById("versus-opp-stage-left"), board.stage.left);
   fillOppStrip(document.getElementById("versus-opp-stage-center"), board.stage.center);
   fillOppStrip(document.getElementById("versus-opp-stage-right"), board.stage.right);
-  fillOppStrip(document.getElementById("versus-opp-live-left"), board.liveArea.left);
-  fillOppStrip(document.getElementById("versus-opp-live-center"), board.liveArea.center);
-  fillOppStrip(document.getElementById("versus-opp-live-right"), board.liveArea.right);
+  fillOppStrip(document.getElementById("versus-opp-live-left"), board.liveArea.left, {
+    forceLiveHorizontal: true,
+  });
+  fillOppStrip(document.getElementById("versus-opp-live-center"), board.liveArea.center, {
+    forceLiveHorizontal: true,
+  });
+  fillOppStrip(document.getElementById("versus-opp-live-right"), board.liveArea.right, {
+    forceLiveHorizontal: true,
+  });
+
+  const deckPile = document.getElementById("versus-opp-deck-pile");
+  if (deckPile) {
+    deckPile.replaceChildren();
+    if (board.deckCount > 0) {
+      const back = document.createElement("div");
+      back.className = "versus-opp-deck-back";
+      back.title = "山札 " + board.deckCount + " 枚";
+      deckPile.appendChild(back);
+    }
+  }
 }
 
 export function hideVersusOpponentBoard() {
