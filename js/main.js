@@ -51,9 +51,29 @@ try {
   var buildTag = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "";
   if (buildTag && APP_MODULE_CACHE_BUST && buildTag !== APP_MODULE_CACHE_BUST) {
     var uMismatch = new URL(window.location.href);
-    if (!uMismatch.searchParams.has("_reload")) {
+    var reloadKey = "llocg_build_reload_" + APP_MODULE_CACHE_BUST;
+    var reloadAlreadyTried = false;
+    try {
+      reloadAlreadyTried = sessionStorage.getItem(reloadKey) === "1";
+    } catch (_) {
+      /* noop */
+    }
+    if (!reloadAlreadyTried && !uMismatch.searchParams.has("_reload")) {
+      try {
+        sessionStorage.setItem(reloadKey, "1");
+      } catch (_) {
+        /* noop */
+      }
       uMismatch.searchParams.set("_reload", String(Date.now()));
       window.location.replace(uMismatch.toString());
+    } else if (reloadAlreadyTried) {
+      console.warn(
+        "[Loveca Labo] index.html loveca-build (" +
+          buildTag +
+          ") !== APP_MODULE_CACHE_BUST (" +
+          APP_MODULE_CACHE_BUST +
+          "); update the meta tag to stop cache mismatch",
+      );
     }
   }
   console.info("[Loveca Labo] build=" + (buildTag || APP_MODULE_CACHE_BUST || "?"));

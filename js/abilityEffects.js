@@ -103,6 +103,10 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  * @property {string[]} [kidouSegmentRaws]
  * @property {boolean} [requiresSeriesOnStage]
  * @property {string[]} [characterNames]
+ * @property {number} [effectDiscardCount] 効果本文での手札→控え室（コストと別）
+ * @property {boolean} [postDiscardActivateIfNonBhMember] 捨てた非BHメンバー1枚以上でこのメンバーをアクティブ
+ * @property {number} [postDiscardBladeGainIfNonBhAt] 非BHメンバーをこの枚数以上捨てたときブレード付与
+ * @property {number} [postDiscardBladeGainCount] 上記時のブレード枚数
  */
 
 export function cardAbilityRawText(card) {
@@ -745,12 +749,24 @@ export function classifyCardAbility(card, trigger, segmentRawOverride) {
     var drawDiscardKd = p.match(/カードを(\d+)枚引き?、手札を(\d+)枚控え室に置/);
     if (!drawDiscardKd) drawDiscardKd = p.match(/カードを(\d+)枚引.*手札を(\d+)枚控え室/);
     if (drawDiscardKd) {
-      return kidouT({
+      /** @type {Partial<ClassifiedAbility>} */
+      var drawDiscardPatch = {
         template: "draw_then_hand_discard",
         deckDrawCount: Number(drawDiscardKd[1]) || 1,
         effectDiscardCount: Number(drawDiscardKd[2]) || 1,
         filters: parseAbilityPickFilters(p),
-      });
+      };
+      if (
+        /控え室に置いたカードの中にブレードハートを持たない/.test(p) &&
+        /このメンバーをアクティブ/.test(p)
+      ) {
+        drawDiscardPatch.postDiscardActivateIfNonBhMember = true;
+        if (/2枚ある場合/.test(p)) {
+          drawDiscardPatch.postDiscardBladeGainIfNonBhAt = 2;
+          drawDiscardPatch.postDiscardBladeGainCount = 2;
+        }
+      }
+      return kidouT(drawDiscardPatch);
     }
 
     var drawOnlyKd = p.match(/カードを(\d+)枚引/);

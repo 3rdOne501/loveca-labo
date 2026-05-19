@@ -1584,6 +1584,23 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
   padding-left: 0.66rem;
   padding-right: 0.66rem;
 }
+/* 手札欄: ライブターン開始／ライブ開始を大きく */
+body.play-mode .zone-head.zone-head--hand #btn-live-turn-primary,
+body.play-mode .zone-head.zone-head--hand #btn-live-turn-begin {
+  min-height: 48px;
+  min-width: 5.5rem;
+  font-size: 0.88rem;
+  font-weight: 800;
+  padding: 0.48rem 1rem;
+  letter-spacing: 0.03em;
+}
+/* マリガン実行後: 横の余白でライブ進行ボタンをさらに広げる */
+body.play-mode .zone-head.zone-head--hand .hand-zone-actions--no-mulligan #btn-live-turn-primary,
+body.play-mode .zone-head.zone-head--hand .hand-zone-actions--no-mulligan #btn-live-turn-begin {
+  min-width: 7.25rem;
+  font-size: 0.95rem;
+  padding: 0.52rem 1.15rem;
+}
 .zone-head h3 { margin: 0; font-family: var(--font-display); color: #fcdcec; }
 .zone-head .hand-zone-title {
   display: inline-flex;
@@ -3618,6 +3635,23 @@ details.hand-stick-fold.zone-block {
     width: 100%;
     max-width: 100%;
   }
+  body.play-mode.chrome-layout-play-mobile-portrait .zone-head.zone-head--hand #btn-live-turn-primary,
+  body.play-mode.chrome-layout-play-mobile-portrait .zone-head.zone-head--hand #btn-live-turn-begin {
+    min-height: 50px;
+    font-size: 0.9rem;
+  }
+  body.play-mode.chrome-layout-play-mobile-portrait
+    .zone-head.zone-head--hand
+    .hand-zone-actions--no-mulligan
+    #btn-live-turn-primary,
+  body.play-mode.chrome-layout-play-mobile-portrait
+    .zone-head.zone-head--hand
+    .hand-zone-actions--no-mulligan
+    #btn-live-turn-begin {
+    min-width: calc(50% - 0.35rem);
+    flex: 1 1 0;
+    font-size: 0.98rem;
+  }
   body.play-mode.chrome-layout-play-mobile-portrait .deck-odds-grid-meta {
     flex-direction: column;
     align-items: flex-start;
@@ -4932,6 +4966,13 @@ body.play-mode .deck-pile {
   body.play-mode.chrome-layout-play-mobile-portrait .col.col-right section.play-tools-block {
     order: 60;
   }
+  /* 控え室・プレビュー見出しを手札 sticky (z-index:8) より前面に（重なり時もクリック可） */
+  body.play-mode.chrome-layout-play-mobile-portrait .zone-block-waiting .waiting-rail-head,
+  body.play-mode.chrome-layout-play-mobile-portrait .zone-block-preview .preview-rail-head {
+    position: relative;
+    z-index: 9;
+  }
+
   body.play-mode.chrome-layout-play-mobile-portrait .col.col-right :is(section, details).zone-block:has(#zone-hand) {
     order: 100;
     margin-top: 0.45rem;
@@ -5812,28 +5853,49 @@ body.play-mode .site-footer {
   font-size: 0.72rem;
   padding: 0.22rem 0.35rem;
 }
+.dlg-ability-source-name {
+  color: #ff9ecf;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.dlg-cost-payment-self-wait-tile {
+  min-width: 12rem;
+  max-width: 100%;
+}
 .dlg-cost-payment-energy-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
-  gap: 0.45rem;
   margin-top: 0.35rem;
 }
-.dlg-cost-payment-energy-tile {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.2rem;
+.dlg-cost-payment-hand-grid {
+  margin-top: 0.3rem;
+}
+.dlg-cost-payment-energy-grid .dlg-pick-kidou-waiting__tile {
   padding: 0.35rem;
   border-radius: 8px;
-  border: 1px solid rgba(255, 200, 120, 0.35);
-  cursor: pointer;
+  border-color: rgba(255, 200, 120, 0.35);
+  gap: 0.2rem;
 }
-.dlg-cost-payment-energy-tile img {
+.dlg-cost-payment-hand-grid .dlg-pick-kidou-waiting__tile {
+  padding: 0.3rem;
+  border-radius: 6px;
+  border-color: rgba(255, 160, 200, 0.2);
+  background: rgba(0, 0, 0, 0.2);
+  gap: 0.18rem;
+}
+.dlg-cost-payment-energy-grid .dlg-pick-kidou-waiting__img {
   width: 100%;
   max-width: 72px;
-  aspect-ratio: 63 / 88;
-  object-fit: cover;
   border-radius: 4px;
+  filter: none;
+}
+.dlg-cost-payment-hand-grid .dlg-pick-kidou-waiting__img,
+.dlg-cost-payment-hand-tile img {
+  width: 100%;
+  max-width: 72px;
+  border-radius: 4px;
+  filter: none;
+}
+.dlg-cost-payment-hand-grid .dlg-pick-kidou-waiting__label {
+  font-size: 0.7rem;
 }
 body.play-mode .btn--manual-mode-on {
   background: linear-gradient(180deg, rgba(120, 72, 32, 0.95), rgba(80, 48, 24, 0.98));
@@ -5892,6 +5954,16 @@ body.play-mode .btn--manual-mode-on {
   grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
   gap: 0.55rem;
   padding: 0.15rem 0.1rem;
+}
+.dlg-cost-payment-energy-grid.dlg-pick-kidou-waiting__grid {
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  gap: 0.45rem;
+  padding: 0;
+}
+.dlg-cost-payment-hand-grid.dlg-pick-kidou-waiting__grid {
+  grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
+  gap: 0.4rem;
+  padding: 0;
 }
 .dlg-pick-kidou-waiting__tile {
   position: relative;
@@ -6066,38 +6138,6 @@ body.play-mode .btn--manual-mode-on {
   display: flex;
   gap: 0.4rem;
   align-items: center;
-}
-.dlg-cost-payment-hand-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
-  gap: 0.4rem;
-  margin-top: 0.3rem;
-}
-.dlg-cost-payment-hand-tile {
-  display: flex;
-  flex-direction: column;
-  gap: 0.18rem;
-  align-items: center;
-  padding: 0.3rem;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 160, 200, 0.2);
-  cursor: pointer;
-  background: rgba(0, 0, 0, 0.2);
-}
-.dlg-cost-payment-hand-tile img {
-  width: 100%;
-  aspect-ratio: 63 / 88;
-  object-fit: cover;
-  border-radius: 4px;
-}
-.dlg-cost-payment-hand-tile span {
-  font-size: 0.7rem;
-  text-align: center;
-  color: #ffd6ef;
-  line-height: 1.2;
-}
-.dlg-cost-payment-hand-tile input[type="checkbox"] {
-  accent-color: #ec407a;
 }
 
 .dlg-ability-guided-plain {
@@ -6963,6 +7003,90 @@ body.play-mode .live-slot .card-effect-resolve-btn-row .card-effect-resolve-btn-
   font-size: 1rem;
   padding: 0.55rem 1.1rem;
 }
+.effect-dialog-resume-chip--on-card {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  right: auto;
+  bottom: auto;
+  transform: translate(-50%, calc(-100% - 6px));
+  z-index: 12060;
+  font-size: 1.14rem;
+  font-weight: 800;
+  padding: 0.62rem 1.4rem;
+  min-width: 9.5rem;
+  letter-spacing: 0.04em;
+  box-shadow:
+    0 10px 32px rgba(0, 0, 0, 0.55),
+    0 0 22px rgba(255, 130, 200, 0.5);
+}
+.effect-dialog-resume-chip--corner {
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  left: auto;
+  top: auto;
+  transform: none;
+}
+body.llocg-effect-dialog-peek .card-effect-resolve-btn,
+body.llocg-effect-dialog-peek .card-effect-icon-host--clickable {
+  display: none !important;
+  pointer-events: none !important;
+}
+body.llocg-effect-dialog-peek #btn-live-turn-primary,
+body.llocg-effect-dialog-peek #btn-live-turn-begin,
+body.llocg-effect-dialog-peek #btn-draw-resolution,
+body.llocg-effect-dialog-peek #btn-res-draw-one {
+  pointer-events: none;
+  opacity: 0.42;
+}
+.turn-phase-splash-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 14500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  background: transparent;
+  opacity: 0;
+  transition: opacity 0.32s ease;
+}
+.turn-phase-splash-overlay.is-visible {
+  opacity: 1;
+}
+.turn-phase-splash-overlay.is-out {
+  opacity: 0;
+  transition: opacity 0.48s ease;
+}
+.turn-phase-splash-title {
+  font-size: clamp(2.6rem, 14vw, 5rem);
+  font-weight: 900;
+  line-height: 1.05;
+  color: #fff8fc;
+  text-align: center;
+  letter-spacing: 0.06em;
+  text-shadow:
+    0 0 28px rgba(255, 150, 220, 0.95),
+    0 0 56px rgba(130, 200, 255, 0.45),
+    0 4px 18px rgba(0, 0, 0, 0.65);
+  animation: llocg-turn-phase-splash-pop 0.72s cubic-bezier(0.22, 1.1, 0.36, 1) both;
+}
+@keyframes llocg-turn-phase-splash-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.55) translateY(12px);
+    filter: blur(8px);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.06) translateY(0);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
 body.play-mode .card-item {
   position: relative;
 }
@@ -7558,10 +7682,10 @@ body.play-mode .play-disclaimer {
   display: inline-block;
   margin-left: 0.3rem;
   font-variant-numeric: tabular-nums;
-  font-size: 1.55em;
+  font-size: 1.9em;
   font-weight: 800;
   color: var(--accent2);
-  text-shadow: 0 0 6px rgba(255, 170, 220, 0.28);
+  text-shadow: 0 0 8px rgba(255, 170, 220, 0.32);
 }
 .deck-flip-blade-note {
   margin: 0.12rem 0 0;
