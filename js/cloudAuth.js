@@ -10,7 +10,12 @@
  * セットアップ手順は README を参照。
  */
 
-import { STORAGE_DECK_LIBRARY, STORAGE_DECK, STORAGE_PLAY_ENERGY_CARD_NO } from "./config.js";
+import {
+  STORAGE_DECK_LIBRARY,
+  STORAGE_DECK,
+  STORAGE_PLAY_ENERGY_CARD_NO,
+  STORAGE_GOOGLE_AUTO_LOGIN,
+} from "./config.js";
 import { showToast } from "./ui.js";
 
 const FIREBASE_APP_URL = "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
@@ -26,6 +31,8 @@ const SYNC_KEYS = [STORAGE_DECK_LIBRARY, STORAGE_DECK, STORAGE_PLAY_ENERGY_CARD_
  * 復元する前に「ログイン中表示」を仮表示するために使う。Firebase 側で確定したらこのキャッシュを更新する。
  */
 const LOCAL_USER_CACHE_KEY = "llocg_cloud_user_cache";
+/** 自動リダイレクトログインの連打防止（同一タブ・1分） */
+const AUTO_REDIRECT_TS_KEY = "llocg_google_auto_redirect_ts";
 
 /** @returns {CloudUserSummary|null} */
 function loadCachedCloudUser() {
@@ -85,6 +92,106 @@ let cloudSyncEnabled = false;
 let suppressLocalWriteSync = false;
 let pendingPush = null;
 let lastPushedJson = "";
+let authStateReadyDone = false;
+let autoSignInAttemptedThisPage = false;
+
+function loadPreferGoogleAutoLogin() {
+  try {
+    if (localStorage.getItem(STORAGE_GOOGLE_AUTO_LOGIN) === "0") return false;
+    if (localStorage.getItem(STORAGE_GOOGLE_AUTO_LOGIN) === "1") return true;
+    return !!loadCachedCloudUser();
+  } catch (_) {
+    return false;
+  }
+}
+
+function setPreferGoogleAutoLogin(on) {
+  try {
+    localStorage.setItem(STORAGE_GOOGLE_AUTO_LOGIN, on ? "1" : "0");
+  } catch (_) {}
+}
+
+/** 復元待ちの間も UI 用にキャッシュを返す */
+export function getEffectiveCloudUser() {
+  if (currentUser) return currentUser;
+  return loadCachedCloudUser();
+}
+
+function userFromFirebaseAuthUser(user) {
+  return {
+    uid: user.uid,
+    displayName: user.displayName || null,
+    photoURL: user.photoURL || null,
+    email: user.email || null,
+  };
+}
+
+async function waitForAuthStateReady() {
+  if (!_auth || !_authApi || authStateReadyDone) return;
+  if (typeof _authApi.authStateReady === "function") {
+    try {
+      await _authApi.authStateReady(_auth);
+    } catch (err) {
+      console.warn("[cloudAuth] authStateReady failed:", err);
+    }
+  }
+  authStateReadyDone = true;
+}
+
+function canAttemptAutoRedirectNow() {
+  if (autoSignInAttemptedThisPage) return false;
+  try {
+    var ts = Number(sessionStorage.getItem(AUTO_REDIRECT_TS_KEY) || 0);
+    if (ts > 0 && Date.now() - ts < 60000) return false;
+  } catch (_) {
+    /* noop */
+  }
+  return true;
+}
+
+function markAutoRedirectAttempt() {
+  autoSignInAttemptedThisPage = true;
+  try {
+    sessionStorage.setItem(AUTO_REDIRECT_TS_KEY, String(Date.now()));
+  } catch (_) {
+    /* noop */
+  }
+}
+
+/**
+ * サードパーティ Cookie 不要のリダイレクトログイン（ポップアップは使わない）
+ * @param {{ silent?: boolean }} [opts]
+ */
+async function signInWithGoogleRedirect(opts) {
+  if (!cloudSyncEnabled || !_auth || !_gp || !_authApi) {
+    showToast("Google ログインの設定が見つかりません。`js/firebaseConfig.js` を確認してください。");
+    return null;
+  }
+  if (typeof _authApi.signInWithRedirect !== "function") {
+    showToast("このブラウザではリダイレクトログインに対応していません。");
+    return null;
+  }
+  if (!opts || !opts.silent) {
+    showToast("Google ログインへ移動します（サードパーティ Cookie 不要）", { duration: 3200 });
+  }
+  markAutoRedirectAttempt();
+  try {
+    await _authApi.signInWithRedirect(_auth, _gp);
+  } catch (err) {
+    console.warn("[cloudAuth] signInWithRedirect failed:", err);
+    showToast("ログイン画面を開けませんでした。ブラウザの Cookie を許可して再試行してください。");
+  }
+  return null;
+}
+
+async function tryRestoreGoogleSessionAfterInit() {
+  if (!cloudSyncEnabled || !_auth || !_authApi) return;
+  await waitForAuthStateReady();
+  if (_auth.currentUser) return;
+  if (!loadPreferGoogleAutoLogin()) return;
+  if (!canAttemptAutoRedirectNow()) return;
+  await signInWithGoogleRedirect({ silent: true });
+}
 
 export function onCloudUserChange(fn) {
   if (typeof fn !== "function") return () => {};
@@ -147,38 +254,71 @@ async function loadFirebaseSdk(config) {
       }
     }
     _gp = new authMod.GoogleAuthProvider();
+    try {
+      _gp.setCustomParameters({ prompt: "select_account" });
+    } catch (_) {
+      /* noop */
+    }
     _authApi = authMod;
     _db = fsMod.getFirestore(app);
     _firestoreApi = fsMod;
 
-    authMod.onAuthStateChanged(_auth, (user) => {
-      if (!user) {
-        currentUser = null;
-        saveCachedCloudUser(null);
-        notifyUserListeners();
-        return;
-      }
-      currentUser = {
-        uid: user.uid,
-        displayName: user.displayName || null,
-        photoURL: user.photoURL || null,
-        email: user.email || null,
-      };
-      saveCachedCloudUser(currentUser);
-      notifyUserListeners();
-      pullCloudStateAndMerge().catch(function (err) {
-        console.warn("[cloudAuth] pull failed:", err);
-      });
-    });
-
-    /* リダイレクト方式でサインインした場合の戻り値を処理（popup がブロックされた場合のフォールバック） */
+    /* リダイレクト復帰は onAuthStateChanged より先に処理（Cookie 制限環境で必須） */
     try {
       const redirected = await authMod.getRedirectResult(_auth);
       if (redirected && redirected.user) {
-        /* onAuthStateChanged が引き続き同じ user で発火するため、ここでは追加処理不要 */
+        currentUser = userFromFirebaseAuthUser(redirected.user);
+        setPreferGoogleAutoLogin(true);
+        saveCachedCloudUser(currentUser);
+        try {
+          sessionStorage.removeItem(AUTO_REDIRECT_TS_KEY);
+        } catch (_) {
+          /* noop */
+        }
+        notifyUserListeners();
+        pullCloudStateAndMerge().catch(function (err) {
+          console.warn("[cloudAuth] pull failed:", err);
+        });
       }
     } catch (err) {
       console.warn("[cloudAuth] getRedirectResult failed:", err);
+    }
+
+    authMod.onAuthStateChanged(_auth, (user) => {
+      if (user) {
+        currentUser = userFromFirebaseAuthUser(user);
+        setPreferGoogleAutoLogin(true);
+        saveCachedCloudUser(currentUser);
+        notifyUserListeners();
+        pullCloudStateAndMerge().catch(function (err) {
+          console.warn("[cloudAuth] pull failed:", err);
+        });
+        return;
+      }
+      /* 永続化復元前の一瞬 null ではキャッシュを消さない */
+      if (!authStateReadyDone) {
+        notifyUserListeners();
+        return;
+      }
+      if (_auth.currentUser) return;
+      currentUser = null;
+      saveCachedCloudUser(null);
+      notifyUserListeners();
+    });
+
+    await waitForAuthStateReady();
+    if (_auth.currentUser) {
+      currentUser = userFromFirebaseAuthUser(_auth.currentUser);
+      setPreferGoogleAutoLogin(true);
+      saveCachedCloudUser(currentUser);
+      notifyUserListeners();
+      if (!lastPushedJson) {
+        pullCloudStateAndMerge().catch(function (err) {
+          console.warn("[cloudAuth] pull failed:", err);
+        });
+      }
+    } else if (!currentUser) {
+      tryRestoreGoogleSessionAfterInit();
     }
     return app;
   })();
@@ -343,48 +483,30 @@ export function getCurrentCloudUser() {
   return currentUser;
 }
 
-const POPUP_FALLBACK_ERRORS = new Set([
-  "auth/popup-blocked",
-  "auth/popup-closed-by-user",
-  "auth/cancelled-popup-request",
-  "auth/operation-not-supported-in-this-environment",
-  "auth/web-storage-unsupported",
-]);
+/** Firebase セッション復元または自動ログインを試みる（設定済みのとき） */
+export async function ensureGoogleSession() {
+  if (!cloudSyncEnabled || !_auth || !_authApi) return getEffectiveCloudUser();
+  await waitForAuthStateReady();
+  if (_auth && _auth.currentUser) {
+    currentUser = userFromFirebaseAuthUser(_auth.currentUser);
+    saveCachedCloudUser(currentUser);
+    notifyUserListeners();
+    return currentUser;
+  }
+  if (!currentUser && loadPreferGoogleAutoLogin()) {
+    await tryRestoreGoogleSessionAfterInit();
+  }
+  return getEffectiveCloudUser();
+}
 
+/** Google ログイン（常にページ遷移方式・サードパーティ Cookie 非依存） */
 export async function signInWithGoogle() {
-  if (!cloudSyncEnabled || !_auth || !_gp || !_authApi) {
-    showToast("Google ログインの設定が見つかりません。`js/firebaseConfig.js` を作成して再読込してください。");
-    return null;
-  }
-  try {
-    const cred = await _authApi.signInWithPopup(_auth, _gp);
-    return cred && cred.user
-      ? {
-          uid: cred.user.uid,
-          displayName: cred.user.displayName || null,
-          photoURL: cred.user.photoURL || null,
-          email: cred.user.email || null,
-        }
-      : null;
-  } catch (err) {
-    console.warn("[cloudAuth] signInWithPopup failed:", err);
-    const code = err && /** @type {any} */ (err).code;
-    if (typeof _authApi.signInWithRedirect === "function" && (POPUP_FALLBACK_ERRORS.has(code) || !code)) {
-      try {
-        showToast("ポップアップが開けないため、ページ遷移でログインします…");
-        await _authApi.signInWithRedirect(_auth, _gp);
-        return null;
-      } catch (errR) {
-        console.warn("[cloudAuth] signInWithRedirect failed:", errR);
-      }
-    }
-    showToast("Google ログインに失敗しました。ポップアップ・サードパーティ Cookie が許可されているか確認してください。");
-    return null;
-  }
+  return signInWithGoogleRedirect({ silent: false });
 }
 
 export async function signOutCloud() {
   if (!cloudSyncEnabled || !_auth || !_authApi) return;
+  setPreferGoogleAutoLogin(false);
   try {
     await _authApi.signOut(_auth);
   } catch (err) {

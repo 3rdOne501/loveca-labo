@@ -76,7 +76,7 @@ import {
   boardYellFloatIconHtml,
 } from "./gameStatusIcons.js";
 import { loadDeckLibrary, normalizeDeckMapCounts } from "./deckLibrary.js";
-import { getCurrentCloudUser } from "./cloudAuth.js";
+import { getCurrentCloudUser, getEffectiveCloudUser } from "./cloudAuth.js";
 import {
   concedeVersusMatch,
   evaluateVersusWinFromCounts,
@@ -1460,10 +1460,12 @@ export function mountSimulator(
   /** @type {{ mode: 'local'|'online', roomCode: string, myRole?: 'host'|'guest', opponentName: string }|null} */
   var versusSession = null;
   if (versusMatch && versusMatch.mode === "local") {
+    var vu = getEffectiveCloudUser();
     versusSession = {
       mode: "local",
       roomCode: "local",
       opponentName: "相手（手入力）",
+      playerLabel: vu ? vu.displayName || vu.email || "あなた" : "あなた",
     };
   } else if (versusMatch && versusMatch.mode === "online" && versusMatch.roomCode && versusMatch.myRole) {
     versusSession = {
@@ -11565,7 +11567,9 @@ export function mountSimulator(
     var detailEl = document.getElementById("versus-match-bar-detail");
     if (!labelEl || !detailEl) return;
     labelEl.textContent =
-      versusSession.mode === "local" ? "簡易対戦" : "オンライン " + versusSession.roomCode;
+      versusSession.mode === "local"
+        ? "簡易対戦" + (versusSession.playerLabel ? " · " + versusSession.playerLabel : "")
+        : "オンライン " + versusSession.roomCode;
     var mine = Array.isArray(state.successfulLiveArea) ? state.successfulLiveArea.length : 0;
     var opp = Math.max(0, Math.floor(Number(state.versusOpponentSuccessLiveCount) || 0));
     var fpNote = "";

@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Loveca Labo" />
-    <meta name="loveca-build" content="2026051834" />
+    <meta name="loveca-build" content="2026051858" />
     <title>Loveca Labo</title>
     <!-- 万一以前のバージョンの Service Worker が登録された端末で取り残しが起きた場合に備え、
          先頭で SW 登録を一括解除する。SW 自体は本サイトでは使っていない。 -->
@@ -41,7 +41,8 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,700;1,9..40,500&family=M+PLUS+Rounded+1c:wght@500;700&family=Noto+Sans+JP:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=2026051858" />
+    <link rel="stylesheet" href="styles-perf.css?v=2026051910" />
   </head>
   <body>
     <div
@@ -120,7 +121,7 @@ python3 -m http.server 8080</pre>
           <div id="cloud-auth-bar" class="cloud-auth-bar cloud-auth-bar--search-top" hidden>
             <span id="cloud-auth-status" class="cloud-auth-bar__status muted">未ログイン</span>
             <img id="cloud-auth-avatar" class="cloud-auth-bar__avatar" alt="" hidden />
-            <button type="button" id="cloud-auth-signin" class="btn sm secondary cloud-auth-bar__signin">Google でログイン</button>
+            <button type="button" id="cloud-auth-signin" class="btn sm secondary cloud-auth-bar__signin" title="Google へ一度だけ移動してログイン（サードパーティ Cookie 不要）">Google でログイン</button>
             <button type="button" id="cloud-auth-signout" class="btn sm secondary cloud-auth-bar__signout" hidden>ログアウト</button>
           </div>
           <div class="search-panel-tools">
@@ -224,6 +225,15 @@ python3 -m http.server 8080</pre>
         <section class="card-panel">
           <div class="panel-title-row">
             <h2 id="card-panel-heading">カード一覧</h2>
+            <button
+              type="button"
+              class="btn sm danger"
+              id="btn-clear-current-deck"
+              hidden
+              title="編集中メインデッキの枚数をすべて0にします"
+            >
+              デッキクリア
+            </button>
             <label class="field card-panel-search-field">
               <span class="sr-only">カード名・能力</span>
               <input
@@ -308,6 +318,14 @@ python3 -m http.server 8080</pre>
                 はじめての方
               </button>
               <button type="button" class="btn primary btn-start-game-sticky" id="btn-start-game" disabled>ソロプレイ開始</button>
+              <button
+                type="button"
+                class="btn secondary btn-start-versus-sticky"
+                id="btn-start-versus"
+                title="簡易対戦はログイン不要。相手の成功ライブ枚数を手入力"
+              >
+                対戦モード
+              </button>
             </div>
             <div id="deck-validation-banner" class="deck-validation-banner" role="status" hidden></div>
             <p class="count-line deck-count-line">
@@ -497,6 +515,15 @@ python3 -m http.server 8080</pre>
           >
             手動モード
           </button>
+          <button
+            type="button"
+            class="btn sm secondary"
+            id="btn-play-lightweight"
+            aria-pressed="false"
+            title="ONにするとカード画像を低解像度にし、光る演出・ビーム・成功確率の重い計算を抑えます"
+          >
+            軽量
+          </button>
           <button type="button" class="btn sm secondary" id="btn-zone-hints" aria-pressed="false">
             ゾーン説明を表示
           </button>
@@ -510,6 +537,23 @@ python3 -m http.server 8080</pre>
           </button>
         </div>
       </header>
+
+      <div id="versus-match-bar" class="versus-match-bar" hidden>
+        <div class="versus-match-bar__info">
+          <span id="versus-match-bar-label" class="versus-match-bar__label">簡易対戦</span>
+          <span id="versus-match-bar-detail" class="versus-match-bar__detail muted"></span>
+        </div>
+        <div class="versus-match-bar__actions">
+          <span id="versus-opp-sl-controls" class="versus-opp-sl-controls" hidden>
+            <span class="muted">相手SL</span>
+            <button type="button" class="btn sm secondary" id="btn-versus-opp-sl-minus" title="相手の成功ライブ枚数を1減らす">−</button>
+            <strong id="versus-opp-sl-num" class="versus-opp-sl-num">0</strong>
+            <button type="button" class="btn sm secondary" id="btn-versus-opp-sl-plus" title="相手の成功ライブ枚数を1増やす">＋</button>
+          </span>
+          <button type="button" class="btn sm secondary" id="btn-versus-lobby" hidden title="対戦ロビーを開く">ロビー</button>
+          <button type="button" class="btn sm secondary" id="btn-versus-concede" hidden title="投了（総合ルール 1.2.3）">投了</button>
+        </div>
+      </div>
 
       <div class="game-board">
         <div class="col col-left">
@@ -803,7 +847,7 @@ python3 -m http.server 8080</pre>
                   <span
                     class="live-score-center-bar__note live-score-note-pink"
                     id="live-center-score-note-suffix"
-                    title="エールで山札から解決にめくったスコアの枚数（成功時のみ打点に反映）"
+                    title="エールでめくったスコア特殊ハート（成功時のみ最終スコアに加算）"
                   ></span>
                 </span>
               </div>
@@ -1258,7 +1302,7 @@ python3 -m http.server 8080</pre>
             メンバーカードとライブカードでデッキを組み、<strong>ステージにメンバーを並べ</strong>、<strong>ライブ</strong>を成功させて勝利条件（多くの構築ではライブを一定回数成功）を目指す対戦型カードゲームです。メンバーは<strong>所持ハート</strong>や<strong>ブレード</strong>を持ち、ライブカードには<strong>必要ハート（need_heart）</strong>などが書かれています。
           </p>
           <p>
-            このツールのソロプレイは、そのうち<strong>1人分の盤面</strong>をドラッグ操作で再現する練習用です。<strong>対面のプレイヤー分やオンライン同期はありません。</strong>
+            ソロプレイは<strong>1人分の盤面</strong>の練習用です。<strong>対戦モード</strong>（Google ログイン）は2人でルーム接続し、成功ライブ枚数・投了を同期します（各プレイヤーが自分の盤面を操作）。
           </p>
         </section>
         <section class="tutorial-section">
@@ -1355,7 +1399,10 @@ python3 -m http.server 8080</pre>
           <strong>プレビュー</strong>は公式のゾーンではない<strong>任意の駒置き場</strong>です（<strong>ヘッダクリックで一覧の開閉</strong>）。ルール計算から外したいカードを一時置きしたり、手札と分けて「見せてよい束」を置く・配信向けに整理するなどの用途向けです（Undo の対象にはなります）。<strong>プレビューのカードはライブ目安パネルや解決の統計には載りません。「ライブ開始」後</strong>に目安パネルが開きます。
         </p>
         <p><strong>HUD のターンカウント</strong>は <strong>0T</strong> から始まり、デッキ欄の「<strong>ターン開始</strong>」ごとに 1 ずつ増えます。ステージにいるメンバーは載せたターンよりカウントが進むと少し<strong>発光した見え方</strong>になります（補助用）。</p>
-        <p>オンライン対戦・自動同期は<strong>未対応</strong>です。</p>
+        <p>
+          <strong>対戦モード</strong>（Google ログイン限定）では、ルームコードで2人が接続し、成功ライブ枚数と投了を同期します（総合ルール 1.06 の勝敗条件）。
+          盤面の全カード操作のリアルタイム同期は今後拡張予定です。
+        </p>
         <p>スナップショット 1〜3 は<strong>ブラウザのこのタブのセッション内</strong>にのみ保存され、ページを閉じると消える場合があります。</p>
       </div>
       <form method="dialog">
@@ -1613,6 +1660,43 @@ python3 -m http.server 8080</pre>
       </div>
     </dialog>
 
+    <dialog id="dlg-versus-lobby" class="app-dialog dlg-versus-lobby" aria-labelledby="dlg-versus-lobby-title">
+      <h2 id="dlg-versus-lobby-title" class="app-dialog__title">対戦モード（総合ルール 1.06）</h2>
+      <p class="hint zone-inline-help">
+        <strong>簡易対戦</strong>は Google ログインも Firestore も不要です。対面プレイでは各プレイヤーが自分の端末で盤面を動かし、
+        相手の<strong>成功ライブ枚数</strong>だけ＋／−で共有します（3枚以上かつ相手2枚以下で勝利）。
+      </p>
+      <p id="dlg-versus-lobby-status" class="dlg-versus-lobby-status muted" role="status"></p>
+      <div class="app-dialog__actions dlg-versus-lobby-actions dlg-versus-lobby-actions--primary">
+        <button type="button" class="btn primary" id="dlg-versus-start-local">簡易対戦を始める（ログイン不要）</button>
+        <button type="button" class="btn secondary" id="dlg-versus-lobby-close">閉じる</button>
+      </div>
+      <details id="dlg-versus-online-wrap" class="dlg-versus-online-wrap" hidden>
+        <summary>オンラインルーム（任意・Google ログイン）</summary>
+        <p id="dlg-versus-online-hint" class="hint zone-inline-help muted"></p>
+        <div class="dlg-versus-lobby-row">
+          <label class="tools-label">ルームコード（参加時）</label>
+          <input
+            type="text"
+            id="dlg-versus-room-code"
+            class="dlg-versus-room-code-input"
+            maxlength="6"
+            autocomplete="off"
+            placeholder="例: ABC123"
+          />
+        </div>
+        <p class="muted">作成したルーム: <strong id="dlg-versus-room-code-display">——</strong></p>
+        <div class="app-dialog__actions dlg-versus-lobby-actions">
+          <button type="button" class="btn secondary" id="dlg-versus-leave">ルームから退出</button>
+          <button type="button" class="btn secondary" id="dlg-versus-create">ルームを作成</button>
+          <button type="button" class="btn secondary" id="dlg-versus-join">コードで参加</button>
+          <button type="button" class="btn secondary" id="dlg-versus-ready">このデッキで準備完了</button>
+          <button type="button" class="btn primary" id="dlg-versus-start" hidden>対戦開始（ホスト）</button>
+          <button type="button" class="btn primary" id="dlg-versus-enter-play" hidden>プレイ画面へ</button>
+        </div>
+      </details>
+    </dialog>
+
     <dialog id="dlg-ability-guided" class="app-dialog dlg-ability-guided" aria-labelledby="dlg-ability-guided-title">
       <h2 id="dlg-ability-guided-title" class="app-dialog__title">効果の処理</h2>
       <p id="dlg-ability-guided-lead" class="hint zone-inline-help">
@@ -1638,7 +1722,7 @@ python3 -m http.server 8080</pre>
     <dialog id="dlg-pick-ability-choice" class="app-dialog dlg-pick-ability-choice" aria-labelledby="dlg-pick-ability-choice-title">
       <h2 id="dlg-pick-ability-choice-title" class="app-dialog__title">効果を選ぶ</h2>
       <p id="dlg-pick-ability-choice-lead" class="hint zone-inline-help"></p>
-      <motionless id="dlg-pick-ability-choice-list" class="dlg-pick-ability-choice-list" role="group"></div>
+      <div id="dlg-pick-ability-choice-list" class="dlg-pick-ability-choice-list" role="group"></div>
       <div class="app-dialog__actions">
         <button type="button" class="btn secondary" id="dlg-pick-ability-choice-cancel">キャンセル</button>
         <button type="button" class="btn primary" id="dlg-pick-ability-choice-ok">選んだ効果を実行</button>
@@ -1684,29 +1768,31 @@ python3 -m http.server 8080</pre>
       {
         "scopes": {
           "/js/": {
-            "./abilityEffects.js": "./abilityEffects.js?v=2026051834",
-            "./bladeHeart.js": "./bladeHeart.js?v=2026051834",
-            "./cardCatalogDialog.js": "./cardCatalogDialog.js?v=2026051834",
-            "./cardGroups.js": "./cardGroups.js?v=2026051834",
-            "./cards.js": "./cards.js?v=2026051834",
-            "./cloudAuth.js": "./cloudAuth.js?v=2026051834",
-            "./config.js": "./config.js?v=2026051834",
-            "./deckLibrary.js": "./deckLibrary.js?v=2026051834",
-            "./deckbuilder.js": "./deckbuilder.js?v=2026051834",
-            "./decklogImport.js": "./decklogImport.js?v=2026051834",
-            "./firebaseConfig.js": "./firebaseConfig.js?v=2026051834",
-            "./gameStatusIcons.js": "./gameStatusIcons.js?v=2026051834",
-            "./joujiEffects.js": "./joujiEffects.js?v=2026051834",
-            "./liveSpecialBhOverride.js": "./liveSpecialBhOverride.js?v=2026051834",
-            "./main.js": "./main.js?v=2026051834",
-            "./sampleDeckRecipes.js": "./sampleDeckRecipes.js?v=2026051834",
-            "./simulator.js": "./simulator.js?v=2026051834",
-            "./testCardLog.js": "./testCardLog.js?v=2026051834",
-            "./ui.js": "./ui.js?v=2026051834"
+            "./abilityEffects.js": "./abilityEffects.js?v=2026051858",
+            "./bladeHeart.js": "./bladeHeart.js?v=2026051858",
+            "./cardCatalogDialog.js": "./cardCatalogDialog.js?v=2026051858",
+            "./cardGroups.js": "./cardGroups.js?v=2026051858",
+            "./cards.js": "./cards.js?v=2026051858",
+            "./cloudAuth.js": "./cloudAuth.js?v=2026051858",
+            "./config.js": "./config.js?v=2026051858",
+            "./deckLibrary.js": "./deckLibrary.js?v=2026051858",
+            "./deckbuilder.js": "./deckbuilder.js?v=2026051858",
+            "./decklogImport.js": "./decklogImport.js?v=2026051858",
+            "./firebaseConfig.js": "./firebaseConfig.js?v=2026051858",
+            "./gameStatusIcons.js": "./gameStatusIcons.js?v=2026051858",
+            "./joujiEffects.js": "./joujiEffects.js?v=2026051858",
+            "./liveSpecialBhOverride.js": "./liveSpecialBhOverride.js?v=2026051858",
+            "./main.js": "./main.js?v=2026051858",
+            "./sampleDeckRecipes.js": "./sampleDeckRecipes.js?v=2026051858",
+            "./simulator.js": "./simulator.js?v=2026051858",
+            "./testCardLog.js": "./testCardLog.js?v=2026051858",
+            "./ui.js": "./ui.js?v=2026051858",
+            "./versusMatch.js": "./versusMatch.js?v=2026051858",
+            "./versusMode.js": "./versusMode.js?v=2026051858"
           }
         }
       }
     </script>
-    <script type="module" src="js/main.js?v=2026051834"></script>
+    <script type="module" src="js/main.js?v=2026051858"></script>
   </body>
 </html>

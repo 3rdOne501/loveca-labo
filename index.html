@@ -121,7 +121,7 @@ python3 -m http.server 8080</pre>
           <div id="cloud-auth-bar" class="cloud-auth-bar cloud-auth-bar--search-top" hidden>
             <span id="cloud-auth-status" class="cloud-auth-bar__status muted">未ログイン</span>
             <img id="cloud-auth-avatar" class="cloud-auth-bar__avatar" alt="" hidden />
-            <button type="button" id="cloud-auth-signin" class="btn sm secondary cloud-auth-bar__signin">Google でログイン</button>
+            <button type="button" id="cloud-auth-signin" class="btn sm secondary cloud-auth-bar__signin" title="Google へ一度だけ移動してログイン（サードパーティ Cookie 不要）">Google でログイン</button>
             <button type="button" id="cloud-auth-signout" class="btn sm secondary cloud-auth-bar__signout" hidden>ログアウト</button>
           </div>
           <div class="search-panel-tools">
@@ -322,7 +322,7 @@ python3 -m http.server 8080</pre>
                 type="button"
                 class="btn secondary btn-start-versus-sticky"
                 id="btn-start-versus"
-                title="簡易対戦（Firestore不要）。相手の成功ライブ枚数を手入力"
+                title="簡易対戦はログイン不要。相手の成功ライブ枚数を手入力"
               >
                 対戦モード
               </button>
@@ -461,22 +461,6 @@ python3 -m http.server 8080</pre>
     </div>
 
     <div id="view-game" class="view" hidden>
-      <div id="versus-match-bar" class="versus-match-bar" hidden>
-        <div class="versus-match-bar__main">
-          <span id="versus-match-bar-label" class="versus-match-bar__label">対戦</span>
-          <span id="versus-match-bar-detail" class="versus-match-bar__detail muted"></span>
-        </div>
-        <div class="versus-match-bar__actions">
-          <span id="versus-opp-sl-controls" class="versus-opp-sl-controls" hidden>
-            <span class="muted">相手SL</span>
-            <button type="button" class="btn sm secondary" id="btn-versus-opp-sl-minus" title="相手の成功ライブを1減らす">−</button>
-            <strong id="versus-opp-sl-num" class="versus-opp-sl-num">0</strong>
-            <button type="button" class="btn sm secondary" id="btn-versus-opp-sl-plus" title="相手の成功ライブを1増やす">＋</button>
-          </span>
-          <button type="button" class="btn sm secondary" id="btn-versus-lobby" hidden>ルーム</button>
-          <button type="button" class="btn sm secondary" id="btn-versus-concede" hidden>投了</button>
-        </div>
-      </div>
       <header class="game-bar">
         <div class="game-bar-row game-bar-actions">
           <button type="button" class="btn primary" id="btn-back-builder">デッキ編集に戻る</button>
@@ -553,6 +537,23 @@ python3 -m http.server 8080</pre>
           </button>
         </div>
       </header>
+
+      <div id="versus-match-bar" class="versus-match-bar" hidden>
+        <div class="versus-match-bar__info">
+          <span id="versus-match-bar-label" class="versus-match-bar__label">簡易対戦</span>
+          <span id="versus-match-bar-detail" class="versus-match-bar__detail muted"></span>
+        </div>
+        <div class="versus-match-bar__actions">
+          <span id="versus-opp-sl-controls" class="versus-opp-sl-controls" hidden>
+            <span class="muted">相手SL</span>
+            <button type="button" class="btn sm secondary" id="btn-versus-opp-sl-minus" title="相手の成功ライブ枚数を1減らす">−</button>
+            <strong id="versus-opp-sl-num" class="versus-opp-sl-num">0</strong>
+            <button type="button" class="btn sm secondary" id="btn-versus-opp-sl-plus" title="相手の成功ライブ枚数を1増やす">＋</button>
+          </span>
+          <button type="button" class="btn sm secondary" id="btn-versus-lobby" hidden title="対戦ロビーを開く">ロビー</button>
+          <button type="button" class="btn sm secondary" id="btn-versus-concede" hidden title="投了（総合ルール 1.2.3）">投了</button>
+        </div>
+      </div>
 
       <div class="game-board">
         <div class="col col-left">
@@ -1662,16 +1663,16 @@ python3 -m http.server 8080</pre>
     <dialog id="dlg-versus-lobby" class="app-dialog dlg-versus-lobby" aria-labelledby="dlg-versus-lobby-title">
       <h2 id="dlg-versus-lobby-title" class="app-dialog__title">対戦モード（総合ルール 1.06）</h2>
       <p class="hint zone-inline-help">
-        <strong>簡易対戦</strong>は Firestore 不要です。対面・通話しながら、各プレイヤーが自分の盤面を操作し、
-        相手の<strong>成功ライブ枚数</strong>だけプレイ画面で手入力します（3枚以上かつ相手2枚以下で勝利）。
+        <strong>簡易対戦</strong>は Google ログインも Firestore も不要です。対面プレイでは各プレイヤーが自分の端末で盤面を動かし、
+        相手の<strong>成功ライブ枚数</strong>だけ＋／−で共有します（3枚以上かつ相手2枚以下で勝利）。
       </p>
       <p id="dlg-versus-lobby-status" class="dlg-versus-lobby-status muted" role="status"></p>
       <div class="app-dialog__actions dlg-versus-lobby-actions dlg-versus-lobby-actions--primary">
-        <button type="button" class="btn primary" id="dlg-versus-start-local">簡易対戦を始める</button>
+        <button type="button" class="btn primary" id="dlg-versus-start-local">簡易対戦を始める（ログイン不要）</button>
         <button type="button" class="btn secondary" id="dlg-versus-lobby-close">閉じる</button>
       </div>
       <details id="dlg-versus-online-wrap" class="dlg-versus-online-wrap" hidden>
-        <summary>オンラインルーム（任意・Firestore）</summary>
+        <summary>オンラインルーム（任意・Google ログイン）</summary>
         <p id="dlg-versus-online-hint" class="hint zone-inline-help muted"></p>
         <div class="dlg-versus-lobby-row">
           <label class="tools-label">ルームコード（参加時）</label>

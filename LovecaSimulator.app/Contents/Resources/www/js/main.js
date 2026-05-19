@@ -6,10 +6,14 @@ import { initPublishedSampleRecipes } from "./sampleDeckRecipes.js";
 import { prefetchGameStatusArtBundledEarly } from "./gameStatusIcons.js";
 import { mountSimulator, teardownDeckPileLayoutWatchers } from "./simulator.js";
 import { showToast } from "./ui.js";
+import { initVersusMode, teardownVersusModeSession } from "./versusMode.js";
 import {
   initCloudAuthIfConfigured,
   isCloudSyncAvailable,
   onCloudUserChange,
+  getCurrentCloudUser,
+  getEffectiveCloudUser,
+  ensureGoogleSession,
   signInWithGoogle,
   signOutCloud,
 } from "./cloudAuth.js";
@@ -51,9 +55,29 @@ try {
   var buildTag = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "";
   if (buildTag && APP_MODULE_CACHE_BUST && buildTag !== APP_MODULE_CACHE_BUST) {
     var uMismatch = new URL(window.location.href);
-    if (!uMismatch.searchParams.has("_reload")) {
+    var reloadKey = "llocg_build_reload_" + APP_MODULE_CACHE_BUST;
+    var reloadAlreadyTried = false;
+    try {
+      reloadAlreadyTried = sessionStorage.getItem(reloadKey) === "1";
+    } catch (_) {
+      /* noop */
+    }
+    if (!reloadAlreadyTried && !uMismatch.searchParams.has("_reload")) {
+      try {
+        sessionStorage.setItem(reloadKey, "1");
+      } catch (_) {
+        /* noop */
+      }
       uMismatch.searchParams.set("_reload", String(Date.now()));
       window.location.replace(uMismatch.toString());
+    } else if (reloadAlreadyTried) {
+      console.warn(
+        "[Loveca Labo] index.html loveca-build (" +
+          buildTag +
+          ") !== APP_MODULE_CACHE_BUST (" +
+          APP_MODULE_CACHE_BUST +
+          "); update the meta tag to stop cache mismatch",
+      );
     }
   }
   console.info("[Loveca Labo] build=" + (buildTag || APP_MODULE_CACHE_BUST || "?"));
@@ -62,6 +86,8 @@ try {
 }
 
 let appStarted = false;
+/** @type {string|null} */
+let activeVersusRoomMounted = null;
 
 function clearPlayResumeStorage() {
   try {
@@ -176,6 +202,93 @@ function hideAppBootLoading() {
   document.body.classList.remove("app-boot-loading");
 }
 
+function enterVersusPlay(viewDeck, viewGame, payload) {
+  const deckMap = normalizeDeckMapCounts(payload.deckMap || {});
+  if (!deckMap || !Object.keys(deckMap).length) {
+    showToast("対戦用デッキを読み込めませんでした");
+    return;
+  }
+  var sessionKey = payload.sessionKey || payload.roomCode || "local";
+  if (activeVersusRoomMounted === sessionKey && !viewGame.hidden) return;
+  activeVersusRoomMounted = sessionKey;
+  try {
+    prefetchDeckCardImagesFromMap(deckMap, getCard);
+  } catch (_) {
+    /* noop */
+  }
+  const bundle = loadDeckBundleFromStorage();
+  clearPlayResumeStorage();
+  const dlg = document.getElementById("dlg-versus-lobby");
+  if (dlg && typeof dlg.close === "function") {
+    try {
+      dlg.close();
+    } catch (_) {
+      /* noop */
+    }
+  }
+  viewDeck.hidden = true;
+  viewGame.hidden = false;
+  document.body.classList.add("play-mode");
+  requestAnimationFrame(function () {
+    setTimeout(function () {
+      try {
+        mountSimulator(viewGame, deckMap, {
+          versusMatch:
+            payload.mode === "local"
+              ? { mode: "local" }
+              : {
+                  mode: "online",
+                  roomCode: payload.roomCode,
+                  myRole: payload.myRole,
+                  match: payload.match,
+                },
+          onBackToDeck() {
+            teardownDeckPileLayoutWatchers();
+            teardownVersusModeSession();
+            activeVersusRoomMounted = null;
+            delete window.__llocgVersusPlayMounted;
+            clearPlayResumeStorage();
+            viewGame.hidden = true;
+            viewDeck.hidden = false;
+            document.body.classList.remove("play-mode");
+            document.body.classList.remove("play-versus-mode");
+            document.body.classList.remove("live-turn-pick-mode");
+            document.body.classList.remove("zone-hints-visible");
+            try {
+              if (typeof window.__llocgRestoreDeckBuilderUi === "function") {
+                window.__llocgRestoreDeckBuilderUi({ reopenCatalog: true });
+              }
+            } catch (_) {
+              /* noop */
+            }
+          },
+          deckRoleLabels: {
+            keyCardNos: bundle.keyCardNos,
+            keyCard2Nos: bundle.keyCard2Nos,
+            keyCard3Nos: bundle.keyCard3Nos,
+            middleCardNos: bundle.middleCardNos,
+          },
+        });
+        window.__llocgVersusPlayMounted = sessionKey;
+        showToast(
+          payload.mode === "local"
+            ? "簡易対戦: 相手の成功ライブ枚数は画面上の＋／−で入力してください"
+            : "オンライン対戦: 成功ライブ枚数は自動同期されます",
+        );
+      } catch (err) {
+        console.error(err);
+        activeVersusRoomMounted = null;
+        teardownDeckPileLayoutWatchers();
+        document.body.classList.remove("play-mode");
+        document.body.classList.remove("play-versus-mode");
+        viewGame.hidden = true;
+        viewDeck.hidden = false;
+        showToast("対戦プレイ画面の初期化に失敗しました");
+      }
+    }, 0);
+  });
+}
+
 function startApp(viewDeck, viewGame, statusEl) {
   if (statusEl) statusEl.textContent = "";
   hideAppBootLoading();
@@ -187,6 +300,14 @@ function startApp(viewDeck, viewGame, statusEl) {
     } catch (_) {
       /* noop */
     }
+    initVersusMode({
+      onEnterVersusPlay: function (payload) {
+        enterVersusPlay(viewDeck, viewGame, payload);
+      },
+      getCurrentDeckMap: function () {
+        return loadDeckBundleFromStorage().map;
+      },
+    });
     initDeckBuilder(viewDeck, {
       onStartGame: (deckMap) => {
         try {
@@ -399,28 +520,18 @@ function wireCloudAuthBar() {
      仮にログイン中の名前を出す。初期化後に onCloudUserChange で正式な値で上書きされる。 */
   bar.hidden = false;
 
-  initCloudAuthIfConfigured()
-    .then((ok) => {
-      if (!ok) return;
-      bar.hidden = false;
-    })
-    .catch((err) => {
-      console.warn("[main] cloudAuth init failed:", err);
-    });
-
-  onCloudUserChange((user) => {
-    /* Firebase 初期化前でもキャッシュからユーザーが見えていれば表示する。
-       isCloudSyncAvailable() は初期化完了後 true。ただしキャッシュ user があるなら
-       「復元中」表示として常に出す。 */
-    if (!isCloudSyncAvailable() && !user) return;
+  function paintAuthBar(user) {
+    const effective = user || getEffectiveCloudUser();
+    if (!isCloudSyncAvailable() && !effective) return;
     bar.hidden = false;
-    if (user) {
+    if (effective) {
       if (statusEl) {
-        statusEl.textContent = user.displayName || user.email || "ログイン中";
+        var label = effective.displayName || effective.email || "ログイン中";
+        statusEl.textContent = user ? label : label + "（復元中）";
       }
       if (avatarEl) {
-        if (user.photoURL) {
-          avatarEl.src = user.photoURL;
+        if (effective.photoURL) {
+          avatarEl.src = effective.photoURL;
           avatarEl.hidden = false;
         } else {
           avatarEl.removeAttribute("src");
@@ -438,6 +549,25 @@ function wireCloudAuthBar() {
       signInBtn.hidden = false;
       signOutBtn.hidden = true;
     }
+  }
+
+  paintAuthBar(getEffectiveCloudUser());
+
+  initCloudAuthIfConfigured()
+    .then((ok) => {
+      if (!ok) return;
+      bar.hidden = false;
+      return ensureGoogleSession();
+    })
+    .then(function () {
+      paintAuthBar(getCurrentCloudUser());
+    })
+    .catch((err) => {
+      console.warn("[main] cloudAuth init failed:", err);
+    });
+
+  onCloudUserChange((user) => {
+    paintAuthBar(user);
   });
 }
 

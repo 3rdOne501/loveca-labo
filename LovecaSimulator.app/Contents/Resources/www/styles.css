@@ -486,6 +486,73 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
   white-space: nowrap;
   box-shadow: 0 0 20px rgba(255, 85, 155, 0.38), 0 2px 0 rgba(184, 50, 106, 0.45);
 }
+.btn-start-versus-sticky {
+  flex: 0 0 auto;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.45rem 0.85rem;
+  white-space: nowrap;
+}
+body.play-mode .versus-match-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem 1rem;
+  flex-wrap: wrap;
+  margin: 0 0 0.35rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: var(--radius-md, 8px);
+  background: linear-gradient(90deg, rgba(80, 120, 255, 0.22), rgba(255, 90, 160, 0.18));
+  border: 1px solid rgba(140, 170, 255, 0.35);
+}
+.versus-match-bar__label {
+  font-weight: 800;
+  font-size: 0.88rem;
+}
+.versus-match-bar__detail {
+  font-size: 0.78rem;
+}
+.versus-match-bar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.dlg-versus-lobby-status {
+  min-height: 1.4em;
+  margin: 0.35rem 0 0.5rem;
+}
+.dlg-versus-room-code-input {
+  font-family: var(--font-mono, monospace);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  max-width: 8rem;
+}
+.dlg-versus-lobby-actions {
+  flex-wrap: wrap;
+}
+.dlg-versus-lobby-actions--primary {
+  margin-bottom: 0.5rem;
+}
+.dlg-versus-online-wrap {
+  margin-top: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+.dlg-versus-online-wrap summary {
+  cursor: pointer;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+.versus-opp-sl-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-right: 0.35rem;
+}
+.versus-opp-sl-num {
+  min-width: 1.2em;
+  text-align: center;
+}
 
 /* ソロプレイ開始: 目立つ発光（無効時はアニメなし） */
 #view-deck .btn-start-game-sticky:not(:disabled) {
@@ -1584,6 +1651,23 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
   padding-left: 0.66rem;
   padding-right: 0.66rem;
 }
+/* 手札欄: ライブターン開始／ライブ開始を大きく */
+body.play-mode .zone-head.zone-head--hand #btn-live-turn-primary,
+body.play-mode .zone-head.zone-head--hand #btn-live-turn-begin {
+  min-height: 48px;
+  min-width: 5.5rem;
+  font-size: 0.88rem;
+  font-weight: 800;
+  padding: 0.48rem 1rem;
+  letter-spacing: 0.03em;
+}
+/* マリガン実行後: 横の余白でライブ進行ボタンをさらに広げる */
+body.play-mode .zone-head.zone-head--hand .hand-zone-actions--no-mulligan #btn-live-turn-primary,
+body.play-mode .zone-head.zone-head--hand .hand-zone-actions--no-mulligan #btn-live-turn-begin {
+  min-width: 7.25rem;
+  font-size: 0.95rem;
+  padding: 0.52rem 1.15rem;
+}
 .zone-head h3 { margin: 0; font-family: var(--font-display); color: #fcdcec; }
 .zone-head .hand-zone-title {
   display: inline-flex;
@@ -2607,9 +2691,10 @@ body.play-mode .draw-row.draw-row--turn #btn-turn-start {
   width: 100%;
   min-width: 0;
   font-weight: 800;
-  font-size: 0.86rem;
-  line-height: 1.25;
-  padding: 0.48em 0.55em;
+  font-size: 0.98rem;
+  line-height: 1.28;
+  padding: 0.62em 0.68em;
+  min-height: 2.85rem;
 }
 body.play-mode .draw-row.draw-row--top .btn {
   flex: 1 1 8.5rem;
@@ -3066,6 +3151,36 @@ body.play-mode .stage-slot.card-strip .card-effect-resolve-btn-row .card-effect-
   top: -4px;
   border-width: 1.5px;
 }
+body.play-mode .stage-slot.card-strip .card-effect-resolve-btn--live_start,
+body.play-mode .stage-slot.card-strip .card-effect-resolve-btn-row .card-effect-resolve-btn--live_start {
+  font-size: 0.92rem;
+  padding: 0.34rem 0.95rem;
+  top: -4px;
+  border-width: 1.5px;
+  letter-spacing: normal;
+  min-width: 0;
+}
+body.play-mode .stage-slot.card-strip .card-effect-resolve-btn--live_success,
+body.play-mode .stage-slot.card-strip .card-effect-resolve-btn-row .card-effect-resolve-btn--live_success {
+  font-size: 1.02rem;
+  padding: 0.42rem 1.12rem;
+  top: -4px;
+  border-width: 1.5px;
+  letter-spacing: normal;
+  min-width: 0;
+}
+body.play-mode .waiting-zone-strip .card-effect-resolve-btn--live_start,
+body.play-mode .waiting-zone-strip .card-effect-resolve-btn--live_success,
+body.play-mode .waiting-zone-strip .card-effect-resolve-btn-row .card-effect-resolve-btn {
+  font-size: 0.88rem;
+  padding: 0.3rem 0.65rem;
+  top: -2px;
+  z-index: 12;
+}
+body.play-mode .waiting-zone-strip .card-effect-resolve-btn--live_success {
+  font-size: 0.96rem;
+  padding: 0.36rem 0.78rem;
+}
 
 /* ライブ枠（横向きライブカード）のボタン／アイコン拡大配置 */
 body.play-mode .live-slot .card-art-wrap {
@@ -3080,8 +3195,26 @@ body.play-mode .live-slot .card-item.card-item--live-h .card-effect-resolve-btn-
   top: -22px;
   z-index: 9;
 }
+body.play-mode .live-slot .card-item.card-item--live-h .card-effect-resolve-btn--live_start,
+body.play-mode .live-slot .card-item.card-item--live-h .card-effect-resolve-btn-row .card-effect-resolve-btn--live_start {
+  font-size: 0.95rem;
+  padding: 0.22rem 0.7rem;
+  top: -40px;
+  border-width: 1.5px;
+  letter-spacing: 0.03em;
+  min-width: 0;
+}
+body.play-mode .live-slot .card-item.card-item--live-h .card-effect-resolve-btn--live_success,
+body.play-mode .live-slot .card-item.card-item--live-h .card-effect-resolve-btn-row .card-effect-resolve-btn--live_success {
+  font-size: 1.08rem;
+  padding: 0.32rem 0.88rem;
+  top: -40px;
+  border-width: 1.5px;
+  letter-spacing: 0.03em;
+  min-width: 0;
+}
 body.play-mode .live-slot .card-item.card-item--live-h .card-effect-resolve-btn-row {
-  top: -22px;
+  top: -38px;
 }
 body.play-mode .live-slot .card-item.card-item--live-h .card-effect-icon-host {
   bottom: -28px;
@@ -3190,6 +3323,30 @@ body.play-mode .live-score-center-bar__note-wrap {
 body.play-mode .live-score-center-bar__note.live-score-note-pink {
   color: #ff6eb4;
   text-shadow: 0 0 10px rgba(255, 110, 200, 0.55);
+}
+body.play-mode .live-score-center-bar__note-plus {
+  font-size: 0.72em;
+  font-weight: 800;
+  color: #ff6eb4;
+  text-shadow:
+    0 0 8px rgba(255, 110, 200, 0.65),
+    0 0 16px rgba(255, 140, 210, 0.45);
+  vertical-align: baseline;
+  margin-left: 0.06em;
+}
+body.play-mode .live-score-center-bar__note-plus-val {
+  font-size: 1em;
+  font-weight: 900;
+}
+body.play-mode .live-score-center-bar__note-icon {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  margin-left: 0.2em;
+}
+body.play-mode .live-score-center-bar__note-icon .card-yell-float-ico {
+  width: 1.05em;
+  height: 1.05em;
 }
 
 /* 成功ライブスコア: 2 点ごとに色を強め、22 点以上は白 */
@@ -3554,6 +3711,23 @@ details.hand-stick-fold.zone-block {
     overflow: visible;
     width: 100%;
     max-width: 100%;
+  }
+  body.play-mode.chrome-layout-play-mobile-portrait .zone-head.zone-head--hand #btn-live-turn-primary,
+  body.play-mode.chrome-layout-play-mobile-portrait .zone-head.zone-head--hand #btn-live-turn-begin {
+    min-height: 50px;
+    font-size: 0.9rem;
+  }
+  body.play-mode.chrome-layout-play-mobile-portrait
+    .zone-head.zone-head--hand
+    .hand-zone-actions--no-mulligan
+    #btn-live-turn-primary,
+  body.play-mode.chrome-layout-play-mobile-portrait
+    .zone-head.zone-head--hand
+    .hand-zone-actions--no-mulligan
+    #btn-live-turn-begin {
+    min-width: calc(50% - 0.35rem);
+    flex: 1 1 0;
+    font-size: 0.98rem;
   }
   body.play-mode.chrome-layout-play-mobile-portrait .deck-odds-grid-meta {
     flex-direction: column;
@@ -4634,6 +4808,7 @@ body.play-mode .live-slot .card-item.card-item--live-h {
 body.play-mode .live-slot .card-item.card-item--live-h .card-img.rotated {
   width: var(--loveca-play-w);
   height: auto;
+  object-fit: contain;
   transform: rotate(90deg);
   transform-origin: center center;
 }
@@ -4869,6 +5044,13 @@ body.play-mode .deck-pile {
   body.play-mode.chrome-layout-play-mobile-portrait .col.col-right section.play-tools-block {
     order: 60;
   }
+  /* 控え室・プレビュー見出しを手札 sticky (z-index:8) より前面に（重なり時もクリック可） */
+  body.play-mode.chrome-layout-play-mobile-portrait .zone-block-waiting .waiting-rail-head,
+  body.play-mode.chrome-layout-play-mobile-portrait .zone-block-preview .preview-rail-head {
+    position: relative;
+    z-index: 9;
+  }
+
   body.play-mode.chrome-layout-play-mobile-portrait .col.col-right :is(section, details).zone-block:has(#zone-hand) {
     order: 100;
     margin-top: 0.45rem;
@@ -5749,28 +5931,49 @@ body.play-mode .site-footer {
   font-size: 0.72rem;
   padding: 0.22rem 0.35rem;
 }
+.dlg-ability-source-name {
+  color: #ff9ecf;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.dlg-cost-payment-self-wait-tile {
+  min-width: 12rem;
+  max-width: 100%;
+}
 .dlg-cost-payment-energy-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
-  gap: 0.45rem;
   margin-top: 0.35rem;
 }
-.dlg-cost-payment-energy-tile {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.2rem;
+.dlg-cost-payment-hand-grid {
+  margin-top: 0.3rem;
+}
+.dlg-cost-payment-energy-grid .dlg-pick-kidou-waiting__tile {
   padding: 0.35rem;
   border-radius: 8px;
-  border: 1px solid rgba(255, 200, 120, 0.35);
-  cursor: pointer;
+  border-color: rgba(255, 200, 120, 0.35);
+  gap: 0.2rem;
 }
-.dlg-cost-payment-energy-tile img {
+.dlg-cost-payment-hand-grid .dlg-pick-kidou-waiting__tile {
+  padding: 0.3rem;
+  border-radius: 6px;
+  border-color: rgba(255, 160, 200, 0.2);
+  background: rgba(0, 0, 0, 0.2);
+  gap: 0.18rem;
+}
+.dlg-cost-payment-energy-grid .dlg-pick-kidou-waiting__img {
   width: 100%;
   max-width: 72px;
-  aspect-ratio: 63 / 88;
-  object-fit: cover;
   border-radius: 4px;
+  filter: none;
+}
+.dlg-cost-payment-hand-grid .dlg-pick-kidou-waiting__img,
+.dlg-cost-payment-hand-tile img {
+  width: 100%;
+  max-width: 72px;
+  border-radius: 4px;
+  filter: none;
+}
+.dlg-cost-payment-hand-grid .dlg-pick-kidou-waiting__label {
+  font-size: 0.7rem;
 }
 body.play-mode .btn--manual-mode-on {
   background: linear-gradient(180deg, rgba(120, 72, 32, 0.95), rgba(80, 48, 24, 0.98));
@@ -5807,6 +6010,20 @@ body.play-mode .btn--manual-mode-on {
 .dlg-pick-kidou-waiting__tile--soft-warn .dlg-pick-kidou-waiting__label {
   color: #e8c89a;
 }
+.dlg-pick-kidou-waiting__tile--reveal-only {
+  cursor: default;
+  pointer-events: none;
+}
+.dlg-pick-kidou-waiting__tile--reveal-only:hover,
+.dlg-pick-kidou-waiting__tile--reveal-only:focus-within {
+  border-color: var(--border, rgba(255, 255, 255, 0.12));
+  box-shadow: none;
+}
+.panel-title-row #btn-clear-current-deck {
+  flex: 0 0 auto;
+  margin-left: 0.35rem;
+  align-self: center;
+}
 .dlg-pick-kidou-waiting__tile--ineligible .dlg-pick-kidou-waiting__label {
   color: #c0a8b8 !important;
 }
@@ -5815,6 +6032,20 @@ body.play-mode .btn--manual-mode-on {
   grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
   gap: 0.55rem;
   padding: 0.15rem 0.1rem;
+}
+.dlg-cost-payment-energy-grid.dlg-pick-kidou-waiting__grid {
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  gap: 0.45rem;
+  padding: 0;
+}
+.dlg-cost-payment-hand-grid.dlg-pick-kidou-waiting__grid {
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 0.5rem;
+  padding: 0.1rem 0;
+  max-width: 100%;
+}
+.dlg-cost-payment-hand-grid .dlg-pick-kidou-waiting__label {
+  display: none;
 }
 .dlg-pick-kidou-waiting__tile {
   position: relative;
@@ -5989,38 +6220,6 @@ body.play-mode .btn--manual-mode-on {
   display: flex;
   gap: 0.4rem;
   align-items: center;
-}
-.dlg-cost-payment-hand-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
-  gap: 0.4rem;
-  margin-top: 0.3rem;
-}
-.dlg-cost-payment-hand-tile {
-  display: flex;
-  flex-direction: column;
-  gap: 0.18rem;
-  align-items: center;
-  padding: 0.3rem;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 160, 200, 0.2);
-  cursor: pointer;
-  background: rgba(0, 0, 0, 0.2);
-}
-.dlg-cost-payment-hand-tile img {
-  width: 100%;
-  aspect-ratio: 63 / 88;
-  object-fit: cover;
-  border-radius: 4px;
-}
-.dlg-cost-payment-hand-tile span {
-  font-size: 0.7rem;
-  text-align: center;
-  color: #ffd6ef;
-  line-height: 1.2;
-}
-.dlg-cost-payment-hand-tile input[type="checkbox"] {
-  accent-color: #ec407a;
 }
 
 .dlg-ability-guided-plain {
@@ -6844,13 +7043,159 @@ body.play-mode .card-art-wrap .card-img {
 .card-effect-resolve-btn--hand_playable {
   background: rgba(32, 36, 52, 0.88);
 }
+body.play-mode .live-slot .card-effect-resolve-btn--live_start,
+body.play-mode .live-slot .card-effect-resolve-btn-row .card-effect-resolve-btn--live_start {
+  font-size: 0.95rem;
+  padding: 0.22rem 0.7rem;
+  border-width: 1.5px;
+  letter-spacing: 0.03em;
+  min-width: 0;
+}
+body.play-mode .live-slot .card-effect-resolve-btn--live_success,
+body.play-mode .live-slot .card-effect-resolve-btn-row .card-effect-resolve-btn--live_success {
+  font-size: 1.06rem;
+  padding: 0.3rem 0.82rem;
+  border-width: 1.5px;
+  letter-spacing: 0.03em;
+  min-width: 0;
+}
+body.play-mode .live-slot .card-effect-resolve-btn-row .card-effect-resolve-btn--live_start {
+  flex: 1 1 auto;
+  min-width: 4.2rem;
+  font-size: 0.88rem;
+  padding: 0.2rem 0.45rem;
+}
+body.play-mode .live-slot .card-effect-resolve-btn-row .card-effect-resolve-btn--live_success {
+  flex: 1 1 auto;
+  min-width: 4.6rem;
+  font-size: 0.98rem;
+  padding: 0.28rem 0.55rem;
+}
+.dlg-pick-kidou-waiting__zone {
+  font-size: 0.62rem;
+  line-height: 1.2;
+  color: rgba(255, 220, 240, 0.88);
+}
+.effect-dialog-resume-chip {
+  position: fixed;
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  z-index: 12050;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  font-size: 1rem;
+  padding: 0.55rem 1.1rem;
+}
+.effect-dialog-resume-chip--on-card {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: auto;
+  bottom: auto;
+  transform: translate(-50%, calc(-100% - 6px));
+  z-index: 12060;
+  font-size: 1.14rem;
+  font-weight: 800;
+  padding: 0.62rem 1.4rem;
+  min-width: 9.5rem;
+  letter-spacing: 0.04em;
+  box-shadow:
+    0 10px 32px rgba(0, 0, 0, 0.55),
+    0 0 22px rgba(255, 130, 200, 0.5);
+}
+.effect-dialog-resume-chip--corner {
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  left: auto;
+  top: auto;
+  transform: none;
+}
+body.llocg-effect-dialog-peek .card-effect-resolve-btn,
+body.llocg-effect-dialog-peek .card-effect-icon-host--clickable {
+  display: none !important;
+  pointer-events: none !important;
+}
+body.llocg-effect-dialog-peek #btn-live-turn-primary,
+body.llocg-effect-dialog-peek #btn-live-turn-begin,
+body.llocg-effect-dialog-peek #btn-draw-resolution,
+body.llocg-effect-dialog-peek #btn-res-draw-one {
+  pointer-events: none;
+  opacity: 0.42;
+}
+.turn-phase-splash-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 14500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  background: transparent;
+  opacity: 0;
+  transition: opacity 0.32s ease;
+}
+.turn-phase-splash-overlay.is-visible {
+  opacity: 1;
+}
+.turn-phase-splash-overlay.is-out {
+  opacity: 0;
+  transition: opacity 0.48s ease;
+}
+.turn-phase-splash-title {
+  font-size: clamp(2.6rem, 14vw, 5rem);
+  font-weight: 900;
+  line-height: 1.05;
+  color: #fff8fc;
+  text-align: center;
+  letter-spacing: 0.06em;
+  text-shadow:
+    0 0 28px rgba(255, 150, 220, 0.95),
+    0 0 56px rgba(130, 200, 255, 0.45),
+    0 4px 18px rgba(0, 0, 0, 0.65);
+  animation: llocg-turn-phase-splash-pop 0.72s cubic-bezier(0.22, 1.1, 0.36, 1) both;
+}
+@keyframes llocg-turn-phase-splash-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.55) translateY(12px);
+    filter: blur(8px);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.06) translateY(0);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+body.play-mode .card-item {
+  position: relative;
+}
+.card-hand-cost-pill {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 8;
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1.15;
+  padding: 0.12rem 0.38rem;
+  border-radius: 999px;
+  background: rgba(12, 18, 36, 0.92);
+  color: #ffe8f8;
+  border: 1px solid rgba(255, 200, 230, 0.55);
+  pointer-events: none;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
 .card-effect-icon-host {
   position: absolute;
   left: 50%;
   right: auto;
   bottom: 5px;
   transform: translateX(-50%);
-  z-index: 6;
+  z-index: 11;
   pointer-events: none;
   line-height: 0;
   width: 100%;
@@ -6873,6 +7218,62 @@ body.play-mode .card-art-wrap .card-img {
 .card-effect-icon-glow--hand_playable .card-member-effect-foot-ico {
   filter: drop-shadow(0 0 5px #fff) drop-shadow(0 0 12px rgba(255, 255, 255, 0.92))
     drop-shadow(0 0 20px rgba(255, 255, 255, 0.55));
+}
+.card-effect-icon-host--clickable {
+  pointer-events: auto;
+  cursor: pointer;
+}
+body.play-mode .stage-slot .card-effect-icon-host {
+  z-index: 12;
+}
+body.play-mode #btn-live-turn-primary.btn-live-turn-primary--post-begin {
+  opacity: 0.38;
+  filter: grayscale(0.35);
+  cursor: not-allowed;
+}
+.hand-zone.hand-zone--multi-row {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  align-content: flex-start;
+  gap: 0.35rem;
+  overflow-x: visible;
+  overflow-y: visible;
+}
+.hand-zone-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 100%;
+  gap: 4px;
+  min-height: calc(var(--card-h) + 4px);
+}
+.hand-zone-row.hand-zone-row--overlap {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  --hand-overlap-frac: -0.36;
+}
+.hand-zone-row.hand-zone-row--overlap.hand-zone-row--overlap-light {
+  --hand-overlap-frac: -0.1;
+}
+.hand-zone-row.hand-zone-row--overlap.hand-zone-row--overlap-strong {
+  --hand-overlap-frac: -0.56;
+}
+.hand-zone-row.hand-zone-row--overlap.hand-zone-row--overlap-heavy {
+  --hand-overlap-frac: -0.68;
+}
+.hand-zone-row.hand-zone-row--overlap .card-item {
+  flex-shrink: 0;
+}
+.hand-zone-row.hand-zone-row--overlap .card-item + .card-item {
+  margin-left: calc(var(--loveca-play-w, 82px) * var(--hand-overlap-frac));
+}
+#hand-row.hand-row--multi-row {
+  overflow-x: visible;
+  overflow-y: visible;
 }
 .dlg-pick-ability-choice-list {
   display: flex;
@@ -7363,10 +7764,10 @@ body.play-mode .play-disclaimer {
   display: inline-block;
   margin-left: 0.3rem;
   font-variant-numeric: tabular-nums;
-  font-size: 1.55em;
+  font-size: 1.9em;
   font-weight: 800;
   color: var(--accent2);
-  text-shadow: 0 0 6px rgba(255, 170, 220, 0.28);
+  text-shadow: 0 0 8px rgba(255, 170, 220, 0.32);
 }
 .deck-flip-blade-note {
   margin: 0.12rem 0 0;
