@@ -7,7 +7,7 @@ import { CARD_BACK_DRAG_DATA_URI } from "./config.js";
 export const VERSUS_BOARD_PUBLIC_V = 1;
 
 /** @typedef {Object} VersusPublicCard
- * @property {number} id
+ * @property {string} id
  * @property {string} card_no
  * @property {string} name
  * @property {string} type
@@ -37,7 +37,7 @@ export const VERSUS_BOARD_PUBLIC_V = 1;
 function stripCard(c) {
   if (!c || typeof c !== "object") return null;
   const o = /** @type {Record<string, unknown>} */ (c);
-  const id = Math.floor(Number(o.id) || 0);
+  const id = o.id != null && String(o.id) ? String(o.id) : "";
   if (!id) return null;
   /** @type {VersusPublicCard} */
   const out = {
@@ -94,7 +94,12 @@ export function boardToVersusPublic(board) {
       typeof b.turnCount === "number" && Number.isFinite(b.turnCount)
         ? Math.max(0, Math.floor(b.turnCount))
         : 0,
-    deckCount: Array.isArray(b.deck) ? b.deck.length : 0,
+    deckCount:
+      typeof b.deckCount === "number" && Number.isFinite(b.deckCount)
+        ? Math.max(0, Math.floor(b.deckCount))
+        : Array.isArray(b.deck)
+          ? b.deck.length
+          : 0,
     hand: stripCardList(b.hand),
     waitingRoom: stripCardList(b.waitingRoom),
     resolutionArea: stripCardList(b.resolutionArea),
@@ -134,11 +139,31 @@ export function fingerprintVersusPublicBoard(board) {
  * @param {'host'|'guest'} myRole
  * @returns {VersusPublicBoard|null}
  */
+/**
+ * Firestore から読んだ生データを VersusPublicBoard に正規化
+ * @param {unknown} raw
+ * @returns {VersusPublicBoard|null}
+ */
+export function normalizeVersusPublicBoard(raw) {
+  if (!raw || typeof raw !== "object") return null;
+  const o = /** @type {Record<string, unknown>} */ (raw);
+  if (Number(o.v) !== VERSUS_BOARD_PUBLIC_V) return null;
+  return boardToVersusPublic(o);
+}
+
 export function getOpponentBoardPublic(match, myRole) {
   if (!match || !myRole) return null;
   const raw = myRole === "host" ? match.guestBoardPublic : match.hostBoardPublic;
-  if (!raw || typeof raw !== "object" || raw.v !== VERSUS_BOARD_PUBLIC_V) return null;
-  return /** @type {VersusPublicBoard} */ (raw);
+  return normalizeVersusPublicBoard(raw);
+}
+
+/** Firestore 送信用に undefined を除去 */
+export function sanitizeVersusPublicBoardForFirestore(board) {
+  try {
+    return JSON.parse(JSON.stringify(board));
+  } catch (_) {
+    return board;
+  }
 }
 
 /**

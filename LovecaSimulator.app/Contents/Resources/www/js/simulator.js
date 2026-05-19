@@ -1492,7 +1492,9 @@ export function mountSimulator(
   var versusPublicSyncTimer = 0;
   var versusBoardSyncTimer = 0;
   var versusBoardSyncLastFp = "";
+  var versusBoardSyncLastRev = 0;
   var versusOpponentBoardFp = "";
+  var versusOpponentBoardRev = 0;
   if (versusSession) {
     state.playVersusMode = true;
     if (versusSession.myRole) state.versusMyRole = versusSession.myRole;
@@ -1522,6 +1524,10 @@ export function mountSimulator(
       });
       syncVersusMatchBar(versusSession.remoteMatch);
       applyVersusOpponentBoardFromRemote(versusSession.remoteMatch);
+      versusBoardSyncLastFp = "";
+      queueMicrotask(function () {
+        flushVersusBoardPublicSync();
+      });
     }
     syncVersusOppSlDisplay();
   }
@@ -11681,13 +11687,42 @@ export function mountSimulator(
     if (!versusSession || versusSession.mode !== "online" || !versusSession.myRole) return;
     var oppBoard = getOpponentBoardPublic(remoteMatch, versusSession.myRole);
     var fp = fingerprintVersusPublicBoard(oppBoard);
-    if (fp === versusOpponentBoardFp) return;
+    var oppRev = Math.max(
+      0,
+      Math.floor(
+        Number(
+          versusSession.myRole === "host" ? remoteMatch.guestBoardRev : remoteMatch.hostBoardRev,
+        ) || 0,
+      ),
+    );
+    if (fp === versusOpponentBoardFp && oppRev === versusOpponentBoardRev) return;
     versusOpponentBoardFp = fp;
+    versusOpponentBoardRev = oppRev;
     var at =
       versusSession.myRole === "host" ? remoteMatch.guestBoardAt : remoteMatch.hostBoardAt;
     renderVersusOpponentBoard(oppBoard, {
       opponentName: versusSession.opponentName,
       updatedAt: at || null,
+    });
+  }
+
+  function flushVersusBoardPublicSync() {
+    if (!versusSession || versusSession.mode !== "online" || !versusSession.myRole) return;
+    if (versusBoardSyncTimer) {
+      clearTimeout(versusBoardSyncTimer);
+      versusBoardSyncTimer = 0;
+    }
+    var board = boardToVersusPublic(snapshotBoard());
+    var fp = fingerprintVersusPublicBoard(board);
+    var rev = Math.max(0, Math.floor(Number(board.ts) || 0));
+    if (fp === versusBoardSyncLastFp && rev === versusBoardSyncLastRev) return;
+    versusBoardSyncLastFp = fp;
+    versusBoardSyncLastRev = rev;
+    pushVersusBoardPublic(versusSession.roomCode, versusSession.myRole, board).catch(function (err) {
+      console.warn("[versus] board sync failed:", err);
+      showToast("盤面の同期に失敗しました: " + (err && err.message ? err.message : String(err)), {
+        duration: 5000,
+      });
     });
   }
 
@@ -11714,14 +11749,8 @@ export function mountSimulator(
     if (versusBoardSyncTimer) clearTimeout(versusBoardSyncTimer);
     versusBoardSyncTimer = setTimeout(function () {
       versusBoardSyncTimer = 0;
-      var board = boardToVersusPublic(snapshotBoard());
-      var fp = fingerprintVersusPublicBoard(board);
-      if (fp === versusBoardSyncLastFp) return;
-      versusBoardSyncLastFp = fp;
-      pushVersusBoardPublic(versusSession.roomCode, versusSession.myRole, board).catch(function (err) {
-        console.warn("[versus] board sync failed:", err);
-      });
-    }, 400);
+      flushVersusBoardPublicSync();
+    }, 250);
   }
 
   function scheduleVersusPublicSync() {
@@ -11765,7 +11794,9 @@ export function mountSimulator(
       versusBoardSyncTimer = 0;
     }
     versusBoardSyncLastFp = "";
+    versusBoardSyncLastRev = 0;
     versusOpponentBoardFp = "";
+    versusOpponentBoardRev = 0;
     hideVersusOpponentBoard();
     document.body.classList.remove("play-versus-mode");
     var versusBarEl = document.getElementById("versus-match-bar");

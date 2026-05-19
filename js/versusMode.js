@@ -70,7 +70,7 @@ function setOnlineSectionVisible() {
   if (hint) {
     if (online) {
       hint.textContent =
-        "①ルームを作成 → コードを相手に伝える ②相手がコードで参加 ③両者「準備完了」→ ホストが「対戦開始」。成功ライブ枚数は自動同期。";
+        "①ルーム作成 → コード共有 ②相手が参加 ③両者「準備完了」→ ホストが「対戦開始」。成功ライブ・場・手札は自動同期（相手盤面はプレイ画面上部のパネル）。";
     } else if (u && cloudOk && !fsOk) {
       hint.textContent =
         "ログイン済みですが Firestore に接続できません。ページを再読込するか、Firebase の Firestore を有効化してください。";
