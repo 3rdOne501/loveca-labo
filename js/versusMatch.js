@@ -5,7 +5,7 @@
 import { LIVE_WINS, MAIN_SIZE } from "./config.js";
 import { getCloudFirestore, getCurrentCloudUser } from "./cloudAuth.js";
 import { normalizeDeckMapCounts } from "./deckLibrary.js";
-import { sanitizeVersusPublicBoardForFirestore } from "./versusBoardSync.js";
+import { buildVersusBoardFirestorePatch } from "./versusBoardSync.js";
 
 const COLLECTION = "versusMatches";
 const RULES_VERSION = "1.06";
@@ -324,18 +324,7 @@ export async function pushVersusBoardPublic(roomCode, role, boardPublic) {
   requireUser();
   const { api } = fs();
   const ref = matchRef(roomCode);
-  const field = role === "host" ? "hostBoardPublic" : "guestBoardPublic";
-  const atField = role === "host" ? "hostBoardAt" : "guestBoardAt";
-  const revField = role === "host" ? "hostBoardRev" : "guestBoardRev";
-  const now = new Date().toISOString();
-  const safe = sanitizeVersusPublicBoardForFirestore(boardPublic);
-  const rev = Math.max(0, Math.floor(Number(safe && safe.ts) || Date.now()));
-  const p = {
-    updatedAt: now,
-    [field]: safe,
-    [atField]: now,
-    [revField]: rev,
-  };
+  const p = buildVersusBoardFirestorePatch(role, boardPublic);
   try {
     await api.updateDoc(ref, p);
   } catch (err) {

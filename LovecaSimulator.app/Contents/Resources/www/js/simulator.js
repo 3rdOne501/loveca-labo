@@ -90,7 +90,7 @@ import {
   versusOpponentLastAction,
 } from "./versusMatch.js";
 import {
-  boardToVersusPublic,
+  boardToVersusPublicFromState,
   fingerprintVersusPublicBoard,
   getOpponentBoardPublic,
   hideVersusOpponentBoard,
@@ -1492,7 +1492,6 @@ export function mountSimulator(
   var versusPublicSyncTimer = 0;
   var versusBoardSyncTimer = 0;
   var versusBoardSyncLastFp = "";
-  var versusBoardSyncLastRev = 0;
   var versusOpponentBoardFp = "";
   var versusOpponentBoardRev = 0;
   if (versusSession) {
@@ -11712,12 +11711,21 @@ export function mountSimulator(
       clearTimeout(versusBoardSyncTimer);
       versusBoardSyncTimer = 0;
     }
-    var board = boardToVersusPublic(snapshotBoard());
+    var board = boardToVersusPublicFromState({
+      deck: state.deck,
+      hand: state.hand,
+      stage: state.stage,
+      liveArea: state.liveArea,
+      waitingRoom: state.waitingRoom,
+      resolutionArea: state.resolutionArea,
+      successfulLiveArea: state.successfulLiveArea,
+      energyArea: state.energyArea,
+      previewScratch: state.previewScratch || [],
+      turnCount: state.turnCount,
+    });
     var fp = fingerprintVersusPublicBoard(board);
-    var rev = Math.max(0, Math.floor(Number(board.ts) || 0));
-    if (fp === versusBoardSyncLastFp && rev === versusBoardSyncLastRev) return;
+    if (fp === versusBoardSyncLastFp) return;
     versusBoardSyncLastFp = fp;
-    versusBoardSyncLastRev = rev;
     pushVersusBoardPublic(versusSession.roomCode, versusSession.myRole, board).catch(function (err) {
       console.warn("[versus] board sync failed:", err);
       showToast("盤面の同期に失敗しました: " + (err && err.message ? err.message : String(err)), {
@@ -11794,7 +11802,6 @@ export function mountSimulator(
       versusBoardSyncTimer = 0;
     }
     versusBoardSyncLastFp = "";
-    versusBoardSyncLastRev = 0;
     versusOpponentBoardFp = "";
     versusOpponentBoardRev = 0;
     hideVersusOpponentBoard();

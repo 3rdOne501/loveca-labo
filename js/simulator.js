@@ -90,7 +90,7 @@ import {
   versusOpponentLastAction,
 } from "./versusMatch.js";
 import {
-  boardToVersusPublic,
+  boardToVersusPublicFromState,
   fingerprintVersusPublicBoard,
   getOpponentBoardPublic,
   hideVersusOpponentBoard,
@@ -11711,7 +11711,18 @@ export function mountSimulator(
       clearTimeout(versusBoardSyncTimer);
       versusBoardSyncTimer = 0;
     }
-    var board = boardToVersusPublic(snapshotBoard());
+    var board = boardToVersusPublicFromState({
+      deck: state.deck,
+      hand: state.hand,
+      stage: state.stage,
+      liveArea: state.liveArea,
+      waitingRoom: state.waitingRoom,
+      resolutionArea: state.resolutionArea,
+      successfulLiveArea: state.successfulLiveArea,
+      energyArea: state.energyArea,
+      previewScratch: state.previewScratch || [],
+      turnCount: state.turnCount,
+    });
     var fp = fingerprintVersusPublicBoard(board);
     if (fp === versusBoardSyncLastFp) return;
     versusBoardSyncLastFp = fp;
