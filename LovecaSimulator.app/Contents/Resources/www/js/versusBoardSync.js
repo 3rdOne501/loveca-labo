@@ -491,14 +491,14 @@ function fillOppSecretHand(strip, handCount) {
 
 /**
  * @param {VersusPublicBoard|null} board
- * @param {{ opponentName?: string, updatedAt?: string|null }} [opts]
+ * @param {{ opponentName?: string, updatedAt?: string|null, skipMeta?: boolean }} [opts]
  */
 export function renderVersusOpponentBoard(board, opts) {
   const wrap = document.getElementById("versus-opponent-board-wrap");
   if (!wrap) return;
   wrap.hidden = false;
   const meta = document.getElementById("versus-opp-board-meta");
-  if (meta) {
+  if (meta && !(opts && opts.skipMeta)) {
     const name = opts && opts.opponentName ? opts.opponentName : "相手";
     const at = opts && opts.updatedAt ? " · 更新 " + new Date(opts.updatedAt).toLocaleTimeString() : "";
     if (!board) {

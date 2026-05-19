@@ -1,12 +1,19 @@
 import { loadCardDatabase, prefetchDeckCardImagesFromMap, getCard } from "./cards.js";
 import { STORAGE_PLAY_RESUME, STORAGE_BUILDER_UI_RESTORE_FLAG, APP_MODULE_CACHE_BUST } from "./config.js";
+import {
+  initVersusMode,
+  teardownVersusModeSession,
+  tryRestoreVersusOnlineSession,
+  persistVersusOnlineSession,
+  clearVersusOnlineSession,
+  pauseVersusOnlineToLobby,
+} from "./versusMode.js";
 import { normalizeDeckMapCounts } from "./deckLibrary.js";
 import { initDeckBuilder, loadDeckBundleFromStorage } from "./deckbuilder.js";
 import { initPublishedSampleRecipes } from "./sampleDeckRecipes.js";
 import { prefetchGameStatusArtBundledEarly } from "./gameStatusIcons.js";
 import { mountSimulator, teardownDeckPileLayoutWatchers } from "./simulator.js";
 import { showToast } from "./ui.js";
-import { initVersusMode, teardownVersusModeSession } from "./versusMode.js";
 import {
   initCloudAuthIfConfigured,
   isCloudSyncAvailable,
@@ -219,7 +226,13 @@ function enterVersusPlay(viewDeck, viewGame, payload) {
     /* noop */
   }
   const bundle = loadDeckBundleFromStorage();
-  clearPlayResumeStorage();
+  if (payload.mode === "online") {
+    persistVersusOnlineSession(payload.roomCode, payload.myRole, true);
+    if (!payload.resumeFromStorage) clearPlayResumeStorage();
+  } else {
+    clearVersusOnlineSession();
+    clearPlayResumeStorage();
+  }
   const dlg = document.getElementById("dlg-versus-lobby");
   if (dlg && typeof dlg.close === "function") {
     try {
@@ -244,9 +257,25 @@ function enterVersusPlay(viewDeck, viewGame, payload) {
                   myRole: payload.myRole,
                   match: payload.match,
                 },
-          onBackToDeck() {
+          resumeFromStorage: !!payload.resumeFromStorage,
+          onBackToDeck(opts) {
             teardownDeckPileLayoutWatchers();
-            teardownVersusModeSession();
+            var wasOnlineVersus = payload.mode === "online" && payload.roomCode && payload.myRole;
+            if (wasOnlineVersus && !(opts && opts.leaveRoom === true)) {
+              try {
+                if (typeof window.__llocgFlushVersusPlayPersist === "function") {
+                  window.__llocgFlushVersusPlayPersist();
+                }
+              } catch (_) {
+                /* noop */
+              }
+              persistVersusOnlineSession(payload.roomCode, payload.myRole, false);
+              pauseVersusOnlineToLobby();
+              teardownVersusModeSession({ skipLeaveRoom: true });
+            } else {
+              teardownVersusModeSession();
+              clearVersusOnlineSession();
+            }
             activeVersusRoomMounted = null;
             delete window.__llocgVersusPlayMounted;
             clearPlayResumeStorage();
@@ -355,10 +384,22 @@ function startApp(viewDeck, viewGame, statusEl) {
         });
       },
     });
-    tryResumePlaySession(viewDeck, viewGame);
+    resumeSessionsAfterBoot(viewDeck, viewGame);
   } else {
     location.reload();
   }
+}
+
+function resumeSessionsAfterBoot(viewDeck, viewGame) {
+  tryRestoreVersusOnlineSession(function (payload) {
+    enterVersusPlay(viewDeck, viewGame, payload);
+  })
+    .then(function (restored) {
+      if (!restored) tryResumePlaySession(viewDeck, viewGame);
+    })
+    .catch(function () {
+      tryResumePlaySession(viewDeck, viewGame);
+    });
 }
 
 function tryLoadDatabase(viewDeck, viewGame, statusEl) {
@@ -482,6 +523,15 @@ function wirePageReloadButtons() {
           /* noop */
         }
       }
+      if (hit.id === "btn-reload-play" && document.body.classList.contains("play-versus-mode")) {
+        try {
+          if (typeof window.__llocgFlushVersusPlayPersist === "function") {
+            window.__llocgFlushVersusPlayPersist();
+          }
+        } catch (_) {
+          /* noop */
+        }
+      }
       doHardReload(ev);
     },
     { capture: true },
@@ -596,6 +646,19 @@ function wireCloudAuthBar() {
 
   onCloudUserChange((user) => {
     paintAuthBar(user);
+    if (
+      user &&
+      appStarted &&
+      viewGame &&
+      viewGame.hidden &&
+      !document.body.classList.contains("play-mode")
+    ) {
+      tryRestoreVersusOnlineSession(function (payload) {
+        enterVersusPlay(viewDeck, viewGame, payload);
+      }).catch(function () {
+        /* noop */
+      });
+    }
   });
 }
 
@@ -606,4 +669,17 @@ if (document.readyState === "loading") {
 }
 
 initVersusModeEarly();
+
+window.addEventListener("pagehide", function () {
+  if (!document.body.classList.contains("play-versus-mode")) return;
+  try {
+    if (typeof window.__llocgFlushVersusPlayPersist === "function") {
+      window.__llocgFlushVersusPlayPersist();
+    }
+  } catch (_) {
+    /* noop */
+  }
+  teardownVersusModeSession({ skipLeaveRoom: true });
+});
+
 tryLoadDatabase(viewDeck, viewGame, status);

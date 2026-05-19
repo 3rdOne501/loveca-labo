@@ -9,8 +9,10 @@ import {
   signInWithGoogle,
 } from "./cloudAuth.js";
 import { showToast } from "./ui.js";
+import { STORAGE_VERSUS_LAST_ROOM, STORAGE_VERSUS_ONLINE_SESSION } from "./config.js";
 import {
   createVersusRoom,
+  fetchVersusMatchDoc,
   joinVersusRoom,
   isVersusMatchAvailable,
   leaveVersusRoom,
@@ -21,6 +23,7 @@ import {
   versusOpponentLabel,
   versusRoleForUid,
 } from "./versusMatch.js";
+import { ensureGoogleSession } from "./cloudAuth.js";
 
 /** @typedef {(payload: object) => void} VersusPlayStartFn */
 /** @typedef {() => Record<string, number>} GetDeckMapFn */
@@ -98,6 +101,28 @@ function setLobbyStatus(text) {
   if (st) st.textContent = text || "";
 }
 
+function versusMatchHasOpponent(match) {
+  return !!(match && match.hostUid && match.guestUid);
+}
+
+/** @param {string} roomCode */
+export function rememberVersusRoomCode(roomCode) {
+  if (!roomCode) return;
+  try {
+    localStorage.setItem(STORAGE_VERSUS_LAST_ROOM, String(roomCode).toUpperCase());
+  } catch (_) {
+    /* noop */
+  }
+}
+
+export function getRememberedVersusRoomCode() {
+  try {
+    return localStorage.getItem(STORAGE_VERSUS_LAST_ROOM) || "";
+  } catch (_) {
+    return "";
+  }
+}
+
 function openVersusLobbyDialog() {
   var dlg = /** @type {HTMLDialogElement|null} */ (el("dlg-versus-lobby"));
   if (!dlg) {
@@ -109,8 +134,15 @@ function openVersusLobbyDialog() {
     (uOpen ? "ログイン: " + (uOpen.displayName || uOpen.email || "Google") + " · " : "") +
       "対面・オンラインどちらでも各プレイヤーが自分の端末で盤面を操作。勝敗は成功ライブ3枚（相手2枚以下）。",
   );
-  setLobbyRoomCode("");
-  updateVersusLobbyButtons(null, null);
+  var saved = readVersusOnlineSession();
+  if (saved && saved.roomCode) {
+    setLobbyRoomCode(saved.roomCode);
+    if (!activeRoomCode) watchRoom(saved.roomCode);
+  } else {
+    var last = getRememberedVersusRoomCode();
+    setLobbyRoomCode(last || "");
+    updateVersusLobbyButtons(null, null);
+  }
   setOnlineSectionVisible();
   try {
     if (dlg.open) {
@@ -198,6 +230,7 @@ function renderLobbyMatch(match) {
   updateVersusLobbyButtons(match, myRole);
 
   if (match.status === "playing" && typeof onEnterVersusPlay === "function") {
+    persistVersusOnlineSession(match.roomCode, myRole, true);
     var deckMap =
       myRole === "host"
         ? match.hostDeckMap || (getCurrentDeckMap && getCurrentDeckMap())
@@ -218,6 +251,7 @@ function renderLobbyMatch(match) {
 function watchRoom(roomCode) {
   stopSubscription();
   activeRoomCode = roomCode;
+  rememberVersusRoomCode(roomCode);
   activeUnsub = subscribeVersusMatch(roomCode, function (match) {
     renderLobbyMatch(match);
     if (match && match.status === "playing" && window.__llocgVersusAutoEnterPending) {
@@ -406,6 +440,7 @@ export function initVersusMode(opts) {
     if (activeRoomCode && u) await leaveVersusRoom(activeRoomCode, u.uid);
     stopSubscription();
     activeRoomCode = null;
+    clearVersusOnlineSession();
     setLobbyStatus("ルームから退出しました。");
     updateVersusLobbyButtons(null, null);
     showToast("ルームから退出しました");
@@ -418,6 +453,9 @@ export function teardownVersusModeSession(opts) {
   var u = getCurrentCloudUser() || getEffectiveCloudUser();
   if (!skipLeave && activeRoomCode && u) {
     leaveVersusRoom(activeRoomCode, u.uid);
+    clearVersusOnlineSession();
+  } else if (!skipLeave) {
+    clearVersusOnlineSession();
   }
   activeRoomCode = null;
   delete window.__llocgVersusAutoEnterPending;
@@ -425,4 +463,130 @@ export function teardownVersusModeSession(opts) {
 
 export function getActiveVersusRoomCode() {
   return activeRoomCode;
+}
+
+/** @param {string} roomCode @param {VersusRole} myRole @param {boolean} inPlay */
+export function persistVersusOnlineSession(roomCode, myRole, inPlay) {
+  if (!roomCode || !myRole) return;
+  rememberVersusRoomCode(roomCode);
+  try {
+    sessionStorage.setItem(
+      STORAGE_VERSUS_ONLINE_SESSION,
+      JSON.stringify({
+        v: 1,
+        roomCode: String(roomCode).toUpperCase(),
+        myRole: myRole,
+        inPlay: !!inPlay,
+        savedAt: Date.now(),
+      }),
+    );
+  } catch (_) {
+    /* noop */
+  }
+}
+
+/** プレイ画面を離れるがルームには残る（オンライン対戦） */
+export function pauseVersusOnlineToLobby() {
+  const saved = readVersusOnlineSession();
+  if (saved && saved.roomCode && saved.myRole) {
+    persistVersusOnlineSession(saved.roomCode, saved.myRole, false);
+  }
+  stopSubscription();
+  activeRoomCode = saved && saved.roomCode ? saved.roomCode : activeRoomCode;
+}
+
+export function clearVersusOnlineSession() {
+  try {
+    sessionStorage.removeItem(STORAGE_VERSUS_ONLINE_SESSION);
+  } catch (_) {
+    /* noop */
+  }
+}
+
+function readVersusOnlineSession() {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_VERSUS_ONLINE_SESSION);
+    if (!raw) return null;
+    const s = JSON.parse(raw);
+    if (!s || s.v !== 1 || !s.roomCode) return null;
+    return s;
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
+ * 再読み込み後にオンライン対戦ルームへ復帰する。
+ * @param {VersusPlayStartFn} onEnterPlay
+ * @returns {Promise<boolean>}
+ */
+export async function tryRestoreVersusOnlineSession(onEnterPlay) {
+  const saved = readVersusOnlineSession();
+  if (!saved || !saved.roomCode) {
+    const last = getRememberedVersusRoomCode();
+    if (!last) return false;
+    try {
+      await ensureGoogleSession();
+    } catch (_) {
+      /* noop */
+    }
+    const u0 = getCurrentCloudUser() || getEffectiveCloudUser();
+    if (!u0 || !u0.uid) return false;
+    watchRoom(last);
+    return true;
+  }
+  if (!isVersusMatchAvailable()) return false;
+  try {
+    await ensureGoogleSession();
+  } catch (_) {
+    /* noop */
+  }
+  const u = getCurrentCloudUser() || getEffectiveCloudUser();
+  if (!u || !u.uid) return false;
+  const match = await fetchVersusMatchDoc(saved.roomCode);
+  if (!match) {
+    clearVersusOnlineSession();
+    return false;
+  }
+  const myRole = versusRoleForUid(match, u.uid);
+  if (!myRole) {
+    clearVersusOnlineSession();
+    return false;
+  }
+  activeRoomCode = match.roomCode;
+  rememberVersusRoomCode(match.roomCode);
+  if (match.status !== "playing") {
+    watchRoom(match.roomCode);
+    showToast("ルーム " + match.roomCode + " に再接続しました");
+    return true;
+  }
+  if (!versusMatchHasOpponent(match)) {
+    watchRoom(match.roomCode);
+    showToast("ルーム " + match.roomCode + " を開きました（相手の参加を待っています）");
+    return true;
+  }
+  if (!saved.inPlay) {
+    watchRoom(match.roomCode);
+    showToast("ルーム " + match.roomCode + " に再接続しました。相手がいれば「プレイ画面へ」から再開できます");
+    return true;
+  }
+  const deckMap =
+    myRole === "host"
+      ? match.hostDeckMap || (getCurrentDeckMap && getCurrentDeckMap())
+      : match.guestDeckMap || (getCurrentDeckMap && getCurrentDeckMap());
+  if (!deckMap || !Object.keys(deckMap).length) return false;
+  persistVersusOnlineSession(match.roomCode, myRole, true);
+  if (typeof onEnterPlay === "function") {
+    onEnterPlay({
+      mode: "online",
+      sessionKey: match.roomCode,
+      roomCode: match.roomCode,
+      myRole: myRole,
+      match: match,
+      deckMap: deckMap,
+      resumeFromStorage: true,
+    });
+    showToast("オンライン対戦ルーム " + match.roomCode + " に復帰しました");
+  }
+  return true;
 }

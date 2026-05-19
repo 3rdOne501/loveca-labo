@@ -496,6 +496,21 @@ export async function leaveVersusRoom(roomCode, uid) {
  * @param {(match: VersusMatchDoc|null) => void} onChange
  * @returns {() => void}
  */
+/** @param {string} roomCode @returns {Promise<VersusMatchDoc|null>} */
+export async function fetchVersusMatchDoc(roomCode) {
+  if (!roomCode) return null;
+  const x = getCloudFirestore();
+  if (!x) return null;
+  const { api } = x;
+  try {
+    const snap = await api.getDoc(matchRef(roomCode));
+    return snap.exists() ? /** @type {VersusMatchDoc} */ (snap.data()) : null;
+  } catch (err) {
+    console.warn("[versusMatch] fetch failed:", err);
+    return null;
+  }
+}
+
 export function subscribeVersusMatch(roomCode, onChange) {
   const x = getCloudFirestore();
   if (!x) {

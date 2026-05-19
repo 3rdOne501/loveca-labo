@@ -80,6 +80,10 @@ export const STORAGE_PLAY_ENERGY_CARD_NO = "llocg_play_energy_card_no";
 export const STORAGE_SNAPSHOT_PREFIX = "llocg_snapshot_";
 /** プレイ画面: 再読み込み時に盤面・Undo 等を復元するセッション用バッファ */
 export const STORAGE_PLAY_RESUME = "llocg_play_resume_v1";
+/** オンライン対戦: 再読み込み後にルームへ復帰するためのセッション */
+export const STORAGE_VERSUS_ONLINE_SESSION = "llocg_versus_online_session_v1";
+/** 直近に参加したオンラインルームコード（ロビー入力の既定値） */
+export const STORAGE_VERSUS_LAST_ROOM = "llocg_versus_last_room_v1";
 /** プレイ画面: 手札・プレビュー配信隠しの濃さ 0〜1（sessionStorage 文字列） */
 export const STORAGE_STREAM_MASK_STRENGTH = "llocg_stream_mask_strength";
 /** プレイ画面: 軽量モード（低画質サムネ・エフェクト簡略・確率計算抑制） */
@@ -120,7 +124,7 @@ export const HISTORY_MAX_STEPS = 35;
 export const DECK_EXPORT_VERSION = 1;
 
 /** index.html の main.js クエリと揃える（JS モジュールのブラウザキャッシュ対策） */
-export const APP_MODULE_CACHE_BUST = "2026051866";
+export const APP_MODULE_CACHE_BUST = "2026051868";
 
 /**
  * 組み込みプリセット・初回メインデッキ用（リポジトリ既定の大会用例。カード DB に番号が無い場合はデッキ構築で警告になります）
