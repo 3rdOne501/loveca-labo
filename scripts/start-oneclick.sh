@@ -101,7 +101,7 @@ start_server_on_port() {
   disown 2>/dev/null || true
   local n=0
   while [[ "$n" -lt 8 ]]; do
-    if server_serves_loveca "http://127.0.0.1:${p}"; then
+    if server_serves_loveca "http://localhost:${p}"; then
       return 0
     fi
     n=$((n + 1))
@@ -117,7 +117,7 @@ start_server_on_port() {
 # 8844 から順に空き／正しいサーバを探す（古いビルドのサーバは kill して差し替え）
 for try in $(seq 0 10); do
   candidate=$((BASE_PORT + try))
-  base="http://127.0.0.1:${candidate}"
+  base="http://localhost:${candidate}"
   if port_listening "$candidate"; then
     if server_serves_loveca "$base"; then
       PORT="$candidate"

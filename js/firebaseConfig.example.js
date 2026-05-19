@@ -39,7 +39,9 @@
  *
  *   5. 「プロジェクトの設定」→「全般」→「マイアプリ」で Web アプリを追加し、表示された
  *      `firebaseConfig` をこのファイルの `firebaseConfig` にコピー
- *   6. このファイルを `js/firebaseConfig.js` の名前で保存して GitHub にプッシュ
+ *   6. Authentication → Settings → Authorized domains に次を追加（無い場合）:
+ *      `localhost`（※ 127.0.0.1 ではなく localhost で開く）、`3rdone501.github.io`（GitHub Pages）
+ *   7. このファイルを `js/firebaseConfig.js` の名前で保存して GitHub にプッシュ
  */
 export const firebaseConfig = {
   apiKey: "",

@@ -93,6 +93,8 @@ let suppressLocalWriteSync = false;
 let pendingPush = null;
 let lastPushedJson = "";
 let authStateReadyDone = false;
+/** @type {Promise<boolean>|null} */
+let cloudInitInFlight = null;
 
 /** http(s) ではリダイレクト、file://（オフラインアプリ）ではポップアップ */
 export function isCloudAuthEnvironmentSupported() {
@@ -140,7 +142,36 @@ async function loadFirebaseConfigObject() {
 
 async function ensureCloudAuthReady() {
   if (cloudSyncEnabled && _auth && _authApi && _gp) return true;
-  return !!(await initCloudAuthIfConfigured());
+  return initCloudAuthIfConfigured();
+}
+
+function formatAuthError(err) {
+  var code = err && err.code ? String(err.code) : "";
+  var msg = err && err.message ? String(err.message) : String(err || "不明なエラー");
+  if (code === "auth/unauthorized-domain") {
+    return (
+      "このURLは Firebase の許可ドメインに登録されていません。Firebase コンソール → Authentication → Settings → " +
+      "Authorized domains に「localhost」（127.0.0.1 ではなく localhost で開く）と GitHub 利用時は「3rdone501.github.io」を追加してください。"
+    );
+  }
+  if (code === "auth/popup-blocked" || code === "auth/popup-closed-by-user") {
+    return "ログイン用ポップアップがブロックまたは閉じられました。ポップアップを許可して再試行してください。";
+  }
+  if (code === "auth/network-request-failed") {
+    return "Firebase へ接続できません。ネットワークと広告ブロックを確認してください。";
+  }
+  return (code ? code + " — " : "") + msg;
+}
+
+function openLocalhostLoginHint() {
+  var ports = [8844, 8845, 8846, 8847, 8848, 8080];
+  var url = "http://localhost:" + ports[0] + "/index.html";
+  showToast("Google ログインは " + url + " で開いてください（localhost 必須）", { duration: 9000 });
+  try {
+    window.open(url, "_blank", "noopener");
+  } catch (_) {
+    /* noop */
+  }
 }
 
 function loadPreferGoogleAutoLogin() {
@@ -211,12 +242,20 @@ function applySignedInUser(user) {
   });
 }
 
-/** 手動ログイン（file:// はポップアップ、http(s) はリダイレクト） */
+/** 手動ログイン（ポップアップ優先 → ダメならリダイレクト） */
 async function signInWithGoogleInteractive() {
+  if (location.protocol === "file:") {
+    openLocalhostLoginHint();
+    return null;
+  }
+  if (location.hostname === "127.0.0.1") {
+    location.replace(location.href.replace("127.0.0.1", "localhost"));
+    return null;
+  }
   if (!(await ensureCloudAuthReady())) {
     showToast(
-      "Google ログインを準備できません。`js/firebaseConfig.js` があるか、ネットワーク接続を確認してください。",
-      { duration: 7000 },
+      "Google ログインを準備できません。ネットワーク接続と firebaseConfig.js を確認し、http://localhost:8844 で開き直してください。",
+      { duration: 9000 },
     );
     return null;
   }
@@ -224,7 +263,7 @@ async function signInWithGoogleInteractive() {
     showToast("Google ログインを準備できません。ページを再読込してください。", { duration: 6000 });
     return null;
   }
-  if (prefersGooglePopupAuth() && typeof _authApi.signInWithPopup === "function") {
+  if (typeof _authApi.signInWithPopup === "function") {
     showToast("Google ログイン（ポップアップ）", { duration: 2800 });
     try {
       const cred = await _authApi.signInWithPopup(_auth, _gp);
@@ -235,14 +274,18 @@ async function signInWithGoogleInteractive() {
       return cred;
     } catch (err) {
       console.warn("[cloudAuth] signInWithPopup failed:", err);
-      showToast(cookieHelpMessage() + " ポップアップがブロックされていないか確認してください。", {
-        duration: 8000,
-      });
-      return null;
+      if (err && err.code === "auth/popup-closed-by-user") {
+        return null;
+      }
+      if (err && err.code === "auth/unauthorized-domain") {
+        showToast(formatAuthError(err), { duration: 12000 });
+        return null;
+      }
+      /* ポップアップ失敗時はリダイレクトへ */
     }
   }
   if (typeof _authApi.signInWithRedirect !== "function") {
-    showToast("このブラウザでは Google ログインに対応していません。");
+    showToast(formatAuthError({ message: "リダイレクトログイン非対応" }), { duration: 8000 });
     return null;
   }
   showToast("Google ログインへ移動します", { duration: 3200 });
@@ -251,7 +294,7 @@ async function signInWithGoogleInteractive() {
     await _authApi.signInWithRedirect(_auth, _gp);
   } catch (err) {
     console.warn("[cloudAuth] signInWithRedirect failed:", err);
-    showToast(cookieHelpMessage(), { duration: 8000 });
+    showToast(formatAuthError(err) + " " + cookieHelpMessage(), { duration: 10000 });
   }
   return null;
 }
@@ -301,19 +344,8 @@ async function loadFirebaseSdk(config) {
       authMod.browserLocalPersistence,
       authMod.browserSessionPersistence,
     ].filter(Boolean);
-    if (typeof authMod.initializeAuth === "function" && persistenceCandidates.length) {
-      try {
-        _auth = authMod.initializeAuth(app, {
-          persistence: persistenceCandidates,
-          popupRedirectResolver: authMod.browserPopupRedirectResolver,
-        });
-      } catch (err) {
-        console.warn("[cloudAuth] initializeAuth failed, falling back:", err);
-        _auth = authMod.getAuth(app);
-      }
-    } else {
-      _auth = authMod.getAuth(app);
-    }
+    /* getAuth の方が Safari / localhost で安定しやすい */
+    _auth = authMod.getAuth(app);
     for (const p of persistenceCandidates) {
       try {
         await authMod.setPersistence(_auth, p);
@@ -509,20 +541,29 @@ let lastConfig = null;
 
 export async function initCloudAuthIfConfigured() {
   if (typeof window === "undefined") return false;
-  if (cloudSyncEnabled && _auth) return true;
-  const config = await loadFirebaseConfigObject();
-  if (!config) return false;
-  lastConfig = config;
-  cloudSyncEnabled = true;
-  installLocalStorageInterceptor();
-  try {
-    await loadFirebaseSdk(config);
-    return true;
-  } catch (err) {
-    console.warn("[cloudAuth] firebase init failed:", err);
-    cloudSyncEnabled = false;
-    return false;
-  }
+  if (cloudSyncEnabled && _auth && _authApi) return true;
+  if (cloudInitInFlight) return cloudInitInFlight;
+  cloudInitInFlight = (async function () {
+    const config = await loadFirebaseConfigObject();
+    if (!config) {
+      console.warn("[cloudAuth] firebaseConfig not found");
+      return false;
+    }
+    lastConfig = config;
+    installLocalStorageInterceptor();
+    try {
+      await loadFirebaseSdk(config);
+      cloudSyncEnabled = true;
+      return true;
+    } catch (err) {
+      console.warn("[cloudAuth] firebase init failed:", err);
+      cloudSyncEnabled = false;
+      return false;
+    } finally {
+      cloudInitInFlight = null;
+    }
+  })();
+  return cloudInitInFlight;
 }
 
 export function isCloudSyncAvailable() {
