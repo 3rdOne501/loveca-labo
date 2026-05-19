@@ -486,6 +486,73 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
   white-space: nowrap;
   box-shadow: 0 0 20px rgba(255, 85, 155, 0.38), 0 2px 0 rgba(184, 50, 106, 0.45);
 }
+.btn-start-versus-sticky {
+  flex: 0 0 auto;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.45rem 0.85rem;
+  white-space: nowrap;
+}
+body.play-mode .versus-match-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem 1rem;
+  flex-wrap: wrap;
+  margin: 0 0 0.35rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: var(--radius-md, 8px);
+  background: linear-gradient(90deg, rgba(80, 120, 255, 0.22), rgba(255, 90, 160, 0.18));
+  border: 1px solid rgba(140, 170, 255, 0.35);
+}
+.versus-match-bar__label {
+  font-weight: 800;
+  font-size: 0.88rem;
+}
+.versus-match-bar__detail {
+  font-size: 0.78rem;
+}
+.versus-match-bar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.dlg-versus-lobby-status {
+  min-height: 1.4em;
+  margin: 0.35rem 0 0.5rem;
+}
+.dlg-versus-room-code-input {
+  font-family: var(--font-mono, monospace);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  max-width: 8rem;
+}
+.dlg-versus-lobby-actions {
+  flex-wrap: wrap;
+}
+.dlg-versus-lobby-actions--primary {
+  margin-bottom: 0.5rem;
+}
+.dlg-versus-online-wrap {
+  margin-top: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+.dlg-versus-online-wrap summary {
+  cursor: pointer;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+.versus-opp-sl-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-right: 0.35rem;
+}
+.versus-opp-sl-num {
+  min-width: 1.2em;
+  text-align: center;
+}
 
 /* ソロプレイ開始: 目立つ発光（無効時はアニメなし） */
 #view-deck .btn-start-game-sticky:not(:disabled) {
@@ -3271,6 +3338,16 @@ body.play-mode .live-score-center-bar__note-plus-val {
   font-size: 1em;
   font-weight: 900;
 }
+body.play-mode .live-score-center-bar__note-icon {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  margin-left: 0.2em;
+}
+body.play-mode .live-score-center-bar__note-icon .card-yell-float-ico {
+  width: 1.05em;
+  height: 1.05em;
+}
 
 /* 成功ライブスコア: 2 点ごとに色を強め、22 点以上は白 */
 body.play-mode .live-score-center-bar__num.live-score-num--tier-0 {
@@ -4731,6 +4808,7 @@ body.play-mode .live-slot .card-item.card-item--live-h {
 body.play-mode .live-slot .card-item.card-item--live-h .card-img.rotated {
   width: var(--loveca-play-w);
   height: auto;
+  object-fit: contain;
   transform: rotate(90deg);
   transform-origin: center center;
 }
@@ -5961,9 +6039,13 @@ body.play-mode .btn--manual-mode-on {
   padding: 0;
 }
 .dlg-cost-payment-hand-grid.dlg-pick-kidou-waiting__grid {
-  grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
-  gap: 0.4rem;
-  padding: 0;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 0.5rem;
+  padding: 0.1rem 0;
+  max-width: 100%;
+}
+.dlg-cost-payment-hand-grid .dlg-pick-kidou-waiting__label {
+  display: none;
 }
 .dlg-pick-kidou-waiting__tile {
   position: relative;
@@ -7004,8 +7086,8 @@ body.play-mode .live-slot .card-effect-resolve-btn-row .card-effect-resolve-btn-
   padding: 0.55rem 1.1rem;
 }
 .effect-dialog-resume-chip--on-card {
-  position: absolute;
-  left: 50%;
+  position: fixed;
+  left: 0;
   top: 0;
   right: auto;
   bottom: auto;

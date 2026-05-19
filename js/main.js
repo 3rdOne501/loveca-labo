@@ -6,6 +6,7 @@ import { initPublishedSampleRecipes } from "./sampleDeckRecipes.js";
 import { prefetchGameStatusArtBundledEarly } from "./gameStatusIcons.js";
 import { mountSimulator, teardownDeckPileLayoutWatchers } from "./simulator.js";
 import { showToast } from "./ui.js";
+import { initVersusMode, teardownVersusModeSession } from "./versusMode.js";
 import {
   initCloudAuthIfConfigured,
   isCloudSyncAvailable,
@@ -82,6 +83,8 @@ try {
 }
 
 let appStarted = false;
+/** @type {string|null} */
+let activeVersusRoomMounted = null;
 
 function clearPlayResumeStorage() {
   try {
@@ -196,6 +199,93 @@ function hideAppBootLoading() {
   document.body.classList.remove("app-boot-loading");
 }
 
+function enterVersusPlay(viewDeck, viewGame, payload) {
+  const deckMap = normalizeDeckMapCounts(payload.deckMap || {});
+  if (!deckMap || !Object.keys(deckMap).length) {
+    showToast("対戦用デッキを読み込めませんでした");
+    return;
+  }
+  var sessionKey = payload.sessionKey || payload.roomCode || "local";
+  if (activeVersusRoomMounted === sessionKey && !viewGame.hidden) return;
+  activeVersusRoomMounted = sessionKey;
+  try {
+    prefetchDeckCardImagesFromMap(deckMap, getCard);
+  } catch (_) {
+    /* noop */
+  }
+  const bundle = loadDeckBundleFromStorage();
+  clearPlayResumeStorage();
+  const dlg = document.getElementById("dlg-versus-lobby");
+  if (dlg && typeof dlg.close === "function") {
+    try {
+      dlg.close();
+    } catch (_) {
+      /* noop */
+    }
+  }
+  viewDeck.hidden = true;
+  viewGame.hidden = false;
+  document.body.classList.add("play-mode");
+  requestAnimationFrame(function () {
+    setTimeout(function () {
+      try {
+        mountSimulator(viewGame, deckMap, {
+          versusMatch:
+            payload.mode === "local"
+              ? { mode: "local" }
+              : {
+                  mode: "online",
+                  roomCode: payload.roomCode,
+                  myRole: payload.myRole,
+                  match: payload.match,
+                },
+          onBackToDeck() {
+            teardownDeckPileLayoutWatchers();
+            teardownVersusModeSession();
+            activeVersusRoomMounted = null;
+            delete window.__llocgVersusPlayMounted;
+            clearPlayResumeStorage();
+            viewGame.hidden = true;
+            viewDeck.hidden = false;
+            document.body.classList.remove("play-mode");
+            document.body.classList.remove("play-versus-mode");
+            document.body.classList.remove("live-turn-pick-mode");
+            document.body.classList.remove("zone-hints-visible");
+            try {
+              if (typeof window.__llocgRestoreDeckBuilderUi === "function") {
+                window.__llocgRestoreDeckBuilderUi({ reopenCatalog: true });
+              }
+            } catch (_) {
+              /* noop */
+            }
+          },
+          deckRoleLabels: {
+            keyCardNos: bundle.keyCardNos,
+            keyCard2Nos: bundle.keyCard2Nos,
+            keyCard3Nos: bundle.keyCard3Nos,
+            middleCardNos: bundle.middleCardNos,
+          },
+        });
+        window.__llocgVersusPlayMounted = sessionKey;
+        showToast(
+          payload.mode === "local"
+            ? "簡易対戦: 相手の成功ライブ枚数は画面上の＋／−で入力してください"
+            : "オンライン対戦: 成功ライブ枚数は自動同期されます",
+        );
+      } catch (err) {
+        console.error(err);
+        activeVersusRoomMounted = null;
+        teardownDeckPileLayoutWatchers();
+        document.body.classList.remove("play-mode");
+        document.body.classList.remove("play-versus-mode");
+        viewGame.hidden = true;
+        viewDeck.hidden = false;
+        showToast("対戦プレイ画面の初期化に失敗しました");
+      }
+    }, 0);
+  });
+}
+
 function startApp(viewDeck, viewGame, statusEl) {
   if (statusEl) statusEl.textContent = "";
   hideAppBootLoading();
@@ -207,6 +297,14 @@ function startApp(viewDeck, viewGame, statusEl) {
     } catch (_) {
       /* noop */
     }
+    initVersusMode({
+      onEnterVersusPlay: function (payload) {
+        enterVersusPlay(viewDeck, viewGame, payload);
+      },
+      getCurrentDeckMap: function () {
+        return loadDeckBundleFromStorage().map;
+      },
+    });
     initDeckBuilder(viewDeck, {
       onStartGame: (deckMap) => {
         try {

@@ -333,6 +333,12 @@ export function isCloudSyncAvailable() {
   return cloudSyncEnabled;
 }
 
+/** 対戦マッチ用 Firestore（Google ログイン＋ Firebase 初期化済みのときのみ） */
+export function getCloudFirestore() {
+  if (!cloudSyncEnabled || !_db || !_firestoreApi) return null;
+  return { db: _db, api: _firestoreApi };
+}
+
 export function getCurrentCloudUser() {
   return currentUser;
 }

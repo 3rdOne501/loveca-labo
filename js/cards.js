@@ -69,15 +69,36 @@ export function setCardsJsonUrlOverride(urlOrEmpty) {
  * @returns {string}
  */
 export function catalogListThumbnailUrl(originalUrl, opts) {
-  const hi = opts != null && typeof opts === "object" && opts.hi === true;
+  const o = opts != null && typeof opts === "object" ? opts : {};
+  const hi = o.hi === true;
+  const playLw = o.playLightweight === true;
+  const play = o.play === true || playLw;
+  const playPile = o.playPile === true;
   if (!originalUrl || typeof originalUrl !== "string") return originalUrl;
   if (originalUrl.startsWith("data:") || originalUrl.includes("wsrv.nl")) return originalUrl;
   try {
     const u = new URL(originalUrl, typeof location !== "undefined" ? location.href : "https://local.invalid/");
     if (u.protocol !== "http:" && u.protocol !== "https:") return originalUrl;
-    const w = hi ? 200 : 96;
-    const h = hi ? 286 : 136;
-    const q = hi ? 78 : 52;
+    let w = 96;
+    let h = 136;
+    let q = 52;
+    if (playLw) {
+      w = 80;
+      h = 112;
+      q = 44;
+    } else if (playPile) {
+      w = 72;
+      h = 100;
+      q = 48;
+    } else if (play) {
+      w = 120;
+      h = 172;
+      q = 55;
+    } else if (hi) {
+      w = 200;
+      h = 286;
+      q = 78;
+    }
     return (
       "https://wsrv.nl/?url=" +
       encodeURIComponent(u.href) +
@@ -941,6 +962,21 @@ export function cardIsNoteLiveCatalog(card) {
 
 /** @deprecated 互換エイリアス */
 export const cardIsScoreLiveCatalog = cardIsNoteLiveCatalog;
+
+/**
+ * エールで解決にめくったとき、成功ライブの最終スコアに加算するスコア特殊ハート数（1枚あたり）。
+ * DB の special_heart.score を優先。BH なしスコアライブで未記載なら 1。
+ */
+export function catalogEaleScoreHeartPoints(card) {
+  if (!card || typeof card !== "object") return 0;
+  var sh = card.special_heart;
+  if (sh && typeof sh === "object" && !Array.isArray(sh)) {
+    var n = Number(sh.score);
+    if (Number.isFinite(n) && n > 0) return Math.floor(n);
+  }
+  if (cardIsNoteLiveCatalog(card)) return 1;
+  return 0;
+}
 
 /* bladeHeart.js のスコア装飾判定を、循環参照を避けて差し込む */
 setIsScoreLiveCheck(cardIsNoteLiveCatalog);

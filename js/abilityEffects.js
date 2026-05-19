@@ -955,6 +955,21 @@ export function classifyCardAbility(card, trigger, segmentRawOverride) {
         requiresOnStage: true,
       });
     }
+    if (
+      /コストが低いメンバーからバトンタッチ/.test(p) &&
+      /自分と相手はそれぞれ/.test(p) &&
+      /手札の枚数が(\d+)枚になるまで手札を控え室に置/.test(p) &&
+      /カードを(\d+)枚引/.test(p)
+    ) {
+      var batonHandTargetM = p.match(/手札の枚数が(\d+)枚になるまで/);
+      var batonDrawM = p.match(/カードを(\d+)枚引/);
+      return twT({
+        template: "toujou_baton_both_trim_hand_draw",
+        targetHandSize: Number(batonHandTargetM && batonHandTargetM[1]) || 3,
+        deckDrawCount: Number(batonDrawM && batonDrawM[1]) || 3,
+        requiresOnStage: true,
+      });
+    }
     var drawDiscardM = p.match(/カードを(\d+)枚引き?、手札を(\d+)枚控え室に置/);
     if (!drawDiscardM) drawDiscardM = p.match(/カードを(\d+)枚引.*手札を(\d+)枚控え室/);
     if (drawDiscardM) {
@@ -1434,7 +1449,8 @@ export function abilityEffectIsAutomated(template) {
     template === "live_start_hand_blade_per" ||
     template === "toujou_deck_top_wait_if_all_members" ||
     template === "toujou_deck_top_wait_if_all_heart" ||
-    template === "toujou_both_wait_to_empty_stage"
+    template === "toujou_both_wait_to_empty_stage" ||
+    template === "toujou_baton_both_trim_hand_draw"
   );
 }
 

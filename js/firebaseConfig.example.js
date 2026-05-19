@@ -22,6 +22,18 @@
  *         match /users/{userId}/state/{docId} {
  *           allow read, write: if request.auth != null && request.auth.uid == userId;
  *         }
+ *         match /versusMatches/{roomId} {
+ *           allow read: if request.auth != null
+ *             && (resource.data.hostUid == request.auth.uid
+ *               || resource.data.guestUid == request.auth.uid);
+ *           allow create: if request.auth != null
+ *             && request.resource.data.hostUid == request.auth.uid;
+ *           allow update: if request.auth != null
+ *             && (resource.data.hostUid == request.auth.uid
+ *               || resource.data.guestUid == request.auth.uid);
+ *           allow delete: if request.auth != null
+ *             && resource.data.hostUid == request.auth.uid;
+ *         }
  *       }
  *     }
  *
