@@ -79,6 +79,37 @@ function userSummary(u) {
   };
 }
 
+function deckMapForVersus(deckMap) {
+  const v = validateVersusMainDeck(deckMap);
+  if (v.ok) return { map: v.map, warning: null };
+  const map = normalizeDeckMapCounts(deckMap || {});
+  let total = 0;
+  Object.keys(map).forEach(function (k) {
+    total += Math.max(0, Math.floor(Number(map[k]) || 0));
+  });
+  if (total <= 0) {
+    return { map: null, warning: "メインデッキにカードを入れてください。" };
+  }
+  return {
+    map: map,
+    warning: v.message || "メインデッキは60枚推奨です（練習用としてルームを作成します）。",
+  };
+}
+
+function formatVersusFirestoreError(err) {
+  const code = err && err.code ? String(err.code) : "";
+  if (code === "permission-denied") {
+    return (
+      "Firestore の書き込み権限がありません。Firebase コンソール → Firestore → ルール に " +
+      "versusMatches のルールを追加してください（リポジトリの firestore.rules を参照）。"
+    );
+  }
+  if (code === "unavailable" || code === "failed-precondition") {
+    return "Firestore に接続できません。ネットワークを確認して再試行してください。";
+  }
+  return err && err.message ? String(err.message) : String(err || "ルーム操作に失敗しました");
+}
+
 /** @param {Record<string, number>} deckMap */
 export function validateVersusMainDeck(deckMap) {
   const map = normalizeDeckMapCounts(deckMap || {});
@@ -101,8 +132,8 @@ export function validateVersusMainDeck(deckMap) {
  */
 export async function createVersusRoom(deckMap) {
   const user = requireUser();
-  const v = validateVersusMainDeck(deckMap);
-  if (!v.ok) throw new Error(v.message || "デッキが不正です。");
+  const prepared = deckMapForVersus(deckMap);
+  if (!prepared.map) throw new Error(prepared.warning || "デッキが不正です。");
   const { api } = fs();
   const now = new Date().toISOString();
   for (let attempt = 0; attempt < 8; attempt++) {
@@ -124,7 +155,7 @@ export async function createVersusRoom(deckMap) {
       guestPhotoURL: null,
       hostDeckReady: true,
       guestDeckReady: false,
-      hostDeckMap: v.map,
+      hostDeckMap: prepared.map,
       guestDeckMap: null,
       firstPlayerRole: null,
       activePlayerRole: null,
@@ -137,9 +168,9 @@ export async function createVersusRoom(deckMap) {
     };
     try {
       await api.setDoc(ref, doc);
-      return { roomCode: roomCode, match: doc };
+      return { roomCode: roomCode, match: doc, deckWarning: prepared.warning };
     } catch (err) {
-      if (attempt >= 7) throw err;
+      if (attempt >= 7) throw new Error(formatVersusFirestoreError(err));
     }
   }
   throw new Error("ルーム作成に失敗しました。もう一度お試しください。");
@@ -151,8 +182,8 @@ export async function createVersusRoom(deckMap) {
  */
 export async function joinVersusRoom(roomCode, deckMap) {
   const user = requireUser();
-  const v = validateVersusMainDeck(deckMap);
-  if (!v.ok) throw new Error(v.message || "デッキが不正です。");
+  const prepared = deckMapForVersus(deckMap);
+  if (!prepared.map) throw new Error(prepared.warning || "デッキが不正です。");
   const code = String(roomCode || "")
     .trim()
     .toUpperCase();
@@ -168,17 +199,25 @@ export async function joinVersusRoom(roomCode, deckMap) {
     throw new Error("このルームには別のプレイヤーが参加済みです。");
   }
   const now = new Date().toISOString();
-  await api.updateDoc(ref, {
-    guestUid: user.uid,
-    guestName: user.displayName,
-    guestPhotoURL: user.photoURL,
-    guestDeckReady: true,
-    guestDeckMap: v.map,
-    status: data.status === "playing" ? "playing" : "lobby",
-    updatedAt: now,
-  });
+  try {
+    await api.updateDoc(ref, {
+      guestUid: user.uid,
+      guestName: user.displayName,
+      guestPhotoURL: user.photoURL,
+      guestDeckReady: true,
+      guestDeckMap: prepared.map,
+      status: data.status === "playing" ? "playing" : "lobby",
+      updatedAt: now,
+    });
+  } catch (err) {
+    throw new Error(formatVersusFirestoreError(err));
+  }
   const snap2 = await api.getDoc(ref);
-  return { roomCode: code, match: /** @type {VersusMatchDoc} */ (snap2.data()) };
+  return {
+    roomCode: code,
+    match: /** @type {VersusMatchDoc} */ (snap2.data()),
+    deckWarning: prepared.warning,
+  };
 }
 
 /**

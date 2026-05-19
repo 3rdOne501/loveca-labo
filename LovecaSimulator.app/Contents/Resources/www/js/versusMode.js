@@ -53,14 +53,32 @@ function deckHasCards(deckMap) {
 function setOnlineSectionVisible() {
   var wrap = el("dlg-versus-online-wrap");
   var hint = el("dlg-versus-online-hint");
-  var online = isVersusMatchAvailable() && !!getCurrentCloudUser();
-  if (wrap) wrap.hidden = !isCloudSyncAvailable();
+  var u = getCurrentCloudUser() || getEffectiveCloudUser();
+  var cloudOk = isCloudSyncAvailable();
+  var fsOk = isVersusMatchAvailable();
+  var online = fsOk && !!u;
+  if (wrap) {
+    wrap.hidden = !cloudOk;
+    if (u && cloudOk) {
+      try {
+        wrap.open = true;
+      } catch (_) {
+        /* noop */
+      }
+    }
+  }
   if (hint) {
-    hint.textContent = online
-      ? "Google ログイン済み — ルームで成功ライブ枚数を自動同期できます。"
-      : isCloudSyncAvailable()
-        ? "オンラインルームを使うには Google でログインしてください。"
-        : "オンラインルームを使うには Firebase 設定（firebaseConfig.js）が必要です。";
+    if (online) {
+      hint.textContent =
+        "①ルームを作成 → コードを相手に伝える ②相手がコードで参加 ③両者「準備完了」→ ホストが「対戦開始」。成功ライブ枚数は自動同期。";
+    } else if (u && cloudOk && !fsOk) {
+      hint.textContent =
+        "ログイン済みですが Firestore に接続できません。ページを再読込するか、Firebase の Firestore を有効化してください。";
+    } else if (cloudOk) {
+      hint.textContent = "オンラインルームを使うには Google でログインしてください。";
+    } else {
+      hint.textContent = "オンラインルームを使うには Firebase 設定（firebaseConfig.js）が必要です。";
+    }
   }
 }
 
@@ -295,33 +313,35 @@ export function initVersusMode(opts) {
   });
 
   btnCreate?.addEventListener("click", async function () {
-    var u = getCurrentCloudUser();
+    var u = getCurrentCloudUser() || getEffectiveCloudUser();
     if (!u) {
       showToast("オンラインルームには Google ログインが必要です");
       signInWithGoogle();
       return;
     }
     if (!isVersusMatchAvailable()) {
-      showToast("Firestore が使えません。firebaseConfig.js を確認してください。");
+      showToast("Firestore が使えません。再読込するか Firebase で Firestore を有効化してください。", {
+        duration: 8000,
+      });
       return;
     }
     var deck = getCurrentDeckMap && getCurrentDeckMap();
-    var v = validateVersusMainDeck(deck || {});
-    if (!v.ok) {
-      showToast(v.message || "デッキを60枚に整えてください");
-      return;
-    }
     try {
-      var created = await createVersusRoom(v.map);
-      showToast("ルームを作成しました: " + created.roomCode);
+      var created = await createVersusRoom(deck || {});
+      if (created.deckWarning) {
+        showToast(created.deckWarning, { duration: 6000 });
+      }
+      showToast("ルームを作成しました: " + created.roomCode + "（相手にこのコードを伝えてください）", {
+        duration: 8000,
+      });
       watchRoom(created.roomCode);
     } catch (err) {
-      showToast(String(err.message || err));
+      showToast(String(err.message || err), { duration: 10000 });
     }
   });
 
   btnJoin?.addEventListener("click", async function () {
-    var u = getCurrentCloudUser();
+    var u = getCurrentCloudUser() || getEffectiveCloudUser();
     if (!u) {
       showToast("オンラインルームには Google ログインが必要です");
       signInWithGoogle();
@@ -330,17 +350,19 @@ export function initVersusMode(opts) {
     var codeInp = /** @type {HTMLInputElement|null} */ (el("dlg-versus-room-code"));
     var code = codeInp && codeInp.value ? codeInp.value.trim() : "";
     var deck = getCurrentDeckMap && getCurrentDeckMap();
-    var v = validateVersusMainDeck(deck || {});
-    if (!v.ok) {
-      showToast(v.message || "デッキを60枚に整えてください");
+    if (!code) {
+      showToast("ルームコードを入力してください");
       return;
     }
     try {
-      var joined = await joinVersusRoom(code, v.map);
+      var joined = await joinVersusRoom(code, deck || {});
+      if (joined.deckWarning) {
+        showToast(joined.deckWarning, { duration: 6000 });
+      }
       showToast("ルーム " + joined.roomCode + " に参加しました");
       watchRoom(joined.roomCode);
     } catch (err) {
-      showToast(String(err.message || err));
+      showToast(String(err.message || err), { duration: 10000 });
     }
   });
 

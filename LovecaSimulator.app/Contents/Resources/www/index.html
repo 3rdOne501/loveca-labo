@@ -1726,8 +1726,9 @@ python3 -m http.server 8080</pre>
     <dialog id="dlg-versus-lobby" class="app-dialog dlg-versus-lobby" aria-labelledby="dlg-versus-lobby-title">
       <h2 id="dlg-versus-lobby-title" class="app-dialog__title">対戦モード（総合ルール 1.06）</h2>
       <p class="hint zone-inline-help">
-        <strong>簡易対戦</strong>は Google ログインも Firestore も不要です。対面プレイでは各プレイヤーが自分の端末で盤面を動かし、
-        相手の<strong>成功ライブ枚数</strong>だけ＋／−で共有します（3枚以上かつ相手2枚以下で勝利）。
+        <strong>簡易対戦</strong>（ログイン不要）— 対面・別々の端末向け。各プレイヤーが<strong>自分の盤面だけ</strong>操作します。
+        カードの自動同期はありません。プレイ中、画面上部の<strong>「相手SL」＋／−</strong>で相手の成功ライブ枚数を共有し、
+        勝敗（あなた3枚以上かつ相手2枚以下）を確認します。60枚未満のデッキでも開始できます。
       </p>
       <p id="dlg-versus-lobby-status" class="dlg-versus-lobby-status muted" role="status"></p>
       <div class="app-dialog__actions dlg-versus-lobby-actions dlg-versus-lobby-actions--primary">
