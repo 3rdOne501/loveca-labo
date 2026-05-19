@@ -4,15 +4,35 @@ service cloud.firestore {
     match /users/{userId}/state/{docId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
+
     match /versusMatches/{roomId} {
+      /* ホスト・ゲスト、または空き席があるルーム（参加前の getDoc 用） */
       allow read: if request.auth != null
-        && (resource.data.hostUid == request.auth.uid
-          || resource.data.guestUid == request.auth.uid);
+        && (
+          resource.data.hostUid == request.auth.uid
+          || resource.data.guestUid == request.auth.uid
+          || (
+            resource.data.guestUid == null
+            && resource.data.status in ["waiting", "lobby"]
+          )
+        );
+
       allow create: if request.auth != null
         && request.resource.data.hostUid == request.auth.uid;
+
+      /* ホスト／既参加ゲストの更新、または初回参加（guestUid を自分にセット） */
       allow update: if request.auth != null
-        && (resource.data.hostUid == request.auth.uid
-          || resource.data.guestUid == request.auth.uid);
+        && (
+          resource.data.hostUid == request.auth.uid
+          || resource.data.guestUid == request.auth.uid
+          || (
+            resource.data.guestUid == null
+            && request.resource.data.guestUid == request.auth.uid
+            && request.resource.data.hostUid == resource.data.hostUid
+            && resource.data.status in ["waiting", "lobby"]
+          )
+        );
+
       allow delete: if request.auth != null
         && resource.data.hostUid == request.auth.uid;
     }

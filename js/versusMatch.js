@@ -190,11 +190,20 @@ export async function joinVersusRoom(roomCode, deckMap) {
   if (!/^[A-Z0-9]{6}$/.test(code)) throw new Error("ルームコードは英数字6文字です。");
   const { api } = fs();
   const ref = matchRef(code);
-  const snap = await api.getDoc(ref);
-  if (!snap.exists()) throw new Error("ルームが見つかりません。");
+  let snap;
+  try {
+    snap = await api.getDoc(ref);
+  } catch (err) {
+    throw new Error(formatVersusFirestoreError(err));
+  }
+  if (!snap.exists()) throw new Error("ルームが見つかりません。コードの打ち間違い、または Firestore ルール未更新の可能性があります。");
   const data = /** @type {VersusMatchDoc} */ (snap.data());
   if (data.status === "ended") throw new Error("このルームは終了しています。");
-  if (data.hostUid === user.uid) throw new Error("自分が作成したルームです。相手の参加を待ってください。");
+  if (data.hostUid === user.uid) {
+    throw new Error(
+      "自分が作成したルームです。別の Google アカウント（シークレットウィンドウなど）で「コードで参加」してください。",
+    );
+  }
   if (data.guestUid && data.guestUid !== user.uid) {
     throw new Error("このルームには別のプレイヤーが参加済みです。");
   }
@@ -227,15 +236,19 @@ export async function joinVersusRoom(roomCode, deckMap) {
  */
 export async function setVersusDeckReady(roomCode, role, deckMap) {
   requireUser();
-  const v = validateVersusMainDeck(deckMap);
-  if (!v.ok) throw new Error(v.message || "デッキが不正です。");
+  const prepared = deckMapForVersus(deckMap);
+  if (!prepared.map) throw new Error(prepared.warning || "デッキが不正です。");
   const { api } = fs();
   const ref = matchRef(roomCode);
   const patch =
     role === "host"
-      ? { hostDeckReady: true, hostDeckMap: v.map, updatedAt: new Date().toISOString() }
-      : { guestDeckReady: true, guestDeckMap: v.map, updatedAt: new Date().toISOString() };
-  await api.updateDoc(ref, patch);
+      ? { hostDeckReady: true, hostDeckMap: prepared.map, updatedAt: new Date().toISOString() }
+      : { guestDeckReady: true, guestDeckMap: prepared.map, updatedAt: new Date().toISOString() };
+  try {
+    await api.updateDoc(ref, patch);
+  } catch (err) {
+    throw new Error(formatVersusFirestoreError(err));
+  }
 }
 
 /** ホストのみ: 先攻を無作為に決めて対戦開始（総合ルール 6.2.1.4） */
