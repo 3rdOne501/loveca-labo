@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Loveca Labo" />
-    <meta name="loveca-build" content="2026051861" />
+    <meta name="loveca-build" content="2026051863" />
     <title>Loveca Labo</title>
     <!-- 万一以前のバージョンの Service Worker が登録された端末で取り残しが起きた場合に備え、
          先頭で SW 登録を一括解除する。SW 自体は本サイトでは使っていない。 -->
@@ -41,7 +41,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,700;1,9..40,500&family=M+PLUS+Rounded+1c:wght@500;700&family=Noto+Sans+JP:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=2026051858" />
+    <link rel="stylesheet" href="styles.css?v=2026051863" />
     <link rel="stylesheet" href="styles-perf.css?v=2026051910" />
   </head>
   <body>
@@ -617,6 +617,77 @@ python3 -m http.server 8080</pre>
           </button>
         </div>
       </header>
+
+      <div id="versus-match-bar" class="versus-match-bar" hidden>
+        <div class="versus-match-bar__main">
+          <span id="versus-match-bar-label" class="versus-match-bar__label">対戦</span>
+          <span id="versus-turn-badge" class="versus-turn-badge" hidden></span>
+          <p id="versus-match-bar-detail" class="versus-match-bar__detail muted"></p>
+          <p id="versus-opponent-action" class="versus-opponent-action muted" hidden></p>
+        </div>
+        <div class="versus-match-bar__actions">
+          <div id="versus-opp-sl-controls" class="versus-opp-sl-controls" hidden>
+            <span class="muted">相手SL</span>
+            <button type="button" class="btn sm secondary" id="btn-versus-opp-sl-minus" aria-label="相手の成功ライブを減らす">−</button>
+            <span id="versus-opp-sl-num" class="versus-opp-sl-num">0</span>
+            <button type="button" class="btn sm secondary" id="btn-versus-opp-sl-plus" aria-label="相手の成功ライブを増やす">＋</button>
+          </div>
+          <button type="button" class="btn sm secondary" id="btn-versus-end-turn" hidden>ターン終了</button>
+          <button type="button" class="btn sm secondary" id="btn-versus-concede" hidden>投了</button>
+          <button type="button" class="btn sm secondary" id="btn-versus-lobby" hidden>対戦ロビー</button>
+        </div>
+      </div>
+
+      <details id="versus-opponent-board-wrap" class="versus-opponent-board-wrap" hidden>
+        <summary>相手の場・手札（リアルタイム）</summary>
+        <p id="versus-opp-board-meta" class="versus-opp-board-meta muted"></p>
+        <div class="versus-opp-board-grid">
+          <section class="versus-opp-zone-block">
+            <h4 class="versus-opp-zone-title">手札 <span id="versus-opp-hand-count">0</span></h4>
+            <div id="versus-opp-zone-hand" class="versus-opp-strip"></div>
+          </section>
+          <section class="versus-opp-zone-block">
+            <h4 class="versus-opp-zone-title">山札（枚数のみ） <span id="versus-opp-deck-count">0</span></h4>
+          </section>
+          <section class="versus-opp-zone-block versus-opp-zone-block--triple">
+            <h4 class="versus-opp-zone-title">ステージ</h4>
+            <div class="versus-opp-triple">
+              <div><span class="muted">左</span><div id="versus-opp-stage-left" class="versus-opp-strip"></div></div>
+              <div><span class="muted">中</span><div id="versus-opp-stage-center" class="versus-opp-strip"></div></div>
+              <div><span class="muted">右</span><div id="versus-opp-stage-right" class="versus-opp-strip"></div></div>
+            </div>
+          </section>
+          <section class="versus-opp-zone-block versus-opp-zone-block--triple">
+            <h4 class="versus-opp-zone-title">ライブ</h4>
+            <div class="versus-opp-triple">
+              <div><span class="muted">左</span><div id="versus-opp-live-left" class="versus-opp-strip"></div></div>
+              <div><span class="muted">中</span><div id="versus-opp-live-center" class="versus-opp-strip"></div></div>
+              <div><span class="muted">右</span><div id="versus-opp-live-right" class="versus-opp-strip"></div></div>
+            </div>
+          </section>
+          <section class="versus-opp-zone-block">
+            <h4 class="versus-opp-zone-title">成功ライブ</h4>
+            <div id="versus-opp-zone-sl" class="versus-opp-strip"></div>
+          </section>
+          <section class="versus-opp-zone-block">
+            <h4 class="versus-opp-zone-title">解決</h4>
+            <div id="versus-opp-zone-resolution" class="versus-opp-strip"></div>
+          </section>
+          <section class="versus-opp-zone-block">
+            <h4 class="versus-opp-zone-title">控え室</h4>
+            <div id="versus-opp-zone-waiting" class="versus-opp-strip"></div>
+          </section>
+          <section class="versus-opp-zone-block">
+            <h4 class="versus-opp-zone-title">エネルギー</h4>
+            <div id="versus-opp-zone-energy" class="versus-opp-strip"></div>
+          </section>
+          <section class="versus-opp-zone-block">
+            <h4 class="versus-opp-zone-title">プレビュー</h4>
+            <div id="versus-opp-zone-preview" class="versus-opp-strip"></div>
+          </section>
+        </div>
+      </details>
+
 
       <div class="game-board">
         <div class="col col-left">
@@ -1727,8 +1798,11 @@ python3 -m http.server 8080</pre>
       <h2 id="dlg-versus-lobby-title" class="app-dialog__title">対戦モード（総合ルール 1.06）</h2>
       <p class="hint zone-inline-help">
         <strong>簡易対戦</strong>（ログイン不要）— 対面・別々の端末向け。各プレイヤーが<strong>自分の盤面だけ</strong>操作します。
-        カードの自動同期はありません。プレイ中、画面上部の<strong>「相手SL」＋／−</strong>で相手の成功ライブ枚数を共有し、
-        勝敗（あなた3枚以上かつ相手2枚以下）を確認します。60枚未満のデッキでも開始できます。
+        カードの自動同期はありません。プレイ中、画面上部の<strong>「相手SL」＋／−</strong>で相手の成功ライブ枚数を共有します。
+      </p>
+      <p class="hint zone-inline-help muted">
+        <strong>オンラインルーム</strong> — 2人が別アカウントで参加。成功ライブ枚数・ターン・直近操作を Firestore で共有。
+        手札や場のカードはまだ同期されません（各端末で自分の盤面を操作）。ホストが「対戦開始」後、<strong>ターン終了</strong>で手番を渡します。
       </p>
       <p id="dlg-versus-lobby-status" class="dlg-versus-lobby-status muted" role="status"></p>
       <div class="app-dialog__actions dlg-versus-lobby-actions dlg-versus-lobby-actions--primary">
@@ -1832,31 +1906,32 @@ python3 -m http.server 8080</pre>
       {
         "scopes": {
           "/js/": {
-            "./abilityEffects.js": "./abilityEffects.js?v=2026051858",
-            "./bladeHeart.js": "./bladeHeart.js?v=2026051858",
-            "./cardCatalogDialog.js": "./cardCatalogDialog.js?v=2026051858",
-            "./cardGroups.js": "./cardGroups.js?v=2026051858",
-            "./cards.js": "./cards.js?v=2026051858",
-            "./cloudAuth.js": "./cloudAuth.js?v=2026051858",
-            "./config.js": "./config.js?v=2026051858",
-            "./deckLibrary.js": "./deckLibrary.js?v=2026051858",
-            "./deckbuilder.js": "./deckbuilder.js?v=2026051858",
-            "./decklogImport.js": "./decklogImport.js?v=2026051858",
-            "./firebaseConfig.js": "./firebaseConfig.js?v=2026051858",
-            "./gameStatusIcons.js": "./gameStatusIcons.js?v=2026051858",
-            "./joujiEffects.js": "./joujiEffects.js?v=2026051858",
-            "./liveSpecialBhOverride.js": "./liveSpecialBhOverride.js?v=2026051858",
-            "./main.js": "./main.js?v=2026051858",
-            "./sampleDeckRecipes.js": "./sampleDeckRecipes.js?v=2026051858",
-            "./simulator.js": "./simulator.js?v=2026051858",
-            "./testCardLog.js": "./testCardLog.js?v=2026051858",
-            "./ui.js": "./ui.js?v=2026051858",
-            "./versusMatch.js": "./versusMatch.js?v=2026051858",
-            "./versusMode.js": "./versusMode.js?v=2026051858"
+            "./abilityEffects.js": "./abilityEffects.js?v=2026051863",
+            "./bladeHeart.js": "./bladeHeart.js?v=2026051863",
+            "./cardCatalogDialog.js": "./cardCatalogDialog.js?v=2026051863",
+            "./cardGroups.js": "./cardGroups.js?v=2026051863",
+            "./cards.js": "./cards.js?v=2026051863",
+            "./cloudAuth.js": "./cloudAuth.js?v=2026051863",
+            "./config.js": "./config.js?v=2026051863",
+            "./deckLibrary.js": "./deckLibrary.js?v=2026051863",
+            "./deckbuilder.js": "./deckbuilder.js?v=2026051863",
+            "./decklogImport.js": "./decklogImport.js?v=2026051863",
+            "./firebaseConfig.js": "./firebaseConfig.js?v=2026051863",
+            "./gameStatusIcons.js": "./gameStatusIcons.js?v=2026051863",
+            "./joujiEffects.js": "./joujiEffects.js?v=2026051863",
+            "./liveSpecialBhOverride.js": "./liveSpecialBhOverride.js?v=2026051863",
+            "./main.js": "./main.js?v=2026051863",
+            "./sampleDeckRecipes.js": "./sampleDeckRecipes.js?v=2026051863",
+            "./simulator.js": "./simulator.js?v=2026051863",
+            "./testCardLog.js": "./testCardLog.js?v=2026051863",
+            "./ui.js": "./ui.js?v=2026051863",
+            "./versusBoardSync.js": "./versusBoardSync.js?v=2026051863",
+            "./versusMatch.js": "./versusMatch.js?v=2026051863",
+            "./versusMode.js": "./versusMode.js?v=2026051863"
           }
         }
       }
     </script>
-    <script type="module" src="js/main.js?v=2026051858"></script>
+    <script type="module" src="js/main.js?v=2026051863"></script>
   </body>
 </html>

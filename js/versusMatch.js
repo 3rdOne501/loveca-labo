@@ -39,6 +39,13 @@ const ROOM_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
  * @property {boolean} guestConceded
  * @property {VersusRole|null} winnerRole
  * @property {string|null} endedReason
+ * @property {number} [turnNumber]
+ * @property {string|null} [hostLastAction]
+ * @property {string|null} [guestLastAction]
+ * @property {import('./versusBoardSync.js').VersusPublicBoard|null} [hostBoardPublic]
+ * @property {import('./versusBoardSync.js').VersusPublicBoard|null} [guestBoardPublic]
+ * @property {string|null} [hostBoardAt]
+ * @property {string|null} [guestBoardAt]
  */
 
 export function isVersusMatchAvailable() {
@@ -165,6 +172,13 @@ export async function createVersusRoom(deckMap) {
       guestConceded: false,
       winnerRole: null,
       endedReason: null,
+      turnNumber: 0,
+      hostLastAction: null,
+      guestLastAction: null,
+      hostBoardPublic: null,
+      guestBoardPublic: null,
+      hostBoardAt: null,
+      guestBoardAt: null,
     };
     try {
       await api.setDoc(ref, doc);
@@ -277,14 +291,52 @@ export async function startVersusMatch(roomCode) {
     guestConceded: false,
     winnerRole: null,
     endedReason: null,
+    turnNumber: 1,
+    hostLastAction: null,
+    guestLastAction: null,
   });
+}
+
+/** @param {VersusMatchDoc|null} match @param {VersusRole|null} role */
+export function isVersusTurnForRole(match, role) {
+  return !!(match && match.status === "playing" && role && match.activePlayerRole === role);
+}
+
+/** @param {VersusMatchDoc|null} match @param {VersusRole} myRole */
+export function versusOpponentLastAction(match, myRole) {
+  if (!match || !myRole) return null;
+  return myRole === "host" ? match.guestLastAction : match.hostLastAction;
 }
 
 /**
  * @param {string} roomCode
  * @param {VersusRole} role
- * @param {{ successLiveCount?: number }} patch
+ * @param {{ successLiveCount?: number, lastAction?: string }} patch
  */
+/**
+ * 場・手札の公開スナップショット（オンライン対戦専用）
+ * @param {string} roomCode
+ * @param {VersusRole} role
+ * @param {import('./versusBoardSync.js').VersusPublicBoard} boardPublic
+ */
+export async function pushVersusBoardPublic(roomCode, role, boardPublic) {
+  requireUser();
+  const { api } = fs();
+  const ref = matchRef(roomCode);
+  const field = role === "host" ? "hostBoardPublic" : "guestBoardPublic";
+  const atField = role === "host" ? "hostBoardAt" : "guestBoardAt";
+  const p = {
+    updatedAt: new Date().toISOString(),
+    [field]: boardPublic,
+    [atField]: new Date().toISOString(),
+  };
+  try {
+    await api.updateDoc(ref, p);
+  } catch (err) {
+    throw new Error(formatVersusFirestoreError(err));
+  }
+}
+
 export async function pushVersusPublicState(roomCode, role, patch) {
   requireUser();
   const { api } = fs();
@@ -295,7 +347,54 @@ export async function pushVersusPublicState(roomCode, role, patch) {
     if (role === "host") p.hostSuccessLiveCount = n;
     else p.guestSuccessLiveCount = n;
   }
-  await api.updateDoc(ref, p);
+  if (patch && patch.lastAction != null && String(patch.lastAction).trim()) {
+    const txt = String(patch.lastAction).trim().slice(0, 120);
+    if (role === "host") p.hostLastAction = txt;
+    else p.guestLastAction = txt;
+  }
+  try {
+    await api.updateDoc(ref, p);
+  } catch (err) {
+    throw new Error(formatVersusFirestoreError(err));
+  }
+}
+
+/**
+ * 手番を相手に渡す（activePlayerRole を切り替え）
+ * @param {string} roomCode
+ * @param {VersusRole} role
+ */
+export async function advanceVersusTurn(roomCode, role) {
+  const user = requireUser();
+  const { api } = fs();
+  const ref = matchRef(roomCode);
+  let snap;
+  try {
+    snap = await api.getDoc(ref);
+  } catch (err) {
+    throw new Error(formatVersusFirestoreError(err));
+  }
+  if (!snap.exists()) throw new Error("ルームが見つかりません。");
+  const data = /** @type {VersusMatchDoc} */ (snap.data());
+  if (data.status !== "playing") throw new Error("対戦中ではありません。");
+  if (data.activePlayerRole !== role) {
+    throw new Error("あなたのターンではありません。相手の操作を待ってください。");
+  }
+  const nextRole = role === "host" ? "guest" : "host";
+  const turn = Math.max(1, Math.floor(Number(data.turnNumber) || 1)) + 1;
+  const actionField = role === "host" ? "hostLastAction" : "guestLastAction";
+  const patch = {
+    activePlayerRole: nextRole,
+    turnNumber: turn,
+    updatedAt: new Date().toISOString(),
+  };
+  patch[actionField] = "ターン終了";
+  try {
+    await api.updateDoc(ref, patch);
+  } catch (err) {
+    throw new Error(formatVersusFirestoreError(err));
+  }
+  void user;
 }
 
 /** @param {string} roomCode @param {VersusRole} role */

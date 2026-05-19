@@ -223,6 +223,7 @@ function watchRoom(roomCode) {
     if (match && match.status === "playing" && window.__llocgVersusAutoEnterPending) {
       var pending = window.__llocgVersusAutoEnterPending;
       delete window.__llocgVersusAutoEnterPending;
+      stopSubscription();
       if (typeof onEnterVersusPlay === "function") onEnterVersusPlay(pending);
     }
   });
@@ -411,10 +412,13 @@ export function initVersusMode(opts) {
   });
 }
 
-export function teardownVersusModeSession() {
+export function teardownVersusModeSession(opts) {
   stopSubscription();
-  var u = getCurrentCloudUser();
-  if (activeRoomCode && u) leaveVersusRoom(activeRoomCode, u.uid);
+  var skipLeave = opts && opts.skipLeaveRoom === true;
+  var u = getCurrentCloudUser() || getEffectiveCloudUser();
+  if (!skipLeave && activeRoomCode && u) {
+    leaveVersusRoom(activeRoomCode, u.uid);
+  }
   activeRoomCode = null;
   delete window.__llocgVersusAutoEnterPending;
 }

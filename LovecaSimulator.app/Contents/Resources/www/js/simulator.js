@@ -78,13 +78,24 @@ import {
 import { loadDeckLibrary, normalizeDeckMapCounts } from "./deckLibrary.js";
 import { getCurrentCloudUser, getEffectiveCloudUser } from "./cloudAuth.js";
 import {
+  advanceVersusTurn,
   concedeVersusMatch,
   evaluateVersusWinFromCounts,
+  isVersusTurnForRole,
+  pushVersusBoardPublic,
   pushVersusPublicState,
   reportVersusWinIfEligible,
   subscribeVersusMatch,
   versusOpponentLabel,
+  versusOpponentLastAction,
 } from "./versusMatch.js";
+import {
+  boardToVersusPublic,
+  fingerprintVersusPublicBoard,
+  getOpponentBoardPublic,
+  hideVersusOpponentBoard,
+  renderVersusOpponentBoard,
+} from "./versusBoardSync.js";
 import {
   openCardCatalogDialog,
   catalogLiveCardIsDrawYellBladeHeart,
@@ -1456,8 +1467,9 @@ export function mountSimulator(
     versusMyRole: null,
     versusOpponentSuccessLiveCount: 0,
     versusMatchEnded: false,
+    versusPendingAction: null,
   };
-  /** @type {{ mode: 'local'|'online', roomCode: string, myRole?: 'host'|'guest', opponentName: string }|null} */
+  /** @type {{ mode: 'local'|'online', roomCode: string, myRole?: 'host'|'guest', opponentName: string, remoteMatch?: import('./versusMatch.js').VersusMatchDoc|null, playerLabel?: string }|null} */
   var versusSession = null;
   if (versusMatch && versusMatch.mode === "local") {
     var vu = getEffectiveCloudUser();
@@ -1473,10 +1485,14 @@ export function mountSimulator(
       roomCode: String(versusMatch.roomCode),
       myRole: versusMatch.myRole === "guest" ? "guest" : "host",
       opponentName: versusOpponentLabel(versusMatch.match, versusMatch.myRole),
+      remoteMatch: versusMatch.match || null,
     };
   }
   var versusMatchUnsub = null;
   var versusPublicSyncTimer = 0;
+  var versusBoardSyncTimer = 0;
+  var versusBoardSyncLastFp = "";
+  var versusOpponentBoardFp = "";
   if (versusSession) {
     state.playVersusMode = true;
     if (versusSession.myRole) state.versusMyRole = versusSession.myRole;
@@ -1485,19 +1501,27 @@ export function mountSimulator(
     if (versusBarEl) versusBarEl.hidden = false;
     var concedeBtn = document.getElementById("btn-versus-concede");
     var lobbyBtn = document.getElementById("btn-versus-lobby");
+    var endTurnBtn = document.getElementById("btn-versus-end-turn");
     var oppSlWrap = document.getElementById("versus-opp-sl-controls");
     if (concedeBtn) concedeBtn.hidden = false;
     if (lobbyBtn) lobbyBtn.hidden = versusSession.mode !== "online";
+    if (endTurnBtn) endTurnBtn.hidden = versusSession.mode !== "online";
     if (oppSlWrap) oppSlWrap.hidden = versusSession.mode !== "local";
-    if (versusSession.mode === "online" && versusMatch.match && versusMatch.match.firstPlayerRole) {
-      var fpVersus = root.querySelector("#select-first-player") || document.getElementById("select-first-player");
-      if (fpVersus) {
-        fpVersus.value =
-          versusMatch.match.firstPlayerRole === versusSession.myRole ? "先攻" : "後攻";
+    var oppBoardWrap = document.getElementById("versus-opponent-board-wrap");
+    if (oppBoardWrap) oppBoardWrap.hidden = versusSession.mode !== "online";
+    if (versusSession.mode === "online" && versusMatch && versusMatch.match) {
+      if (versusMatch.match.firstPlayerRole) {
+        var fpVersus = root.querySelector("#select-first-player") || document.getElementById("select-first-player");
+        if (fpVersus) {
+          fpVersus.value =
+            versusMatch.match.firstPlayerRole === versusSession.myRole ? "先攻" : "後攻";
+        }
       }
       versusMatchUnsub = subscribeVersusMatch(versusSession.roomCode, function (remoteMatch) {
         applyRemoteVersusMatch(remoteMatch);
       });
+      syncVersusMatchBar(versusSession.remoteMatch);
+      applyVersusOpponentBoardFromRemote(versusSession.remoteMatch);
     }
     syncVersusOppSlDisplay();
   }
@@ -11565,7 +11589,11 @@ export function mountSimulator(
     if (!versusSession) return;
     var labelEl = document.getElementById("versus-match-bar-label");
     var detailEl = document.getElementById("versus-match-bar-detail");
+    var turnBadge = document.getElementById("versus-turn-badge");
+    var oppActEl = document.getElementById("versus-opponent-action");
+    var endTurnBtn = document.getElementById("btn-versus-end-turn");
     if (!labelEl || !detailEl) return;
+    var m = remoteMatch || versusSession.remoteMatch || null;
     labelEl.textContent =
       versusSession.mode === "local"
         ? "簡易対戦" + (versusSession.playerLabel ? " · " + versusSession.playerLabel : "")
@@ -11573,9 +11601,13 @@ export function mountSimulator(
     var mine = Array.isArray(state.successfulLiveArea) ? state.successfulLiveArea.length : 0;
     var opp = Math.max(0, Math.floor(Number(state.versusOpponentSuccessLiveCount) || 0));
     var fpNote = "";
-    if (remoteMatch && remoteMatch.firstPlayerRole) {
+    if (m && m.firstPlayerRole && versusSession.myRole) {
       fpNote =
-        remoteMatch.firstPlayerRole === versusSession.myRole ? " · あなたが先攻" : " · 相手が先攻";
+        m.firstPlayerRole === versusSession.myRole ? " · あなたが先攻" : " · 相手が先攻";
+    }
+    var turnNote = "";
+    if (m && m.status === "playing" && m.turnNumber) {
+      turnNote = " · ターン " + m.turnNumber;
     }
     detailEl.textContent =
       versusSession.opponentName +
@@ -11586,7 +11618,43 @@ export function mountSimulator(
       "（" +
       LIVE_WINS +
       "枚で勝利）" +
-      fpNote;
+      fpNote +
+      turnNote;
+    if (
+      versusSession.mode === "online" &&
+      m &&
+      m.status === "playing" &&
+      versusSession.myRole &&
+      !state.versusMatchEnded
+    ) {
+      var mineTurn = isVersusTurnForRole(m, versusSession.myRole);
+      if (turnBadge) {
+        turnBadge.hidden = false;
+        turnBadge.textContent = mineTurn ? "あなたのターン" : "相手のターン（待機）";
+        turnBadge.classList.toggle("versus-turn-badge--mine", mineTurn);
+        turnBadge.classList.toggle("versus-turn-badge--opp", !mineTurn);
+      }
+      if (endTurnBtn) {
+        endTurnBtn.hidden = false;
+        endTurnBtn.disabled = !mineTurn;
+      }
+      document.body.classList.toggle("versus-my-turn", mineTurn);
+      document.body.classList.toggle("versus-opponent-turn", !mineTurn);
+      var oppTxt = versusOpponentLastAction(m, versusSession.myRole);
+      if (oppActEl) {
+        if (oppTxt) {
+          oppActEl.hidden = false;
+          oppActEl.textContent = "相手の直近操作: " + oppTxt;
+        } else {
+          oppActEl.hidden = true;
+        }
+      }
+    } else {
+      if (turnBadge) turnBadge.hidden = true;
+      if (endTurnBtn) endTurnBtn.hidden = versusSession.mode !== "online";
+      if (oppActEl) oppActEl.hidden = true;
+      document.body.classList.remove("versus-my-turn", "versus-opponent-turn");
+    }
     checkLocalVersusWinCondition();
   }
 
@@ -11609,19 +11677,51 @@ export function mountSimulator(
     void myUid;
   }
 
+  function applyVersusOpponentBoardFromRemote(remoteMatch) {
+    if (!versusSession || versusSession.mode !== "online" || !versusSession.myRole) return;
+    var oppBoard = getOpponentBoardPublic(remoteMatch, versusSession.myRole);
+    var fp = fingerprintVersusPublicBoard(oppBoard);
+    if (fp === versusOpponentBoardFp) return;
+    versusOpponentBoardFp = fp;
+    var at =
+      versusSession.myRole === "host" ? remoteMatch.guestBoardAt : remoteMatch.hostBoardAt;
+    renderVersusOpponentBoard(oppBoard, {
+      opponentName: versusSession.opponentName,
+      updatedAt: at || null,
+    });
+  }
+
   function applyRemoteVersusMatch(remoteMatch) {
     if (!versusSession || !remoteMatch) return;
+    versusSession.remoteMatch = remoteMatch;
     var oppSl =
       versusSession.myRole === "host"
         ? remoteMatch.guestSuccessLiveCount
         : remoteMatch.hostSuccessLiveCount;
     state.versusOpponentSuccessLiveCount = Math.max(0, Math.floor(Number(oppSl) || 0));
     syncVersusMatchBar(remoteMatch);
+    syncVersusOppSlDisplay();
+    applyVersusOpponentBoardFromRemote(remoteMatch);
     if (remoteMatch.status === "ended" && !state.versusMatchEnded) {
       state.versusMatchEnded = true;
       showVersusEndBanner(remoteMatch);
+      document.body.classList.remove("versus-my-turn", "versus-opponent-turn");
     }
-    render();
+  }
+
+  function scheduleVersusBoardPublicSync() {
+    if (!versusSession || versusSession.mode !== "online" || !versusSession.myRole) return;
+    if (versusBoardSyncTimer) clearTimeout(versusBoardSyncTimer);
+    versusBoardSyncTimer = setTimeout(function () {
+      versusBoardSyncTimer = 0;
+      var board = boardToVersusPublic(snapshotBoard());
+      var fp = fingerprintVersusPublicBoard(board);
+      if (fp === versusBoardSyncLastFp) return;
+      versusBoardSyncLastFp = fp;
+      pushVersusBoardPublic(versusSession.roomCode, versusSession.myRole, board).catch(function (err) {
+        console.warn("[versus] board sync failed:", err);
+      });
+    }, 400);
   }
 
   function scheduleVersusPublicSync() {
@@ -11630,9 +11730,14 @@ export function mountSimulator(
     versusPublicSyncTimer = setTimeout(function () {
       versusPublicSyncTimer = 0;
       var sl = Array.isArray(state.successfulLiveArea) ? state.successfulLiveArea.length : 0;
-      pushVersusPublicState(versusSession.roomCode, versusSession.myRole, {
-        successLiveCount: sl,
-      })
+      var patch = { successLiveCount: sl };
+      if (state.versusPendingAction) {
+        patch.lastAction = state.versusPendingAction;
+        state.versusPendingAction = null;
+      } else {
+        patch.lastAction = "成功ライブ " + sl + " 枚";
+      }
+      pushVersusPublicState(versusSession.roomCode, versusSession.myRole, patch)
         .then(function () {
           return reportVersusWinIfEligible(versusSession.roomCode, versusSession.myRole);
         })
@@ -11655,15 +11760,25 @@ export function mountSimulator(
       clearTimeout(versusPublicSyncTimer);
       versusPublicSyncTimer = 0;
     }
+    if (versusBoardSyncTimer) {
+      clearTimeout(versusBoardSyncTimer);
+      versusBoardSyncTimer = 0;
+    }
+    versusBoardSyncLastFp = "";
+    versusOpponentBoardFp = "";
+    hideVersusOpponentBoard();
     document.body.classList.remove("play-versus-mode");
     var versusBarEl = document.getElementById("versus-match-bar");
     if (versusBarEl) versusBarEl.hidden = true;
     var concedeBtn = document.getElementById("btn-versus-concede");
     var lobbyBtn = document.getElementById("btn-versus-lobby");
+    var endTurnBtn = document.getElementById("btn-versus-end-turn");
     if (concedeBtn) concedeBtn.hidden = true;
     if (lobbyBtn) lobbyBtn.hidden = true;
+    if (endTurnBtn) endTurnBtn.hidden = true;
     var oppSlWrap = document.getElementById("versus-opp-sl-controls");
     if (oppSlWrap) oppSlWrap.hidden = true;
+    document.body.classList.remove("versus-my-turn", "versus-opponent-turn");
   }
 
   function syncSuccessLiveZoneChrome() {
@@ -12311,6 +12426,7 @@ export function mountSimulator(
     syncStageSlotEnergyCountVars();
     syncLiveSuccessEffectActivation();
     schedulePersistPlayResume();
+    scheduleVersusBoardPublicSync();
     repositionEffectDialogResumeChip();
   }
 
@@ -13856,7 +13972,39 @@ export function mountSimulator(
     if (dlg && typeof dlg.showModal === "function") dlg.showModal();
   });
 
+  document.getElementById("btn-versus-end-turn")?.addEventListener("click", function () {
+    if (!versusSession || versusSession.mode !== "online" || !versusSession.myRole) return;
+    if (state.versusMatchEnded) return;
+    var m = versusSession.remoteMatch;
+    if (!isVersusTurnForRole(m, versusSession.myRole)) {
+      showToast("あなたのターンではありません");
+      return;
+    }
+    advanceVersusTurn(versusSession.roomCode, versusSession.myRole)
+      .then(function () {
+        showToast("ターンを終了しました");
+      })
+      .catch(function (err) {
+        showToast(String(err.message || err));
+      });
+  });
+
   $("btn-back-builder")?.addEventListener("click", () => {
+    if (
+      versusSession &&
+      versusSession.mode === "online" &&
+      versusSession.remoteMatch &&
+      versusSession.remoteMatch.status === "playing" &&
+      !state.versusMatchEnded
+    ) {
+      if (
+        !confirm(
+          "デッキ編集に戻りますか？\nルームから退出し、相手の勝ちになる場合があります（総合ルール 1.2.3 相当）。",
+        )
+      ) {
+        return;
+      }
+    }
     teardownVersusSessionUi();
     if (typeof onBackToDeck === "function") onBackToDeck();
   });
