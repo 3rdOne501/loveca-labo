@@ -18,8 +18,28 @@ import { normalizeDeckMapCounts } from "./deckLibrary.js";
 import { initDeckBuilder, loadDeckBundleFromStorage } from "./deckbuilder.js";
 import { initPublishedSampleRecipes } from "./sampleDeckRecipes.js";
 import { prefetchGameStatusArtBundledEarly } from "./gameStatusIcons.js";
-import { mountSimulator, teardownDeckPileLayoutWatchers } from "./simulator.js";
 import { showToast } from "./ui.js";
+
+/** プレイ画面（約1.5万行）— 起動時に読み込まない（デッキ画面だけで固まるのを防ぐ） */
+/** @type {Promise<typeof import('./simulator.js')>|null} */
+let simulatorModulePromise = null;
+function loadSimulatorModule() {
+  if (!simulatorModulePromise) {
+    simulatorModulePromise = import("./simulator.js");
+  }
+  return simulatorModulePromise;
+}
+function teardownDeckPileLayoutWatchers() {
+  if (simulatorModulePromise) {
+    simulatorModulePromise
+      .then(function (m) {
+        m.teardownDeckPileLayoutWatchers();
+      })
+      .catch(function () {
+        /* noop */
+      });
+  }
+}
 import {
   initCloudAuthIfConfigured,
   isCloudSyncAvailable,
@@ -112,6 +132,35 @@ function clearPlayResumeStorage() {
   }
 }
 
+/** 起動時の自動復元でメインスレッドが塞がるのを防ぐ（対戦ルーム文脈では盤面スナップショットを捨てる） */
+function sanitizeBootSessionStorage() {
+  try {
+    var versusRoom =
+      getRememberedVersusRoomCode() ||
+      (typeof window !== "undefined" && window.__llocgVersusPendingLobbyRoom
+        ? String(window.__llocgVersusPendingLobbyRoom)
+        : "");
+    if (versusRoom) {
+      clearPlayResumeStorage();
+      var rawVs = sessionStorage.getItem(STORAGE_VERSUS_ONLINE_SESSION);
+      if (rawVs) {
+        var vs = JSON.parse(rawVs);
+        if (vs && vs.v === 1 && vs.roomCode && vs.inPlay) {
+          vs.inPlay = false;
+          vs.savedAt = Date.now();
+          sessionStorage.setItem(STORAGE_VERSUS_ONLINE_SESSION, JSON.stringify(vs));
+        }
+      }
+    }
+    var rawPr = sessionStorage.getItem(STORAGE_PLAY_RESUME);
+    if (rawPr && rawPr.length > 400000) {
+      clearPlayResumeStorage();
+    }
+  } catch (_) {
+    /* noop */
+  }
+}
+
 /**
  * 直前のプレイ盤面がセッションにあればプレイ画面へ復帰する。
  * @returns {boolean} 復元を開始したか
@@ -144,41 +193,43 @@ function tryResumePlaySession(viewDeck, viewGame) {
     document.body.classList.add("play-mode");
     requestAnimationFrame(function () {
       setTimeout(function () {
-        try {
-          mountSimulator(viewGame, deckMap, {
-            onBackToDeck() {
-              teardownDeckPileLayoutWatchers();
-              clearPlayResumeStorage();
-              viewGame.hidden = true;
-              viewDeck.hidden = false;
-              document.body.classList.remove("play-mode");
-              document.body.classList.remove("live-turn-pick-mode");
-              document.body.classList.remove("zone-hints-visible");
-              try {
-                if (typeof window.__llocgRestoreDeckBuilderUi === "function") {
-                  window.__llocgRestoreDeckBuilderUi({ reopenCatalog: true });
+        loadSimulatorModule()
+          .then(function (sim) {
+            sim.mountSimulator(viewGame, deckMap, {
+              onBackToDeck() {
+                teardownDeckPileLayoutWatchers();
+                clearPlayResumeStorage();
+                viewGame.hidden = true;
+                viewDeck.hidden = false;
+                document.body.classList.remove("play-mode");
+                document.body.classList.remove("live-turn-pick-mode");
+                document.body.classList.remove("zone-hints-visible");
+                try {
+                  if (typeof window.__llocgRestoreDeckBuilderUi === "function") {
+                    window.__llocgRestoreDeckBuilderUi({ reopenCatalog: true });
+                  }
+                } catch (_) {
+                  /* noop */
                 }
-              } catch (_) {
-                /* noop */
-              }
-            },
-            deckRoleLabels: {
-              keyCardNos: Array.isArray(dm.keyCardNos) ? dm.keyCardNos : [],
-              keyCard2Nos: Array.isArray(dm.keyCard2Nos) ? dm.keyCard2Nos : [],
-              keyCard3Nos: Array.isArray(dm.keyCard3Nos) ? dm.keyCard3Nos : [],
-              middleCardNos: Array.isArray(dm.middleCardNos) ? dm.middleCardNos : [],
-            },
-            resumeFromStorage: true,
+              },
+              deckRoleLabels: {
+                keyCardNos: Array.isArray(dm.keyCardNos) ? dm.keyCardNos : [],
+                keyCard2Nos: Array.isArray(dm.keyCard2Nos) ? dm.keyCard2Nos : [],
+                keyCard3Nos: Array.isArray(dm.keyCard3Nos) ? dm.keyCard3Nos : [],
+                middleCardNos: Array.isArray(dm.middleCardNos) ? dm.middleCardNos : [],
+              },
+              resumeFromStorage: true,
+            });
+          })
+          .catch(function (err) {
+            console.error(err);
+            teardownDeckPileLayoutWatchers();
+            clearPlayResumeStorage();
+            document.body.classList.remove("play-mode");
+            viewGame.hidden = true;
+            viewDeck.hidden = false;
+            showToast("前回の盤面の復元に失敗しました。デッキ画面からやり直してください。");
           });
-        } catch (err) {
-          console.error(err);
-          teardownDeckPileLayoutWatchers();
-          clearPlayResumeStorage();
-          document.body.classList.remove("play-mode");
-          viewGame.hidden = true;
-          viewDeck.hidden = false;
-          showToast("前回の盤面の復元に失敗しました。デッキ画面からやり直してください。");
-        }
       }, 0);
     });
     return true;
@@ -256,76 +307,78 @@ function enterVersusPlay(viewDeck, viewGame, payload) {
   document.body.classList.add("play-mode");
   requestAnimationFrame(function () {
     setTimeout(function () {
-      try {
-        mountSimulator(viewGame, deckMap, {
-          versusMatch:
-            payload.mode === "local"
-              ? { mode: "local" }
-              : {
-                  mode: "online",
-                  roomCode: payload.roomCode,
-                  myRole: payload.myRole,
-                  match: payload.match,
-                },
-          resumeFromStorage: !!payload.resumeFromStorage,
-          onBackToDeck(opts) {
-            teardownDeckPileLayoutWatchers();
-            var wasOnlineVersus = payload.mode === "online" && payload.roomCode && payload.myRole;
-            if (wasOnlineVersus && !(opts && opts.leaveRoom === true)) {
+      loadSimulatorModule()
+        .then(function (sim) {
+          sim.mountSimulator(viewGame, deckMap, {
+            versusMatch:
+              payload.mode === "local"
+                ? { mode: "local" }
+                : {
+                    mode: "online",
+                    roomCode: payload.roomCode,
+                    myRole: payload.myRole,
+                    match: payload.match,
+                  },
+            resumeFromStorage: !!payload.resumeFromStorage,
+            onBackToDeck(opts) {
+              teardownDeckPileLayoutWatchers();
+              var wasOnlineVersus = payload.mode === "online" && payload.roomCode && payload.myRole;
+              if (wasOnlineVersus && !(opts && opts.leaveRoom === true)) {
+                try {
+                  if (typeof window.__llocgFlushVersusPlayPersist === "function") {
+                    window.__llocgFlushVersusPlayPersist();
+                  }
+                } catch (_) {
+                  /* noop */
+                }
+                persistVersusOnlineSession(payload.roomCode, payload.myRole, false);
+                pauseVersusOnlineToLobby();
+                teardownVersusModeSession({ skipLeaveRoom: true });
+              } else {
+                teardownVersusModeSession();
+                clearVersusOnlineSession();
+              }
+              activeVersusRoomMounted = null;
+              delete window.__llocgVersusPlayMounted;
+              clearPlayResumeStorage();
+              viewGame.hidden = true;
+              viewDeck.hidden = false;
+              document.body.classList.remove("play-mode");
+              document.body.classList.remove("play-versus-mode");
+              document.body.classList.remove("live-turn-pick-mode");
+              document.body.classList.remove("zone-hints-visible");
               try {
-                if (typeof window.__llocgFlushVersusPlayPersist === "function") {
-                  window.__llocgFlushVersusPlayPersist();
+                if (typeof window.__llocgRestoreDeckBuilderUi === "function") {
+                  window.__llocgRestoreDeckBuilderUi({ reopenCatalog: true });
                 }
               } catch (_) {
                 /* noop */
               }
-              persistVersusOnlineSession(payload.roomCode, payload.myRole, false);
-              pauseVersusOnlineToLobby();
-              teardownVersusModeSession({ skipLeaveRoom: true });
-            } else {
-              teardownVersusModeSession();
-              clearVersusOnlineSession();
-            }
-            activeVersusRoomMounted = null;
-            delete window.__llocgVersusPlayMounted;
-            clearPlayResumeStorage();
-            viewGame.hidden = true;
-            viewDeck.hidden = false;
-            document.body.classList.remove("play-mode");
-            document.body.classList.remove("play-versus-mode");
-            document.body.classList.remove("live-turn-pick-mode");
-            document.body.classList.remove("zone-hints-visible");
-            try {
-              if (typeof window.__llocgRestoreDeckBuilderUi === "function") {
-                window.__llocgRestoreDeckBuilderUi({ reopenCatalog: true });
-              }
-            } catch (_) {
-              /* noop */
-            }
-          },
-          deckRoleLabels: {
-            keyCardNos: bundle.keyCardNos,
-            keyCard2Nos: bundle.keyCard2Nos,
-            keyCard3Nos: bundle.keyCard3Nos,
-            middleCardNos: bundle.middleCardNos,
-          },
+            },
+            deckRoleLabels: {
+              keyCardNos: bundle.keyCardNos,
+              keyCard2Nos: bundle.keyCard2Nos,
+              keyCard3Nos: bundle.keyCard3Nos,
+              middleCardNos: bundle.middleCardNos,
+            },
+          });
+          window.__llocgVersusPlayMounted = sessionKey;
+          showToast(
+            payload.mode === "local"
+              ? "簡易対戦: 相手の成功ライブ枚数は画面上の＋／−で入力してください"
+              : "オンライン対戦: 成功ライブ枚数は自動同期されます",
+          );
+        })
+        .catch(function (err) {
+          console.error(err);
+          activeVersusRoomMounted = null;
+          teardownDeckPileLayoutWatchers();
+          document.body.classList.remove("play-mode");
+          document.body.classList.remove("play-versus-mode");
+          viewGame.hidden = true;
+          viewDeck.hidden = false;
+          showToast("対戦プレイ画面の初期化に失敗しました");
         });
-        window.__llocgVersusPlayMounted = sessionKey;
-        showToast(
-          payload.mode === "local"
-            ? "簡易対戦: 相手の成功ライブ枚数は画面上の＋／−で入力してください"
-            : "オンライン対戦: 成功ライブ枚数は自動同期されます",
-        );
-      } catch (err) {
-        console.error(err);
-        activeVersusRoomMounted = null;
-        teardownDeckPileLayoutWatchers();
-        document.body.classList.remove("play-mode");
-        document.body.classList.remove("play-versus-mode");
-        viewGame.hidden = true;
-        viewDeck.hidden = false;
-        showToast("対戦プレイ画面の初期化に失敗しました");
-      }
     }, 0);
   });
 }
@@ -355,41 +408,43 @@ function startApp(viewDeck, viewGame, statusEl) {
         document.body.classList.add("play-mode");
         requestAnimationFrame(function () {
           setTimeout(function () {
-            try {
-              mountSimulator(viewGame, deckMap, {
-                onBackToDeck() {
-                  teardownDeckPileLayoutWatchers();
-                  clearPlayResumeStorage();
-                  viewGame.hidden = true;
-                  viewDeck.hidden = false;
-                  document.body.classList.remove("play-mode");
-                  document.body.classList.remove("live-turn-pick-mode");
-                  document.body.classList.remove("zone-hints-visible");
-                  try {
-                    if (typeof window.__llocgRestoreDeckBuilderUi === "function") {
-                      window.__llocgRestoreDeckBuilderUi({ reopenCatalog: true });
+            loadSimulatorModule()
+              .then(function (sim) {
+                sim.mountSimulator(viewGame, deckMap, {
+                  onBackToDeck() {
+                    teardownDeckPileLayoutWatchers();
+                    clearPlayResumeStorage();
+                    viewGame.hidden = true;
+                    viewDeck.hidden = false;
+                    document.body.classList.remove("play-mode");
+                    document.body.classList.remove("live-turn-pick-mode");
+                    document.body.classList.remove("zone-hints-visible");
+                    try {
+                      if (typeof window.__llocgRestoreDeckBuilderUi === "function") {
+                        window.__llocgRestoreDeckBuilderUi({ reopenCatalog: true });
+                      }
+                    } catch (_) {
+                      /* noop */
                     }
-                  } catch (_) {
-                    /* noop */
-                  }
-                },
-                deckRoleLabels: {
-                  keyCardNos: bundle.keyCardNos,
-                  keyCard2Nos: bundle.keyCard2Nos,
-                  keyCard3Nos: bundle.keyCard3Nos,
-                  middleCardNos: bundle.middleCardNos,
-                },
+                  },
+                  deckRoleLabels: {
+                    keyCardNos: bundle.keyCardNos,
+                    keyCard2Nos: bundle.keyCard2Nos,
+                    keyCard3Nos: bundle.keyCard3Nos,
+                    middleCardNos: bundle.middleCardNos,
+                  },
+                });
+              })
+              .catch(function (err) {
+                console.error(err);
+                teardownDeckPileLayoutWatchers();
+                document.body.classList.remove("play-mode");
+                document.body.classList.remove("live-turn-pick-mode");
+                document.body.classList.remove("zone-hints-visible");
+                viewGame.hidden = true;
+                viewDeck.hidden = false;
+                showToast("プレイ画面の初期化に失敗しました。ページを再読み込みしてお試しください。");
               });
-            } catch (err) {
-              console.error(err);
-              teardownDeckPileLayoutWatchers();
-              document.body.classList.remove("play-mode");
-              document.body.classList.remove("live-turn-pick-mode");
-              document.body.classList.remove("zone-hints-visible");
-              viewGame.hidden = true;
-              viewDeck.hidden = false;
-              showToast("プレイ画面の初期化に失敗しました。ページを再読み込みしてお試しください。");
-            }
           }, 0);
         });
       },
@@ -401,19 +456,32 @@ function startApp(viewDeck, viewGame, statusEl) {
 }
 
 function resumeSessionsAfterBoot(viewDeck, viewGame) {
+  sanitizeBootSessionStorage();
   window.setTimeout(function () {
-    tryRestoreVersusOnlineSession(function (payload) {
-      enterVersusPlay(viewDeck, viewGame, payload);
+    tryRestoreVersusOnlineSession(function () {
+      /* 起動時はプレイ画面へ入れない（ユーザーがロビー／プレイへ進む） */
     })
-      .then(function (restored) {
-        if (!restored && !readVersusOnlineSessionForResumeGate()) {
-          tryResumePlaySession(viewDeck, viewGame);
+      .then(function () {
+        try {
+          var pending =
+            typeof window !== "undefined" && window.__llocgVersusPendingLobbyRoom
+              ? String(window.__llocgVersusPendingLobbyRoom)
+              : "";
+          if (pending) {
+            showToast(
+              "ルーム " +
+                pending +
+                " の続きがあります。「簡易対戦」からロビーを開いて再接続してください。",
+              { duration: 8000 },
+            );
+          }
+        } catch (_) {
+          /* noop */
         }
+        window.__llocgVersusBootRestoreDone = true;
       })
       .catch(function () {
-        if (!readVersusOnlineSessionForResumeGate()) {
-          tryResumePlaySession(viewDeck, viewGame);
-        }
+        window.__llocgVersusBootRestoreDone = true;
       });
   }, 0);
 }
@@ -680,21 +748,6 @@ function wireCloudAuthBar() {
 
   onCloudUserChange((user) => {
     paintAuthBar(user);
-    if (
-      user &&
-      appStarted &&
-      viewGame &&
-      viewGame.hidden &&
-      !document.body.classList.contains("play-mode") &&
-      !window.__llocgVersusPlayMounted &&
-      !window.__llocgVersusBootRestoreDone
-    ) {
-      tryRestoreVersusOnlineSession(function (payload) {
-        enterVersusPlay(viewDeck, viewGame, payload);
-      }).catch(function () {
-        /* noop */
-      });
-    }
   });
 }
 

@@ -4560,8 +4560,20 @@ export function initDeckBuilder(root, { onStartGame }) {
   });
   renderPresetSelect();
   renderCounts();
-  renderDeckList();
-  renderCardGrid();
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
+      try {
+        renderDeckList();
+      } catch (_) {
+        /* noop */
+      }
+      try {
+        scheduleRenderCardGrid();
+      } catch (_) {
+        /* noop */
+      }
+    });
+  });
   if (pendingBuilderUiRestoreScroll) {
     var s = pendingBuilderUiRestoreScroll;
     pendingBuilderUiRestoreScroll = null;

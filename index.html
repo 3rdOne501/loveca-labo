@@ -16,12 +16,23 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Loveca Labo" />
-    <meta name="loveca-build" content="2026051974" />
+    <meta name="loveca-build" content="2026051975" />
     <title>Loveca Labo</title>
     <!-- 万一以前のバージョンの Service Worker が登録された端末で取り残しが起きた場合に備え、
          先頭で SW 登録を一括解除する。SW 自体は本サイトでは使っていない。 -->
     <script>
       (function () {
+        try {
+          var u = new URL(location.href);
+          if (u.searchParams.has("recover")) {
+            sessionStorage.removeItem("llocg_play_resume_v1");
+            sessionStorage.removeItem("llocg_versus_online_session_v1");
+            localStorage.removeItem("llocg_versus_last_room_v1");
+            u.searchParams.delete("recover");
+            var q = u.searchParams.toString();
+            history.replaceState({}, "", u.pathname + (q ? "?" + q : "") + u.hash);
+          }
+        } catch (_) { /* noop */ }
         try {
           if ("serviceWorker" in navigator) {
             navigator.serviceWorker.getRegistrations().then(function (rs) {
@@ -1931,6 +1942,6 @@ python3 -m http.server 8080</pre>
         }
       }
     </script>
-    <script type="module" src="js/main.js?v=2026051974"></script>
+    <script type="module" src="js/main.js?v=2026051975"></script>
   </body>
 </html>

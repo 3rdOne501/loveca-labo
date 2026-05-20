@@ -607,27 +607,9 @@ export async function tryRestoreVersusOnlineSession(onEnterPlay) {
       rememberVersusRoomCode(match.roomCode);
       persistVersusOnlineSession(match.roomCode, myRole, !!saved.inPlay);
 
-      if (match.status !== "playing" || !saved.inPlay) {
-        markVersusPendingLobbyRoom(match.roomCode);
-        return false;
-      }
-      if (!versusMatchHasOpponent(match)) {
-        markVersusPendingLobbyRoom(match.roomCode);
-        return false;
-      }
-      var payload = buildVersusOnlineEnterPayload(match, myRole);
-      if (!deckHasCards(payload.deckMap)) {
-        markVersusPendingLobbyRoom(match.roomCode);
-        return false;
-      }
-      persistVersusOnlineSession(match.roomCode, myRole, true);
-      if (typeof onEnterPlay === "function") {
-        window.setTimeout(function () {
-          onEnterPlay(payload);
-          showToast("オンライン対戦ルーム " + match.roomCode + " に復帰しました");
-        }, 0);
-      }
-      return true;
+      markVersusPendingLobbyRoom(match.roomCode);
+      persistVersusOnlineSession(match.roomCode, myRole, false);
+      return false;
     } finally {
       try {
         if (typeof window !== "undefined") window.__llocgVersusBootRestoreDone = true;
