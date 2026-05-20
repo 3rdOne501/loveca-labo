@@ -82,6 +82,7 @@ import {
   canRoleActInVersus,
   claimVersusFirstFromSuccessLive,
   clearVersusEffectHighlight,
+  completeVersusOpeningMulligan,
   concedeVersusMatch,
   endVersusTurn,
   evaluateVersusWinFromCounts,
@@ -11689,6 +11690,12 @@ export function mountSimulator(
     liveTurnStartGlowArmed = canRoleActInVersus(m, versusSession.myRole);
   }
 
+  function isVersusOpeningMulliganPhase(remoteMatch) {
+    if (!remoteMatch) return false;
+    var ph = normalizeVersusPhase(remoteMatch);
+    return ph === "firstMulligan" || ph === "secondMulligan";
+  }
+
   function syncVersusMatchBar(remoteMatch) {
     if (!versusSession) return;
     var metaEl = document.getElementById("versus-opp-board-meta");
@@ -11747,24 +11754,13 @@ export function mountSimulator(
         turnBadge.classList.toggle("versus-turn-badge--mine", mineTurn && !isLive);
         turnBadge.classList.toggle("versus-turn-badge--opp", !mineTurn && !isLive);
       }
-      var mullBtn = $("btn-mulligan-execute");
-      var showEndTurn = !isLive && (phase === "firstNormal" || phase === "secondNormal");
+      var showEndTurn =
+        !isLive &&
+        (phase === "firstNormal" || phase === "secondNormal");
       if (endTurnBtn) {
-        endTurnBtn.hidden = !showEndTurn;
-        endTurnBtn.disabled = !mineTurn;
-        endTurnBtn.classList.toggle(
-          "btn--versus-end-glow",
-          showEndTurn && mineTurn && liveTurnStartGlowArmed,
-        );
+        endTurnBtn.hidden = true;
       }
-      if (mullBtn && showEndTurn) {
-        mullBtn.hidden = false;
-        mullBtn.disabled = !mineTurn;
-        mullBtn.textContent = "ターン終了";
-        mullBtn.classList.toggle("btn--versus-end-glow", mineTurn && liveTurnStartGlowArmed);
-      } else if (mullBtn && versusSession.mode === "online") {
-        mullBtn.hidden = true;
-      }
+      void showEndTurn;
       updateVersusTurnGlow(m);
       document.body.classList.toggle("versus-my-turn", mineTurn && !isLive);
       document.body.classList.toggle("versus-opponent-turn", !mineTurn && !isLive);
@@ -11887,15 +11883,18 @@ export function mountSimulator(
       }
     }
     if (!document.getElementById("versus-phase-live-banner")) {
-      var mount = document.getElementById("mount-mobile-live-prob-inline");
-      if (!mount) mount = document.getElementById("deck-live-sim-summary");
-      if (mount && mount.parentElement) {
+      var mount = document.getElementById("versus-phase-live-banner-mount");
+      if (!mount) {
+        mount = document.getElementById("mount-mobile-live-prob-inline");
+      }
+      if (mount) {
         var banner = document.createElement("div");
         banner.id = "versus-phase-live-banner";
         banner.className = "versus-phase-live-banner";
         banner.hidden = true;
         banner.setAttribute("aria-live", "polite");
-        mount.parentElement.insertBefore(banner, mount);
+        mount.appendChild(banner);
+        mount.hidden = false;
       }
     }
     if (!document.getElementById("versus-opp-effect-label")) {
@@ -11912,9 +11911,11 @@ export function mountSimulator(
 
   function syncVersusPhaseLiveBanner(remoteMatch) {
     ensureVersusUiChrome();
+    var mount = document.getElementById("versus-phase-live-banner-mount");
     var el = document.getElementById("versus-phase-live-banner");
     if (!el || !versusOnlineActive()) {
       if (el) el.hidden = true;
+      if (mount) mount.hidden = true;
       return;
     }
     var m = remoteMatch || versusSession.remoteMatch;
@@ -11931,6 +11932,7 @@ export function mountSimulator(
       el.textContent = flowDesc || "ライブフェイズです";
       el.classList.add("versus-phase-live-banner--live");
       el.hidden = false;
+      if (mount) mount.hidden = false;
       return;
     }
     if (mineTurn) {
@@ -11941,6 +11943,7 @@ export function mountSimulator(
       el.classList.add("versus-phase-live-banner--opp");
     }
     el.hidden = false;
+    if (mount) mount.hidden = false;
   }
 
   function showVersusFirstPlayerBanner(remoteMatch) {
@@ -12071,6 +12074,36 @@ export function mountSimulator(
     var liveStep = getVersusLiveStep(remoteMatch);
     var mineAct =
       versusSession.myRole && canRoleActInVersus(remoteMatch, versusSession.myRole);
+    var fp = remoteMatch.firstPlayerRole;
+    var mineFirst = !!(fp && versusSession.myRole === fp);
+
+    if (phase === "firstMulligan" || phase === "secondMulligan") {
+      if (mineAct) {
+        state.awaitingTurnStart = true;
+        openingMulliganExecuteUsed = false;
+        state.mulliganSelectedIds = [];
+      } else {
+        state.awaitingTurnStart = false;
+      }
+    } else if (phase === "firstNormal" && remoteMatch.turnNumber === 1) {
+      if (mineAct && mineFirst) {
+        state.awaitingTurnStart = true;
+        openingMulliganExecuteUsed = true;
+      } else if (!mineAct) {
+        state.awaitingTurnStart = false;
+      }
+    } else if (phase === "secondNormal" && remoteMatch.turnNumber === 1) {
+      if (mineAct && !mineFirst) {
+        state.awaitingTurnStart = true;
+        openingMulliganExecuteUsed = true;
+      } else if (!mineAct) {
+        state.awaitingTurnStart = false;
+      }
+    } else if (!(phase === "firstNormal" && remoteMatch.turnNumber === 1 && state.awaitingTurnStart)) {
+      if (phase !== "firstNormal" || remoteMatch.turnNumber > 1) {
+        state.awaitingTurnStart = false;
+      }
+    }
 
     if (phase === "live") {
       var autoKey = buildVersusPhaseAutoKey(remoteMatch);
@@ -12102,15 +12135,33 @@ export function mountSimulator(
       }
     }
 
-    if (!(phase === "firstNormal" && remoteMatch.turnNumber === 1 && state.awaitingTurnStart)) {
-      if (phase !== "firstNormal" || remoteMatch.turnNumber > 1) {
-        state.awaitingTurnStart = false;
-      }
-    }
-
     syncVersusPhaseLiveBanner(remoteMatch);
     showVersusFirstPlayerBanner(remoteMatch);
     syncVersusOpponentEffectUi(remoteMatch);
+  }
+
+  function doVersusMulliganExecuteClick() {
+    if (!versusSession || versusSession.mode !== "online" || !versusSession.myRole) return;
+    if (state.versusMatchEnded) return;
+    var m = versusSession.remoteMatch;
+    if (!isVersusOpeningMulliganPhase(m)) {
+      showToast("開幕マリガンフェイズではありません");
+      return;
+    }
+    if (!canRoleActInVersus(m, versusSession.myRole)) {
+      showToast("あなたのマリガン順番ではありません");
+      return;
+    }
+    if (!state.awaitingTurnStart || openingMulliganExecuteUsed) return;
+    doMulliganExecute();
+    completeVersusOpeningMulligan(versusSession.roomCode, versusSession.myRole)
+      .then(function () {
+        showToast("マリガンを確定しました");
+        render();
+      })
+      .catch(function (err) {
+        showToast(String(err.message || err));
+      });
   }
 
   function doVersusEndTurnClick() {
@@ -12121,9 +12172,12 @@ export function mountSimulator(
       showToast("あなたのターンではありません");
       return;
     }
+    if (state.awaitingTurnStart) {
+      showToast("「ターン開始」でドローしてからターン終了してください");
+      return;
+    }
     endVersusTurn(versusSession.roomCode, versusSession.myRole)
       .then(function () {
-        openingMulliganExecuteUsed = true;
         state.awaitingTurnStart = false;
         showToast("ターンを終了しました");
         render();
@@ -12182,6 +12236,7 @@ export function mountSimulator(
       showVersusEndBanner(remoteMatch);
       document.body.classList.remove("versus-my-turn", "versus-opponent-turn");
     }
+    render();
   }
 
   function scheduleVersusBoardPublicSync() {
@@ -12602,6 +12657,23 @@ export function mountSimulator(
     if (versusOnlineActive() && versusSession.remoteMatch) {
       var vPh = normalizeVersusPhase(versusSession.remoteMatch);
       if (vPh !== "live") {
+        if (
+          isVersusOpeningMulliganPhase(versusSession.remoteMatch) &&
+          state.awaitingTurnStart === true &&
+          !openingMulliganExecuteUsed &&
+          canRoleActInVersus(versusSession.remoteMatch, versusSession.myRole)
+        ) {
+          body.classList.remove(
+            "flow-hint--live-turn-start",
+            "flow-hint--live-to-area",
+            "flow-hint--live-begin",
+            "flow-hint--turn-start",
+            "flow-hint--turn-start-yell",
+            "flow-hint--live-success",
+          );
+          body.classList.add("flow-hint--mulligan-execute");
+          return;
+        }
         body.classList.remove(
           "flow-hint--live-turn-start",
           "flow-hint--live-to-area",
@@ -12765,41 +12837,54 @@ export function mountSimulator(
 
   /** マリガンのヒント文言・実行ボタンを state に合わせる */
   function syncMulliganUi() {
-    var versusEndTurnBtn =
+    var remoteMatch = versusOnlineActive() ? versusSession.remoteMatch : null;
+    var versusMulliganPhase = isVersusOpeningMulliganPhase(remoteMatch);
+    var versusNormalPhase =
       versusOnlineActive() &&
-      versusSession.remoteMatch &&
-      normalizeVersusPhase(versusSession.remoteMatch) !== "live";
-    var versusOpening =
-      versusEndTurnBtn &&
-      normalizeVersusPhase(versusSession.remoteMatch) === "firstNormal" &&
-      versusSession.remoteMatch.turnNumber === 1 &&
-      state.awaitingTurnStart === true;
-    var showMulligan =
-      versusOpening ||
-      (!versusEndTurnBtn && state.awaitingTurnStart === true && !openingMulliganExecuteUsed);
+      remoteMatch &&
+      (normalizeVersusPhase(remoteMatch) === "firstNormal" ||
+        normalizeVersusPhase(remoteMatch) === "secondNormal");
+    var mineAct =
+      versusOnlineActive() &&
+      remoteMatch &&
+      canRoleActInVersus(remoteMatch, versusSession.myRole);
+    var showMulligan = versusMulliganPhase
+      ? mineAct && state.awaitingTurnStart === true && !openingMulliganExecuteUsed
+      : state.awaitingTurnStart === true && !openingMulliganExecuteUsed;
+    var showVersusEndTurn =
+      versusNormalPhase && mineAct && state.awaitingTurnStart !== true;
     const hint = $("hand-mulligan-hint");
     if (hint) {
-      if (versusEndTurnBtn && !versusOpening) {
+      if (versusNormalPhase && mineAct) {
         hint.hidden = true;
+      } else if (versusMulliganPhase && mineAct) {
+        hint.hidden = false;
+        hint.textContent =
+          "マリガンするカードを選んでから「マリガン実行」。先攻→後攻の順に確定し、先攻の通常フェイズへ進みます。";
       } else {
         hint.hidden = !showMulligan;
-        if (versusOpening) {
-          hint.textContent =
-            "マリガンするカードを選んでから「ターン終了」。先攻は相手の開幕、後攻はライブターンへ進みます。";
+        if (!versusOnlineActive()) {
+          hint.innerHTML =
+            "<strong>ターン開始まで:</strong> 戻したいカードに<strong>チェック</strong>、「<strong>マリガン実行</strong>」で選択枚を山札に戻しシャッフルして同じ枚数をドローします。<strong>0枚チェックでも実行できます</strong>（そのときはシャッフル・追加ドローはしません）。チェックはカード中央付近の小さな操作域です。タップしづらいときはカードを少し上下に動かしてから再度タップしてください。";
         }
       }
     }
     const btn = $("btn-mulligan-execute");
     if (btn) {
-      if (versusEndTurnBtn) {
+      if (showMulligan) {
         btn.hidden = false;
-        btn.disabled = !canRoleActInVersus(versusSession.remoteMatch, versusSession.myRole);
+        btn.disabled = false;
+        btn.textContent = "マリガン実行";
+        btn.classList.remove("btn--versus-end-glow");
+      } else if (showVersusEndTurn) {
+        btn.hidden = false;
+        btn.disabled = false;
         btn.textContent = "ターン終了";
-        btn.classList.toggle(
-          "btn--versus-end-glow",
-          canRoleActInVersus(versusSession.remoteMatch, versusSession.myRole) &&
-            liveTurnStartGlowArmed,
-        );
+        btn.classList.toggle("btn--versus-end-glow", liveTurnStartGlowArmed);
+      } else if (versusOnlineActive()) {
+        btn.hidden = true;
+        btn.disabled = true;
+        btn.classList.remove("btn--versus-end-glow");
       } else {
         btn.hidden = !showMulligan;
         btn.disabled = !showMulligan;
@@ -13530,6 +13615,16 @@ export function mountSimulator(
   }
 
   function doTurnPhaseStart() {
+    if (versusOnlineActive() && versusSession.remoteMatch) {
+      if (isVersusOpeningMulliganPhase(versusSession.remoteMatch)) {
+        showToast("開幕マリガン中です");
+        return;
+      }
+      if (!canRoleActInVersus(versusSession.remoteMatch, versusSession.myRole)) {
+        showToast("あなたのターンではありません");
+        return;
+      }
+    }
     if (!isPlayManualMode()) {
       var mand = collectPendingTriggeredEffects(["toujyou", "live_start", "live_success"]).filter(function (p) {
         return p.mandatory;
@@ -13682,21 +13777,11 @@ export function mountSimulator(
         doMulliganExecute();
         return;
       }
-      if (
-        vPhase === "firstNormal" ||
-        vPhase === "secondNormal" ||
-        state.awaitingTurnStart === true
-      ) {
-        if (
-          vPhase === "firstNormal" &&
-          versusSession.remoteMatch.turnNumber === 1 &&
-          state.awaitingTurnStart === true &&
-          state.mulliganSelectedIds &&
-          state.mulliganSelectedIds.length
-        ) {
-          doMulliganExecute();
-          return;
-        }
+      if (vPhase === "firstMulligan" || vPhase === "secondMulligan") {
+        doVersusMulliganExecuteClick();
+        return;
+      }
+      if (vPhase === "firstNormal" || vPhase === "secondNormal") {
         doVersusEndTurnClick();
         return;
       }

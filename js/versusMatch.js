@@ -13,7 +13,7 @@ const ROOM_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 /** @typedef {'host'|'guest'} VersusRole */
 /** @typedef {'waiting'|'lobby'|'playing'|'ended'} VersusMatchStatus */
-/** @typedef {'firstNormal'|'secondNormal'|'live'} VersusPhase */
+/** @typedef {'firstMulligan'|'secondMulligan'|'firstNormal'|'secondNormal'|'live'} VersusPhase */
 /** @typedef {'opening'|'main'} VersusPhaseLegacy */
 /** @typedef {'set'|'perf'|'judgment'|'successFx'} VersusLiveStep */
 
@@ -309,7 +309,7 @@ export async function startVersusMatch(roomCode) {
     turnNumber: 1,
     hostLastAction: null,
     guestLastAction: null,
-    versusPhase: "firstNormal",
+    versusPhase: "firstMulligan",
     liveStep: null,
     hostLiveSetDone: false,
     guestLiveSetDone: false,
@@ -337,12 +337,20 @@ export function versusSecondPlayerRole(match) {
 export function normalizeVersusPhase(match) {
   if (!match) return "firstNormal";
   const p = match.versusPhase;
-  if (p === "firstNormal" || p === "secondNormal" || p === "live") return p;
+  if (
+    p === "firstMulligan" ||
+    p === "secondMulligan" ||
+    p === "firstNormal" ||
+    p === "secondNormal" ||
+    p === "live"
+  ) {
+    return p;
+  }
   const fp = match.firstPlayerRole;
   const ap = match.activePlayerRole;
   if (p === "opening") {
-    if (ap && fp && ap !== fp) return "secondNormal";
-    return "firstNormal";
+    if (ap && fp && ap !== fp) return "secondMulligan";
+    return "firstMulligan";
   }
   if (p === "main") {
     if (ap && fp && ap === fp) return "firstNormal";
@@ -383,6 +391,18 @@ export function describeVersusFlowForRole(match, myRole) {
   const active = match.activePlayerRole;
   const mineActive = active === myRole;
 
+  if (phase === "firstMulligan") {
+    if (mineActive && mineFirst) return "開幕マリガン（先攻・あなた）";
+    if (!mineActive && mineFirst) return "開幕マリガン（先攻・相手）";
+    if (mineActive && !mineFirst) return "開幕マリガン（先攻側・あなた）";
+    return "開幕マリガン（先攻・相手）";
+  }
+  if (phase === "secondMulligan") {
+    if (mineActive && !mineFirst) return "開幕マリガン（後攻・あなた）";
+    if (!mineActive && !mineFirst) return "開幕マリガン（後攻・相手）";
+    if (mineActive && mineFirst) return "開幕マリガン（後攻側・あなた）";
+    return "開幕マリガン（後攻・相手）";
+  }
   if (phase === "firstNormal") {
     if (mineActive && mineFirst) return "先攻通常フェイズ（あなたの手番）";
     if (mineActive && !mineFirst) return "先攻通常フェイズ（あなたの手番・先攻側）";
@@ -497,7 +517,57 @@ export async function advanceVersusTurn(roomCode, role) {
 }
 
 /**
- * ターン終了（開幕・メイン・ライブ遷移）
+ * 開幕マリガン確定（先攻→後攻→先攻通常へ）
+ * @param {string} roomCode
+ * @param {VersusRole} role
+ */
+export async function completeVersusOpeningMulligan(roomCode, role) {
+  const user = requireUser();
+  const { api } = fs();
+  const ref = matchRef(roomCode);
+  let snap;
+  try {
+    snap = await api.getDoc(ref);
+  } catch (err) {
+    throw new Error(formatVersusFirestoreError(err));
+  }
+  if (!snap.exists()) throw new Error("ルームが見つかりません。");
+  const data = /** @type {VersusMatchDoc} */ (snap.data());
+  if (data.status !== "playing") throw new Error("対戦中ではありません。");
+  if (!canRoleActInVersus(data, role)) {
+    throw new Error("あなたのマリガン順番ではありません。");
+  }
+  const fp = data.firstPlayerRole;
+  const second = versusSecondPlayerRole(data);
+  if (!fp || !second) throw new Error("先攻が未設定です。");
+  const actionField = role === "host" ? "hostLastAction" : "guestLastAction";
+  const phase = normalizeVersusPhase(data);
+  const now = new Date().toISOString();
+  /** @type {Record<string, unknown>} */
+  const patch = { updatedAt: now };
+  patch[actionField] = "マリガン完了";
+
+  if (phase === "firstMulligan") {
+    if (role !== fp) throw new Error("先攻プレイヤーのマリガンです。");
+    patch.versusPhase = "secondMulligan";
+    patch.activePlayerRole = second;
+  } else if (phase === "secondMulligan") {
+    if (role !== second) throw new Error("後攻プレイヤーのマリガンです。");
+    patch.versusPhase = "firstNormal";
+    patch.activePlayerRole = fp;
+  } else {
+    throw new Error("マリガンフェイズではありません。");
+  }
+  try {
+    await api.updateDoc(ref, patch);
+  } catch (err) {
+    throw new Error(formatVersusFirestoreError(err));
+  }
+  void user;
+}
+
+/**
+ * ターン終了（通常フェイズ・ライブ遷移）
  * @param {string} roomCode
  * @param {VersusRole} role
  */
@@ -529,6 +599,9 @@ export async function endVersusTurn(roomCode, role) {
 
   if (phase === "live") {
     throw new Error("ライブフェイズ中です。セット完了・ライブ開始・パフォーマンス完了で進めてください。");
+  }
+  if (phase === "firstMulligan" || phase === "secondMulligan") {
+    throw new Error("開幕マリガン中です。「マリガン実行」で確定してください。");
   }
 
   if (phase === "firstNormal") {
