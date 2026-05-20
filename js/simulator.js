@@ -110,7 +110,6 @@ import {
   finishVersusLiveJudgment,
 } from "./versusMatch.js";
 import {
-  assemblePublicBoardFromMatchFields,
   boardToVersusPublicFromState,
   fingerprintVersusPublicBoard,
   getOpponentBoardPublic,
@@ -408,7 +407,6 @@ export function mountSimulator(
   deckMap,
   { onBackToDeck, deckRoleLabels, resumeFromStorage, versusMatch } = {},
 ) {
-  if (versusMatch && versusMatch.spectatorMode) resumeFromStorage = false;
   if (typeof Sortable === "undefined") {
     throw new Error(
       "Sortable が未定義です。index.html の CDN（sortablejs）が読み込めるか（オフライン・ブロッカー）を確認してください。",
@@ -1509,20 +1507,11 @@ export function mountSimulator(
       playerLabel: vu ? vu.displayName || vu.email || "あなた" : "あなた",
     };
   } else if (versusMatch && versusMatch.mode === "online" && versusMatch.roomCode && versusMatch.myRole) {
-    var vRole =
-      versusMatch.myRole === "spectator"
-        ? "spectator"
-        : versusMatch.myRole === "guest"
-          ? "guest"
-          : "host";
     versusSession = {
       mode: "online",
       roomCode: String(versusMatch.roomCode),
-      myRole: vRole,
-      opponentName:
-        vRole === "spectator"
-          ? "観戦"
-          : versusOpponentLabel(versusMatch.match, vRole),
+      myRole: versusMatch.myRole === "guest" ? "guest" : "host",
+      opponentName: versusOpponentLabel(versusMatch.match, versusMatch.myRole),
       remoteMatch: versusMatch.match || null,
     };
   }
@@ -1561,30 +1550,24 @@ export function mountSimulator(
   if (!versusSession) {
     state.playVersusMode = false;
   }
-  var isSpectatorSession = !!(versusSession && versusSession.myRole === "spectator");
   if (versusSession) {
     state.playVersusMode = true;
     if (versusSession.myRole) state.versusMyRole = versusSession.myRole;
     document.body.classList.add("play-versus-mode");
-    if (isSpectatorSession) document.body.classList.add("play-spectator-mode");
     var versusChromeEl = document.getElementById("versus-play-chrome");
     if (versusChromeEl) versusChromeEl.hidden = versusSession.mode !== "local";
     var concedeBtn = document.getElementById("btn-versus-concede");
     var lobbyBtn = document.getElementById("btn-versus-lobby");
     var endTurnBtn = document.getElementById("btn-versus-end-turn");
     var oppSlWrap = document.getElementById("versus-opp-sl-controls");
-    if (concedeBtn) concedeBtn.hidden = isSpectatorSession || versusSession.mode !== "online";
+    if (concedeBtn) concedeBtn.hidden = versusSession.mode !== "online";
     if (lobbyBtn) lobbyBtn.hidden = versusSession.mode !== "online";
-    if (endTurnBtn) endTurnBtn.hidden = isSpectatorSession || versusSession.mode !== "online";
+    if (endTurnBtn) endTurnBtn.hidden = versusSession.mode !== "online";
     if (oppSlWrap) oppSlWrap.hidden = true;
     if (concedeBtn) concedeBtn.classList.add("btn--versus-concede-main");
     var oppBoardWrap = document.getElementById("versus-opponent-board-wrap");
     if (oppBoardWrap) oppBoardWrap.hidden = versusSession.mode !== "online";
-    var specChrome = document.getElementById("versus-spectator-chrome");
-    if (specChrome) specChrome.hidden = !isSpectatorSession;
-    var gameBoardEl = root.querySelector(".game-board");
-    if (gameBoardEl) gameBoardEl.hidden = isSpectatorSession;
-    if (versusSession.mode === "online" && versusMatch && versusMatch.match && !isSpectatorSession) {
+    if (versusSession.mode === "online" && versusMatch && versusMatch.match) {
       versusBootstrapping = true;
       state.deckPileFacesDown = true;
       versusLastRematchSeq = Math.max(0, Math.floor(Number(versusMatch.match.rematchSeq) || 0));
@@ -1633,7 +1616,7 @@ export function mountSimulator(
       console.warn(resumeErr);
     }
   }
-  if (!resumedFromStorage && !isSpectatorSession) {
+  if (!resumedFromStorage) {
     state.deck = buildMainDeckInstances(activePlayDeckMap);
     if (versusSession && versusSession.mode === "online") {
       state.deckPileFacesDown = true;
@@ -11880,23 +11863,6 @@ export function mountSimulator(
     var turnBadge = document.getElementById("versus-turn-badge");
     var endTurnBtn = document.getElementById("btn-versus-end-turn");
     var m = remoteMatch || versusSession.remoteMatch || null;
-    if (versusSession.myRole === "spectator") {
-      if (turnBadge && m) {
-        turnBadge.hidden = false;
-        turnBadge.textContent = describeVersusFlowForRole(m, "spectator");
-        turnBadge.classList.remove("versus-turn-badge--mine", "versus-turn-badge--opp");
-      }
-      if (metaEl && m) {
-        metaEl.textContent =
-          "観戦 · ルーム " +
-          m.roomCode +
-          " · " +
-          (m.hostName || "ホスト") +
-          " vs " +
-          (m.guestName || "ゲスト未参加");
-      }
-      return;
-    }
     var mine = Array.isArray(state.successfulLiveArea) ? state.successfulLiveArea.length : 0;
     var opp = Math.max(0, Math.floor(Number(state.versusOpponentSuccessLiveCount) || 0));
     if (metaEl) {
@@ -12073,38 +12039,8 @@ export function mountSimulator(
   }
 
   function versusBlocksFreePlay() {
-    if (versusSession && versusSession.myRole === "spectator") return true;
     if (!versusOnlineActive() || !versusSession.myRole) return false;
     return !canRoleActInVersus(versusSession.remoteMatch, versusSession.myRole);
-  }
-
-  var spectatorViewSide = "host";
-
-  function applySpectatorBoardFromRemote(remoteMatch) {
-    if (!versusSession || versusSession.myRole !== "spectator" || !remoteMatch) return;
-    var pre = spectatorViewSide === "guest" ? "guest" : "host";
-    var board = assemblePublicBoardFromMatchFields(
-      /** @type {Record<string, unknown>} */ (remoteMatch),
-      pre,
-    );
-    var oppBoardWrap = document.getElementById("versus-opponent-board-wrap");
-    if (oppBoardWrap) oppBoardWrap.hidden = false;
-    var label =
-      (pre === "host" ? remoteMatch.hostName || "ホスト" : remoteMatch.guestName || "ゲスト") +
-      " の公開盤面";
-    renderVersusOpponentBoard(board, {
-      opponentName: label,
-      remoteMatch: remoteMatch,
-      myRole: "spectator",
-    });
-    var metaEl = document.getElementById("versus-opp-board-meta");
-    if (metaEl) {
-      metaEl.textContent =
-        "観戦 · ルーム " +
-        remoteMatch.roomCode +
-        " · " +
-        describeVersusFlowForRole(remoteMatch, "spectator");
-    }
   }
 
   function ensureVersusOverlayChrome() {
@@ -13057,17 +12993,6 @@ export function mountSimulator(
     if (!versusSession || versusSession.mode !== "online" || !versusSession.roomCode) return;
     if (versusMatchUnsub) return;
     versusBootstrapping = false;
-    if (versusSession.myRole === "spectator") {
-      versusMatchUnsub = subscribeVersusMatch(versusSession.roomCode, function (remoteMatch) {
-        applyRemoteVersusMatch(remoteMatch);
-      });
-      if (versusSession.remoteMatch) {
-        applySpectatorBoardFromRemote(versusSession.remoteMatch);
-        syncVersusMatchBar(versusSession.remoteMatch);
-        render();
-      }
-      return;
-    }
     versusPhaseAutoKey = buildVersusPhaseAutoKey(versusSession.remoteMatch);
     if (versusSession.remoteMatch) {
       applyVersusPhaseFromRemote(versusSession.remoteMatch);
@@ -13090,18 +13015,6 @@ export function mountSimulator(
 
   function applyRemoteVersusMatch(remoteMatch) {
     if (!versusSession || !remoteMatch) return;
-    if (versusSession.myRole === "spectator") {
-      versusSession.remoteMatch = remoteMatch;
-      if (versusBootstrapping) return;
-      applySpectatorBoardFromRemote(remoteMatch);
-      syncVersusMatchBar(remoteMatch);
-      if (remoteMatch.status === "ended") {
-        showVersusEndBanner(remoteMatch);
-        state.versusMatchEnded = true;
-      }
-      render();
-      return;
-    }
     var prevMatch = versusSession.remoteMatch;
     versusSession.remoteMatch = remoteMatch;
     syncVersusFirstPlayerSelect(remoteMatch);
@@ -13221,7 +13134,6 @@ export function mountSimulator(
     versusPhaseAutoKey = "";
     hideVersusOpponentBoard();
     document.body.classList.remove("play-versus-mode");
-    document.body.classList.remove("play-spectator-mode");
     var versusChromeEl = document.getElementById("versus-play-chrome");
     if (versusChromeEl) versusChromeEl.hidden = true;
     var concedeBtn = document.getElementById("btn-versus-concede");
@@ -13232,10 +13144,6 @@ export function mountSimulator(
     if (endTurnBtn) endTurnBtn.hidden = true;
     var oppSlWrap = document.getElementById("versus-opp-sl-controls");
     if (oppSlWrap) oppSlWrap.hidden = true;
-    var specChrome = document.getElementById("versus-spectator-chrome");
-    if (specChrome) specChrome.hidden = true;
-    var gameBoardEl = root.querySelector(".game-board");
-    if (gameBoardEl) gameBoardEl.hidden = false;
     document.body.classList.remove("versus-my-turn", "versus-opponent-turn");
   }
 
@@ -15803,33 +15711,6 @@ export function mountSimulator(
     doVersusEndTurnClick();
   });
 
-  document.getElementById("btn-spectator-view-host")?.addEventListener("click", function () {
-    spectatorViewSide = "host";
-    var bH = document.getElementById("btn-spectator-view-host");
-    var bG = document.getElementById("btn-spectator-view-guest");
-    if (bH) bH.setAttribute("aria-pressed", "true");
-    if (bG) bG.setAttribute("aria-pressed", "false");
-    if (versusSession && versusSession.remoteMatch) applySpectatorBoardFromRemote(versusSession.remoteMatch);
-  });
-  document.getElementById("btn-spectator-view-guest")?.addEventListener("click", function () {
-    spectatorViewSide = "guest";
-    var bH = document.getElementById("btn-spectator-view-host");
-    var bG = document.getElementById("btn-spectator-view-guest");
-    if (bH) bH.setAttribute("aria-pressed", "false");
-    if (bG) bG.setAttribute("aria-pressed", "true");
-    if (versusSession && versusSession.remoteMatch) applySpectatorBoardFromRemote(versusSession.remoteMatch);
-  });
-  document.getElementById("btn-versus-lobby-from-spectator")?.addEventListener("click", function () {
-    if (versusSession && versusSession.roomCode) {
-      persistVersusOnlineSession(versusSession.roomCode, "spectator", false);
-    }
-    if (typeof onBackToDeck === "function") {
-      onBackToDeck({ toVersusLobby: true });
-      var dlg = document.getElementById("dlg-versus-lobby");
-      if (dlg && typeof dlg.showModal === "function") dlg.showModal();
-    }
-  });
-
   $("btn-back-builder")?.addEventListener("click", () => {
     if (
       versusSession &&
@@ -16150,5 +16031,6 @@ export function mountSimulator(
     };
   } catch (_) {
     /* noop */
+  }
   }
 }

@@ -649,12 +649,6 @@ python3 -m http.server 8080</pre>
         <div id="versus-play-chrome" class="versus-play-chrome game-bar-row" hidden>
           <span id="versus-turn-badge" class="versus-turn-badge" hidden></span>
         </div>
-        <div id="versus-spectator-chrome" class="versus-spectator-chrome game-bar-row" hidden>
-          <span class="versus-spectator-chrome__label">観戦モード</span>
-          <button type="button" class="btn sm secondary" id="btn-spectator-view-host" aria-pressed="true">ホスト盤面</button>
-          <button type="button" class="btn sm secondary" id="btn-spectator-view-guest" aria-pressed="false">ゲスト盤面</button>
-          <button type="button" class="btn sm secondary" id="btn-versus-lobby-from-spectator">ロビーに戻る</button>
-        </div>
       </header>
 
       <div id="versus-opponent-board-wrap" class="versus-opponent-board" hidden aria-label="相手の公開盤面">
@@ -1872,7 +1866,6 @@ python3 -m http.server 8080</pre>
           <button type="button" class="btn secondary btn-versus-lobby-create" id="dlg-versus-create">ルームを作成</button>
           <button type="button" class="btn secondary btn-versus-lobby-join" id="dlg-versus-join">コードで参加</button>
           <button type="button" class="btn secondary" id="dlg-versus-ready">このデッキで準備完了</button>
-          <button type="button" class="btn primary btn-versus-lobby-spectate" id="dlg-versus-spectate" hidden>観戦画面へ</button>
           <button type="button" class="btn primary" id="dlg-versus-start" hidden>対戦開始（ホスト）</button>
           <button type="button" class="btn primary" id="dlg-versus-rejoin-room" hidden>ルームに入室</button>
           <button type="button" class="btn primary" id="dlg-versus-enter-play" hidden>プレイ画面へ</button>

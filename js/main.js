@@ -143,7 +143,6 @@ function resetPlayFromVersusLeave() {
   document.body.classList.remove(
     "play-mode",
     "play-versus-mode",
-    "play-spectator-mode",
     "live-turn-pick-mode",
     "live-stats-after-begin",
     "zone-hints-visible",
@@ -313,8 +312,7 @@ function hideAppBootLoading() {
 
 function enterVersusPlay(viewDeck, viewGame, payload) {
   const deckMap = normalizeDeckMapCounts(payload.deckMap || {});
-  const spectatorMode = payload.spectatorMode === true || payload.myRole === "spectator";
-  if (!spectatorMode && (!deckMap || !Object.keys(deckMap).length)) {
+  if (!deckMap || !Object.keys(deckMap).length) {
     showToast("対戦用デッキを読み込めませんでした");
     return;
   }
@@ -358,7 +356,6 @@ function enterVersusPlay(viewDeck, viewGame, payload) {
                     roomCode: payload.roomCode,
                     myRole: payload.myRole,
                     match: payload.match,
-                    spectatorMode: spectatorMode,
                   },
             resumeFromStorage: !!payload.resumeFromStorage,
             onBackToDeck(opts) {
@@ -367,7 +364,7 @@ function enterVersusPlay(viewDeck, viewGame, payload) {
                 payload.mode === "online" &&
                 payload.roomCode &&
                 payload.myRole &&
-                payload.myRole !== "spectator";
+                !!payload.myRole;
               if (opts && opts.leaveRoom === true) {
                 teardownVersusModeSession();
                 clearVersusOnlineSession();

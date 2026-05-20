@@ -253,32 +253,6 @@ body::before {
   color: #062a18;
   font-weight: 700;
 }
-.btn-versus-lobby-spectate {
-  background: linear-gradient(145deg, #b88cff, #7c4dff);
-  border-color: rgba(220, 190, 255, 0.6);
-  color: #fff;
-  font-weight: 800;
-}
-.versus-spectator-chrome {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.35rem 0.55rem;
-  padding: 0.2rem 0;
-}
-.versus-spectator-chrome__label {
-  font-weight: 800;
-  font-size: 0.82rem;
-  color: rgba(200, 180, 255, 0.95);
-  letter-spacing: 0.06em;
-}
-body.play-spectator-mode .game-board {
-  display: none !important;
-}
-body.play-spectator-mode .versus-opponent-board {
-  flex: 1 1 auto;
-  max-height: none;
-}
 .cloud-auth-bar {
   display: inline-flex;
   align-items: center;
