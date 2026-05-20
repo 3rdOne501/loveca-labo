@@ -484,6 +484,12 @@ export function isVersusTurnForRole(match, role) {
   return canRoleActInVersus(match, role);
 }
 
+/** @param {VersusMatchDoc|null|undefined} match */
+export function versusBothLiveSetDone(match) {
+  if (!match) return false;
+  return match.hostLiveSetDone === true && match.guestLiveSetDone === true;
+}
+
 /** @param {VersusMatchDoc|null} match @param {VersusRole} myRole */
 export function versusOpponentLastAction(match, myRole) {
   if (!match || !myRole) return null;
@@ -698,9 +704,15 @@ export async function reportVersusLiveSetComplete(roomCode, role) {
 
   if (role === fp) {
     patch.activePlayerRole = second;
-  } else if (role === second) {
-    patch.liveStep = "perf";
-    patch.activePlayerRole = fp;
+  } else {
+    const hostDone = role === "host" ? true : data.hostLiveSetDone === true;
+    const guestDone = role === "guest" ? true : data.guestLiveSetDone === true;
+    if (hostDone && guestDone) {
+      patch.liveStep = "perf";
+      patch.activePlayerRole = fp;
+    } else if (fp) {
+      patch.activePlayerRole = fp;
+    }
   }
   try {
     await api.updateDoc(ref, patch);

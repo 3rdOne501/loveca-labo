@@ -941,6 +941,34 @@ body.play-versus-mode #view-game.view-game--versus {
     0 0 32px rgba(255, 60, 60, 0.55);
   white-space: nowrap;
 }
+.versus-turn-end-overlay {
+  position: absolute;
+  left: 50%;
+  top: 30%;
+  transform: translate(-50%, -50%);
+  z-index: 221;
+  pointer-events: none;
+  padding: 1rem 1.8rem;
+  border-radius: var(--radius-md, 8px);
+  background: rgba(12, 18, 32, 0.88);
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  box-shadow:
+    0 0 48px rgba(255, 255, 255, 0.35),
+    0 8px 32px rgba(0, 0, 0, 0.5);
+}
+.versus-turn-end-overlay__text {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 6vw, 2.75rem);
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: #ffffff;
+  text-shadow:
+    0 0 18px rgba(255, 255, 255, 0.95),
+    0 0 36px rgba(200, 220, 255, 0.65),
+    0 0 56px rgba(140, 180, 255, 0.45);
+  white-space: nowrap;
+}
 .versus-opp-action-feed {
   position: fixed;
   right: 0.65rem;

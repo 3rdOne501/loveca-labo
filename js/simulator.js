@@ -103,6 +103,7 @@ import {
   subscribeVersusMatch,
   versusOpponentLabel,
   versusOpponentLastAction,
+  versusBothLiveSetDone,
   versusSecondPlayerRole,
 } from "./versusMatch.js";
 import {
@@ -1530,6 +1531,9 @@ export function mountSimulator(
   var versusRematchPrepTimer = 0;
   var versusConcedeOverlayTimer = 0;
   var versusFirstPlayerBannerShownForSeq = -1;
+  if (!versusSession) {
+    state.playVersusMode = false;
+  }
   if (versusSession) {
     state.playVersusMode = true;
     if (versusSession.myRole) state.versusMyRole = versusSession.myRole;
@@ -11906,6 +11910,48 @@ export function mountSimulator(
       feed.setAttribute("aria-live", "polite");
       viewGame.appendChild(feed);
     }
+    if (!document.getElementById("versus-turn-end-overlay") && viewGame) {
+      var turnEnd = document.createElement("div");
+      turnEnd.id = "versus-turn-end-overlay";
+      turnEnd.className = "versus-turn-end-overlay";
+      turnEnd.hidden = true;
+      turnEnd.setAttribute("aria-live", "assertive");
+      var turnEndP = document.createElement("p");
+      turnEndP.className = "versus-turn-end-overlay__text";
+      turnEndP.textContent = "ターン終了";
+      turnEnd.appendChild(turnEndP);
+      viewGame.appendChild(turnEnd);
+    }
+  }
+
+  var versusTurnEndOverlayTimer = 0;
+
+  function showVersusTurnEndOverlay() {
+    ensureVersusOverlayChrome();
+    var el = document.getElementById("versus-turn-end-overlay");
+    if (!el) return;
+    el.hidden = false;
+    if (versusTurnEndOverlayTimer) {
+      clearTimeout(versusTurnEndOverlayTimer);
+      versusTurnEndOverlayTimer = 0;
+    }
+    versusTurnEndOverlayTimer = window.setTimeout(function () {
+      versusTurnEndOverlayTimer = 0;
+      if (el) el.hidden = true;
+    }, 3200);
+  }
+
+  function versusLiveEaleDoneWithVerdict() {
+    if (state.liveStatsAfterBegin !== true) return false;
+    var bladeN = Math.max(0, Math.floor(sumBoardMemberBlades()));
+    var resN = Array.isArray(state.resolutionArea) ? state.resolutionArea.length : 0;
+    if (bladeN > 0 && resN < bladeN) return false;
+    return liveSimResolutionVerdictLocked();
+  }
+
+  function patchLocalVersusRemoteMatch(patch) {
+    if (!versusSession || !versusSession.remoteMatch || !patch) return;
+    versusSession.remoteMatch = Object.assign({}, versusSession.remoteMatch, patch);
   }
 
   function syncVersusFirstPlayerSelect(remoteMatch) {
@@ -12232,11 +12278,39 @@ export function mountSimulator(
   }
 
   function endVersusLiveSetComplete() {
+    var hadVerdictBefore = versusLiveEaleDoneWithVerdict();
     reportVersusLiveSetComplete(versusSession.roomCode, versusSession.myRole)
       .then(function () {
         state.liveTurnPickMode = false;
         state.liveTurnSelectedIds = [];
-        showToast("ライブカードセットを完了しました（相手のセットを待機）");
+        var m = versusSession.remoteMatch;
+        var fp = m && m.firstPlayerRole;
+        var second = m ? versusSecondPlayerRole(m) : null;
+        var mineSecond = !!(second && versusSession.myRole === second);
+        if (mineSecond && fp) {
+          patchLocalVersusRemoteMatch({
+            guestLiveSetDone:
+              versusSession.myRole === "guest" ? true : m.guestLiveSetDone,
+            hostLiveSetDone:
+              versusSession.myRole === "host" ? true : m.hostLiveSetDone,
+          });
+          if (versusBothLiveSetDone(versusSession.remoteMatch)) {
+            patchLocalVersusRemoteMatch({
+              liveStep: "perf",
+              activePlayerRole: fp,
+            });
+            if (hadVerdictBefore) {
+              showToast("セット完了。先攻のパフォーマンスフェイズへ");
+            } else {
+              showToast("ライブカードセット完了。先攻のパフォーマンスへ");
+            }
+            applyVersusPhaseFromRemote(versusSession.remoteMatch);
+          } else {
+            showToast("ライブカードセットを完了しました（先攻のセットを待機）");
+          }
+        } else {
+          showToast("ライブカードセットを完了しました（相手のセットを待機）");
+        }
         render();
       })
       .catch(function (err) {
@@ -12287,7 +12361,15 @@ export function mountSimulator(
   }
 
   function applyVersusPhaseFromRemote(remoteMatch) {
-    if (!versusOnlineActive() || versusBootstrapping) return;
+    if (
+      !versusSession ||
+      versusSession.mode !== "online" ||
+      versusBootstrapping ||
+      !remoteMatch ||
+      remoteMatch.status !== "playing"
+    ) {
+      return;
+    }
     var phase = normalizeVersusPhase(remoteMatch);
     var liveStep = getVersusLiveStep(remoteMatch);
     var mineAct =
@@ -12350,17 +12432,35 @@ export function mountSimulator(
             /* noop */
           }
         }
+      } else if (liveStep === "set" && !mineAct) {
+        if (state.liveTurnPickMode) {
+          state.liveTurnPickMode = false;
+          state.liveTurnSelectedIds = [];
+        }
       } else if (liveStep !== "set" || !mineAct) {
-        if (state.liveTurnPickMode && (liveStep !== "set" || !mineAct)) {
+        if (state.liveTurnPickMode) {
           state.liveTurnPickMode = false;
           state.liveTurnSelectedIds = [];
         }
       }
-      if (liveStep === "perf" && !mineAct && state.liveStatsAfterBegin) {
+      if (liveStep === "perf" && mineAct) {
+        if (versusLiveEaleDoneWithVerdict()) {
+          liveTurnStartGlowArmed = true;
+        } else if (versusLiveSlotsHaveCards() && !state.liveStatsAfterBegin) {
+          liveTurnStartGlowArmed = true;
+        }
+      } else if (liveStep === "successFx" && !mineAct) {
         resetVersusLocalLiveHandoff();
       }
-      if (liveStep === "successFx" && !mineAct) {
-        resetVersusLocalLiveHandoff();
+      if (
+        liveStep === "perf" &&
+        versusBothLiveSetDone(remoteMatch) &&
+        mineAct &&
+        mineFirst &&
+        !state.liveStatsAfterBegin &&
+        !versusLiveSlotsHaveCards()
+      ) {
+        showToast("パフォーマンスフェイズです。ライブ開始から進めてください。");
       }
     } else {
       if (state.liveTurnPickMode && !state.liveStatsAfterBegin) {
@@ -12418,12 +12518,40 @@ export function mountSimulator(
       showToast("あなたのターンではありません");
       return;
     }
+    var mBefore = versusSession.remoteMatch;
+    var phaseBefore = mBefore ? normalizeVersusPhase(mBefore) : "";
+    var fp = mBefore && mBefore.firstPlayerRole;
+    var second = mBefore ? versusSecondPlayerRole(mBefore) : null;
     endVersusTurn(versusSession.roomCode, versusSession.myRole)
       .then(function () {
+        showVersusTurnEndOverlay();
         versusNormalAutoKey = "";
         state.awaitingTurnStart = false;
         liveTurnStartGlowArmed = false;
-        showToast("ターンを終了しました");
+        if (mBefore && fp && second) {
+          if (phaseBefore === "firstNormal" && versusSession.myRole === fp) {
+            patchLocalVersusRemoteMatch({
+              versusPhase: "secondNormal",
+              activePlayerRole: second,
+            });
+          } else if (phaseBefore === "secondNormal" && versusSession.myRole === second) {
+            patchLocalVersusRemoteMatch({
+              versusPhase: "live",
+              liveStep: "set",
+              activePlayerRole: fp,
+              hostLiveSetDone: false,
+              guestLiveSetDone: false,
+              hostPerfDone: false,
+              guestPerfDone: false,
+            });
+            showToast("ライブフェイズへ。先攻はライブカードセットから");
+          }
+          if (versusSession.remoteMatch) {
+            applyVersusPhaseFromRemote(versusSession.remoteMatch);
+          }
+        } else {
+          showToast("ターンを終了しました");
+        }
         render();
       })
       .catch(function (err) {
@@ -12976,6 +13104,58 @@ export function mountSimulator(
         );
         return;
       }
+      var vLiveStep = getVersusLiveStep(versusSession.remoteMatch);
+      var vMineAct = canRoleActInVersus(versusSession.remoteMatch, versusSession.myRole);
+      body.classList.remove(
+        "flow-hint--live-turn-start",
+        "flow-hint--live-to-area",
+        "flow-hint--live-begin",
+        "flow-hint--turn-start",
+        "flow-hint--turn-start-yell",
+        "flow-hint--live-success",
+        "flow-hint--mulligan-execute",
+        "flow-hint--versus-end-turn",
+      );
+      if (vLiveStep === "set" && vMineAct && !state.liveStatsAfterBegin) {
+        if (state.liveTurnPickMode) {
+          if (state.liveTurnSelectedIds.length > 0) {
+            body.classList.add("flow-hint--live-to-area");
+          } else {
+            body.classList.add("flow-hint--live-turn-start");
+          }
+        } else {
+          body.classList.add("flow-hint--live-turn-start");
+        }
+        return;
+      }
+      if (vLiveStep === "perf" && vMineAct) {
+        if (state.liveStatsAfterBegin && liveSimResolutionVerdictLocked()) {
+          body.classList.add("flow-hint--live-success");
+          body.classList.add("flow-hint--turn-start");
+          return;
+        }
+        if (state.liveStatsAfterBegin) {
+          var bladeN0 = Math.max(0, Math.floor(sumBoardMemberBlades()));
+          var resN0 = Array.isArray(state.resolutionArea) ? state.resolutionArea.length : 0;
+          if (bladeN0 > 0 && resN0 >= bladeN0) {
+            body.classList.add("flow-hint--turn-start");
+            return;
+          }
+        }
+        if (!state.liveStatsAfterBegin && versusLiveSlotsHaveCards()) {
+          body.classList.add("flow-hint--live-begin");
+          return;
+        }
+        if (state.liveStatsAfterBegin) {
+          body.classList.add("flow-hint--turn-start");
+        }
+        return;
+      }
+      if (vLiveStep === "successFx" && vMineAct) {
+        body.classList.add("flow-hint--turn-start");
+        return;
+      }
+      return;
     }
     body.classList.remove(
       "flow-hint--live-turn-start",
@@ -13078,9 +13258,9 @@ export function mountSimulator(
           mulliganPhase || !vMineAct || (inPick && state.liveTurnSelectedIds.length === 0);
         bPrim.title = "手札から最大3枚まで裏向きでライブ置き場へ（8.2）";
       } else if (versusLive && vStep === "perf") {
-        bPrim.textContent = "ライブターン開始";
-        bPrim.disabled = mulliganPhase || !vMineAct || afterLiveBegin || inPick;
-        bPrim.title = "パフォーマンス前の準備（ソロと同様）";
+        bPrim.textContent = inPick ? "ライブエリアへ" : "（パフォーマンス）";
+        bPrim.disabled = true;
+        bPrim.title = "パフォーマンスは下の「ライブ開始」→エール→「パフォーマンス完了」で進めます";
       } else {
         bPrim.textContent = inPick ? "ライブエリアへ" : "ライブターン開始";
         bPrim.disabled =
@@ -14093,7 +14273,6 @@ export function mountSimulator(
     if (versusOnlineActive() && versusSession.remoteMatch) {
       var vPhase = normalizeVersusPhase(versusSession.remoteMatch);
       if (vPhase === "live") {
-        doMulliganExecute();
         return;
       }
       if (vPhase === "firstMulligan" || vPhase === "secondMulligan") {
@@ -14499,6 +14678,19 @@ export function mountSimulator(
   }
 
   $("btn-live-turn-primary")?.addEventListener("click", function () {
+    if (versusOnlineActive() && isVersusLivePhase(versusSession.remoteMatch)) {
+      var vStep = getVersusLiveStep(versusSession.remoteMatch);
+      if (vStep === "set") {
+        if (state.liveTurnPickMode) doLiveTurnToArea();
+        else doLiveTurnStart();
+        return;
+      }
+      if (vStep === "perf") {
+        showToast("パフォーマンスは「ライブ開始」ボタンから進めてください");
+        return;
+      }
+      return;
+    }
     if (state.liveTurnPickMode) doLiveTurnToArea();
     else doLiveTurnStart();
   });
