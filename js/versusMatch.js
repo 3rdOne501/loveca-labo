@@ -4,6 +4,7 @@
  */
 import { LIVE_WINS, MAIN_SIZE } from "./config.js";
 import { getCloudFirestore, getCurrentCloudUser } from "./cloudAuth.js";
+import { getPlayerDisplayName } from "./playerProfile.js";
 import { normalizeDeckMapCounts } from "./deckLibrary.js";
 import { buildVersusBoardFirestorePatch } from "./versusBoardSync.js";
 
@@ -11,7 +12,7 @@ const COLLECTION = "versusMatches";
 const RULES_VERSION = "1.06";
 const ROOM_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
-/** @typedef {'host'|'guest'} VersusRole */
+/** @typedef {'host'|'guest'|'spectator'} VersusRole */
 /** @typedef {'waiting'|'lobby'|'playing'|'ended'} VersusMatchStatus */
 /** @typedef {'firstMulligan'|'secondMulligan'|'firstNormal'|'secondNormal'|'live'} VersusPhase */
 /** @typedef {'opening'|'main'} VersusPhaseLegacy */
@@ -70,6 +71,8 @@ const ROOM_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
  * @property {boolean} [hostOpeningMulliganDone]
  * @property {boolean} [guestOpeningMulliganDone]
  * @property {number} [rematchSeq]
+ * @property {string[]} [spectatorUids]
+ * @property {Record<string, string>} [spectatorNames]
  */
 
 export function isVersusMatchAvailable() {
@@ -95,10 +98,17 @@ function matchRef(roomCode) {
 
 function randomRoomCode() {
   let s = "";
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 4; i++) {
     s += ROOM_CODE_CHARS[Math.floor(Math.random() * ROOM_CODE_CHARS.length)];
   }
   return s;
+}
+
+/** @param {VersusMatchDoc} data @param {string} uid */
+function isSpectatorUid(data, uid) {
+  if (!data || !uid) return false;
+  const list = data.spectatorUids;
+  return Array.isArray(list) && list.indexOf(uid) >= 0;
 }
 
 function userSummary(u) {
@@ -179,7 +189,7 @@ export async function createVersusRoom(deckMap) {
       createdAt: now,
       updatedAt: now,
       hostUid: user.uid,
-      hostName: user.displayName,
+      hostName: getPlayerDisplayName() || user.displayName || null,
       hostPhotoURL: user.photoURL,
       guestUid: null,
       guestName: null,
@@ -225,7 +235,7 @@ export async function joinVersusRoom(roomCode, deckMap) {
   const code = String(roomCode || "")
     .trim()
     .toUpperCase();
-  if (!/^[A-Z0-9]{6}$/.test(code)) throw new Error("ルームコードは英数字6文字です。");
+  if (!/^[A-Z0-9]{4}$/.test(code)) throw new Error("ルームコードは英数字4文字です。");
   const { api } = fs();
   const ref = matchRef(code);
   let snap;
@@ -243,13 +253,13 @@ export async function joinVersusRoom(roomCode, deckMap) {
     );
   }
   if (data.guestUid && data.guestUid !== user.uid) {
-    throw new Error("このルームには別のプレイヤーが参加済みです。");
+    return joinVersusRoomAsSpectator(code, data, user);
   }
   const now = new Date().toISOString();
   try {
     await api.updateDoc(ref, {
       guestUid: user.uid,
-      guestName: user.displayName,
+      guestName: getPlayerDisplayName() || user.displayName || null,
       guestPhotoURL: user.photoURL,
       guestDeckReady: true,
       guestDeckMap: prepared.map,
@@ -264,6 +274,42 @@ export async function joinVersusRoom(roomCode, deckMap) {
     roomCode: code,
     match: /** @type {VersusMatchDoc} */ (snap2.data()),
     deckWarning: prepared.warning,
+    joinedAs: "guest",
+  };
+}
+
+/**
+ * 3人目以降は観戦者として参加
+ * @param {string} roomCode
+ * @param {VersusMatchDoc} data
+ * @param {{ uid: string, displayName?: string|null }} user
+ */
+export async function joinVersusRoomAsSpectator(roomCode, data, user) {
+  const code = String(roomCode || "")
+    .trim()
+    .toUpperCase();
+  const { api } = fs();
+  const ref = matchRef(code);
+  const specs = Array.isArray(data.spectatorUids) ? data.spectatorUids.slice() : [];
+  if (specs.indexOf(user.uid) < 0) specs.push(user.uid);
+  const names = data.spectatorNames && typeof data.spectatorNames === "object" ? { ...data.spectatorNames } : {};
+  names[user.uid] = getPlayerDisplayName() || user.displayName || "観戦者";
+  const now = new Date().toISOString();
+  try {
+    await api.updateDoc(ref, {
+      spectatorUids: specs,
+      spectatorNames: names,
+      updatedAt: now,
+    });
+  } catch (err) {
+    throw new Error(formatVersusFirestoreError(err));
+  }
+  const snap2 = await api.getDoc(ref);
+  return {
+    roomCode: code,
+    match: /** @type {VersusMatchDoc} */ (snap2.data()),
+    deckWarning: null,
+    joinedAs: "spectator",
   };
 }
 
@@ -424,6 +470,13 @@ export function isVersusFirstPlayer(match, role) {
  */
 export function describeVersusFlowForRole(match, myRole) {
   if (!match || !myRole) return "";
+  if (myRole === "spectator") {
+    if (match.status === "playing") return "観戦中";
+    if (match.status === "lobby") return "観戦（対戦開始待ち）";
+    if (match.status === "waiting") return "観戦（参加者待ち）";
+    if (match.status === "ended") return "観戦（終了）";
+    return "観戦";
+  }
   const phase = normalizeVersusPhase(match);
   const fp = match.firstPlayerRole;
   const second = versusSecondPlayerRole(match);
@@ -879,11 +932,12 @@ export async function commitVersusLiveJudgment(roomCode) {
     throw new Error("ライブ勝敗判定フェイズではありません。");
   }
   if (data.liveJudgmentOutcome) return;
-  if (!versusBothLivePerfScoresReady(data)) {
-    throw new Error("両者のライブスコアが未報告です。");
-  }
-  const h = Math.max(0, Math.floor(Number(data.hostLivePerfScore) || 0));
-  const g = Math.max(0, Math.floor(Number(data.guestLivePerfScore) || 0));
+  const h = Number.isFinite(Number(data.hostLivePerfScore))
+    ? Math.max(0, Math.floor(Number(data.hostLivePerfScore)))
+    : 0;
+  const g = Number.isFinite(Number(data.guestLivePerfScore))
+    ? Math.max(0, Math.floor(Number(data.guestLivePerfScore)))
+    : 0;
   /** @type {'hostWin'|'guestWin'|'draw'} */
   let outcome = "draw";
   if (h > g) outcome = "hostWin";
@@ -1155,6 +1209,17 @@ export async function leaveVersusRoom(roomCode, uid) {
         status: "waiting",
         updatedAt: new Date().toISOString(),
       });
+    } else if (isSpectatorUid(data, uid)) {
+      const specs = (data.spectatorUids || []).filter(function (id) {
+        return id !== uid;
+      });
+      const names = data.spectatorNames && typeof data.spectatorNames === "object" ? { ...data.spectatorNames } : {};
+      delete names[uid];
+      await api.updateDoc(ref, {
+        spectatorUids: specs,
+        spectatorNames: names,
+        updatedAt: new Date().toISOString(),
+      });
     }
   } catch (err) {
     console.warn("[versusMatch] leave failed:", err);
@@ -1206,6 +1271,7 @@ export function versusRoleForUid(match, uid) {
   if (!match || !uid) return null;
   if (match.hostUid === uid) return "host";
   if (match.guestUid === uid) return "guest";
+  if (isSpectatorUid(match, uid)) return "spectator";
   return null;
 }
 

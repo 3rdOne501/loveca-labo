@@ -52,6 +52,14 @@ function el(id) {
   return document.getElementById(id);
 }
 
+function clearPlayResumeStorage() {
+  try {
+    sessionStorage.removeItem(STORAGE_PLAY_RESUME);
+  } catch (_) {
+    /* noop */
+  }
+}
+
 function deckHasCards(deckMap) {
   if (!deckMap || typeof deckMap !== "object") return false;
   var keys = Object.keys(deckMap);
@@ -128,8 +136,20 @@ function hasPlayResumeForVersusRoom(roomCode) {
   }
 }
 
-/** @param {import('./versusMatch.js').VersusMatchDoc} match @param {'host'|'guest'} myRole */
+/** @param {import('./versusMatch.js').VersusMatchDoc} match @param {import('./versusMatch.js').VersusRole} myRole */
 function buildVersusOnlineEnterPayload(match, myRole) {
+  if (myRole === "spectator") {
+    return {
+      mode: "online",
+      sessionKey: match.roomCode + ":spectator",
+      roomCode: match.roomCode,
+      myRole: "spectator",
+      match: match,
+      deckMap: {},
+      resumeFromStorage: false,
+      spectatorMode: true,
+    };
+  }
   var deckMap =
     myRole === "host"
       ? match.hostDeckMap || (getCurrentDeckMap && getCurrentDeckMap())
@@ -216,11 +236,24 @@ function updateVersusLobbyButtons(match, myRole) {
   var btnStart = el("dlg-versus-start");
   var btnEnter = el("dlg-versus-enter-play");
   var btnRejoin = el("dlg-versus-rejoin-room");
+  var btnSpectate = el("dlg-versus-spectate");
   var u = getCurrentCloudUser();
   var isHost = myRole === "host";
+  var isSpectator = myRole === "spectator";
   var inRoom = !!(match && myRole && u);
   if (btnCreate) btnCreate.hidden = inRoom;
   if (btnJoin) btnJoin.hidden = inRoom;
+  if (isSpectator) {
+    if (btnReady) btnReady.hidden = true;
+    if (btnStart) btnStart.hidden = true;
+    if (btnRejoin) btnRejoin.hidden = true;
+    if (btnEnter) btnEnter.hidden = true;
+    if (btnSpectate) {
+      btnSpectate.hidden = match.status !== "playing";
+    }
+    return;
+  }
+  if (btnSpectate) btnSpectate.hidden = true;
   if (btnReady) {
     btnReady.hidden = !inRoom || match.status === "playing" || match.status === "ended";
     var ready = isHost ? match.hostDeckReady : match.guestDeckReady;
@@ -258,8 +291,24 @@ function renderLobbyMatch(match) {
   }
   var myRole = versusRoleForUid(match, u.uid);
   if (!myRole) {
-    setLobbyStatus("このルームの参加者ではありません。");
+    setLobbyStatus("このルームの参加者ではありません。コードで参加してください。");
     updateVersusLobbyButtons(null, null);
+    return;
+  }
+  if (myRole === "spectator") {
+    var specN = Array.isArray(match.spectatorUids) ? match.spectatorUids.length : 0;
+    setLobbyStatus(
+      "観戦モード · ルーム " +
+        match.roomCode +
+        "（プレイヤー: " +
+        (match.hostName || "ホスト") +
+        " / " +
+        (match.guestName || "ゲスト未参加") +
+        " · 観戦者 " +
+        specN +
+        " 人）",
+    );
+    updateVersusLobbyButtons(match, myRole);
     return;
   }
   activeRoomCode = match.roomCode;
@@ -429,7 +478,11 @@ export function initVersusMode(opts) {
       if (joined.deckWarning) {
         showToast(joined.deckWarning, { duration: 6000 });
       }
-      showToast("ルーム " + joined.roomCode + " に参加しました");
+      if (joined.joinedAs === "spectator") {
+        showToast("ルーム " + joined.roomCode + " を観戦者として参加しました");
+      } else {
+        showToast("ルーム " + joined.roomCode + " に参加しました");
+      }
       watchRoom(joined.roomCode);
       var joinRole = versusRoleForUid(joined.match, u.uid);
       if (joinRole) persistVersusOnlineSession(joined.roomCode, joinRole, false);
@@ -486,12 +539,33 @@ export function initVersusMode(opts) {
   btnEnter?.addEventListener("click", enterVersusPlayFromLobby);
   btnRejoin?.addEventListener("click", enterVersusPlayFromLobby);
 
+  function enterSpectatorViewFromLobby() {
+    if (!lastLobbyMatch || lastLobbyMatch.status !== "playing") {
+      showToast("対戦が開始されると観戦できます");
+      return;
+    }
+    var u = getCurrentCloudUser() || getEffectiveCloudUser();
+    if (!u || !u.uid || typeof onEnterVersusPlay !== "function") return;
+    var myRole = versusRoleForUid(lastLobbyMatch, u.uid);
+    if (myRole !== "spectator") return;
+    clearPlayResumeStorage();
+    persistVersusOnlineSession(lastLobbyMatch.roomCode, "spectator", true);
+    onEnterVersusPlay(buildVersusOnlineEnterPayload(lastLobbyMatch, "spectator"));
+    dlg?.close();
+  }
+
+  el("dlg-versus-spectate")?.addEventListener("click", enterSpectatorViewFromLobby);
+
   btnLeave?.addEventListener("click", async function () {
     var u = getCurrentCloudUser();
     if (activeRoomCode && u) await leaveVersusRoom(activeRoomCode, u.uid);
     stopSubscription();
     activeRoomCode = null;
     clearVersusOnlineSession();
+    clearPlayResumeStorage();
+    if (typeof window.__llocgResetPlayFromVersusLeave === "function") {
+      window.__llocgResetPlayFromVersusLeave();
+    }
     setLobbyStatus("ルームから退出しました。");
     updateVersusLobbyButtons(null, null);
     showToast("ルームから退出しました");
@@ -507,6 +581,10 @@ export function teardownVersusModeSession(opts) {
     clearVersusOnlineSession();
   } else if (!skipLeave) {
     clearVersusOnlineSession();
+  }
+  clearPlayResumeStorage();
+  if (!skipLeave && typeof window.__llocgResetPlayFromVersusLeave === "function") {
+    window.__llocgResetPlayFromVersusLeave();
   }
   activeRoomCode = null;
   delete window.__llocgVersusAutoEnterPending;
@@ -617,6 +695,11 @@ export async function tryRestoreVersusOnlineSession(onEnterPlay) {
 
       watchRoom(match.roomCode);
       if (match.status === "playing" && saved.inPlay && typeof onEnterPlay === "function") {
+        if (myRole === "spectator") {
+          persistVersusOnlineSession(match.roomCode, "spectator", true);
+          onEnterPlay(buildVersusOnlineEnterPayload(match, "spectator"));
+          return true;
+        }
         if (!versusMatchHasOpponent(match)) {
           markVersusPendingLobbyRoom(match.roomCode);
           persistVersusOnlineSession(match.roomCode, myRole, false);

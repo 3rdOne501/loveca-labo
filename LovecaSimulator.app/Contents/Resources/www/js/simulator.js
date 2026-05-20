@@ -1034,7 +1034,7 @@ export function mountSimulator(
   function computeEffectiveDeckOddsK() {
     var n = state.deck.length;
     if (n <= 0) return 0;
-    if (state.awaitingTurnStart) {
+    if (isMulliganHandPickActive()) {
       var m = Array.isArray(state.mulliganSelectedIds) ? state.mulliganSelectedIds.length : 0;
       if (m > 0) return Math.min(m, n);
       return 0;
@@ -1068,7 +1068,9 @@ export function mountSimulator(
     var m = Array.isArray(state.mulliganSelectedIds) ? state.mulliganSelectedIds.length : 0;
     var c = liveTurnHandCheckCount();
     var eff = computeEffectiveDeckOddsK();
-    var autoLock = (state.awaitingTurnStart && m > 0) || (state.liveTurnPickMode === true && c > 0);
+    var autoLock =
+      (isMulliganHandPickActive() && m > 0) ||
+      (state.liveTurnPickMode === true && c > 0);
     var ro = n <= 0 ? true : !!autoLock;
     function applyOne(el) {
       if (!el) return;
@@ -1107,7 +1109,7 @@ export function mountSimulator(
       b.disabled = !!(ro || n <= 0);
     });
     function hintText() {
-      if (state.awaitingTurnStart) {
+      if (isMulliganHandPickActive()) {
         return m > 0
           ? "マリガン: 戻し " + m + " 枚＝このあと引く枚数に連動（編集不可）"
           : "マリガン: 戻す枚を選ぶと連動（未選択は k=0 の参考）";
@@ -11153,7 +11155,7 @@ export function mountSimulator(
           c.type === T_MEMBER &&
           isHandDependentCost20Member(mergedCatalogCard(c).card_no || c.card_no),
       };
-      if (zoneId === "zone-hand" && state.awaitingTurnStart && !openingMulliganExecuteUsed) {
+      if (zoneId === "zone-hand" && isMulliganHandPickActive()) {
         const sel = state.mulliganSelectedIds;
         cardOpts.mulliganPick = {
           isOn: sel.indexOf(c.id) >= 0,
@@ -11722,6 +11724,32 @@ export function mountSimulator(
     if (!remoteMatch) return false;
     var ph = normalizeVersusPhase(remoteMatch);
     return ph === "firstMulligan" || ph === "secondMulligan";
+  }
+
+  /** 後攻プレイヤーが開幕マリガンで戻すカードを選べる状態（実行順を待つ間も可） */
+  function isVersusSecondPlayerMulliganPickPhase(remoteMatch) {
+    if (!versusOnlineActive() || !remoteMatch || !versusSession.myRole) return false;
+    if (!isVersusOpeningMulliganPhase(remoteMatch)) return false;
+    var fp = remoteMatch.firstPlayerRole;
+    if (!fp || versusSession.myRole === fp) return false;
+    if (hasVersusRoleCompletedOpeningMulligan(remoteMatch, versusSession.myRole)) {
+      return false;
+    }
+    if (openingMulliganExecuteUsed || versusMulliganCommitPending) return false;
+    return true;
+  }
+
+  /** 手札のマリガンチェック UI を出すか */
+  function isMulliganHandPickActive() {
+    if (openingMulliganExecuteUsed) return false;
+    if (versusOnlineActive() && versusSession.remoteMatch) {
+      if (isVersusSecondPlayerMulliganPickPhase(versusSession.remoteMatch)) return true;
+      return (
+        isVersusOpeningMulliganPhase(versusSession.remoteMatch) &&
+        state.awaitingTurnStart === true
+      );
+    }
+    return state.awaitingTurnStart === true;
   }
 
   function syncVersusMatchBar(remoteMatch) {
@@ -12645,7 +12673,7 @@ export function mountSimulator(
       var mullKey = phase + ":" + String(remoteMatch.activePlayerRole || "");
       if (mullKey !== versusMulliganUiKey) {
         versusMulliganUiKey = mullKey;
-        if (!versusMulliganCommitPending) {
+        if (!versusMulliganCommitPending && !isVersusSecondPlayerMulliganPickPhase(remoteMatch)) {
           state.mulliganSelectedIds = [];
         }
       }
@@ -12723,6 +12751,7 @@ export function mountSimulator(
         resetVersusLocalLiveHandoff();
       }
     } else {
+      versusLiveBeginAutoKey = "";
       if (state.liveTurnPickMode && !state.liveStatsAfterBegin) {
         state.liveTurnPickMode = false;
         state.liveTurnSelectedIds = [];
@@ -13313,7 +13342,7 @@ export function mountSimulator(
   }
 
   function pruneMulliganSelection() {
-    if (state.awaitingTurnStart) {
+    if (isMulliganHandPickActive()) {
       state.mulliganSelectedIds = state.mulliganSelectedIds.filter(function (id) {
         return state.hand.some(function (c) {
           return c.id === id;
@@ -13336,7 +13365,8 @@ export function mountSimulator(
           isVersusOpeningMulliganPhase(versusSession.remoteMatch) &&
           (state.awaitingTurnStart === true || versusMulliganCommitPending) &&
           !openingMulliganExecuteUsed &&
-          canRoleActInVersus(versusSession.remoteMatch, versusSession.myRole)
+          canRoleActInVersus(versusSession.remoteMatch, versusSession.myRole) &&
+          !isVersusSecondPlayerMulliganPickPhase(versusSession.remoteMatch)
         ) {
           body.classList.remove(
             "flow-hint--live-turn-start",
@@ -13601,6 +13631,10 @@ export function mountSimulator(
       versusSession.myRole &&
       remoteMatch &&
       hasVersusRoleCompletedOpeningMulligan(remoteMatch, versusSession.myRole);
+    var secondMulliganPickPrep =
+      versusMulliganPhase &&
+      versusSession.remoteMatch &&
+      isVersusSecondPlayerMulliganPickPhase(versusSession.remoteMatch);
     var showMulligan = versusMulliganPhase
       ? mineAct &&
         !myMulliganDone &&
@@ -13617,6 +13651,10 @@ export function mountSimulator(
         hint.hidden = false;
         hint.textContent =
           "開幕マリガン（総合ルール 6.2.1.6）：戻すカードを選び「マリガン実行」。0枚でも可。先攻→後攻の順です。";
+      } else if (secondMulliganPickPrep && !mineAct) {
+        hint.hidden = false;
+        hint.textContent =
+          "先攻の開幕マリガン中です。戻すカードを選んでおけます（「マリガン実行」は後攻の順番で押せます）。";
       } else if (versusMulliganPhase && !mineAct) {
         hint.hidden = false;
         hint.textContent = "相手の開幕マリガンを待っています。";
@@ -13642,6 +13680,12 @@ export function mountSimulator(
         btn.hidden = false;
         btn.disabled = true;
         btn.textContent = "マリガン確定中…";
+        btn.classList.remove("btn--versus-end-glow");
+      } else if (secondMulliganPickPrep && !mineAct) {
+        btn.hidden = false;
+        btn.disabled = true;
+        btn.textContent = "マリガン実行";
+        btn.title = "後攻のマリガン順番になるまで実行できません";
         btn.classList.remove("btn--versus-end-glow");
       } else if (versusOnlineActive()) {
         btn.hidden = true;
@@ -14032,7 +14076,9 @@ export function mountSimulator(
     var n = state.deck.length;
     var m = Array.isArray(state.mulliganSelectedIds) ? state.mulliganSelectedIds.length : 0;
     var c = liveTurnHandCheckCount();
-    var autoLock = (state.awaitingTurnStart && m > 0) || (state.liveTurnPickMode === true && c > 0);
+    var autoLock =
+      (isMulliganHandPickActive() && m > 0) ||
+      (state.liveTurnPickMode === true && c > 0);
     if (n <= 0 || autoLock) return;
     deckOddsKManual = Math.max(
       0,

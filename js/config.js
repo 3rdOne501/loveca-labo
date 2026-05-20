@@ -90,6 +90,8 @@ export const STORAGE_STREAM_MASK_STRENGTH = "llocg_stream_mask_strength";
 export const STORAGE_LIGHTWEIGHT_PLAY = "llocg_lightweight_play_v1";
 /** 一度 Google ログインしたら次回以降自動でセッション復元を試みる（"0" で無効） */
 export const STORAGE_GOOGLE_AUTO_LOGIN = "llocg_google_auto_login_v1";
+/** デッキ編集で設定する対戦用プレイヤー名（Google ログイン時） */
+export const STORAGE_PLAYER_DISPLAY_NAME = "llocg_player_display_name_v1";
 /** デッキ構築: お気に入りカード番号（JSON 配列） */
 export const STORAGE_CARD_FAVORITES = "llocg_card_favorites";
 

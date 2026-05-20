@@ -208,12 +208,6 @@ python3 -m http.server 8080</pre>
 
       <div class="builder">
         <aside class="search-panel">
-          <div id="cloud-auth-bar" class="cloud-auth-bar cloud-auth-bar--search-top" hidden>
-            <span id="cloud-auth-status" class="cloud-auth-bar__status muted">未ログイン</span>
-            <img id="cloud-auth-avatar" class="cloud-auth-bar__avatar" alt="" hidden />
-            <button type="button" id="cloud-auth-signin" class="btn sm secondary cloud-auth-bar__signin" title="Google へ一度だけ移動してログイン（サードパーティ Cookie 不要）">Google でログイン</button>
-            <button type="button" id="cloud-auth-signout" class="btn sm secondary cloud-auth-bar__signout" hidden>ログアウト</button>
-          </div>
           <div class="search-panel-tools">
             <h2 class="panel-h2-plain">検索・絞り込み</h2>
             <div class="search-quick-tools">
@@ -401,6 +395,29 @@ python3 -m http.server 8080</pre>
         </section>
 
         <aside class="deck-panel">
+          <div id="cloud-auth-bar" class="cloud-auth-bar cloud-auth-bar--deck-top" hidden>
+            <div class="cloud-auth-bar__profile">
+              <img id="cloud-auth-avatar" class="cloud-auth-bar__avatar" alt="" hidden />
+              <div class="cloud-auth-bar__profile-text">
+                <span id="cloud-auth-status" class="cloud-auth-bar__status">未ログイン</span>
+                <label id="player-display-name-wrap" class="player-display-name-wrap" hidden>
+                  <span class="player-display-name-wrap__label">対戦表示名</span>
+                  <input
+                    type="text"
+                    id="input-player-display-name"
+                    class="input player-display-name-input"
+                    maxlength="32"
+                    placeholder="ルームで表示する名前"
+                    autocomplete="nickname"
+                  />
+                </label>
+              </div>
+            </div>
+            <div class="cloud-auth-bar__actions">
+              <button type="button" id="cloud-auth-signin" class="btn sm secondary cloud-auth-bar__signin" title="Google でログイン">Google でログイン</button>
+              <button type="button" id="cloud-auth-signout" class="btn sm secondary cloud-auth-bar__signout" hidden>ログアウト</button>
+            </div>
+          </div>
           <div class="deck-panel-sticky-head">
             <div class="deck-panel-head-row">
               <h2>メインデッキ</h2>
@@ -410,9 +427,9 @@ python3 -m http.server 8080</pre>
               <button type="button" class="btn primary btn-start-game-sticky" id="btn-start-game" disabled>ソロプレイ開始</button>
               <button
                 type="button"
-                class="btn secondary btn-start-versus-sticky"
+                class="btn secondary btn-start-versus-sticky btn-start-versus--glow"
                 id="btn-start-versus"
-                title="簡易対戦はログイン不要。相手の成功ライブ枚数を手入力"
+                title="簡易対戦はログイン不要。オンラインルームは Google ログイン"
               >
                 対戦モード
               </button>
@@ -593,8 +610,8 @@ python3 -m http.server 8080</pre>
             </div>
           </details>
           <button type="button" class="btn sm secondary" id="btn-coin">コイン</button>
-          <button type="button" class="btn sm secondary" id="btn-layout-16-9" aria-pressed="false" title="プレイ画面全体を通常の約 85% の表示倍率に縮小します（再押しで解除）">
-            16:9
+          <button type="button" class="btn sm secondary" id="btn-layout-16-9" aria-pressed="false" title="対戦時：相手盤面と自分盤面の高さ比を 4:6 にします（再押しで解除）">
+            4:6
           </button>
           <button
             type="button"
@@ -631,19 +648,21 @@ python3 -m http.server 8080</pre>
         </div>
         <div id="versus-play-chrome" class="versus-play-chrome game-bar-row" hidden>
           <span id="versus-turn-badge" class="versus-turn-badge" hidden></span>
-          <div id="versus-opp-sl-controls" class="versus-opp-sl-controls" hidden>
-            <span class="muted">相手SL</span>
-            <button type="button" class="btn sm secondary" id="btn-versus-opp-sl-minus" aria-label="相手の成功ライブを減らす">−</button>
-            <span id="versus-opp-sl-num" class="versus-opp-sl-num">0</span>
-            <button type="button" class="btn sm secondary" id="btn-versus-opp-sl-plus" aria-label="相手の成功ライブを増やす">＋</button>
-          </div>
+        </div>
+        <div id="versus-spectator-chrome" class="versus-spectator-chrome game-bar-row" hidden>
+          <span class="versus-spectator-chrome__label">観戦モード</span>
+          <button type="button" class="btn sm secondary" id="btn-spectator-view-host" aria-pressed="true">ホスト盤面</button>
+          <button type="button" class="btn sm secondary" id="btn-spectator-view-guest" aria-pressed="false">ゲスト盤面</button>
+          <button type="button" class="btn sm secondary" id="btn-versus-lobby-from-spectator">ロビーに戻る</button>
         </div>
       </header>
 
       <div id="versus-opponent-board-wrap" class="versus-opponent-board" hidden aria-label="相手の公開盤面">
         <p id="versus-opp-board-meta" class="versus-opp-board-meta muted"></p>
         <div class="versus-opponent-board__surface">
-          <div class="versus-opponent-board__cell versus-opponent-board__cell--void" aria-hidden="true"></div>
+          <div class="versus-opponent-board__cell versus-opponent-board__cell--void" aria-label="相手の控えの残色">
+            <div id="versus-opp-void-waiting-colors" class="versus-opp-void-waiting-colors"></div>
+          </div>
           <section class="versus-opponent-board__cell versus-opponent-board__cell--center zone-block">
             <details class="energy-fold versus-opp-energy-fold">
               <summary class="energy-fold__summary versus-opp-legible">
@@ -669,7 +688,11 @@ python3 -m http.server 8080</pre>
                 <h3 class="versus-opp-zone-heading versus-opp-legible live-area-col-heading">ライブ</h3>
                 <div class="three-cols versus-opp-live-row">
                   <div class="slot-wrap"><span class="slot-label versus-opp-legible">左</span><div id="versus-opp-live-left" class="card-strip zone-drop live-slot"></div></div>
-                  <div class="slot-wrap slot-wrap--live-center"><span class="slot-label versus-opp-legible">中</span><div id="versus-opp-live-center" class="card-strip zone-drop live-slot"></div></div>
+                  <div class="slot-wrap slot-wrap--live-center">
+                    <span class="slot-label versus-opp-legible">中</span>
+                    <div id="versus-opp-live-center-score" class="live-score-center-bar versus-opp-live-center-score" hidden aria-live="polite"></div>
+                    <div id="versus-opp-live-center" class="card-strip zone-drop live-slot"></div>
+                  </div>
                   <div class="slot-wrap"><span class="slot-label versus-opp-legible">右</span><div id="versus-opp-live-right" class="card-strip zone-drop live-slot"></div></div>
                 </div>
               </div>
@@ -1050,7 +1073,11 @@ python3 -m http.server 8080</pre>
                     </div>
                     <div class="live-stats-metric-cell" title="ステージ上メンバーの blade（ブレード）合計＝ライブ判定で解決ゾーンに送る「エール数」">
                       <span class="live-stats-metric-label live-stats-metric-label--white">エール数</span>
-                      <span id="live-total-blade" class="live-stats-metric-answer">0</span>
+                      <span class="live-stats-metric-answer live-stats-metric-answer--with-step">
+                        <button type="button" class="btn sm secondary live-blade-step" id="btn-live-blade-minus" aria-label="エール数を1減らす">−</button>
+                        <span id="live-total-blade">0</span>
+                        <button type="button" class="btn sm secondary live-blade-step" id="btn-live-blade-plus" aria-label="エール数を1増やす">＋</button>
+                      </span>
                     </div>
                     <div class="live-stats-metric-cell" title="ステージ＋ライブ枠のメンバー所持H合計（play ボーナス ALL の分を含む表示）">
                       <span class="live-stats-metric-label live-stats-metric-label--white">場メンバーH計</span>
@@ -1808,7 +1835,10 @@ python3 -m http.server 8080</pre>
     </dialog>
 
     <dialog id="dlg-versus-lobby" class="app-dialog dlg-versus-lobby" aria-labelledby="dlg-versus-lobby-title">
-      <h2 id="dlg-versus-lobby-title" class="app-dialog__title">対戦モード（総合ルール 1.06）</h2>
+      <div class="dlg-versus-lobby__header">
+        <h2 id="dlg-versus-lobby-title" class="app-dialog__title dlg-versus-lobby__title">対戦モード（総合ルール 1.06）</h2>
+        <button type="button" class="dlg-versus-lobby-close-top" id="dlg-versus-lobby-close" aria-label="閉じる">×</button>
+      </div>
       <p class="hint zone-inline-help">
         <strong>簡易対戦</strong>（ログイン不要）— 対面・別々の端末向け。各プレイヤーが<strong>自分の盤面だけ</strong>操作します。
         カードの自動同期はありません。プレイ中、画面上部の<strong>「相手SL」＋／−</strong>で相手の成功ライブ枚数を共有します。
@@ -1820,7 +1850,6 @@ python3 -m http.server 8080</pre>
       <p id="dlg-versus-lobby-status" class="dlg-versus-lobby-status muted" role="status"></p>
       <div class="app-dialog__actions dlg-versus-lobby-actions dlg-versus-lobby-actions--primary">
         <button type="button" class="btn primary" id="dlg-versus-start-local">簡易対戦を始める（ログイン不要）</button>
-        <button type="button" class="btn secondary" id="dlg-versus-lobby-close">閉じる</button>
       </div>
       <details id="dlg-versus-online-wrap" class="dlg-versus-online-wrap" hidden>
         <summary>オンラインルーム（任意・Google ログイン）</summary>
@@ -1831,17 +1860,19 @@ python3 -m http.server 8080</pre>
             type="text"
             id="dlg-versus-room-code"
             class="dlg-versus-room-code-input"
-            maxlength="6"
+            maxlength="4"
             autocomplete="off"
-            placeholder="例: ABC123"
+            placeholder="例: A1B2"
+            inputmode="text"
           />
         </div>
         <p class="muted">作成したルーム: <strong id="dlg-versus-room-code-display">——</strong></p>
         <div class="app-dialog__actions dlg-versus-lobby-actions">
-          <button type="button" class="btn secondary" id="dlg-versus-leave">ルームから退出</button>
-          <button type="button" class="btn secondary" id="dlg-versus-create">ルームを作成</button>
-          <button type="button" class="btn secondary" id="dlg-versus-join">コードで参加</button>
+          <button type="button" class="btn secondary btn-versus-lobby-leave" id="dlg-versus-leave">ルームから退出</button>
+          <button type="button" class="btn secondary btn-versus-lobby-create" id="dlg-versus-create">ルームを作成</button>
+          <button type="button" class="btn secondary btn-versus-lobby-join" id="dlg-versus-join">コードで参加</button>
           <button type="button" class="btn secondary" id="dlg-versus-ready">このデッキで準備完了</button>
+          <button type="button" class="btn primary btn-versus-lobby-spectate" id="dlg-versus-spectate" hidden>観戦画面へ</button>
           <button type="button" class="btn primary" id="dlg-versus-start" hidden>対戦開始（ホスト）</button>
           <button type="button" class="btn primary" id="dlg-versus-rejoin-room" hidden>ルームに入室</button>
           <button type="button" class="btn primary" id="dlg-versus-enter-play" hidden>プレイ画面へ</button>

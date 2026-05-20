@@ -124,6 +124,161 @@ body::before {
   margin-top: 0.45rem;
 }
 
+.cloud-auth-bar--deck-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem 0.75rem;
+  margin: 0 0 0.65rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--radius-md, 10px);
+  border: 1px solid rgba(140, 170, 255, 0.35);
+  background: linear-gradient(135deg, rgba(32, 42, 72, 0.92), rgba(18, 26, 48, 0.95));
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.22);
+}
+.cloud-auth-bar--deck-top .cloud-auth-bar__profile {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  flex: 1 1 12rem;
+}
+.cloud-auth-bar--deck-top .cloud-auth-bar__profile-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  min-width: 0;
+}
+.cloud-auth-bar--deck-top .cloud-auth-bar__status {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: rgba(230, 238, 255, 0.95);
+}
+.cloud-auth-bar--deck-top .cloud-auth-bar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+.player-display-name-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  width: 100%;
+  max-width: 14rem;
+}
+.player-display-name-wrap__label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: rgba(180, 200, 255, 0.85);
+  text-transform: uppercase;
+}
+.player-display-name-input {
+  width: 100%;
+  font-size: 0.86rem;
+  padding: 0.32rem 0.5rem;
+  border-radius: 8px;
+  border: 1px solid rgba(150, 180, 255, 0.45);
+  background: rgba(8, 14, 28, 0.75);
+  color: #f4f7ff;
+}
+.player-display-name-input:focus {
+  outline: 2px solid rgba(255, 140, 200, 0.55);
+  border-color: rgba(255, 160, 220, 0.7);
+}
+.btn-start-versus--glow {
+  background: linear-gradient(135deg, #7b5cff 0%, #e040a0 55%, #ff8a4d 100%);
+  border-color: rgba(255, 200, 240, 0.75);
+  color: #fff;
+  font-weight: 800;
+  text-shadow: 0 1px 2px rgba(40, 10, 40, 0.45);
+  box-shadow:
+    0 0 10px rgba(200, 120, 255, 0.55),
+    0 0 22px rgba(255, 100, 180, 0.35);
+  animation: versusVersusBtnGlow 2s ease-in-out infinite;
+}
+@keyframes versusVersusBtnGlow {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.12);
+  }
+}
+.dlg-versus-lobby__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+.dlg-versus-lobby__title {
+  margin: 0;
+  flex: 1 1 auto;
+}
+.dlg-versus-lobby-close-top {
+  flex: 0 0 auto;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(30, 38, 58, 0.85);
+  color: #fff;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+.dlg-versus-lobby-close-top:hover {
+  background: rgba(60, 72, 100, 0.95);
+}
+.btn-versus-lobby-leave {
+  background: linear-gradient(145deg, #5a5f78, #3a4058);
+  border-color: rgba(200, 210, 240, 0.45);
+  color: #f0f3ff;
+  font-weight: 700;
+}
+.btn-versus-lobby-create {
+  background: linear-gradient(145deg, #3d8bfd, #2563c9);
+  border-color: rgba(150, 200, 255, 0.65);
+  color: #fff;
+  font-weight: 700;
+}
+.btn-versus-lobby-join {
+  background: linear-gradient(145deg, #3ecf8e, #1f9d5c);
+  border-color: rgba(160, 240, 190, 0.55);
+  color: #062a18;
+  font-weight: 700;
+}
+.btn-versus-lobby-spectate {
+  background: linear-gradient(145deg, #b88cff, #7c4dff);
+  border-color: rgba(220, 190, 255, 0.6);
+  color: #fff;
+  font-weight: 800;
+}
+.versus-spectator-chrome {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.55rem;
+  padding: 0.2rem 0;
+}
+.versus-spectator-chrome__label {
+  font-weight: 800;
+  font-size: 0.82rem;
+  color: rgba(200, 180, 255, 0.95);
+  letter-spacing: 0.06em;
+}
+body.play-spectator-mode .game-board {
+  display: none !important;
+}
+body.play-spectator-mode .versus-opponent-board {
+  flex: 1 1 auto;
+  max-height: none;
+}
 .cloud-auth-bar {
   display: inline-flex;
   align-items: center;
@@ -553,15 +708,20 @@ body.play-versus-mode.versus-my-turn #btn-versus-end-turn:not(:disabled) {
   font-weight: 700;
   margin-bottom: 0.35rem;
 }
-.versus-opp-sl-controls {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  margin-right: 0.35rem;
+#btn-versus-concede.btn--versus-concede-main {
+  background: linear-gradient(145deg, #ff4d4d 0%, #c41e1e 55%, #8b0000 100%);
+  border-color: rgba(255, 160, 160, 0.85);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.95rem;
+  padding: 0.45rem 1.1rem;
+  min-height: 2.35rem;
+  box-shadow:
+    0 0 12px rgba(255, 80, 80, 0.55),
+    0 2px 8px rgba(0, 0, 0, 0.35);
 }
-.versus-opp-sl-num {
-  min-width: 1.2em;
-  text-align: center;
+#btn-versus-concede.btn--versus-concede-main:hover {
+  filter: brightness(1.08);
 }
 
 body.play-versus-mode #view-game {
@@ -583,9 +743,17 @@ body.play-versus-mode .versus-opponent-board {
   border: 1px solid rgba(140, 170, 255, 0.28);
   border-top: none;
   background: linear-gradient(180deg, rgba(28, 36, 62, 0.72), rgba(16, 22, 40, 0.92));
-  overflow: hidden;
+  overflow: auto;
   display: flex;
   flex-direction: column;
+}
+body.play-versus-mode.layout-4-6-board-ratio .versus-opponent-board {
+  flex: 0 0 40%;
+  max-height: 40%;
+}
+body.play-versus-mode.layout-4-6-board-ratio .game-board {
+  flex: 1 1 60%;
+  max-height: 60%;
 }
 body.play-versus-mode .versus-opp-board-meta {
   margin: 0 0 0.1rem;
@@ -623,11 +791,28 @@ body.play-versus-mode .versus-opponent-board__cell .card-strip {
   min-height: 0;
 }
 body.play-versus-mode .versus-opponent-board__cell--void {
-  visibility: hidden;
+  visibility: visible;
   pointer-events: none;
   min-height: 0;
   grid-column: 1;
   grid-row: 1;
+  overflow: auto;
+  padding: 0.12rem;
+}
+.versus-opp-void-waiting-colors {
+  font-size: 0.62rem;
+  line-height: 1.25;
+}
+.versus-opp-void-waiting-title {
+  margin: 0 0 0.15rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: rgba(220, 230, 255, 0.9);
+}
+body.play-versus-mode .versus-opp-live-center-score {
+  margin: 0.08rem auto 0.12rem;
+  width: fit-content;
+  max-width: 100%;
 }
 body.play-versus-mode .versus-opponent-board__cell--center {
   grid-column: 2;
@@ -870,9 +1055,15 @@ body.play-versus-mode .game-board {
 body.play-versus-mode.versus-opponent-turn:not(.versus-live-phase) .game-board .card-item {
   cursor: not-allowed;
 }
-body.play-versus-mode #deck-live-sim-summary,
-body.play-versus-mode #mount-mobile-live-prob-inline .deck-live-sim-summary {
-  display: none !important;
+.live-stats-metric-answer--with-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+.live-stats-metric-answer--with-step .live-blade-step {
+  min-width: 1.6rem;
+  padding: 0.05rem 0.25rem;
+  line-height: 1.2;
 }
 .versus-phase-live-banner {
   display: block;
@@ -1027,22 +1218,37 @@ body.play-versus-mode #view-game.view-game--versus {
   transform: translate(-50%, -50%);
   z-index: 223;
   pointer-events: none;
-  padding: 0.85rem 1.5rem;
-  border-radius: var(--radius-md, 8px);
-  background: rgba(12, 18, 32, 0.88);
-  border: 2px solid rgba(255, 255, 255, 0.5);
+  padding: 0;
+  border: none;
+  background: transparent;
+  animation: play-turn-badge-pop 0.55s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .versus-role-change-overlay__text {
   margin: 0;
-  font-family: var(--font-display);
-  font-size: clamp(1.35rem, 4.5vw, 2rem);
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  color: #ffffff;
-  text-shadow:
-    0 0 16px rgba(255, 255, 255, 0.9),
-    0 0 32px rgba(200, 220, 255, 0.5);
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  padding: 0.32rem 0.85rem;
+  border-radius: 12px;
+  background: linear-gradient(140deg, rgba(255, 45, 110, 0.55), rgba(110, 70, 220, 0.5));
+  border: 1px solid rgba(255, 200, 250, 0.55);
+  box-shadow: 0 0 22px rgba(255, 90, 160, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  font-size: clamp(1.1rem, 4vw, 1.42rem);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: #fff;
+  text-shadow: 0 0 14px rgba(255, 220, 255, 0.95);
   white-space: nowrap;
+}
+@keyframes play-turn-badge-pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.82);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
 }
 .versus-opp-action-feed {
   position: fixed;
@@ -1123,11 +1329,24 @@ body.play-versus-mode .versus-opponent-board {
     opacity: 0.72;
   }
 }
-body.play-mode.flow-hint--versus-end-turn #btn-turn-start:not(:disabled) {
-  animation: versus-end-turn-glow 2.2s ease-in-out infinite;
+body.play-mode.flow-hint--versus-end-turn #btn-turn-start:not(:disabled),
+body.play-mode.flow-hint--versus-perf-done #btn-live-turn-begin:not(:disabled),
+body.play-mode.flow-hint--versus-success-fx-done #btn-live-turn-begin:not(:disabled) {
+  position: relative;
+  z-index: 2;
+  background: linear-gradient(135deg, #ffe7a3 0%, #ffb86b 45%, #ff7eb6 100%);
+  border-color: rgba(255, 220, 150, 0.85);
+  color: #2a1230;
+  text-shadow: 0 1px 1px rgba(255, 255, 230, 0.55);
   box-shadow:
-    0 0 16px rgba(255, 180, 90, 0.55),
-    0 0 32px rgba(255, 140, 50, 0.35);
+    0 0 8px rgba(255, 220, 130, 0.85),
+    0 0 18px rgba(255, 170, 80, 0.65),
+    0 0 32px rgba(255, 140, 200, 0.55),
+    0 2px 0 rgba(170, 90, 30, 0.45);
+  animation: liveYellBtnPulse 1.6s ease-in-out infinite;
+  border-radius: var(--radius-sm, 10px);
+  font-weight: 800;
+  letter-spacing: 0.02em;
 }
 #btn-mulligan-execute.btn--versus-end-glow:not(:disabled),
 #btn-versus-end-turn.btn--versus-end-glow:not(:disabled),

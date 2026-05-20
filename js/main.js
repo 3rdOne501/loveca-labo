@@ -51,6 +51,7 @@ import {
   signInWithGoogle,
   signOutCloud,
 } from "./cloudAuth.js";
+import { getPlayerDisplayName, setPlayerDisplayName } from "./playerProfile.js";
 
 /** 強制リロード用の一時クエリをアドレスバーから外す（ブックマーク汚染防止） */
 function stripHardReloadQueryFromUrl() {
@@ -123,6 +124,44 @@ let appStarted = false;
 let versusModeReady = false;
 /** @type {string|null} */
 let activeVersusRoomMounted = null;
+/** @type {HTMLElement|null} */
+let viewDeckRef = null;
+/** @type {HTMLElement|null} */
+let viewGameRef = null;
+
+function resetPlayFromVersusLeave() {
+  activeVersusRoomMounted = null;
+  try {
+    delete window.__llocgVersusPlayMounted;
+  } catch (_) {
+    /* noop */
+  }
+  clearPlayResumeStorage();
+  teardownDeckPileLayoutWatchers();
+  if (viewGameRef) viewGameRef.hidden = true;
+  if (viewDeckRef) viewDeckRef.hidden = false;
+  document.body.classList.remove(
+    "play-mode",
+    "play-versus-mode",
+    "play-spectator-mode",
+    "live-turn-pick-mode",
+    "live-stats-after-begin",
+    "zone-hints-visible",
+    "versus-my-turn",
+    "versus-opponent-turn",
+    "versus-live-phase",
+    "llocg-effect-dialog-peek",
+  );
+  try {
+    if (typeof window.__llocgRestoreDeckBuilderUi === "function") {
+      window.__llocgRestoreDeckBuilderUi({ reopenCatalog: true });
+    }
+  } catch (_) {
+    /* noop */
+  }
+}
+
+window.__llocgResetPlayFromVersusLeave = resetPlayFromVersusLeave;
 
 function clearPlayResumeStorage() {
   try {
@@ -274,7 +313,8 @@ function hideAppBootLoading() {
 
 function enterVersusPlay(viewDeck, viewGame, payload) {
   const deckMap = normalizeDeckMapCounts(payload.deckMap || {});
-  if (!deckMap || !Object.keys(deckMap).length) {
+  const spectatorMode = payload.spectatorMode === true || payload.myRole === "spectator";
+  if (!spectatorMode && (!deckMap || !Object.keys(deckMap).length)) {
     showToast("対戦用デッキを読み込めませんでした");
     return;
   }
@@ -318,11 +358,22 @@ function enterVersusPlay(viewDeck, viewGame, payload) {
                     roomCode: payload.roomCode,
                     myRole: payload.myRole,
                     match: payload.match,
+                    spectatorMode: spectatorMode,
                   },
             resumeFromStorage: !!payload.resumeFromStorage,
             onBackToDeck(opts) {
               teardownDeckPileLayoutWatchers();
-              var wasOnlineVersus = payload.mode === "online" && payload.roomCode && payload.myRole;
+              var wasOnlineVersus =
+                payload.mode === "online" &&
+                payload.roomCode &&
+                payload.myRole &&
+                payload.myRole !== "spectator";
+              if (opts && opts.leaveRoom === true) {
+                teardownVersusModeSession();
+                clearVersusOnlineSession();
+                resetPlayFromVersusLeave();
+                return;
+              }
               if (wasOnlineVersus && !(opts && opts.leaveRoom === true)) {
                 try {
                   if (typeof window.__llocgFlushVersusPlayPersist === "function") {
@@ -390,6 +441,8 @@ function enterVersusPlay(viewDeck, viewGame, payload) {
 }
 
 function startApp(viewDeck, viewGame, statusEl) {
+  viewDeckRef = viewDeck;
+  viewGameRef = viewGame;
   if (statusEl) statusEl.textContent = "";
   hideAppBootLoading();
   hideBootToolbar();
@@ -684,7 +737,21 @@ function wireCloudAuthBar() {
   );
   const signInBtn = document.getElementById("cloud-auth-signin");
   const signOutBtn = document.getElementById("cloud-auth-signout");
+  const playerNameWrap = document.getElementById("player-display-name-wrap");
+  const playerNameInput = /** @type {HTMLInputElement|null} */ (
+    document.getElementById("input-player-display-name")
+  );
   if (!bar || !signInBtn || !signOutBtn) return;
+  if (playerNameInput && playerNameInput.dataset.wiredDisplayName !== "1") {
+    playerNameInput.dataset.wiredDisplayName = "1";
+    playerNameInput.value = getPlayerDisplayName();
+    playerNameInput.addEventListener("change", function () {
+      setPlayerDisplayName(playerNameInput.value);
+    });
+    playerNameInput.addEventListener("blur", function () {
+      setPlayerDisplayName(playerNameInput.value);
+    });
+  }
   signInBtn.addEventListener("click", () => {
     signInWithGoogle();
   });
@@ -711,6 +778,11 @@ function wireCloudAuthBar() {
     }
     bar.hidden = false;
     if (effective) {
+      if (playerNameWrap) playerNameWrap.hidden = false;
+      if (playerNameInput && document.activeElement !== playerNameInput) {
+        var savedName = getPlayerDisplayName();
+        if (savedName) playerNameInput.value = savedName;
+      }
       if (statusEl) {
         var label = effective.displayName || effective.email || "ログイン中";
         statusEl.textContent = user ? label : label + "（復元中）";
@@ -727,6 +799,7 @@ function wireCloudAuthBar() {
       signInBtn.hidden = true;
       signOutBtn.hidden = false;
     } else {
+      if (playerNameWrap) playerNameWrap.hidden = true;
       if (statusEl) statusEl.textContent = "未ログイン";
       if (avatarEl) {
         avatarEl.removeAttribute("src");
@@ -757,10 +830,43 @@ function wireCloudAuthBar() {
   });
 }
 
+function wireAppDialogBackdropClicks() {
+  document.querySelectorAll("dialog.app-dialog").forEach(function (dlg) {
+    if (dlg.dataset.backdropWired === "1") return;
+    dlg.dataset.backdropWired = "1";
+    dlg.addEventListener("click", function (ev) {
+      if (ev.target !== dlg) return;
+      if (document.body.classList.contains("play-mode")) {
+        if (dlg.id === "dlg-versus-lobby") {
+          try {
+            dlg.close();
+          } catch (_) {
+            /* noop */
+          }
+          return;
+        }
+        if (typeof window.__llocgPeekBoardFromDialog === "function") {
+          window.__llocgPeekBoardFromDialog(dlg);
+          return;
+        }
+      }
+      try {
+        dlg.close();
+      } catch (_) {
+        /* noop */
+      }
+    });
+  });
+}
+
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", wireCloudAuthBar);
+  document.addEventListener("DOMContentLoaded", function () {
+    wireCloudAuthBar();
+    wireAppDialogBackdropClicks();
+  });
 } else {
   wireCloudAuthBar();
+  wireAppDialogBackdropClicks();
 }
 
 initVersusModeEarly();
