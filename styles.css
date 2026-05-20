@@ -572,10 +572,10 @@ body.play-versus-mode #view-game {
   overflow: hidden;
 }
 body.play-versus-mode .versus-opponent-board {
-  --versus-opp-card-w: calc(var(--loveca-play-w, 82px) * 0.55);
-  --versus-opp-card-h: calc(var(--loveca-play-h, var(--card-h)) * 0.55);
-  flex: 0 0 40%;
-  max-height: 40%;
+  --versus-opp-card-w: calc(var(--loveca-play-w, 82px) * 0.52);
+  --versus-opp-card-h: calc(var(--loveca-play-h, var(--card-h)) * 0.52);
+  flex: 0 0 30%;
+  max-height: 30%;
   min-height: 0;
   margin: 0;
   padding: 0.12rem 0.3rem 0;
@@ -626,10 +626,28 @@ body.play-versus-mode .versus-opponent-board__cell--void {
   visibility: hidden;
   pointer-events: none;
   min-height: 0;
-}
-body.play-versus-mode .versus-opponent-board__cell--energy {
-  grid-column: 2;
+  grid-column: 1;
   grid-row: 1;
+}
+body.play-versus-mode .versus-opponent-board__cell--center {
+  grid-column: 2;
+  grid-row: 1 / 4;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.12rem;
+  min-height: 0;
+}
+body.play-versus-mode .versus-opponent-board__center-main {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.14rem;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+body.play-versus-mode .versus-opp-energy-fold:not([open]) + .versus-opponent-board__center-main {
+  margin-top: auto;
 }
 body.play-versus-mode .versus-opponent-board__cell--hand {
   grid-column: 3;
@@ -639,20 +657,12 @@ body.play-versus-mode .versus-opponent-board__cell--waiting {
   grid-column: 1;
   grid-row: 2;
 }
-body.play-versus-mode .versus-opponent-board__cell--stage {
-  grid-column: 2;
-  grid-row: 2;
-}
 body.play-versus-mode .versus-opponent-board__cell--resolution {
   grid-column: 3;
   grid-row: 2;
 }
 body.play-versus-mode .versus-opponent-board__cell--deck {
   grid-column: 1;
-  grid-row: 3;
-}
-body.play-versus-mode .versus-opponent-board__cell--live {
-  grid-column: 2;
   grid-row: 3;
 }
 body.play-versus-mode .versus-opponent-board__cell--sl {
@@ -785,19 +795,20 @@ body.play-versus-mode .versus-opponent-board__cell--sl .success-live-strip {
   justify-content: flex-end;
 }
 body.play-versus-mode .versus-opponent-board__cell--energy .energy-zone,
-body.play-versus-mode .versus-opponent-board__cell--energy .versus-opp-energy-fold {
-  flex: 1 1 auto;
+body.play-versus-mode .versus-opponent-board__cell--center .energy-zone,
+body.play-versus-mode .versus-opponent-board__cell--center .versus-opp-energy-fold {
+  flex: 0 0 auto;
   min-height: 0;
 }
 @media (max-width: 720px) {
   body.play-versus-mode .versus-opponent-board {
-    flex-basis: 38%;
-    max-height: 38%;
+    flex-basis: 28%;
+    max-height: 28%;
     padding-inline: 0.18rem;
   }
   body.play-versus-mode .game-board {
-    flex-basis: 62%;
-    max-height: 62%;
+    flex-basis: 72%;
+    max-height: 72%;
   }
   body.play-versus-mode .versus-opponent-board__surface {
     grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.25fr) minmax(0, 0.95fr);
@@ -850,9 +861,9 @@ body.play-versus-mode.versus-opponent-turn .versus-opponent-board {
   opacity: 0.97;
 }
 body.play-versus-mode .game-board {
-  flex: 1 1 60%;
+  flex: 1 1 70%;
   min-height: 0;
-  max-height: 60%;
+  max-height: 70%;
   overflow: auto;
   border-top: 1px solid rgba(140, 170, 255, 0.22);
 }

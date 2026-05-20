@@ -93,6 +93,7 @@ import {
   pushVersusPublicState,
   describeVersusFlowForRole,
   getVersusLiveStep,
+  hasVersusRoleCompletedOpeningMulligan,
   normalizeVersusPhase,
   reportVersusLivePerfComplete,
   reportVersusLiveSetComplete,
@@ -1515,6 +1516,10 @@ export function mountSimulator(
   var versusPhaseAutoKey = "";
   /** 盤面復元・初回描画が終わるまでリモートフェイズ自動操作を止める */
   var versusBootstrapping = false;
+  /** 開幕マリガン UI キー（同一スナップショットで選択肢を消さない） */
+  var versusMulliganUiKey = "";
+  /** マリガン確定 API 送信中 */
+  var versusMulliganCommitPending = false;
   if (versusSession) {
     state.playVersusMode = true;
     if (versusSession.myRole) state.versusMyRole = versusSession.myRole;
@@ -12076,16 +12081,32 @@ export function mountSimulator(
       versusSession.myRole && canRoleActInVersus(remoteMatch, versusSession.myRole);
     var fp = remoteMatch.firstPlayerRole;
     var mineFirst = !!(fp && versusSession.myRole === fp);
+    var myMulliganDone =
+      versusSession.myRole &&
+      hasVersusRoleCompletedOpeningMulligan(remoteMatch, versusSession.myRole);
 
     if (phase === "firstMulligan" || phase === "secondMulligan") {
-      if (mineAct) {
-        state.awaitingTurnStart = true;
-        openingMulliganExecuteUsed = false;
-        state.mulliganSelectedIds = [];
+      var mullKey = phase + ":" + String(remoteMatch.activePlayerRole || "");
+      if (mullKey !== versusMulliganUiKey) {
+        versusMulliganUiKey = mullKey;
+        if (!versusMulliganCommitPending) {
+          state.mulliganSelectedIds = [];
+        }
+      }
+      if (mineAct && !myMulliganDone) {
+        if (!versusMulliganCommitPending) {
+          state.awaitingTurnStart = true;
+          openingMulliganExecuteUsed = false;
+        }
       } else {
         state.awaitingTurnStart = false;
+        if (myMulliganDone) {
+          openingMulliganExecuteUsed = true;
+        }
       }
     } else if (phase === "firstNormal" && remoteMatch.turnNumber === 1) {
+      versusMulliganUiKey = "";
+      versusMulliganCommitPending = false;
       if (mineAct && mineFirst) {
         state.awaitingTurnStart = true;
         openingMulliganExecuteUsed = true;
@@ -12093,15 +12114,21 @@ export function mountSimulator(
         state.awaitingTurnStart = false;
       }
     } else if (phase === "secondNormal" && remoteMatch.turnNumber === 1) {
+      versusMulliganUiKey = "";
+      versusMulliganCommitPending = false;
       if (mineAct && !mineFirst) {
         state.awaitingTurnStart = true;
         openingMulliganExecuteUsed = true;
       } else if (!mineAct) {
         state.awaitingTurnStart = false;
       }
-    } else if (!(phase === "firstNormal" && remoteMatch.turnNumber === 1 && state.awaitingTurnStart)) {
-      if (phase !== "firstNormal" || remoteMatch.turnNumber > 1) {
-        state.awaitingTurnStart = false;
+    } else {
+      versusMulliganUiKey = "";
+      versusMulliganCommitPending = false;
+      if (!(phase === "firstNormal" && remoteMatch.turnNumber === 1 && state.awaitingTurnStart)) {
+        if (phase !== "firstNormal" || remoteMatch.turnNumber > 1) {
+          state.awaitingTurnStart = false;
+        }
       }
     }
 
@@ -12152,15 +12179,24 @@ export function mountSimulator(
       showToast("あなたのマリガン順番ではありません");
       return;
     }
-    if (!state.awaitingTurnStart || openingMulliganExecuteUsed) return;
+    if (!state.awaitingTurnStart || openingMulliganExecuteUsed || versusMulliganCommitPending) return;
+    versusMulliganCommitPending = true;
     doMulliganExecute();
+    openingMulliganExecuteUsed = false;
     completeVersusOpeningMulligan(versusSession.roomCode, versusSession.myRole)
       .then(function () {
+        versusMulliganCommitPending = false;
+        openingMulliganExecuteUsed = true;
+        state.awaitingTurnStart = false;
         showToast("マリガンを確定しました");
         render();
       })
       .catch(function (err) {
+        versusMulliganCommitPending = false;
+        openingMulliganExecuteUsed = false;
+        state.awaitingTurnStart = true;
         showToast(String(err.message || err));
+        render();
       });
   }
 
@@ -12205,11 +12241,16 @@ export function mountSimulator(
     if (versusMatchUnsub) return;
     versusBootstrapping = false;
     versusPhaseAutoKey = buildVersusPhaseAutoKey(versusSession.remoteMatch);
+    if (versusSession.remoteMatch) {
+      applyVersusPhaseFromRemote(versusSession.remoteMatch);
+    }
     versusMatchUnsub = subscribeVersusMatch(versusSession.roomCode, function (remoteMatch) {
       applyRemoteVersusMatch(remoteMatch);
     });
     if (versusSession.remoteMatch) {
-      applyRemoteVersusMatch(versusSession.remoteMatch);
+      syncVersusMatchBar(versusSession.remoteMatch);
+      syncMulliganUi();
+      render();
     }
     window.setTimeout(function () {
       if (!versusSession || versusSession.mode !== "online") return;
@@ -12659,7 +12700,7 @@ export function mountSimulator(
       if (vPh !== "live") {
         if (
           isVersusOpeningMulliganPhase(versusSession.remoteMatch) &&
-          state.awaitingTurnStart === true &&
+          (state.awaitingTurnStart === true || versusMulliganCommitPending) &&
           !openingMulliganExecuteUsed &&
           canRoleActInVersus(versusSession.remoteMatch, versusSession.myRole)
         ) {
@@ -12848,8 +12889,17 @@ export function mountSimulator(
       versusOnlineActive() &&
       remoteMatch &&
       canRoleActInVersus(remoteMatch, versusSession.myRole);
+    var myMulliganDone =
+      versusSession &&
+      versusSession.myRole &&
+      remoteMatch &&
+      hasVersusRoleCompletedOpeningMulligan(remoteMatch, versusSession.myRole);
     var showMulligan = versusMulliganPhase
-      ? mineAct && state.awaitingTurnStart === true && !openingMulliganExecuteUsed
+      ? mineAct &&
+        !myMulliganDone &&
+        state.awaitingTurnStart === true &&
+        !openingMulliganExecuteUsed &&
+        !versusMulliganCommitPending
       : state.awaitingTurnStart === true && !openingMulliganExecuteUsed;
     var showVersusEndTurn =
       versusNormalPhase && mineAct && state.awaitingTurnStart !== true;
@@ -12857,10 +12907,16 @@ export function mountSimulator(
     if (hint) {
       if (versusNormalPhase && mineAct) {
         hint.hidden = true;
-      } else if (versusMulliganPhase && mineAct) {
+      } else if (versusMulliganPhase && mineAct && showMulligan) {
         hint.hidden = false;
         hint.textContent =
-          "マリガンするカードを選んでから「マリガン実行」。先攻→後攻の順に確定し、先攻の通常フェイズへ進みます。";
+          "開幕マリガン（総合ルール 6.2.1.6）：戻すカードを選び「マリガン実行」。0枚でも可。先攻→後攻の順です。";
+      } else if (versusMulliganPhase && !mineAct) {
+        hint.hidden = false;
+        hint.textContent = "相手の開幕マリガンを待っています。";
+      } else if (versusMulliganCommitPending) {
+        hint.hidden = false;
+        hint.textContent = "マリガンを確定しています…";
       } else {
         hint.hidden = !showMulligan;
         if (!versusOnlineActive()) {
@@ -12875,6 +12931,11 @@ export function mountSimulator(
         btn.hidden = false;
         btn.disabled = false;
         btn.textContent = "マリガン実行";
+        btn.classList.remove("btn--versus-end-glow");
+      } else if (versusMulliganCommitPending) {
+        btn.hidden = false;
+        btn.disabled = true;
+        btn.textContent = "マリガン確定中…";
         btn.classList.remove("btn--versus-end-glow");
       } else if (showVersusEndTurn) {
         btn.hidden = false;

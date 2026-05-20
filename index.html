@@ -644,7 +644,7 @@ python3 -m http.server 8080</pre>
         <p id="versus-opp-board-meta" class="versus-opp-board-meta muted"></p>
         <div class="versus-opponent-board__surface">
           <div class="versus-opponent-board__cell versus-opponent-board__cell--void" aria-hidden="true"></div>
-          <section class="versus-opponent-board__cell versus-opponent-board__cell--energy zone-block">
+          <section class="versus-opponent-board__cell versus-opponent-board__cell--center zone-block">
             <details class="energy-fold versus-opp-energy-fold">
               <summary class="energy-fold__summary versus-opp-legible">
                 <span class="versus-opp-zone-heading">エネルギー</span>
@@ -656,6 +656,24 @@ python3 -m http.server 8080</pre>
               </summary>
               <div id="versus-opp-zone-energy" class="card-strip zone-drop energy-zone"></div>
             </details>
+            <div class="versus-opponent-board__center-main">
+              <div class="versus-opponent-board__center-stage">
+                <div class="stage-title-bar versus-opp-stage-bar"><h3 class="stage-title-bar__h versus-opp-legible">ステージ</h3></div>
+                <div class="three-cols versus-opp-stage-row">
+                  <div class="slot-wrap"><span class="slot-label versus-opp-legible">左</span><div id="versus-opp-stage-left" class="card-strip zone-drop stage-slot"></div></div>
+                  <div class="slot-wrap"><span class="slot-label versus-opp-legible">中</span><div id="versus-opp-stage-center" class="card-strip zone-drop stage-slot"></div></div>
+                  <div class="slot-wrap"><span class="slot-label versus-opp-legible">右</span><div id="versus-opp-stage-right" class="card-strip zone-drop stage-slot"></div></div>
+                </div>
+              </div>
+              <div class="versus-opponent-board__center-live">
+                <h3 class="versus-opp-zone-heading versus-opp-legible live-area-col-heading">ライブ</h3>
+                <div class="three-cols versus-opp-live-row">
+                  <div class="slot-wrap"><span class="slot-label versus-opp-legible">左</span><div id="versus-opp-live-left" class="card-strip zone-drop live-slot"></div></div>
+                  <div class="slot-wrap slot-wrap--live-center"><span class="slot-label versus-opp-legible">中</span><div id="versus-opp-live-center" class="card-strip zone-drop live-slot"></div></div>
+                  <div class="slot-wrap"><span class="slot-label versus-opp-legible">右</span><div id="versus-opp-live-right" class="card-strip zone-drop live-slot"></div></div>
+                </div>
+              </div>
+            </div>
           </section>
           <section class="versus-opponent-board__cell versus-opponent-board__cell--hand zone-block versus-opp-rail-zone">
             <h3 class="versus-opp-zone-heading versus-opp-legible">手札 <span id="versus-opp-hand-count" class="badge">0</span></h3>
@@ -665,14 +683,6 @@ python3 -m http.server 8080</pre>
             <h3 class="versus-opp-zone-heading versus-opp-legible">控え室 <span id="versus-opp-waiting-count" class="badge">0</span></h3>
             <div id="versus-opp-zone-waiting" class="card-strip zone-drop waiting-zone-strip"></div>
           </section>
-          <section class="versus-opponent-board__cell versus-opponent-board__cell--stage zone-block">
-            <div class="stage-title-bar versus-opp-stage-bar"><h3 class="stage-title-bar__h versus-opp-legible">ステージ</h3></div>
-            <div class="three-cols versus-opp-stage-row">
-              <div class="slot-wrap"><span class="slot-label versus-opp-legible">左</span><div id="versus-opp-stage-left" class="card-strip zone-drop stage-slot"></div></div>
-              <div class="slot-wrap"><span class="slot-label versus-opp-legible">中</span><div id="versus-opp-stage-center" class="card-strip zone-drop stage-slot"></div></div>
-              <div class="slot-wrap"><span class="slot-label versus-opp-legible">右</span><div id="versus-opp-stage-right" class="card-strip zone-drop stage-slot"></div></div>
-            </div>
-          </section>
           <section class="versus-opponent-board__cell versus-opponent-board__cell--resolution zone-block versus-opp-rail-zone">
             <h3 class="versus-opp-zone-heading versus-opp-legible">解決 <span id="versus-opp-resolution-count" class="badge">0</span></h3>
             <div id="versus-opp-zone-resolution" class="card-strip zone-drop resolution-zone-strip"></div>
@@ -680,14 +690,6 @@ python3 -m http.server 8080</pre>
           <section class="versus-opponent-board__cell versus-opponent-board__cell--deck zone-block versus-opp-rail-zone deck-block">
             <h3 class="versus-opp-zone-heading versus-opp-legible">デッキ <span id="versus-opp-deck-count" class="badge">0</span></h3>
             <div id="versus-opp-deck-pile" class="deck-pile versus-opp-deck-pile" aria-hidden="true"></div>
-          </section>
-          <section class="versus-opponent-board__cell versus-opponent-board__cell--live zone-block">
-            <h3 class="versus-opp-zone-heading versus-opp-legible live-area-col-heading">ライブ</h3>
-            <div class="three-cols versus-opp-live-row">
-              <div class="slot-wrap"><span class="slot-label versus-opp-legible">左</span><div id="versus-opp-live-left" class="card-strip zone-drop live-slot"></div></div>
-              <div class="slot-wrap slot-wrap--live-center"><span class="slot-label versus-opp-legible">中</span><div id="versus-opp-live-center" class="card-strip zone-drop live-slot"></div></div>
-              <div class="slot-wrap"><span class="slot-label versus-opp-legible">右</span><div id="versus-opp-live-right" class="card-strip zone-drop live-slot"></div></div>
-            </div>
           </section>
           <section class="versus-opponent-board__cell versus-opponent-board__cell--sl zone-block versus-opp-rail-zone">
             <h3 class="versus-opp-zone-heading versus-opp-legible">成功ライブ <span id="versus-opp-sl-count" class="badge">0</span></h3>

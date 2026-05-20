@@ -61,6 +61,8 @@ const ROOM_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
  * @property {boolean} [successLiveFirstLocked]
  * @property {string|null} [hostEffectCardNo]
  * @property {string|null} [guestEffectCardNo]
+ * @property {boolean} [hostOpeningMulliganDone]
+ * @property {boolean} [guestOpeningMulliganDone]
  */
 
 export function isVersusMatchAvailable() {
@@ -310,6 +312,8 @@ export async function startVersusMatch(roomCode) {
     hostLastAction: null,
     guestLastAction: null,
     versusPhase: "firstMulligan",
+    hostOpeningMulliganDone: false,
+    guestOpeningMulliganDone: false,
     liveStep: null,
     hostLiveSetDone: false,
     guestLiveSetDone: false,
@@ -334,6 +338,17 @@ export function versusSecondPlayerRole(match) {
  * @param {VersusMatchDoc|null|undefined} match
  * @returns {VersusPhase}
  */
+/** @param {VersusMatchDoc|null|undefined} match @param {VersusRole|null} role */
+export function hasVersusRoleCompletedOpeningMulligan(match, role) {
+  if (!match || !role) return false;
+  return role === "host" ? match.hostOpeningMulliganDone === true : match.guestOpeningMulliganDone === true;
+}
+
+/**
+ * 開幕マリガン未完了なら first/secondMulligan へ（6.2.1.6）
+ * @param {VersusMatchDoc|null|undefined} match
+ * @returns {VersusPhase}
+ */
 export function normalizeVersusPhase(match) {
   if (!match) return "firstNormal";
   const p = match.versusPhase;
@@ -344,6 +359,17 @@ export function normalizeVersusPhase(match) {
     p === "secondNormal" ||
     p === "live"
   ) {
+    if (match.turnNumber === 1 && p !== "live") {
+      const fp = match.firstPlayerRole;
+      const second = versusSecondPlayerRole(match);
+      if (fp && second) {
+        const firstDone = hasVersusRoleCompletedOpeningMulligan(match, fp);
+        const secondDone = hasVersusRoleCompletedOpeningMulligan(match, second);
+        if (!firstDone) return "firstMulligan";
+        if (!secondDone) return "secondMulligan";
+        if (p === "firstMulligan" || p === "secondMulligan") return "firstNormal";
+      }
+    }
     return p;
   }
   const fp = match.firstPlayerRole;
@@ -551,10 +577,14 @@ export async function completeVersusOpeningMulligan(roomCode, role) {
     if (role !== fp) throw new Error("先攻プレイヤーのマリガンです。");
     patch.versusPhase = "secondMulligan";
     patch.activePlayerRole = second;
+    if (role === "host") patch.hostOpeningMulliganDone = true;
+    else patch.guestOpeningMulliganDone = true;
   } else if (phase === "secondMulligan") {
     if (role !== second) throw new Error("後攻プレイヤーのマリガンです。");
     patch.versusPhase = "firstNormal";
     patch.activePlayerRole = fp;
+    if (role === "host") patch.hostOpeningMulliganDone = true;
+    else patch.guestOpeningMulliganDone = true;
   } else {
     throw new Error("マリガンフェイズではありません。");
   }
