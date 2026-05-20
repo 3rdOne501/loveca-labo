@@ -1508,6 +1508,12 @@ export function mountSimulator(
   var versusBoardSyncLastFp = "";
   var versusOpponentBoardFp = "";
   var versusOpponentBoardRev = 0;
+  /** 成功ライブ枚数の Firestore 同期（毎 render で送らない） */
+  var versusLastSyncedSlCount = -1;
+  /** applyVersusPhaseFromRemote の doLiveTurnStart 二重起動防止 */
+  var versusPhaseAutoKey = "";
+  /** 盤面復元・初回描画が終わるまでリモートフェイズ自動操作を止める */
+  var versusBootstrapping = false;
   if (versusSession) {
     state.playVersusMode = true;
     if (versusSession.myRole) state.versusMyRole = versusSession.myRole;
@@ -1525,6 +1531,7 @@ export function mountSimulator(
     var oppBoardWrap = document.getElementById("versus-opponent-board-wrap");
     if (oppBoardWrap) oppBoardWrap.hidden = versusSession.mode !== "online";
     if (versusSession.mode === "online" && versusMatch && versusMatch.match) {
+      versusBootstrapping = true;
       if (versusMatch.match.firstPlayerRole) {
         var fpVersus = root.querySelector("#select-first-player") || document.getElementById("select-first-player");
         if (fpVersus) {
@@ -1532,18 +1539,10 @@ export function mountSimulator(
             versusMatch.match.firstPlayerRole === versusSession.myRole ? "先攻" : "後攻";
         }
       }
-      versusMatchUnsub = subscribeVersusMatch(versusSession.roomCode, function (remoteMatch) {
-        applyRemoteVersusMatch(remoteMatch);
-      });
+      versusLastSyncedSlCount = Array.isArray(state.successfulLiveArea)
+        ? state.successfulLiveArea.length
+        : 0;
       ensureVersusUiChrome();
-      showVersusFirstPlayerBanner(versusSession.remoteMatch);
-      updateVersusTurnGlow(versusSession.remoteMatch);
-      syncVersusMatchBar(versusSession.remoteMatch);
-      applyVersusOpponentBoardFromRemote(versusSession.remoteMatch);
-      versusBoardSyncLastFp = "";
-      queueMicrotask(function () {
-        flushVersusBoardPublicSync();
-      });
     }
     syncVersusOppSlDisplay();
   }
@@ -5394,6 +5393,7 @@ export function mountSimulator(
     if (state.playVersusMode && (!versusSession || versusSession.mode !== "online")) return;
     try {
       var fpLive = fingerprintZonesFromLive();
+      if (fpLive === playResumeLastFp) return;
       playResumeLastFp = fpLive;
       var fpSel = $("select-first-player");
       var payload = {
@@ -5416,12 +5416,13 @@ export function mountSimulator(
   }
 
   function schedulePersistPlayResume() {
+    if (versusBootstrapping) return;
     if (state.playVersusMode && (!versusSession || versusSession.mode !== "online")) return;
     if (playResumePersistTimer) clearTimeout(playResumePersistTimer);
     playResumePersistTimer = setTimeout(function () {
       playResumePersistTimer = 0;
       flushPersistPlayResumeNow();
-    }, 400);
+    }, 600);
   }
 
   window.__llocgFlushVersusPlayPersist = flushPersistPlayResumeNow;
@@ -11826,7 +11827,6 @@ export function mountSimulator(
       updatedAt: at || null,
       effectCardNo: effectCardNo || null,
     });
-    syncVersusMatchBar(remoteMatch);
     syncVersusOpponentEffectUi(remoteMatch);
   }
 
@@ -12066,15 +12066,17 @@ export function mountSimulator(
   }
 
   function applyVersusPhaseFromRemote(remoteMatch) {
-    if (!versusOnlineActive()) return;
+    if (!versusOnlineActive() || versusBootstrapping) return;
     var phase = normalizeVersusPhase(remoteMatch);
     var liveStep = getVersusLiveStep(remoteMatch);
     var mineAct =
       versusSession.myRole && canRoleActInVersus(remoteMatch, versusSession.myRole);
 
     if (phase === "live") {
+      var autoKey = buildVersusPhaseAutoKey(remoteMatch);
       if (liveStep === "set" && mineAct && !state.liveStatsAfterBegin) {
-        if (!state.liveTurnPickMode) {
+        if (!state.liveTurnPickMode && versusPhaseAutoKey !== autoKey) {
+          versusPhaseAutoKey = autoKey;
           try {
             doLiveTurnStart();
           } catch (_) {
@@ -12131,9 +12133,40 @@ export function mountSimulator(
       });
   }
 
+  function buildVersusPhaseAutoKey(remoteMatch) {
+    if (!remoteMatch) return "";
+    return (
+      normalizeVersusPhase(remoteMatch) +
+      ":" +
+      (getVersusLiveStep(remoteMatch) || "") +
+      ":" +
+      String(remoteMatch.activePlayerRole || "") +
+      ":" +
+      String(remoteMatch.turnNumber || "")
+    );
+  }
+
+  function bootVersusOnlineSyncAfterMount() {
+    if (!versusSession || versusSession.mode !== "online" || !versusSession.roomCode) return;
+    if (versusMatchUnsub) return;
+    versusBootstrapping = false;
+    versusPhaseAutoKey = buildVersusPhaseAutoKey(versusSession.remoteMatch);
+    versusMatchUnsub = subscribeVersusMatch(versusSession.roomCode, function (remoteMatch) {
+      applyRemoteVersusMatch(remoteMatch);
+    });
+    if (versusSession.remoteMatch) {
+      applyRemoteVersusMatch(versusSession.remoteMatch);
+    }
+    window.setTimeout(function () {
+      if (!versusSession || versusSession.mode !== "online") return;
+      flushVersusBoardPublicSync();
+    }, 900);
+  }
+
   function applyRemoteVersusMatch(remoteMatch) {
     if (!versusSession || !remoteMatch) return;
     versusSession.remoteMatch = remoteMatch;
+    if (versusBootstrapping) return;
     updateVersusTurnGlow(remoteMatch);
     var oppSl =
       versusSession.myRole === "host"
@@ -12157,21 +12190,28 @@ export function mountSimulator(
     versusBoardSyncTimer = setTimeout(function () {
       versusBoardSyncTimer = 0;
       flushVersusBoardPublicSync();
-    }, 250);
+    }, 500);
   }
 
-  function scheduleVersusPublicSync() {
+  function queueVersusSuccessLivePublicSync() {
+    if (!versusSession || versusSession.mode !== "online" || !versusSession.myRole) return;
+    var sl = Array.isArray(state.successfulLiveArea) ? state.successfulLiveArea.length : 0;
+    if (sl === versusLastSyncedSlCount) return;
+    versusLastSyncedSlCount = sl;
+    scheduleVersusPublicSync({ successLiveCount: sl });
+  }
+
+  function scheduleVersusPublicSync(explicitPatch) {
     if (!versusSession || versusSession.mode !== "online" || !versusSession.myRole) return;
     if (versusPublicSyncTimer) clearTimeout(versusPublicSyncTimer);
     versusPublicSyncTimer = setTimeout(function () {
       versusPublicSyncTimer = 0;
       var sl = Array.isArray(state.successfulLiveArea) ? state.successfulLiveArea.length : 0;
-      var patch = { successLiveCount: sl };
+      var patch = explicitPatch && typeof explicitPatch === "object" ? explicitPatch : { successLiveCount: sl };
+      if (patch.successLiveCount == null) patch.successLiveCount = sl;
       if (state.versusPendingAction) {
         patch.lastAction = state.versusPendingAction;
         state.versusPendingAction = null;
-      } else {
-        patch.lastAction = "成功ライブ " + sl + " 枚";
       }
       pushVersusPublicState(versusSession.roomCode, versusSession.myRole, patch)
         .then(function () {
@@ -12203,6 +12243,8 @@ export function mountSimulator(
     versusBoardSyncLastFp = "";
     versusOpponentBoardFp = "";
     versusOpponentBoardRev = 0;
+    versusLastSyncedSlCount = -1;
+    versusPhaseAutoKey = "";
     hideVersusOpponentBoard();
     document.body.classList.remove("play-versus-mode");
     var versusChromeEl = document.getElementById("versus-play-chrome");
@@ -12230,8 +12272,8 @@ export function mountSimulator(
     if (winEl) winEl.hidden = n < LIVE_WINS;
     if (snsEl) snsEl.hidden = n !== 2;
     if (versusSession) {
-      syncVersusMatchBar(null);
-      scheduleVersusPublicSync();
+      syncVersusMatchBar(versusSession.remoteMatch);
+      queueVersusSuccessLivePublicSync();
     }
   }
 
@@ -12955,10 +12997,6 @@ export function mountSimulator(
     schedulePersistPlayResume();
     scheduleVersusBoardPublicSync();
     repositionEffectDialogResumeChip();
-    if (versusOnlineActive()) {
-      syncVersusMatchBar(versusSession.remoteMatch);
-      syncVersusPhaseLiveBanner(versusSession.remoteMatch);
-    }
   }
 
   /**
@@ -14897,6 +14935,21 @@ export function mountSimulator(
   syncPlayBoardChromeMounts();
   /** 同期レンダーで盤面・Sortable・+H/B を確実に有効化（初回のみ遅延すると操作が死ぬ） */
   renderSynchronouslyOnce();
+  if (resumedFromStorage) {
+    try {
+      playResumeLastFp = fingerprintZonesFromLive();
+    } catch (_) {
+      /* noop */
+    }
+  }
+  if (versusSession && versusSession.mode === "online") {
+    syncVersusMatchBar(versusSession.remoteMatch);
+    syncVersusPhaseLiveBanner(versusSession.remoteMatch);
+    showVersusFirstPlayerBanner(versusSession.remoteMatch);
+    updateVersusTurnGlow(versusSession.remoteMatch);
+    versusPhaseAutoKey = buildVersusPhaseAutoKey(versusSession.remoteMatch);
+    window.setTimeout(bootVersusOnlineSyncAfterMount, 0);
+  }
   if (typeof requestAnimationFrame === "function") {
     requestAnimationFrame(function () {
       updateHandZoneLayoutMode();

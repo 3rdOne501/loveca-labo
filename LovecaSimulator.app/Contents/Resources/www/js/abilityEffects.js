@@ -47,7 +47,9 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  *   |'kidou_multi_choice'
  *   |'kidou_self_to_wait_recover'
  *   |'live_start_hand_discard_blade_per'
+ *   |'live_start_hand_blade_per'
  *   |'toujou_deck_top_wait_if_all_members'
+ *   |'toujou_deck_top_wait_if_all_heart'
  *   |'toujou_both_wait_to_empty_stage'
  *   |'guided_manual'} AbilityTemplate
  */
@@ -101,6 +103,10 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  * @property {string[]} [kidouSegmentRaws]
  * @property {boolean} [requiresSeriesOnStage]
  * @property {string[]} [characterNames]
+ * @property {number} [effectDiscardCount] 効果本文での手札→控え室（コストと別）
+ * @property {boolean} [postDiscardActivateIfNonBhMember] 捨てた非BHメンバー1枚以上でこのメンバーをアクティブ
+ * @property {number} [postDiscardBladeGainIfNonBhAt] 非BHメンバーをこの枚数以上捨てたときブレード付与
+ * @property {number} [postDiscardBladeGainCount] 上記時のブレード枚数
  */
 
 export function cardAbilityRawText(card) {
@@ -301,11 +307,18 @@ function bladeGainFromIcons(segRaw, p) {
 
 /** @param {ClassifiedAbility} base @param {string} segRaw */
 function applyOptionalEnergyCostFromSegment(base, segRaw) {
-  var n = countWikiEnergyIcons(segRaw);
+  /**
+   * 条件・コストは「：」より前の部分だけ。
+   * 「：」がない場合は全て効果本文なので、エネルギーアイコンはコストではない。
+   */
+  var colonIdx = segRaw.indexOf("：");
+  var costRaw = colonIdx >= 0 ? segRaw.slice(0, colonIdx) : "";
+  if (!costRaw) return;
+  var n = countWikiEnergyIcons(costRaw);
   if (n > 0) {
     base.costEnergy = true;
     base.costEnergyCount = Math.max(base.costEnergyCount || 0, n);
-    if (/もよい/.test(segRaw)) base.hasOptionalCost = true;
+    if (/もよい/.test(costRaw)) base.hasOptionalCost = true;
   }
 }
 
@@ -550,7 +563,11 @@ export function classifyCardAbility(card, trigger, segmentRawOverride) {
 
   var perTurn = parsePerTurnLimit(segRaw, keys);
   base.perTurnLimit = perTurn;
-  var costPart = p.split("：")[0] || "";
+  /**
+   * 条件・コストは「：」より前の部分だけ。
+   * 「：」を含まない場合、全てが効果本文なのでコストは空。
+   */
+  var costPart = p.indexOf("：") >= 0 ? p.split("：")[0] : "";
   base.hasOptionalCost = /もよい/.test(costPart);
   base.costEnergy = /(エネルギー|E)を?(\d+)?枚?支払/.test(costPart) || /E支払/.test(costPart);
   base.costEnergyCount = base.costEnergy ? parseCostEnergyCount(costPart) : 0;
@@ -732,12 +749,24 @@ export function classifyCardAbility(card, trigger, segmentRawOverride) {
     var drawDiscardKd = p.match(/カードを(\d+)枚引き?、手札を(\d+)枚控え室に置/);
     if (!drawDiscardKd) drawDiscardKd = p.match(/カードを(\d+)枚引.*手札を(\d+)枚控え室/);
     if (drawDiscardKd) {
-      return kidouT({
+      /** @type {Partial<ClassifiedAbility>} */
+      var drawDiscardPatch = {
         template: "draw_then_hand_discard",
         deckDrawCount: Number(drawDiscardKd[1]) || 1,
-        handDiscardToWaiting: Number(drawDiscardKd[2]) || 1,
+        effectDiscardCount: Number(drawDiscardKd[2]) || 1,
         filters: parseAbilityPickFilters(p),
-      });
+      };
+      if (
+        /控え室に置いたカードの中にブレードハートを持たない/.test(p) &&
+        /このメンバーをアクティブ/.test(p)
+      ) {
+        drawDiscardPatch.postDiscardActivateIfNonBhMember = true;
+        if (/2枚ある場合/.test(p)) {
+          drawDiscardPatch.postDiscardBladeGainIfNonBhAt = 2;
+          drawDiscardPatch.postDiscardBladeGainCount = 2;
+        }
+      }
+      return kidouT(drawDiscardPatch);
     }
 
     var drawOnlyKd = p.match(/カードを(\d+)枚引/);
@@ -821,6 +850,22 @@ export function classifyCardAbility(card, trigger, segmentRawOverride) {
         requiresOnStage: true,
       });
     }
+    if (deckTopMem && /すべて.*heart04.*メンバー/.test(p)) {
+      return twT({
+        template: "toujou_deck_top_wait_if_all_heart",
+        deckTopCount: deckTopMem ? Number(deckTopMem[1]) : 3,
+        requiredHeartSlot: 4,
+        requiresOnStage: true,
+      });
+    }
+    if (deckTopMem && /すべて.*heart01.*メンバー/.test(p)) {
+      return twT({
+        template: "toujou_deck_top_wait_if_all_heart",
+        deckTopCount: deckTopMem ? Number(deckTopMem[1]) : 3,
+        requiredHeartSlot: 1,
+        requiresOnStage: true,
+      });
+    }
     if (
       /自分と相手はそれぞれ/.test(p) &&
       /控え室からコスト(\d+)以下のメンバーカードを1枚/.test(p) &&
@@ -881,7 +926,7 @@ export function classifyCardAbility(card, trigger, segmentRawOverride) {
       return twT({
         template: "draw_per_stage_member_discard",
         deckDrawCount: Number(drawPerMem[1]) || 1,
-        handDiscardToWaiting: discPer ? Number(discPer[1]) : 0,
+        effectDiscardCount: discPer ? Number(discPer[1]) : 0,
         requiresOnStage: true,
         filters: parseAbilityPickFilters(p),
       });
@@ -910,13 +955,28 @@ export function classifyCardAbility(card, trigger, segmentRawOverride) {
         requiresOnStage: true,
       });
     }
+    if (
+      /コストが低いメンバーからバトンタッチ/.test(p) &&
+      /自分と相手はそれぞれ/.test(p) &&
+      /手札の枚数が(\d+)枚になるまで手札を控え室に置/.test(p) &&
+      /カードを(\d+)枚引/.test(p)
+    ) {
+      var batonHandTargetM = p.match(/手札の枚数が(\d+)枚になるまで/);
+      var batonDrawM = p.match(/カードを(\d+)枚引/);
+      return twT({
+        template: "toujou_baton_both_trim_hand_draw",
+        targetHandSize: Number(batonHandTargetM && batonHandTargetM[1]) || 3,
+        deckDrawCount: Number(batonDrawM && batonDrawM[1]) || 3,
+        requiresOnStage: true,
+      });
+    }
     var drawDiscardM = p.match(/カードを(\d+)枚引き?、手札を(\d+)枚控え室に置/);
     if (!drawDiscardM) drawDiscardM = p.match(/カードを(\d+)枚引.*手札を(\d+)枚控え室/);
     if (drawDiscardM) {
       return twT({
         template: "draw_then_hand_discard",
         deckDrawCount: Number(drawDiscardM[1]) || 1,
-        handDiscardToWaiting: Number(drawDiscardM[2]) || 1,
+        effectDiscardCount: Number(drawDiscardM[2]) || 1,
         requiresOnStage: true,
         filters: parseAbilityPickFilters(p),
       });
@@ -1013,7 +1073,7 @@ export function classifyCardAbility(card, trigger, segmentRawOverride) {
       return withTrigger("live_success", {
         template: "draw_then_hand_discard",
         deckDrawCount: Number(lsCombo[1]) || 1,
-        handDiscardToWaiting: Number(lsCombo[2]) || 1,
+        effectDiscardCount: Number(lsCombo[2]) || 1,
       });
     }
     var lsPick = parseDeckTopCount(p);
@@ -1112,6 +1172,24 @@ export function classifyCardAbility(card, trigger, segmentRawOverride) {
       });
     }
 
+    /**
+     * 「ライブ終了時まで、自分の手札N枚につき、ブレードを得る。」
+     * 手札サイズ / N の数のブレードをライブ開始時に獲得して、ライブ終了時まで維持する。
+     */
+    var handPerMatch = p.match(/自分の手札(\d+)枚につき/);
+    if (
+      handPerMatch &&
+      /ライブ終了時まで/.test(p) &&
+      (bladeGainFromIcons(segRaw, p) > 0 || /ブレード.*得る/.test(p) || /得る/.test(p))
+    ) {
+      return lsT({
+        template: "live_start_hand_blade_per",
+        handPer: Math.max(1, Number(handPerMatch[1]) || 2),
+        bladeGain: bladeGainFromIcons(segRaw, p) || 1,
+        requiresOnStage: true,
+      });
+    }
+
     if (/ライブ終了時まで/.test(p + segRaw)) {
       var grantBlade = bladeGainFromIcons(segRaw, p);
       var grantScore = parseScorePlusFromText(p) || parseScorePlusFromText(segRaw.replace(/\{\{[^}]+\}\}/g, ""));
@@ -1163,7 +1241,7 @@ export function classifyCardAbility(card, trigger, segmentRawOverride) {
       return lsT({
         template: "draw_per_stage_member_discard",
         deckDrawCount: Number(drawPerMemLs[1]) || 1,
-        handDiscardToWaiting: discLs ? Number(discLs[1]) : 0,
+        effectDiscardCount: discLs ? Number(discLs[1]) : 0,
         requiresOnStage: true,
         filters: parseAbilityPickFilters(p),
       });
@@ -1175,7 +1253,7 @@ export function classifyCardAbility(card, trigger, segmentRawOverride) {
       return lsT({
         template: "draw_then_hand_discard",
         deckDrawCount: Number(drawDiscardLs[1]) || 1,
-        handDiscardToWaiting: Number(drawDiscardLs[2]) || 1,
+        effectDiscardCount: Number(drawDiscardLs[2]) || 1,
         requiresOnStage: true,
         filters: parseAbilityPickFilters(p),
       });
@@ -1368,8 +1446,11 @@ export function abilityEffectIsAutomated(template) {
     template === "kidou_multi_choice" ||
     template === "kidou_self_to_wait_recover" ||
     template === "live_start_hand_discard_blade_per" ||
+    template === "live_start_hand_blade_per" ||
     template === "toujou_deck_top_wait_if_all_members" ||
-    template === "toujou_both_wait_to_empty_stage"
+    template === "toujou_deck_top_wait_if_all_heart" ||
+    template === "toujou_both_wait_to_empty_stage" ||
+    template === "toujou_baton_both_trim_hand_draw"
   );
 }
 

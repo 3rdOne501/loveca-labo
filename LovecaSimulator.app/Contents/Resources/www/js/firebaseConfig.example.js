@@ -22,12 +22,26 @@
  *         match /users/{userId}/state/{docId} {
  *           allow read, write: if request.auth != null && request.auth.uid == userId;
  *         }
+ *         match /versusMatches/{roomId} {
+ *           allow read: if request.auth != null
+ *             && (resource.data.hostUid == request.auth.uid
+ *               || resource.data.guestUid == request.auth.uid);
+ *           allow create: if request.auth != null
+ *             && request.resource.data.hostUid == request.auth.uid;
+ *           allow update: if request.auth != null
+ *             && (resource.data.hostUid == request.auth.uid
+ *               || resource.data.guestUid == request.auth.uid);
+ *           allow delete: if request.auth != null
+ *             && resource.data.hostUid == request.auth.uid;
+ *         }
  *       }
  *     }
  *
  *   5. 「プロジェクトの設定」→「全般」→「マイアプリ」で Web アプリを追加し、表示された
  *      `firebaseConfig` をこのファイルの `firebaseConfig` にコピー
- *   6. このファイルを `js/firebaseConfig.js` の名前で保存して GitHub にプッシュ
+ *   6. Authentication → Settings → Authorized domains に次を追加（無い場合）:
+ *      `localhost`（※ 127.0.0.1 ではなく localhost で開く）、`3rdone501.github.io`（GitHub Pages）
+ *   7. このファイルを `js/firebaseConfig.js` の名前で保存して GitHub にプッシュ
  */
 export const firebaseConfig = {
   apiKey: "",

@@ -1,5 +1,10 @@
 import { loadCardDatabase, prefetchDeckCardImagesFromMap, getCard } from "./cards.js";
-import { STORAGE_PLAY_RESUME, STORAGE_BUILDER_UI_RESTORE_FLAG, APP_MODULE_CACHE_BUST } from "./config.js";
+import {
+  STORAGE_PLAY_RESUME,
+  STORAGE_BUILDER_UI_RESTORE_FLAG,
+  STORAGE_VERSUS_ONLINE_SESSION,
+  APP_MODULE_CACHE_BUST,
+} from "./config.js";
 import {
   initVersusMode,
   teardownVersusModeSession,
@@ -7,6 +12,7 @@ import {
   persistVersusOnlineSession,
   clearVersusOnlineSession,
   pauseVersusOnlineToLobby,
+  getRememberedVersusRoomCode,
 } from "./versusMode.js";
 import { normalizeDeckMapCounts } from "./deckLibrary.js";
 import { initDeckBuilder, loadDeckBundleFromStorage } from "./deckbuilder.js";
@@ -114,6 +120,10 @@ function tryResumePlaySession(viewDeck, viewGame) {
   try {
     const raw = sessionStorage.getItem(STORAGE_PLAY_RESUME);
     if (!raw) return false;
+    if (raw.length > 600000) {
+      clearPlayResumeStorage();
+      return false;
+    }
     const pr = JSON.parse(raw);
     if (
       !pr ||
@@ -391,15 +401,39 @@ function startApp(viewDeck, viewGame, statusEl) {
 }
 
 function resumeSessionsAfterBoot(viewDeck, viewGame) {
-  tryRestoreVersusOnlineSession(function (payload) {
-    enterVersusPlay(viewDeck, viewGame, payload);
-  })
-    .then(function (restored) {
-      if (!restored) tryResumePlaySession(viewDeck, viewGame);
+  window.setTimeout(function () {
+    tryRestoreVersusOnlineSession(function (payload) {
+      enterVersusPlay(viewDeck, viewGame, payload);
     })
-    .catch(function () {
-      tryResumePlaySession(viewDeck, viewGame);
-    });
+      .then(function (restored) {
+        if (!restored && !readVersusOnlineSessionForResumeGate()) {
+          tryResumePlaySession(viewDeck, viewGame);
+        }
+      })
+      .catch(function () {
+        if (!readVersusOnlineSessionForResumeGate()) {
+          tryResumePlaySession(viewDeck, viewGame);
+        }
+      });
+  }, 0);
+}
+
+/** オンライン対戦の復帰待ちがあるときはソロ用 STORAGE_PLAY_RESUME で上書きしない */
+function readVersusOnlineSessionForResumeGate() {
+  try {
+    var raw = sessionStorage.getItem(STORAGE_VERSUS_ONLINE_SESSION);
+    if (!raw) return false;
+    var s = JSON.parse(raw);
+    if (s && s.v === 1 && s.roomCode && s.inPlay === true) return true;
+  } catch (_) {
+    /* noop */
+  }
+  try {
+    if (typeof window !== "undefined" && window.__llocgVersusPendingLobbyRoom) return true;
+  } catch (_) {
+    /* noop */
+  }
+  return !!getRememberedVersusRoomCode();
 }
 
 function tryLoadDatabase(viewDeck, viewGame, statusEl) {
@@ -651,7 +685,9 @@ function wireCloudAuthBar() {
       appStarted &&
       viewGame &&
       viewGame.hidden &&
-      !document.body.classList.contains("play-mode")
+      !document.body.classList.contains("play-mode") &&
+      !window.__llocgVersusPlayMounted &&
+      !window.__llocgVersusBootRestoreDone
     ) {
       tryRestoreVersusOnlineSession(function (payload) {
         enterVersusPlay(viewDeck, viewGame, payload);
