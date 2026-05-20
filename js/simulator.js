@@ -85,6 +85,7 @@ import {
   completeVersusOpeningMulligan,
   concedeVersusMatch,
   endVersusTurn,
+  resetVersusMatchForNextGame,
   evaluateVersusWinFromCounts,
   isVersusLivePhase,
   isVersusTurnForRole,
@@ -427,6 +428,8 @@ export function mountSimulator(
   var deckMiddleCardNos = sanitizeDeckRoleCardNos(deckRoleLabels && deckRoleLabels.middleCardNos);
   /** 盤面リセット・保存デッキ適用で参照する現在のメイン構成（Undo 用に snapshot にも載せる） */
   var activePlayDeckMap = normalizeDeckMapCounts(deckMap);
+
+  const $ = (id) => root.querySelector("#" + id) || document.getElementById(id);
 
   /** nT開始時グリッド行の前提（sessionStorage と同期）。t1開始の連続めくり・ライブで出す枚数・次ターン開始ドロー */
   var deckOddsTimelineT1K = 1;
@@ -1520,6 +1523,13 @@ export function mountSimulator(
   var versusMulliganUiKey = "";
   /** マリガン確定 API 送信中 */
   var versusMulliganCommitPending = false;
+  /** 通常フェイズの自動ターン開始（重複防止） */
+  var versusNormalAutoKey = "";
+  /** リマッチ検知 */
+  var versusLastRematchSeq = -1;
+  var versusRematchPrepTimer = 0;
+  var versusConcedeOverlayTimer = 0;
+  var versusFirstPlayerBannerShownForSeq = -1;
   if (versusSession) {
     state.playVersusMode = true;
     if (versusSession.myRole) state.versusMyRole = versusSession.myRole;
@@ -1538,13 +1548,9 @@ export function mountSimulator(
     if (oppBoardWrap) oppBoardWrap.hidden = versusSession.mode !== "online";
     if (versusSession.mode === "online" && versusMatch && versusMatch.match) {
       versusBootstrapping = true;
-      if (versusMatch.match.firstPlayerRole) {
-        var fpVersus = root.querySelector("#select-first-player") || document.getElementById("select-first-player");
-        if (fpVersus) {
-          fpVersus.value =
-            versusMatch.match.firstPlayerRole === versusSession.myRole ? "先攻" : "後攻";
-        }
-      }
+      state.deckPileFacesDown = true;
+      versusLastRematchSeq = Math.max(0, Math.floor(Number(versusMatch.match.rematchSeq) || 0));
+      syncVersusFirstPlayerSelect(versusMatch.match);
       versusLastSyncedSlCount = Array.isArray(state.successfulLiveArea)
         ? state.successfulLiveArea.length
         : 0;
@@ -1591,6 +1597,9 @@ export function mountSimulator(
   }
   if (!resumedFromStorage) {
     state.deck = buildMainDeckInstances(activePlayDeckMap);
+    if (versusSession && versusSession.mode === "online") {
+      state.deckPileFacesDown = true;
+    }
     dealOpeningHand(state.deck, state.hand, OPENING_HAND_SIZE);
     openingMulliganRememberedK = null;
     deckOddsOpeningMullBaselineOn = false;
@@ -1795,8 +1804,6 @@ export function mountSimulator(
   }
 
   normalizeAllCardFields();
-
-  const $ = (id) => root.querySelector("#" + id) || document.getElementById(id);
 
   /** プレイ画面のみ：縦長スマホ向け DOM 組み替え（デスクトップでは左列レイアウトへ復帰） */
   function isPlayChromeMobilePortraitLayout() {
@@ -11876,10 +11883,211 @@ export function mountSimulator(
     return !canRoleActInVersus(versusSession.remoteMatch, versusSession.myRole);
   }
 
+  function ensureVersusOverlayChrome() {
+    ensureVersusUiChrome();
+    var viewGame = document.getElementById("view-game");
+    if (!document.getElementById("versus-concede-overlay") && viewGame) {
+      var concede = document.createElement("div");
+      concede.id = "versus-concede-overlay";
+      concede.className = "versus-concede-overlay";
+      concede.hidden = true;
+      concede.setAttribute("aria-live", "assertive");
+      var concedeP = document.createElement("p");
+      concedeP.className = "versus-concede-overlay__text";
+      concedeP.textContent = "投了が選択されました";
+      concede.appendChild(concedeP);
+      viewGame.appendChild(concede);
+    }
+    if (!document.getElementById("versus-opp-action-feed") && viewGame) {
+      var feed = document.createElement("div");
+      feed.id = "versus-opp-action-feed";
+      feed.className = "versus-opp-action-feed";
+      feed.hidden = true;
+      feed.setAttribute("aria-live", "polite");
+      viewGame.appendChild(feed);
+    }
+  }
+
+  function syncVersusFirstPlayerSelect(remoteMatch) {
+    var fpSel =
+      root.querySelector("#select-first-player") || document.getElementById("select-first-player");
+    if (!fpSel || !versusSession || !versusSession.myRole || !remoteMatch) return;
+    if (remoteMatch.status !== "playing" || !remoteMatch.firstPlayerRole) {
+      fpSel.disabled = false;
+      return;
+    }
+    fpSel.value =
+      remoteMatch.firstPlayerRole === versusSession.myRole ? "先攻" : "後攻";
+    fpSel.disabled = true;
+    fpSel.title = "オンライン対戦の先攻／後攻（自動同期）";
+  }
+
+  function resetLocalVersusBoardForRematch() {
+    undoHistory.length = 0;
+    redoHistory.length = 0;
+    versusNormalAutoKey = "";
+    versusMulliganUiKey = "";
+    versusMulliganCommitPending = false;
+    openingMulliganExecuteUsed = false;
+    openingMulliganRememberedK = null;
+    const deck = shuffle(buildMainDeckInstances(activePlayDeckMap));
+    const hand = [];
+    dealOpeningHand(deck, hand, OPENING_HAND_SIZE);
+    applyBoard({
+      deck: deck,
+      hand: hand,
+      previewScratch: [],
+      deckPileOpen: false,
+      deckPileFacesDown: true,
+      stage: { left: [], center: [], right: [] },
+      liveArea: { left: [], center: [], right: [] },
+      successfulLiveArea: [],
+      waitingRoom: [],
+      resolutionArea: [],
+      energyArea: initialEnergyArea(),
+      turnCount: 0,
+      awaitingTurnStart: true,
+      mulliganSelectedIds: [],
+      liveTurnPickMode: false,
+      liveTurnSelectedIds: [],
+      liveTurnHandSpreadPick: false,
+      liveStatsAfterBegin: false,
+      playLiveStartGlowActive: false,
+      playLiveYellStarted: false,
+      liveScoreEffectBonus: 0,
+      ealeNoteLiveHitIds: [],
+      ealeNoteLiveScorePoints: 0,
+      pendingDrawYellHandDraws: 0,
+    });
+    uid = Math.max(uid, 999);
+    liveTurnStartGlowArmed = false;
+    versusBoardSyncLastFp = "";
+    if (versusSession) {
+      versusSession._firstPlayerBannerTimer = 0;
+    }
+  }
+
+  function showVersusConcedeOverlay() {
+    ensureVersusOverlayChrome();
+    var el = document.getElementById("versus-concede-overlay");
+    if (!el) return;
+    el.hidden = false;
+    if (versusConcedeOverlayTimer) {
+      clearTimeout(versusConcedeOverlayTimer);
+      versusConcedeOverlayTimer = 0;
+    }
+    versusConcedeOverlayTimer = window.setTimeout(function () {
+      versusConcedeOverlayTimer = 0;
+      if (el) el.hidden = true;
+    }, 4500);
+  }
+
+  function scheduleVersusRematchPrepIfHost(remoteMatch) {
+    if (!versusSession || versusSession.mode !== "online" || versusSession.myRole !== "host") {
+      return;
+    }
+    if (versusRematchPrepTimer) return;
+    versusRematchPrepTimer = window.setTimeout(function () {
+      versusRematchPrepTimer = 0;
+      if (!versusSession || versusSession.mode !== "online") return;
+      resetVersusMatchForNextGame(versusSession.roomCode)
+        .then(function () {
+          showToast("次のゲームの準備ができました（開幕マリガンから）", { duration: 6000 });
+        })
+        .catch(function (err) {
+          showToast(String(err.message || err), { duration: 8000 });
+        });
+    }, 4200);
+  }
+
+  function maybeAutoVersusNormalTurnStart(remoteMatch) {
+    if (!versusOnlineActive() || !versusSession.myRole) return;
+    var phase = normalizeVersusPhase(remoteMatch);
+    if (phase !== "firstNormal" && phase !== "secondNormal") return;
+    if (!canRoleActInVersus(remoteMatch, versusSession.myRole)) return;
+    var key =
+      phase +
+      ":" +
+      String(remoteMatch.turnNumber || 1) +
+      ":" +
+      String(remoteMatch.activePlayerRole || "");
+    if (versusNormalAutoKey === key) return;
+    versusNormalAutoKey = key;
+    pushHistoryBefore("versus-auto-turn-open");
+    state.turnCount += 1;
+    runTurnPhaseStartAfterSuccessLivePrompt();
+    pushVersusPublicState(versusSession.roomCode, versusSession.myRole, {
+      lastAction: "ターン開始（自動）",
+    }).catch(function () {
+      /* noop */
+    });
+  }
+
+  function syncVersusTurnStartButton(remoteMatch) {
+    var btn = $("btn-turn-start");
+    if (!btn) return;
+    if (!versusOnlineActive() || !remoteMatch) {
+      btn.textContent = "ターン開始/次のターンへ";
+      btn.classList.remove("btn--versus-end-glow");
+      btn.disabled = false;
+      return;
+    }
+    var phase = normalizeVersusPhase(remoteMatch);
+    var mineAct = canRoleActInVersus(remoteMatch, versusSession.myRole);
+    var normalPhase = phase === "firstNormal" || phase === "secondNormal";
+    if (normalPhase && mineAct) {
+      btn.textContent = "ターン終了";
+      btn.disabled = false;
+      btn.classList.toggle("btn--versus-end-glow", liveTurnStartGlowArmed);
+      btn.title = "自分の通常フェイズを終え、次のフェイズへ進みます（総合ルール 7.3）";
+      return;
+    }
+    if (isVersusOpeningMulliganPhase(remoteMatch)) {
+      btn.textContent = "ターン開始/次のターンへ";
+      btn.disabled = true;
+      btn.title = "開幕マリガン中は使用できません";
+      btn.classList.remove("btn--versus-end-glow");
+      return;
+    }
+    if (phase === "live") {
+      btn.textContent = "ターン開始/次のターンへ";
+      btn.disabled = true;
+      btn.title = "ライブフェイズ中はライブ操作で進めてください";
+      btn.classList.remove("btn--versus-end-glow");
+      return;
+    }
+    btn.textContent = "ターン開始/次のターンへ";
+    btn.disabled = !mineAct;
+    btn.classList.remove("btn--versus-end-glow");
+  }
+
+  function syncVersusOpponentActionFeed(remoteMatch) {
+    ensureVersusOverlayChrome();
+    var el = document.getElementById("versus-opp-action-feed");
+    if (!el || !versusSession || !remoteMatch) {
+      if (el) el.hidden = true;
+      return;
+    }
+    if (!versusOnlineActive()) {
+      el.hidden = true;
+      return;
+    }
+    var txt = versusOpponentLastAction(remoteMatch, versusSession.myRole);
+    if (txt && String(txt).trim()) {
+      el.textContent = "相手: " + String(txt).trim();
+      el.hidden = false;
+    } else {
+      el.hidden = true;
+    }
+  }
+
   function ensureVersusUiChrome() {
     if (!document.getElementById("versus-first-player-banner")) {
       var viewGame = document.getElementById("view-game");
       if (viewGame) {
+        if (!viewGame.classList.contains("view-game--versus")) {
+          viewGame.classList.add("view-game--versus");
+        }
         var fp = document.createElement("div");
         fp.id = "versus-first-player-banner";
         fp.className = "versus-first-player-banner";
@@ -11959,18 +12167,23 @@ export function mountSimulator(
       el.hidden = true;
       return;
     }
+    var seq = Math.max(0, Math.floor(Number(remoteMatch.rematchSeq) || 0));
+    if (versusFirstPlayerBannerShownForSeq === seq) return;
+    versusFirstPlayerBannerShownForSeq = seq;
     var mine = remoteMatch.firstPlayerRole === versusSession.myRole;
     el.textContent = mine ? "あなたは先攻です" : "あなたは後攻です";
     el.classList.toggle("versus-first-player-banner--first", mine);
     el.classList.toggle("versus-first-player-banner--second", !mine);
     el.hidden = false;
-    if (!versusSession._firstPlayerBannerTimer) {
-      versusSession._firstPlayerBannerTimer = window.setTimeout(function () {
-        versusSession._firstPlayerBannerTimer = 0;
-        var b = document.getElementById("versus-first-player-banner");
-        if (b) b.hidden = true;
-      }, 7000);
+    if (versusSession._firstPlayerBannerTimer) {
+      clearTimeout(versusSession._firstPlayerBannerTimer);
+      versusSession._firstPlayerBannerTimer = 0;
     }
+    versusSession._firstPlayerBannerTimer = window.setTimeout(function () {
+      versusSession._firstPlayerBannerTimer = 0;
+      var b = document.getElementById("versus-first-player-banner");
+      if (b) b.hidden = true;
+    }, 6500);
   }
 
   function syncVersusOpponentEffectUi(remoteMatch) {
@@ -12104,23 +12317,17 @@ export function mountSimulator(
           openingMulliganExecuteUsed = true;
         }
       }
-    } else if (phase === "firstNormal" && remoteMatch.turnNumber === 1) {
+    } else if (phase === "firstNormal" || phase === "secondNormal") {
       versusMulliganUiKey = "";
       versusMulliganCommitPending = false;
-      if (mineAct && mineFirst) {
-        state.awaitingTurnStart = true;
-        openingMulliganExecuteUsed = true;
-      } else if (!mineAct) {
-        state.awaitingTurnStart = false;
-      }
-    } else if (phase === "secondNormal" && remoteMatch.turnNumber === 1) {
-      versusMulliganUiKey = "";
-      versusMulliganCommitPending = false;
-      if (mineAct && !mineFirst) {
-        state.awaitingTurnStart = true;
-        openingMulliganExecuteUsed = true;
-      } else if (!mineAct) {
-        state.awaitingTurnStart = false;
+      state.awaitingTurnStart = false;
+      openingMulliganExecuteUsed = true;
+      if (mineAct) {
+        try {
+          maybeAutoVersusNormalTurnStart(remoteMatch);
+        } catch (autoTurnErr) {
+          console.warn("[versus] auto turn start failed:", autoTurnErr);
+        }
       }
     } else {
       versusMulliganUiKey = "";
@@ -12165,6 +12372,9 @@ export function mountSimulator(
     syncVersusPhaseLiveBanner(remoteMatch);
     showVersusFirstPlayerBanner(remoteMatch);
     syncVersusOpponentEffectUi(remoteMatch);
+    syncVersusFirstPlayerSelect(remoteMatch);
+    syncVersusTurnStartButton(remoteMatch);
+    syncVersusOpponentActionFeed(remoteMatch);
   }
 
   function doVersusMulliganExecuteClick() {
@@ -12208,13 +12418,11 @@ export function mountSimulator(
       showToast("あなたのターンではありません");
       return;
     }
-    if (state.awaitingTurnStart) {
-      showToast("「ターン開始」でドローしてからターン終了してください");
-      return;
-    }
     endVersusTurn(versusSession.roomCode, versusSession.myRole)
       .then(function () {
+        versusNormalAutoKey = "";
         state.awaitingTurnStart = false;
+        liveTurnStartGlowArmed = false;
         showToast("ターンを終了しました");
         render();
       })
@@ -12249,6 +12457,8 @@ export function mountSimulator(
     });
     if (versusSession.remoteMatch) {
       syncVersusMatchBar(versusSession.remoteMatch);
+      syncVersusFirstPlayerSelect(versusSession.remoteMatch);
+      showVersusFirstPlayerBanner(versusSession.remoteMatch);
       syncMulliganUi();
       render();
     }
@@ -12260,7 +12470,25 @@ export function mountSimulator(
 
   function applyRemoteVersusMatch(remoteMatch) {
     if (!versusSession || !remoteMatch) return;
+    var prevMatch = versusSession.remoteMatch;
     versusSession.remoteMatch = remoteMatch;
+    syncVersusFirstPlayerSelect(remoteMatch);
+
+    var rematchSeq = Math.max(0, Math.floor(Number(remoteMatch.rematchSeq) || 0));
+    if (
+      remoteMatch.status === "playing" &&
+      rematchSeq > versusLastRematchSeq &&
+      (state.versusMatchEnded || (prevMatch && prevMatch.status === "ended"))
+    ) {
+      versusLastRematchSeq = rematchSeq;
+      state.versusMatchEnded = false;
+      resetLocalVersusBoardForRematch();
+      versusFirstPlayerBannerShownForSeq = -1;
+      showToast("次のゲームの準備（6枚配布・マリガン前）", { duration: 6000 });
+    } else if (remoteMatch.status === "playing") {
+      versusLastRematchSeq = Math.max(versusLastRematchSeq, rematchSeq);
+    }
+
     if (versusBootstrapping) return;
     updateVersusTurnGlow(remoteMatch);
     var oppSl =
@@ -12272,8 +12500,13 @@ export function mountSimulator(
     syncVersusMatchBar(remoteMatch);
     syncVersusOppSlDisplay();
     applyVersusOpponentBoardFromRemote(remoteMatch);
+    syncVersusOpponentActionFeed(remoteMatch);
     if (remoteMatch.status === "ended" && !state.versusMatchEnded) {
       state.versusMatchEnded = true;
+      if (remoteMatch.endedReason === "concede") {
+        showVersusConcedeOverlay();
+        scheduleVersusRematchPrepIfHost(remoteMatch);
+      }
       showVersusEndBanner(remoteMatch);
       document.body.classList.remove("versus-my-turn", "versus-opponent-turn");
     }
@@ -12715,6 +12948,22 @@ export function mountSimulator(
           body.classList.add("flow-hint--mulligan-execute");
           return;
         }
+        if (
+          (vPh === "firstNormal" || vPh === "secondNormal") &&
+          canRoleActInVersus(versusSession.remoteMatch, versusSession.myRole)
+        ) {
+          body.classList.remove(
+            "flow-hint--live-turn-start",
+            "flow-hint--live-to-area",
+            "flow-hint--live-begin",
+            "flow-hint--mulligan-execute",
+            "flow-hint--turn-start",
+            "flow-hint--turn-start-yell",
+            "flow-hint--live-success",
+          );
+          body.classList.add("flow-hint--versus-end-turn");
+          return;
+        }
         body.classList.remove(
           "flow-hint--live-turn-start",
           "flow-hint--live-to-area",
@@ -12723,6 +12972,7 @@ export function mountSimulator(
           "flow-hint--turn-start-yell",
           "flow-hint--live-success",
           "flow-hint--mulligan-execute",
+          "flow-hint--versus-end-turn",
         );
         return;
       }
@@ -12735,6 +12985,7 @@ export function mountSimulator(
       "flow-hint--turn-start-yell",
       "flow-hint--live-success",
       "flow-hint--mulligan-execute",
+      "flow-hint--versus-end-turn",
     );
     function finalizeTurnStartYellGlow() {
       body.classList.toggle(
@@ -12901,8 +13152,7 @@ export function mountSimulator(
         !openingMulliganExecuteUsed &&
         !versusMulliganCommitPending
       : state.awaitingTurnStart === true && !openingMulliganExecuteUsed;
-    var showVersusEndTurn =
-      versusNormalPhase && mineAct && state.awaitingTurnStart !== true;
+    var showVersusEndTurn = false;
     const hint = $("hand-mulligan-hint");
     if (hint) {
       if (versusNormalPhase && mineAct) {
@@ -12937,11 +13187,6 @@ export function mountSimulator(
         btn.disabled = true;
         btn.textContent = "マリガン確定中…";
         btn.classList.remove("btn--versus-end-glow");
-      } else if (showVersusEndTurn) {
-        btn.hidden = false;
-        btn.disabled = false;
-        btn.textContent = "ターン終了";
-        btn.classList.toggle("btn--versus-end-glow", liveTurnStartGlowArmed);
       } else if (versusOnlineActive()) {
         btn.hidden = true;
         btn.disabled = true;
@@ -13123,6 +13368,10 @@ export function mountSimulator(
     syncLiveYellDrawButtons();
     syncDeckPileUi();
     syncMulliganUi();
+    if (versusOnlineActive() && versusSession.remoteMatch) {
+      syncVersusTurnStartButton(versusSession.remoteMatch);
+      syncVersusOpponentActionFeed(versusSession.remoteMatch);
+    }
     syncLiveTurnHandUi();
     syncPlayFlowHintGlows();
     syncDeckOddsKInput();
@@ -13808,7 +14057,16 @@ export function mountSimulator(
     render();
   }
 
-  $("btn-turn-start")?.addEventListener("click", doTurnPhaseStart);
+  $("btn-turn-start")?.addEventListener("click", function () {
+    if (versusOnlineActive() && versusSession.remoteMatch) {
+      var vPh = normalizeVersusPhase(versusSession.remoteMatch);
+      if (vPh === "firstNormal" || vPh === "secondNormal") {
+        doVersusEndTurnClick();
+        return;
+      }
+    }
+    doTurnPhaseStart();
+  });
 
   $("btn-zone-hints")?.addEventListener("click", function () {
     document.body.classList.toggle("zone-hints-visible");

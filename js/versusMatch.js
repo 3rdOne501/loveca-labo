@@ -63,6 +63,7 @@ const ROOM_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
  * @property {string|null} [guestEffectCardNo]
  * @property {boolean} [hostOpeningMulliganDone]
  * @property {boolean} [guestOpeningMulliganDone]
+ * @property {number} [rematchSeq]
  */
 
 export function isVersusMatchAvailable() {
@@ -314,6 +315,7 @@ export async function startVersusMatch(roomCode) {
     versusPhase: "firstMulligan",
     hostOpeningMulliganDone: false,
     guestOpeningMulliganDone: false,
+    rematchSeq: 0,
     liveStep: null,
     hostLiveSetDone: false,
     guestLiveSetDone: false,
@@ -870,6 +872,57 @@ export async function clearVersusEffectHighlight(roomCode, role) {
 }
 
 /** @param {string} roomCode @param {VersusRole} role */
+/**
+ * 投了後の次ゲーム準備（ホストのみ・6.2.1.4〜6 相当の開幕前まで）
+ * @param {string} roomCode
+ */
+export async function resetVersusMatchForNextGame(roomCode) {
+  const user = requireUser();
+  const { api } = fs();
+  const ref = matchRef(roomCode);
+  const snap = await api.getDoc(ref);
+  if (!snap.exists()) throw new Error("ルームが見つかりません。");
+  const data = /** @type {VersusMatchDoc} */ (snap.data());
+  if (data.hostUid !== user.uid) {
+    throw new Error("次のゲームの準備はルーム作成者（ホスト）のみ行えます。");
+  }
+  if (data.status !== "ended") {
+    throw new Error("対戦終了後にのみ次のゲームを準備できます。");
+  }
+  const firstPlayerRole = Math.random() < 0.5 ? "host" : "guest";
+  const now = new Date().toISOString();
+  const seq = Math.max(0, Math.floor(Number(data.rematchSeq) || 0)) + 1;
+  await api.updateDoc(ref, {
+    status: "playing",
+    firstPlayerRole: firstPlayerRole,
+    activePlayerRole: firstPlayerRole,
+    updatedAt: now,
+    hostSuccessLiveCount: 0,
+    guestSuccessLiveCount: 0,
+    hostConceded: false,
+    guestConceded: false,
+    winnerRole: null,
+    endedReason: null,
+    turnNumber: 1,
+    hostLastAction: null,
+    guestLastAction: null,
+    versusPhase: "firstMulligan",
+    hostOpeningMulliganDone: false,
+    guestOpeningMulliganDone: false,
+    rematchSeq: seq,
+    liveStep: null,
+    hostLiveSetDone: false,
+    guestLiveSetDone: false,
+    hostPerfDone: false,
+    guestPerfDone: false,
+    hostLiveComplete: false,
+    guestLiveComplete: false,
+    successLiveFirstLocked: false,
+    hostEffectCardNo: null,
+    guestEffectCardNo: null,
+  });
+}
+
 export async function concedeVersusMatch(roomCode, role) {
   requireUser();
   const { api } = fs();
@@ -879,12 +932,14 @@ export async function concedeVersusMatch(roomCode, role) {
   const data = /** @type {VersusMatchDoc} */ (snap.data());
   if (data.status === "ended") return;
   const winnerRole = role === "host" ? "guest" : "host";
+  const actionField = role === "host" ? "hostLastAction" : "guestLastAction";
   const patch = {
     status: "ended",
     winnerRole: winnerRole,
     endedReason: "concede",
     updatedAt: new Date().toISOString(),
   };
+  patch[actionField] = "投了";
   if (role === "host") patch.hostConceded = true;
   else patch.guestConceded = true;
   await api.updateDoc(ref, patch);

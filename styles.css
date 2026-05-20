@@ -911,17 +911,74 @@ body.play-versus-mode #mount-mobile-live-prob-inline .deck-live-sim-summary {
   border: 1px solid rgba(255, 170, 80, 0.45);
   background: rgba(48, 28, 8, 0.55);
 }
-.versus-first-player-banner {
+body.play-versus-mode #view-game.view-game--versus {
   position: relative;
-  z-index: 6;
-  margin: 0.25rem 0 0.35rem;
-  padding: 0.55rem 0.75rem;
+}
+.versus-concede-overlay {
+  position: absolute;
+  left: 50%;
+  top: 30%;
+  transform: translate(-50%, -50%);
+  z-index: 220;
+  pointer-events: none;
+  padding: 1rem 1.6rem;
+  border-radius: var(--radius-md, 8px);
+  background: rgba(48, 8, 12, 0.92);
+  border: 2px solid rgba(255, 120, 120, 0.65);
+  box-shadow:
+    0 0 40px rgba(255, 80, 80, 0.45),
+    0 8px 32px rgba(0, 0, 0, 0.55);
+}
+.versus-concede-overlay__text {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 5vw, 2.4rem);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: #ffe8e8;
+  text-shadow:
+    0 0 16px rgba(255, 120, 120, 0.95),
+    0 0 32px rgba(255, 60, 60, 0.55);
+  white-space: nowrap;
+}
+.versus-opp-action-feed {
+  position: fixed;
+  right: 0.65rem;
+  bottom: 0.65rem;
+  z-index: 95;
+  max-width: min(360px, 46vw);
+  padding: 0.45rem 0.65rem;
+  border-radius: var(--radius-md, 8px);
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: #e8eeff;
+  background: rgba(16, 22, 42, 0.92);
+  border: 1px solid rgba(140, 170, 255, 0.38);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+}
+body.play-versus-mode .versus-opponent-board__surface .versus-opp-card--facing {
+  transform: rotate(180deg);
+  transform-origin: center center;
+}
+body.play-versus-mode .versus-opponent-board__surface .versus-opp-card--facing .card-img.rotated {
+  transform: rotate(270deg);
+  transform-origin: center center;
+}
+.versus-first-player-banner {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, -50%);
+  z-index: 210;
+  margin: 0;
+  padding: 1rem 1.5rem;
   border-radius: var(--radius-md, 8px);
   font-family: var(--font-display);
-  font-size: clamp(1.05rem, 3.5vw, 1.35rem);
+  font-size: clamp(1.35rem, 5vw, 2rem);
   font-weight: 900;
   text-align: center;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
+  pointer-events: none;
 }
 .versus-first-player-banner--first {
   color: #fff6d8;
@@ -963,8 +1020,15 @@ body.play-versus-mode .versus-opponent-board {
     opacity: 0.72;
   }
 }
+body.play-mode.flow-hint--versus-end-turn #btn-turn-start:not(:disabled) {
+  animation: versus-end-turn-glow 2.2s ease-in-out infinite;
+  box-shadow:
+    0 0 16px rgba(255, 180, 90, 0.55),
+    0 0 32px rgba(255, 140, 50, 0.35);
+}
 #btn-mulligan-execute.btn--versus-end-glow:not(:disabled),
-#btn-versus-end-turn.btn--versus-end-glow:not(:disabled) {
+#btn-versus-end-turn.btn--versus-end-glow:not(:disabled),
+#btn-turn-start.btn--versus-end-glow:not(:disabled) {
   animation: versus-end-turn-glow 2.2s ease-in-out infinite;
   box-shadow:
     0 0 16px rgba(255, 180, 90, 0.55),

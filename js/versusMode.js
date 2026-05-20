@@ -215,6 +215,7 @@ function updateVersusLobbyButtons(match, myRole) {
   var btnReady = el("dlg-versus-ready");
   var btnStart = el("dlg-versus-start");
   var btnEnter = el("dlg-versus-enter-play");
+  var btnRejoin = el("dlg-versus-rejoin-room");
   var u = getCurrentCloudUser();
   var isHost = myRole === "host";
   var inRoom = !!(match && myRole && u);
@@ -229,6 +230,9 @@ function updateVersusLobbyButtons(match, myRole) {
   if (btnStart) {
     btnStart.hidden = !inRoom || !isHost || match.status !== "lobby";
     btnStart.disabled = !(match.hostDeckReady && match.guestDeckReady && match.guestUid);
+  }
+  if (btnRejoin) {
+    btnRejoin.hidden = !inRoom || match.status !== "playing";
   }
   if (btnEnter) {
     btnEnter.hidden = !inRoom || match.status !== "playing";
@@ -338,6 +342,7 @@ export function initVersusMode(opts) {
   var btnReady = el("dlg-versus-ready");
   var btnStart = el("dlg-versus-start");
   var btnEnter = el("dlg-versus-enter-play");
+  var btnRejoin = el("dlg-versus-rejoin-room");
   var btnLeave = el("dlg-versus-leave");
 
   function refreshVersusButton() {
@@ -458,7 +463,7 @@ export function initVersusMode(opts) {
     }
   });
 
-  btnEnter?.addEventListener("click", function () {
+  function enterVersusPlayFromLobby() {
     if (!lastLobbyMatch || lastLobbyMatch.status !== "playing") return;
     var u = getCurrentCloudUser() || getEffectiveCloudUser();
     if (!u || !u.uid || typeof onEnterVersusPlay !== "function") return;
@@ -476,7 +481,10 @@ export function initVersusMode(opts) {
     persistVersusOnlineSession(lastLobbyMatch.roomCode, myRole, true);
     onEnterVersusPlay(payload);
     dlg?.close();
-  });
+  }
+
+  btnEnter?.addEventListener("click", enterVersusPlayFromLobby);
+  btnRejoin?.addEventListener("click", enterVersusPlayFromLobby);
 
   btnLeave?.addEventListener("click", async function () {
     var u = getCurrentCloudUser();
@@ -607,6 +615,23 @@ export async function tryRestoreVersusOnlineSession(onEnterPlay) {
       rememberVersusRoomCode(match.roomCode);
       persistVersusOnlineSession(match.roomCode, myRole, !!saved.inPlay);
 
+      watchRoom(match.roomCode);
+      if (match.status === "playing" && saved.inPlay && typeof onEnterPlay === "function") {
+        if (!versusMatchHasOpponent(match)) {
+          markVersusPendingLobbyRoom(match.roomCode);
+          persistVersusOnlineSession(match.roomCode, myRole, false);
+          return false;
+        }
+        var payload = buildVersusOnlineEnterPayload(match, myRole);
+        if (!deckHasCards(payload.deckMap)) {
+          markVersusPendingLobbyRoom(match.roomCode);
+          persistVersusOnlineSession(match.roomCode, myRole, false);
+          return false;
+        }
+        persistVersusOnlineSession(match.roomCode, myRole, true);
+        onEnterPlay(payload);
+        return true;
+      }
       markVersusPendingLobbyRoom(match.roomCode);
       persistVersusOnlineSession(match.roomCode, myRole, false);
       return false;

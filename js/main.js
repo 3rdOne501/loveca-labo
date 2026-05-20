@@ -377,7 +377,13 @@ function enterVersusPlay(viewDeck, viewGame, payload) {
           document.body.classList.remove("play-versus-mode");
           viewGame.hidden = true;
           viewDeck.hidden = false;
-          showToast("対戦プレイ画面の初期化に失敗しました");
+          var errMsg = err && err.message ? String(err.message) : String(err || "");
+          showToast(
+            errMsg
+              ? "対戦プレイ画面の初期化に失敗しました: " + errMsg
+              : "対戦プレイ画面の初期化に失敗しました",
+            { duration: 10000 },
+          );
         });
     }, 0);
   });
@@ -471,7 +477,7 @@ function resumeSessionsAfterBoot(viewDeck, viewGame) {
             showToast(
               "ルーム " +
                 pending +
-                " の続きがあります。「簡易対戦」からロビーを開いて再接続してください。",
+                " の続きがあります。「簡易対戦」→ ロビーで「ルームに入室」を押してください。",
               { duration: 8000 },
             );
           }

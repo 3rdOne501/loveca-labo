@@ -445,7 +445,7 @@ function resolveCardImg(c) {
 function appendOppCardItem(container, c, opts) {
   opts = opts || {};
   const div = document.createElement("div");
-  div.className = "card-item";
+  div.className = "card-item versus-opp-card--facing";
   if (c.id) div.dataset.id = c.id;
   if (c.card_no) div.dataset.cardNo = c.card_no;
   if (c.type) div.dataset.type = c.type;
