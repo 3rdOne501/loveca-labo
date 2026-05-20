@@ -969,6 +969,81 @@ body.play-versus-mode #view-game.view-game--versus {
     0 0 56px rgba(140, 180, 255, 0.45);
   white-space: nowrap;
 }
+.versus-live-score-overlay {
+  position: absolute;
+  left: 50%;
+  top: 30%;
+  transform: translate(-50%, -50%);
+  z-index: 222;
+  pointer-events: none;
+  padding: 1rem 1.8rem;
+  border-radius: var(--radius-md, 8px);
+  background: rgba(12, 18, 32, 0.9);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
+}
+.versus-live-score-overlay__text {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 5.5vw, 2.6rem);
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+.versus-live-score-overlay--win .versus-live-score-overlay__text {
+  color: #ffd0ec;
+  text-shadow:
+    0 0 20px rgba(255, 100, 180, 0.95),
+    0 0 40px rgba(255, 60, 140, 0.65);
+}
+.versus-live-score-overlay--win {
+  border-color: rgba(255, 120, 200, 0.7);
+  box-shadow: 0 0 48px rgba(255, 80, 160, 0.45);
+}
+.versus-live-score-overlay--lose .versus-live-score-overlay__text {
+  color: #c8e8ff;
+  text-shadow:
+    0 0 20px rgba(100, 180, 255, 0.95),
+    0 0 40px rgba(60, 140, 255, 0.65);
+}
+.versus-live-score-overlay--lose {
+  border-color: rgba(120, 180, 255, 0.7);
+  box-shadow: 0 0 48px rgba(80, 140, 255, 0.45);
+}
+.versus-live-score-overlay--draw .versus-live-score-overlay__text {
+  color: #fff4c8;
+  text-shadow:
+    0 0 20px rgba(255, 220, 80, 0.95),
+    0 0 40px rgba(255, 180, 40, 0.65);
+}
+.versus-live-score-overlay--draw {
+  border-color: rgba(255, 220, 100, 0.7);
+  box-shadow: 0 0 48px rgba(255, 200, 60, 0.45);
+}
+.versus-role-change-overlay {
+  position: absolute;
+  left: 50%;
+  top: 22%;
+  transform: translate(-50%, -50%);
+  z-index: 223;
+  pointer-events: none;
+  padding: 0.85rem 1.5rem;
+  border-radius: var(--radius-md, 8px);
+  background: rgba(12, 18, 32, 0.88);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+}
+.versus-role-change-overlay__text {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 4.5vw, 2rem);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: #ffffff;
+  text-shadow:
+    0 0 16px rgba(255, 255, 255, 0.9),
+    0 0 32px rgba(200, 220, 255, 0.5);
+  white-space: nowrap;
+}
 .versus-opp-action-feed {
   position: fixed;
   right: 0.65rem;

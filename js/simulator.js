@@ -104,7 +104,10 @@ import {
   versusOpponentLabel,
   versusOpponentLastAction,
   versusBothLiveSetDone,
+  versusBothLivePerfScoresReady,
   versusSecondPlayerRole,
+  commitVersusLiveJudgment,
+  finishVersusLiveJudgment,
 } from "./versusMatch.js";
 import {
   boardToVersusPublicFromState,
@@ -1531,6 +1534,15 @@ export function mountSimulator(
   var versusRematchPrepTimer = 0;
   var versusConcedeOverlayTimer = 0;
   var versusFirstPlayerBannerShownForSeq = -1;
+  /** applyVersusPhaseFromRemote の doLiveTurnBegin 二重起動防止 */
+  var versusLiveBeginAutoKey = "";
+  /** ターン終了オーバーレイ（リモート action 変化） */
+  var versusTurnEndFeedKey = "";
+  /** ライブ勝敗判定の適用済み seq */
+  var versusJudgmentAppliedSeq = -1;
+  var versusJudgmentFinishTimer = 0;
+  var versusRoleBannerTimer = 0;
+  var versusLastKnownFirstPlayerRole = null;
   if (!versusSession) {
     state.playVersusMode = false;
   }
@@ -11941,6 +11953,124 @@ export function mountSimulator(
     }, 3200);
   }
 
+  function maybeShowVersusTurnEndFromRemote(remoteMatch) {
+    if (!versusOnlineActive() || !remoteMatch) return;
+    var key =
+      String(remoteMatch.updatedAt || "") +
+      "|" +
+      String(remoteMatch.hostLastAction || "") +
+      "|" +
+      String(remoteMatch.guestLastAction || "");
+    if (key === versusTurnEndFeedKey) return;
+    versusTurnEndFeedKey = key;
+    if (
+      remoteMatch.hostLastAction === "ターン終了" ||
+      remoteMatch.guestLastAction === "ターン終了"
+    ) {
+      showVersusTurnEndOverlay();
+    }
+  }
+
+  function ensureVersusLiveScoreOverlayChrome() {
+    ensureVersusOverlayChrome();
+    var viewGame = document.getElementById("view-game");
+    if (!viewGame) return;
+    if (!document.getElementById("versus-live-score-overlay")) {
+      var ov = document.createElement("div");
+      ov.id = "versus-live-score-overlay";
+      ov.className = "versus-live-score-overlay";
+      ov.hidden = true;
+      ov.setAttribute("aria-live", "assertive");
+      var p = document.createElement("p");
+      p.className = "versus-live-score-overlay__text";
+      p.textContent = "";
+      ov.appendChild(p);
+      viewGame.appendChild(ov);
+    }
+    if (!document.getElementById("versus-role-change-overlay")) {
+      var roleOv = document.createElement("div");
+      roleOv.id = "versus-role-change-overlay";
+      roleOv.className = "versus-role-change-overlay";
+      roleOv.hidden = true;
+      roleOv.setAttribute("aria-live", "assertive");
+      var roleP = document.createElement("p");
+      roleP.className = "versus-role-change-overlay__text";
+      roleP.textContent = "";
+      roleOv.appendChild(roleP);
+      viewGame.appendChild(roleOv);
+    }
+  }
+
+  function showVersusLiveScoreOverlay(kind) {
+    ensureVersusLiveScoreOverlayChrome();
+    var el = document.getElementById("versus-live-score-overlay");
+    var p = el && el.querySelector(".versus-live-score-overlay__text");
+    if (!el || !p) return;
+    var text = "ライブスコア相打ち";
+    if (kind === "win") text = "ライブスコア勝利";
+    else if (kind === "lose") text = "ライブスコア敗北";
+    p.textContent = text;
+    el.classList.remove(
+      "versus-live-score-overlay--win",
+      "versus-live-score-overlay--lose",
+      "versus-live-score-overlay--draw",
+    );
+    if (kind === "win") el.classList.add("versus-live-score-overlay--win");
+    else if (kind === "lose") el.classList.add("versus-live-score-overlay--lose");
+    else el.classList.add("versus-live-score-overlay--draw");
+    el.hidden = false;
+    window.setTimeout(function () {
+      if (el) el.hidden = true;
+    }, 4200);
+  }
+
+  function showVersusRoleChangeOverlay(isFirst) {
+    ensureVersusLiveScoreOverlayChrome();
+    var el = document.getElementById("versus-role-change-overlay");
+    var p = el && el.querySelector(".versus-role-change-overlay__text");
+    if (!el || !p) return;
+    p.textContent = isFirst ? "先行になります" : "後攻になります";
+    el.hidden = false;
+    if (versusRoleBannerTimer) {
+      clearTimeout(versusRoleBannerTimer);
+      versusRoleBannerTimer = 0;
+    }
+    versusRoleBannerTimer = window.setTimeout(function () {
+      versusRoleBannerTimer = 0;
+      if (el) el.hidden = true;
+    }, 3600);
+  }
+
+  function isVersusSenkyurakuState() {
+    var n = Array.isArray(state.successfulLiveArea) ? state.successfulLiveArea.length : 0;
+    return n === 2;
+  }
+
+  function computeVersusLivePerfScoreTotal() {
+    try {
+      var b = evaluateLiveMechanicalFulfillmentBundle();
+      return Math.max(0, Math.floor(liveVerdictScorePoints(b).total || 0));
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  function tryAutoVersusLiveBegin(remoteMatch) {
+    if (!versusOnlineActive() || !remoteMatch || !versusSession.myRole) return;
+    if (getVersusLiveStep(remoteMatch) !== "perf") return;
+    if (!canRoleActInVersus(remoteMatch, versusSession.myRole)) return;
+    if (state.liveStatsAfterBegin) return;
+    if (!versusLiveSlotsHaveCards()) return;
+    var autoKey = buildVersusPhaseAutoKey(remoteMatch) + ":liveBegin";
+    if (versusLiveBeginAutoKey === autoKey) return;
+    versusLiveBeginAutoKey = autoKey;
+    try {
+      doLiveTurnBegin();
+    } catch (autoBeginErr) {
+      console.warn("[versus] auto live begin failed:", autoBeginErr);
+    }
+  }
+
   function versusLiveEaleDoneWithVerdict() {
     if (state.liveStatsAfterBegin !== true) return false;
     var bladeN = Math.max(0, Math.floor(sumBoardMemberBlades()));
@@ -11952,6 +12082,135 @@ export function mountSimulator(
   function patchLocalVersusRemoteMatch(patch) {
     if (!versusSession || !versusSession.remoteMatch || !patch) return;
     versusSession.remoteMatch = Object.assign({}, versusSession.remoteMatch, patch);
+  }
+
+  function versusMigrateLiveToSuccessForJudgment() {
+    var moved = 0;
+    if (isVersusSenkyurakuState()) return 0;
+    ["left", "center", "right"].forEach(function (k) {
+      var slot = state.liveArea[k];
+      var kept = [];
+      slot.forEach(function (c) {
+        if (c.type === T_LIVE) {
+          c.isRotated = false;
+          c.lcWait = false;
+          if (cardCannotPlaceOnSuccessLive(mergedCatalogCard(c))) {
+            state.waitingRoom.push(c);
+          } else {
+            state.successfulLiveArea.push(c);
+            moved++;
+          }
+        } else {
+          kept.push(c);
+        }
+      });
+      state.liveArea[k] = kept;
+    });
+    if (moved) clearTurnScopedPlayBonusesEverywhere();
+    return moved;
+  }
+
+  function versusMigrateLiveToWaitingForJudgment() {
+    var moved = 0;
+    ["left", "center", "right"].forEach(function (k) {
+      var slot = state.liveArea[k];
+      var kept = [];
+      slot.forEach(function (c) {
+        if (c.type === T_LIVE) {
+          c.isRotated = false;
+          c.lcWait = false;
+          state.waitingRoom.push(c);
+          moved++;
+        } else {
+          kept.push(c);
+        }
+      });
+      state.liveArea[k] = kept;
+    });
+    if (moved) clearTurnScopedPlayBonusesEverywhere();
+    return moved;
+  }
+
+  function applyVersusLiveJudgmentForMe(remoteMatch) {
+    if (!versusOnlineActive() || !remoteMatch || !versusSession.myRole) return;
+    var seq = Math.max(0, Math.floor(Number(remoteMatch.liveJudgmentSeq) || 0));
+    if (!seq || seq <= versusJudgmentAppliedSeq) return;
+    var outcome = remoteMatch.liveJudgmentOutcome;
+    if (outcome !== "hostWin" && outcome !== "guestWin" && outcome !== "draw") return;
+    versusJudgmentAppliedSeq = seq;
+    var myRole = versusSession.myRole;
+    var iWin = outcome === myRole;
+    var iLose =
+      (outcome === "hostWin" && myRole === "guest") ||
+      (outcome === "guestWin" && myRole === "host");
+    var iDraw = outcome === "draw";
+    var placedBefore = Array.isArray(state.successfulLiveArea)
+      ? state.successfulLiveArea.length
+      : 0;
+    var placed = 0;
+    if (iWin) {
+      placed = versusMigrateLiveToSuccessForJudgment();
+      showVersusLiveScoreOverlay("win");
+    } else if (iLose) {
+      versusMigrateLiveToWaitingForJudgment();
+      showVersusLiveScoreOverlay("lose");
+    } else if (iDraw) {
+      placed = versusMigrateLiveToSuccessForJudgment();
+      showVersusLiveScoreOverlay("draw");
+    }
+    resetVersusLocalLiveHandoff();
+    var placedAfter = Array.isArray(state.successfulLiveArea)
+      ? state.successfulLiveArea.length
+      : 0;
+    var didPlace = placedAfter > placedBefore;
+    var fpBefore = remoteMatch.firstPlayerRole;
+    var shouldClaimFirst = false;
+    if (didPlace && versusSession.roomCode) {
+      if (iWin) {
+        shouldClaimFirst = true;
+      } else if (iDraw) {
+        var oppBoard = getOpponentBoardPublic(remoteMatch, myRole);
+        var oppSlN =
+          oppBoard && Array.isArray(oppBoard.successfulLiveArea)
+            ? oppBoard.successfulLiveArea.length
+            : 0;
+        var oppSenkyu = oppSlN === 2;
+        if (oppSenkyu && !isVersusSenkyurakuState()) {
+          shouldClaimFirst = true;
+        }
+      }
+      if (shouldClaimFirst) {
+        claimVersusFirstFromSuccessLive(versusSession.roomCode, myRole).catch(function () {
+          /* noop */
+        });
+      }
+    }
+    queueVersusSuccessLivePublicSync();
+    flushVersusBoardPublicSync();
+    render();
+    if (versusSession.roomCode && versusSession.myRole === "host") {
+      if (versusJudgmentFinishTimer) clearTimeout(versusJudgmentFinishTimer);
+      versusJudgmentFinishTimer = window.setTimeout(function () {
+        versusJudgmentFinishTimer = 0;
+        finishVersusLiveJudgment(versusSession.roomCode)
+          .then(function () {
+            render();
+          })
+          .catch(function (err) {
+            console.warn("[versus] finish judgment:", err);
+          });
+      }, 4500);
+    }
+  }
+
+  function maybeCommitVersusLiveJudgment(remoteMatch) {
+    if (!versusOnlineActive() || !versusSession || versusSession.myRole !== "host") return;
+    if (!remoteMatch || getVersusLiveStep(remoteMatch) !== "judgment") return;
+    if (remoteMatch.liveJudgmentOutcome) return;
+    if (!versusBothLivePerfScoresReady(remoteMatch)) return;
+    commitVersusLiveJudgment(versusSession.roomCode).catch(function (err) {
+      console.warn("[versus] commit judgment:", err);
+    });
   }
 
   function syncVersusFirstPlayerSelect(remoteMatch) {
@@ -12305,6 +12564,7 @@ export function mountSimulator(
               showToast("ライブカードセット完了。先攻のパフォーマンスへ");
             }
             applyVersusPhaseFromRemote(versusSession.remoteMatch);
+            tryAutoVersusLiveBegin(versusSession.remoteMatch);
           } else {
             showToast("ライブカードセットを完了しました（先攻のセットを待機）");
           }
@@ -12329,10 +12589,11 @@ export function mountSimulator(
       showToast("あなたのパフォーマンス順番ではありません");
       return;
     }
-    reportVersusLivePerfComplete(versusSession.roomCode, versusSession.myRole)
+    var perfScore = computeVersusLivePerfScoreTotal();
+    reportVersusLivePerfComplete(versusSession.roomCode, versusSession.myRole, perfScore)
       .then(function () {
         resetVersusLocalLiveHandoff();
-        showToast("パフォーマンスを完了しました");
+        showToast("パフォーマンスを完了しました（スコア " + perfScore + "）");
         render();
       })
       .catch(function (err) {
@@ -12444,25 +12705,25 @@ export function mountSimulator(
         }
       }
       if (liveStep === "perf" && mineAct) {
-        if (versusLiveEaleDoneWithVerdict()) {
-          liveTurnStartGlowArmed = true;
-        } else if (versusLiveSlotsHaveCards() && !state.liveStatsAfterBegin) {
+        tryAutoVersusLiveBegin(remoteMatch);
+        if (state.liveStatsAfterBegin) {
+          try {
+            syncLiveTurnStatsPanel();
+            syncLiveYellDrawButtons();
+          } catch (_) {
+            /* noop */
+          }
+        } else if (versusLiveSlotsHaveCards()) {
           liveTurnStartGlowArmed = true;
         }
+      } else if (liveStep === "judgment") {
+        maybeCommitVersusLiveJudgment(remoteMatch);
+        applyVersusLiveJudgmentForMe(remoteMatch);
       } else if (liveStep === "successFx" && !mineAct) {
         resetVersusLocalLiveHandoff();
       }
-      if (
-        liveStep === "perf" &&
-        versusBothLiveSetDone(remoteMatch) &&
-        mineAct &&
-        mineFirst &&
-        !state.liveStatsAfterBegin &&
-        !versusLiveSlotsHaveCards()
-      ) {
-        showToast("パフォーマンスフェイズです。ライブ開始から進めてください。");
-      }
     } else {
+      versusLiveBeginAutoKey = "";
       if (state.liveTurnPickMode && !state.liveStatsAfterBegin) {
         state.liveTurnPickMode = false;
         state.liveTurnSelectedIds = [];
@@ -12618,6 +12879,7 @@ export function mountSimulator(
     }
 
     if (versusBootstrapping) return;
+    maybeShowVersusTurnEndFromRemote(remoteMatch);
     updateVersusTurnGlow(remoteMatch);
     var oppSl =
       versusSession.myRole === "host"
@@ -12625,6 +12887,18 @@ export function mountSimulator(
         : remoteMatch.hostSuccessLiveCount;
     state.versusOpponentSuccessLiveCount = Math.max(0, Math.floor(Number(oppSl) || 0));
     applyVersusPhaseFromRemote(remoteMatch);
+    if (
+      remoteMatch.firstPlayerRole &&
+      versusLastKnownFirstPlayerRole &&
+      remoteMatch.firstPlayerRole !== versusLastKnownFirstPlayerRole &&
+      normalizeVersusPhase(remoteMatch) === "firstNormal" &&
+      getVersusLiveStep(remoteMatch) == null
+    ) {
+      showVersusRoleChangeOverlay(remoteMatch.firstPlayerRole === versusSession.myRole);
+    }
+    if (remoteMatch.firstPlayerRole) {
+      versusLastKnownFirstPlayerRole = remoteMatch.firstPlayerRole;
+    }
     syncVersusMatchBar(remoteMatch);
     syncVersusOppSlDisplay();
     applyVersusOpponentBoardFromRemote(remoteMatch);
@@ -13155,6 +13429,9 @@ export function mountSimulator(
         body.classList.add("flow-hint--turn-start");
         return;
       }
+      if (vLiveStep === "judgment") {
+        return;
+      }
       return;
     }
     body.classList.remove(
@@ -13554,6 +13831,24 @@ export function mountSimulator(
     }
     syncLiveTurnHandUi();
     syncPlayFlowHintGlows();
+    if (versusOnlineActive() && versusSession.remoteMatch && isVersusLivePhase(versusSession.remoteMatch)) {
+      var vStepRender = getVersusLiveStep(versusSession.remoteMatch);
+      var vMineRender =
+        versusSession.myRole &&
+        canRoleActInVersus(versusSession.remoteMatch, versusSession.myRole);
+      if (vStepRender === "perf" && vMineRender) {
+        if (!state.liveStatsAfterBegin && versusLiveSlotsHaveCards()) {
+          tryAutoVersusLiveBegin(versusSession.remoteMatch);
+        } else if (state.liveStatsAfterBegin) {
+          try {
+            syncLiveTurnStatsPanel();
+            syncLiveYellDrawButtons();
+          } catch (_) {
+            /* noop */
+          }
+        }
+      }
+    }
     syncDeckOddsKInput();
     syncLiveTurnStatsPanel();
     syncDeckPickPanel();
@@ -14649,8 +14944,11 @@ export function mountSimulator(
       const slot = state.liveArea[k];
       const kept = [];
       slot.forEach(function (c) {
-        if (c.type === T_LIVE) kept.push(c);
-        else {
+        if (c.type === T_LIVE) {
+          c.isRotated = false;
+          c.lcWait = false;
+          kept.push(c);
+        } else {
           state.waitingRoom.push(c);
           movedNonLive++;
         }
@@ -14674,7 +14972,18 @@ export function mountSimulator(
         ? "ライブ開始 — ライブカード以外を控え室へ送りました（" + movedNonLive + " 枚）"
         : "ライブターンを終了しました",
     );
+    if (versusOnlineActive() && isVersusLivePhase(versusSession.remoteMatch)) {
+      flushVersusBoardPublicSync();
+    }
     render();
+    if (versusOnlineActive() && isVersusLivePhase(versusSession.remoteMatch)) {
+      try {
+        syncLiveTurnStatsPanel();
+        syncLiveYellDrawButtons();
+      } catch (_) {
+        /* noop */
+      }
+    }
   }
 
   $("btn-live-turn-primary")?.addEventListener("click", function () {

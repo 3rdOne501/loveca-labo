@@ -58,6 +58,12 @@ const ROOM_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
  * @property {boolean} [guestPerfDone]
  * @property {boolean} [hostLiveComplete]
  * @property {boolean} [guestLiveComplete]
+ * @property {number|null} [hostLivePerfScore]
+ * @property {number|null} [guestLivePerfScore]
+ * @property {boolean} [hostSuccessFxDone]
+ * @property {boolean} [guestSuccessFxDone]
+ * @property {'hostWin'|'guestWin'|'draw'|null} [liveJudgmentOutcome]
+ * @property {number} [liveJudgmentSeq]
  * @property {boolean} [successLiveFirstLocked]
  * @property {string|null} [hostEffectCardNo]
  * @property {string|null} [guestEffectCardNo]
@@ -323,6 +329,12 @@ export async function startVersusMatch(roomCode) {
     guestPerfDone: false,
     hostLiveComplete: false,
     guestLiveComplete: false,
+    hostLivePerfScore: null,
+    guestLivePerfScore: null,
+    hostSuccessFxDone: false,
+    guestSuccessFxDone: false,
+    liveJudgmentOutcome: null,
+    liveJudgmentSeq: 0,
     successLiveFirstLocked: false,
     hostEffectCardNo: null,
     guestEffectCardNo: null,
@@ -488,6 +500,21 @@ export function isVersusTurnForRole(match, role) {
 export function versusBothLiveSetDone(match) {
   if (!match) return false;
   return match.hostLiveSetDone === true && match.guestLiveSetDone === true;
+}
+
+/** @param {VersusMatchDoc|null|undefined} match */
+export function versusBothSuccessFxDone(match) {
+  if (!match) return false;
+  return match.hostSuccessFxDone === true && match.guestSuccessFxDone === true;
+}
+
+/** @param {VersusMatchDoc|null|undefined} match */
+export function versusBothLivePerfScoresReady(match) {
+  if (!match) return false;
+  return (
+    Number.isFinite(Number(match.hostLivePerfScore)) &&
+    Number.isFinite(Number(match.guestLivePerfScore))
+  );
 }
 
 /** @param {VersusMatchDoc|null} match @param {VersusRole} myRole */
@@ -661,6 +688,12 @@ export async function endVersusTurn(roomCode, role) {
     patch.guestPerfDone = false;
     patch.hostLiveComplete = false;
     patch.guestLiveComplete = false;
+    patch.hostLivePerfScore = null;
+    patch.guestLivePerfScore = null;
+    patch.hostSuccessFxDone = false;
+    patch.guestSuccessFxDone = false;
+    patch.liveJudgmentOutcome = null;
+    patch.liveJudgmentSeq = 0;
   } else {
     throw new Error("不明なフェーズです。");
   }
@@ -722,11 +755,12 @@ export async function reportVersusLiveSetComplete(roomCode, role) {
 }
 
 /**
- * 8.3 パフォーマンス完了（先攻→後攻→判定へ）
+ * 8.3 パフォーマンス完了（先攻→後攻→成功時効果へ）
  * @param {string} roomCode
  * @param {VersusRole} role
+ * @param {number} [liveScore] ライブスコア（勝敗判定用）
  */
-export async function reportVersusLivePerfComplete(roomCode, role) {
+export async function reportVersusLivePerfComplete(roomCode, role, liveScore) {
   requireUser();
   const { api } = fs();
   const ref = matchRef(roomCode);
@@ -747,9 +781,11 @@ export async function reportVersusLivePerfComplete(roomCode, role) {
   if (!fp || !second) throw new Error("先攻が未設定です。");
   const actionField = role === "host" ? "hostLastAction" : "guestLastAction";
   const perfFlag = role === "host" ? "hostPerfDone" : "guestPerfDone";
+  const scoreField = role === "host" ? "hostLivePerfScore" : "guestLivePerfScore";
   const patch = { updatedAt: new Date().toISOString() };
   patch[actionField] = "パフォーマンス完了";
   patch[perfFlag] = true;
+  patch[scoreField] = Math.max(0, Math.floor(Number(liveScore) || 0));
 
   if (role === fp) {
     patch.activePlayerRole = second;
@@ -758,6 +794,8 @@ export async function reportVersusLivePerfComplete(roomCode, role) {
     patch.activePlayerRole = fp;
     patch.hostPerfDone = true;
     patch.guestPerfDone = true;
+    patch.hostSuccessFxDone = false;
+    patch.guestSuccessFxDone = false;
   }
   try {
     await api.updateDoc(ref, patch);
@@ -796,23 +834,105 @@ export async function reportVersusSuccessFxDone(roomCode, role) {
   const second = versusSecondPlayerRole(data);
   if (!fp || !second) throw new Error("先攻が未設定です。");
   const actionField = role === "host" ? "hostLastAction" : "guestLastAction";
+  const fxFlag = role === "host" ? "hostSuccessFxDone" : "guestSuccessFxDone";
   const patch = { updatedAt: new Date().toISOString() };
   patch[actionField] = "成功時効果 完了";
+  patch[fxFlag] = true;
 
   if (role === fp) {
     patch.activePlayerRole = second;
-  } else if (role === second) {
-    patch.versusPhase = "firstNormal";
-    patch.liveStep = null;
-    patch.activePlayerRole = data.firstPlayerRole;
-    patch.hostLiveSetDone = false;
-    patch.guestLiveSetDone = false;
-    patch.hostPerfDone = false;
-    patch.guestPerfDone = false;
-    patch.hostLiveComplete = false;
-    patch.guestLiveComplete = false;
-    patch.turnNumber = Math.max(1, Math.floor(Number(data.turnNumber) || 1)) + 1;
+  } else {
+    const hostFx = role === "host" ? true : data.hostSuccessFxDone === true;
+    const guestFx = role === "guest" ? true : data.guestSuccessFxDone === true;
+    if (hostFx && guestFx) {
+      patch.liveStep = "judgment";
+      patch.activePlayerRole = fp;
+    } else if (fp) {
+      patch.activePlayerRole = fp;
+    }
   }
+  try {
+    await api.updateDoc(ref, patch);
+  } catch (err) {
+    throw new Error(formatVersusFirestoreError(err));
+  }
+}
+
+/**
+ * ライブスコア勝敗判定（ホストのみ・両者のスコア報告後）
+ * @param {string} roomCode
+ */
+export async function commitVersusLiveJudgment(roomCode) {
+  const user = requireUser();
+  const { api } = fs();
+  const ref = matchRef(roomCode);
+  const snap = await api.getDoc(ref);
+  if (!snap.exists()) throw new Error("ルームが見つかりません。");
+  const data = /** @type {VersusMatchDoc} */ (snap.data());
+  if (data.hostUid !== user.uid) {
+    throw new Error("勝敗判定はルーム作成者（ホスト）のみが確定できます。");
+  }
+  if (data.status !== "playing" || normalizeVersusPhase(data) !== "live") {
+    throw new Error("ライブフェイズ中ではありません。");
+  }
+  if (getVersusLiveStep(data) !== "judgment") {
+    throw new Error("ライブ勝敗判定フェイズではありません。");
+  }
+  if (data.liveJudgmentOutcome) return;
+  if (!versusBothLivePerfScoresReady(data)) {
+    throw new Error("両者のライブスコアが未報告です。");
+  }
+  const h = Math.max(0, Math.floor(Number(data.hostLivePerfScore) || 0));
+  const g = Math.max(0, Math.floor(Number(data.guestLivePerfScore) || 0));
+  /** @type {'hostWin'|'guestWin'|'draw'} */
+  let outcome = "draw";
+  if (h > g) outcome = "hostWin";
+  else if (g > h) outcome = "guestWin";
+  const seq = Math.max(0, Math.floor(Number(data.liveJudgmentSeq) || 0)) + 1;
+  try {
+    await api.updateDoc(ref, {
+      liveJudgmentOutcome: outcome,
+      liveJudgmentSeq: seq,
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    throw new Error(formatVersusFirestoreError(err));
+  }
+}
+
+/**
+ * 勝敗判定表示後に次の通常フェイズへ（ホストのみ）
+ * @param {string} roomCode
+ */
+export async function finishVersusLiveJudgment(roomCode) {
+  const user = requireUser();
+  const { api } = fs();
+  const ref = matchRef(roomCode);
+  const snap = await api.getDoc(ref);
+  if (!snap.exists()) throw new Error("ルームが見つかりません。");
+  const data = /** @type {VersusMatchDoc} */ (snap.data());
+  if (data.hostUid !== user.uid) return;
+  if (data.status !== "playing" || normalizeVersusPhase(data) !== "live") return;
+  if (getVersusLiveStep(data) !== "judgment" || !data.liveJudgmentOutcome) return;
+  const fp = data.firstPlayerRole;
+  const patch = {
+    versusPhase: "firstNormal",
+    liveStep: null,
+    activePlayerRole: fp || data.activePlayerRole,
+    hostLiveSetDone: false,
+    guestLiveSetDone: false,
+    hostPerfDone: false,
+    guestPerfDone: false,
+    hostLiveComplete: false,
+    guestLiveComplete: false,
+    hostLivePerfScore: null,
+    guestLivePerfScore: null,
+    hostSuccessFxDone: false,
+    guestSuccessFxDone: false,
+    liveJudgmentOutcome: null,
+    turnNumber: Math.max(1, Math.floor(Number(data.turnNumber) || 1)) + 1,
+    updatedAt: new Date().toISOString(),
+  };
   try {
     await api.updateDoc(ref, patch);
   } catch (err) {
@@ -929,6 +1049,12 @@ export async function resetVersusMatchForNextGame(roomCode) {
     guestPerfDone: false,
     hostLiveComplete: false,
     guestLiveComplete: false,
+    hostLivePerfScore: null,
+    guestLivePerfScore: null,
+    hostSuccessFxDone: false,
+    guestSuccessFxDone: false,
+    liveJudgmentOutcome: null,
+    liveJudgmentSeq: 0,
     successLiveFirstLocked: false,
     hostEffectCardNo: null,
     guestEffectCardNo: null,
