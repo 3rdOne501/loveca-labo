@@ -2,7 +2,7 @@
  * オンライン対戦: 場・手札の公開スナップショット（相手閲覧用）
  * ソロプレイの盤面ロジックとは独立。
  */
-import { CARD_BACK_DRAG_DATA_URI, T_MEMBER } from "./config.js";
+import { CARD_BACK_DRAG_DATA_URI, T_LIVE, T_MEMBER } from "./config.js";
 import { getCard } from "./cards.js";
 
 export const VERSUS_BOARD_PUBLIC_V = 1;
@@ -33,6 +33,7 @@ export const VERSUS_BOARD_PUBLIC_V = 1;
  * @property {VersusPublicCard[]} previewScratch
  * @property {{ left: VersusPublicCard[], center: VersusPublicCard[], right: VersusPublicCard[] }} stage
  * @property {{ left: VersusPublicCard[], center: VersusPublicCard[], right: VersusPublicCard[] }} liveArea
+ * @property {boolean} [liveRevealed]
  */
 
 /** @param {unknown} raw */
@@ -124,25 +125,53 @@ function countTriple(trip) {
   );
 }
 
-/** ライブ置き場は枚数だけ共有（表面は非公開） */
+/** ライブ枠からライブカードのみ抽出（メンバー誤配置は公開しない） */
+function liveCardsFromSlot(arr) {
+  const list = arrayFromFirestoreValue(arr);
+  const out = [];
+  for (let i = 0; i < list.length; i++) {
+    const c = stripCard(list[i], i);
+    if (c && c.type === T_LIVE) out.push(c);
+  }
+  return out;
+}
+
+/** ライブ置き場はライブカード枚数だけ共有（表面は非公開） */
 function stripLiveAreaPublic(trip) {
   const t =
     trip && typeof trip === "object"
       ? /** @type {Record<string, unknown>} */ (trip)
       : {};
   function slot(arr) {
-    const list = arrayFromFirestoreValue(arr);
-    const out = [];
-    for (let i = 0; i < list.length; i++) {
-      out.push({
-        id: "opp-live-" + i,
+    const lives = liveCardsFromSlot(arr);
+    return lives.map(function (c, i) {
+      return {
+        id: c.id || "opp-live-" + i,
         card_no: "",
         name: "",
-        type: "ライブ",
+        type: T_LIVE,
         hiddenFace: true,
-      });
-    }
-    return out;
+      };
+    });
+  }
+  return {
+    left: slot(t.left),
+    center: slot(t.center),
+    right: slot(t.right),
+  };
+}
+
+/** ライブ開始後: ライブカードのみ表面公開 */
+function stripLiveAreaRevealed(trip) {
+  const t =
+    trip && typeof trip === "object"
+      ? /** @type {Record<string, unknown>} */ (trip)
+      : {};
+  function slot(arr) {
+    const lives = liveCardsFromSlot(arr);
+    return lives.filter(function (c) {
+      return !c.hiddenFace;
+    });
   }
   return {
     left: slot(t.left),
@@ -180,7 +209,10 @@ function redactLiveAreaPublic(trip) {
 export function boardToVersusPublic(board) {
   const b = board && typeof board === "object" ? board : {};
   const stage = stripTriple(b.stage);
-  const liveArea = stripLiveAreaPublic(b.liveArea);
+  const liveRevealed = b.liveRevealed === true;
+  const liveArea = liveRevealed
+    ? stripLiveAreaRevealed(b.liveArea)
+    : stripLiveAreaPublic(b.liveArea);
   const handCount = stripCardList(b.hand).length;
   return {
     v: VERSUS_BOARD_PUBLIC_V,
@@ -204,6 +236,7 @@ export function boardToVersusPublic(board) {
     previewScratch: [],
     stage: stage,
     liveArea: liveArea,
+    liveRevealed: liveRevealed,
   };
 }
 
@@ -234,6 +267,7 @@ export function boardToVersusPublicFromState(st) {
     energyArea: st.energyArea,
     previewScratch: st.previewScratch || [],
     turnCount: st.turnCount,
+    liveRevealed: st.liveRevealed === true,
   });
 }
 
@@ -246,25 +280,17 @@ export function fingerprintVersusPublicBoard(board) {
   function trip(t) {
     return ids(t && t.left) + "|" + ids(t && t.center) + "|" + ids(t && t.right);
   }
-  function liveCounts(t) {
-    return (
-      String(t && t.left ? t.left.length : 0) +
-      "," +
-      String(t && t.center ? t.center.length : 0) +
-      "," +
-      String(t && t.right ? t.right.length : 0)
-    );
-  }
   return [
     board.turnCount,
     board.deckCount,
     String(board.handCount || 0),
+    board.liveRevealed ? "1" : "0",
     ids(board.waitingRoom),
     ids(board.resolutionArea),
     ids(board.successfulLiveArea),
     ids(board.energyArea),
     trip(board.stage),
-    liveCounts(board.liveArea),
+    trip(board.liveArea),
   ].join("\x1e");
 }
 
@@ -296,6 +322,7 @@ export function buildVersusBoardFirestorePatch(role, board) {
       deckCount: safe.deckCount,
       turnCount: safe.turnCount,
       handCount: safe.handCount,
+      liveRevealed: safe.liveRevealed === true,
       stageCount: countTriple(safe.stage),
       liveCount: countTriple(safe.liveArea),
     },
@@ -340,9 +367,14 @@ function assemblePublicBoardFromMatchFields(match, pre) {
   const stage = stripTriple(
     match[pre + "StagePublic"] != null ? match[pre + "StagePublic"] : nested && nested.stage,
   );
-  const liveRaw = stripTriple(
+  const liveRevealed =
+    meta.liveRevealed === true || (nested && nested.liveRevealed === true);
+  const liveRawFull = stripTriple(
     match[pre + "LivePublic"] != null ? match[pre + "LivePublic"] : nested && nested.liveArea,
   );
+  const liveRaw = liveRevealed
+    ? stripLiveAreaRevealed(liveRawFull)
+    : redactLiveAreaPublic(liveRawFull);
 
   return {
     v: VERSUS_BOARD_PUBLIC_V,
@@ -373,7 +405,8 @@ function assemblePublicBoardFromMatchFields(match, pre) {
     ),
     previewScratch: [],
     stage: stage,
-    liveArea: redactLiveAreaPublic(liveRaw),
+    liveArea: liveRaw,
+    liveRevealed: liveRevealed,
   };
 }
 
@@ -414,12 +447,15 @@ function appendOppCardItem(container, c, opts) {
   const div = document.createElement("div");
   div.className = "card-item";
   if (c.id) div.dataset.id = c.id;
+  if (c.card_no) div.dataset.cardNo = c.card_no;
   if (c.type) div.dataset.type = c.type;
   if (c.hiddenFace) div.classList.add("card-item--opp-secret");
   if (c.lcWait) div.classList.add("card-item--lc-wait");
   if (c.lcInactive) div.classList.add("card-item--lc-inactive");
   if (c.energyWait) div.classList.add("card-item--energy-wait");
-  if (opts.forceLiveHorizontal) div.classList.add("card-item--live-h");
+  const livePickBack = opts.forceLiveHorizontal && c.hiddenFace;
+  const liveFaceUp = opts.forceLiveFaceUp && c.type === T_LIVE && !c.hiddenFace;
+  if (livePickBack) div.classList.add("card-item--live-h");
 
   const artWrap = document.createElement("div");
   artWrap.className = "card-art-wrap";
@@ -436,7 +472,7 @@ function appendOppCardItem(container, c, opts) {
     img.src = CARD_BACK_DRAG_DATA_URI;
     img.alt = c.hiddenFace ? "非公開" : c.card_no || "";
   }
-  if (opts.forceLiveHorizontal || c.energyWait) img.classList.add("rotated");
+  if ((livePickBack || c.energyWait) && !liveFaceUp) img.classList.add("rotated");
   artWrap.appendChild(img);
   div.appendChild(artWrap);
 
@@ -564,15 +600,18 @@ export function renderVersusOpponentBoard(board, opts) {
   fillOppStrip(document.getElementById("versus-opp-stage-left"), board.stage.left);
   fillOppStrip(document.getElementById("versus-opp-stage-center"), board.stage.center);
   fillOppStrip(document.getElementById("versus-opp-stage-right"), board.stage.right);
-  fillOppStrip(document.getElementById("versus-opp-live-left"), board.liveArea.left, {
-    forceLiveHorizontal: true,
-  });
-  fillOppStrip(document.getElementById("versus-opp-live-center"), board.liveArea.center, {
-    forceLiveHorizontal: true,
-  });
-  fillOppStrip(document.getElementById("versus-opp-live-right"), board.liveArea.right, {
-    forceLiveHorizontal: true,
-  });
+  const liveRenderOpts = board.liveRevealed
+    ? { forceLiveFaceUp: true }
+    : { forceLiveHorizontal: true };
+  fillOppStrip(document.getElementById("versus-opp-live-left"), board.liveArea.left, liveRenderOpts);
+  fillOppStrip(
+    document.getElementById("versus-opp-live-center"),
+    board.liveArea.center,
+    liveRenderOpts,
+  );
+  fillOppStrip(document.getElementById("versus-opp-live-right"), board.liveArea.right, liveRenderOpts);
+
+  wireVersusOpponentZoneInspect(board, opts);
 
   const deckPile = document.getElementById("versus-opp-deck-pile");
   if (deckPile) {
@@ -589,4 +628,96 @@ export function renderVersusOpponentBoard(board, opts) {
 export function hideVersusOpponentBoard() {
   const wrap = document.getElementById("versus-opponent-board-wrap");
   if (wrap) wrap.hidden = true;
+}
+
+/** @type {VersusPublicBoard|null} */
+let lastOppInspectBoard = null;
+
+/**
+ * @param {VersusPublicBoard} board
+ * @param {string} title
+ * @param {VersusPublicCard[]} cards
+ */
+export function openVersusOpponentZoneDialog(board, title, cards) {
+  lastOppInspectBoard = board;
+  const dlg = document.getElementById("dlg-zone-bh-list");
+  const titleEl = document.getElementById("dlg-zone-bh-list-title");
+  const lead = document.getElementById("dlg-zone-bh-list-lead");
+  const body = document.getElementById("dlg-zone-bh-list-body");
+  if (!dlg || !body) return;
+  if (titleEl) titleEl.textContent = "相手: " + title;
+  if (lead) {
+    lead.textContent =
+      cards && cards.length
+        ? cards.length + " 枚（対戦相手の公開情報）"
+        : "このゾーンにカードはありません";
+  }
+  body.replaceChildren();
+  if (!cards || !cards.length) {
+    dlg.showModal();
+    return;
+  }
+  const grid = document.createElement("div");
+  grid.className = "dlg-zone-bh-list__grid";
+  cards.forEach(function (c) {
+    const tile = document.createElement("button");
+    tile.type = "button";
+    tile.className = "dlg-zone-bh-list__tile";
+    const img = document.createElement("img");
+    img.className = "dlg-zone-bh-list__img";
+    img.alt = c.name || c.card_no || "";
+    const src = resolveCardImg(c);
+    img.src = src || CARD_BACK_DRAG_DATA_URI;
+    tile.appendChild(img);
+    const lab = document.createElement("span");
+    lab.className = "dlg-zone-bh-list__label";
+    lab.textContent = c.hiddenFace ? "非公開" : c.name || c.card_no || "カード";
+    tile.appendChild(lab);
+    tile.addEventListener("click", function () {
+      if (c.hiddenFace || !c.card_no) return;
+      const cat = getCard(c.card_no);
+      if (cat) {
+        import("./cardCatalogDialog.js").then(function (mod) {
+          mod.openCardCatalogDialog(cat, { playMode: true });
+        });
+      }
+    });
+    grid.appendChild(tile);
+  });
+  body.appendChild(grid);
+  dlg.showModal();
+}
+
+/**
+ * @param {VersusPublicBoard} board
+ * @param {{ effectCardNo?: string|null }} [opts]
+ */
+function wireVersusOpponentZoneInspect(board, opts) {
+  const wrap = document.getElementById("versus-opponent-board-wrap");
+  if (!wrap) return;
+  const zones = [
+    { sel: "#versus-opp-zone-waiting", title: "控え室", cards: board.waitingRoom },
+    { sel: "#versus-opp-zone-resolution", title: "解決", cards: board.resolutionArea },
+    { sel: "#versus-opp-zone-sl", title: "成功ライブ", cards: board.successfulLiveArea },
+    { sel: "#versus-opp-stage-left", title: "ステージ左", cards: board.stage.left },
+    { sel: "#versus-opp-stage-center", title: "ステージ中央", cards: board.stage.center },
+    { sel: "#versus-opp-stage-right", title: "ステージ右", cards: board.stage.right },
+  ];
+  zones.forEach(function (z) {
+    const el = wrap.querySelector(z.sel);
+    if (!el) return;
+    el.classList.add("versus-opp-zone-clickable");
+    el.onclick = function (ev) {
+      ev.stopPropagation();
+      openVersusOpponentZoneDialog(board, z.title, z.cards);
+    };
+  });
+  const effectNo = opts && opts.effectCardNo ? String(opts.effectCardNo) : "";
+  wrap.querySelectorAll(".card-item").forEach(function (node) {
+    node.classList.remove("versus-opp-card--effect");
+  });
+  if (effectNo) {
+    const hit = wrap.querySelector('.card-item[data-card-no="' + effectNo.replace(/"/g, "") + '"]');
+    if (hit) hit.classList.add("versus-opp-card--effect");
+  }
 }

@@ -13,6 +13,9 @@ const ROOM_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 /** @typedef {'host'|'guest'} VersusRole */
 /** @typedef {'waiting'|'lobby'|'playing'|'ended'} VersusMatchStatus */
+/** @typedef {'firstNormal'|'secondNormal'|'live'} VersusPhase */
+/** @typedef {'opening'|'main'} VersusPhaseLegacy */
+/** @typedef {'set'|'perf'|'judgment'|'successFx'} VersusLiveStep */
 
 /**
  * @typedef {Object} VersusMatchDoc
@@ -47,6 +50,17 @@ const ROOM_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
  * @property {import('./versusBoardSync.js').VersusPublicBoard|null} [guestBoardPublic]
  * @property {string|null} [hostBoardAt]
  * @property {string|null} [guestBoardAt]
+ * @property {VersusPhase|VersusPhaseLegacy} [versusPhase]
+ * @property {VersusLiveStep|null} [liveStep]
+ * @property {boolean} [hostLiveSetDone]
+ * @property {boolean} [guestLiveSetDone]
+ * @property {boolean} [hostPerfDone]
+ * @property {boolean} [guestPerfDone]
+ * @property {boolean} [hostLiveComplete]
+ * @property {boolean} [guestLiveComplete]
+ * @property {boolean} [successLiveFirstLocked]
+ * @property {string|null} [hostEffectCardNo]
+ * @property {string|null} [guestEffectCardNo]
  */
 
 export function isVersusMatchAvailable() {
@@ -295,12 +309,131 @@ export async function startVersusMatch(roomCode) {
     turnNumber: 1,
     hostLastAction: null,
     guestLastAction: null,
+    versusPhase: "firstNormal",
+    liveStep: null,
+    hostLiveSetDone: false,
+    guestLiveSetDone: false,
+    hostPerfDone: false,
+    guestPerfDone: false,
+    hostLiveComplete: false,
+    guestLiveComplete: false,
+    successLiveFirstLocked: false,
+    hostEffectCardNo: null,
+    guestEffectCardNo: null,
   });
 }
 
-/** @param {VersusMatchDoc|null} match @param {VersusRole|null} role */
+/** @param {VersusMatchDoc|null|undefined} match */
+export function versusSecondPlayerRole(match) {
+  if (!match || !match.firstPlayerRole) return null;
+  return match.firstPlayerRole === "host" ? "guest" : "host";
+}
+
+/**
+ * 旧フィールドを含め正規化（7.1.2 先攻通常→後攻通常→ライブ）
+ * @param {VersusMatchDoc|null|undefined} match
+ * @returns {VersusPhase}
+ */
+export function normalizeVersusPhase(match) {
+  if (!match) return "firstNormal";
+  const p = match.versusPhase;
+  if (p === "firstNormal" || p === "secondNormal" || p === "live") return p;
+  const fp = match.firstPlayerRole;
+  const ap = match.activePlayerRole;
+  if (p === "opening") {
+    if (ap && fp && ap !== fp) return "secondNormal";
+    return "firstNormal";
+  }
+  if (p === "main") {
+    if (ap && fp && ap === fp) return "firstNormal";
+    return "secondNormal";
+  }
+  return "firstNormal";
+}
+
+/** @param {VersusMatchDoc|null|undefined} match @returns {VersusLiveStep|null} */
+export function getVersusLiveStep(match) {
+  if (!match || normalizeVersusPhase(match) !== "live") return null;
+  const s = match.liveStep;
+  if (s === "set" || s === "perf" || s === "judgment" || s === "successFx") return s;
+  return "set";
+}
+
+/** @param {VersusMatchDoc|null|undefined} match */
+export function isVersusLivePhase(match) {
+  return !!(match && match.status === "playing" && normalizeVersusPhase(match) === "live");
+}
+
+/** @param {VersusMatchDoc|null|undefined} match @param {VersusRole|null} role */
+export function isVersusFirstPlayer(match, role) {
+  return !!(match && role && match.firstPlayerRole === role);
+}
+
+/**
+ * UI 用フェーズ説明
+ * @param {VersusMatchDoc|null|undefined} match
+ * @param {VersusRole|null} myRole
+ */
+export function describeVersusFlowForRole(match, myRole) {
+  if (!match || !myRole) return "";
+  const phase = normalizeVersusPhase(match);
+  const fp = match.firstPlayerRole;
+  const second = versusSecondPlayerRole(match);
+  const mineFirst = myRole === fp;
+  const active = match.activePlayerRole;
+  const mineActive = active === myRole;
+
+  if (phase === "firstNormal") {
+    if (mineActive && mineFirst) return "先攻通常フェイズ（あなたの手番）";
+    if (mineActive && !mineFirst) return "先攻通常フェイズ（あなたの手番・先攻側）";
+    if (!mineActive && mineFirst) return "先攻通常フェイズ（相手の手番）";
+    return "先攻通常フェイズ（相手の手番）";
+  }
+  if (phase === "secondNormal") {
+    if (mineActive && !mineFirst) return "後攻通常フェイズ（あなたの手番）";
+    if (mineActive && mineFirst) return "後攻通常フェイズ（あなたの手番・後攻側）";
+    if (!mineActive && !mineFirst) return "後攻通常フェイズ（相手の手番）";
+    return "後攻通常フェイズ（相手の手番）";
+  }
+  const step = getVersusLiveStep(match);
+  if (step === "set") {
+    if (mineActive && mineFirst) return "ライブカードセット（先攻・あなた）";
+    if (mineActive && !mineFirst) return "ライブカードセット（後攻・あなた）";
+    if (!mineActive && mineFirst) return "ライブカードセット（先攻・相手）";
+    return "ライブカードセット（後攻・相手）";
+  }
+  if (step === "perf") {
+    if (mineActive && mineFirst) return "先攻パフォーマンス（あなた）";
+    if (mineActive && !mineFirst) return "後攻パフォーマンス（あなた）";
+    if (!mineActive && mineFirst) return "先攻パフォーマンス（相手）";
+    return "後攻パフォーマンス（相手）";
+  }
+  if (step === "judgment") return "ライブ勝敗判定フェイズ";
+  if (step === "successFx") {
+    if (mineActive && mineFirst) return "ライブ成功時効果（先攻から）";
+    if (mineActive && !mineFirst) return "ライブ成功時効果（後攻・あなた）";
+    if (!mineActive && mineFirst) return "ライブ成功時効果（先攻・相手）";
+    return "ライブ成功時効果（後攻・相手）";
+  }
+  void second;
+  return "ライブフェイズ";
+}
+
+/** @param {VersusMatchDoc|null|undefined} match @param {VersusRole|null} role */
+export function canRoleActInVersus(match, role) {
+  if (!match || match.status !== "playing" || !role) return false;
+  const phase = normalizeVersusPhase(match);
+  if (phase !== "live") {
+    return match.activePlayerRole === role;
+  }
+  const step = getVersusLiveStep(match);
+  if (step === "judgment") return false;
+  return match.activePlayerRole === role;
+}
+
+/** @param {VersusMatchDoc|null|undefined} match @param {VersusRole|null} role */
 export function isVersusTurnForRole(match, role) {
-  return !!(match && match.status === "playing" && role && match.activePlayerRole === role);
+  return canRoleActInVersus(match, role);
 }
 
 /** @param {VersusMatchDoc|null} match @param {VersusRole} myRole */
@@ -360,6 +493,15 @@ export async function pushVersusPublicState(roomCode, role, patch) {
  * @param {VersusRole} role
  */
 export async function advanceVersusTurn(roomCode, role) {
+  return endVersusTurn(roomCode, role);
+}
+
+/**
+ * ターン終了（開幕・メイン・ライブ遷移）
+ * @param {string} roomCode
+ * @param {VersusRole} role
+ */
+export async function endVersusTurn(roomCode, role) {
   const user = requireUser();
   const { api } = fs();
   const ref = matchRef(roomCode);
@@ -372,24 +514,256 @@ export async function advanceVersusTurn(roomCode, role) {
   if (!snap.exists()) throw new Error("ルームが見つかりません。");
   const data = /** @type {VersusMatchDoc} */ (snap.data());
   if (data.status !== "playing") throw new Error("対戦中ではありません。");
-  if (data.activePlayerRole !== role) {
+  if (!canRoleActInVersus(data, role)) {
     throw new Error("あなたのターンではありません。相手の操作を待ってください。");
   }
-  const nextRole = role === "host" ? "guest" : "host";
-  const turn = Math.max(1, Math.floor(Number(data.turnNumber) || 1)) + 1;
+  const fp = data.firstPlayerRole;
+  const second = versusSecondPlayerRole(data);
+  if (!fp || !second) throw new Error("先攻が未設定です。");
   const actionField = role === "host" ? "hostLastAction" : "guestLastAction";
-  const patch = {
-    activePlayerRole: nextRole,
-    turnNumber: turn,
-    updatedAt: new Date().toISOString(),
-  };
+  const phase = normalizeVersusPhase(data);
+  const now = new Date().toISOString();
+  /** @type {Record<string, unknown>} */
+  const patch = { updatedAt: now };
   patch[actionField] = "ターン終了";
+
+  if (phase === "live") {
+    throw new Error("ライブフェイズ中です。セット完了・ライブ開始・パフォーマンス完了で進めてください。");
+  }
+
+  if (phase === "firstNormal") {
+    if (role !== fp) {
+      throw new Error("先攻プレイヤーの通常フェイズです。");
+    }
+    patch.versusPhase = "secondNormal";
+    patch.activePlayerRole = second;
+  } else if (phase === "secondNormal") {
+    if (role !== second) {
+      throw new Error("後攻プレイヤーの通常フェイズです。");
+    }
+    patch.versusPhase = "live";
+    patch.liveStep = "set";
+    patch.activePlayerRole = fp;
+    patch.hostLiveSetDone = false;
+    patch.guestLiveSetDone = false;
+    patch.hostPerfDone = false;
+    patch.guestPerfDone = false;
+    patch.hostLiveComplete = false;
+    patch.guestLiveComplete = false;
+  } else {
+    throw new Error("不明なフェーズです。");
+  }
   try {
     await api.updateDoc(ref, patch);
   } catch (err) {
     throw new Error(formatVersusFirestoreError(err));
   }
   void user;
+}
+
+/**
+ * 8.2 ライブカードセット完了（先攻→後攻）
+ * @param {string} roomCode
+ * @param {VersusRole} role
+ */
+export async function reportVersusLiveSetComplete(roomCode, role) {
+  requireUser();
+  const { api } = fs();
+  const ref = matchRef(roomCode);
+  const snap = await api.getDoc(ref);
+  if (!snap.exists()) throw new Error("ルームが見つかりません。");
+  const data = /** @type {VersusMatchDoc} */ (snap.data());
+  if (data.status !== "playing" || normalizeVersusPhase(data) !== "live") {
+    throw new Error("ライブフェイズ中ではありません。");
+  }
+  if (getVersusLiveStep(data) !== "set") {
+    throw new Error("ライブカードセットフェイズではありません。");
+  }
+  if (!canRoleActInVersus(data, role)) {
+    throw new Error("あなたのセット順番ではありません。");
+  }
+  const fp = data.firstPlayerRole;
+  const second = versusSecondPlayerRole(data);
+  if (!fp || !second) throw new Error("先攻が未設定です。");
+  const actionField = role === "host" ? "hostLastAction" : "guestLastAction";
+  const setFlag = role === "host" ? "hostLiveSetDone" : "guestLiveSetDone";
+  const patch = { updatedAt: new Date().toISOString() };
+  patch[actionField] = "ライブセット完了";
+  patch[setFlag] = true;
+
+  if (role === fp) {
+    patch.activePlayerRole = second;
+  } else if (role === second) {
+    patch.liveStep = "perf";
+    patch.activePlayerRole = fp;
+  }
+  try {
+    await api.updateDoc(ref, patch);
+  } catch (err) {
+    throw new Error(formatVersusFirestoreError(err));
+  }
+}
+
+/**
+ * 8.3 パフォーマンス完了（先攻→後攻→判定へ）
+ * @param {string} roomCode
+ * @param {VersusRole} role
+ */
+export async function reportVersusLivePerfComplete(roomCode, role) {
+  requireUser();
+  const { api } = fs();
+  const ref = matchRef(roomCode);
+  const snap = await api.getDoc(ref);
+  if (!snap.exists()) throw new Error("ルームが見つかりません。");
+  const data = /** @type {VersusMatchDoc} */ (snap.data());
+  if (data.status !== "playing" || normalizeVersusPhase(data) !== "live") {
+    throw new Error("ライブフェイズ中ではありません。");
+  }
+  if (getVersusLiveStep(data) !== "perf") {
+    throw new Error("パフォーマンスフェイズではありません。");
+  }
+  if (!canRoleActInVersus(data, role)) {
+    throw new Error("あなたのパフォーマンス順番ではありません。");
+  }
+  const fp = data.firstPlayerRole;
+  const second = versusSecondPlayerRole(data);
+  if (!fp || !second) throw new Error("先攻が未設定です。");
+  const actionField = role === "host" ? "hostLastAction" : "guestLastAction";
+  const perfFlag = role === "host" ? "hostPerfDone" : "guestPerfDone";
+  const patch = { updatedAt: new Date().toISOString() };
+  patch[actionField] = "パフォーマンス完了";
+  patch[perfFlag] = true;
+
+  if (role === fp) {
+    patch.activePlayerRole = second;
+  } else if (role === second) {
+    patch.liveStep = "successFx";
+    patch.activePlayerRole = fp;
+    patch.hostPerfDone = true;
+    patch.guestPerfDone = true;
+  }
+  try {
+    await api.updateDoc(ref, patch);
+  } catch (err) {
+    throw new Error(formatVersusFirestoreError(err));
+  }
+}
+
+/** @deprecated reportVersusLivePerfComplete を使用 */
+export async function reportVersusLiveComplete(roomCode, role) {
+  return reportVersusLivePerfComplete(roomCode, role);
+}
+
+/**
+ * 8.4 ライブ成功時効果を先攻→後攻の順で処理し終えた報告
+ * @param {string} roomCode
+ * @param {VersusRole} role
+ */
+export async function reportVersusSuccessFxDone(roomCode, role) {
+  requireUser();
+  const { api } = fs();
+  const ref = matchRef(roomCode);
+  const snap = await api.getDoc(ref);
+  if (!snap.exists()) throw new Error("ルームが見つかりません。");
+  const data = /** @type {VersusMatchDoc} */ (snap.data());
+  if (data.status !== "playing" || normalizeVersusPhase(data) !== "live") {
+    throw new Error("ライブフェイズ中ではありません。");
+  }
+  if (getVersusLiveStep(data) !== "successFx") {
+    throw new Error("ライブ成功時効果の処理順番ではありません。");
+  }
+  if (!canRoleActInVersus(data, role)) {
+    throw new Error("あなたの成功時効果処理順番ではありません。");
+  }
+  const fp = data.firstPlayerRole;
+  const second = versusSecondPlayerRole(data);
+  if (!fp || !second) throw new Error("先攻が未設定です。");
+  const actionField = role === "host" ? "hostLastAction" : "guestLastAction";
+  const patch = { updatedAt: new Date().toISOString() };
+  patch[actionField] = "成功時効果 完了";
+
+  if (role === fp) {
+    patch.activePlayerRole = second;
+  } else if (role === second) {
+    patch.versusPhase = "firstNormal";
+    patch.liveStep = null;
+    patch.activePlayerRole = data.firstPlayerRole;
+    patch.hostLiveSetDone = false;
+    patch.guestLiveSetDone = false;
+    patch.hostPerfDone = false;
+    patch.guestPerfDone = false;
+    patch.hostLiveComplete = false;
+    patch.guestLiveComplete = false;
+    patch.turnNumber = Math.max(1, Math.floor(Number(data.turnNumber) || 1)) + 1;
+  }
+  try {
+    await api.updateDoc(ref, patch);
+  } catch (err) {
+    throw new Error(formatVersusFirestoreError(err));
+  }
+}
+
+/**
+ * 成功ライブに最初に置いたプレイヤーを先攻に（1回のみ）
+ * @param {string} roomCode
+ * @param {VersusRole} role
+ */
+export async function claimVersusFirstFromSuccessLive(roomCode, role) {
+  requireUser();
+  const { api } = fs();
+  const ref = matchRef(roomCode);
+  const snap = await api.getDoc(ref);
+  if (!snap.exists()) return;
+  const data = /** @type {VersusMatchDoc} */ (snap.data());
+  if (data.successLiveFirstLocked) return;
+  try {
+    await api.updateDoc(ref, {
+      firstPlayerRole: role,
+      successLiveFirstLocked: true,
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.warn("[versusMatch] claim first from SL failed:", err);
+  }
+}
+
+/**
+ * @param {string} roomCode
+ * @param {VersusRole} role
+ * @param {string|null} cardNo
+ */
+export async function pushVersusEffectHighlight(roomCode, role, cardNo) {
+  if (!cardNo) return;
+  requireUser();
+  const { api } = fs();
+  const ref = matchRef(roomCode);
+  const field = role === "host" ? "hostEffectCardNo" : "guestEffectCardNo";
+  const actionField = role === "host" ? "hostLastAction" : "guestLastAction";
+  try {
+    await api.updateDoc(ref, {
+      [field]: String(cardNo),
+      [actionField]: "効果発動",
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.warn("[versusMatch] effect highlight failed:", err);
+  }
+}
+
+/** @param {string} roomCode @param {VersusRole} role */
+export async function clearVersusEffectHighlight(roomCode, role) {
+  requireUser();
+  const { api } = fs();
+  const ref = matchRef(roomCode);
+  const field = role === "host" ? "hostEffectCardNo" : "guestEffectCardNo";
+  try {
+    await api.updateDoc(ref, {
+      [field]: null,
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.warn("[versusMatch] clear effect highlight failed:", err);
+  }
 }
 
 /** @param {string} roomCode @param {VersusRole} role */
