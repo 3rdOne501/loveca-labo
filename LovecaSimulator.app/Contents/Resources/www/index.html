@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Loveca Labo" />
-    <meta name="loveca-build" content="2026051975" />
+    <meta name="loveca-build" content="2026052021" />
     <title>Loveca Labo</title>
     <!-- 万一以前のバージョンの Service Worker が登録された端末で取り残しが起きた場合に備え、
          先頭で SW 登録を一括解除する。SW 自体は本サイトでは使っていない。 -->
@@ -208,12 +208,6 @@ python3 -m http.server 8080</pre>
 
       <div class="builder">
         <aside class="search-panel">
-          <div id="cloud-auth-bar" class="cloud-auth-bar cloud-auth-bar--search-top" hidden>
-            <span id="cloud-auth-status" class="cloud-auth-bar__status muted">未ログイン</span>
-            <img id="cloud-auth-avatar" class="cloud-auth-bar__avatar" alt="" hidden />
-            <button type="button" id="cloud-auth-signin" class="btn sm secondary cloud-auth-bar__signin" title="Google へ一度だけ移動してログイン（サードパーティ Cookie 不要）">Google でログイン</button>
-            <button type="button" id="cloud-auth-signout" class="btn sm secondary cloud-auth-bar__signout" hidden>ログアウト</button>
-          </div>
           <div class="search-panel-tools">
             <h2 class="panel-h2-plain">検索・絞り込み</h2>
             <div class="search-quick-tools">
@@ -401,6 +395,29 @@ python3 -m http.server 8080</pre>
         </section>
 
         <aside class="deck-panel">
+          <div id="cloud-auth-bar" class="cloud-auth-bar cloud-auth-bar--deck-top" hidden>
+            <div class="cloud-auth-bar__profile">
+              <img id="cloud-auth-avatar" class="cloud-auth-bar__avatar" alt="" hidden />
+              <div class="cloud-auth-bar__profile-text">
+                <span id="cloud-auth-status" class="cloud-auth-bar__status">未ログイン</span>
+                <label id="player-display-name-wrap" class="player-display-name-wrap" hidden>
+                  <span class="player-display-name-wrap__label">対戦表示名</span>
+                  <input
+                    type="text"
+                    id="input-player-display-name"
+                    class="input player-display-name-input"
+                    maxlength="32"
+                    placeholder="ルームで表示する名前"
+                    autocomplete="nickname"
+                  />
+                </label>
+              </div>
+            </div>
+            <div class="cloud-auth-bar__actions">
+              <button type="button" id="cloud-auth-signin" class="btn sm secondary cloud-auth-bar__signin" title="Google でログイン">Google でログイン</button>
+              <button type="button" id="cloud-auth-signout" class="btn sm secondary cloud-auth-bar__signout" hidden>ログアウト</button>
+            </div>
+          </div>
           <div class="deck-panel-sticky-head">
             <div class="deck-panel-head-row">
               <h2>メインデッキ</h2>
@@ -410,9 +427,9 @@ python3 -m http.server 8080</pre>
               <button type="button" class="btn primary btn-start-game-sticky" id="btn-start-game" disabled>ソロプレイ開始</button>
               <button
                 type="button"
-                class="btn secondary btn-start-versus-sticky"
+                class="btn secondary btn-start-versus-sticky btn-start-versus--glow"
                 id="btn-start-versus"
-                title="簡易対戦はログイン不要。相手の成功ライブ枚数を手入力"
+                title="簡易対戦はログイン不要。オンラインルームは Google ログイン"
               >
                 対戦モード
               </button>
@@ -593,8 +610,8 @@ python3 -m http.server 8080</pre>
             </div>
           </details>
           <button type="button" class="btn sm secondary" id="btn-coin">コイン</button>
-          <button type="button" class="btn sm secondary" id="btn-layout-16-9" aria-pressed="false" title="プレイ画面全体を通常の約 85% の表示倍率に縮小します（再押しで解除）">
-            16:9
+          <button type="button" class="btn sm secondary" id="btn-layout-16-9" aria-pressed="false" title="対戦時：相手盤面と自分盤面の高さ比を 4:6 にします（再押しで解除）">
+            4:6
           </button>
           <button
             type="button"
@@ -631,70 +648,70 @@ python3 -m http.server 8080</pre>
         </div>
         <div id="versus-play-chrome" class="versus-play-chrome game-bar-row" hidden>
           <span id="versus-turn-badge" class="versus-turn-badge" hidden></span>
-          <div id="versus-opp-sl-controls" class="versus-opp-sl-controls" hidden>
-            <span class="muted">相手SL</span>
-            <button type="button" class="btn sm secondary" id="btn-versus-opp-sl-minus" aria-label="相手の成功ライブを減らす">−</button>
-            <span id="versus-opp-sl-num" class="versus-opp-sl-num">0</span>
-            <button type="button" class="btn sm secondary" id="btn-versus-opp-sl-plus" aria-label="相手の成功ライブを増やす">＋</button>
-          </div>
         </div>
       </header>
 
-                  <div id="versus-opponent-board-wrap" class="versus-opponent-board" hidden aria-label="相手の公開盤面">
+      <div id="versus-opponent-board-wrap" class="versus-opponent-board" hidden aria-label="相手の公開盤面">
         <p id="versus-opp-board-meta" class="versus-opp-board-meta muted"></p>
-        <div class="versus-opponent-board__flip">
-          <div class="versus-opponent-board__surface">
-            <aside class="versus-opponent-board__rail versus-opponent-board__rail--end col">
-              <section class="zone-block versus-opp-rail-zone">
-                <h3 class="versus-opp-zone-heading versus-opp-legible">手札 <span id="versus-opp-hand-count" class="badge">0</span></h3>
-                <div id="versus-opp-zone-hand" class="card-strip zone-drop hand-zone versus-opp-hand-zone"></div>
-              </section>
-              <section class="zone-block versus-opp-rail-zone">
-                <h3 class="versus-opp-zone-heading versus-opp-legible">解決 <span id="versus-opp-resolution-count" class="badge">0</span></h3>
-                <div id="versus-opp-zone-resolution" class="card-strip zone-drop resolution-zone-strip"></div>
-              </section>
-            </aside>
-                        <div class="versus-opponent-board__center col col-center">
-              <details class="zone-block energy-fold versus-opp-energy-fold">
-                <summary class="energy-fold__summary versus-opp-legible">
-                  <span class="versus-opp-zone-heading">エネルギー</span>
-                  <span class="energy-fold__counts">
-                    <span class="energy-fold__count-label">A</span><span id="versus-opp-energy-active-count" class="badge">0</span>
-                    <span class="energy-fold__count-sep">／</span>
-                    <span class="energy-fold__count-label">W</span><span id="versus-opp-energy-wait-count" class="badge badge--wait">0</span>
-                  </span>
-                </summary>
-                <div id="versus-opp-zone-energy" class="card-strip zone-drop energy-zone"></div>
-              </details>
-              <div class="stage-title-bar versus-opp-stage-bar"><h3 class="stage-title-bar__h versus-opp-legible">ステージ</h3></div>
-              <div class="three-cols versus-opp-stage-row">
-                <div class="slot-wrap"><span class="slot-label versus-opp-legible">左</span><div id="versus-opp-stage-left" class="card-strip zone-drop stage-slot"></div></div>
-                <div class="slot-wrap"><span class="slot-label versus-opp-legible">中</span><div id="versus-opp-stage-center" class="card-strip zone-drop stage-slot"></div></div>
-                <div class="slot-wrap"><span class="slot-label versus-opp-legible">右</span><div id="versus-opp-stage-right" class="card-strip zone-drop stage-slot"></div></div>
+        <div class="versus-opponent-board__surface">
+          <div class="versus-opponent-board__cell versus-opponent-board__cell--void" aria-label="相手の控えの残色">
+            <div id="versus-opp-void-waiting-colors" class="versus-opp-void-waiting-colors"></div>
+          </div>
+          <section class="versus-opponent-board__cell versus-opponent-board__cell--center zone-block">
+            <details class="energy-fold versus-opp-energy-fold">
+              <summary class="energy-fold__summary versus-opp-legible">
+                <span class="versus-opp-zone-heading">エネルギー</span>
+                <span class="energy-fold__counts">
+                  <span class="energy-fold__count-label">A</span><span id="versus-opp-energy-active-count" class="badge">0</span>
+                  <span class="energy-fold__count-sep">／</span>
+                  <span class="energy-fold__count-label">W</span><span id="versus-opp-energy-wait-count" class="badge badge--wait">0</span>
+                </span>
+              </summary>
+              <div id="versus-opp-zone-energy" class="card-strip zone-drop energy-zone"></div>
+            </details>
+            <div class="versus-opponent-board__center-main">
+              <div class="versus-opponent-board__center-stage">
+                <div class="stage-title-bar versus-opp-stage-bar"><h3 class="stage-title-bar__h versus-opp-legible">ステージ</h3></div>
+                <div class="three-cols versus-opp-stage-row">
+                  <div class="slot-wrap"><span class="slot-label versus-opp-legible">左</span><div id="versus-opp-stage-left" class="card-strip zone-drop stage-slot"></div></div>
+                  <div class="slot-wrap"><span class="slot-label versus-opp-legible">中</span><div id="versus-opp-stage-center" class="card-strip zone-drop stage-slot"></div></div>
+                  <div class="slot-wrap"><span class="slot-label versus-opp-legible">右</span><div id="versus-opp-stage-right" class="card-strip zone-drop stage-slot"></div></div>
+                </div>
               </div>
-              <h3 class="versus-opp-zone-heading versus-opp-legible live-area-col-heading">ライブ</h3>
-              <div class="three-cols versus-opp-live-row">
-                <div class="slot-wrap"><span class="slot-label versus-opp-legible">左</span><div id="versus-opp-live-left" class="card-strip zone-drop live-slot"></div></div>
-                <div class="slot-wrap slot-wrap--live-center"><span class="slot-label versus-opp-legible">中</span><div id="versus-opp-live-center" class="card-strip zone-drop live-slot"></div></div>
-                <div class="slot-wrap"><span class="slot-label versus-opp-legible">右</span><div id="versus-opp-live-right" class="card-strip zone-drop live-slot"></div></div>
+              <div class="versus-opponent-board__center-live">
+                <h3 class="versus-opp-zone-heading versus-opp-legible live-area-col-heading">ライブ</h3>
+                <div class="three-cols versus-opp-live-row">
+                  <div class="slot-wrap"><span class="slot-label versus-opp-legible">左</span><div id="versus-opp-live-left" class="card-strip zone-drop live-slot"></div></div>
+                  <div class="slot-wrap slot-wrap--live-center">
+                    <span class="slot-label versus-opp-legible">中</span>
+                    <div id="versus-opp-live-center-score" class="live-score-center-bar versus-opp-live-center-score" hidden aria-live="polite"></div>
+                    <div id="versus-opp-live-center" class="card-strip zone-drop live-slot"></div>
+                  </div>
+                  <div class="slot-wrap"><span class="slot-label versus-opp-legible">右</span><div id="versus-opp-live-right" class="card-strip zone-drop live-slot"></div></div>
+                </div>
               </div>
             </div>
-
-            <aside class="versus-opponent-board__rail versus-opponent-board__rail--start col">
-              <section class="zone-block versus-opp-rail-zone deck-block">
-                <h3 class="versus-opp-zone-heading versus-opp-legible">デッキ <span id="versus-opp-deck-count" class="badge">0</span></h3>
-                <div id="versus-opp-deck-pile" class="deck-pile versus-opp-deck-pile" aria-hidden="true"></div>
-              </section>
-              <section class="zone-block versus-opp-rail-zone">
-                <h3 class="versus-opp-zone-heading versus-opp-legible">控え室 <span id="versus-opp-waiting-count" class="badge">0</span></h3>
-                <div id="versus-opp-zone-waiting" class="card-strip zone-drop waiting-zone-strip"></div>
-              </section>
-              <section class="zone-block versus-opp-rail-zone">
-                <h3 class="versus-opp-zone-heading versus-opp-legible">成功ライブ <span id="versus-opp-sl-count" class="badge">0</span></h3>
-                <div id="versus-opp-zone-sl" class="card-strip zone-drop success-live-strip"></div>
-              </section>
-            </aside>
-          </div>
+          </section>
+          <section class="versus-opponent-board__cell versus-opponent-board__cell--hand zone-block versus-opp-rail-zone">
+            <h3 class="versus-opp-zone-heading versus-opp-legible">手札 <span id="versus-opp-hand-count" class="badge">0</span></h3>
+            <div id="versus-opp-zone-hand" class="card-strip zone-drop hand-zone versus-opp-hand-zone"></div>
+          </section>
+          <section class="versus-opponent-board__cell versus-opponent-board__cell--waiting zone-block versus-opp-rail-zone">
+            <h3 class="versus-opp-zone-heading versus-opp-legible">控え室 <span id="versus-opp-waiting-count" class="badge">0</span></h3>
+            <div id="versus-opp-zone-waiting" class="card-strip zone-drop waiting-zone-strip"></div>
+          </section>
+          <section class="versus-opponent-board__cell versus-opponent-board__cell--resolution zone-block versus-opp-rail-zone">
+            <h3 class="versus-opp-zone-heading versus-opp-legible">解決 <span id="versus-opp-resolution-count" class="badge">0</span></h3>
+            <div id="versus-opp-zone-resolution" class="card-strip zone-drop resolution-zone-strip"></div>
+          </section>
+          <section class="versus-opponent-board__cell versus-opponent-board__cell--deck zone-block versus-opp-rail-zone deck-block">
+            <h3 class="versus-opp-zone-heading versus-opp-legible">デッキ <span id="versus-opp-deck-count" class="badge">0</span></h3>
+            <div id="versus-opp-deck-pile" class="deck-pile versus-opp-deck-pile" aria-hidden="true"></div>
+          </section>
+          <section class="versus-opponent-board__cell versus-opponent-board__cell--sl zone-block versus-opp-rail-zone">
+            <h3 class="versus-opp-zone-heading versus-opp-legible">成功ライブ <span id="versus-opp-sl-count" class="badge">0</span></h3>
+            <div id="versus-opp-zone-sl" class="card-strip zone-drop success-live-strip"></div>
+          </section>
         </div>
       </div>
 
@@ -945,33 +962,36 @@ python3 -m http.server 8080</pre>
 
           <h3 class="live-area-col-heading">ライブエリア</h3>
           <div class="zone-head zone-head--live-with-turn">
-            <div id="play-turn-badge" class="play-turn-badge" title="ターン数（ターン開始で増加）" aria-live="polite">
-              <span class="play-turn-badge__q">ターン</span>
-              <span id="play-turn-display" class="play-turn-badge__n">0</span>
+            <div class="zone-head__turn-row">
+              <div id="play-turn-badge" class="play-turn-badge" title="ターン数（ターン開始で増加）" aria-live="polite">
+                <span class="play-turn-badge__q">ターン</span>
+                <span id="play-turn-display" class="play-turn-badge__n">0</span>
+              </div>
+              <div id="first-player-badge" class="first-player-badge">
+                <span class="first-player-badge__q">先後</span>
+                <select id="select-first-player" class="first-player-badge__sel" aria-label="先攻の目安">
+                  <option value="—">—</option>
+                  <option value="先攻">先攻</option>
+                  <option value="後攻">後攻</option>
+                </select>
+              </div>
+              <div id="mount-desktop-live-prob-inline" class="chrome-live-prob-desktop-inline" aria-live="polite">
+                <p
+                  id="deck-live-sim-summary-desktop-inline"
+                  class="deck-live-sim-summary deck-live-sim-summary--desktop-toolbar-muted"
+                ></p>
+              </div>
+              <div class="play-undo-redo-cluster play-undo-redo-cluster--live-header">
+                <button type="button" class="btn play-undo-redo play-undo-redo--undo" id="btn-undo" title="U キー">
+                  ひとつ戻す
+                </button>
+                <button type="button" class="btn play-undo-redo play-undo-redo--redo" id="btn-redo" title="R キー">
+                  ひとつ進む
+                </button>
+              </div>
             </div>
-            <div id="first-player-badge" class="first-player-badge">
-              <span class="first-player-badge__q">先後</span>
-              <select id="select-first-player" class="first-player-badge__sel" aria-label="先攻の目安">
-                <option value="—">—</option>
-                <option value="先攻">先攻</option>
-                <option value="後攻">後攻</option>
-              </select>
-            </div>
-            <div id="mount-desktop-live-prob-inline" class="chrome-live-prob-desktop-inline" aria-live="polite">
-              <p
-                id="deck-live-sim-summary-desktop-inline"
-                class="deck-live-sim-summary deck-live-sim-summary--desktop-toolbar-muted"
-              ></p>
-            </div>
+            <div id="versus-phase-live-banner-mount" class="zone-head__versus-banner-row" hidden></div>
             <div id="mount-mobile-live-prob-inline" class="live-prob-toolbar-inline chrome-live-prob-mobile-slot"></div>
-            <div class="play-undo-redo-cluster">
-              <button type="button" class="btn play-undo-redo play-undo-redo--undo" id="btn-undo" title="U キー">
-                ひとつ戻す
-              </button>
-              <button type="button" class="btn play-undo-redo play-undo-redo--redo" id="btn-redo" title="R キー">
-                ひとつ進む
-              </button>
-            </div>
           </div>
           <div id="live-row" class="three-cols">
             <div class="slot-wrap">
@@ -1047,7 +1067,11 @@ python3 -m http.server 8080</pre>
                     </div>
                     <div class="live-stats-metric-cell" title="ステージ上メンバーの blade（ブレード）合計＝ライブ判定で解決ゾーンに送る「エール数」">
                       <span class="live-stats-metric-label live-stats-metric-label--white">エール数</span>
-                      <span id="live-total-blade" class="live-stats-metric-answer">0</span>
+                      <span class="live-stats-metric-answer live-stats-metric-answer--with-step">
+                        <button type="button" class="btn sm secondary live-blade-step" id="btn-live-blade-minus" aria-label="エール数を1減らす">−</button>
+                        <span id="live-total-blade">0</span>
+                        <button type="button" class="btn sm secondary live-blade-step" id="btn-live-blade-plus" aria-label="エール数を1増やす">＋</button>
+                      </span>
                     </div>
                     <div class="live-stats-metric-cell" title="ステージ＋ライブ枠のメンバー所持H合計（play ボーナス ALL の分を含む表示）">
                       <span class="live-stats-metric-label live-stats-metric-label--white">場メンバーH計</span>
@@ -1189,7 +1213,7 @@ python3 -m http.server 8080</pre>
               <button type="button" class="btn" id="btn-draw-resolution">1枚ドロー（解決）</button>
             </div>
             <div class="btn-row draw-row draw-row--turn wrap">
-              <button type="button" class="btn primary" id="btn-turn-start" title="解決・ライブ枠を控え室へ送る／手札に山札から 1 枚ドロー／側面エネのウェイト解除・メンバーを縦・アクティブにし側面エネを1枚加算（上限12）。ライブフェーズ終了後は次のターンへもここから。">
+              <button type="button" class="btn primary" id="btn-turn-start" title="解決・ライブ枠を控え室へ送る／手札に山札から 1 枚ドロー／側面エネのウェイト解除・メンバーを縦・アクティブにし側面エネを1枚加算（上限12）。対戦モードの通常フェイズではターン終了。">
                 ターン開始/次のターンへ
               </button>
             </div>
@@ -1805,19 +1829,21 @@ python3 -m http.server 8080</pre>
     </dialog>
 
     <dialog id="dlg-versus-lobby" class="app-dialog dlg-versus-lobby" aria-labelledby="dlg-versus-lobby-title">
-      <h2 id="dlg-versus-lobby-title" class="app-dialog__title">対戦モード（総合ルール 1.06）</h2>
+      <div class="dlg-versus-lobby__header">
+        <h2 id="dlg-versus-lobby-title" class="app-dialog__title dlg-versus-lobby__title">対戦モード（総合ルール 1.06）</h2>
+        <button type="button" class="dlg-versus-lobby-close-top" id="dlg-versus-lobby-close" aria-label="閉じる">×</button>
+      </div>
       <p class="hint zone-inline-help">
         <strong>簡易対戦</strong>（ログイン不要）— 対面・別々の端末向け。各プレイヤーが<strong>自分の盤面だけ</strong>操作します。
         カードの自動同期はありません。プレイ中、画面上部の<strong>「相手SL」＋／−</strong>で相手の成功ライブ枚数を共有します。
       </p>
       <p class="hint zone-inline-help muted">
         <strong>オンラインルーム</strong> — 2人が別アカウントで参加。成功ライブ枚数・ターン・直近操作を Firestore で共有。
-        手札や場のカードはまだ同期されません（各端末で自分の盤面を操作）。ホストが「対戦開始」後、<strong>ターン終了</strong>で手番を渡します。
+        手札や場のカードはまだ同期されません（各端末で自分の盤面を操作）。ホストが「対戦開始」後、<strong>ターン終了</strong>で手番を渡します。再読み込み後は<strong>ルームに入室</strong>で対戦画面へ戻れます（ルームからは追い出されません）。
       </p>
       <p id="dlg-versus-lobby-status" class="dlg-versus-lobby-status muted" role="status"></p>
       <div class="app-dialog__actions dlg-versus-lobby-actions dlg-versus-lobby-actions--primary">
         <button type="button" class="btn primary" id="dlg-versus-start-local">簡易対戦を始める（ログイン不要）</button>
-        <button type="button" class="btn secondary" id="dlg-versus-lobby-close">閉じる</button>
       </div>
       <details id="dlg-versus-online-wrap" class="dlg-versus-online-wrap" hidden>
         <summary>オンラインルーム（任意・Google ログイン）</summary>
@@ -1828,18 +1854,20 @@ python3 -m http.server 8080</pre>
             type="text"
             id="dlg-versus-room-code"
             class="dlg-versus-room-code-input"
-            maxlength="6"
+            maxlength="4"
             autocomplete="off"
-            placeholder="例: ABC123"
+            placeholder="例: A1B2"
+            inputmode="text"
           />
         </div>
         <p class="muted">作成したルーム: <strong id="dlg-versus-room-code-display">——</strong></p>
         <div class="app-dialog__actions dlg-versus-lobby-actions">
-          <button type="button" class="btn secondary" id="dlg-versus-leave">ルームから退出</button>
-          <button type="button" class="btn secondary" id="dlg-versus-create">ルームを作成</button>
-          <button type="button" class="btn secondary" id="dlg-versus-join">コードで参加</button>
+          <button type="button" class="btn secondary btn-versus-lobby-leave" id="dlg-versus-leave">ルームから退出</button>
+          <button type="button" class="btn secondary btn-versus-lobby-create" id="dlg-versus-create">ルームを作成</button>
+          <button type="button" class="btn secondary btn-versus-lobby-join" id="dlg-versus-join">コードで参加</button>
           <button type="button" class="btn secondary" id="dlg-versus-ready">このデッキで準備完了</button>
           <button type="button" class="btn primary" id="dlg-versus-start" hidden>対戦開始（ホスト）</button>
+          <button type="button" class="btn primary" id="dlg-versus-rejoin-room" hidden>ルームに入室</button>
           <button type="button" class="btn primary" id="dlg-versus-enter-play" hidden>プレイ画面へ</button>
         </div>
       </details>
@@ -1930,9 +1958,9 @@ python3 -m http.server 8080</pre>
             "./gameStatusIcons.js": "./gameStatusIcons.js?v=2026051866",
             "./joujiEffects.js": "./joujiEffects.js?v=2026051866",
             "./liveSpecialBhOverride.js": "./liveSpecialBhOverride.js?v=2026051866",
-            "./main.js": "./main.js?v=2026051974",
+            "./main.js": "./main.js?v=2026052021",
             "./sampleDeckRecipes.js": "./sampleDeckRecipes.js?v=2026051866",
-            "./simulator.js": "./simulator.js?v=2026051866",
+            "./simulator.js": "./simulator.js?v=2026052021",
             "./testCardLog.js": "./testCardLog.js?v=2026051866",
             "./ui.js": "./ui.js?v=2026051866",
             "./versusBoardSync.js": "./versusBoardSync.js?v=2026051866",
@@ -1942,6 +1970,6 @@ python3 -m http.server 8080</pre>
         }
       }
     </script>
-    <script type="module" src="js/main.js?v=2026051975"></script>
+    <script type="module" src="js/main.js?v=2026052021"></script>
   </body>
 </html>

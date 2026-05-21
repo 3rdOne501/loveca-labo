@@ -158,6 +158,37 @@ export function normalizeDeckMapCounts(map) {
 }
 
 /**
+ * Firestore の versusMatches.hostDeckMap / guestDeckMap をプレイ用 map に正規化する。
+ * @param {unknown} raw
+ * @returns {Record<string, number>}
+ */
+export function deckMapFromVersusMatchField(raw) {
+  if (!raw || typeof raw !== "object") return {};
+  const direct = normalizeDeckMapCounts(/** @type {Record<string, unknown>} */ (raw));
+  if (Object.keys(direct).length > 0) return direct;
+  const o = /** @type {Record<string, unknown>} */ (raw);
+  const numKeys = Object.keys(o).filter(function (k) {
+    return /^\d+$/.test(k);
+  });
+  if (!numKeys.length) return direct;
+  const merged = {};
+  numKeys
+    .sort(function (a, b) {
+      return Number(a) - Number(b);
+    })
+    .forEach(function (k) {
+      const item = o[k];
+      if (!item || typeof item !== "object") return;
+      const row = /** @type {Record<string, unknown>} */ (item);
+      const no = row.card_no != null ? String(row.card_no) : row.cardNo != null ? String(row.cardNo) : "";
+      const cnt = coerceDeckCount(row.count != null ? row.count : row.n);
+      if (!no || cnt <= 0) return;
+      merged[no] = (merged[no] || 0) + cnt;
+    });
+  return normalizeDeckMapCounts(merged);
+}
+
+/**
  * localStorage とメモリのどちらか一方だけ欠けてもプレイ用構成が空にならないようまとめる（mem が優先）。
  * @param {Record<string, unknown>|null|undefined} mem
  * @param {Record<string, unknown>|null|undefined} disk

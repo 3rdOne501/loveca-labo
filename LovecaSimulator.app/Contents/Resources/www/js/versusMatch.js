@@ -4,6 +4,7 @@
  */
 import { LIVE_WINS, MAIN_SIZE } from "./config.js";
 import { getCloudFirestore, getCurrentCloudUser } from "./cloudAuth.js";
+import { getPlayerDisplayName } from "./playerProfile.js";
 import { normalizeDeckMapCounts } from "./deckLibrary.js";
 import { buildVersusBoardFirestorePatch } from "./versusBoardSync.js";
 
@@ -95,7 +96,7 @@ function matchRef(roomCode) {
 
 function randomRoomCode() {
   let s = "";
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 4; i++) {
     s += ROOM_CODE_CHARS[Math.floor(Math.random() * ROOM_CODE_CHARS.length)];
   }
   return s;
@@ -179,7 +180,7 @@ export async function createVersusRoom(deckMap) {
       createdAt: now,
       updatedAt: now,
       hostUid: user.uid,
-      hostName: user.displayName,
+      hostName: getPlayerDisplayName() || user.displayName || null,
       hostPhotoURL: user.photoURL,
       guestUid: null,
       guestName: null,
@@ -225,7 +226,7 @@ export async function joinVersusRoom(roomCode, deckMap) {
   const code = String(roomCode || "")
     .trim()
     .toUpperCase();
-  if (!/^[A-Z0-9]{6}$/.test(code)) throw new Error("ルームコードは英数字6文字です。");
+  if (!/^[A-Z0-9]{4}$/.test(code)) throw new Error("ルームコードは英数字4文字です。");
   const { api } = fs();
   const ref = matchRef(code);
   let snap;
@@ -243,13 +244,13 @@ export async function joinVersusRoom(roomCode, deckMap) {
     );
   }
   if (data.guestUid && data.guestUid !== user.uid) {
-    throw new Error("このルームには別のプレイヤーが参加済みです。");
+    throw new Error("このルームは満員です。別のルームを作成するか、参加者の退出をお待ちください。");
   }
   const now = new Date().toISOString();
   try {
     await api.updateDoc(ref, {
       guestUid: user.uid,
-      guestName: user.displayName,
+      guestName: getPlayerDisplayName() || user.displayName || null,
       guestPhotoURL: user.photoURL,
       guestDeckReady: true,
       guestDeckMap: prepared.map,
@@ -264,6 +265,7 @@ export async function joinVersusRoom(roomCode, deckMap) {
     roomCode: code,
     match: /** @type {VersusMatchDoc} */ (snap2.data()),
     deckWarning: prepared.warning,
+    joinedAs: "guest",
   };
 }
 
@@ -879,11 +881,12 @@ export async function commitVersusLiveJudgment(roomCode) {
     throw new Error("ライブ勝敗判定フェイズではありません。");
   }
   if (data.liveJudgmentOutcome) return;
-  if (!versusBothLivePerfScoresReady(data)) {
-    throw new Error("両者のライブスコアが未報告です。");
-  }
-  const h = Math.max(0, Math.floor(Number(data.hostLivePerfScore) || 0));
-  const g = Math.max(0, Math.floor(Number(data.guestLivePerfScore) || 0));
+  const h = Number.isFinite(Number(data.hostLivePerfScore))
+    ? Math.max(0, Math.floor(Number(data.hostLivePerfScore)))
+    : 0;
+  const g = Number.isFinite(Number(data.guestLivePerfScore))
+    ? Math.max(0, Math.floor(Number(data.guestLivePerfScore)))
+    : 0;
   /** @type {'hostWin'|'guestWin'|'draw'} */
   let outcome = "draw";
   if (h > g) outcome = "hostWin";
@@ -1181,7 +1184,13 @@ export async function fetchVersusMatchDoc(roomCode) {
   }
 }
 
-export function subscribeVersusMatch(roomCode, onChange) {
+/**
+ * @param {string} roomCode
+ * @param {(match: VersusMatchDoc|null) => void} onChange
+ * @param {(() => void)=} onError
+ * @returns {() => void}
+ */
+export function subscribeVersusMatch(roomCode, onChange, onError) {
   const x = getCloudFirestore();
   if (!x) {
     onChange(null);
@@ -1196,7 +1205,8 @@ export function subscribeVersusMatch(roomCode, onChange) {
     },
     function (err) {
       console.warn("[versusMatch] snapshot error:", err);
-      onChange(null);
+      if (typeof onError === "function") onError(err);
+      else onChange(null);
     },
   );
 }

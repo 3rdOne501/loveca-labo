@@ -90,6 +90,8 @@ export const STORAGE_STREAM_MASK_STRENGTH = "llocg_stream_mask_strength";
 export const STORAGE_LIGHTWEIGHT_PLAY = "llocg_lightweight_play_v1";
 /** 一度 Google ログインしたら次回以降自動でセッション復元を試みる（"0" で無効） */
 export const STORAGE_GOOGLE_AUTO_LOGIN = "llocg_google_auto_login_v1";
+/** デッキ編集で設定する対戦用プレイヤー名（Google ログイン時） */
+export const STORAGE_PLAYER_DISPLAY_NAME = "llocg_player_display_name_v1";
 /** デッキ構築: お気に入りカード番号（JSON 配列） */
 export const STORAGE_CARD_FAVORITES = "llocg_card_favorites";
 
@@ -124,7 +126,7 @@ export const HISTORY_MAX_STEPS = 35;
 export const DECK_EXPORT_VERSION = 1;
 
 /** index.html の main.js クエリと揃える（JS モジュールのブラウザキャッシュ対策） */
-export const APP_MODULE_CACHE_BUST = "2026051975";
+export const APP_MODULE_CACHE_BUST = "2026052021";
 
 /**
  * 組み込みプリセット・初回メインデッキ用（リポジトリ既定の大会用例。カード DB に番号が無い場合はデッキ構築で警告になります）

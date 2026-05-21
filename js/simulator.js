@@ -279,6 +279,35 @@ export function teardownDeckPileLayoutWatchers() {
   deckPileScheduleLayoutRef = () => {};
 }
 
+/** @type {(() => void) | null} */
+let activePlayMountTeardown = null;
+
+/** 前回の mountSimulator（対戦プレイ等）の購読・タイマーを止める。ソロ開始前にも呼ぶ。 */
+export function teardownActivePlayMount() {
+  if (activePlayMountTeardown) {
+    try {
+      activePlayMountTeardown();
+    } catch (err) {
+      console.warn("[simulator] play mount teardown failed:", err);
+    }
+    activePlayMountTeardown = null;
+  }
+  try {
+    delete window.__llocgFlushVersusPlayPersist;
+    delete window.__llocgVersusPlayMounted;
+    delete window.__llocgPeekBoardFromDialog;
+  } catch (_) {
+    /* noop */
+  }
+  document.body.classList.remove(
+    "play-versus-mode",
+    "versus-my-turn",
+    "versus-opponent-turn",
+    "versus-live-phase",
+    "llocg-effect-dialog-peek",
+  );
+}
+
 /**
  * DOM 状態と履歴だけリセットしたい場合に mount と同じ並びへ戻す
  */
@@ -1395,6 +1424,7 @@ export function mountSimulator(
   }
 
   teardownDeckPileLayoutWatchers();
+  teardownActivePlayMount();
 
   if (!resumeFromStorage) {
     try {
@@ -1580,7 +1610,7 @@ export function mountSimulator(
     syncVersusOppSlDisplay();
   }
   var resumedFromStorage = false;
-  if (resumeFromStorage) {
+  if (resumeFromStorage === true) {
     try {
       var rawPlayResume = sessionStorage.getItem(STORAGE_PLAY_RESUME);
       if (rawPlayResume) {
@@ -1616,7 +1646,15 @@ export function mountSimulator(
       console.warn(resumeErr);
     }
   }
-  if (!resumedFromStorage) {
+  var needFreshDeck = !resumedFromStorage;
+  if (
+    !needFreshDeck &&
+    (!Array.isArray(state.deck) || state.deck.length === 0) &&
+    Object.keys(activePlayDeckMap).length > 0
+  ) {
+    needFreshDeck = true;
+  }
+  if (needFreshDeck) {
     state.deck = buildMainDeckInstances(activePlayDeckMap);
     if (versusSession && versusSession.mode === "online") {
       state.deckPileFacesDown = true;
@@ -12893,6 +12931,7 @@ export function mountSimulator(
     versusTryAutoSkipSuccessFx(remoteMatch);
     versusTryOrchestrateSuccessFx(remoteMatch);
   }
+  }
 
   function doVersusMulliganExecuteClick() {
     if (!versusSession || versusSession.mode !== "online" || !versusSession.myRole) return;
@@ -16000,6 +16039,43 @@ export function mountSimulator(
   })();
   refreshPlayDeckPresetSelect();
   syncPlayBoardChromeMounts();
+
+  /** マウント途中で deck/hand が空になった場合の最終ガード（ソロ新規開始・古い resume 対策） */
+  function ensurePlayDeckReadyBeforeFirstRender() {
+    if (!Object.keys(activePlayDeckMap).length) return;
+    if (
+      versusSession &&
+      versusSession.mode === "online" &&
+      resumeFromStorage === true &&
+      resumedFromStorage
+    ) {
+      return;
+    }
+    var deckLen = Array.isArray(state.deck) ? state.deck.length : 0;
+    var handLen = Array.isArray(state.hand) ? state.hand.length : 0;
+    if (deckLen > 0) {
+      if (handLen === 0 && OPENING_HAND_SIZE > 0) {
+        dealOpeningHand(state.deck, state.hand, OPENING_HAND_SIZE);
+      }
+      return;
+    }
+    state.deck = buildMainDeckInstances(activePlayDeckMap);
+    if (versusSession && versusSession.mode === "online") {
+      state.deckPileFacesDown = true;
+    }
+    state.hand = [];
+    dealOpeningHand(state.deck, state.hand, OPENING_HAND_SIZE);
+    openingMulliganRememberedK = null;
+    deckOddsOpeningMullBaselineOn = false;
+    try {
+      sessionStorage.removeItem(STORAGE_OPENING_MULLIGAN_K);
+      sessionStorage.removeItem(STORAGE_DECK_ODDS_OPENING_MULL_MODEL);
+    } catch (_) {
+      /* noop */
+    }
+  }
+  ensurePlayDeckReadyBeforeFirstRender();
+
   /** 同期レンダーで盤面・Sortable・+H/B を確実に有効化（初回のみ遅延すると操作が死ぬ） */
   renderSynchronouslyOnce();
   if (resumedFromStorage) {
@@ -16032,5 +16108,14 @@ export function mountSimulator(
   } catch (_) {
     /* noop */
   }
-  }
+
+  activePlayMountTeardown = function () {
+    teardownVersusSessionUi();
+    if (playResumePersistTimer) {
+      clearTimeout(playResumePersistTimer);
+      playResumePersistTimer = 0;
+    }
+    hideEffectDialogResumeChip();
+    document.body.classList.remove("llocg-effect-dialog-peek");
+  };
 }

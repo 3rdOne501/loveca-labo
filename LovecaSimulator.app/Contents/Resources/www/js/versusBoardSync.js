@@ -34,6 +34,7 @@ export const VERSUS_BOARD_PUBLIC_V = 1;
  * @property {{ left: VersusPublicCard[], center: VersusPublicCard[], right: VersusPublicCard[] }} stage
  * @property {{ left: VersusPublicCard[], center: VersusPublicCard[], right: VersusPublicCard[] }} liveArea
  * @property {boolean} [liveRevealed]
+ * @property {"hidden"|"set"|"revealed"} [livePublicMode]
  */
 
 /** @param {unknown} raw */
@@ -136,6 +137,35 @@ function liveCardsFromSlot(arr) {
   return out;
 }
 
+/** セット／パフォーマンス前: 枠内の全カードを裏向きで枚数共有 */
+function stripLiveAreaSetMode(trip) {
+  const t =
+    trip && typeof trip === "object"
+      ? /** @type {Record<string, unknown>} */ (trip)
+      : {};
+  function slot(arr) {
+    const list = arrayFromFirestoreValue(arr);
+    const out = [];
+    for (let i = 0; i < list.length; i++) {
+      const c = stripCard(list[i], i);
+      if (!c) continue;
+      out.push({
+        id: c.id || "opp-live-set-" + i,
+        card_no: "",
+        name: "",
+        type: c.type || T_LIVE,
+        hiddenFace: true,
+      });
+    }
+    return out;
+  }
+  return {
+    left: slot(t.left),
+    center: slot(t.center),
+    right: slot(t.right),
+  };
+}
+
 /** ライブ置き場はライブカード枚数だけ共有（表面は非公開） */
 function stripLiveAreaPublic(trip) {
   const t =
@@ -209,10 +239,19 @@ function redactLiveAreaPublic(trip) {
 export function boardToVersusPublic(board) {
   const b = board && typeof board === "object" ? board : {};
   const stage = stripTriple(b.stage);
-  const liveRevealed = b.liveRevealed === true;
-  const liveArea = liveRevealed
-    ? stripLiveAreaRevealed(b.liveArea)
-    : stripLiveAreaPublic(b.liveArea);
+  const liveMode =
+    b.livePublicMode === "set" || b.livePublicMode === "revealed" || b.livePublicMode === "hidden"
+      ? b.livePublicMode
+      : b.liveRevealed === true
+        ? "revealed"
+        : "hidden";
+  const liveArea =
+    liveMode === "revealed"
+      ? stripLiveAreaRevealed(b.liveArea)
+      : liveMode === "set"
+        ? stripLiveAreaSetMode(b.liveArea)
+        : stripLiveAreaPublic(b.liveArea);
+  const liveRevealed = liveMode === "revealed";
   const handCount = stripCardList(b.hand).length;
   return {
     v: VERSUS_BOARD_PUBLIC_V,
@@ -268,6 +307,7 @@ export function boardToVersusPublicFromState(st) {
     previewScratch: st.previewScratch || [],
     turnCount: st.turnCount,
     liveRevealed: st.liveRevealed === true,
+    livePublicMode: st.livePublicMode || (st.liveRevealed === true ? "revealed" : "hidden"),
   });
 }
 
@@ -284,7 +324,7 @@ export function fingerprintVersusPublicBoard(board) {
     board.turnCount,
     board.deckCount,
     String(board.handCount || 0),
-    board.liveRevealed ? "1" : "0",
+    board.livePublicMode || (board.liveRevealed ? "revealed" : "hidden"),
     ids(board.waitingRoom),
     ids(board.resolutionArea),
     ids(board.successfulLiveArea),
@@ -323,6 +363,7 @@ export function buildVersusBoardFirestorePatch(role, board) {
       turnCount: safe.turnCount,
       handCount: safe.handCount,
       liveRevealed: safe.liveRevealed === true,
+      livePublicMode: safe.livePublicMode || (safe.liveRevealed ? "revealed" : "hidden"),
       stageCount: countTriple(safe.stage),
       liveCount: countTriple(safe.liveArea),
     },
@@ -344,7 +385,7 @@ export function buildVersusBoardFirestorePatch(role, board) {
  * @param {'host'|'guest'} pre
  * @returns {VersusPublicBoard|null}
  */
-function assemblePublicBoardFromMatchFields(match, pre) {
+export function assemblePublicBoardFromMatchFields(match, pre) {
   const metaRaw = match[pre + "BoardMeta"] || match[pre + "BoardPublic"];
   if (!metaRaw || typeof metaRaw !== "object") return null;
   const meta = /** @type {Record<string, unknown>} */ (metaRaw);
@@ -367,14 +408,24 @@ function assemblePublicBoardFromMatchFields(match, pre) {
   const stage = stripTriple(
     match[pre + "StagePublic"] != null ? match[pre + "StagePublic"] : nested && nested.stage,
   );
-  const liveRevealed =
-    meta.liveRevealed === true || (nested && nested.liveRevealed === true);
+  const liveModeRaw =
+    meta.livePublicMode ||
+    (nested && nested.livePublicMode) ||
+    (meta.liveRevealed === true || (nested && nested.liveRevealed === true) ? "revealed" : "hidden");
+  const liveMode =
+    liveModeRaw === "set" || liveModeRaw === "revealed" || liveModeRaw === "hidden"
+      ? liveModeRaw
+      : "hidden";
+  const liveRevealed = liveMode === "revealed";
   const liveRawFull = stripTriple(
     match[pre + "LivePublic"] != null ? match[pre + "LivePublic"] : nested && nested.liveArea,
   );
-  const liveRaw = liveRevealed
-    ? stripLiveAreaRevealed(liveRawFull)
-    : redactLiveAreaPublic(liveRawFull);
+  const liveRaw =
+    liveMode === "revealed"
+      ? stripLiveAreaRevealed(liveRawFull)
+      : liveMode === "set"
+        ? stripLiveAreaSetMode(liveRawFull)
+        : redactLiveAreaPublic(liveRawFull);
 
   return {
     v: VERSUS_BOARD_PUBLIC_V,
@@ -407,6 +458,7 @@ function assemblePublicBoardFromMatchFields(match, pre) {
     stage: stage,
     liveArea: liveRaw,
     liveRevealed: liveRevealed,
+    livePublicMode: liveMode,
   };
 }
 
@@ -445,7 +497,7 @@ function resolveCardImg(c) {
 function appendOppCardItem(container, c, opts) {
   opts = opts || {};
   const div = document.createElement("div");
-  div.className = "card-item";
+  div.className = "card-item versus-opp-card--facing";
   if (c.id) div.dataset.id = c.id;
   if (c.card_no) div.dataset.cardNo = c.card_no;
   if (c.type) div.dataset.type = c.type;
@@ -453,7 +505,8 @@ function appendOppCardItem(container, c, opts) {
   if (c.lcWait) div.classList.add("card-item--lc-wait");
   if (c.lcInactive) div.classList.add("card-item--lc-inactive");
   if (c.energyWait) div.classList.add("card-item--energy-wait");
-  const livePickBack = opts.forceLiveHorizontal && c.hiddenFace;
+  const livePickBack =
+    (opts.forceLiveHorizontal && c.hiddenFace) || (opts.forceSetMode && c.hiddenFace);
   const liveFaceUp = opts.forceLiveFaceUp && c.type === T_LIVE && !c.hiddenFace;
   if (livePickBack) div.classList.add("card-item--live-h");
 
@@ -490,6 +543,99 @@ function appendOppCardItem(container, c, opts) {
  * @param {VersusPublicCard[]} cards
  * @param {{ forceLiveHorizontal?: boolean }} [opts]
  */
+function applyOppZoneOverlapClasses(el, n) {
+  if (!el) return;
+  el.classList.remove("resolution-zone--t1", "resolution-zone--t2", "resolution-zone--t3");
+  const ct = Math.max(0, Math.floor(Number(n) || 0));
+  if (ct >= 21) el.classList.add("resolution-zone--t3");
+  else if (ct >= 11) el.classList.add("resolution-zone--t2");
+  else if (ct >= 5) el.classList.add("resolution-zone--t1");
+}
+
+function buildOppWaitingBhColorsHtml(cards) {
+  if (!cards || !cards.length) {
+    return '<p class="muted" style="margin:0;font-size:0.65rem">控え室にカードがありません</p>';
+  }
+  const slotCount = {};
+  let nonBh = 0;
+  cards.forEach(function (c) {
+    if (!c || c.hiddenFace || !c.card_no) {
+      nonBh++;
+      return;
+    }
+    const cat = getCard(c.card_no);
+    if (!cat) {
+      nonBh++;
+      return;
+    }
+    const bh = cat.blade_heart;
+    if (!bh || typeof bh !== "object") {
+      nonBh++;
+      return;
+    }
+    let any = false;
+    for (let s = 1; s <= 7; s++) {
+      const key = s === 1 ? "b_heart01" : "b_heart0" + s;
+      const n = Number(bh[key]);
+      if (Number.isFinite(n) && n > 0) {
+        slotCount[s] = (slotCount[s] || 0) + 1;
+        any = true;
+      }
+    }
+    if (!any) nonBh++;
+  });
+  let html =
+    '<span class="deck-remain-bh-pill deck-remain-bh-pill--nonbh"><span class="deck-remain-bh-pill__lab">BHなし</span><strong class="deck-remain-bh-pill__n">' +
+    nonBh +
+    "</strong></span>";
+  [1, 2, 3, 4, 7, 5, 6].forEach(function (s) {
+    const cnt = slotCount[s] || 0;
+    if (cnt <= 0) return;
+    html +=
+      '<span class="deck-remain-bh-pill deck-remain-bh-pill--art"><span class="deck-remain-bh-pill__lab">BH' +
+      s +
+      '</span><strong class="deck-remain-bh-pill__n">' +
+      cnt +
+      "</strong></span>";
+  });
+  return '<div class="deck-remain-bh-pill-row">' + html + "</div>";
+}
+
+function syncVersusOppVoidWaitingColors(board) {
+  const host = document.getElementById("versus-opp-void-waiting-colors");
+  if (!host) return;
+  if (!board || !board.waitingRoom || !board.waitingRoom.length) {
+    host.innerHTML =
+      '<p class="versus-opp-void-waiting-title">控えの残色</p><p class="muted" style="margin:0;font-size:0.65rem">—</p>';
+    return;
+  }
+  host.innerHTML =
+    '<p class="versus-opp-void-waiting-title">控えの残色</p>' +
+    buildOppWaitingBhColorsHtml(board.waitingRoom);
+}
+
+function renderVersusOppLiveScore(remoteMatch, myRole) {
+  const el = document.getElementById("versus-opp-live-center-score");
+  if (!el || !remoteMatch || !myRole) return;
+  const oppRole = myRole === "host" ? "guest" : "host";
+  const score =
+    oppRole === "host" ? remoteMatch.hostLivePerfScore : remoteMatch.guestLivePerfScore;
+  const n = Number.isFinite(Number(score)) ? Math.max(0, Math.floor(Number(score))) : null;
+  if (n == null) {
+    el.hidden = true;
+    el.textContent = "";
+    return;
+  }
+  el.hidden = false;
+  el.className = "live-score-center-bar versus-opp-live-center-score";
+  el.innerHTML =
+    '<span class="live-score-center-bar__label">ライブスコア</span>' +
+    '<span class="live-score-center-bar__num">' +
+    n +
+    "</span>" +
+    '<span class="live-score-center-bar__suffix">点</span>';
+}
+
 function fillOppStrip(strip, cards, opts) {
   if (!strip) return;
   strip.replaceChildren();
@@ -499,6 +645,7 @@ function fillOppStrip(strip, cards, opts) {
   cards.forEach(function (c) {
     appendOppCardItem(strip, c, opts);
   });
+  applyOppZoneOverlapClasses(strip, cards.length);
 }
 
 /** @param {HTMLElement} strip @param {number} handCount */
@@ -600,9 +747,13 @@ export function renderVersusOpponentBoard(board, opts) {
   fillOppStrip(document.getElementById("versus-opp-stage-left"), board.stage.left);
   fillOppStrip(document.getElementById("versus-opp-stage-center"), board.stage.center);
   fillOppStrip(document.getElementById("versus-opp-stage-right"), board.stage.right);
-  const liveRenderOpts = board.liveRevealed
-    ? { forceLiveFaceUp: true }
-    : { forceLiveHorizontal: true };
+  const liveMode = board.livePublicMode || (board.liveRevealed ? "revealed" : "hidden");
+  const liveRenderOpts =
+    liveMode === "revealed"
+      ? { forceLiveFaceUp: true }
+      : liveMode === "set"
+        ? { forceSetMode: true }
+        : { forceLiveHorizontal: true };
   fillOppStrip(document.getElementById("versus-opp-live-left"), board.liveArea.left, liveRenderOpts);
   fillOppStrip(
     document.getElementById("versus-opp-live-center"),
@@ -612,6 +763,10 @@ export function renderVersusOpponentBoard(board, opts) {
   fillOppStrip(document.getElementById("versus-opp-live-right"), board.liveArea.right, liveRenderOpts);
 
   wireVersusOpponentZoneInspect(board, opts);
+  syncVersusOppVoidWaitingColors(board);
+  if (opts && opts.remoteMatch) {
+    renderVersusOppLiveScore(opts.remoteMatch, opts.myRole || null);
+  }
 
   const deckPile = document.getElementById("versus-opp-deck-pile");
   if (deckPile) {
