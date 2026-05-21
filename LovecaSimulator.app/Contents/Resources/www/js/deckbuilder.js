@@ -861,6 +861,52 @@ export function initDeckBuilder(root, { onStartGame }) {
     dlg.showModal();
   }
 
+  /** @returns {{ map: Record<string, number>, keyCardNos: string[], keyCard2Nos: string[], keyCard3Nos: string[], middleCardNos: string[] }} */
+  function editorDeckBundleSnapshot() {
+    return {
+      map: cloneDeckMap(deckMap),
+      keyCardNos: sanitizeCardNoList(Array.from(keyCardNos)),
+      keyCard2Nos: sanitizeCardNoList(Array.from(keyCard2Nos)),
+      keyCard3Nos: sanitizeCardNoList(Array.from(keyCard3Nos)),
+      middleCardNos: sanitizeCardNoList(Array.from(middleCardNos)),
+    };
+  }
+
+  /** @param {{ deck?: Record<string, number>, keyCardNos?: unknown, keyCard2Nos?: unknown, keyCard3Nos?: unknown, middleCardNos?: unknown }} src */
+  function deckBundleFromSource(src) {
+    src = src || {};
+    return {
+      map: cloneDeckMap(src.deck || {}),
+      keyCardNos: sanitizeCardNoList(src.keyCardNos),
+      keyCard2Nos: sanitizeCardNoList(src.keyCard2Nos),
+      keyCard3Nos: sanitizeCardNoList(src.keyCard3Nos),
+      middleCardNos: sanitizeCardNoList(src.middleCardNos),
+    };
+  }
+
+  /**
+   * サンプル／登録デッキからソロ開始するとき、選択デッキを確実に渡す。
+   * @param {{ map: Record<string, number>, keyCardNos?: string[], keyCard2Nos?: string[], keyCard3Nos?: string[], middleCardNos?: string[] }} bundle
+   */
+  function startSoloPlayWithBundle(bundle) {
+    if (!bundle || !bundle.map || !Object.keys(bundle.map).length) {
+      showToast("デッキが空のためソロプレイを開始できません");
+      return;
+    }
+    pruneOrphanRoleLabels();
+    if (persistDeckTimer) {
+      clearTimeout(persistDeckTimer);
+      persistDeckTimer = 0;
+    }
+    flushPersistDeckToStorage();
+    onStartGame(bundle.map, {
+      keyCardNos: bundle.keyCardNos || [],
+      keyCard2Nos: bundle.keyCard2Nos || [],
+      keyCard3Nos: bundle.keyCard3Nos || [],
+      middleCardNos: bundle.middleCardNos || [],
+    });
+  }
+
   function pruneOrphanRoleLabels() {
     for (const no of [...keyCardNos]) {
       if (!(deckMap[no] > 0)) keyCardNos.delete(no);
@@ -3589,7 +3635,7 @@ export function initDeckBuilder(root, { onStartGame }) {
     }
     flushPersistDeckToStorage();
     persistDeckBuilderUiState();
-    onStartGame(deckMap);
+    startSoloPlayWithBundle(editorDeckBundleSnapshot());
   });
 
   el("btn-deck-export")?.addEventListener("click", () => {
@@ -3999,13 +4045,7 @@ export function initDeckBuilder(root, { onStartGame }) {
       if (act === "play") {
         applyLibrarySlotToMainDeck(slot);
         renderDeckLibraryTiles();
-        pruneOrphanRoleLabels();
-        if (persistDeckTimer) {
-          clearTimeout(persistDeckTimer);
-          persistDeckTimer = 0;
-        }
-        flushPersistDeckToStorage();
-        onStartGame(deckMap);
+        startSoloPlayWithBundle(deckBundleFromSource(slot));
         return;
       }
       if (act === "delete") {
@@ -4101,13 +4141,7 @@ export function initDeckBuilder(root, { onStartGame }) {
       }
       if (act === "play") {
         applySampleRecipeToMainDeck(recipe);
-        pruneOrphanRoleLabels();
-        if (persistDeckTimer) {
-          clearTimeout(persistDeckTimer);
-          persistDeckTimer = 0;
-        }
-        flushPersistDeckToStorage();
-        onStartGame(deckMap);
+        startSoloPlayWithBundle(deckBundleFromSource(recipe));
         return;
       }
       if (act === "copy") {

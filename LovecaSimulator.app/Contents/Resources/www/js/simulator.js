@@ -10,6 +10,7 @@ import {
   MAX_COPIES_PER_CARD,
   MAX_ENERGY_SIDE,
   OPENING_HAND_SIZE,
+  STORAGE_ACTIVE_PRESET_ID,
   STORAGE_DECK_PICK_SELECTED,
   STORAGE_DECK_ODDS_K,
   STORAGE_DECK_ODDS_TURN_STEPS,
@@ -1429,9 +1430,14 @@ export function mountSimulator(
   if (!resumeFromStorage) {
     try {
       sessionStorage.removeItem(STORAGE_PLAY_RESUME);
+      sessionStorage.removeItem(STORAGE_DECK_PICK_SELECTED);
+      sessionStorage.removeItem(STORAGE_OPENING_MULLIGAN_K);
+      sessionStorage.removeItem(STORAGE_DECK_ODDS_OPENING_MULL_MODEL);
     } catch (_) {
       /* noop */
     }
+    deckPickSelectedNos.clear();
+    deckPickListSig = "";
   }
 
   root.querySelectorAll("button").forEach(function (b) {
@@ -1571,7 +1577,12 @@ export function mountSimulator(
   /** applyVersusPhaseFromRemote の doLiveTurnBegin 二重起動防止 */
   var versusLiveBeginAutoKey = "";
   /** ターン終了オーバーレイ（リモート action 変化） */
-  var versusTurnEndFeedKey = "";
+  var versusTurnEndFeedPrimed = false;
+  var versusLastHostAction = "";
+  var versusLastGuestAction = "";
+  var versusHandRevealPending = [];
+  var versusHandRevealUntil = 0;
+  var versusHandRevealClearTimer = 0;
   /** ライブ勝敗判定の適用済み seq */
   var versusJudgmentAppliedSeq = -1;
   var versusJudgmentFinishTimer = 0;
@@ -2070,6 +2081,12 @@ export function mountSimulator(
   function pickCardDomElForInst(inst) {
     if (!inst || inst.id == null) return null;
     var id = String(inst.id).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+    var sel = '.card-item[data-id="' + id + '"]';
+    var board = document.getElementById("game-board") || document.getElementById("view-game");
+    if (board) {
+      var hitBoard = board.querySelector(sel);
+      if (hitBoard && hitBoard.getBoundingClientRect().width > 4) return hitBoard;
+    }
     var zoneIds = [
       "zone-hand",
       "zone-stage-left",
@@ -2080,17 +2097,65 @@ export function mountSimulator(
       "zone-live-right",
       "zone-resolution",
       "zone-waiting",
+      "zone-success-live",
+      "zone-energy",
+      "zone-preview",
+      "zone-deck",
     ];
     for (var zi = 0; zi < zoneIds.length; zi++) {
       var z = $(zoneIds[zi]);
       if (!z) continue;
-      var el = z.querySelector('[data-id="' + id + '"]');
+      var el = z.querySelector(sel);
       if (el && el.getBoundingClientRect().width > 4) return el;
     }
     return null;
   }
 
   /** 効果テキストによる山札→手札ドロー（エール処理のビーム＋「+1ドロー」表示） */
+  function instsToVersusHandRevealCards(cards) {
+    var out = [];
+    for (var hi = 0; hi < (cards || []).length; hi++) {
+      var inst = cards[hi];
+      if (!inst || !inst.card_no) continue;
+      var catH = getCard(inst.card_no);
+      out.push({
+        id: String(inst.id || inst.card_no + "@" + hi),
+        card_no: String(inst.card_no),
+        name: String((catH && catH.name) || inst.name || inst.card_no),
+        type: String((catH && catH.type) || inst.type || ""),
+      });
+    }
+    return out;
+  }
+
+  function queueVersusHandRevealPublic(drawnCards) {
+    if (!versusOnlineActive()) return;
+    var pub = instsToVersusHandRevealCards(drawnCards);
+    if (!pub.length) return;
+    versusHandRevealPending = pub;
+    versusHandRevealUntil = Date.now() + 6000;
+    versusBoardSyncLastFp = "";
+    flushVersusBoardPublicSync();
+    var label = pub
+      .slice(0, 3)
+      .map(function (c) {
+        return c.name || c.card_no;
+      })
+      .join("、");
+    showToast(
+      "手札に追加（相手に公開）: " + label + (pub.length > 3 ? "…" : ""),
+      { duration: 4500 },
+    );
+    if (versusHandRevealClearTimer) clearTimeout(versusHandRevealClearTimer);
+    versusHandRevealClearTimer = window.setTimeout(function () {
+      versusHandRevealClearTimer = 0;
+      versusHandRevealPending = [];
+      versusHandRevealUntil = 0;
+      versusBoardSyncLastFp = "";
+      flushVersusBoardPublicSync();
+    }, 6100);
+  }
+
   function presentAbilityDrawsToHand(drawnCards, sourceInst) {
     if (!drawnCards || !drawnCards.length) return;
     drawnCards.forEach(function (c) {
@@ -2109,6 +2174,7 @@ export function mountSimulator(
     } else {
       fireDrawBeams();
     }
+    if (versusOnlineActive()) queueVersusHandRevealPublic(drawnCards);
   }
 
   function flashTurnStartDrawToHand() {
@@ -5746,58 +5812,83 @@ export function mountSimulator(
     return !!(effectDialogResumeChip && effectDialogResumeChip.parentNode);
   }
 
-  function hideEffectDialogResumeChip() {
+  function hideEffectDialogResumeChip(opts) {
+    opts = opts || {};
     if (effectDialogResumeChipReposition) {
       window.removeEventListener("resize", effectDialogResumeChipReposition);
       window.removeEventListener("scroll", effectDialogResumeChipReposition, true);
       effectDialogResumeChipReposition = null;
     }
+    clearEffectDialogPeekSourceHighlights();
     if (effectDialogResumeChip && effectDialogResumeChip.parentNode) {
       effectDialogResumeChip.parentNode.removeChild(effectDialogResumeChip);
     }
     effectDialogResumeChip = null;
     effectDialogPeekSourceInst = null;
     document.body.classList.remove("llocg-effect-dialog-peek");
-    render();
+    if (!opts.skipRender) render();
   }
 
   function blockPlayActionsDuringEffectDialogPeek() {
     return isEffectDialogBoardPeekActive();
   }
 
+  function clearEffectDialogPeekSourceHighlights() {
+    document.querySelectorAll(".card-item--effect-peek-source").forEach(function (el) {
+      el.classList.remove("card-item--effect-peek-source");
+    });
+  }
+
+  function markEffectDialogPeekSourceOnBoard() {
+    clearEffectDialogPeekSourceHighlights();
+    if (!effectDialogPeekSourceInst) return null;
+    var anchor = pickCardDomElForInst(effectDialogPeekSourceInst);
+    if (anchor) anchor.classList.add("card-item--effect-peek-source");
+    return anchor;
+  }
+
   function repositionEffectDialogResumeChip() {
     if (!effectDialogResumeChip) return;
-    var anchor = effectDialogPeekSourceInst ? pickCardDomElForInst(effectDialogPeekSourceInst) : null;
+    if (effectDialogResumeChip.parentNode !== document.body) {
+      document.body.appendChild(effectDialogResumeChip);
+    }
+    var anchor = markEffectDialogPeekSourceOnBoard();
     if (anchor) {
       var r = anchor.getBoundingClientRect();
       if (r.width > 4 && r.height > 4) {
         effectDialogResumeChip.classList.add("effect-dialog-resume-chip--on-card");
         effectDialogResumeChip.classList.remove("effect-dialog-resume-chip--corner");
-        if (effectDialogResumeChip.parentNode !== document.body) {
-          document.body.appendChild(effectDialogResumeChip);
-        }
+        effectDialogResumeChip.style.position = "fixed";
         effectDialogResumeChip.style.left = String(r.left + r.width / 2) + "px";
         effectDialogResumeChip.style.top = String(r.top) + "px";
+        effectDialogResumeChip.style.right = "auto";
+        effectDialogResumeChip.style.bottom = "auto";
+        effectDialogResumeChip.style.transform = "translate(-50%, calc(-100% - 10px))";
+        effectDialogResumeChip.style.zIndex = "12065";
         return;
       }
     }
     effectDialogResumeChip.classList.remove("effect-dialog-resume-chip--on-card");
     effectDialogResumeChip.classList.add("effect-dialog-resume-chip--corner");
+    effectDialogResumeChip.style.position = "";
     effectDialogResumeChip.style.left = "";
     effectDialogResumeChip.style.top = "";
-    if (effectDialogResumeChip.parentNode !== document.body) {
-      document.body.appendChild(effectDialogResumeChip);
-    }
+    effectDialogResumeChip.style.right = "";
+    effectDialogResumeChip.style.bottom = "";
+    effectDialogResumeChip.style.transform = "";
+    effectDialogResumeChip.style.zIndex = "";
   }
 
   /** @param {() => void} resumeFn @param {*} [sourceInst] */
   function showEffectDialogResumeChip(resumeFn, sourceInst) {
-    hideEffectDialogResumeChip();
+    hideEffectDialogResumeChip({ skipRender: true });
     if (sourceInst) effectDialogPeekSourceInst = sourceInst;
     var btn = document.createElement("button");
     btn.type = "button";
     btn.id = "effect-dialog-resume-chip";
-    btn.className = "effect-dialog-resume-chip effect-dialog-resume-chip--corner btn primary";
+    btn.className =
+      "effect-dialog-resume-chip btn primary" +
+      (sourceInst ? " effect-dialog-resume-chip--on-card" : " effect-dialog-resume-chip--corner");
     btn.textContent = "効果を続ける";
     btn.title = "中断していた効果ダイアログを再開します";
     btn.addEventListener("click", function () {
@@ -5808,14 +5899,22 @@ export function mountSimulator(
     document.body.classList.add("llocg-effect-dialog-peek");
     document.body.appendChild(btn);
     render();
-    requestAnimationFrame(function () {
+    function armResumeChipReposition() {
       repositionEffectDialogResumeChip();
-      effectDialogResumeChipReposition = function () {
-        repositionEffectDialogResumeChip();
-      };
-      window.addEventListener("resize", effectDialogResumeChipReposition);
-      window.addEventListener("scroll", effectDialogResumeChipReposition, true);
+      if (!effectDialogResumeChipReposition) {
+        effectDialogResumeChipReposition = function () {
+          repositionEffectDialogResumeChip();
+        };
+        window.addEventListener("resize", effectDialogResumeChipReposition);
+        window.addEventListener("scroll", effectDialogResumeChipReposition, true);
+      }
+    }
+    armResumeChipReposition();
+    requestAnimationFrame(function () {
+      requestAnimationFrame(armResumeChipReposition);
     });
+    window.setTimeout(armResumeChipReposition, 50);
+    window.setTimeout(armResumeChipReposition, 180);
   }
 
   /**
@@ -10802,6 +10901,13 @@ export function mountSimulator(
     if (opts.successLiveAlwaysGlow) div.classList.add("card-item--success-live-glow");
     if (opts.liveVenueBoost) div.classList.add("card-item--live-venue-boost");
     if (opts.stageVeteranGlow) div.classList.add("card-item--stage-veteran-glow");
+    if (
+      effectDialogPeekSourceInst &&
+      effectDialogPeekSourceInst.id != null &&
+      String(c.id) === String(effectDialogPeekSourceInst.id)
+    ) {
+      div.classList.add("card-item--effect-peek-source");
+    }
     if (opts.playGlowClasses && opts.playGlowClasses.length) {
       opts.playGlowClasses.forEach(function (cls) {
         if (cls) div.classList.add(cls);
@@ -12041,6 +12147,10 @@ export function mountSimulator(
         if (vStep === "set" || vStep === "perf") livePublicMode = "set";
       }
     }
+    var handReveal =
+      versusHandRevealPending.length && Date.now() < versusHandRevealUntil
+        ? versusHandRevealPending
+        : [];
     var board = boardToVersusPublicFromState({
       deck: state.deck,
       hand: state.hand,
@@ -12054,6 +12164,7 @@ export function mountSimulator(
       turnCount: state.turnCount,
       liveRevealed: state.liveStatsAfterBegin === true,
       livePublicMode: livePublicMode,
+      handReveal: handReveal,
     });
     var fp = fingerprintVersusPublicBoard(board);
     if (fp === versusBoardSyncLastFp) return;
@@ -12137,18 +12248,20 @@ export function mountSimulator(
 
   function maybeShowVersusTurnEndFromRemote(remoteMatch) {
     if (!versusOnlineActive() || !remoteMatch) return;
-    var key =
-      String(remoteMatch.updatedAt || "") +
-      "|" +
-      String(remoteMatch.hostLastAction || "") +
-      "|" +
-      String(remoteMatch.guestLastAction || "");
-    if (key === versusTurnEndFeedKey) return;
-    versusTurnEndFeedKey = key;
-    if (
-      remoteMatch.hostLastAction === "ターン終了" ||
-      remoteMatch.guestLastAction === "ターン終了"
-    ) {
+    var hostAct = String(remoteMatch.hostLastAction || "");
+    var guestAct = String(remoteMatch.guestLastAction || "");
+    if (!versusTurnEndFeedPrimed) {
+      versusTurnEndFeedPrimed = true;
+      versusLastHostAction = hostAct;
+      versusLastGuestAction = guestAct;
+      return;
+    }
+    var myRole = versusSession.myRole;
+    var oppAct = myRole === "host" ? guestAct : hostAct;
+    var lastOppAct = myRole === "host" ? versusLastGuestAction : versusLastHostAction;
+    versusLastHostAction = hostAct;
+    versusLastGuestAction = guestAct;
+    if (oppAct === "ターン終了" && lastOppAct !== "ターン終了") {
       showVersusTurnEndOverlay();
     }
   }
@@ -12240,6 +12353,8 @@ export function mountSimulator(
   function tryAutoVersusLiveBegin(remoteMatch) {
     if (!versusOnlineActive() || !remoteMatch || !versusSession.myRole) return;
     if (getVersusLiveStep(remoteMatch) !== "perf") return;
+    if (!myVersusLiveSetDone(remoteMatch)) return;
+    if (state.liveTurnPickMode && !state.liveStatsAfterBegin) return;
     if (!canRoleActInVersus(remoteMatch, versusSession.myRole)) return;
     if (state.liveStatsAfterBegin) return;
     if (!versusLiveSlotsHaveCards()) return;
@@ -12700,6 +12815,14 @@ export function mountSimulator(
     });
   }
 
+  /** 自分が「セット完了」を押してリモートに反映済みか */
+  function myVersusLiveSetDone(remoteMatch) {
+    if (!remoteMatch || !versusSession || !versusSession.myRole) return false;
+    return versusSession.myRole === "host"
+      ? remoteMatch.hostLiveSetDone === true
+      : remoteMatch.guestLiveSetDone === true;
+  }
+
   function resetVersusLocalLiveHandoff() {
     state.liveStatsAfterBegin = false;
     state.liveTurnPickMode = false;
@@ -12872,22 +12995,25 @@ export function mountSimulator(
 
     if (phase === "live") {
       var autoKey = buildVersusPhaseAutoKey(remoteMatch);
-      if (liveStep === "set" && mineAct && !state.liveStatsAfterBegin) {
-        if (!state.liveTurnPickMode && versusPhaseAutoKey !== autoKey) {
-          versusPhaseAutoKey = autoKey;
-          try {
-            doLiveTurnStart();
-          } catch (_) {
-            /* noop */
+      if (liveStep === "set") {
+        if (mineAct && !state.liveStatsAfterBegin) {
+          if (!state.liveTurnPickMode && versusPhaseAutoKey !== autoKey) {
+            versusPhaseAutoKey = autoKey;
+            try {
+              doLiveTurnStart();
+            } catch (_) {
+              /* noop */
+            }
+          }
+        } else if (!mineAct) {
+          if (state.liveTurnPickMode) {
+            state.liveTurnPickMode = false;
+            state.liveTurnSelectedIds = [];
           }
         }
-      } else if (liveStep === "set" && !mineAct) {
-        if (state.liveTurnPickMode) {
-          state.liveTurnPickMode = false;
-          state.liveTurnSelectedIds = [];
-        }
-      } else if (liveStep !== "set" || !mineAct) {
-        if (state.liveTurnPickMode) {
+      } else {
+        versusLiveBeginAutoKey = "";
+        if (state.liveTurnPickMode && !state.liveStatsAfterBegin) {
           state.liveTurnPickMode = false;
           state.liveTurnSelectedIds = [];
         }
@@ -12908,14 +13034,16 @@ export function mountSimulator(
         maybeCommitVersusLiveJudgment(remoteMatch);
         applyVersusLiveJudgmentForMe(remoteMatch);
       } else if (liveStep === "successFx") {
-      if (!mineAct) {
-        resetVersusLocalLiveHandoff();
-      } else {
-        versusTryAutoSkipSuccessFx(remoteMatch);
-        versusTryOrchestrateSuccessFx(remoteMatch);
+        if (!mineAct) {
+          resetVersusLocalLiveHandoff();
+        } else {
+          versusTryAutoSkipSuccessFx(remoteMatch);
+          versusTryOrchestrateSuccessFx(remoteMatch);
+        }
       }
     } else {
       versusLiveBeginAutoKey = "";
+      versusPhaseAutoKey = "";
       if (state.liveTurnPickMode && !state.liveStatsAfterBegin) {
         state.liveTurnPickMode = false;
         state.liveTurnSelectedIds = [];
@@ -12930,7 +13058,6 @@ export function mountSimulator(
     syncVersusOpponentActionFeed(remoteMatch);
     versusTryAutoSkipSuccessFx(remoteMatch);
     versusTryOrchestrateSuccessFx(remoteMatch);
-  }
   }
 
   function doVersusMulliganExecuteClick() {
@@ -13171,6 +13298,15 @@ export function mountSimulator(
     versusOpponentBoardRev = 0;
     versusLastSyncedSlCount = -1;
     versusPhaseAutoKey = "";
+    versusTurnEndFeedPrimed = false;
+    versusLastHostAction = "";
+    versusLastGuestAction = "";
+    versusHandRevealPending = [];
+    versusHandRevealUntil = 0;
+    if (versusHandRevealClearTimer) {
+      clearTimeout(versusHandRevealClearTimer);
+      versusHandRevealClearTimer = 0;
+    }
     hideVersusOpponentBoard();
     document.body.classList.remove("play-versus-mode");
     var versusChromeEl = document.getElementById("versus-play-chrome");
@@ -14037,7 +14173,12 @@ export function mountSimulator(
         versusSession.myRole &&
         canRoleActInVersus(versusSession.remoteMatch, versusSession.myRole);
       if (vStepRender === "perf" && vMineRender) {
-        if (!state.liveStatsAfterBegin && versusLiveSlotsHaveCards()) {
+        if (
+          !state.liveStatsAfterBegin &&
+          !state.liveTurnPickMode &&
+          myVersusLiveSetDone(versusSession.remoteMatch) &&
+          versusLiveSlotsHaveCards()
+        ) {
           tryAutoVersusLiveBegin(versusSession.remoteMatch);
         } else if (state.liveStatsAfterBegin) {
           try {
@@ -15595,6 +15736,12 @@ export function mountSimulator(
     if (!sel) return;
     var lib = loadDeckLibrary();
     var prev = sel.value;
+    try {
+      var activePreset = localStorage.getItem(STORAGE_ACTIVE_PRESET_ID) || "";
+      if (activePreset) prev = activePreset;
+    } catch (_) {
+      /* noop */
+    }
     sel.innerHTML = "";
     var opt0 = document.createElement("option");
     opt0.value = "";

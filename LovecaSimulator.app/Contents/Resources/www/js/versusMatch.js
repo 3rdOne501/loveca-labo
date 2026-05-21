@@ -1006,6 +1006,44 @@ export async function clearVersusEffectHighlight(roomCode, role) {
   }
 }
 
+/**
+ * 効果などで手札に加えたカードを相手画面にも表示する
+ * @param {string} roomCode
+ * @param {VersusRole} role
+ * @param {{ card_no?: string, name?: string }[]} cards
+ * @returns {Promise<number>} seq
+ */
+export async function pushVersusHandReveal(roomCode, role, cards) {
+  const list = (cards || [])
+    .filter(function (c) {
+      return c && (c.card_no || c.name);
+    })
+    .slice(0, 12)
+    .map(function (c) {
+      return {
+        card_no: String(c.card_no || ""),
+        name: String(c.name || c.card_no || "カード"),
+      };
+    });
+  if (!list.length) return 0;
+  requireUser();
+  const { api } = fs();
+  const ref = matchRef(roomCode);
+  const field = role === "host" ? "hostHandReveal" : "guestHandReveal";
+  const seq = Date.now();
+  const now = new Date().toISOString();
+  try {
+    await api.updateDoc(ref, {
+      [field]: { seq: seq, at: now, cards: list },
+      updatedAt: now,
+    });
+    return seq;
+  } catch (err) {
+    console.warn("[versusMatch] hand reveal failed:", err);
+    return 0;
+  }
+}
+
 /** @param {string} roomCode @param {VersusRole} role */
 /**
  * 投了後の次ゲーム準備（ホストのみ・6.2.1.4〜6 相当の開幕前まで）

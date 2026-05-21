@@ -3,7 +3,14 @@
  * ソロプレイの盤面ロジックとは独立。
  */
 import { CARD_BACK_DRAG_DATA_URI, T_LIVE, T_MEMBER } from "./config.js";
-import { getCard } from "./cards.js";
+import { getCard, cardIsNoteLiveCatalog, bladeHeartSlotsOnCard } from "./cards.js";
+import { catalogLiveCardIsDrawYellBladeHeart } from "./cardCatalogDialog.js";
+import {
+  bladeHeartDisplaySlotLabel,
+  cardHasBladeHeart,
+  heartSlotArtIconHtml,
+} from "./bladeHeart.js";
+import { showToast } from "./ui.js";
 
 export const VERSUS_BOARD_PUBLIC_V = 1;
 
@@ -35,6 +42,7 @@ export const VERSUS_BOARD_PUBLIC_V = 1;
  * @property {{ left: VersusPublicCard[], center: VersusPublicCard[], right: VersusPublicCard[] }} liveArea
  * @property {boolean} [liveRevealed]
  * @property {"hidden"|"set"|"revealed"} [livePublicMode]
+ * @property {VersusPublicCard[]} [handReveal]
  */
 
 /** @param {unknown} raw */
@@ -253,6 +261,7 @@ export function boardToVersusPublic(board) {
         : stripLiveAreaPublic(b.liveArea);
   const liveRevealed = liveMode === "revealed";
   const handCount = stripCardList(b.hand).length;
+  const handReveal = stripCardList(b.handReveal);
   return {
     v: VERSUS_BOARD_PUBLIC_V,
     ts: Date.now(),
@@ -268,6 +277,7 @@ export function boardToVersusPublic(board) {
           : 0,
     handCount: handCount,
     hand: [],
+    handReveal: handReveal.length ? handReveal : undefined,
     waitingRoom: stripCardList(b.waitingRoom),
     resolutionArea: stripCardList(b.resolutionArea),
     successfulLiveArea: stripCardList(b.successfulLiveArea),
@@ -308,6 +318,7 @@ export function boardToVersusPublicFromState(st) {
     turnCount: st.turnCount,
     liveRevealed: st.liveRevealed === true,
     livePublicMode: st.livePublicMode || (st.liveRevealed === true ? "revealed" : "hidden"),
+    handReveal: st.handReveal,
   });
 }
 
@@ -324,6 +335,7 @@ export function fingerprintVersusPublicBoard(board) {
     board.turnCount,
     board.deckCount,
     String(board.handCount || 0),
+    ids(board.handReveal || []),
     board.livePublicMode || (board.liveRevealed ? "revealed" : "hidden"),
     ids(board.waitingRoom),
     ids(board.resolutionArea),
@@ -434,6 +446,7 @@ export function assemblePublicBoardFromMatchFields(match, pre) {
     deckCount: Math.max(0, Math.floor(Number(meta.deckCount) || 0)),
     handCount: handCount,
     hand: [],
+    handReveal: stripCardList(nested && nested.handReveal),
     waitingRoom: stripCardList(
       match[pre + "WaitingPublic"] != null
         ? match[pre + "WaitingPublic"]
@@ -552,12 +565,39 @@ function applyOppZoneOverlapClasses(el, n) {
   else if (ct >= 5) el.classList.add("resolution-zone--t1");
 }
 
+/** @param {string} s */
+function escapeHtmlPlain(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/** @param {VersusPublicBoard|null|undefined} board */
+function oppLiveFaceUpInFrames(board) {
+  if (!board || !board.liveArea) return 0;
+  const liveMode = board.livePublicMode || (board.liveRevealed ? "revealed" : "hidden");
+  if (liveMode !== "revealed") return 0;
+  let n = 0;
+  ["left", "center", "right"].forEach(function (side) {
+    const list = board.liveArea[side] || [];
+    list.forEach(function (c) {
+      if (c && !c.hiddenFace && c.card_no) n++;
+    });
+  });
+  return n;
+}
+
 function buildOppWaitingBhColorsHtml(cards) {
   if (!cards || !cards.length) {
     return '<p class="muted" style="margin:0;font-size:0.65rem">控え室にカードがありません</p>';
   }
-  const slotCount = {};
   let nonBh = 0;
+  let noteLive = 0;
+  let drawYell = 0;
+  /** @type {Record<number, number>} */
+  const slotCount = {};
   cards.forEach(function (c) {
     if (!c || c.hiddenFace || !c.card_no) {
       nonBh++;
@@ -568,53 +608,171 @@ function buildOppWaitingBhColorsHtml(cards) {
       nonBh++;
       return;
     }
-    const bh = cat.blade_heart;
-    if (!bh || typeof bh !== "object") {
+    if (cat.type === T_LIVE && cardIsNoteLiveCatalog(cat)) noteLive++;
+    if (cat.type === T_LIVE && catalogLiveCardIsDrawYellBladeHeart(cat)) drawYell++;
+    if (!cardHasBladeHeart(cat)) {
       nonBh++;
       return;
     }
-    let any = false;
-    for (let s = 1; s <= 7; s++) {
-      const key = s === 1 ? "b_heart01" : "b_heart0" + s;
-      const n = Number(bh[key]);
-      if (Number.isFinite(n) && n > 0) {
-        slotCount[s] = (slotCount[s] || 0) + 1;
-        any = true;
-      }
-    }
-    if (!any) nonBh++;
+    bladeHeartSlotsOnCard(cat).forEach(function (s) {
+      slotCount[s] = (slotCount[s] || 0) + 1;
+    });
   });
-  let html =
-    '<span class="deck-remain-bh-pill deck-remain-bh-pill--nonbh"><span class="deck-remain-bh-pill__lab">BHなし</span><strong class="deck-remain-bh-pill__n">' +
-    nonBh +
-    "</strong></span>";
-  [1, 2, 3, 4, 7, 5, 6].forEach(function (s) {
-    const cnt = slotCount[s] || 0;
+  const parts = [];
+  [1, 2, 3, 4, 7, 5, 6].forEach(function (si) {
+    const cnt = slotCount[si] || 0;
     if (cnt <= 0) return;
-    html +=
-      '<span class="deck-remain-bh-pill deck-remain-bh-pill--art"><span class="deck-remain-bh-pill__lab">BH' +
-      s +
-      '</span><strong class="deck-remain-bh-pill__n">' +
-      cnt +
-      "</strong></span>";
+    parts.push(
+      '<span class="deck-remain-bh-pill deck-remain-bh-pill--art" data-bh-slot="' +
+        si +
+        '"><span class="deck-remain-bh-pill__lab">' +
+        heartSlotArtIconHtml(si, { extraClass: "deck-remain-bh-pill__art-ico" }) +
+        '<span class="visually-hidden">' +
+        escapeHtmlPlain(bladeHeartDisplaySlotLabel(si)) +
+        '</span></span><strong class="deck-remain-bh-pill__n">' +
+        escapeHtmlPlain(String(cnt)) +
+        "</strong></span>",
+    );
   });
-  return '<div class="deck-remain-bh-pill-row">' + html + "</div>";
+  const nonBhPill =
+    '<span class="deck-remain-bh-pill deck-remain-bh-pill--nonbh" data-bh-slot="non">' +
+    '<span class="deck-remain-bh-pill__lab">BHなし</span><strong class="deck-remain-bh-pill__n">' +
+    escapeHtmlPlain(String(nonBh)) +
+    "</strong></span>";
+  const notePill =
+    noteLive > 0
+      ? '<span class="deck-remain-bh-pill deck-remain-bh-pill--note-live deck-remain-bh-pill--art" data-bh-slot="note" title="スコア（BHなしのライブ）枚数">' +
+        '<span class="deck-remain-bh-pill__lab">' +
+        heartSlotArtIconHtml(0, { score: true, extraClass: "deck-remain-bh-pill__art-ico" }) +
+        '<span class="visually-hidden">スコア</span></span><strong class="deck-remain-bh-pill__n">' +
+        escapeHtmlPlain(String(noteLive)) +
+        "</strong></span>"
+      : "";
+  const drawYellPill =
+    drawYell > 0
+      ? '<span class="deck-remain-bh-pill deck-remain-bh-pill--draw-yell deck-remain-bh-pill--art" data-bh-slot="draw-yell" title="ドロー（BH）を持つライブ枚数">' +
+        '<span class="deck-remain-bh-pill__lab">' +
+        heartSlotArtIconHtml(0, { draw_yell: true, extraClass: "deck-remain-bh-pill__art-ico" }) +
+        '<span class="visually-hidden">ドロー</span></span><strong class="deck-remain-bh-pill__n">' +
+        escapeHtmlPlain(String(drawYell)) +
+        "</strong></span>"
+      : "";
+  return (
+    '<div class="deck-remain-bh-pill-row">' + nonBhPill + notePill + drawYellPill + parts.join("") + "</div>"
+  );
+}
+
+/** @type {VersusPublicBoard|null} */
+let lastOppBhInspectBoard = null;
+let versusOppBhPillBound = false;
+let lastOppHandRevealToastKey = "";
+
+/**
+ * @param {VersusPublicBoard} board
+ * @param {string} slotKey
+ */
+function openVersusOpponentBhPillDialog(board, slotKey) {
+  const cards = board.waitingRoom || [];
+  let slotLabel = "";
+  /** @type {(cat: ReturnType<typeof getCard>|null) => boolean} */
+  let pred;
+  if (slotKey === "non") {
+    slotLabel = "BHなし";
+    pred = function (cat) {
+      return !cat || !cardHasBladeHeart(cat);
+    };
+  } else if (slotKey === "note") {
+    slotLabel = "スコア";
+    pred = function (cat) {
+      return !!(cat && cat.type === T_LIVE && cardIsNoteLiveCatalog(cat));
+    };
+  } else if (slotKey === "draw-yell") {
+    slotLabel = "ドロー";
+    pred = function (cat) {
+      return !!(cat && cat.type === T_LIVE && catalogLiveCardIsDrawYellBladeHeart(cat));
+    };
+  } else {
+    const slotNum = Number(slotKey);
+    if (!Number.isFinite(slotNum) || slotNum < 1 || slotNum > 7) return;
+    slotLabel = bladeHeartDisplaySlotLabel(slotNum);
+    pred = function (cat) {
+      if (!cat || !cardHasBladeHeart(cat)) return false;
+      return bladeHeartSlotsOnCard(cat).has(slotNum);
+    };
+  }
+  const matched = cards.filter(function (c) {
+    if (!c || c.hiddenFace || !c.card_no) return pred(null);
+    return pred(getCard(c.card_no));
+  });
+  openVersusOpponentZoneDialog(board, "控え室 — " + slotLabel, matched);
+}
+
+function bindVersusOppBhPillClicksOnce() {
+  if (versusOppBhPillBound) return;
+  const host = document.getElementById("versus-opp-void-waiting-colors");
+  if (!host) return;
+  versusOppBhPillBound = true;
+  host.addEventListener("click", function (ev) {
+    const pill =
+      ev.target && /** @type {Element} */ (ev.target).closest
+        ? /** @type {Element} */ (ev.target).closest(".deck-remain-bh-pill")
+        : null;
+    if (!pill || !lastOppBhInspectBoard) return;
+    const slot = pill.getAttribute("data-bh-slot");
+    if (!slot) return;
+    ev.stopPropagation();
+    openVersusOpponentBhPillDialog(lastOppBhInspectBoard, slot);
+  });
 }
 
 function syncVersusOppVoidWaitingColors(board) {
   const host = document.getElementById("versus-opp-void-waiting-colors");
   if (!host) return;
+  bindVersusOppBhPillClicksOnce();
   if (!board || !board.waitingRoom || !board.waitingRoom.length) {
+    lastOppBhInspectBoard = board;
     host.innerHTML =
       '<p class="versus-opp-void-waiting-title">控えの残色</p><p class="muted" style="margin:0;font-size:0.65rem">—</p>';
     return;
   }
+  lastOppBhInspectBoard = board;
   host.innerHTML =
     '<p class="versus-opp-void-waiting-title">控えの残色</p>' +
     buildOppWaitingBhColorsHtml(board.waitingRoom);
 }
 
-function renderVersusOppLiveScore(remoteMatch, myRole) {
+/** @param {VersusPublicBoard|null|undefined} board */
+function maybeToastOpponentHandReveal(board) {
+  if (!board || !board.handReveal || !board.handReveal.length) return;
+  const key =
+    board.handReveal
+      .map(function (c) {
+        return c.id;
+      })
+      .join(",") +
+    "@" +
+    String(board.handCount || 0);
+  if (key === lastOppHandRevealToastKey) return;
+  lastOppHandRevealToastKey = key;
+  const label = board.handReveal
+    .slice(0, 3)
+    .map(function (c) {
+      return c.name || c.card_no;
+    })
+    .filter(Boolean)
+    .join("、");
+  showToast(
+    "相手が手札に追加: " + (label || board.handReveal.length + "枚"),
+    { duration: 4500 },
+  );
+}
+
+/**
+ * @param {import('./versusMatch.js').VersusMatchDoc|null} remoteMatch
+ * @param {'host'|'guest'|null} myRole
+ * @param {VersusPublicBoard|null|undefined} [board]
+ */
+function renderVersusOppLiveScore(remoteMatch, myRole, board) {
   const el = document.getElementById("versus-opp-live-center-score");
   if (!el || !remoteMatch || !myRole) return;
   const oppRole = myRole === "host" ? "guest" : "host";
@@ -628,6 +786,16 @@ function renderVersusOppLiveScore(remoteMatch, myRole) {
   }
   el.hidden = false;
   el.className = "live-score-center-bar versus-opp-live-center-score";
+  const placeholder = board && oppLiveFaceUpInFrames(board) === 0;
+  if (placeholder) {
+    el.classList.add("live-score-center-bar--placeholder");
+    el.innerHTML =
+      '<span class="live-score-center-bar__label">ライブスコア</span>' +
+      '<span class="live-score-center-bar__num live-score-num--placeholder">－</span>' +
+      '<span class="live-score-center-bar__suffix">点</span>';
+    return;
+  }
+  el.classList.remove("live-score-center-bar--placeholder");
   el.innerHTML =
     '<span class="live-score-center-bar__label">ライブスコア</span>' +
     '<span class="live-score-center-bar__num">' +
@@ -739,7 +907,13 @@ export function renderVersusOpponentBoard(board, opts) {
   setCount("versus-opp-energy-active-count", energyActive);
   setCount("versus-opp-energy-wait-count", energyWait);
 
-  fillOppSecretHand(document.getElementById("versus-opp-zone-hand"), board.handCount || 0);
+  const handStrip = document.getElementById("versus-opp-zone-hand");
+  if (board.handReveal && board.handReveal.length) {
+    fillOppStrip(handStrip, board.handReveal);
+    maybeToastOpponentHandReveal(board);
+  } else {
+    fillOppSecretHand(handStrip, board.handCount || 0);
+  }
   fillOppStrip(document.getElementById("versus-opp-zone-waiting"), board.waitingRoom);
   fillOppStrip(document.getElementById("versus-opp-zone-resolution"), board.resolutionArea);
   fillOppStrip(document.getElementById("versus-opp-zone-sl"), board.successfulLiveArea);
@@ -765,7 +939,7 @@ export function renderVersusOpponentBoard(board, opts) {
   wireVersusOpponentZoneInspect(board, opts);
   syncVersusOppVoidWaitingColors(board);
   if (opts && opts.remoteMatch) {
-    renderVersusOppLiveScore(opts.remoteMatch, opts.myRole || null);
+    renderVersusOppLiveScore(opts.remoteMatch, opts.myRole || null, board);
   }
 
   const deckPile = document.getElementById("versus-opp-deck-pile");

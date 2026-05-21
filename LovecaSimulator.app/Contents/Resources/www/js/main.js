@@ -1,6 +1,9 @@
 import { loadCardDatabase, prefetchDeckCardImagesFromMap, getCard } from "./cards.js";
 import {
   STORAGE_PLAY_RESUME,
+  STORAGE_DECK_PICK_SELECTED,
+  STORAGE_OPENING_MULLIGAN_K,
+  STORAGE_DECK_ODDS_OPENING_MULL_MODEL,
   STORAGE_BUILDER_UI_RESTORE_FLAG,
   STORAGE_PAGE_RELOAD_SNAPSHOT,
   STORAGE_PAGE_RELOAD_RESTORE_FLAG,
@@ -23,6 +26,9 @@ import { initDeckBuilder, loadDeckBundleFromStorage } from "./deckbuilder.js";
 import { initPublishedSampleRecipes } from "./sampleDeckRecipes.js";
 import { prefetchGameStatusArtBundledEarly } from "./gameStatusIcons.js";
 import { showToast } from "./ui.js";
+
+/** ソロ開始の非同期マウントが古いクリックで上書きされないようにする */
+let soloPlayStartSeq = 0;
 
 /** プレイ画面（約1.5万行）— 起動時に読み込まない（デッキ画面だけで固まるのを防ぐ） */
 /** @type {Promise<typeof import('./simulator.js')>|null} */
@@ -169,6 +175,17 @@ window.__llocgResetPlayFromVersusLeave = resetPlayFromVersusLeave;
 function clearPlayResumeStorage() {
   try {
     sessionStorage.removeItem(STORAGE_PLAY_RESUME);
+  } catch (_) {
+    /* noop */
+  }
+}
+
+/** 新規ソロ開始時に前回プレイの山札選択・マリガン記憶を捨てる */
+function clearSoloPlaySessionPrefs() {
+  try {
+    sessionStorage.removeItem(STORAGE_DECK_PICK_SELECTED);
+    sessionStorage.removeItem(STORAGE_OPENING_MULLIGAN_K);
+    sessionStorage.removeItem(STORAGE_DECK_ODDS_OPENING_MULL_MODEL);
   } catch (_) {
     /* noop */
   }
@@ -549,10 +566,15 @@ function startApp(viewDeck, viewGame, statusEl) {
       /* noop */
     }
     initDeckBuilder(viewDeck, {
-      onStartGame: (deckMap) => {
+      onStartGame: (deckMap, deckRoleLabels) => {
         markVersusSessionLobbyOnly();
         var map = normalizeDeckMapCounts(deckMap || {});
+        var rolesExplicit = !!(deckRoleLabels && typeof deckRoleLabels === "object");
         if (!Object.keys(map).length) {
+          if (rolesExplicit) {
+            showToast("選択したデッキを読み込めませんでした");
+            return;
+          }
           map = normalizeDeckMapCounts(loadDeckBundleFromStorage().map || {});
         }
         if (!Object.keys(map).length) {
@@ -564,8 +586,19 @@ function startApp(viewDeck, viewGame, statusEl) {
         } catch (_) {
           /* noop */
         }
-        const bundle = loadDeckBundleFromStorage();
+        const bundle = rolesExplicit
+          ? {
+              keyCardNos: Array.isArray(deckRoleLabels.keyCardNos) ? deckRoleLabels.keyCardNos : [],
+              keyCard2Nos: Array.isArray(deckRoleLabels.keyCard2Nos) ? deckRoleLabels.keyCard2Nos : [],
+              keyCard3Nos: Array.isArray(deckRoleLabels.keyCard3Nos) ? deckRoleLabels.keyCard3Nos : [],
+              middleCardNos: Array.isArray(deckRoleLabels.middleCardNos)
+                ? deckRoleLabels.middleCardNos
+                : [],
+            }
+          : loadDeckBundleFromStorage();
+        const startSeq = ++soloPlayStartSeq;
         clearPlayResumeStorage();
+        clearSoloPlaySessionPrefs();
         activeVersusRoomMounted = null;
         viewDeck.hidden = true;
         viewGame.hidden = false;
@@ -575,6 +608,7 @@ function startApp(viewDeck, viewGame, statusEl) {
           setTimeout(function () {
             loadSimulatorModule()
               .then(function (sim) {
+                if (startSeq !== soloPlayStartSeq) return;
                 if (typeof sim.teardownActivePlayMount === "function") {
                   sim.teardownActivePlayMount();
                 }
@@ -605,6 +639,7 @@ function startApp(viewDeck, viewGame, statusEl) {
                 });
               })
               .catch(function (err) {
+                if (startSeq !== soloPlayStartSeq) return;
                 console.error(err);
                 teardownDeckPileLayoutWatchers();
                 document.body.classList.remove("play-mode");

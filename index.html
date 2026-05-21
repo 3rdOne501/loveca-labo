@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Loveca Labo" />
-    <meta name="loveca-build" content="2026052022" />
+    <meta name="loveca-build" content="2026052027" />
     <title>Loveca Labo</title>
     <!-- 万一以前のバージョンの Service Worker が登録された端末で取り残しが起きた場合に備え、
          先頭で SW 登録を一括解除する。SW 自体は本サイトでは使っていない。 -->
@@ -204,33 +204,33 @@ python3 -m http.server 8080</pre>
     <div id="view-deck" class="view">
       <header class="app-header">
         <h1>Loveca Labo</h1>
-        <div id="cloud-auth-bar" class="cloud-auth-bar cloud-auth-bar--app-header" hidden>
-          <div class="cloud-auth-bar__profile">
-            <img id="cloud-auth-avatar" class="cloud-auth-bar__avatar" alt="" hidden />
-            <div class="cloud-auth-bar__profile-text">
-              <span id="cloud-auth-status" class="cloud-auth-bar__status">未ログイン</span>
-              <label id="player-display-name-wrap" class="player-display-name-wrap" hidden>
-                <span class="player-display-name-wrap__label">対戦表示名</span>
-                <input
-                  type="text"
-                  id="input-player-display-name"
-                  class="input player-display-name-input"
-                  maxlength="32"
-                  placeholder="ルームで表示する名前"
-                  autocomplete="nickname"
-                />
-              </label>
-            </div>
-          </div>
-          <div class="cloud-auth-bar__actions">
-            <button type="button" id="cloud-auth-signin" class="btn sm secondary cloud-auth-bar__signin" title="Google でログイン">Google でログイン</button>
-            <button type="button" id="cloud-auth-signout" class="btn sm secondary cloud-auth-bar__signout" hidden>ログアウト</button>
-          </div>
-        </div>
       </header>
 
       <div class="builder">
         <aside class="search-panel">
+          <div id="cloud-auth-bar" class="cloud-auth-bar cloud-auth-bar--search-top" hidden>
+            <div class="cloud-auth-bar__profile">
+              <img id="cloud-auth-avatar" class="cloud-auth-bar__avatar" alt="" hidden />
+              <div class="cloud-auth-bar__profile-text">
+                <span id="cloud-auth-status" class="cloud-auth-bar__status">未ログイン</span>
+                <label id="player-display-name-wrap" class="player-display-name-wrap" hidden>
+                  <span class="player-display-name-wrap__label">対戦表示名</span>
+                  <input
+                    type="text"
+                    id="input-player-display-name"
+                    class="input player-display-name-input"
+                    maxlength="32"
+                    placeholder="ルームで表示する名前"
+                    autocomplete="nickname"
+                  />
+                </label>
+              </div>
+            </div>
+            <div class="cloud-auth-bar__actions">
+              <button type="button" id="cloud-auth-signin" class="btn sm secondary cloud-auth-bar__signin" title="Google でログイン">Google でログイン</button>
+              <button type="button" id="cloud-auth-signout" class="btn sm secondary cloud-auth-bar__signout" hidden>ログアウト</button>
+            </div>
+          </div>
           <div class="search-panel-tools">
             <h2 class="panel-h2-plain">検索・絞り込み</h2>
             <div class="search-quick-tools">
@@ -1958,18 +1958,18 @@ python3 -m http.server 8080</pre>
             "./gameStatusIcons.js": "./gameStatusIcons.js?v=2026051866",
             "./joujiEffects.js": "./joujiEffects.js?v=2026051866",
             "./liveSpecialBhOverride.js": "./liveSpecialBhOverride.js?v=2026051866",
-            "./main.js": "./main.js?v=2026052022",
+            "./main.js": "./main.js?v=2026052027",
             "./sampleDeckRecipes.js": "./sampleDeckRecipes.js?v=2026051866",
-            "./simulator.js": "./simulator.js?v=2026052022",
+            "./simulator.js": "./simulator.js?v=2026052027",
             "./testCardLog.js": "./testCardLog.js?v=2026051866",
             "./ui.js": "./ui.js?v=2026051866",
-            "./versusBoardSync.js": "./versusBoardSync.js?v=2026051866",
+            "./versusBoardSync.js": "./versusBoardSync.js?v=2026052027",
             "./versusMatch.js": "./versusMatch.js?v=2026051866",
             "./versusMode.js": "./versusMode.js?v=2026051866"
           }
         }
       }
     </script>
-    <script type="module" src="js/main.js?v=2026052022"></script>
+    <script type="module" src="js/main.js?v=2026052027"></script>
   </body>
 </html>
