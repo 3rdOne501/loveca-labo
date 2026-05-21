@@ -98,6 +98,9 @@ export const STORAGE_CARD_FAVORITES = "llocg_card_favorites";
 /** デッキ編集:「再読込」直前の UI（開閉・スクロール）を次読み込みで復元 */
 export const STORAGE_BUILDER_UI_RELOAD = "llocg_builder_ui_reload_v2";
 export const STORAGE_BUILDER_UI_RESTORE_FLAG = "llocg_builder_restore_ui_next_v1";
+/** 「再読込」直前の画面（デッキ／プレイ）を次回起動で復元 */
+export const STORAGE_PAGE_RELOAD_SNAPSHOT = "llocg_page_reload_snapshot_v1";
+export const STORAGE_PAGE_RELOAD_RESTORE_FLAG = "llocg_page_reload_restore_v1";
 
 /** テストカード（オリカ）採用時に保存するログ（同一ブラウザの localStorage） */
 export const STORAGE_TEST_CARD_LOG = "llocg_test_card_log_v1";
@@ -126,7 +129,7 @@ export const HISTORY_MAX_STEPS = 35;
 export const DECK_EXPORT_VERSION = 1;
 
 /** index.html の main.js クエリと揃える（JS モジュールのブラウザキャッシュ対策） */
-export const APP_MODULE_CACHE_BUST = "2026052021";
+export const APP_MODULE_CACHE_BUST = "2026052022";
 
 /**
  * 組み込みプリセット・初回メインデッキ用（リポジトリ既定の大会用例。カード DB に番号が無い場合はデッキ構築で警告になります）

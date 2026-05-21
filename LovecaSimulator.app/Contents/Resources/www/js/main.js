@@ -2,6 +2,8 @@ import { loadCardDatabase, prefetchDeckCardImagesFromMap, getCard } from "./card
 import {
   STORAGE_PLAY_RESUME,
   STORAGE_BUILDER_UI_RESTORE_FLAG,
+  STORAGE_PAGE_RELOAD_SNAPSHOT,
+  STORAGE_PAGE_RELOAD_RESTORE_FLAG,
   STORAGE_VERSUS_ONLINE_SESSION,
   APP_MODULE_CACHE_BUST,
 } from "./config.js";
@@ -172,8 +174,82 @@ function clearPlayResumeStorage() {
   }
 }
 
+function isPageReloadRestorePending() {
+  try {
+    return sessionStorage.getItem(STORAGE_PAGE_RELOAD_RESTORE_FLAG) === "1";
+  } catch (_) {
+    return false;
+  }
+}
+
+function readPageReloadSnapshot() {
+  try {
+    var raw = sessionStorage.getItem(STORAGE_PAGE_RELOAD_SNAPSHOT);
+    if (!raw) return null;
+    var o = JSON.parse(raw);
+    if (!o || o.v !== 1) return null;
+    return o;
+  } catch (_) {
+    return null;
+  }
+}
+
+function persistPageReloadSnapshot() {
+  try {
+    var inPlay = document.body.classList.contains("play-mode");
+    var inVersus = document.body.classList.contains("play-versus-mode");
+    sessionStorage.setItem(
+      STORAGE_PAGE_RELOAD_SNAPSHOT,
+      JSON.stringify({
+        v: 1,
+        view: inPlay ? "play" : "deck",
+        playVersus: inVersus,
+      }),
+    );
+    sessionStorage.setItem(STORAGE_PAGE_RELOAD_RESTORE_FLAG, "1");
+  } catch (_) {
+    /* noop */
+  }
+}
+
+function persistStateBeforePageReload(hitId) {
+  persistPageReloadSnapshot();
+  try {
+    if (typeof window.__llocgPersistDeckBuilderUi === "function") {
+      window.__llocgPersistDeckBuilderUi();
+    }
+  } catch (_) {
+    /* noop */
+  }
+  if (hitId === "btn-reload-builder") {
+    try {
+      sessionStorage.setItem(STORAGE_BUILDER_UI_RESTORE_FLAG, "1");
+    } catch (_) {
+      /* noop */
+    }
+  }
+  if (document.body.classList.contains("play-mode")) {
+    try {
+      if (typeof window.__llocgFlushVersusPlayPersist === "function") {
+        window.__llocgFlushVersusPlayPersist();
+      }
+    } catch (_) {
+      /* noop */
+    }
+  }
+}
+
+function clearPageReloadRestoreFlags() {
+  try {
+    sessionStorage.removeItem(STORAGE_PAGE_RELOAD_RESTORE_FLAG);
+  } catch (_) {
+    /* noop */
+  }
+}
+
 /** 起動時の自動復元でメインスレッドが塞がるのを防ぐ（対戦ルーム文脈では盤面スナップショットを捨てる） */
 function sanitizeBootSessionStorage() {
+  var keepVersusInPlay = isPageReloadRestorePending();
   try {
     var rawVs = sessionStorage.getItem(STORAGE_VERSUS_ONLINE_SESSION);
     var hasVersusSession = false;
@@ -182,7 +258,7 @@ function sanitizeBootSessionStorage() {
         var vs = JSON.parse(rawVs);
         if (vs && vs.v === 1 && vs.roomCode) {
           hasVersusSession = true;
-          if (vs.inPlay) {
+          if (vs.inPlay && !keepVersusInPlay) {
             vs.inPlay = false;
             vs.savedAt = Date.now();
             sessionStorage.setItem(STORAGE_VERSUS_ONLINE_SESSION, JSON.stringify(vs));
@@ -550,11 +626,31 @@ function startApp(viewDeck, viewGame, statusEl) {
 
 function resumeSessionsAfterBoot(viewDeck, viewGame) {
   sanitizeBootSessionStorage();
+  var reloadSnap = isPageReloadRestorePending() ? readPageReloadSnapshot() : null;
   window.setTimeout(function () {
-    tryRestoreVersusOnlineSession(function () {
+    var onEnterVersusPlay = null;
+    if (reloadSnap && reloadSnap.view === "play" && reloadSnap.playVersus) {
+      onEnterVersusPlay = function (payload) {
+        enterVersusPlay(viewDeck, viewGame, payload);
+      };
+    }
+    tryRestoreVersusOnlineSession(onEnterVersusPlay || function () {
       /* 起動時はプレイ画面へ入れない（ユーザーがロビー／プレイへ進む） */
     })
-      .then(function () {
+      .then(function (versusRestored) {
+        if (reloadSnap && reloadSnap.view === "play" && !reloadSnap.playVersus && !versusRestored) {
+          tryResumePlaySession(viewDeck, viewGame);
+        }
+        if (reloadSnap && reloadSnap.view === "deck") {
+          try {
+            if (typeof window.__llocgRestoreDeckBuilderUi === "function") {
+              window.__llocgRestoreDeckBuilderUi({ reopenCatalog: true });
+            }
+          } catch (_) {
+            /* noop */
+          }
+        }
+        clearPageReloadRestoreFlags();
         try {
           var pending =
             typeof window !== "undefined" && window.__llocgVersusPendingLobbyRoom
@@ -574,6 +670,10 @@ function resumeSessionsAfterBoot(viewDeck, viewGame) {
         window.__llocgVersusBootRestoreDone = true;
       })
       .catch(function () {
+        if (reloadSnap && reloadSnap.view === "play" && !reloadSnap.playVersus) {
+          tryResumePlaySession(viewDeck, viewGame);
+        }
+        clearPageReloadRestoreFlags();
         window.__llocgVersusBootRestoreDone = true;
       });
   }, 0);
@@ -703,25 +803,7 @@ function wirePageReloadButtons() {
       if (!el || typeof el.closest !== "function") return;
       const hit = el.closest("#btn-reload-builder, #btn-reload-play");
       if (!hit) return;
-      if (hit.id === "btn-reload-builder") {
-        try {
-          if (typeof window.__llocgPersistDeckBuilderUi === "function") {
-            window.__llocgPersistDeckBuilderUi();
-          }
-          sessionStorage.setItem(STORAGE_BUILDER_UI_RESTORE_FLAG, "1");
-        } catch (_) {
-          /* noop */
-        }
-      }
-      if (hit.id === "btn-reload-play" && document.body.classList.contains("play-versus-mode")) {
-        try {
-          if (typeof window.__llocgFlushVersusPlayPersist === "function") {
-            window.__llocgFlushVersusPlayPersist();
-          }
-        } catch (_) {
-          /* noop */
-        }
-      }
+      persistStateBeforePageReload(hit.id);
       doHardReload(ev);
     },
     { capture: true },
