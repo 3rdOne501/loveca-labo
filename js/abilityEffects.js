@@ -51,6 +51,7 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  *   |'toujou_deck_top_wait_if_all_members'
  *   |'toujou_deck_top_wait_if_all_heart'
  *   |'toujou_both_wait_to_empty_stage'
+ *   |'optional_self_wait_opp_stage'
  *   |'guided_manual'} AbilityTemplate
  */
 
@@ -236,6 +237,87 @@ export function abilityInstMatchesStageArea(memberColumn, cl) {
 }
 
 /** 登場／ライブ開始時の共有「E支払い＋2択」本文（PL!SP-bp5-001 等） */
+/**
+ * 「このメンバーをウェイトにしてもよい：」の任意コスト＋効果テンプレート（登場／起動／ライブ開始時／ライブ成功時）
+ * @param {string} p
+ * @param {ClassifiedAbility} base
+ * @returns {Partial<ClassifiedAbility> | null}
+ */
+function classifyOptionalSelfWaitEffect(p, base) {
+  if (!base.costSelfWait || !base.hasOptionalCost) return null;
+  /** @type {Partial<ClassifiedAbility>} */
+  var patch = {
+    optional: true,
+    hasOptionalCost: true,
+    costSelfWait: true,
+    requiresOnStage: true,
+  };
+  if (/相手のステージ/.test(p) && /ウェイト/.test(p)) {
+    var costM = p.match(/コスト(\d+)以下/);
+    return Object.assign(patch, {
+      template: "optional_self_wait_opp_stage",
+      oppWaitMaxCost: costM ? Number(costM[1]) : 4,
+    });
+  }
+  var lookN = parseDeckTopCount(p);
+  if (lookN != null && /見る/.test(p) && /デッキの上|山札の上/.test(p)) {
+    return Object.assign(patch, {
+      template: "deck_top_look_reorder",
+      deckTopCount: lookN,
+    });
+  }
+  if (/控え室から/.test(p) && /手札に加/.test(p) && !/成功ライブ/.test(p)) {
+    return Object.assign(patch, {
+      template: "toujou_wait_pick_hand",
+      filters: parseAbilityPickFilters(p),
+    });
+  }
+  if (/成功ライブ/.test(p) && /手札に加/.test(p)) {
+    return Object.assign(patch, { template: "toujou_success_live_pick_hand" });
+  }
+  var drawM = p.match(/カードを(\d+)枚引/);
+  if (drawM && !/控え室から/.test(p) && !/山札の上からカードを/.test(p)) {
+    return Object.assign(patch, {
+      template: "draw_from_deck",
+      deckDrawCount: Number(drawM[1]) || 1,
+      filters: parseAbilityPickFilters(p),
+    });
+  }
+  var td = parseDeckTopCount(p);
+  if (td != null && /控え室/.test(p)) {
+    return Object.assign(patch, {
+      template: "deck_top_to_waiting",
+      deckTopCount: td,
+    });
+  }
+  return null;
+}
+
+/**
+ * ライブ開始時「メンバー1人をウェイトにしてもよい：ライブ終了時まで…」
+ * @param {string} p
+ * @param {string} segRaw
+ * @param {ClassifiedAbility} base
+ * @returns {Partial<ClassifiedAbility> | null}
+ */
+function classifyOptionalMemberWaitGrant(p, segRaw, base) {
+  if (!base.costPickMemberWait) return null;
+  if (!/ライブ終了時まで/.test(p + segRaw)) return null;
+  var grantBlade = bladeGainFromIcons(segRaw, p);
+  if (grantBlade <= 0) grantBlade = base.bladeGain || 0;
+  var grantScore = parseScorePlusFromText(p) || parseScorePlusFromText(segRaw.replace(/\{\{[^}]+\}\}/g, ""));
+  return {
+    template: "grant_jouji_session",
+    optional: true,
+    hasOptionalCost: true,
+    costPickMemberWait: true,
+    bladeGain: grantBlade,
+    liveScoreGrant: grantScore,
+    requiresOnStage: true,
+    filters: parseAbilityPickFilters(p),
+  };
+}
+
 function classifyPayEnergyPickOne(card, trigger) {
   var raw = cardAbilityRawText(card);
   if (!/E支払ってもよい：以下から1つを選ぶ/.test(raw)) return null;
@@ -572,7 +654,11 @@ export function classifyCardAbility(card, trigger, segmentRawOverride) {
   base.costEnergy = /(エネルギー|E)を?(\d+)?枚?支払/.test(costPart) || /E支払/.test(costPart);
   base.costEnergyCount = base.costEnergy ? parseCostEnergyCount(costPart) : 0;
   base.costSelfWait =
-    /このメンバーをウェイト/.test(costPart) || /メンバーをウェイトにし/.test(costPart);
+    /このメンバーをウェイト/.test(costPart) ||
+    /メンバーをウェイトにし/.test(costPart) ||
+    /メンバーをウェイトにする/.test(costPart);
+  base.costPickMemberWait =
+    /メンバー.*ウェイトにしてもよい/.test(costPart) && !base.costSelfWait;
   base.costOrAlt =
     /ウェイトにするか/.test(costPart) ||
     (/手札.*控え室/.test(costPart) && /か/.test(costPart) && base.costSelfWait);
@@ -631,6 +717,9 @@ export function classifyCardAbility(card, trigger, segmentRawOverride) {
         });
       }
     }
+
+    var optSelfWaitKd = classifyOptionalSelfWaitEffect(p, base);
+    if (optSelfWaitKd) return kidouT(optSelfWaitKd);
 
     var payPickKd = classifyPayEnergyPickOne(card, "kidou");
     if (payPickKd) {
@@ -823,6 +912,8 @@ export function classifyCardAbility(card, trigger, segmentRawOverride) {
     function twT(obj) {
       return withTrigger("toujyou", Object.assign({}, stageAreaMeta, obj));
     }
+    var optSelfWaitTj = classifyOptionalSelfWaitEffect(p, base);
+    if (optSelfWaitTj) return twT(optSelfWaitTj);
     var payPick = classifyPayEnergyPickOne(card, "toujyou");
     if (payPick) {
       return twT(Object.assign({ requiresOnStage: true }, payPick));
@@ -1054,6 +1145,10 @@ export function classifyCardAbility(card, trigger, segmentRawOverride) {
   }
 
   if (enterLiveSuccess) {
+    var optSelfWaitLsOk = classifyOptionalSelfWaitEffect(p, base);
+    if (optSelfWaitLsOk) {
+      return withTrigger("live_success", Object.assign({}, optSelfWaitLsOk));
+    }
     if (/以下から1つを選ぶ/.test(p)) {
       var lsChoices = parseAbilityBulletChoices(segRaw);
       var boostM = p.match(/成功ライブカード置き場に『([^』]+)』のカードがある場合/);
@@ -1112,10 +1207,16 @@ export function classifyCardAbility(card, trigger, segmentRawOverride) {
       return withTrigger("live_start", Object.assign({}, stageAreaMetaLs, obj));
     }
 
+    var optSelfWaitLs = classifyOptionalSelfWaitEffect(p, base);
+    if (optSelfWaitLs) return lsT(optSelfWaitLs);
+
     var payPickLs = classifyPayEnergyPickOne(card, "live_start");
     if (payPickLs) {
       return lsT(Object.assign({ requiresOnStage: true }, payPickLs));
     }
+    var optMemWaitGrant = classifyOptionalMemberWaitGrant(p, segRaw, base);
+    if (optMemWaitGrant) return lsT(optMemWaitGrant);
+
     var energyBladeLs = classifyOptionalEnergyBladeUntilLiveEnd(segRaw, p, base);
     if (energyBladeLs) {
       return lsT(Object.assign({ requiresOnStage: true }, energyBladeLs));

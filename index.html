@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Loveca Labo" />
-    <meta name="loveca-build" content="2026052027" />
+    <meta name="loveca-build" content="2026052029" />
     <title>Loveca Labo</title>
     <!-- 万一以前のバージョンの Service Worker が登録された端末で取り残しが起きた場合に備え、
          先頭で SW 登録を一括解除する。SW 自体は本サイトでは使っていない。 -->
@@ -1828,6 +1828,19 @@ python3 -m http.server 8080</pre>
       </div>
     </dialog>
 
+    <dialog
+      id="dlg-versus-opp-hand-reveal"
+      class="app-dialog dlg-versus-opp-hand-reveal"
+      aria-labelledby="dlg-versus-opp-hand-reveal-title"
+    >
+      <h2 id="dlg-versus-opp-hand-reveal-title" class="app-dialog__title">相手が手札に加えたカード</h2>
+      <p class="hint zone-inline-help muted">効果で相手が手札に加えたカードを一時公開しています（約6秒）。</p>
+      <div id="dlg-versus-opp-hand-reveal-body" class="dlg-versus-opp-hand-reveal-body"></div>
+      <div class="app-dialog__actions">
+        <button type="button" class="btn secondary" id="dlg-versus-opp-hand-reveal-close">閉じる</button>
+      </div>
+    </dialog>
+
     <dialog id="dlg-versus-lobby" class="app-dialog dlg-versus-lobby" aria-labelledby="dlg-versus-lobby-title">
       <div class="dlg-versus-lobby__header">
         <h2 id="dlg-versus-lobby-title" class="app-dialog__title dlg-versus-lobby__title">対戦モード（総合ルール 1.06）</h2>
@@ -1958,18 +1971,18 @@ python3 -m http.server 8080</pre>
             "./gameStatusIcons.js": "./gameStatusIcons.js?v=2026051866",
             "./joujiEffects.js": "./joujiEffects.js?v=2026051866",
             "./liveSpecialBhOverride.js": "./liveSpecialBhOverride.js?v=2026051866",
-            "./main.js": "./main.js?v=2026052027",
+            "./main.js": "./main.js?v=2026052029",
             "./sampleDeckRecipes.js": "./sampleDeckRecipes.js?v=2026051866",
-            "./simulator.js": "./simulator.js?v=2026052027",
+            "./simulator.js": "./simulator.js?v=2026052029",
             "./testCardLog.js": "./testCardLog.js?v=2026051866",
             "./ui.js": "./ui.js?v=2026051866",
-            "./versusBoardSync.js": "./versusBoardSync.js?v=2026052027",
+            "./versusBoardSync.js": "./versusBoardSync.js?v=2026052029",
             "./versusMatch.js": "./versusMatch.js?v=2026051866",
             "./versusMode.js": "./versusMode.js?v=2026051866"
           }
         }
       }
     </script>
-    <script type="module" src="js/main.js?v=2026052027"></script>
+    <script type="module" src="js/main.js?v=2026052029"></script>
   </body>
 </html>

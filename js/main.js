@@ -215,12 +215,18 @@ function persistPageReloadSnapshot() {
   try {
     var inPlay = document.body.classList.contains("play-mode");
     var inVersus = document.body.classList.contains("play-versus-mode");
+    /** @type {string[]} */
+    var openDialogIds = [];
+    document.querySelectorAll("dialog[open]").forEach(function (dlg) {
+      if (dlg && dlg.id) openDialogIds.push(dlg.id);
+    });
     sessionStorage.setItem(
       STORAGE_PAGE_RELOAD_SNAPSHOT,
       JSON.stringify({
         v: 1,
         view: inPlay ? "play" : "deck",
         playVersus: inVersus,
+        openDialogIds: openDialogIds,
       }),
     );
     sessionStorage.setItem(STORAGE_PAGE_RELOAD_RESTORE_FLAG, "1");
@@ -228,6 +234,23 @@ function persistPageReloadSnapshot() {
     /* noop */
   }
 }
+
+function restorePageReloadDialogs(reloadSnap) {
+  if (!reloadSnap || !Array.isArray(reloadSnap.openDialogIds)) return;
+  reloadSnap.openDialogIds.forEach(function (id) {
+    var dlg = document.getElementById(id);
+    if (!dlg || typeof dlg.showModal !== "function") return;
+    if (id === "dlg-versus-lobby" && document.body.classList.contains("play-versus-mode")) {
+      return;
+    }
+    try {
+      dlg.showModal();
+    } catch (_) {
+      /* noop */
+    }
+  });
+}
+window.__llocgRestorePageReloadDialogs = restorePageReloadDialogs;
 
 function persistStateBeforePageReload(hitId) {
   persistPageReloadSnapshot();
@@ -292,7 +315,7 @@ function sanitizeBootSessionStorage() {
       ) {
         forgetVersusRoomPersistence();
       }
-    } else {
+    } else if (!keepVersusInPlay) {
       clearPlayResumeStorage();
     }
     var rawPr = sessionStorage.getItem(STORAGE_PLAY_RESUME);
@@ -666,6 +689,7 @@ function resumeSessionsAfterBoot(viewDeck, viewGame) {
     var onEnterVersusPlay = null;
     if (reloadSnap && reloadSnap.view === "play" && reloadSnap.playVersus) {
       onEnterVersusPlay = function (payload) {
+        payload.resumeFromStorage = true;
         enterVersusPlay(viewDeck, viewGame, payload);
       };
     }
@@ -685,6 +709,14 @@ function resumeSessionsAfterBoot(viewDeck, viewGame) {
             /* noop */
           }
         }
+        if (reloadSnap) {
+          try {
+            window.__llocgReloadSnapPending = reloadSnap;
+          } catch (_) {
+            /* noop */
+          }
+        }
+        restorePageReloadDialogs(reloadSnap);
         clearPageReloadRestoreFlags();
         try {
           var pending =
@@ -1018,14 +1050,17 @@ if (document.readyState === "loading") {
 initVersusModeEarly();
 
 window.addEventListener("pagehide", function () {
-  if (!document.body.classList.contains("play-versus-mode")) return;
   try {
-    if (typeof window.__llocgFlushVersusPlayPersist === "function") {
-      window.__llocgFlushVersusPlayPersist();
+    if (document.body.classList.contains("play-mode")) {
+      persistPageReloadSnapshot();
+      if (typeof window.__llocgFlushVersusPlayPersist === "function") {
+        window.__llocgFlushVersusPlayPersist();
+      }
     }
   } catch (_) {
     /* noop */
   }
+  if (!document.body.classList.contains("play-versus-mode")) return;
   teardownVersusModeSession({ skipLeaveRoom: true });
 });
 

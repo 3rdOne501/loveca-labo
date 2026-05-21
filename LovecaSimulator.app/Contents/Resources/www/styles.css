@@ -733,7 +733,7 @@ body.play-versus-mode .versus-opponent-board {
   border: 1px solid rgba(140, 170, 255, 0.28);
   border-top: none;
   background: linear-gradient(180deg, rgba(28, 36, 62, 0.72), rgba(16, 22, 40, 0.92));
-  overflow: auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -941,8 +941,37 @@ body.play-versus-mode .versus-opponent-board .card-item .card-img {
   display: block;
 }
 body.play-versus-mode .versus-opponent-board .card-item--live-h .card-img.rotated,
-body.play-versus-mode .versus-opponent-board .card-item--energy-wait .card-img.rotated {
+body.play-versus-mode .versus-opponent-board .card-item--energy-wait .card-img.rotated,
+body.play-versus-mode .versus-opponent-board .card-item[data-type="メンバー"].card-item--lc-wait .card-img.rotated {
   transform: rotate(90deg);
+}
+body.play-versus-mode .versus-opponent-board .versus-opp-stance-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  justify-content: center;
+  margin-top: 2px;
+  pointer-events: none;
+}
+body.play-versus-mode .versus-opponent-board .versus-opp-stance-bar .stance-chip {
+  font-size: 0.48rem;
+  padding: 0.05rem 0.22rem;
+  border-radius: 4px;
+  line-height: 1.1;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  opacity: 0.55;
+}
+body.play-versus-mode .versus-opponent-board .versus-opp-stance-bar .stance-chip.is-on {
+  opacity: 1;
+}
+body.play-versus-mode .versus-opponent-board .versus-opp-bonus-footer {
+  font-size: 0.44rem;
+  padding: 1px 3px;
+  gap: 2px 4px;
+  pointer-events: none;
+}
+body.play-versus-mode .versus-opponent-board .stage-slot.card-strip {
+  min-height: calc(var(--versus-opp-card-h) + 22px);
 }
 body.play-versus-mode .versus-opponent-board .versus-opp-live-row,
 body.play-versus-mode .versus-opponent-board .versus-opp-stage-row {
@@ -1000,6 +1029,20 @@ body.play-versus-mode .versus-opponent-board__cell--center .versus-opp-energy-fo
     --versus-opp-card-w: calc(var(--loveca-play-w, 82px) * 0.46);
     --versus-opp-card-h: calc(var(--loveca-play-h, var(--card-h)) * 0.46);
   }
+}
+.dlg-versus-opp-hand-reveal-body {
+  max-height: min(70vh, 520px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.dlg-versus-opp-hand-reveal__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+body.play-versus-mode .versus-opp-hand-zone .versus-opp-card--facing {
+  box-shadow: 0 0 10px rgba(255, 210, 120, 0.55);
 }
 body.play-versus-mode .versus-opp-hand-more {
   align-self: center;

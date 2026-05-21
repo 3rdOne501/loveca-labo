@@ -21,8 +21,11 @@ export const VERSUS_BOARD_PUBLIC_V = 1;
  * @property {string} type
  * @property {number} [cost]
  * @property {boolean} [lcWait]
+ * @property {boolean} [lcActive]
  * @property {boolean} [lcInactive]
  * @property {boolean} [energyWait]
+ * @property {number} [bonusBlade]
+ * @property {Record<string, number>} [bonusHearts]
  * @property {boolean} [hiddenFace]
  */
 
@@ -93,11 +96,46 @@ function stripCard(c, indexInZone) {
   if (o.cost != null && Number.isFinite(Number(o.cost))) {
     out.cost = Math.floor(Number(o.cost));
   }
-  if (o.lcWait === true) out.lcWait = true;
-  if (o.lcInactive === true) out.lcInactive = true;
-  else if (o.lcActive === false) out.lcInactive = true;
-  if (o.energyWait === true) out.energyWait = true;
-  else if (o.isRotated === true) out.energyWait = true;
+  var cardType = String(o.type || "");
+  var isMember = cardType === T_MEMBER || cardType === "メンバー";
+  var isEnergy = cardType === "エネルギー";
+  if (isMember) {
+    if (o.lcWait === true) out.lcWait = true;
+    if (o.lcActive === true) out.lcActive = true;
+    if (o.lcInactive === true) out.lcInactive = true;
+    else if (o.lcActive === false) out.lcInactive = true;
+    var bladeBonus =
+      Math.max(0, Math.floor(Number(o.playBonusBladeAlways) || 0)) +
+      Math.max(0, Math.floor(Number(o.playBonusBladeTurn) || 0)) +
+      Math.max(0, Math.floor(Number(o.playBonusBlade) || 0));
+    if (bladeBonus > 0) out.bonusBlade = bladeBonus;
+    /** @type {Record<string, number>} */
+    var hearts = {};
+    var slotMaps = [
+      o.playBonusHeartSlotsAlways,
+      o.playBonusHeartSlotsTurn,
+      o.playBonusHeartSlots,
+    ];
+    for (var sm = 0; sm < slotMaps.length; sm++) {
+      var map = slotMaps[sm];
+      if (!map || typeof map !== "object" || Array.isArray(map)) continue;
+      Object.keys(map).forEach(function (k) {
+        var n = Math.max(0, Math.floor(Number(map[k]) || 0));
+        if (n > 0) hearts[k] = (hearts[k] || 0) + n;
+      });
+    }
+    if (Object.keys(hearts).length) out.bonusHearts = hearts;
+  } else if (isEnergy) {
+    if (o.energyWait === true || o.isRotated === true) out.energyWait = true;
+    if (o.lcWait === true) out.lcWait = true;
+    if (o.lcActive === false) out.lcInactive = true;
+  } else {
+    if (o.lcWait === true) out.lcWait = true;
+    if (o.lcInactive === true) out.lcInactive = true;
+    else if (o.lcActive === false) out.lcInactive = true;
+    if (o.energyWait === true) out.energyWait = true;
+    else if (o.isRotated === true) out.energyWait = true;
+  }
   return out;
 }
 
@@ -538,9 +576,66 @@ function appendOppCardItem(container, c, opts) {
     img.src = CARD_BACK_DRAG_DATA_URI;
     img.alt = c.hiddenFace ? "非公開" : c.card_no || "";
   }
-  if ((livePickBack || c.energyWait) && !liveFaceUp) img.classList.add("rotated");
+  var isMember = c.type === T_MEMBER || c.type === "メンバー";
+  var isEnergy = c.type === "エネルギー";
+  if ((livePickBack || c.energyWait || (isMember && c.lcWait)) && !liveFaceUp) {
+    img.classList.add("rotated");
+  }
   artWrap.appendChild(img);
   div.appendChild(artWrap);
+
+  if ((isMember || isEnergy) && !c.hiddenFace) {
+    var bar = document.createElement("div");
+    bar.className = "card-stance-bar versus-opp-stance-bar";
+    var waitOn = isMember ? c.lcWait === true : c.energyWait === true || c.lcWait === true;
+    var actOn = isMember
+      ? c.lcWait !== true && c.lcInactive !== true && c.lcActive !== false
+      : !waitOn && c.lcInactive !== true;
+    var wChip = document.createElement("span");
+    wChip.className = "stance-chip stance-wait" + (waitOn ? " is-on" : "");
+    wChip.textContent = "W";
+    wChip.title = "ウェイト";
+    var aChip = document.createElement("span");
+    aChip.className = "stance-chip stance-active" + (actOn ? " is-on" : "");
+    aChip.textContent = "A";
+    aChip.title = "アクティブ";
+    bar.appendChild(wChip);
+    bar.appendChild(aChip);
+    if (isMember) {
+      var hbChip = document.createElement("span");
+      hbChip.className = "stance-chip stance-hb";
+      hbChip.textContent = "+H/B";
+      hbChip.title = "所持ハート／ブレード（相手）";
+      bar.appendChild(hbChip);
+    }
+    div.appendChild(bar);
+  }
+
+  if (isMember && (c.bonusBlade > 0 || (c.bonusHearts && Object.keys(c.bonusHearts).length))) {
+    var foot = document.createElement("div");
+    foot.className = "card-member-bonus-footer versus-opp-bonus-footer";
+    if (c.bonusBlade > 0) {
+      var bSp = document.createElement("span");
+      bSp.className = "card-member-bonus-chip";
+      bSp.textContent = "B+" + String(c.bonusBlade);
+      foot.appendChild(bSp);
+    }
+    if (c.bonusHearts) {
+      Object.keys(c.bonusHearts)
+        .sort(function (a, b) {
+          return Number(a) - Number(b);
+        })
+        .forEach(function (slot) {
+          var v = c.bonusHearts[slot];
+          if (!v) return;
+          var hSp = document.createElement("span");
+          hSp.className = "card-member-bonus-chip";
+          hSp.textContent = "H" + slot + "+" + String(v);
+          foot.appendChild(hSp);
+        });
+    }
+    div.appendChild(foot);
+  }
 
   if (c.type === T_MEMBER && c.cost != null && !c.hiddenFace) {
     const pill = document.createElement("span");
@@ -725,6 +820,24 @@ function bindVersusOppBhPillClicksOnce() {
   });
 }
 
+function bindOppHandRevealDialogOnce() {
+  const btn = document.getElementById("dlg-versus-opp-hand-reveal-close");
+  const dlg = document.getElementById("dlg-versus-opp-hand-reveal");
+  if (!btn || !dlg || btn.dataset.wired === "1") return;
+  btn.dataset.wired = "1";
+  btn.addEventListener("click", function () {
+    if (oppHandRevealDialogTimer) {
+      clearTimeout(oppHandRevealDialogTimer);
+      oppHandRevealDialogTimer = 0;
+    }
+    try {
+      dlg.close();
+    } catch (_) {
+      /* noop */
+    }
+  });
+}
+
 function syncVersusOppVoidWaitingColors(board) {
   const host = document.getElementById("versus-opp-void-waiting-colors");
   if (!host) return;
@@ -741,6 +854,50 @@ function syncVersusOppVoidWaitingColors(board) {
     buildOppWaitingBhColorsHtml(board.waitingRoom);
 }
 
+/** @type {number} */
+let oppHandRevealDialogTimer = 0;
+
+/** @param {VersusPublicCard[]} cards */
+function openVersusOpponentHandRevealDialog(cards) {
+  if (!cards || !cards.length) return;
+  const dlg = document.getElementById("dlg-versus-opp-hand-reveal");
+  const body = document.getElementById("dlg-versus-opp-hand-reveal-body");
+  if (!dlg || !body || typeof dlg.showModal !== "function") return;
+  body.replaceChildren();
+  const grid = document.createElement("div");
+  grid.className = "dlg-zone-bh-list__grid dlg-versus-opp-hand-reveal__grid";
+  cards.forEach(function (c) {
+    const tile = document.createElement("div");
+    tile.className = "dlg-zone-bh-list__tile dlg-versus-opp-hand-reveal__tile";
+    const img = document.createElement("img");
+    img.className = "dlg-zone-bh-list__img";
+    img.alt = c.name || c.card_no || "";
+    const src = resolveCardImg(c);
+    img.src = src || CARD_BACK_DRAG_DATA_URI;
+    tile.appendChild(img);
+    const lab = document.createElement("span");
+    lab.className = "dlg-zone-bh-list__label";
+    lab.textContent = c.name || c.card_no || "カード";
+    tile.appendChild(lab);
+    grid.appendChild(tile);
+  });
+  body.appendChild(grid);
+  try {
+    dlg.showModal();
+  } catch (_) {
+    /* noop */
+  }
+  if (oppHandRevealDialogTimer) clearTimeout(oppHandRevealDialogTimer);
+  oppHandRevealDialogTimer = window.setTimeout(function () {
+    oppHandRevealDialogTimer = 0;
+    try {
+      dlg.close();
+    } catch (_) {
+      /* noop */
+    }
+  }, 6200);
+}
+
 /** @param {VersusPublicBoard|null|undefined} board */
 function maybeToastOpponentHandReveal(board) {
   if (!board || !board.handReveal || !board.handReveal.length) return;
@@ -754,17 +911,8 @@ function maybeToastOpponentHandReveal(board) {
     String(board.handCount || 0);
   if (key === lastOppHandRevealToastKey) return;
   lastOppHandRevealToastKey = key;
-  const label = board.handReveal
-    .slice(0, 3)
-    .map(function (c) {
-      return c.name || c.card_no;
-    })
-    .filter(Boolean)
-    .join("、");
-  showToast(
-    "相手が手札に追加: " + (label || board.handReveal.length + "枚"),
-    { duration: 4500 },
-  );
+  showToast("相手が手札に追加", { duration: 4500 });
+  openVersusOpponentHandRevealDialog(board.handReveal);
 }
 
 /**
@@ -847,6 +995,7 @@ function fillOppSecretHand(strip, handCount) {
 export function renderVersusOpponentBoard(board, opts) {
   const wrap = document.getElementById("versus-opponent-board-wrap");
   if (!wrap) return;
+  bindOppHandRevealDialogOnce();
   wrap.hidden = false;
   const meta = document.getElementById("versus-opp-board-meta");
   if (meta && !(opts && opts.skipMeta)) {
@@ -855,11 +1004,16 @@ export function renderVersusOpponentBoard(board, opts) {
     if (!board) {
       meta.textContent = name + " の公開盤面を待機中…";
     } else {
+      var handNote =
+        board.handReveal && board.handReveal.length
+          ? " 枚（公開中 " + board.handReveal.length + "）"
+          : " 枚（非公開）";
       meta.textContent =
         name +
         "（向かい合わせ） · 手札 " +
         (board.handCount || 0) +
-        " 枚（非公開） · 山札 " +
+        handNote +
+        " · 山札 " +
         board.deckCount +
         at;
     }
