@@ -13230,10 +13230,11 @@ export function mountSimulator(
       return false;
     }
     patchLocalVersusRemoteMatch(patch);
+    forceVersusLocalDualBoardSwitchToActive();
     applyVersusPhaseFromRemote(versusSession.remoteMatch);
     updateVersusTurnGlow(versusSession.remoteMatch);
     syncVersusMatchBar(versusSession.remoteMatch);
-    forceVersusLocalDualBoardSwitchToActive();
+    syncVersusTurnStartButton(versusSession.remoteMatch);
     syncVersusLocalDualEndSwitchButton(versusSession.remoteMatch);
     return true;
   }
@@ -14481,6 +14482,9 @@ export function mountSimulator(
     ) {
       return;
     }
+    if (versusLocalDualActive()) {
+      forceVersusLocalDualBoardSwitchToActive();
+    }
     var playRole = getVersusPlayRole();
     var phase = normalizeVersusPhase(remoteMatch);
     var liveStep = getVersusLiveStep(remoteMatch);
@@ -14612,23 +14616,38 @@ export function mountSimulator(
       showToast("開幕マリガンフェイズではありません");
       return;
     }
-    if (!canRoleActInVersus(m, playRole)) {
-      showToast("あなたのマリガン順番ではありません");
+    if (versusLocalDualMatchActive()) {
+      forceVersusLocalDualBoardSwitchToActive();
+      playRole = getVersusPlayRole();
+    }
+    if (!playRole || !canRoleActInVersus(m, playRole)) {
+      showToast("手番のプレイヤー盤面でマリガン実行してください");
       return;
     }
     if (!state.awaitingTurnStart || openingMulliganExecuteUsed || versusMulliganCommitPending) return;
     versusMulliganCommitPending = true;
-    doMulliganExecute();
-    openingMulliganExecuteUsed = false;
     if (versusLocalDualMatchActive()) {
       persistVersusLocalDualActiveBoard();
+    }
+    doMulliganExecute();
+    if (versusLocalDualMatchActive()) {
       var ok = applyLocalVersusOpeningMulliganComplete(playRole);
       versusMulliganCommitPending = false;
       if (ok) {
         openingMulliganExecuteUsed = true;
         state.awaitingTurnStart = false;
-        showToast("マリガンを確定しました");
-        forceVersusLocalDualBoardSwitchToActive();
+        var mAfter = versusSession.remoteMatch;
+        var nextLabel =
+          mAfter && mAfter.activePlayerRole
+            ? versusLocalDualRoleLabel(mAfter.activePlayerRole)
+            : "";
+        if (normalizeVersusPhase(mAfter) === "firstNormal") {
+          showToast("開幕マリガン完了。先攻の通常ターンです", { duration: 5000 });
+        } else if (nextLabel) {
+          showToast("マリガン確定。「" + nextLabel + "」のマリガンです", { duration: 5000 });
+        } else {
+          showToast("マリガンを確定しました");
+        }
       } else {
         openingMulliganExecuteUsed = false;
         state.awaitingTurnStart = true;
