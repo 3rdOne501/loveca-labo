@@ -61,6 +61,10 @@ const ROOM_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
  * @property {boolean} [guestLiveComplete]
  * @property {number|null} [hostLivePerfScore]
  * @property {number|null} [guestLivePerfScore]
+ * @property {'none'|'success'|'fail'} [hostLiveVerdict]
+ * @property {'none'|'success'|'fail'} [guestLiveVerdict]
+ * @property {boolean} [hostLiveHadCards]
+ * @property {boolean} [guestLiveHadCards]
  * @property {boolean} [hostSuccessFxDone]
  * @property {boolean} [guestSuccessFxDone]
  * @property {'hostWin'|'guestWin'|'draw'|null} [liveJudgmentOutcome]
@@ -354,6 +358,10 @@ export async function startVersusMatch(roomCode) {
     guestLiveComplete: false,
     hostLivePerfScore: null,
     guestLivePerfScore: null,
+    hostLiveVerdict: "none",
+    guestLiveVerdict: "none",
+    hostLiveHadCards: false,
+    guestLiveHadCards: false,
     hostSuccessFxDone: false,
     guestSuccessFxDone: false,
     liveJudgmentOutcome: null,
@@ -543,6 +551,40 @@ export function versusBothLivePerfScoresReady(match) {
   );
 }
 
+/**
+ * ライブ勝敗判定の解決（両者未セット／両者失敗はスキップ、一方成功一方失敗は成功側の勝ち、それ以外はスコア比較）
+ * @param {VersusMatchDoc|null|undefined} match
+ * @returns {{ kind: 'skip' } | { kind: 'outcome', outcome: 'hostWin'|'guestWin' } | { kind: 'scores', outcome: 'hostWin'|'guestWin'|'draw' } | { kind: 'pending' }}
+ */
+export function resolveVersusLiveJudgmentOutcome(match) {
+  if (!match) return { kind: "pending" };
+  /** @param {unknown} v */
+  function normVerdict(v) {
+    return v === "success" || v === "fail" ? v : "none";
+  }
+  var bothPerfDone = match.hostPerfDone === true && match.guestPerfDone === true;
+  if (bothPerfDone) {
+    var hv = normVerdict(match.hostLiveVerdict);
+    var gv = normVerdict(match.guestLiveVerdict);
+    if (hv === "none" && gv === "none") return { kind: "skip" };
+    if (hv === "fail" && gv === "fail") return { kind: "skip" };
+    if (hv === "success" && gv === "fail") return { kind: "outcome", outcome: "hostWin" };
+    if (gv === "success" && hv === "fail") return { kind: "outcome", outcome: "guestWin" };
+  }
+  if (!versusBothLivePerfScoresReady(match)) return { kind: "pending" };
+  var h = Number.isFinite(Number(match.hostLivePerfScore))
+    ? Math.max(0, Math.floor(Number(match.hostLivePerfScore)))
+    : 0;
+  var g = Number.isFinite(Number(match.guestLivePerfScore))
+    ? Math.max(0, Math.floor(Number(match.guestLivePerfScore)))
+    : 0;
+  /** @type {'hostWin'|'guestWin'|'draw'} */
+  var outcome = "draw";
+  if (h > g) outcome = "hostWin";
+  else if (g > h) outcome = "guestWin";
+  return { kind: "scores", outcome: outcome };
+}
+
 /** @param {VersusMatchDoc|null} match @param {VersusRole} myRole */
 export function versusOpponentLastAction(match, myRole) {
   if (!match || !myRole) return null;
@@ -716,6 +758,10 @@ export async function endVersusTurn(roomCode, role) {
     patch.guestLiveComplete = false;
     patch.hostLivePerfScore = null;
     patch.guestLivePerfScore = null;
+    patch.hostLiveVerdict = "none";
+    patch.guestLiveVerdict = "none";
+    patch.hostLiveHadCards = false;
+    patch.guestLiveHadCards = false;
     patch.hostSuccessFxDone = false;
     patch.guestSuccessFxDone = false;
     patch.liveJudgmentOutcome = null;
@@ -785,8 +831,9 @@ export async function reportVersusLiveSetComplete(roomCode, role) {
  * @param {string} roomCode
  * @param {VersusRole} role
  * @param {number} [liveScore] ライブスコア（勝敗判定用）
+ * @param {{ verdict?: 'none'|'success'|'fail', hadCards?: boolean }} [liveMeta]
  */
-export async function reportVersusLivePerfComplete(roomCode, role, liveScore) {
+export async function reportVersusLivePerfComplete(roomCode, role, liveScore, liveMeta) {
   requireUser();
   const { api } = fs();
   const ref = matchRef(roomCode);
@@ -812,6 +859,14 @@ export async function reportVersusLivePerfComplete(roomCode, role, liveScore) {
   patch[actionField] = "パフォーマンス完了";
   patch[perfFlag] = true;
   patch[scoreField] = Math.max(0, Math.floor(Number(liveScore) || 0));
+  if (liveMeta && typeof liveMeta === "object") {
+    const verdictField = role === "host" ? "hostLiveVerdict" : "guestLiveVerdict";
+    const hadField = role === "host" ? "hostLiveHadCards" : "guestLiveHadCards";
+    const v = liveMeta.verdict;
+    if (v === "success" || v === "fail" || v === "none") patch[verdictField] = v;
+    if (liveMeta.hadCards === true) patch[hadField] = true;
+    else if (liveMeta.hadCards === false) patch[hadField] = false;
+  }
 
   if (role === fp) {
     patch.activePlayerRole = second;
@@ -871,8 +926,35 @@ export async function reportVersusSuccessFxDone(roomCode, role) {
     const hostFx = role === "host" ? true : data.hostSuccessFxDone === true;
     const guestFx = role === "guest" ? true : data.guestSuccessFxDone === true;
     if (hostFx && guestFx) {
-      patch.liveStep = "judgment";
-      patch.activePlayerRole = fp;
+      const afterFx = Object.assign({}, data, patch, {
+        hostSuccessFxDone: true,
+        guestSuccessFxDone: true,
+      });
+      const resolved = resolveVersusLiveJudgmentOutcome(afterFx);
+      if (resolved.kind === "skip") {
+        patch.versusPhase = "firstNormal";
+        patch.liveStep = null;
+        patch.activePlayerRole = fp;
+        patch.hostLiveSetDone = false;
+        patch.guestLiveSetDone = false;
+        patch.hostPerfDone = false;
+        patch.guestPerfDone = false;
+        patch.hostLiveComplete = false;
+        patch.guestLiveComplete = false;
+        patch.hostLivePerfScore = null;
+        patch.guestLivePerfScore = null;
+        patch.hostLiveVerdict = "none";
+        patch.guestLiveVerdict = "none";
+        patch.hostLiveHadCards = false;
+        patch.guestLiveHadCards = false;
+        patch.hostSuccessFxDone = false;
+        patch.guestSuccessFxDone = false;
+        patch.liveJudgmentOutcome = null;
+        patch.turnNumber = Math.max(1, Math.floor(Number(data.turnNumber) || 1)) + 1;
+      } else {
+        patch.liveStep = "judgment";
+        patch.activePlayerRole = fp;
+      }
     } else if (fp) {
       patch.activePlayerRole = fp;
     }
@@ -905,16 +987,11 @@ export async function commitVersusLiveJudgment(roomCode) {
     throw new Error("ライブ勝敗判定フェイズではありません。");
   }
   if (data.liveJudgmentOutcome) return;
-  const h = Number.isFinite(Number(data.hostLivePerfScore))
-    ? Math.max(0, Math.floor(Number(data.hostLivePerfScore)))
-    : 0;
-  const g = Number.isFinite(Number(data.guestLivePerfScore))
-    ? Math.max(0, Math.floor(Number(data.guestLivePerfScore)))
-    : 0;
+  const resolved = resolveVersusLiveJudgmentOutcome(data);
+  if (resolved.kind === "pending" || resolved.kind === "skip") return;
   /** @type {'hostWin'|'guestWin'|'draw'} */
-  let outcome = "draw";
-  if (h > g) outcome = "hostWin";
-  else if (g > h) outcome = "guestWin";
+  const outcome =
+    resolved.kind === "outcome" || resolved.kind === "scores" ? resolved.outcome : "draw";
   const seq = Math.max(0, Math.floor(Number(data.liveJudgmentSeq) || 0)) + 1;
   try {
     await api.updateDoc(ref, {
@@ -940,7 +1017,9 @@ export async function finishVersusLiveJudgment(roomCode) {
   const data = /** @type {VersusMatchDoc} */ (snap.data());
   if (data.hostUid !== user.uid) return;
   if (data.status !== "playing" || normalizeVersusPhase(data) !== "live") return;
-  if (getVersusLiveStep(data) !== "judgment" || !data.liveJudgmentOutcome) return;
+  if (getVersusLiveStep(data) !== "judgment") return;
+  const resolved = resolveVersusLiveJudgmentOutcome(data);
+  if (!data.liveJudgmentOutcome && resolved.kind !== "skip") return;
   const fp = data.firstPlayerRole;
   const patch = {
     versusPhase: "firstNormal",
@@ -954,6 +1033,10 @@ export async function finishVersusLiveJudgment(roomCode) {
     guestLiveComplete: false,
     hostLivePerfScore: null,
     guestLivePerfScore: null,
+    hostLiveVerdict: "none",
+    guestLiveVerdict: "none",
+    hostLiveHadCards: false,
+    guestLiveHadCards: false,
     hostSuccessFxDone: false,
     guestSuccessFxDone: false,
     liveJudgmentOutcome: null,
@@ -1175,6 +1258,10 @@ export async function resetVersusMatchForNextGame(roomCode) {
     guestLiveComplete: false,
     hostLivePerfScore: null,
     guestLivePerfScore: null,
+    hostLiveVerdict: "none",
+    guestLiveVerdict: "none",
+    hostLiveHadCards: false,
+    guestLiveHadCards: false,
     hostSuccessFxDone: false,
     guestSuccessFxDone: false,
     liveJudgmentOutcome: null,

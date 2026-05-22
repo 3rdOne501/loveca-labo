@@ -275,7 +275,25 @@ function classifyOptionalSelfWaitEffect(p, base) {
       filters: parseAbilityPickFilters(p),
     });
   }
-  if (lookN != null && /見る/.test(p) && /デッキの上|山札の上/.test(p)) {
+  if (
+    lookN != null &&
+    /見る/.test(p) &&
+    /手札に加/.test(p) &&
+    /公開/.test(p) &&
+    /デッキの上|山札の上/.test(p)
+  ) {
+    return Object.assign(patch, {
+      template: "deck_top_pick_recover",
+      deckTopCount: lookN,
+      filters: parseAbilityPickFilters(p),
+    });
+  }
+  if (
+    lookN != null &&
+    /見る/.test(p) &&
+    /デッキの上|山札の上/.test(p) &&
+    !(/手札に加/.test(p) && /公開/.test(p))
+  ) {
     return Object.assign(patch, {
       template: "deck_top_look_reorder",
       deckTopCount: lookN,
