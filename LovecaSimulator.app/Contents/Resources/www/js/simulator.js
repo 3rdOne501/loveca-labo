@@ -2152,6 +2152,52 @@ export function mountSimulator(
     }, 6100);
   }
 
+  /** @param {*} snapBefore @param {HTMLElement|null} [fromEl] */
+  function maybeRevealHandAddsFromWaitingOrResolution(snapBefore, fromEl) {
+    if (!versusOnlineActive() || !snapBefore) return;
+    var prevHand = new Set();
+    (snapBefore.hand || []).forEach(function (c) {
+      if (c && c.id != null) prevHand.add(String(c.id));
+    });
+    var added = [];
+    state.hand.forEach(function (c) {
+      if (!c || c.id == null) return;
+      var sid = String(c.id);
+      if (prevHand.has(sid)) return;
+      var fromWait = (snapBefore.waitingRoom || []).some(function (w) {
+        return w && String(w.id) === sid;
+      });
+      var fromRes = (snapBefore.resolutionArea || []).some(function (r) {
+        return r && String(r.id) === sid;
+      });
+      if (fromWait || fromRes) added.push(c);
+    });
+    if (!added.length) return;
+    added.forEach(function (c) {
+      markCardFlashDraw(c, FLASH_LABEL_PLUS_DRAW);
+    });
+    var handEl = $("zone-hand");
+    var beamFrom = null;
+    if (fromEl && fromEl.closest) {
+      if (fromEl.closest("#zone-resolution")) beamFrom = $("zone-resolution");
+      else if (fromEl.closest("#zone-waiting, #zone-waiting-drop-catcher")) {
+        beamFrom = $("zone-waiting") || $("zone-waiting-drop-catcher");
+      }
+    }
+    if (!beamFrom) {
+      var anyFromRes = added.some(function (c) {
+        return (snapBefore.resolutionArea || []).some(function (r) {
+          return r && String(r.id) === String(c.id);
+        });
+      });
+      beamFrom = anyFromRes ? $("zone-resolution") : $("zone-waiting") || $("zone-waiting-drop-catcher");
+    }
+    if (beamFrom && handEl) {
+      flashDrawBeamsBetweenElements(beamFrom, handEl, added.length);
+    }
+    queueVersusHandRevealPublic(added);
+  }
+
   function presentAbilityDrawsToHand(drawnCards, sourceInst) {
     if (!drawnCards || !drawnCards.length) return;
     drawnCards.forEach(function (c) {
@@ -12223,8 +12269,12 @@ export function mountSimulator(
         var dragIdEnd =
           evt.item && evt.item.dataset && evt.item.dataset.id != null ? String(evt.item.dataset.id) : "";
         var fromHandDrop = isHandZoneSortableEl(evt.from);
+        var toHandDrop = isHandZoneSortableEl(evt.to);
         var toStageCol = stageColumnFromZoneEl(evt.to);
         readAllFromDom();
+        if (toHandDrop && dragUndoSnap) {
+          maybeRevealHandAddsFromWaitingOrResolution(dragUndoSnap, evt.from);
+        }
         if (fromHandDrop && toStageCol === "center" && dragIdEnd && dragUndoSnap) {
           var dragInstCenter = findCardInstById(dragIdEnd);
           var dragMcCenter = dragInstCenter ? mergedCatalogCard(dragInstCenter) : null;

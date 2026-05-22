@@ -48,6 +48,7 @@ export const VERSUS_BOARD_PUBLIC_V = 1;
  * @property {boolean} [liveRevealed]
  * @property {"hidden"|"set"|"revealed"} [livePublicMode]
  * @property {VersusPublicCard[]} [handReveal]
+ * @property {VersusPublicCard[]} [waitingReveal]
  */
 
 /** @param {unknown} raw */
@@ -302,6 +303,7 @@ export function boardToVersusPublic(board) {
   const liveRevealed = liveMode === "revealed";
   const handCount = stripCardList(b.hand).length;
   const handReveal = stripCardList(b.handReveal);
+  const waitingReveal = stripCardList(b.waitingReveal);
   return {
     v: VERSUS_BOARD_PUBLIC_V,
     ts: Date.now(),
@@ -318,6 +320,7 @@ export function boardToVersusPublic(board) {
     handCount: handCount,
     hand: [],
     handReveal: handReveal.length ? handReveal : undefined,
+    waitingReveal: waitingReveal.length ? waitingReveal : undefined,
     waitingRoom: stripCardList(b.waitingRoom),
     resolutionArea: stripCardList(b.resolutionArea),
     successfulLiveArea: stripCardList(b.successfulLiveArea),
@@ -359,6 +362,27 @@ export function boardToVersusPublicFromState(st) {
     liveRevealed: st.liveRevealed === true,
     livePublicMode: st.livePublicMode || (st.liveRevealed === true ? "revealed" : "hidden"),
     handReveal: st.handReveal,
+    waitingReveal: st.waitingReveal,
+  });
+}
+
+/** 簡易対戦・一人二役: 相手盤面を全面公開（手札・ライブ表面含む） */
+export function boardToVersusPublicFromStateForLocalDual(st) {
+  const hand = stripCardList(st.hand);
+  return boardToVersusPublic({
+    deck: st.deck,
+    hand: st.hand,
+    handReveal: hand,
+    stage: st.stage,
+    liveArea: st.liveArea,
+    waitingRoom: st.waitingRoom,
+    resolutionArea: st.resolutionArea,
+    successfulLiveArea: st.successfulLiveArea,
+    energyArea: st.energyArea,
+    previewScratch: st.previewScratch || [],
+    turnCount: st.turnCount,
+    liveRevealed: true,
+    livePublicMode: "revealed",
   });
 }
 
@@ -376,6 +400,7 @@ export function fingerprintVersusPublicBoard(board) {
     board.deckCount,
     String(board.handCount || 0),
     ids(board.handReveal || []),
+    ids(board.waitingReveal || []),
     board.livePublicMode || (board.liveRevealed ? "revealed" : "hidden"),
     ids(board.waitingRoom),
     ids(board.resolutionArea),
@@ -487,6 +512,7 @@ export function assemblePublicBoardFromMatchFields(match, pre) {
     handCount: handCount,
     hand: [],
     handReveal: stripCardList(nested && nested.handReveal),
+    waitingReveal: stripCardList(nested && nested.waitingReveal),
     waitingRoom: stripCardList(
       match[pre + "WaitingPublic"] != null
         ? match[pre + "WaitingPublic"]
@@ -879,22 +905,45 @@ function bindVersusOppBhPillClicksOnce() {
   });
 }
 
-function bindOppHandRevealDialogOnce() {
-  const btn = document.getElementById("dlg-versus-opp-hand-reveal-close");
-  const dlg = document.getElementById("dlg-versus-opp-hand-reveal");
+/** @type {number} */
+let oppWaitRevealDialogTimer = 0;
+
+function bindOppRevealDialogClose(btnId, dlgId, clearTimerFn) {
+  const btn = document.getElementById(btnId);
+  const dlg = document.getElementById(dlgId);
   if (!btn || !dlg || btn.dataset.wired === "1") return;
   btn.dataset.wired = "1";
   btn.addEventListener("click", function () {
-    if (oppHandRevealDialogTimer) {
-      clearTimeout(oppHandRevealDialogTimer);
-      oppHandRevealDialogTimer = 0;
-    }
+    clearTimerFn();
     try {
       dlg.close();
     } catch (_) {
       /* noop */
     }
   });
+}
+
+function bindOppHandRevealDialogOnce() {
+  bindOppRevealDialogClose(
+    "dlg-versus-opp-hand-reveal-close",
+    "dlg-versus-opp-hand-reveal",
+    function () {
+      if (oppHandRevealDialogTimer) {
+        clearTimeout(oppHandRevealDialogTimer);
+        oppHandRevealDialogTimer = 0;
+      }
+    },
+  );
+  bindOppRevealDialogClose(
+    "dlg-versus-opp-wait-reveal-close",
+    "dlg-versus-opp-wait-reveal",
+    function () {
+      if (oppWaitRevealDialogTimer) {
+        clearTimeout(oppWaitRevealDialogTimer);
+        oppWaitRevealDialogTimer = 0;
+      }
+    },
+  );
 }
 
 function syncVersusOppVoidWaitingColors(board) {
@@ -915,19 +964,23 @@ function syncVersusOppVoidWaitingColors(board) {
 
 /** @type {number} */
 let oppHandRevealDialogTimer = 0;
+/** @type {string} */
+let lastOppWaitRevealToastKey = "";
 
-/** @param {VersusPublicCard[]} cards */
-function openVersusOpponentHandRevealDialog(cards) {
-  if (!cards || !cards.length) return;
-  const dlg = document.getElementById("dlg-versus-opp-hand-reveal");
-  const body = document.getElementById("dlg-versus-opp-hand-reveal-body");
+/** @param {VersusPublicCard[]} cards @param {{ dlgId: string, bodyId: string, tileExtraClass?: string, onTimer?: (fn: () => void) => void }} opts */
+function openVersusOpponentCardsRevealDialog(cards, opts) {
+  if (!cards || !cards.length || !opts) return;
+  const dlg = document.getElementById(opts.dlgId);
+  const body = document.getElementById(opts.bodyId);
   if (!dlg || !body || typeof dlg.showModal !== "function") return;
   body.replaceChildren();
   const grid = document.createElement("div");
   grid.className = "dlg-zone-bh-list__grid dlg-versus-opp-hand-reveal__grid";
   cards.forEach(function (c) {
     const tile = document.createElement("div");
-    tile.className = "dlg-zone-bh-list__tile dlg-versus-opp-hand-reveal__tile";
+    tile.className =
+      "dlg-zone-bh-list__tile dlg-versus-opp-hand-reveal__tile" +
+      (opts.tileExtraClass ? " " + opts.tileExtraClass : "");
     const img = document.createElement("img");
     img.className = "dlg-zone-bh-list__img";
     img.alt = c.name || c.card_no || "";
@@ -946,15 +999,46 @@ function openVersusOpponentHandRevealDialog(cards) {
   } catch (_) {
     /* noop */
   }
-  if (oppHandRevealDialogTimer) clearTimeout(oppHandRevealDialogTimer);
-  oppHandRevealDialogTimer = window.setTimeout(function () {
-    oppHandRevealDialogTimer = 0;
-    try {
-      dlg.close();
-    } catch (_) {
-      /* noop */
-    }
-  }, 6200);
+  if (typeof opts.onTimer === "function") {
+    opts.onTimer(function () {
+      try {
+        dlg.close();
+      } catch (_) {
+        /* noop */
+      }
+    });
+  }
+}
+
+/** @param {VersusPublicCard[]} cards */
+function openVersusOpponentHandRevealDialog(cards) {
+  openVersusOpponentCardsRevealDialog(cards, {
+    dlgId: "dlg-versus-opp-hand-reveal",
+    bodyId: "dlg-versus-opp-hand-reveal-body",
+    onTimer: function (closeFn) {
+      if (oppHandRevealDialogTimer) clearTimeout(oppHandRevealDialogTimer);
+      oppHandRevealDialogTimer = window.setTimeout(function () {
+        oppHandRevealDialogTimer = 0;
+        closeFn();
+      }, 6200);
+    },
+  });
+}
+
+/** @param {VersusPublicCard[]} cards */
+function openVersusOpponentWaitingRevealDialog(cards) {
+  openVersusOpponentCardsRevealDialog(cards, {
+    dlgId: "dlg-versus-opp-wait-reveal",
+    bodyId: "dlg-versus-opp-wait-reveal-body",
+    tileExtraClass: "dlg-versus-opp-wait-reveal__tile",
+    onTimer: function (closeFn) {
+      if (oppWaitRevealDialogTimer) clearTimeout(oppWaitRevealDialogTimer);
+      oppWaitRevealDialogTimer = window.setTimeout(function () {
+        oppWaitRevealDialogTimer = 0;
+        closeFn();
+      }, 6200);
+    },
+  });
 }
 
 /** @param {VersusPublicBoard|null|undefined} board */
@@ -972,6 +1056,23 @@ function maybeToastOpponentHandReveal(board) {
   lastOppHandRevealToastKey = key;
   showToast("相手が手札に追加", { duration: 4500 });
   openVersusOpponentHandRevealDialog(board.handReveal);
+}
+
+/** @param {VersusPublicBoard|null|undefined} board */
+function maybeToastOpponentWaitingReveal(board) {
+  if (!board || !board.waitingReveal || !board.waitingReveal.length) return;
+  const key =
+    board.waitingReveal
+      .map(function (c) {
+        return c.id;
+      })
+      .join(",") +
+    "@" +
+    String(board.waitingRoom ? board.waitingRoom.length : 0);
+  if (key === lastOppWaitRevealToastKey) return;
+  lastOppWaitRevealToastKey = key;
+  showToast("相手が控え室にカードを置きました", { duration: 4500 });
+  openVersusOpponentWaitingRevealDialog(board.waitingReveal);
 }
 
 /**
@@ -1128,6 +1229,7 @@ export function renderVersusOpponentBoard(board, opts) {
     fillOppSecretHand(handStrip, board.handCount || 0);
   }
   fillOppStrip(document.getElementById("versus-opp-zone-waiting"), board.waitingRoom);
+  maybeToastOpponentWaitingReveal(board);
   fillOppStrip(document.getElementById("versus-opp-zone-resolution"), board.resolutionArea);
   fillOppStrip(document.getElementById("versus-opp-zone-sl"), board.successfulLiveArea);
   fillOppStrip(document.getElementById("versus-opp-zone-energy"), board.energyArea);

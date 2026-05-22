@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Loveca Labo" />
-    <meta name="loveca-build" content="2026052032" />
+    <meta name="loveca-build" content="2026052021" />
     <title>Loveca Labo</title>
     <!-- 万一以前のバージョンの Service Worker が登録された端末で取り残しが起きた場合に備え、
          先頭で SW 登録を一括解除する。SW 自体は本サイトでは使っていない。 -->
@@ -208,29 +208,6 @@ python3 -m http.server 8080</pre>
 
       <div class="builder">
         <aside class="search-panel">
-          <div id="cloud-auth-bar" class="cloud-auth-bar cloud-auth-bar--search-top" hidden>
-            <div class="cloud-auth-bar__profile">
-              <img id="cloud-auth-avatar" class="cloud-auth-bar__avatar" alt="" hidden />
-              <div class="cloud-auth-bar__profile-text">
-                <span id="cloud-auth-status" class="cloud-auth-bar__status">未ログイン</span>
-                <label id="player-display-name-wrap" class="player-display-name-wrap" hidden>
-                  <span class="player-display-name-wrap__label">対戦表示名</span>
-                  <input
-                    type="text"
-                    id="input-player-display-name"
-                    class="input player-display-name-input"
-                    maxlength="32"
-                    placeholder="ルームで表示する名前"
-                    autocomplete="nickname"
-                  />
-                </label>
-              </div>
-            </div>
-            <div class="cloud-auth-bar__actions">
-              <button type="button" id="cloud-auth-signin" class="btn sm secondary cloud-auth-bar__signin" title="Google でログイン">Google でログイン</button>
-              <button type="button" id="cloud-auth-signout" class="btn sm secondary cloud-auth-bar__signout" hidden>ログアウト</button>
-            </div>
-          </div>
           <div class="search-panel-tools">
             <h2 class="panel-h2-plain">検索・絞り込み</h2>
             <div class="search-quick-tools">
@@ -418,6 +395,29 @@ python3 -m http.server 8080</pre>
         </section>
 
         <aside class="deck-panel">
+          <div id="cloud-auth-bar" class="cloud-auth-bar cloud-auth-bar--deck-top" hidden>
+            <div class="cloud-auth-bar__profile">
+              <img id="cloud-auth-avatar" class="cloud-auth-bar__avatar" alt="" hidden />
+              <div class="cloud-auth-bar__profile-text">
+                <span id="cloud-auth-status" class="cloud-auth-bar__status">未ログイン</span>
+                <label id="player-display-name-wrap" class="player-display-name-wrap" hidden>
+                  <span class="player-display-name-wrap__label">対戦表示名</span>
+                  <input
+                    type="text"
+                    id="input-player-display-name"
+                    class="input player-display-name-input"
+                    maxlength="32"
+                    placeholder="ルームで表示する名前"
+                    autocomplete="nickname"
+                  />
+                </label>
+              </div>
+            </div>
+            <div class="cloud-auth-bar__actions">
+              <button type="button" id="cloud-auth-signin" class="btn sm secondary cloud-auth-bar__signin" title="Google でログイン">Google でログイン</button>
+              <button type="button" id="cloud-auth-signout" class="btn sm secondary cloud-auth-bar__signout" hidden>ログアウト</button>
+            </div>
+          </div>
           <div class="deck-panel-sticky-head">
             <div class="deck-panel-head-row">
               <h2>メインデッキ</h2>
@@ -1212,9 +1212,19 @@ python3 -m http.server 8080</pre>
               <button type="button" class="btn" id="btn-draw-waiting">1枚ドロー（控室）</button>
               <button type="button" class="btn" id="btn-draw-resolution">1枚ドロー（解決）</button>
             </div>
-            <div class="btn-row draw-row draw-row--turn wrap">
+            <div class="btn-row draw-row draw-row--turn wrap draw-row--turn-versus">
               <button type="button" class="btn primary" id="btn-turn-start" title="解決・ライブ枠を控え室へ送る／手札に山札から 1 枚ドロー／側面エネのウェイト解除・メンバーを縦・アクティブにし側面エネを1枚加算（上限12）。対戦モードの通常フェイズではターン終了。">
                 ターン開始/次のターンへ
+              </button>
+              <button
+                type="button"
+                class="btn primary btn-versus-local-dual-end-switch"
+                id="btn-versus-local-dual-end-switch"
+                hidden
+                disabled
+                title="通常フェイズを終了し、次の手番のプレイヤー盤面に切り替えます"
+              >
+                ターン終了して相手に切り替え
               </button>
             </div>
           </section>
@@ -1828,19 +1838,6 @@ python3 -m http.server 8080</pre>
       </div>
     </dialog>
 
-    <dialog
-      id="dlg-versus-opp-hand-reveal"
-      class="app-dialog dlg-versus-opp-hand-reveal"
-      aria-labelledby="dlg-versus-opp-hand-reveal-title"
-    >
-      <h2 id="dlg-versus-opp-hand-reveal-title" class="app-dialog__title">相手が手札に加えたカード</h2>
-      <p class="hint zone-inline-help muted">効果で相手が手札に加えたカードを一時公開しています（約6秒）。</p>
-      <div id="dlg-versus-opp-hand-reveal-body" class="dlg-versus-opp-hand-reveal-body"></div>
-      <div class="app-dialog__actions">
-        <button type="button" class="btn secondary" id="dlg-versus-opp-hand-reveal-close">閉じる</button>
-      </div>
-    </dialog>
-
     <dialog id="dlg-versus-lobby" class="app-dialog dlg-versus-lobby" aria-labelledby="dlg-versus-lobby-title">
       <div class="dlg-versus-lobby__header">
         <h2 id="dlg-versus-lobby-title" class="app-dialog__title dlg-versus-lobby__title">対戦モード（総合ルール 1.06）</h2>
@@ -1884,34 +1881,6 @@ python3 -m http.server 8080</pre>
           <button type="button" class="btn primary" id="dlg-versus-enter-play" hidden>プレイ画面へ</button>
         </div>
       </details>
-    </dialog>
-
-    <dialog
-      id="dlg-versus-opp-effect"
-      class="app-dialog dlg-versus-opp-effect"
-      aria-labelledby="dlg-versus-opp-effect-title"
-    >
-      <h2 id="dlg-versus-opp-effect-title" class="app-dialog__title">相手の効果処理</h2>
-      <p id="dlg-versus-opp-effect-lead" class="hint zone-inline-help muted">
-        相手が効果を解決しています（閲覧のみ）
-      </p>
-      <div id="dlg-versus-opp-effect-body" class="dlg-versus-opp-effect-body"></div>
-      <div class="app-dialog__actions">
-        <button type="button" class="btn secondary" id="dlg-versus-opp-effect-close">閉じる</button>
-      </div>
-    </dialog>
-
-    <dialog
-      id="dlg-versus-action-approve"
-      class="app-dialog dlg-versus-action-approve"
-      aria-labelledby="dlg-versus-action-approve-title"
-    >
-      <h2 id="dlg-versus-action-approve-title" class="app-dialog__title">操作の承認</h2>
-      <p id="dlg-versus-action-approve-lead" class="dlg-versus-action-approve-lead"></p>
-      <div class="app-dialog__actions">
-        <button type="button" class="btn secondary" id="dlg-versus-action-approve-no">いいえ</button>
-        <button type="button" class="btn primary" id="dlg-versus-action-approve-yes">はい</button>
-      </div>
     </dialog>
 
     <dialog id="dlg-ability-guided" class="app-dialog dlg-ability-guided" aria-labelledby="dlg-ability-guided-title">
@@ -1999,18 +1968,18 @@ python3 -m http.server 8080</pre>
             "./gameStatusIcons.js": "./gameStatusIcons.js?v=2026051866",
             "./joujiEffects.js": "./joujiEffects.js?v=2026051866",
             "./liveSpecialBhOverride.js": "./liveSpecialBhOverride.js?v=2026051866",
-            "./main.js": "./main.js?v=2026052032",
+            "./main.js": "./main.js?v=2026052021",
             "./sampleDeckRecipes.js": "./sampleDeckRecipes.js?v=2026051866",
-            "./simulator.js": "./simulator.js?v=2026052032",
+            "./simulator.js": "./simulator.js?v=2026052021",
             "./testCardLog.js": "./testCardLog.js?v=2026051866",
             "./ui.js": "./ui.js?v=2026051866",
-            "./versusBoardSync.js": "./versusBoardSync.js?v=2026052032",
+            "./versusBoardSync.js": "./versusBoardSync.js?v=2026051866",
             "./versusMatch.js": "./versusMatch.js?v=2026051866",
             "./versusMode.js": "./versusMode.js?v=2026051866"
           }
         }
       }
     </script>
-    <script type="module" src="js/main.js?v=2026052032"></script>
+    <script type="module" src="js/main.js?v=2026052021"></script>
   </body>
 </html>

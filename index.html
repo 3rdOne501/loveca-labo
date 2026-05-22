@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Loveca Labo" />
-    <meta name="loveca-build" content="2026052032" />
+    <meta name="loveca-build" content="2026052034" />
     <title>Loveca Labo</title>
     <!-- 万一以前のバージョンの Service Worker が登録された端末で取り残しが起きた場合に備え、
          先頭で SW 登録を一括解除する。SW 自体は本サイトでは使っていない。 -->
@@ -153,10 +153,10 @@ python3 -m http.server 8080</pre>
               openVersusLobby();
               return;
             }
-            if (t.closest("#dlg-versus-start-local")) {
+            if (t.closest("#dlg-versus-start-solo-dual")) {
               ev.preventDefault();
-              if (typeof window.__llocgStartLocalVersus === "function") {
-                window.__llocgStartLocalVersus();
+              if (typeof window.__llocgStartSoloDualVersus === "function") {
+                window.__llocgStartSoloDualVersus();
               } else {
                 window.alert(
                   "アプリの読み込みが完了してからお試しください（数秒待ってからもう一度押してください）",
@@ -429,7 +429,7 @@ python3 -m http.server 8080</pre>
                 type="button"
                 class="btn secondary btn-start-versus-sticky btn-start-versus--glow"
                 id="btn-start-versus"
-                title="簡易対戦はログイン不要。オンラインルームは Google ログイン"
+                title="一人二役・オンライン対戦（オンラインは Google ログイン）"
               >
                 対戦モード
               </button>
@@ -648,6 +648,16 @@ python3 -m http.server 8080</pre>
         </div>
         <div id="versus-play-chrome" class="versus-play-chrome game-bar-row" hidden>
           <span id="versus-turn-badge" class="versus-turn-badge" hidden></span>
+          <span id="versus-local-dual-badge" class="versus-local-dual-badge muted" hidden></span>
+          <button
+            type="button"
+            class="btn primary btn-versus-dual-board-switch"
+            id="btn-versus-dual-board-switch"
+            hidden
+            title="操作する盤面（下段）をもう一方のデッキに切り替えます"
+          >
+            デッキに切替
+          </button>
         </div>
       </header>
 
@@ -1212,9 +1222,19 @@ python3 -m http.server 8080</pre>
               <button type="button" class="btn" id="btn-draw-waiting">1枚ドロー（控室）</button>
               <button type="button" class="btn" id="btn-draw-resolution">1枚ドロー（解決）</button>
             </div>
-            <div class="btn-row draw-row draw-row--turn wrap">
+            <div class="btn-row draw-row draw-row--turn wrap draw-row--turn-versus">
               <button type="button" class="btn primary" id="btn-turn-start" title="解決・ライブ枠を控え室へ送る／手札に山札から 1 枚ドロー／側面エネのウェイト解除・メンバーを縦・アクティブにし側面エネを1枚加算（上限12）。対戦モードの通常フェイズではターン終了。">
                 ターン開始/次のターンへ
+              </button>
+              <button
+                type="button"
+                class="btn primary btn-versus-local-dual-end-switch"
+                id="btn-versus-local-dual-end-switch"
+                hidden
+                disabled
+                title="通常フェイズを終了し、次の手番のプレイヤー盤面に切り替えます"
+              >
+                ターン終了して相手に切り替え
               </button>
             </div>
           </section>
@@ -1841,23 +1861,61 @@ python3 -m http.server 8080</pre>
       </div>
     </dialog>
 
+    <dialog
+      id="dlg-versus-opp-wait-reveal"
+      class="app-dialog dlg-versus-opp-hand-reveal dlg-versus-opp-wait-reveal"
+      aria-labelledby="dlg-versus-opp-wait-reveal-title"
+    >
+      <h2 id="dlg-versus-opp-wait-reveal-title" class="app-dialog__title">相手の控え室に置かれたカード</h2>
+      <p class="hint zone-inline-help muted">相手が控え室に置いたカードを一時公開しています（約6秒）。</p>
+      <div id="dlg-versus-opp-wait-reveal-body" class="dlg-versus-opp-hand-reveal-body"></div>
+      <div class="app-dialog__actions">
+        <button type="button" class="btn secondary" id="dlg-versus-opp-wait-reveal-close">閉じる</button>
+      </div>
+    </dialog>
+
     <dialog id="dlg-versus-lobby" class="app-dialog dlg-versus-lobby" aria-labelledby="dlg-versus-lobby-title">
       <div class="dlg-versus-lobby__header">
         <h2 id="dlg-versus-lobby-title" class="app-dialog__title dlg-versus-lobby__title">対戦モード（総合ルール 1.06）</h2>
         <button type="button" class="dlg-versus-lobby-close-top" id="dlg-versus-lobby-close" aria-label="閉じる">×</button>
       </div>
-      <p class="hint zone-inline-help">
-        <strong>簡易対戦</strong>（ログイン不要）— 対面・別々の端末向け。各プレイヤーが<strong>自分の盤面だけ</strong>操作します。
-        カードの自動同期はありません。プレイ中、画面上部の<strong>「相手SL」＋／−</strong>で相手の成功ライブ枚数を共有します。
-      </p>
+      <details class="dlg-versus-solo-dual-wrap" open>
+        <summary><strong>一人二役</strong>（同じ端末で両者操作・ログイン不要）</summary>
+        <p class="hint zone-inline-help muted">
+          下段が操作対象の盤面です。メインデッキと相手デッキ（サンプル・登録）を選び、モードを選んでから開始します。
+        </p>
+        <div class="dlg-versus-mode-pick" role="radiogroup" aria-label="一人二役のモード">
+          <button
+            type="button"
+            class="btn secondary dlg-versus-mode-pick-btn dlg-versus-mode-pick-btn--on"
+            data-versus-solo-mode="localPractice"
+            aria-pressed="true"
+          >
+            対戦練習モード
+          </button>
+          <button
+            type="button"
+            class="btn secondary dlg-versus-mode-pick-btn"
+            data-versus-solo-mode="localDual"
+            aria-pressed="false"
+          >
+            1人対戦モード
+          </button>
+        </div>
+        <p id="dlg-versus-solo-mode-hint" class="hint zone-inline-help muted dlg-versus-solo-mode-hint"></p>
+        <div class="dlg-versus-lobby-row">
+          <label class="tools-label" for="dlg-versus-local-dual-deck">相手のデッキ（サンプル・登録デッキ）</label>
+          <select id="dlg-versus-local-dual-deck" class="dlg-versus-local-dual-deck-select"></select>
+        </div>
+        <div class="app-dialog__actions dlg-versus-lobby-actions">
+          <button type="button" class="btn primary" id="dlg-versus-start-solo-dual">一人二役で対戦を開始</button>
+        </div>
+      </details>
       <p class="hint zone-inline-help muted">
         <strong>オンラインルーム</strong> — 2人が別アカウントで参加。成功ライブ枚数・ターン・直近操作を Firestore で共有。
         手札や場のカードはまだ同期されません（各端末で自分の盤面を操作）。ホストが「対戦開始」後、<strong>ターン終了</strong>で手番を渡します。再読み込み後は<strong>ルームに入室</strong>で対戦画面へ戻れます（ルームからは追い出されません）。
       </p>
       <p id="dlg-versus-lobby-status" class="dlg-versus-lobby-status muted" role="status"></p>
-      <div class="app-dialog__actions dlg-versus-lobby-actions dlg-versus-lobby-actions--primary">
-        <button type="button" class="btn primary" id="dlg-versus-start-local">簡易対戦を始める（ログイン不要）</button>
-      </div>
       <details id="dlg-versus-online-wrap" class="dlg-versus-online-wrap" hidden>
         <summary>オンラインルーム（任意・Google ログイン）</summary>
         <p id="dlg-versus-online-hint" class="hint zone-inline-help muted"></p>
@@ -1999,18 +2057,18 @@ python3 -m http.server 8080</pre>
             "./gameStatusIcons.js": "./gameStatusIcons.js?v=2026051866",
             "./joujiEffects.js": "./joujiEffects.js?v=2026051866",
             "./liveSpecialBhOverride.js": "./liveSpecialBhOverride.js?v=2026051866",
-            "./main.js": "./main.js?v=2026052032",
+            "./main.js": "./main.js?v=2026052034",
             "./sampleDeckRecipes.js": "./sampleDeckRecipes.js?v=2026051866",
-            "./simulator.js": "./simulator.js?v=2026052032",
+            "./simulator.js": "./simulator.js?v=2026052034",
             "./testCardLog.js": "./testCardLog.js?v=2026051866",
             "./ui.js": "./ui.js?v=2026051866",
-            "./versusBoardSync.js": "./versusBoardSync.js?v=2026052032",
+            "./versusBoardSync.js": "./versusBoardSync.js?v=2026052034",
             "./versusMatch.js": "./versusMatch.js?v=2026051866",
             "./versusMode.js": "./versusMode.js?v=2026051866"
           }
         }
       }
     </script>
-    <script type="module" src="js/main.js?v=2026052032"></script>
+    <script type="module" src="js/main.js?v=2026052034"></script>
   </body>
 </html>
