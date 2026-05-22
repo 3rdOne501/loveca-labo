@@ -92,6 +92,10 @@ import {
   isVersusTurnForRole,
   pushVersusBoardPublic,
   pushVersusEffectHighlight,
+  pushVersusEffectUi,
+  requestVersusBoardAction,
+  respondVersusBoardAction,
+  clearVersusBoardActionRequest,
   pushVersusPublicState,
   describeVersusFlowForRole,
   getVersusLiveStep,
@@ -297,6 +301,7 @@ export function teardownActivePlayMount() {
     delete window.__llocgFlushVersusPlayPersist;
     delete window.__llocgVersusPlayMounted;
     delete window.__llocgPeekBoardFromDialog;
+    delete window.__llocgDialogSupportsBoardPeek;
   } catch (_) {
     /* noop */
   }
@@ -3215,6 +3220,26 @@ export function mountSimulator(
     return n;
   }
 
+  function isVersusPerfPhaseNoLiveInFrames() {
+    if (!versusOnlineActive() || !versusSession.remoteMatch) return false;
+    if (getVersusLiveStep(versusSession.remoteMatch) !== "perf") return false;
+    return liveLiveCardsInFramesOnly() === 0;
+  }
+
+  function syncPerfNoLivePlaceholders() {
+    document.querySelectorAll(".live-slot-no-live-placeholder").forEach(function (el) {
+      el.remove();
+    });
+    if (!isVersusPerfPhaseNoLiveInFrames()) return;
+    var center = $("live-center");
+    if (!center) return;
+    var ph = document.createElement("div");
+    ph.className = "live-slot-no-live-placeholder";
+    ph.textContent = "ライブなし";
+    ph.setAttribute("aria-live", "polite");
+    center.appendChild(ph);
+  }
+
   /** ライブ枠内のライブカードの打点合計（印刷スコアのみ） */
   function computeLiveFrameScoreParts() {
     var baseSum = 0;
@@ -5798,6 +5823,33 @@ export function mountSimulator(
   var effectDialogPeekSourceInst = null;
   /** @type {(() => void) | null} */
   var effectDialogResumeChipReposition = null;
+  /** dlg.close() による「場を見る」中は cancel ハンドラを無視 */
+  var effectDialogSuppressCancel = false;
+
+  var EFFECT_BOARD_PEEK_DIALOG_IDS = {
+    "dlg-ability-guided": true,
+    "dlg-pick-kidou-waiting": true,
+    "dlg-cost-payment": true,
+    "dlg-deck-look-reorder": true,
+    "dlg-pick-ability-choice": true,
+    "dlg-pick-effect-order": true,
+    "dlg-pick-success-live": true,
+  };
+
+  function shouldIgnoreEffectDialogDismiss() {
+    return effectDialogSuppressCancel || isEffectDialogBoardPeekActive();
+  }
+
+  function hideEffectDialogResumeChipOnDialogCleanup() {
+    if (!isEffectDialogBoardPeekActive()) hideEffectDialogResumeChip();
+  }
+
+  /** @param {HTMLDialogElement | null} dlg */
+  function dialogSupportsBoardPeek(dlg) {
+    if (!dlg || !dlg.id) return false;
+    if (dlg.querySelector("[data-dialog-view-board]")) return true;
+    return EFFECT_BOARD_PEEK_DIALOG_IDS[dlg.id] === true;
+  }
 
   function isEffectDialogBoardPeekActive() {
     return !!(effectDialogResumeChip && effectDialogResumeChip.parentNode);
@@ -5935,12 +5987,16 @@ export function mountSimulator(
   /** @param {HTMLDialogElement} dlg @param {*} [sourceInst] */
   function peekBoardFromDialog(dlg, sourceInst) {
     if (!dlg || typeof dlg.close !== "function") return;
+    if (!dialogSupportsBoardPeek(dlg)) return;
     var peekInst = sourceInst || effectDialogPeekSourceInst;
+    if (peekInst) effectDialogPeekSourceInst = peekInst;
+    effectDialogSuppressCancel = true;
     try {
       dlg.close();
     } catch (_) {
       /* noop */
     }
+    effectDialogSuppressCancel = false;
     showEffectDialogResumeChip(function () {
       try {
         dlg.showModal();
@@ -5950,7 +6006,20 @@ export function mountSimulator(
     }, peekInst);
   }
 
+  if (!window.__llocgEffectDialogCancelGuard) {
+    window.__llocgEffectDialogCancelGuard = function (ev) {
+      if (!effectDialogSuppressCancel) return;
+      var t = ev.target;
+      if (t && t.tagName === "DIALOG") {
+        ev.preventDefault();
+        ev.stopImmediatePropagation();
+      }
+    };
+    document.addEventListener("cancel", window.__llocgEffectDialogCancelGuard, true);
+  }
+
   window.__llocgPeekBoardFromDialog = peekBoardFromDialog;
+  window.__llocgDialogSupportsBoardPeek = dialogSupportsBoardPeek;
 
   /** @param {*} inst */
   function soloOpponentMemberZoneLabel(inst) {
@@ -6225,6 +6294,7 @@ export function mountSimulator(
     if (c.lcWait !== true) c.lcWait = false;
     if (c.lcActive !== true && c.lcActive !== false) c.lcActive = true;
     if (typeof c.isRotated !== "boolean") c.isRotated = false;
+    if (c.type === T_MEMBER) c.isRotated = c.lcWait === true;
 
     if (!c.playBonusHeartSlotsAlways || typeof c.playBonusHeartSlotsAlways !== "object" || Array.isArray(c.playBonusHeartSlotsAlways)) {
       c.playBonusHeartSlotsAlways = {};
@@ -7305,7 +7375,7 @@ export function mountSimulator(
     ensureDialogViewBoardButton(actionsEl, dlg, titleInst);
 
     function cleanup() {
-      hideEffectDialogResumeChip();
+      hideEffectDialogResumeChipOnDialogCleanup();
       btnOk.removeEventListener("click", onOk);
       if (btnCx) btnCx.removeEventListener("click", onCx);
       dlg.removeEventListener("cancel", onDismiss);
@@ -7439,6 +7509,186 @@ export function mountSimulator(
    * @param {any[]} looked 上から見たカード（順序＝見た順）
    * @param {(deckOrderIds: string[], waitingIds: string[]) => void} onDone
    */
+  /**
+   * 登場時: 山札上から見て Liella! ライブ1枚まで手札（PL!SP-bp4-002 等）
+   * @param {any[]} looked
+   * @param {import('./abilityEffects.js').AbilityPickFilters} filters
+   * @param {*} sourceInst
+   * @param {(pickedId: string | null) => void} onDone
+   */
+  function openDeckTopLiellaLivePickDialog(looked, filters, sourceInst, onDone) {
+    var dlg = document.getElementById("dlg-pick-kidou-waiting");
+    var list = document.getElementById("dlg-pick-kidou-waiting-list");
+    var lead = document.getElementById("dlg-pick-kidou-waiting-lead");
+    var btnOk = document.getElementById("dlg-pick-kidou-waiting-ok");
+    var btnCx = document.getElementById("dlg-pick-kidou-waiting-cancel");
+    var dlgTitle = document.getElementById("dlg-pick-kidou-waiting-title");
+    if (!dlg || !list || !btnOk || typeof dlg.showModal !== "function") {
+      onDone(null);
+      return;
+    }
+    if (sourceInst) effectDialogPeekSourceInst = sourceInst;
+    if (dlgTitle) setEffectProcessingDialogTitle(dlgTitle, sourceInst, "効果の処理");
+    if (lead) {
+      lead.textContent =
+        "見た " +
+        looked.length +
+        " 枚のうち、条件を満たす『Liella!』のライブを1枚まで選んで手札に加えられます（選ばない場合はすべて控え室へ）。";
+    }
+    btnOk.textContent = "完了";
+    btnCx.textContent = "手札に加えない";
+    list.innerHTML = "";
+    var grid = document.createElement("div");
+    grid.className = "dlg-pick-kidou-waiting__grid";
+    var eligible = 0;
+    looked.forEach(function (c, i) {
+      var mc = mergedCatalogCard(c);
+      var ok =
+        mc.type === T_LIVE &&
+        catalogCardMatchesPickFilters(mc, filters || {}) &&
+        (!filters || !filters.seriesTag || catalogCardMatchesGroupTag(mc, filters.seriesTag));
+      if (ok) eligible++;
+      var labEl = document.createElement("label");
+      labEl.className =
+        "dlg-pick-kidou-waiting__tile" + (ok ? "" : " dlg-pick-kidou-waiting__tile--soft-warn");
+      var radio = document.createElement("input");
+      radio.type = "radio";
+      radio.name = "deckTopLiellaPick";
+      radio.value = String(c.id);
+      radio.className = "dlg-pick-kidou-waiting__radio";
+      radio.disabled = !ok;
+      if (i === 0 && ok) radio.checked = true;
+      var img = document.createElement("img");
+      img.className = "dlg-pick-kidou-waiting__img";
+      img.alt = mc.name || "";
+      if (mc.img || c.img) img.src = mc.img || c.img;
+      var cap = document.createElement("span");
+      cap.className = "dlg-pick-kidou-waiting__label";
+      cap.textContent = ((mc.card_no != null ? String(mc.card_no) + " " : "") + (mc.name || "")).trim();
+      if (!ok) {
+        cap.textContent += "（条件外）";
+      } else {
+        cap.textContent += "（必要H合計 " + sumNeedHeartOnCard(mc) + "）";
+      }
+      labEl.appendChild(radio);
+      labEl.appendChild(img);
+      labEl.appendChild(cap);
+      labEl.addEventListener("click", function () {
+        if (!radio.disabled) radio.checked = true;
+      });
+      grid.appendChild(labEl);
+    });
+    list.appendChild(grid);
+    if (!eligible) {
+      var hint = document.createElement("p");
+      hint.className = "muted";
+      hint.textContent = "条件を満たすライブカードはありません。すべて控え室に置きます。";
+      list.appendChild(hint);
+    }
+    ensureDialogViewBoardButton(dlg.querySelector(".app-dialog__actions"), dlg, sourceInst);
+    if (sourceInst) {
+      pushLocalVersusEffectUi(
+        sourceInst,
+        "toujyou",
+        "山札の上から見たカードから条件を満たすライブを手札に加えられます",
+      );
+    }
+    function cleanup() {
+      btnOk.textContent = "選択した1枚を手札に加える";
+      btnCx.textContent = "キャンセル";
+      if (dlgTitle) dlgTitle.textContent = "回収対象カード — 1枚を手札に加える";
+      btnOk.removeEventListener("click", onOk);
+      if (btnCx) btnCx.removeEventListener("click", onCx);
+      dlg.removeEventListener("cancel", onCx);
+    }
+    function onOk() {
+      var picked = list.querySelector('input[name="deckTopLiellaPick"]:checked');
+      var pid = picked && !picked.disabled ? String(picked.value) : null;
+      cleanup();
+      try {
+        dlg.close();
+      } catch (_) {}
+      onDone(pid);
+    }
+    function onCx() {
+      if (shouldIgnoreEffectDialogDismiss()) return;
+      cleanup();
+      try {
+        dlg.close();
+      } catch (_) {}
+      onDone(null);
+    }
+    btnOk.addEventListener("click", onOk);
+    if (btnCx) btnCx.addEventListener("click", onCx);
+    dlg.addEventListener("cancel", onCx);
+    dlg.showModal();
+  }
+
+  function sumNeedHeartOnCard(cat) {
+    var need = cat && cat.need_heart;
+    if (!need || typeof need !== "object") return 0;
+    var sum = 0;
+    Object.keys(need).forEach(function (k) {
+      sum += Math.max(0, Math.floor(Number(need[k]) || 0));
+    });
+    return sum;
+  }
+
+  function applyNamedMemberHeartBladeGifts(gifts) {
+    if (!gifts || !gifts.length) return 0;
+    var applied = 0;
+    eachStageColumnMemberInsts().forEach(function (m) {
+      var mc = mergedCatalogCard(m);
+      var memName = String(mc.name || "");
+      gifts.forEach(function (g) {
+        if (!g || !g.name || memName.indexOf(String(g.name)) < 0) return;
+        ensureCardBoardFields(m);
+        var slot = Math.max(1, Math.min(6, Math.floor(Number(g.heartSlot) || 0)));
+        var add = Math.max(1, Math.floor(Number(g.count) || 1));
+        m.playBonusHeartSlotsAlways[slot] =
+          sanitizeNonNegativeInt(m.playBonusHeartSlotsAlways[slot]) + add;
+        if (g.grantBlade) {
+          m.playBonusBladeAlways = sanitizeNonNegativeInt(m.playBonusBladeAlways) + 1;
+        }
+        applied++;
+      });
+    });
+    return applied;
+  }
+
+  function stageHasAllCharacterNames(names) {
+    if (!names || !names.length) return false;
+    /** @type {Record<string, boolean>} */
+    var found = {};
+    eachStageColumnMemberInsts().forEach(function (m) {
+      var n = String(mergedCatalogCard(m).name || "");
+      names.forEach(function (needle) {
+        if (needle && n.indexOf(String(needle)) >= 0) found[String(needle)] = true;
+      });
+    });
+    for (var i = 0; i < names.length; i++) {
+      if (!found[String(names[i])]) return false;
+    }
+    return true;
+  }
+
+  function syncAbilityGuidedDialogLead(inst, kind) {
+    var lead = document.getElementById("dlg-ability-guided-lead");
+    if (!lead) return;
+    var cl = classifyCardAbility(mergedCatalogCard(inst), kind);
+    if (abilityEffectIsAutomated(cl.template)) {
+      lead.hidden = false;
+      lead.className = "hint zone-inline-help dlg-ability-guided-lead dlg-ability-guided-lead--auto";
+      lead.textContent =
+        "この効果は自動処理に対応しています。ダイアログの指示に従うか、盤面を確認して「効果を処理済みにする」で完了できます。";
+    } else {
+      lead.hidden = false;
+      lead.className = "hint zone-inline-help dlg-ability-guided-lead";
+      lead.textContent =
+        "この効果は自動処理に未対応です。テキストを確認し、盤面を手動で整えたうえで「効果を処理済みにする」を押してください。";
+    }
+  }
+
   function openDeckLookReorderDialog(looked, onDone) {
     var dlg = document.getElementById("dlg-deck-look-reorder");
     var list = document.getElementById("dlg-deck-look-reorder-list");
@@ -7508,6 +7758,7 @@ export function mountSimulator(
       onDone(deckIds, waitIds);
     }
     function onCx() {
+      if (shouldIgnoreEffectDialogDismiss()) return;
       cleanup();
       try {
         dlg.close();
@@ -7517,11 +7768,13 @@ export function mountSimulator(
       }));
     }
     function onDismiss() {
+      if (shouldIgnoreEffectDialogDismiss()) return;
       cleanup();
       onDone([], looked.map(function (c) {
         return String(c.id);
       }));
     }
+    ensureDialogViewBoardButton(dlg.querySelector(".app-dialog__actions"), dlg, effectDialogPeekSourceInst);
     btnOk.addEventListener("click", onOk);
     if (btnCx) btnCx.addEventListener("click", onCx);
     dlg.addEventListener("cancel", onDismiss);
@@ -7539,14 +7792,16 @@ export function mountSimulator(
       if (typeof onDone === "function") onDone();
       return;
     }
+    if (inst) effectDialogPeekSourceInst = inst;
+    syncAbilityGuidedDialogLead(inst, kind);
     var title = document.getElementById("dlg-ability-guided-title");
     setEffectProcessingDialogTitle(title, inst, "効果の処理");
+    var plainBody = abilityPlainText(mc) || "（テキストなし）";
     body.innerHTML =
-      '<p class="dlg-ability-guided-plain">' +
-      escapeHtmlPlain(abilityPlainText(mc) || "（テキストなし）") +
-      "</p>";
+      '<p class="dlg-ability-guided-plain">' + escapeHtmlPlain(plainBody) + "</p>";
+    pushLocalVersusEffectUi(inst, kind, plainBody);
     function cleanup() {
-      hideEffectDialogResumeChip();
+      hideEffectDialogResumeChipOnDialogCleanup();
       btnDone.removeEventListener("click", onDoneClick);
       if (btnCx) btnCx.removeEventListener("click", onCx);
       dlg.removeEventListener("cancel", onDismiss);
@@ -7564,9 +7819,13 @@ export function mountSimulator(
       if (typeof onDone === "function") onDone();
     }
     function onCx() {
+      if (shouldIgnoreEffectDialogDismiss()) return;
+      clearLocalVersusEffectUi();
       closeDlg();
     }
     function onDismiss() {
+      if (shouldIgnoreEffectDialogDismiss()) return;
+      clearLocalVersusEffectUi();
       closeDlg();
     }
     ensureDialogViewBoardButton(dlg.querySelector(".app-dialog__actions"), dlg, inst);
@@ -7653,6 +7912,13 @@ export function mountSimulator(
         versusSession.roomCode,
         versusSession.myRole,
         String(mcVersusFx.card_no),
+        {
+          cardNo: String(mcVersusFx.card_no),
+          instId: inst.id != null ? String(inst.id) : null,
+          kind: kind,
+          title: mergedInstDisplayName(inst) + "の" + abilityKindLabel(kind),
+          bodyPlain: abilityPlainText(mcVersusFx) || "",
+        },
       ).catch(function () {
         /* noop */
       });
@@ -7895,6 +8161,7 @@ export function mountSimulator(
       done(true);
       return;
     }
+    if (inst) effectDialogPeekSourceInst = inst;
     var prevTitleHtml = dlgTitle ? dlgTitle.innerHTML : "";
     if (dlgTitle) {
       if (inst) {
@@ -7995,7 +8262,7 @@ export function mountSimulator(
     }
     btnSkip.textContent = mandatory ? "キャンセル（解決しない）" : "支払わない";
     function cleanup() {
-      hideEffectDialogResumeChip();
+      hideEffectDialogResumeChipOnDialogCleanup();
       btnPay.removeEventListener("click", onPay);
       btnSkip.removeEventListener("click", onSkip);
       dlg.removeEventListener("cancel", onCx);
@@ -8084,6 +8351,7 @@ export function mountSimulator(
       done(true);
     }
     function onSkip() {
+      if (shouldIgnoreEffectDialogDismiss()) return;
       cleanup();
       try {
         dlg.close();
@@ -8091,10 +8359,18 @@ export function mountSimulator(
       done(false);
     }
     function onCx() {
+      if (shouldIgnoreEffectDialogDismiss()) return;
       cleanup();
       done(false);
     }
     ensureDialogViewBoardButton(dlg.querySelector(".app-dialog__actions"), dlg, inst);
+    var costKind =
+      cl && cl.trigger
+        ? cl.trigger
+        : cl && cl.template && String(cl.template).indexOf("live") >= 0
+          ? "live_start"
+          : "kidou";
+    pushLocalVersusEffectUi(inst, costKind, abilityPlainText(mc) || "");
     btnPay.addEventListener("click", onPay);
     btnSkip.addEventListener("click", onSkip);
     dlg.addEventListener("cancel", onCx);
@@ -8136,7 +8412,7 @@ export function mountSimulator(
     btnPay.textContent = "完了";
     btnSkip.textContent = "スキップ";
     function cleanup() {
-      hideEffectDialogResumeChip();
+      hideEffectDialogResumeChipOnDialogCleanup();
       btnPay.removeEventListener("click", onPay);
       btnSkip.removeEventListener("click", onSkip);
       dlg.removeEventListener("cancel", onCx);
@@ -8171,11 +8447,13 @@ export function mountSimulator(
       done(true, discarded);
     }
     function onSkip() {
+      if (shouldIgnoreEffectDialogDismiss()) return;
       cleanup();
       try { dlg.close(); } catch (_) {}
       done(false);
     }
     function onCx() {
+      if (shouldIgnoreEffectDialogDismiss()) return;
       cleanup();
       done(false);
     }
@@ -8221,7 +8499,7 @@ export function mountSimulator(
     btnPay.textContent = "完了";
     btnSkip.hidden = true;
     function cleanup() {
-      hideEffectDialogResumeChip();
+      hideEffectDialogResumeChipOnDialogCleanup();
       btnPay.removeEventListener("click", onPay);
       btnSkip.removeEventListener("click", onSkip);
       dlg.removeEventListener("cancel", onCx);
@@ -8255,6 +8533,7 @@ export function mountSimulator(
       done(true, toDiscard);
     }
     function onSkip() {
+      if (shouldIgnoreEffectDialogDismiss()) return;
       cleanup();
       try {
         dlg.close();
@@ -8262,6 +8541,7 @@ export function mountSimulator(
       done(false);
     }
     function onCx() {
+      if (shouldIgnoreEffectDialogDismiss()) return;
       cleanup();
       done(false);
     }
@@ -8817,7 +9097,7 @@ export function mountSimulator(
       list.appendChild(lab);
     });
     function cleanup() {
-      hideEffectDialogResumeChip();
+      hideEffectDialogResumeChipOnDialogCleanup();
       btnOk.removeEventListener("click", onOk);
       if (btnCx) btnCx.removeEventListener("click", onCx);
       dlg.removeEventListener("cancel", onCx);
@@ -8855,6 +9135,7 @@ export function mountSimulator(
       });
     }
     function onCx() {
+      if (shouldIgnoreEffectDialogDismiss()) return;
       cleanup();
       try {
         dlg.close();
@@ -9315,6 +9596,79 @@ export function mountSimulator(
           finishResolved();
         },
       );
+      return;
+    }
+
+    if (cl.template === "toujou_deck_top_liella_live_pick") {
+      if (!checkAbilityToujouPreconditions(cl)) {
+        showToast("登場時効果の条件を満たしていません");
+        finishResolved();
+        return;
+      }
+      var cntLiella = cl.deckTopCount || 4;
+      if (state.deck.length < cntLiella) {
+        showToast("山札が " + cntLiella + " 枚ありません");
+        finishResolved();
+        return;
+      }
+      pushHistoryBefore("toujou-deck-top-liella-pick");
+      var lookedLiella = state.deck.splice(0, cntLiella);
+      render();
+      openDeckTopLiellaLivePickDialog(lookedLiella, cl.filters || {}, inst, function (pickedId) {
+        var toHand = null;
+        lookedLiella.forEach(function (c) {
+          if (pickedId && String(c.id) === String(pickedId)) toHand = c;
+          else state.waitingRoom.push(c);
+        });
+        if (toHand) {
+          state.hand.push(toHand);
+          presentAbilityDrawsToHand([toHand], inst);
+          showToast((mergedCatalogCard(toHand).name || "ライブ") + " を手札に加えました");
+        } else {
+          showToast("見た " + lookedLiella.length + " 枚を控え室に置きました");
+        }
+        finishResolved();
+      });
+      return;
+    }
+
+    if (cl.template === "live_start_named_member_heart_blades") {
+      if (!checkAbilityLiveStartPreconditions(cl)) {
+        showToast("ライブ開始時効果の条件を満たしていません");
+        finishResolved();
+        return;
+      }
+      pushHistoryBefore("live-start-named-heart-blades");
+      var gifts = cl.memberHeartBladeGifts || [];
+      var appliedG = applyNamedMemberHeartBladeGifts(gifts);
+      if (appliedG > 0) {
+        showToast("ステージのメンバーにハート付きブレードを付与しました（ライブ終了時まで）");
+      } else {
+        showToast("対象のメンバーがステージにいませんでした");
+      }
+      finishResolved();
+      return;
+    }
+
+    if (cl.template === "live_success_characters_draw") {
+      var needChars = cl.characterNames || [];
+      if (!stageHasAllCharacterNames(needChars)) {
+        showToast("ステージに必要なメンバーが揃っていないためスキップしました");
+        finishResolved();
+        return;
+      }
+      var drawNc = cl.deckDrawCount || 1;
+      if (!state.deck.length) {
+        showToast("山札がありません");
+        finishResolved();
+        return;
+      }
+      pushHistoryBefore("live-success-characters-draw");
+      var drawnC = state.deck.shift();
+      state.hand.push(drawnC);
+      presentAbilityDrawsToHand([drawnC], inst);
+      showToast("山札から1枚引きました");
+      finishResolved();
       return;
     }
 
@@ -10781,6 +11135,9 @@ export function mountSimulator(
       onDone(true);
       return;
     }
+    if (inst) effectDialogPeekSourceInst = inst;
+    syncAbilityGuidedDialogLead(inst, kind);
+    pushLocalVersusEffectUi(inst, kind, abilityPlainText(mc) || "");
     var prevDoneLabel = btnDone.textContent;
     if (title) {
       title.textContent =
@@ -10796,7 +11153,7 @@ export function mountSimulator(
       "</p>";
     btnDone.textContent = "効果を処理済みにする";
     function cleanup() {
-      hideEffectDialogResumeChip();
+      hideEffectDialogResumeChipOnDialogCleanup();
       btnDone.textContent = prevDoneLabel || "効果を処理済みにする";
       btnDone.removeEventListener("click", onDoneClick);
       if (btnCx) btnCx.removeEventListener("click", onCx);
@@ -10815,10 +11172,12 @@ export function mountSimulator(
       onDone(true);
     }
     function onCx() {
+      if (shouldIgnoreEffectDialogDismiss()) return;
       closeDlg();
       onDone(false);
     }
     function onDismiss() {
+      if (shouldIgnoreEffectDialogDismiss()) return;
       closeDlg();
       onDone(false);
     }
@@ -11034,7 +11393,9 @@ export function mountSimulator(
       }
       img.className = "card-img";
       if (opts.forceLiveHorizontal) img.classList.add("rotated");
-      else if (c.isRotated) img.classList.add("rotated");
+      else if (c.type === T_MEMBER) {
+        if (c.lcWait === true) img.classList.add("rotated");
+      } else if (c.isRotated) img.classList.add("rotated");
       if (opts.catalogImgClickDetail === true) {
         img.addEventListener(
           "click",
@@ -11380,6 +11741,9 @@ export function mountSimulator(
       if (isStage && c.type === T_ENERGY) {
         c.lcWait = false;
         c.lcActive = true;
+      }
+      if (isStage && c.type === T_MEMBER) {
+        c.isRotated = c.lcWait === true;
       }
       var onRotate =
         isStage &&
@@ -12194,13 +12558,18 @@ export function mountSimulator(
     var at =
       versusSession.myRole === "host" ? remoteMatch.guestBoardAt : remoteMatch.hostBoardAt;
     var oppRole = versusSession.myRole === "host" ? "guest" : "host";
+    var oppUi =
+      oppRole === "host" ? remoteMatch.hostEffectUi : remoteMatch.guestEffectUi;
     var effectCardNo =
-      oppRole === "host" ? remoteMatch.hostEffectCardNo : remoteMatch.guestEffectCardNo;
+      (oppUi && oppUi.cardNo) ||
+      (oppRole === "host" ? remoteMatch.hostEffectCardNo : remoteMatch.guestEffectCardNo);
+    var effectKind = oppUi && oppUi.kind ? oppUi.kind : null;
     renderVersusOpponentBoard(oppBoard, {
       skipMeta: true,
       opponentName: versusSession.opponentName,
       updatedAt: at || null,
       effectCardNo: effectCardNo || null,
+      effectKind: effectKind,
       remoteMatch: remoteMatch,
       myRole: versusSession.myRole,
     });
@@ -12259,6 +12628,222 @@ export function mountSimulator(
       versusSession.remoteMatch.status === "playing" &&
       !state.versusMatchEnded
     );
+  }
+
+  var versusLastHandledBoardRequestId = "";
+  var versusApprovalDialogOpenFor = "";
+
+  var VERSUS_SENSITIVE_ACTION_LABELS = {
+    undo: "ひとつ戻る",
+    redo: "ひとつ進む",
+    deck_face_up: "山札を表向きにする",
+    res_deck_top: "デッキ上に戻す",
+    res_deck_shuffle: "戻してシャッフル",
+  };
+
+  function syncVersusDeckFaceLockUi() {
+    var btn = $("btn-deck-face");
+    if (!btn) return;
+    if (versusOnlineActive()) {
+      state.deckPileFacesDown = true;
+      btn.disabled = true;
+      btn.title = "対戦中は山札は常に裏向き（表向きにするには相手の承認が必要）";
+    } else {
+      btn.disabled = false;
+      btn.title = "";
+    }
+  }
+
+  /** @param {*} inst @param {string} kind @param {string} [bodyPlain] @param {string} [title] */
+  function pushLocalVersusEffectUi(inst, kind, bodyPlain, title) {
+    if (!versusOnlineActive() || !versusSession.myRole || !inst) return;
+    var mc = mergedCatalogCard(inst);
+    if (!mc || !mc.card_no) return;
+    pushVersusEffectUi(versusSession.roomCode, versusSession.myRole, {
+      cardNo: String(mc.card_no),
+      instId: inst.id != null ? String(inst.id) : null,
+      kind: kind,
+      title:
+        title ||
+        mergedInstDisplayName(inst) + "の" + abilityKindLabel(kind),
+      bodyPlain: bodyPlain || abilityPlainText(mc) || "",
+    }).catch(function () {
+      /* noop */
+    });
+  }
+
+  function clearLocalVersusEffectUi() {
+    if (!versusOnlineActive() || !versusSession.myRole) return;
+    clearVersusEffectHighlight(versusSession.roomCode, versusSession.myRole).catch(function () {
+      /* noop */
+    });
+  }
+
+  function syncVersusOpponentEffectMirrorDialog(remoteMatch) {
+    var dlg = document.getElementById("dlg-versus-opp-effect");
+    var body = document.getElementById("dlg-versus-opp-effect-body");
+    var titleEl = document.getElementById("dlg-versus-opp-effect-title");
+    if (!dlg || !body || typeof dlg.showModal !== "function") return;
+    if (!versusOnlineActive() || !versusSession.myRole || !remoteMatch) {
+      try {
+        dlg.close();
+      } catch (_) {}
+      return;
+    }
+    var oppRole = versusSession.myRole === "host" ? "guest" : "host";
+    var ui =
+      oppRole === "host" ? remoteMatch.hostEffectUi : remoteMatch.guestEffectUi;
+    if (!ui || !ui.cardNo) {
+      try {
+        dlg.close();
+      } catch (_) {}
+      return;
+    }
+    var oppName = versusOpponentLabel(remoteMatch, versusSession.myRole);
+    if (titleEl) {
+      titleEl.textContent =
+        oppName + " — " + (ui.title || abilityKindLabel(ui.kind) || "効果の処理");
+    }
+    body.textContent = ui.bodyPlain || "（テキストなし）";
+    if (!dlg.open) {
+      try {
+        dlg.showModal();
+      } catch (_) {}
+    }
+  }
+
+  function ensureVersusActionApproveDialogWired() {
+    var dlg = document.getElementById("dlg-versus-action-approve");
+    if (!dlg || dlg.dataset.llocgApproveWired === "1") return;
+    dlg.dataset.llocgApproveWired = "1";
+    var btnYes = document.getElementById("dlg-versus-action-approve-yes");
+    var btnNo = document.getElementById("dlg-versus-action-approve-no");
+    function closeDlg() {
+      try {
+        dlg.close();
+      } catch (_) {}
+      versusApprovalDialogOpenFor = "";
+    }
+    if (btnYes) {
+      btnYes.addEventListener("click", function () {
+        var reqId = dlg.dataset.pendingRequestId || "";
+        if (!versusSession || !versusSession.myRole || !versusSession.roomCode) {
+          closeDlg();
+          return;
+        }
+        respondVersusBoardAction(versusSession.roomCode, versusSession.myRole, true)
+          .catch(function (err) {
+            showToast(String(err && err.message ? err.message : err));
+          })
+          .finally(closeDlg);
+      });
+    }
+    if (btnNo) {
+      btnNo.addEventListener("click", function () {
+        if (!versusSession || !versusSession.myRole || !versusSession.roomCode) {
+          closeDlg();
+          return;
+        }
+        respondVersusBoardAction(versusSession.roomCode, versusSession.myRole, false)
+          .catch(function (err) {
+            showToast(String(err && err.message ? err.message : err));
+          })
+          .finally(closeDlg);
+      });
+    }
+  }
+
+  function openVersusActionApprovalDialog(req, remoteMatch) {
+    ensureVersusActionApproveDialogWired();
+    var dlg = document.getElementById("dlg-versus-action-approve");
+    var lead = document.getElementById("dlg-versus-action-approve-lead");
+    if (!dlg || !lead || !req || req.status !== "pending") return;
+    if (versusApprovalDialogOpenFor === req.id && dlg.open) return;
+    versusApprovalDialogOpenFor = req.id;
+    dlg.dataset.pendingRequestId = req.id;
+    var fromName =
+      req.fromRole === "host"
+        ? remoteMatch.hostName || "ホスト"
+        : remoteMatch.guestName || "ゲスト";
+    var actionLabel = VERSUS_SENSITIVE_ACTION_LABELS[req.action] || req.action;
+    lead.textContent =
+      fromName +
+      " が「" +
+      actionLabel +
+      "」ボタンを使用しました。許可しますか？";
+    try {
+      dlg.showModal();
+    } catch (_) {}
+  }
+
+  function executeVersusApprovedBoardAction(action) {
+    if (action === "undo") {
+      doUndoCore();
+      return;
+    }
+    if (action === "redo") {
+      doRedoCore();
+      return;
+    }
+    if (action === "deck_face_up") {
+      pushHistoryBefore("deck-face-toggle");
+      state.deckPileFacesDown = false;
+      render();
+      showToast("山札を表向きにしました（相手の承認済み）");
+      return;
+    }
+    if (action === "res_deck_top") {
+      executeResToDeckTopCore();
+      return;
+    }
+    if (action === "res_deck_shuffle") {
+      executeResDeckShuffleCore();
+    }
+  }
+
+  function syncVersusBoardActionRequest(remoteMatch) {
+    if (!versusOnlineActive() || !versusSession.myRole || !remoteMatch) return;
+    var req = remoteMatch.boardActionRequest;
+    if (!req || !req.id) return;
+    var myRole = versusSession.myRole;
+    if (req.fromRole === myRole) {
+      if (req.id === versusLastHandledBoardRequestId) return;
+      if (req.status === "approved") {
+        versusLastHandledBoardRequestId = req.id;
+        executeVersusApprovedBoardAction(req.action);
+        clearVersusBoardActionRequest(versusSession.roomCode).catch(function () {
+          /* noop */
+        });
+      } else if (req.status === "denied") {
+        versusLastHandledBoardRequestId = req.id;
+        showToast("相手が操作を拒否しました");
+        clearVersusBoardActionRequest(versusSession.roomCode).catch(function () {
+          /* noop */
+        });
+      }
+      return;
+    }
+    if (req.status === "pending") {
+      openVersusActionApprovalDialog(req, remoteMatch);
+    }
+  }
+
+  /**
+   * @param {import('./versusMatch.js').VersusBoardActionRequest['action']} action
+   * @param {() => void} localExecute
+   */
+  function runVersusSensitiveBoardAction(action, localExecute) {
+    if (!versusOnlineActive() || !versusSession.myRole || !versusSession.roomCode) {
+      localExecute();
+      return;
+    }
+    requestVersusBoardAction(versusSession.roomCode, versusSession.myRole, action)
+      .then(function () {
+        showToast("相手の承認を待っています…", { duration: 4500 });
+      })
+      .catch(function (err) {
+        showToast(String(err && err.message ? err.message : err));
+      });
   }
 
   function versusBlocksFreePlay() {
@@ -13232,6 +13817,20 @@ export function mountSimulator(
   function bootVersusOnlineSyncAfterMount() {
     if (!versusSession || versusSession.mode !== "online" || !versusSession.roomCode) return;
     if (versusMatchUnsub) return;
+    ensureVersusActionApproveDialogWired();
+    syncVersusDeckFaceLockUi();
+    var oppEffClose = document.getElementById("dlg-versus-opp-effect-close");
+    if (oppEffClose && oppEffClose.dataset.llocgWired !== "1") {
+      oppEffClose.dataset.llocgWired = "1";
+      oppEffClose.addEventListener("click", function () {
+        var dlg = document.getElementById("dlg-versus-opp-effect");
+        if (dlg) {
+          try {
+            dlg.close();
+          } catch (_) {}
+        }
+      });
+    }
     versusBootstrapping = false;
     versusPhaseAutoKey = buildVersusPhaseAutoKey(versusSession.remoteMatch);
     if (versusSession.remoteMatch) {
@@ -13299,6 +13898,8 @@ export function mountSimulator(
     syncVersusOppSlDisplay();
     applyVersusOpponentBoardFromRemote(remoteMatch);
     syncVersusOpponentActionFeed(remoteMatch);
+    syncVersusBoardActionRequest(remoteMatch);
+    syncVersusOpponentEffectMirrorDialog(remoteMatch);
     if (remoteMatch.status === "ended" && !state.versusMatchEnded) {
       state.versusMatchEnded = true;
       if (remoteMatch.endedReason === "concede") {
@@ -14223,6 +14824,7 @@ export function mountSimulator(
     fillZone("live-left", state.liveArea.left, null);
     fillZone("live-center", state.liveArea.center, null);
     fillZone("live-right", state.liveArea.right, null);
+    syncPerfNoLivePlaceholders();
     fillZone("zone-preview", state.previewScratch, {});
     var pCatch = $("zone-preview-drop-catcher");
     if (pCatch) pCatch.innerHTML = "";
@@ -14282,6 +14884,7 @@ export function mountSimulator(
     schedulePersistPlayResume();
     scheduleVersusBoardPublicSync();
     repositionEffectDialogResumeChip();
+    syncVersusDeckFaceLockUi();
   }
 
   /**
@@ -14311,7 +14914,7 @@ export function mountSimulator(
     renderNowImpl();
   }
 
-  function doUndo() {
+  function doUndoCore() {
     if (!undoHistory.length) {
       showToast("ひとつ戻せる操作がありません");
       return;
@@ -14327,7 +14930,7 @@ export function mountSimulator(
     showToast("ひとつ戻しました");
   }
 
-  function doRedo() {
+  function doRedoCore() {
     if (!redoHistory.length) {
       showToast("ひとつ進める操作がありません");
       return;
@@ -14341,6 +14944,61 @@ export function mountSimulator(
     logReplay("redo");
     render();
     showToast("ひとつ進めました");
+  }
+
+  function doUndo() {
+    if (!undoHistory.length) {
+      showToast("ひとつ戻せる操作がありません");
+      return;
+    }
+    runVersusSensitiveBoardAction("undo", doUndoCore);
+  }
+
+  function doRedo() {
+    if (!redoHistory.length) {
+      showToast("ひとつ進める操作がありません");
+      return;
+    }
+    runVersusSensitiveBoardAction("redo", doRedoCore);
+  }
+
+  function executeResToDeckTopCore() {
+    if (!state.resolutionArea.length) {
+      showToast("解決エリアが空です");
+      return;
+    }
+    pushHistoryBefore("res-to-deck-top");
+    state.pendingDrawYellHandDraws = 0;
+    var handReturned = harvestDrawYellHandCardsForReturn();
+    var moved = handReturned.concat(state.resolutionArea);
+    state.deck.unshift(...moved);
+    state.resolutionArea = [];
+    var nu = moved.length;
+    var msg = nu + " 枚をデッキの上に戻しました";
+    if (handReturned.length) {
+      msg += "（うち手札に来ていたドロー " + handReturned.length + " 枚を含む）";
+    }
+    showToast(msg);
+    render();
+  }
+
+  function executeResDeckShuffleCore() {
+    if (!state.resolutionArea.length) {
+      showToast("解決エリアが空です");
+      return;
+    }
+    pushHistoryBefore("res-shuffle-in");
+    state.pendingDrawYellHandDraws = 0;
+    var handReturned = harvestDrawYellHandCardsForReturn();
+    state.deck.push(...handReturned, ...state.resolutionArea);
+    state.resolutionArea = [];
+    state.deck = shuffle(state.deck);
+    var msg = "解決をデッキに戻してシャッフルしました";
+    if (handReturned.length) {
+      msg += "（手札のドロー " + handReturned.length + " 枚も一緒に戻しました）";
+    }
+    showToast(msg);
+    render();
   }
 
   function persistSessionTexts() {
@@ -15520,6 +16178,14 @@ export function mountSimulator(
   });
 
   $("btn-deck-face")?.addEventListener("click", function () {
+    if (versusOnlineActive()) {
+      if (!state.deckPileFacesDown) {
+        showToast("対戦中は山札を裏向きのままにしてください");
+        return;
+      }
+      runVersusSensitiveBoardAction("deck_face_up", function () {});
+      return;
+    }
     pushHistoryBefore("deck-face-toggle");
     state.deckPileFacesDown = !state.deckPileFacesDown;
     render();
@@ -15571,20 +16237,9 @@ export function mountSimulator(
       showToast("解決エリアが空です");
       return;
     }
-    pushHistoryBefore("res-to-deck-top");
-    state.pendingDrawYellHandDraws = 0;
-    var handReturned = harvestDrawYellHandCardsForReturn();
-    /** 戻す順: 手札からのドローカード → 解決エリア の順でデッキ上に積み戻す。 */
-    var moved = handReturned.concat(state.resolutionArea);
-    state.deck.unshift(...moved);
-    state.resolutionArea = [];
-    var nu = moved.length;
-    var msg = nu + " 枚をデッキの上に戻しました";
-    if (handReturned.length) {
-      msg += "（うち手札に来ていたドロー " + handReturned.length + " 枚を含む）";
-    }
-    showToast(msg);
-    render();
+    runVersusSensitiveBoardAction("res_deck_top", function () {
+      executeResToDeckTopCore();
+    });
   });
 
   $("btn-res-shuf")?.addEventListener("click", () => {
@@ -15592,18 +16247,9 @@ export function mountSimulator(
       showToast("解決エリアが空です");
       return;
     }
-    pushHistoryBefore("res-shuffle-in");
-    state.pendingDrawYellHandDraws = 0;
-    var handReturned = harvestDrawYellHandCardsForReturn();
-    state.deck.push(...handReturned, ...state.resolutionArea);
-    state.resolutionArea = [];
-    state.deck = shuffle(state.deck);
-    var msg = "解決をデッキに戻してシャッフルしました";
-    if (handReturned.length) {
-      msg += "（手札のドロー " + handReturned.length + " 枚も一緒に戻しました）";
-    }
-    showToast(msg);
-    render();
+    runVersusSensitiveBoardAction("res_deck_shuffle", function () {
+      executeResDeckShuffleCore();
+    });
   });
 
   $("btn-res-wait")?.addEventListener("click", () => {
@@ -15875,6 +16521,19 @@ export function mountSimulator(
   });
 
   $("btn-reset-game")?.addEventListener("click", () => {
+    if (versusOnlineActive() && versusSession.myRole && versusSession.roomCode) {
+      if (
+        !confirm(
+          "盤面リセットは投了と同じ扱いです。投了して相手の勝利にしますか？",
+        )
+      ) {
+        return;
+      }
+      concedeVersusMatch(versusSession.roomCode, versusSession.myRole).catch(function (err) {
+        showToast(String(err.message || err));
+      });
+      return;
+    }
     if (!confirm(
       "盤面をリセットしますか？（デッキは再シャッフル・初手 " +
         OPENING_HAND_SIZE +

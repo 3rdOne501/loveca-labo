@@ -1023,7 +1023,13 @@ function wireAppDialogBackdropClicks() {
           }
           return;
         }
-        if (typeof window.__llocgPeekBoardFromDialog === "function") {
+        if (
+          typeof window.__llocgDialogSupportsBoardPeek === "function" &&
+          window.__llocgDialogSupportsBoardPeek(dlg) &&
+          typeof window.__llocgPeekBoardFromDialog === "function"
+        ) {
+          ev.preventDefault();
+          ev.stopPropagation();
           window.__llocgPeekBoardFromDialog(dlg);
           return;
         }

@@ -52,6 +52,9 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  *   |'toujou_deck_top_wait_if_all_heart'
  *   |'toujou_both_wait_to_empty_stage'
  *   |'optional_self_wait_opp_stage'
+ *   |'toujou_deck_top_liella_live_pick'
+ *   |'live_start_named_member_heart_blades'
+ *   |'live_success_characters_draw'
  *   |'guided_manual'} AbilityTemplate
  */
 
@@ -260,6 +263,18 @@ function classifyOptionalSelfWaitEffect(p, base) {
     });
   }
   var lookN = parseDeckTopCount(p);
+  if (
+    lookN != null &&
+    /見る/.test(p) &&
+    /手札に加/.test(p) &&
+    (/必要ハート/.test(p) || /Liella!/.test(p))
+  ) {
+    return Object.assign(patch, {
+      template: "toujou_deck_top_liella_live_pick",
+      deckTopCount: lookN,
+      filters: parseAbilityPickFilters(p),
+    });
+  }
   if (lookN != null && /見る/.test(p) && /デッキの上|山札の上/.test(p)) {
     return Object.assign(patch, {
       template: "deck_top_look_reorder",
@@ -569,6 +584,38 @@ function parseRequiresSeriesOnStage(p) {
 }
 
 /** @param {string} p @returns {string[]} */
+/**
+ * ライブ開始時「○○1人はheart05…」形式の付与を解析（PL!SP-bp1-024-L 等）
+ * @param {string} p
+ * @param {string} segRaw
+ * @returns {{ name: string, heartSlot: number, count: number }[]}
+ */
+function parseNamedMemberHeartBladeGifts(p, segRaw) {
+  /** @type {{ name: string, heartSlot: number, count: number }[]} */
+  var gifts = [];
+  var chunks = String(p + " " + segRaw).split(/、|,/);
+  chunks.forEach(function (chunk) {
+    var nm = chunk.match(/「([^」]+)」/);
+    if (!nm) return;
+    var slot = 0;
+    if (/heart05|heart_05|h05/i.test(chunk)) slot = 5;
+    else if (/heart01|heart_01|h01/i.test(chunk)) slot = 1;
+    else if (/heart02|heart_02|h02/i.test(chunk)) slot = 2;
+    else if (/heart03|heart_03|h03/i.test(chunk)) slot = 3;
+    else if (/heart04|heart_04|h04/i.test(chunk)) slot = 4;
+    else if (/heart06|heart_06|h06/i.test(chunk)) slot = 6;
+    if (slot > 0) {
+      gifts.push({
+        name: String(nm[1]).trim(),
+        heartSlot: slot,
+        count: 1,
+        grantBlade: /ブレード/.test(chunk),
+      });
+    }
+  });
+  return gifts;
+}
+
 export function parseQuotedCharacterNames(p) {
   /** @type {string[]} */
   var names = [];
@@ -1149,6 +1196,15 @@ export function classifyCardAbility(card, trigger, segmentRawOverride) {
     if (optSelfWaitLsOk) {
       return withTrigger("live_success", Object.assign({}, optSelfWaitLsOk));
     }
+    var charNames = parseQuotedCharacterNames(p);
+    if (charNames.length >= 2 && /ステージに/.test(p) && /カードを(\d+)枚引/.test(p)) {
+      var lsCharDraw = p.match(/カードを(\d+)枚引/);
+      return withTrigger("live_success", {
+        template: "live_success_characters_draw",
+        characterNames: charNames,
+        deckDrawCount: lsCharDraw ? Number(lsCharDraw[1]) : 1,
+      });
+    }
     if (/以下から1つを選ぶ/.test(p)) {
       var lsChoices = parseAbilityBulletChoices(segRaw);
       var boostM = p.match(/成功ライブカード置き場に『([^』]+)』のカードがある場合/);
@@ -1209,6 +1265,18 @@ export function classifyCardAbility(card, trigger, segmentRawOverride) {
 
     var optSelfWaitLs = classifyOptionalSelfWaitEffect(p, base);
     if (optSelfWaitLs) return lsT(optSelfWaitLs);
+
+    if (
+      /ライブ終了時まで/.test(p + segRaw) &&
+      /ステージにいる/.test(p) &&
+      parseNamedMemberHeartBladeGifts(p, segRaw).length > 0
+    ) {
+      return lsT({
+        template: "live_start_named_member_heart_blades",
+        requiresOnStage: true,
+        memberHeartBladeGifts: parseNamedMemberHeartBladeGifts(p, segRaw),
+      });
+    }
 
     var payPickLs = classifyPayEnergyPickOne(card, "live_start");
     if (payPickLs) {
@@ -1551,7 +1619,11 @@ export function abilityEffectIsAutomated(template) {
     template === "toujou_deck_top_wait_if_all_members" ||
     template === "toujou_deck_top_wait_if_all_heart" ||
     template === "toujou_both_wait_to_empty_stage" ||
-    template === "toujou_baton_both_trim_hand_draw"
+    template === "toujou_baton_both_trim_hand_draw" ||
+    template === "optional_self_wait_opp_stage" ||
+    template === "toujou_deck_top_liella_live_pick" ||
+    template === "live_start_named_member_heart_blades" ||
+    template === "live_success_characters_draw"
   );
 }
 

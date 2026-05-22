@@ -68,9 +68,30 @@ const ROOM_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
  * @property {boolean} [successLiveFirstLocked]
  * @property {string|null} [hostEffectCardNo]
  * @property {string|null} [guestEffectCardNo]
+ * @property {VersusEffectUi|null} [hostEffectUi]
+ * @property {VersusEffectUi|null} [guestEffectUi]
+ * @property {VersusBoardActionRequest|null} [boardActionRequest]
  * @property {boolean} [hostOpeningMulliganDone]
  * @property {boolean} [guestOpeningMulliganDone]
  * @property {number} [rematchSeq]
+ */
+
+/**
+ * @typedef {Object} VersusEffectUi
+ * @property {string} cardNo
+ * @property {string|null} [instId]
+ * @property {'toujyou'|'kidou'|'live_start'|'live_success'} kind
+ * @property {string} title
+ * @property {string} bodyPlain
+ */
+
+/**
+ * @typedef {Object} VersusBoardActionRequest
+ * @property {string} id
+ * @property {VersusRole} fromRole
+ * @property {'undo'|'redo'|'deck_face_up'|'res_deck_top'|'res_deck_shuffle'} action
+ * @property {'pending'|'approved'|'denied'} status
+ * @property {string} requestedAt
  */
 
 export function isVersusMatchAvailable() {
@@ -340,6 +361,9 @@ export async function startVersusMatch(roomCode) {
     successLiveFirstLocked: false,
     hostEffectCardNo: null,
     guestEffectCardNo: null,
+    hostEffectUi: null,
+    guestEffectUi: null,
+    boardActionRequest: null,
   });
 }
 
@@ -972,75 +996,134 @@ export async function claimVersusFirstFromSuccessLive(roomCode, role) {
  * @param {VersusRole} role
  * @param {string|null} cardNo
  */
-export async function pushVersusEffectHighlight(roomCode, role, cardNo) {
-  if (!cardNo) return;
+/**
+ * @param {string} roomCode
+ * @param {VersusRole} role
+ * @param {VersusEffectUi|null} ui
+ */
+export async function pushVersusEffectUi(roomCode, role, ui) {
   requireUser();
   const { api } = fs();
   const ref = matchRef(roomCode);
-  const field = role === "host" ? "hostEffectCardNo" : "guestEffectCardNo";
+  const uiField = role === "host" ? "hostEffectUi" : "guestEffectUi";
+  const cardField = role === "host" ? "hostEffectCardNo" : "guestEffectCardNo";
   const actionField = role === "host" ? "hostLastAction" : "guestLastAction";
   try {
+    if (!ui || !ui.cardNo) {
+      await api.updateDoc(ref, {
+        [uiField]: null,
+        [cardField]: null,
+        updatedAt: new Date().toISOString(),
+      });
+      return;
+    }
     await api.updateDoc(ref, {
-      [field]: String(cardNo),
+      [uiField]: ui,
+      [cardField]: String(ui.cardNo),
       [actionField]: "効果発動",
       updatedAt: new Date().toISOString(),
     });
   } catch (err) {
-    console.warn("[versusMatch] effect highlight failed:", err);
+    console.warn("[versusMatch] effect ui push failed:", err);
   }
+}
+
+/** @param {string} roomCode @param {VersusRole} role @param {string|null} cardNo @param {VersusEffectUi|null} [ui] */
+export async function pushVersusEffectHighlight(roomCode, role, cardNo, ui) {
+  if (!cardNo && !ui) return;
+  var payload =
+    ui && ui.cardNo
+      ? ui
+      : {
+          cardNo: String(cardNo),
+          instId: null,
+          kind: "kidou",
+          title: "効果の処理",
+          bodyPlain: "",
+        };
+  await pushVersusEffectUi(roomCode, role, payload);
 }
 
 /** @param {string} roomCode @param {VersusRole} role */
 export async function clearVersusEffectHighlight(roomCode, role) {
+  await pushVersusEffectUi(roomCode, role, null);
+}
+
+function newBoardActionRequestId() {
+  return "req-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
+}
+
+/**
+ * @param {string} roomCode
+ * @param {VersusRole} fromRole
+ * @param {VersusBoardActionRequest['action']} action
+ */
+export async function requestVersusBoardAction(roomCode, fromRole, action) {
   requireUser();
   const { api } = fs();
   const ref = matchRef(roomCode);
-  const field = role === "host" ? "hostEffectCardNo" : "guestEffectCardNo";
+  const snap = await api.getDoc(ref);
+  if (!snap.exists()) throw new Error("ルームが見つかりません。");
+  const cur = /** @type {VersusMatchDoc} */ (snap.data());
+  if (cur.boardActionRequest && cur.boardActionRequest.status === "pending") {
+    throw new Error("相手の承認待ちの操作が残っています。");
+  }
+  const req = {
+    id: newBoardActionRequestId(),
+    fromRole: fromRole,
+    action: action,
+    status: "pending",
+    requestedAt: new Date().toISOString(),
+  };
   try {
     await api.updateDoc(ref, {
-      [field]: null,
+      boardActionRequest: req,
       updatedAt: new Date().toISOString(),
     });
+    return req;
   } catch (err) {
-    console.warn("[versusMatch] clear effect highlight failed:", err);
+    console.warn("[versusMatch] board action request failed:", err);
+    throw err;
   }
 }
 
 /**
- * 効果などで手札に加えたカードを相手画面にも表示する
  * @param {string} roomCode
- * @param {VersusRole} role
- * @param {{ card_no?: string, name?: string }[]} cards
- * @returns {Promise<number>} seq
+ * @param {VersusRole} responderRole
+ * @param {boolean} approved
  */
-export async function pushVersusHandReveal(roomCode, role, cards) {
-  const list = (cards || [])
-    .filter(function (c) {
-      return c && (c.card_no || c.name);
-    })
-    .slice(0, 12)
-    .map(function (c) {
-      return {
-        card_no: String(c.card_no || ""),
-        name: String(c.name || c.card_no || "カード"),
-      };
-    });
-  if (!list.length) return 0;
+export async function respondVersusBoardAction(roomCode, responderRole, approved) {
   requireUser();
   const { api } = fs();
   const ref = matchRef(roomCode);
-  const field = role === "host" ? "hostHandReveal" : "guestHandReveal";
-  const seq = Date.now();
-  const now = new Date().toISOString();
+  const snap = await api.getDoc(ref);
+  if (!snap.exists()) return;
+  const data = /** @type {VersusMatchDoc} */ (snap.data());
+  const req = data.boardActionRequest;
+  if (!req || req.status !== "pending") return;
+  if (req.fromRole === responderRole) {
+    throw new Error("自分のリクエストには応答できません。");
+  }
+  await api.updateDoc(ref, {
+    boardActionRequest: Object.assign({}, req, {
+      status: approved ? "approved" : "denied",
+    }),
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+/** @param {string} roomCode */
+export async function clearVersusBoardActionRequest(roomCode) {
+  requireUser();
+  const { api } = fs();
+  const ref = matchRef(roomCode);
   try {
     await api.updateDoc(ref, {
-      [field]: { seq: seq, at: now, cards: list },
-      updatedAt: now,
+      boardActionRequest: null,
+      updatedAt: new Date().toISOString(),
     });
-    return seq;
   } catch (err) {
-    console.warn("[versusMatch] hand reveal failed:", err);
-    return 0;
+    console.warn("[versusMatch] clear board action request failed:", err);
   }
 }
 
@@ -1099,6 +1182,9 @@ export async function resetVersusMatchForNextGame(roomCode) {
     successLiveFirstLocked: false,
     hostEffectCardNo: null,
     guestEffectCardNo: null,
+    hostEffectUi: null,
+    guestEffectUi: null,
+    boardActionRequest: null,
   });
 }
 

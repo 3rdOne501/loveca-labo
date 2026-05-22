@@ -11,6 +11,8 @@ import {
   heartSlotArtIconHtml,
 } from "./bladeHeart.js";
 import { showToast } from "./ui.js";
+import { boardMemberEffectIconHtml } from "./gameStatusIcons.js";
+import { getVersusLiveStep } from "./versusMatch.js";
 
 export const VERSUS_BOARD_PUBLIC_V = 1;
 
@@ -545,6 +547,14 @@ function resolveCardImg(c) {
  * @param {VersusPublicCard} c
  * @param {{ forceLiveHorizontal?: boolean }} [opts]
  */
+function effectGlowClassForKind(kind) {
+  if (kind === "toujyou") return "card-item--play-toujou-glow";
+  if (kind === "kidou") return "card-item--play-kidou-glow";
+  if (kind === "live_start") return "card-item--play-live-start-glow";
+  if (kind === "live_success") return "card-item--play-live-success-glow";
+  return "card-item--play-kidou-glow";
+}
+
 function appendOppCardItem(container, c, opts) {
   opts = opts || {};
   const div = document.createElement("div");
@@ -583,6 +593,26 @@ function appendOppCardItem(container, c, opts) {
   }
   artWrap.appendChild(img);
   div.appendChild(artWrap);
+
+  var isEffectCard =
+    opts.effectCardNo &&
+    c.card_no &&
+    String(c.card_no) === String(opts.effectCardNo);
+  if (isEffectCard && opts.effectKind) {
+    div.classList.add("versus-opp-card--effect");
+    var glowCls = effectGlowClassForKind(opts.effectKind);
+    if (glowCls) div.classList.add(glowCls);
+    var iconKey = opts.effectKind;
+    var iconHtml = boardMemberEffectIconHtml(iconKey, iconKey);
+    if (iconHtml) {
+      var iconHost = document.createElement("div");
+      iconHost.className =
+        "card-effect-icon-host card-effect-icon-host--opp-top card-effect-icon-glow--" +
+        String(iconKey);
+      iconHost.innerHTML = iconHtml;
+      div.appendChild(iconHost);
+    }
+  }
 
   if ((isMember || isEnergy) && !c.hiddenFace) {
     var bar = document.createElement("div");
@@ -670,6 +700,35 @@ function escapeHtmlPlain(s) {
 }
 
 /** @param {VersusPublicBoard|null|undefined} board */
+/** @param {VersusPublicBoard|null|undefined} board */
+function countLiveCardsInPublicBoard(board) {
+  if (!board || !board.liveArea) return 0;
+  var n = 0;
+  ["left", "center", "right"].forEach(function (side) {
+    (board.liveArea[side] || []).forEach(function (c) {
+      if (c && (c.type === T_LIVE || c.type === "ライブ")) n++;
+    });
+  });
+  return n;
+}
+
+function syncVersusOppPerfNoLivePlaceholder(board, remoteMatch) {
+  document
+    .querySelectorAll("#versus-opponent-board .live-slot-no-live-placeholder")
+    .forEach(function (el) {
+      el.remove();
+    });
+  if (!remoteMatch || getVersusLiveStep(remoteMatch) !== "perf") return;
+  if (countLiveCardsInPublicBoard(board) > 0) return;
+  var center = document.getElementById("versus-opp-live-center");
+  if (!center) return;
+  var ph = document.createElement("div");
+  ph.className = "live-slot-no-live-placeholder";
+  ph.textContent = "ライブなし";
+  ph.setAttribute("aria-live", "polite");
+  center.appendChild(ph);
+}
+
 function oppLiveFaceUpInFrames(board) {
   if (!board || !board.liveArea) return 0;
   const liveMode = board.livePublicMode || (board.liveRevealed ? "revealed" : "hidden");
@@ -990,7 +1049,7 @@ function fillOppSecretHand(strip, handCount) {
 
 /**
  * @param {VersusPublicBoard|null} board
- * @param {{ opponentName?: string, updatedAt?: string|null, skipMeta?: boolean }} [opts]
+ * @param {{ opponentName?: string, updatedAt?: string|null, skipMeta?: boolean, effectCardNo?: string|null, effectKind?: string|null, remoteMatch?: import('./versusMatch.js').VersusMatchDoc|null, myRole?: 'host'|'guest'|null }} [opts]
  */
 export function renderVersusOpponentBoard(board, opts) {
   const wrap = document.getElementById("versus-opponent-board-wrap");
@@ -1072,9 +1131,6 @@ export function renderVersusOpponentBoard(board, opts) {
   fillOppStrip(document.getElementById("versus-opp-zone-resolution"), board.resolutionArea);
   fillOppStrip(document.getElementById("versus-opp-zone-sl"), board.successfulLiveArea);
   fillOppStrip(document.getElementById("versus-opp-zone-energy"), board.energyArea);
-  fillOppStrip(document.getElementById("versus-opp-stage-left"), board.stage.left);
-  fillOppStrip(document.getElementById("versus-opp-stage-center"), board.stage.center);
-  fillOppStrip(document.getElementById("versus-opp-stage-right"), board.stage.right);
   const liveMode = board.livePublicMode || (board.liveRevealed ? "revealed" : "hidden");
   const liveRenderOpts =
     liveMode === "revealed"
@@ -1082,13 +1138,30 @@ export function renderVersusOpponentBoard(board, opts) {
       : liveMode === "set"
         ? { forceSetMode: true }
         : { forceLiveHorizontal: true };
-  fillOppStrip(document.getElementById("versus-opp-live-left"), board.liveArea.left, liveRenderOpts);
+  var effectCardNo = opts && opts.effectCardNo ? String(opts.effectCardNo) : "";
+  var effectKind = opts && opts.effectKind ? String(opts.effectKind) : "";
+  var effectOpts =
+    effectCardNo && effectKind
+      ? { effectCardNo: effectCardNo, effectKind: effectKind }
+      : {};
+  function withEffectOpts(base) {
+    return Object.assign({}, base || {}, effectOpts);
+  }
+  fillOppStrip(document.getElementById("versus-opp-live-left"), board.liveArea.left, withEffectOpts(liveRenderOpts));
   fillOppStrip(
     document.getElementById("versus-opp-live-center"),
     board.liveArea.center,
-    liveRenderOpts,
+    withEffectOpts(liveRenderOpts),
   );
-  fillOppStrip(document.getElementById("versus-opp-live-right"), board.liveArea.right, liveRenderOpts);
+  fillOppStrip(
+    document.getElementById("versus-opp-live-right"),
+    board.liveArea.right,
+    withEffectOpts(liveRenderOpts),
+  );
+  fillOppStrip(document.getElementById("versus-opp-stage-left"), board.stage.left, effectOpts);
+  fillOppStrip(document.getElementById("versus-opp-stage-center"), board.stage.center, effectOpts);
+  fillOppStrip(document.getElementById("versus-opp-stage-right"), board.stage.right, effectOpts);
+  syncVersusOppPerfNoLivePlaceholder(board, opts && opts.remoteMatch);
 
   wireVersusOpponentZoneInspect(board, opts);
   syncVersusOppVoidWaitingColors(board);

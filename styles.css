@@ -917,6 +917,45 @@ body.play-versus-mode .versus-opp-zone-clickable:hover {
   outline: 1px solid rgba(160, 200, 255, 0.45);
   outline-offset: 1px;
 }
+body.play-versus-mode .versus-opponent-board .card-item.card-item--play-kidou-glow .card-img,
+body.play-versus-mode .versus-opponent-board .card-item.card-item--play-toujou-glow .card-img,
+body.play-versus-mode .versus-opponent-board .card-item.card-item--play-live-start-glow .card-img,
+body.play-versus-mode .versus-opponent-board .card-item.card-item--play-live-success-glow .card-img {
+  box-shadow:
+    0 0 16px rgba(255, 218, 140, 0.55),
+    0 0 32px rgba(255, 185, 105, 0.28);
+}
+body.play-versus-mode .versus-opponent-board .card-effect-icon-host--opp-top {
+  position: absolute;
+  top: -2.1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 8;
+  pointer-events: none;
+}
+body.play-versus-mode .versus-opponent-board .card-item {
+  position: relative;
+}
+.dlg-versus-opp-effect-body {
+  max-height: min(52vh, 420px);
+  overflow: auto;
+  white-space: pre-wrap;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  margin: 0.5rem 0 0;
+}
+.dlg-versus-action-approve-lead {
+  margin: 0.35rem 0 0.75rem;
+  line-height: 1.5;
+}
+body.play-versus-mode #btn-deck-face:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+body.play-versus-mode #btn-res-top.versus-needs-approval,
+body.play-versus-mode #btn-res-shuf.versus-needs-approval {
+  outline: 1px dashed rgba(255, 200, 120, 0.55);
+}
 body.play-versus-mode .versus-opponent-board .card-item.versus-opp-card--effect {
   box-shadow:
     0 0 12px rgba(255, 220, 120, 0.85),
@@ -4120,6 +4159,28 @@ body.play-mode #live-row .slot-wrap {
 }
 body.play-mode #live-row .slot-wrap--live-center {
   align-items: stretch;
+}
+
+.live-slot-no-live-placeholder {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 4;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #fcdcec;
+  background: rgba(18, 10, 28, 0.82);
+  border: 1px solid rgba(255, 180, 220, 0.35);
+  pointer-events: none;
+  white-space: nowrap;
+}
+body.play-mode #live-center.live-slot,
+body.play-versus-mode #versus-opp-live-center.live-slot {
+  position: relative;
 }
 
 /* ライブ中央列: スコア表示（ライブ開始後） */
