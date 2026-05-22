@@ -96,6 +96,7 @@ import {
   requestVersusBoardAction,
   respondVersusBoardAction,
   clearVersusBoardActionRequest,
+  rollbackVersusMatchState,
   pushVersusPublicState,
   describeVersusFlowForRole,
   getVersusLiveStep,
@@ -231,6 +232,10 @@ function matchesPlayPortraitLayout() {
 /** @type {{ t: string, act: string, meta?: object }[]} */
 let replayLog = [];
 let undoHistory = [];
+/** @type {Record<string, unknown>[]} 対戦フェイズ／手番の巻き戻し用（undoHistory と同期） */
+let versusMatchUndoStack = [];
+/** @type {Record<string, unknown>[]} */
+let versusMatchRedoStack = [];
 /** @type {ReturnType<typeof setTimeout> | null} */
 var liveSuccessEffectScheduleTimer = null;
 /** ライブ成功誘発を一度スケジュール済みの判定指紋（Undo でクリア） */
@@ -323,6 +328,8 @@ function bootstrapReplayStacks() {
   replayLog = [];
   undoHistory = [];
   redoHistory = [];
+  versusMatchUndoStack = [];
+  versusMatchRedoStack = [];
 }
 
 function nextId(prefix) {
@@ -434,9 +441,11 @@ function logReplay(act, meta) {
 
 function trimUndo() {
   while (undoHistory.length > HISTORY_MAX_STEPS) undoHistory.shift();
+  while (versusMatchUndoStack.length > HISTORY_MAX_STEPS) versusMatchUndoStack.shift();
 }
 function trimRedo() {
   while (redoHistory.length > HISTORY_MAX_STEPS) redoHistory.shift();
+  while (versusMatchRedoStack.length > HISTORY_MAX_STEPS) versusMatchRedoStack.shift();
 }
 
 export function mountSimulator(
@@ -6527,10 +6536,142 @@ export function mountSimulator(
     } catch (_) {}
   }
 
+  function snapshotVersusMatchForUndo() {
+    var m = versusSession && versusSession.remoteMatch;
+    if (!m || !versusMatchPhaseActive()) return null;
+    return {
+      versusPhase: normalizeVersusPhase(m),
+      activePlayerRole:
+        m.activePlayerRole === "host" || m.activePlayerRole === "guest"
+          ? m.activePlayerRole
+          : null,
+      liveStep:
+        m.liveStep === "set" ||
+        m.liveStep === "perf" ||
+        m.liveStep === "judgment" ||
+        m.liveStep === "successFx"
+          ? m.liveStep
+          : null,
+      turnNumber: Math.max(1, Math.floor(Number(m.turnNumber) || 1)),
+      hostLiveSetDone: m.hostLiveSetDone === true,
+      guestLiveSetDone: m.guestLiveSetDone === true,
+      hostPerfDone: m.hostPerfDone === true,
+      guestPerfDone: m.guestPerfDone === true,
+      hostSuccessFxDone: m.hostSuccessFxDone === true,
+      guestSuccessFxDone: m.guestSuccessFxDone === true,
+      hostLivePerfScore: Number.isFinite(Number(m.hostLivePerfScore))
+        ? Math.max(0, Math.floor(Number(m.hostLivePerfScore)))
+        : null,
+      guestLivePerfScore: Number.isFinite(Number(m.guestLivePerfScore))
+        ? Math.max(0, Math.floor(Number(m.guestLivePerfScore)))
+        : null,
+      hostLiveVerdict:
+        m.hostLiveVerdict === "success" || m.hostLiveVerdict === "fail"
+          ? m.hostLiveVerdict
+          : "none",
+      guestLiveVerdict:
+        m.guestLiveVerdict === "success" || m.guestLiveVerdict === "fail"
+          ? m.guestLiveVerdict
+          : "none",
+      hostLiveHadCards: m.hostLiveHadCards === true,
+      guestLiveHadCards: m.guestLiveHadCards === true,
+      liveJudgmentOutcome:
+        m.liveJudgmentOutcome === "hostWin" ||
+        m.liveJudgmentOutcome === "guestWin" ||
+        m.liveJudgmentOutcome === "draw"
+          ? m.liveJudgmentOutcome
+          : null,
+      liveJudgmentSeq: Math.max(0, Math.floor(Number(m.liveJudgmentSeq) || 0)),
+      hostOpeningMulliganDone: m.hostOpeningMulliganDone === true,
+      guestOpeningMulliganDone: m.guestOpeningMulliganDone === true,
+    };
+  }
+
+  function pushVersusMatchUndoSnap() {
+    if (!versusMatchPhaseActive()) return;
+    var snap = snapshotVersusMatchForUndo();
+    if (!snap) return;
+    versusMatchUndoStack.push(snap);
+    while (versusMatchUndoStack.length > HISTORY_MAX_STEPS) versusMatchUndoStack.shift();
+  }
+
+  /** @param {Record<string, unknown>|null|undefined} snap @param {{ skipRoleSwitch?: boolean }} [opts] */
+  function applyVersusMatchUndoSnap(snap, opts) {
+    if (!snap || !versusSession) return;
+    patchLocalVersusRemoteMatch(snap);
+    var m = versusSession.remoteMatch;
+    if (!m) return;
+    applyVersusPhaseFromRemote(m);
+    updateVersusTurnGlow(m);
+    syncVersusMatchBar(m);
+    syncVersusPhaseLiveBanner(m);
+    syncVersusTurnStartButton(m);
+    syncVersusLocalDualEndSwitchButton(m);
+    if (opts && opts.skipRoleSwitch) return;
+    if (versusLocalDualActive() && (snap.activePlayerRole === "host" || snap.activePlayerRole === "guest")) {
+      switchVersusLocalDualToRole(snap.activePlayerRole, { preserveUndoStacks: true });
+    } else if (versusLocalDualActive()) {
+      forceVersusLocalDualBoardSwitchToActive();
+    }
+  }
+
+  /**
+   * @param {'host'|'guest'} next
+   * @param {{ preserveUndoStacks?: boolean }} [opts]
+   */
+  function switchVersusLocalDualToRoleForUndo(next, opts) {
+    if (!versusDualBoardActive() || state.versusMatchEnded) return;
+    if (next !== "host" && next !== "guest") return;
+    if (versusSession.activeRole === next) return;
+    persistVersusLocalDualActiveBoard();
+    versusSession.activeRole = next;
+    versusSession.myRole = next;
+    state.versusMyRole = next;
+    versusSession.opponentName = versusLocalDualRoleLabel(versusLocalDualInactiveRole());
+    if (!(opts && opts.preserveUndoStacks)) {
+      undoHistory.length = 0;
+      redoHistory.length = 0;
+      versusMatchUndoStack.length = 0;
+      versusMatchRedoStack.length = 0;
+    }
+    applyVersusLocalDualRoleMeta(next);
+    versusOpponentBoardFp = "";
+    syncVersusLocalDualChrome();
+    if (versusLocalDualActive() && versusSession.remoteMatch) {
+      syncVersusFirstPlayerSelect(versusSession.remoteMatch);
+      syncVersusPhaseLiveBanner(versusSession.remoteMatch);
+      syncVersusTurnStartButton(versusSession.remoteMatch);
+      updateVersusTurnGlow(versusSession.remoteMatch);
+    }
+  }
+
+  /** @param {Record<string, unknown>|null|undefined} beforeSnap @param {Record<string, unknown>|null|undefined} afterSnap */
+  function versusMatchUndoCrossedBoundary(beforeSnap, afterSnap) {
+    if (!beforeSnap || !afterSnap) return false;
+    return (
+      beforeSnap.activePlayerRole !== afterSnap.activePlayerRole ||
+      beforeSnap.versusPhase !== afterSnap.versusPhase ||
+      beforeSnap.liveStep !== afterSnap.liveStep ||
+      beforeSnap.turnNumber !== afterSnap.turnNumber
+    );
+  }
+
+  function syncVersusMatchUndoToRemote(snap) {
+    if (!versusOnlineActive() || !versusSession.roomCode || !snap) return Promise.resolve();
+    return rollbackVersusMatchState(versusSession.roomCode, snap).catch(function (err) {
+      console.warn("[versus] match undo sync failed:", err);
+      showToast("フェイズの同期に失敗しました: " + (err && err.message ? err.message : String(err)), {
+        duration: 5000,
+      });
+    });
+  }
+
   function pushHistoryBefore(act) {
     undoHistory.push(snapshotBoard());
     trimUndo();
     redoHistory.length = 0;
+    versusMatchRedoStack.length = 0;
+    pushVersusMatchUndoSnap();
     logReplay(act || "action");
   }
 
@@ -12737,8 +12878,8 @@ export function mountSimulator(
     syncVersusDualBoardSwitchButton();
   }
 
-  /** @param {'host'|'guest'} next */
-  function switchVersusLocalDualToRole(next) {
+  /** @param {'host'|'guest'} next @param {{ preserveUndoStacks?: boolean }} [opts] */
+  function switchVersusLocalDualToRole(next, opts) {
     if (!versusDualBoardActive() || state.versusMatchEnded) return;
     if (next !== "host" && next !== "guest") return;
     if (versusSession.activeRole === next) return;
@@ -12752,8 +12893,12 @@ export function mountSimulator(
       showToast("盤面を読み込めませんでした");
       return;
     }
-    undoHistory.length = 0;
-    redoHistory.length = 0;
+    if (!(opts && opts.preserveUndoStacks)) {
+      undoHistory.length = 0;
+      redoHistory.length = 0;
+      versusMatchUndoStack.length = 0;
+      versusMatchRedoStack.length = 0;
+    }
     applyBoard(snap);
     applyVersusLocalDualRoleMeta(next);
     versusOpponentBoardFp = "";
@@ -14188,6 +14333,8 @@ export function mountSimulator(
   function resetLocalVersusBoardForRematch() {
     undoHistory.length = 0;
     redoHistory.length = 0;
+    versusMatchUndoStack.length = 0;
+    versusMatchRedoStack.length = 0;
     versusNormalAutoKey = "";
     versusMulliganUiKey = "";
     versusMulliganCommitPending = false;
@@ -14947,6 +15094,7 @@ export function mountSimulator(
       showToast("あなたのターンではありません");
       return;
     }
+    pushHistoryBefore("versus-turn-end");
     if (versusLocalDualMatchActive()) {
       persistVersusLocalDualActiveBoard();
       var mBeforeLocal = versusSession.remoteMatch;
@@ -16159,13 +16307,56 @@ export function mountSimulator(
     }
     clearLiveSuccessEffectSchedule();
     lastLiveSuccessOrchestrateFp = "";
+    var matchBeforeUndo = snapshotVersusMatchForUndo();
+    while (versusMatchUndoStack.length > undoHistory.length) versusMatchUndoStack.pop();
     redoHistory.push(snapshotBoard());
-    trimRedo();
-    applyBoard(undoHistory.pop());
+    if (versusMatchPhaseActive()) {
+      var curMatchRedo = snapshotVersusMatchForUndo();
+      if (curMatchRedo) versusMatchRedoStack.push(curMatchRedo);
+      trimRedo();
+    } else {
+      trimRedo();
+    }
+    var matchSnap =
+      versusMatchPhaseActive() && versusMatchUndoStack.length
+        ? versusMatchUndoStack.pop()
+        : null;
+    var boardSnap = undoHistory.pop();
+    var crossed = false;
+    if (versusMatchPhaseActive() && matchSnap) {
+      crossed = versusMatchUndoCrossedBoundary(matchSnap, matchBeforeUndo);
+      var undoRole =
+        matchSnap.activePlayerRole === "host" || matchSnap.activePlayerRole === "guest"
+          ? matchSnap.activePlayerRole
+          : null;
+      if (
+        versusLocalDualActive() &&
+        undoRole &&
+        versusSession.activeRole !== undoRole
+      ) {
+        switchVersusLocalDualToRoleForUndo(undoRole, { preserveUndoStacks: true });
+      }
+      applyBoard(boardSnap);
+      applyVersusMatchUndoSnap(matchSnap, { skipRoleSwitch: true });
+      syncVersusMatchUndoToRemote(matchSnap);
+    } else {
+      applyBoard(boardSnap);
+    }
     persistSessionTexts();
     logReplay("undo");
     render();
-    showToast("ひとつ戻しました");
+    if (crossed && versusSession && versusSession.remoteMatch) {
+      var playRole = getVersusPlayRole();
+      var flowDesc = playRole
+        ? describeVersusFlowForRole(versusSession.remoteMatch, playRole)
+        : "";
+      showToast(
+        "ひとつ戻しました（ターン／フェイズを巻き戻し" + (flowDesc ? "：" + flowDesc : "") + "）",
+        { duration: 5200 },
+      );
+    } else {
+      showToast("ひとつ戻しました");
+    }
   }
 
   function doRedoCore() {
@@ -16175,13 +16366,50 @@ export function mountSimulator(
     }
     clearLiveSuccessEffectSchedule();
     lastLiveSuccessOrchestrateFp = "";
+    var matchBeforeRedo = snapshotVersusMatchForUndo();
     undoHistory.push(snapshotBoard());
+    pushVersusMatchUndoSnap();
     trimUndo();
-    applyBoard(redoHistory.pop());
+    var matchSnap =
+      versusMatchPhaseActive() && versusMatchRedoStack.length
+        ? versusMatchRedoStack.pop()
+        : null;
+    var boardSnapRedo = redoHistory.pop();
+    var crossed = false;
+    if (versusMatchPhaseActive() && matchSnap) {
+      crossed = versusMatchUndoCrossedBoundary(matchSnap, matchBeforeRedo);
+      var redoRole =
+        matchSnap.activePlayerRole === "host" || matchSnap.activePlayerRole === "guest"
+          ? matchSnap.activePlayerRole
+          : null;
+      if (
+        versusLocalDualActive() &&
+        redoRole &&
+        versusSession.activeRole !== redoRole
+      ) {
+        switchVersusLocalDualToRoleForUndo(redoRole, { preserveUndoStacks: true });
+      }
+      applyBoard(boardSnapRedo);
+      applyVersusMatchUndoSnap(matchSnap, { skipRoleSwitch: true });
+      syncVersusMatchUndoToRemote(matchSnap);
+    } else {
+      applyBoard(boardSnapRedo);
+    }
     persistSessionTexts();
     logReplay("redo");
     render();
-    showToast("ひとつ進めました");
+    if (crossed && versusSession && versusSession.remoteMatch) {
+      var playRoleRedo = getVersusPlayRole();
+      var flowDescRedo = playRoleRedo
+        ? describeVersusFlowForRole(versusSession.remoteMatch, playRoleRedo)
+        : "";
+      showToast(
+        "ひとつ進めました（ターン／フェイズを進め直し" + (flowDescRedo ? "：" + flowDescRedo : "") + "）",
+        { duration: 5200 },
+      );
+    } else {
+      showToast("ひとつ進めました");
+    }
   }
 
   function doUndo() {

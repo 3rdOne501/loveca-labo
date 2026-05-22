@@ -1211,6 +1211,87 @@ export async function clearVersusBoardActionRequest(roomCode) {
   }
 }
 
+/**
+ * ひとつ戻るに伴う共有マッチ状態の巻き戻し（両者同期用）
+ * @param {string} roomCode
+ * @param {Record<string, unknown>} snap
+ */
+export async function rollbackVersusMatchState(roomCode, snap) {
+  requireUser();
+  if (!snap || typeof snap !== "object") return;
+  const { api } = fs();
+  const ref = matchRef(roomCode);
+  const snapRef = /** @type {Record<string, unknown>} */ (snap);
+  /** @type {Record<string, unknown>} */
+  const patch = {
+    updatedAt: new Date().toISOString(),
+  };
+  if (snapRef.versusPhase != null) patch.versusPhase = snapRef.versusPhase;
+  if (snapRef.activePlayerRole === "host" || snapRef.activePlayerRole === "guest") {
+    patch.activePlayerRole = snapRef.activePlayerRole;
+  }
+  if (snapRef.liveStep === null) patch.liveStep = null;
+  else if (
+    snapRef.liveStep === "set" ||
+    snapRef.liveStep === "perf" ||
+    snapRef.liveStep === "judgment" ||
+    snapRef.liveStep === "successFx"
+  ) {
+    patch.liveStep = snapRef.liveStep;
+  }
+  if (Number.isFinite(Number(snapRef.turnNumber))) {
+    patch.turnNumber = Math.max(1, Math.floor(Number(snapRef.turnNumber)));
+  }
+  if (typeof snapRef.hostLiveSetDone === "boolean") patch.hostLiveSetDone = snapRef.hostLiveSetDone;
+  if (typeof snapRef.guestLiveSetDone === "boolean") patch.guestLiveSetDone = snapRef.guestLiveSetDone;
+  if (typeof snapRef.hostPerfDone === "boolean") patch.hostPerfDone = snapRef.hostPerfDone;
+  if (typeof snapRef.guestPerfDone === "boolean") patch.guestPerfDone = snapRef.guestPerfDone;
+  if (typeof snapRef.hostSuccessFxDone === "boolean") {
+    patch.hostSuccessFxDone = snapRef.hostSuccessFxDone;
+  }
+  if (typeof snapRef.guestSuccessFxDone === "boolean") {
+    patch.guestSuccessFxDone = snapRef.guestSuccessFxDone;
+  }
+  if (snapRef.hostLivePerfScore === null) patch.hostLivePerfScore = null;
+  else if (Number.isFinite(Number(snapRef.hostLivePerfScore))) {
+    patch.hostLivePerfScore = Math.max(0, Math.floor(Number(snapRef.hostLivePerfScore)));
+  }
+  if (snapRef.guestLivePerfScore === null) patch.guestLivePerfScore = null;
+  else if (Number.isFinite(Number(snapRef.guestLivePerfScore))) {
+    patch.guestLivePerfScore = Math.max(0, Math.floor(Number(snapRef.guestLivePerfScore)));
+  }
+  if (snapRef.hostLiveVerdict === "none" || snapRef.hostLiveVerdict === "success" || snapRef.hostLiveVerdict === "fail") {
+    patch.hostLiveVerdict = snapRef.hostLiveVerdict;
+  }
+  if (snapRef.guestLiveVerdict === "none" || snapRef.guestLiveVerdict === "success" || snapRef.guestLiveVerdict === "fail") {
+    patch.guestLiveVerdict = snapRef.guestLiveVerdict;
+  }
+  if (typeof snapRef.hostLiveHadCards === "boolean") patch.hostLiveHadCards = snapRef.hostLiveHadCards;
+  if (typeof snapRef.guestLiveHadCards === "boolean") patch.guestLiveHadCards = snapRef.guestLiveHadCards;
+  if (snapRef.liveJudgmentOutcome === null) patch.liveJudgmentOutcome = null;
+  else if (
+    snapRef.liveJudgmentOutcome === "hostWin" ||
+    snapRef.liveJudgmentOutcome === "guestWin" ||
+    snapRef.liveJudgmentOutcome === "draw"
+  ) {
+    patch.liveJudgmentOutcome = snapRef.liveJudgmentOutcome;
+  }
+  if (Number.isFinite(Number(snapRef.liveJudgmentSeq))) {
+    patch.liveJudgmentSeq = Math.max(0, Math.floor(Number(snapRef.liveJudgmentSeq)));
+  }
+  if (typeof snapRef.hostOpeningMulliganDone === "boolean") {
+    patch.hostOpeningMulliganDone = snapRef.hostOpeningMulliganDone;
+  }
+  if (typeof snapRef.guestOpeningMulliganDone === "boolean") {
+    patch.guestOpeningMulliganDone = snapRef.guestOpeningMulliganDone;
+  }
+  try {
+    await api.updateDoc(ref, patch);
+  } catch (err) {
+    throw new Error(formatVersusFirestoreError(err));
+  }
+}
+
 /** @param {string} roomCode @param {VersusRole} role */
 /**
  * 投了後の次ゲーム準備（ホストのみ・6.2.1.4〜6 相当の開幕前まで）
