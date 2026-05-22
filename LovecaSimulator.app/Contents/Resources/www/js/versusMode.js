@@ -1,5 +1,5 @@
 /**
- * 対戦モード（簡易＝Firestore 不要 / オンライン＝任意で Firestore）
+ * 対戦モード（一人二役＝Firestore 不要 / オンライン＝任意で Firestore）
  */
 import {
   getCurrentCloudUser,
@@ -10,6 +10,7 @@ import {
 } from "./cloudAuth.js";
 import { showToast } from "./ui.js";
 import {
+  STORAGE_ACTIVE_PRESET_ID,
   STORAGE_PLAY_RESUME,
   STORAGE_VERSUS_LAST_ROOM,
   STORAGE_VERSUS_ONLINE_SESSION,
@@ -27,7 +28,13 @@ import {
   versusOpponentLabel,
   versusRoleForUid,
 } from "./versusMatch.js";
-import { deckMapFromVersusMatchField, normalizeDeckMapCounts } from "./deckLibrary.js";
+import {
+  deckMapFromVersusMatchField,
+  isBuiltInStarterDeckId,
+  loadDeckLibrary,
+  normalizeDeckMapCounts,
+} from "./deckLibrary.js";
+import { getSampleDeckRecipes } from "./sampleDeckRecipes.js";
 import { ensureGoogleSession } from "./cloudAuth.js";
 
 /** @typedef {(payload: object) => void} VersusPlayStartFn */
@@ -37,6 +44,16 @@ import { ensureGoogleSession } from "./cloudAuth.js";
 let onEnterVersusPlay = null;
 /** @type {GetDeckMapFn|null} */
 let getCurrentDeckMap = null;
+
+/** @type {'localPractice'|'localDual'} */
+let selectedSoloDualMode = "localPractice";
+
+var SOLO_DUAL_MODE_HINTS = {
+  localPractice:
+    "ソロプレイのように自由に操作できます。画面上部の「〇〇に切替」でいつでも上下の盤面を入れ替えられます（ターン・フェイズの厳密管理なし）。",
+  localDual:
+    "対戦モードと同じフェイズ進行です。「ターン終了して〇〇に切り替え」で手番と盤面が切り替わります（手札・ライブは全面公開）。",
+};
 
 /** @type {(() => void)|null} */
 let activeUnsub = null;
@@ -206,6 +223,7 @@ export function forgetVersusRoomPersistence() {
     if (typeof window !== "undefined") {
       delete window.__llocgVersusPendingLobbyRoom;
       delete window.__llocgVersusAutoEnterPending;
+      delete window.__llocgVersusLobbyAutoEnterSeq;
     }
   } catch (_) {
     /* noop */
@@ -245,6 +263,8 @@ function openVersusLobbyDialog() {
     delete window.__llocgVersusPendingLobbyRoom;
   }
   setOnlineSectionVisible();
+  refreshVersusLocalDualDeckSelect();
+  refreshVersusSoloModePick();
   try {
     if (dlg.open) {
       dlg.focus();
@@ -266,42 +286,57 @@ function setLobbyRoomCode(code) {
   if (disp) disp.textContent = code || "——";
 }
 
+function isVersusPlayScreenMounted() {
+  try {
+    return !!(
+      typeof window !== "undefined" &&
+      window.__llocgVersusPlayMounted &&
+      !document.getElementById("view-game")?.hidden
+    );
+  } catch (_) {
+    return false;
+  }
+}
+
 function updateVersusLobbyButtons(match, myRole) {
   var btnCreate = el("dlg-versus-create");
   var btnJoin = el("dlg-versus-join");
   var btnReady = el("dlg-versus-ready");
   var btnStart = el("dlg-versus-start");
-  var btnEnter = el("dlg-versus-enter-play");
-  var btnRejoin = el("dlg-versus-rejoin-room");
+  var btnOpenPlay = el("dlg-versus-open-play");
   if (!match || !myRole) {
     if (btnCreate) btnCreate.hidden = false;
     if (btnJoin) btnJoin.hidden = false;
     if (btnReady) btnReady.hidden = true;
     if (btnStart) btnStart.hidden = true;
-    if (btnEnter) btnEnter.hidden = true;
-    if (btnRejoin) btnRejoin.hidden = true;
+    if (btnOpenPlay) btnOpenPlay.hidden = true;
     return;
   }
   var u = getCurrentCloudUser();
   var isHost = myRole === "host";
   var inRoom = !!(match && myRole && u);
+  var inLobby = match.status === "lobby" || match.status === "waiting";
   if (btnCreate) btnCreate.hidden = inRoom;
   if (btnJoin) btnJoin.hidden = inRoom;
   if (btnReady) {
-    btnReady.hidden = !inRoom || match.status === "playing" || match.status === "ended";
+    btnReady.hidden = !inRoom || !inLobby;
     var ready = isHost ? match.hostDeckReady : match.guestDeckReady;
     btnReady.textContent = ready ? "デッキ準備済み" : "このデッキで準備完了";
     btnReady.disabled = !!ready;
   }
   if (btnStart) {
-    btnStart.hidden = !inRoom || !isHost || match.status !== "lobby";
-    btnStart.disabled = !(match.hostDeckReady && match.guestDeckReady && match.guestUid);
+    btnStart.hidden = !inRoom || !isHost || !inLobby;
+    var canStart = !!(match.hostDeckReady && match.guestDeckReady && match.guestUid);
+    btnStart.disabled = !canStart;
+    btnStart.textContent = canStart ? "対戦開始" : "対戦開始（相手の準備待ち）";
   }
-  if (btnRejoin) {
-    btnRejoin.hidden = !inRoom || match.status !== "playing";
-  }
-  if (btnEnter) {
-    btnEnter.hidden = !inRoom || match.status !== "playing";
+  if (btnOpenPlay) {
+    var showOpen =
+      inRoom && match.status === "playing" && !isVersusPlayScreenMounted();
+    btnOpenPlay.hidden = !showOpen;
+    btnOpenPlay.textContent = shouldResumeVersusPlayForRoom(match.roomCode)
+      ? "対戦画面へ（続きから）"
+      : "対戦画面へ";
   }
 }
 
@@ -328,6 +363,7 @@ function renderLobbyMatch(match) {
     updateVersusLobbyButtons(null, null);
     return;
   }
+  var isHost = myRole === "host";
   activeRoomCode = match.roomCode;
   setLobbyRoomCode(match.roomCode);
   var opp = versusOpponentLabel(match, myRole);
@@ -341,7 +377,11 @@ function renderLobbyMatch(match) {
       : Math.floor(Number(match.hostSuccessLiveCount) || 0);
   var status = "オンライン ルーム " + match.roomCode + " · 相手: " + opp;
   if (match.status === "waiting") status += " · 相手の参加を待っています…";
-  else if (match.status === "lobby") status += " · ホストが「対戦開始」を押すまで待機";
+  else if (match.status === "lobby") {
+    status += isHost
+      ? " · 両者の準備ができたら「対戦開始」"
+      : " · 準備完了後、ホストの開始を待機";
+  }
   else if (match.status === "playing") {
     status += " · 対戦中（成功ライブ あなた " + mySl + " / 相手 " + oppSl + "）";
   } else if (match.status === "ended") {
@@ -351,6 +391,65 @@ function renderLobbyMatch(match) {
   }
   setLobbyStatus(status);
   updateVersusLobbyButtons(match, myRole);
+  maybeAutoEnterVersusPlayFromLobby(match, myRole);
+}
+
+/** @param {{ allowResume?: boolean, silent?: boolean }} [opts] */
+function enterVersusPlayFromLobby(opts) {
+  if (!lastLobbyMatch || lastLobbyMatch.status !== "playing") return;
+  var u = getCurrentCloudUser() || getEffectiveCloudUser();
+  if (!u || !u.uid || typeof onEnterVersusPlay !== "function") return;
+  var myRole = versusRoleForUid(lastLobbyMatch, u.uid);
+  if (!myRole) return;
+  if (!versusMatchHasOpponent(lastLobbyMatch)) {
+    showToast("相手の参加を待っています");
+    return;
+  }
+  var allowResume = !!(opts && opts.allowResume === true);
+  var payload = buildVersusOnlineEnterPayload(lastLobbyMatch, myRole);
+  if (!allowResume) {
+    payload.resumeFromStorage = false;
+    clearPlayResumeStorage();
+  }
+  if (!deckHasCards(payload.deckMap)) {
+    showToast("デッキを準備してからプレイ画面へ進んでください");
+    return;
+  }
+  persistVersusOnlineSession(lastLobbyMatch.roomCode, myRole, true);
+  onEnterVersusPlay(payload);
+  var dlg = /** @type {HTMLDialogElement|null} */ (el("dlg-versus-lobby"));
+  try {
+    dlg?.close();
+  } catch (_) {
+    /* noop */
+  }
+  if (!(opts && opts.silent)) {
+    showToast(payload.resumeFromStorage ? "対戦画面へ（続きから）" : "対戦画面へ", {
+      duration: 4000,
+    });
+  }
+}
+
+/** @param {import('./versusMatch.js').VersusMatchDoc} match @param {import('./versusMatch.js').VersusRole} myRole */
+function maybeAutoEnterVersusPlayFromLobby(match, myRole) {
+  if (!match || match.status !== "playing" || !myRole) return;
+  if (isVersusPlayScreenMounted()) return;
+  var dlg = /** @type {HTMLDialogElement|null} */ (el("dlg-versus-lobby"));
+  if (!dlg || !dlg.open) return;
+  if (typeof window !== "undefined" && window.__llocgVersusLobbyAutoEnterSeq === match.rematchSeq) {
+    return;
+  }
+  try {
+    if (typeof window !== "undefined") {
+      window.__llocgVersusLobbyAutoEnterSeq = Math.max(
+        0,
+        Math.floor(Number(match.rematchSeq) || 0),
+      );
+    }
+  } catch (_) {
+    /* noop */
+  }
+  enterVersusPlayFromLobby({ allowResume: true, silent: true });
 }
 
 function watchRoom(roomCode) {
@@ -371,23 +470,184 @@ function watchRoom(roomCode) {
   );
 }
 
-function startLocalVersus() {
+function deckRoleLabelsFromSlot(slot) {
+  if (!slot || typeof slot !== "object") {
+    return { keyCardNos: [], keyCard2Nos: [], keyCard3Nos: [], middleCardNos: [] };
+  }
+  return {
+    keyCardNos: Array.isArray(slot.keyCardNos) ? slot.keyCardNos : [],
+    keyCard2Nos: Array.isArray(slot.keyCard2Nos) ? slot.keyCard2Nos : [],
+    keyCard3Nos: Array.isArray(slot.keyCard3Nos) ? slot.keyCard3Nos : [],
+    middleCardNos: Array.isArray(slot.middleCardNos) ? slot.middleCardNos : [],
+  };
+}
+
+function hostDeckLabelFromLibrary() {
+  var lib = loadDeckLibrary();
+  var activeId = "";
+  try {
+    activeId = localStorage.getItem(STORAGE_ACTIVE_PRESET_ID) || "";
+  } catch (_) {
+    /* noop */
+  }
+  if (activeId && lib && Array.isArray(lib.slots)) {
+    for (var i = 0; i < lib.slots.length; i++) {
+      var s = lib.slots[i];
+      if (s && s.id === activeId && s.name) return String(s.name);
+    }
+  }
+  return "メインデッキ";
+}
+
+function deckRoleLabelsFromSample(recipe) {
+  if (!recipe || typeof recipe !== "object") {
+    return { keyCardNos: [], keyCard2Nos: [], keyCard3Nos: [], middleCardNos: [] };
+  }
+  return {
+    keyCardNos: Array.isArray(recipe.keyCardNos) ? recipe.keyCardNos : [],
+    keyCard2Nos: Array.isArray(recipe.keyCard2Nos) ? recipe.keyCard2Nos : [],
+    keyCard3Nos: Array.isArray(recipe.keyCard3Nos) ? recipe.keyCard3Nos : [],
+    middleCardNos: Array.isArray(recipe.middleCardNos) ? recipe.middleCardNos : [],
+  };
+}
+
+/** @param {string} id */
+export function resolveLocalDualOpponentDeck(id) {
+  var key = String(id || "").trim();
+  if (!key) return null;
+  if (key.indexOf("sample:") === 0) {
+    var sid = key.slice(7);
+    var recipes = getSampleDeckRecipes();
+    for (var r = 0; r < recipes.length; r++) {
+      var recipe = recipes[r];
+      if (!recipe || recipe.id !== sid || !deckHasCards(recipe.deck)) continue;
+      return {
+        deckMap: normalizeDeckMapCounts(recipe.deck),
+        roleLabels: deckRoleLabelsFromSample(recipe),
+        label: String(recipe.name || sid),
+      };
+    }
+    return null;
+  }
+  var lib = loadDeckLibrary();
+  var slots = lib && Array.isArray(lib.slots) ? lib.slots : [];
+  for (var i = 0; i < slots.length; i++) {
+    var slot = slots[i];
+    if (!slot || slot.id !== key || !deckHasCards(slot.deck)) continue;
+    return {
+      deckMap: normalizeDeckMapCounts(slot.deck),
+      roleLabels: deckRoleLabelsFromSlot(slot),
+      label: String(slot.name || key),
+    };
+  }
+  return null;
+}
+
+export function refreshVersusLocalDualDeckSelect() {
+  var sel = /** @type {HTMLSelectElement|null} */ (el("dlg-versus-local-dual-deck"));
+  if (!sel) return;
+  var lib = loadDeckLibrary();
+  var slots = lib && Array.isArray(lib.slots) ? lib.slots : [];
+  var prev = sel.value;
+  sel.replaceChildren();
+  var placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "相手デッキを選択…";
+  sel.appendChild(placeholder);
+  var hostMap = getCurrentDeckMap ? normalizeDeckMapCounts(getCurrentDeckMap() || {}) : {};
+  var hostFp = JSON.stringify(hostMap);
+  var added = 0;
+
+  function appendOpt(value, label, sameAsMain) {
+    var opt = document.createElement("option");
+    opt.value = value;
+    opt.textContent = label + (sameAsMain ? "（メインと同じ）" : "");
+    sel.appendChild(opt);
+    added++;
+  }
+
+  var samples = getSampleDeckRecipes();
+  for (var s = 0; s < samples.length; s++) {
+    var recipe = samples[s];
+    if (!recipe || !recipe.id || !deckHasCards(recipe.deck)) continue;
+    var same = JSON.stringify(normalizeDeckMapCounts(recipe.deck)) === hostFp;
+    appendOpt("sample:" + recipe.id, "[サンプル] " + String(recipe.name || recipe.id), same);
+  }
+  for (var j = 0; j < slots.length; j++) {
+    var slot = slots[j];
+    if (!slot || !slot.id || !deckHasCards(slot.deck)) continue;
+    var tag = isBuiltInStarterDeckId(slot.id) ? "[サンプル] " : "[登録] ";
+    var sameSlot = JSON.stringify(normalizeDeckMapCounts(slot.deck)) === hostFp;
+    appendOpt(slot.id, tag + String(slot.name || slot.id), sameSlot);
+  }
+  if (prev) {
+    for (var k = 0; k < sel.options.length; k++) {
+      if (sel.options[k].value === prev) {
+        sel.value = prev;
+        break;
+      }
+    }
+  }
+  sel.disabled = added === 0;
+}
+
+export function refreshVersusSoloModePick() {
+  document.querySelectorAll("[data-versus-solo-mode]").forEach(function (btn) {
+    if (!(btn instanceof HTMLElement)) return;
+    var mode = btn.getAttribute("data-versus-solo-mode");
+    var on = mode === selectedSoloDualMode;
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+    btn.classList.toggle("dlg-versus-mode-pick-btn--on", on);
+  });
+  var hint = el("dlg-versus-solo-mode-hint");
+  if (hint) {
+    hint.textContent = SOLO_DUAL_MODE_HINTS[selectedSoloDualMode] || "";
+  }
+}
+
+function startSoloDualVersus() {
   var deck = getCurrentDeckMap && getCurrentDeckMap();
   if (!deckHasCards(deck)) {
     showToast("メインデッキにカードを入れてください");
     return;
   }
-  var v60 = validateVersusMainDeck(deck || {});
-  if (!v60.ok) {
-    showToast(v60.message || "公式戦ではメインデッキ60枚が必要です（練習はこのまま開始できます）", {
+  var sel = /** @type {HTMLSelectElement|null} */ (el("dlg-versus-local-dual-deck"));
+  var oppId = sel && sel.value ? String(sel.value).trim() : "";
+  if (!oppId) {
+    showToast("相手のデッキを選択してください");
+    return;
+  }
+  var oppResolved = resolveLocalDualOpponentDeck(oppId);
+  if (!oppResolved || !deckHasCards(oppResolved.deckMap)) {
+    showToast("選択した相手デッキを読み込めませんでした");
+    return;
+  }
+  var hostV60 = validateVersusMainDeck(deck || {});
+  if (!hostV60.ok) {
+    showToast(hostV60.message || "公式戦ではメインデッキ60枚が必要です（練習はこのまま開始できます）", {
       duration: 5000,
     });
   }
+  var oppMap = oppResolved.deckMap;
+  var oppV60 = validateVersusMainDeck(oppMap);
+  if (!oppV60.ok) {
+    showToast(
+      "相手デッキ: " +
+        (oppV60.message || "60枚未満です") +
+        "（練習はこのまま開始できます）",
+      { duration: 5000 },
+    );
+  }
   if (typeof onEnterVersusPlay !== "function") return;
+  var mode = selectedSoloDualMode === "localDual" ? "localDual" : "localPractice";
   onEnterVersusPlay({
-    mode: "local",
-    sessionKey: "local",
-    deckMap: v60.ok ? v60.map : deck,
+    mode: mode,
+    sessionKey: mode === "localDual" ? "local-dual" : "local-practice",
+    deckMap: hostV60.ok ? hostV60.map : deck,
+    opponentDeckMap: oppV60.ok ? oppV60.map : oppMap,
+    hostDeckLabel: hostDeckLabelFromLibrary(),
+    guestDeckLabel: oppResolved.label || "相手デッキ",
+    opponentDeckRoleLabels: oppResolved.roleLabels || {},
   });
   var dlg = /** @type {HTMLDialogElement|null} */ (el("dlg-versus-lobby"));
   try {
@@ -403,21 +663,20 @@ function startLocalVersus() {
 export function initVersusMode(opts) {
   onEnterVersusPlay = opts.onEnterVersusPlay;
   getCurrentDeckMap = opts.getCurrentDeckMap;
-  window.__llocgStartLocalVersus = function () {
-    startLocalVersus();
+  window.__llocgStartSoloDualVersus = function () {
+    startSoloDualVersus();
   };
   window.__llocgOpenVersusLobby = openVersusLobbyDialog;
 
   var dlg = /** @type {HTMLDialogElement|null} */ (el("dlg-versus-lobby"));
   var btnOpen = el("btn-start-versus");
   var btnClose = el("dlg-versus-lobby-close");
-  var btnLocal = el("dlg-versus-start-local");
+  var btnSoloDual = el("dlg-versus-start-solo-dual");
   var btnCreate = el("dlg-versus-create");
   var btnJoin = el("dlg-versus-join");
   var btnReady = el("dlg-versus-ready");
   var btnStart = el("dlg-versus-start");
-  var btnEnter = el("dlg-versus-enter-play");
-  var btnRejoin = el("dlg-versus-rejoin-room");
+  var btnOpenPlay = el("dlg-versus-open-play");
   var btnLeave = el("dlg-versus-leave");
 
   function refreshVersusButton() {
@@ -425,8 +684,8 @@ export function initVersusMode(opts) {
     btnOpen.disabled = false;
     var u = getEffectiveCloudUser();
     btnOpen.title = u
-      ? "簡易対戦（" + (u.displayName || u.email || "Google") + " としてプレイ）"
-      : "簡易対戦（Firestore 不要）— 相手の成功ライブ枚数を手入力";
+      ? "一人二役・オンライン対戦（" + (u.displayName || u.email || "Google") + "）"
+      : "一人二役（ログイン不要）・オンラインルーム（Google ログイン）";
     setOnlineSectionVisible();
   }
 
@@ -452,9 +711,19 @@ export function initVersusMode(opts) {
     dlg?.close();
   });
 
-  btnLocal?.addEventListener("click", function () {
-    startLocalVersus();
+  btnSoloDual?.addEventListener("click", function () {
+    startSoloDualVersus();
   });
+
+  document.querySelectorAll("[data-versus-solo-mode]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var mode = btn.getAttribute("data-versus-solo-mode");
+      if (mode !== "localPractice" && mode !== "localDual") return;
+      selectedSoloDualMode = mode;
+      refreshVersusSoloModePick();
+    });
+  });
+  refreshVersusSoloModePick();
 
   btnCreate?.addEventListener("click", async function () {
     var u = getCurrentCloudUser() || getEffectiveCloudUser();
@@ -534,40 +803,13 @@ export function initVersusMode(opts) {
       await startVersusMatch(activeRoomCode);
       clearPlayResumeStorage();
       showToast("対戦を開始しました（先攻は無作為）");
+      enterVersusPlayFromLobby({ allowResume: false, silent: true });
     } catch (err) {
       showToast(String(err.message || err));
     }
   });
 
-  function enterVersusPlayFromLobby(opts) {
-    if (!lastLobbyMatch || lastLobbyMatch.status !== "playing") return;
-    var u = getCurrentCloudUser() || getEffectiveCloudUser();
-    if (!u || !u.uid || typeof onEnterVersusPlay !== "function") return;
-    var myRole = versusRoleForUid(lastLobbyMatch, u.uid);
-    if (!myRole) return;
-    if (!versusMatchHasOpponent(lastLobbyMatch)) {
-      showToast("相手の参加を待っています");
-      return;
-    }
-    var allowResume = !!(opts && opts.allowResume === true);
-    var payload = buildVersusOnlineEnterPayload(lastLobbyMatch, myRole);
-    if (!allowResume) {
-      payload.resumeFromStorage = false;
-      clearPlayResumeStorage();
-    }
-    if (!deckHasCards(payload.deckMap)) {
-      showToast("デッキを準備してからプレイ画面へ進んでください");
-      return;
-    }
-    persistVersusOnlineSession(lastLobbyMatch.roomCode, myRole, true);
-    onEnterVersusPlay(payload);
-    dlg?.close();
-  }
-
-  btnEnter?.addEventListener("click", function () {
-    enterVersusPlayFromLobby();
-  });
-  btnRejoin?.addEventListener("click", function () {
+  btnOpenPlay?.addEventListener("click", function () {
     enterVersusPlayFromLobby({ allowResume: true });
   });
 

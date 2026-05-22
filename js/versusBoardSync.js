@@ -366,7 +366,7 @@ export function boardToVersusPublicFromState(st) {
   });
 }
 
-/** 簡易対戦・一人二役: 相手盤面を全面公開（手札・ライブ表面含む） */
+/** 一人二役: 相手盤面を全面公開（手札・ライブ表面含む） */
 export function boardToVersusPublicFromStateForLocalDual(st) {
   const hand = stripCardList(st.hand);
   return boardToVersusPublic({

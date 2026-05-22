@@ -648,7 +648,6 @@ python3 -m http.server 8080</pre>
         </div>
         <div id="versus-play-chrome" class="versus-play-chrome game-bar-row" hidden>
           <span id="versus-turn-badge" class="versus-turn-badge" hidden></span>
-          <span id="versus-local-dual-badge" class="versus-local-dual-badge muted" hidden></span>
           <button
             type="button"
             class="btn primary btn-versus-dual-board-switch"
@@ -1913,7 +1912,7 @@ python3 -m http.server 8080</pre>
       </details>
       <p class="hint zone-inline-help muted">
         <strong>オンラインルーム</strong> — 2人が別アカウントで参加。成功ライブ枚数・ターン・直近操作を Firestore で共有。
-        手札や場のカードはまだ同期されません（各端末で自分の盤面を操作）。ホストが「対戦開始」後、<strong>ターン終了</strong>で手番を渡します。再読み込み後は<strong>ルームに入室</strong>で対戦画面へ戻れます（ルームからは追い出されません）。
+        手札や場のカードはまだ同期されません（各端末で自分の盤面を操作）。準備完了後、ホストが<strong>対戦開始</strong>すると自動で対戦画面へ入ります。再読み込み後は<strong>対戦画面へ</strong>で復帰できます。
       </p>
       <p id="dlg-versus-lobby-status" class="dlg-versus-lobby-status muted" role="status"></p>
       <details id="dlg-versus-online-wrap" class="dlg-versus-online-wrap" hidden>
@@ -1938,8 +1937,7 @@ python3 -m http.server 8080</pre>
           <button type="button" class="btn secondary btn-versus-lobby-join" id="dlg-versus-join">コードで参加</button>
           <button type="button" class="btn secondary" id="dlg-versus-ready">このデッキで準備完了</button>
           <button type="button" class="btn primary" id="dlg-versus-start" hidden>対戦開始（ホスト）</button>
-          <button type="button" class="btn primary" id="dlg-versus-rejoin-room" hidden>ルームに入室</button>
-          <button type="button" class="btn primary" id="dlg-versus-enter-play" hidden>プレイ画面へ</button>
+          <button type="button" class="btn primary" id="dlg-versus-open-play" hidden>対戦画面へ</button>
         </div>
       </details>
     </dialog>

@@ -1654,17 +1654,12 @@ export function mountSimulator(
     var endTurnBtn = document.getElementById("btn-versus-end-turn");
     var localDualEndSwitchBtn = document.getElementById("btn-versus-local-dual-end-switch");
     var dualBoardSwitchBtn = document.getElementById("btn-versus-dual-board-switch");
-    var localDualBadge = document.getElementById("versus-local-dual-badge");
     var oppSlWrap = document.getElementById("versus-opp-sl-controls");
     if (concedeBtn) concedeBtn.hidden = versusSession.mode !== "online";
     if (lobbyBtn) lobbyBtn.hidden = versusSession.mode !== "online";
     if (endTurnBtn) endTurnBtn.hidden = versusSession.mode !== "online";
     if (localDualEndSwitchBtn) localDualEndSwitchBtn.hidden = versusSession.mode !== "localDual";
     if (dualBoardSwitchBtn) dualBoardSwitchBtn.hidden = versusSession.mode !== "localPractice";
-    if (localDualBadge) {
-      localDualBadge.hidden =
-        versusSession.mode !== "localDual" && versusSession.mode !== "localPractice";
-    }
     if (oppSlWrap) oppSlWrap.hidden = true;
     if (concedeBtn) concedeBtn.classList.add("btn--versus-concede-main");
     var oppBoardWrap = document.getElementById("versus-opponent-board-wrap");
@@ -1685,6 +1680,8 @@ export function mountSimulator(
       applyVersusPlayModeDefaults();
     }
     syncVersusOppSlDisplay();
+    playChromeMountsLastMobile = null;
+    syncPlayBoardChromeMounts();
   }
   var resumedFromStorage = false;
   if (resumeFromStorage === true) {
@@ -12690,14 +12687,6 @@ export function mountSimulator(
 
   function syncVersusLocalDualChrome() {
     if (!versusDualBoardActive()) return;
-    var badge = document.getElementById("versus-local-dual-badge");
-    var activeRole = versusSession.activeRole || "host";
-    var activeLabel = versusLocalDualRoleLabel(activeRole);
-    var oppLabel = versusLocalDualRoleLabel(versusLocalDualInactiveRole());
-    if (badge) {
-      badge.textContent =
-        "操作中（下段）: " + activeLabel + " · 上段: " + oppLabel;
-    }
     syncVersusLocalDualOpponentBoard();
     if (versusLocalDualActive()) {
       syncVersusLocalDualEndSwitchButton(versusSession.remoteMatch);
@@ -14985,9 +14974,11 @@ export function mountSimulator(
     versusLocalDualBoards.host = null;
     versusLocalDualBoards.guest = null;
     var localDualEndSwitchTeardown = document.getElementById("btn-versus-local-dual-end-switch");
-    var localDualBadgeTeardown = document.getElementById("versus-local-dual-badge");
+    var dualBoardSwitchTeardown = document.getElementById("btn-versus-dual-board-switch");
     if (localDualEndSwitchTeardown) localDualEndSwitchTeardown.hidden = true;
-    if (localDualBadgeTeardown) localDualBadgeTeardown.hidden = true;
+    if (dualBoardSwitchTeardown) dualBoardSwitchTeardown.hidden = true;
+    playChromeMountsLastMobile = null;
+    syncPlayBoardChromeMounts();
     var versusChromeEl = document.getElementById("versus-play-chrome");
     if (versusChromeEl) versusChromeEl.hidden = true;
     var concedeBtn = document.getElementById("btn-versus-concede");
@@ -17620,12 +17611,7 @@ export function mountSimulator(
   document.getElementById("btn-versus-concede")?.addEventListener("click", function () {
     if (!versusSession) return;
     if (!confirm("投了を宣言しますか？（総合ルール 1.2.3 — 即座に敗北）")) return;
-    if (versusSession.mode === "local") {
-      state.versusMatchEnded = true;
-      showToast("投了しました", { duration: 5000 });
-      return;
-    }
-    if (versusSession.mode === "localDual") {
+    if (versusSession.mode === "localDual" || versusSession.mode === "localPractice") {
       persistVersusLocalDualActiveBoard();
       state.versusMatchEnded = true;
       var concedeLabel = versusLocalDualRoleLabel(versusSession.activeRole || "host");
@@ -17659,6 +17645,13 @@ export function mountSimulator(
 
   document.getElementById("btn-versus-end-turn")?.addEventListener("click", function () {
     doVersusEndTurnClick();
+  });
+
+  document.getElementById("btn-versus-dual-board-switch")?.addEventListener("click", function () {
+    if (!versusSession || versusSession.mode !== "localPractice" || state.versusMatchEnded) return;
+    var next = versusLocalDualInactiveRole();
+    switchVersusLocalDualToRole(next);
+    showToast("「" + versusLocalDualRoleLabel(next) + "」の盤面に切り替えました", { duration: 3500 });
   });
 
   document.getElementById("btn-versus-local-dual-end-switch")?.addEventListener("click", function () {
@@ -18017,7 +18010,7 @@ export function mountSimulator(
     versusPhaseAutoKey = buildVersusPhaseAutoKey(versusSession.remoteMatch);
     window.setTimeout(bootVersusOnlineSyncAfterMount, 0);
   }
-  if (versusSession && versusSession.mode === "localDual") {
+  if (versusSession && (versusSession.mode === "localDual" || versusSession.mode === "localPractice")) {
     versusLocalDualBoards.host = buildOpeningBoardSnapshotForLocalDual(
       versusSession.hostDeckMap,
       versusSession.hostDeckRoleLabels,
@@ -18026,39 +18019,48 @@ export function mountSimulator(
       versusSession.guestDeckMap,
       versusSession.guestDeckRoleLabels,
     );
-    var ldFp = versusSession.remoteMatch && versusSession.remoteMatch.firstPlayerRole;
-    if (ldFp === "host" || ldFp === "guest") {
-      versusSession.activeRole = ldFp;
-      versusSession.myRole = ldFp;
-      state.versusMyRole = ldFp;
-      var ldSnap = versusLocalDualBoards[ldFp];
-      if (ldSnap) {
-        undoHistory.length = 0;
-        redoHistory.length = 0;
-        applyBoard(ldSnap);
-        applyVersusLocalDualRoleMeta(ldFp);
+    var dualStartRole = versusSession.activeRole === "guest" ? "guest" : "host";
+    if (versusSession.mode === "localDual") {
+      var ldFp = versusSession.remoteMatch && versusSession.remoteMatch.firstPlayerRole;
+      if (ldFp === "host" || ldFp === "guest") dualStartRole = ldFp;
+    }
+    versusSession.activeRole = dualStartRole;
+    versusSession.myRole = dualStartRole;
+    state.versusMyRole = dualStartRole;
+    var dualSnap = versusLocalDualBoards[dualStartRole];
+    if (dualSnap) {
+      undoHistory.length = 0;
+      redoHistory.length = 0;
+      applyBoard(dualSnap);
+      applyVersusLocalDualRoleMeta(dualStartRole);
+    }
+    versusSession.opponentName = versusLocalDualRoleLabel(
+      dualStartRole === "host" ? "guest" : "host",
+    );
+    if (versusSession.mode === "localDual") {
+      applyVersusPlayModeDefaults();
+      ensureVersusUiChrome();
+      if (versusSession.remoteMatch) {
+        applyVersusPhaseFromRemote(versusSession.remoteMatch);
+        syncVersusMatchBar(versusSession.remoteMatch);
+        syncVersusPhaseLiveBanner(versusSession.remoteMatch);
+        showVersusFirstPlayerBanner(versusSession.remoteMatch);
+        updateVersusTurnGlow(versusSession.remoteMatch);
+        versusPhaseAutoKey = buildVersusPhaseAutoKey(versusSession.remoteMatch);
+        syncVersusTurnStartButton(versusSession.remoteMatch);
+        syncVersusLocalDualEndSwitchButton(versusSession.remoteMatch);
       }
-      versusSession.opponentName = versusLocalDualRoleLabel(
-        ldFp === "host" ? "guest" : "host",
+      showToast(
+        "1人対戦: 開幕マリガンから開始。「ターン終了して〇〇に切り替え」で手番と盤面が切り替わります。",
+        { duration: 8000 },
+      );
+    } else {
+      showToast(
+        "対戦練習: 上部の「〇〇に切替」でいつでも盤面を入れ替えられます。",
+        { duration: 7000 },
       );
     }
-    applyVersusPlayModeDefaults();
-    ensureVersusUiChrome();
-    if (versusSession.remoteMatch) {
-      applyVersusPhaseFromRemote(versusSession.remoteMatch);
-      syncVersusMatchBar(versusSession.remoteMatch);
-      syncVersusPhaseLiveBanner(versusSession.remoteMatch);
-      showVersusFirstPlayerBanner(versusSession.remoteMatch);
-      updateVersusTurnGlow(versusSession.remoteMatch);
-      versusPhaseAutoKey = buildVersusPhaseAutoKey(versusSession.remoteMatch);
-      syncVersusTurnStartButton(versusSession.remoteMatch);
-      syncVersusLocalDualEndSwitchButton(versusSession.remoteMatch);
-    }
     syncVersusLocalDualChrome();
-    showToast(
-      "一人二役: 開幕マリガンから開始。「ターン終了して〇〇に切り替え」で手番と盤面が切り替わります。",
-      { duration: 8000 },
-    );
   }
   try {
     if (

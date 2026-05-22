@@ -1029,16 +1029,6 @@ body.play-versus-mode #btn-deck-face:disabled {
   cursor: not-allowed;
 }
 
-/** 対戦プレイ（オンライン・一人二役）ではソロ向けの確率・シミュ・山札指定ツールを非表示 */
-body.play-versus-mode #deck-odds-fold,
-body.play-versus-mode .zone-block-deck-live-sim,
-body.play-versus-mode .zone-block-deck-live-sim-under-preview,
-body.play-versus-mode .live-prob-toolbar-inline,
-body.play-versus-mode .play-tools-block,
-body.play-versus-mode .live-prob-footnote,
-body.play-versus-mode #mount-desktop-sim-success-row {
-  display: none !important;
-}
 body.play-versus-mode #btn-res-top.versus-needs-approval,
 body.play-versus-mode #btn-res-shuf.versus-needs-approval {
   outline: 1px dashed rgba(255, 200, 120, 0.55);

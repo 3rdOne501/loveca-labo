@@ -223,6 +223,7 @@ export function forgetVersusRoomPersistence() {
     if (typeof window !== "undefined") {
       delete window.__llocgVersusPendingLobbyRoom;
       delete window.__llocgVersusAutoEnterPending;
+      delete window.__llocgVersusLobbyAutoEnterSeq;
     }
   } catch (_) {
     /* noop */
@@ -285,42 +286,57 @@ function setLobbyRoomCode(code) {
   if (disp) disp.textContent = code || "——";
 }
 
+function isVersusPlayScreenMounted() {
+  try {
+    return !!(
+      typeof window !== "undefined" &&
+      window.__llocgVersusPlayMounted &&
+      !document.getElementById("view-game")?.hidden
+    );
+  } catch (_) {
+    return false;
+  }
+}
+
 function updateVersusLobbyButtons(match, myRole) {
   var btnCreate = el("dlg-versus-create");
   var btnJoin = el("dlg-versus-join");
   var btnReady = el("dlg-versus-ready");
   var btnStart = el("dlg-versus-start");
-  var btnEnter = el("dlg-versus-enter-play");
-  var btnRejoin = el("dlg-versus-rejoin-room");
+  var btnOpenPlay = el("dlg-versus-open-play");
   if (!match || !myRole) {
     if (btnCreate) btnCreate.hidden = false;
     if (btnJoin) btnJoin.hidden = false;
     if (btnReady) btnReady.hidden = true;
     if (btnStart) btnStart.hidden = true;
-    if (btnEnter) btnEnter.hidden = true;
-    if (btnRejoin) btnRejoin.hidden = true;
+    if (btnOpenPlay) btnOpenPlay.hidden = true;
     return;
   }
   var u = getCurrentCloudUser();
   var isHost = myRole === "host";
   var inRoom = !!(match && myRole && u);
+  var inLobby = match.status === "lobby" || match.status === "waiting";
   if (btnCreate) btnCreate.hidden = inRoom;
   if (btnJoin) btnJoin.hidden = inRoom;
   if (btnReady) {
-    btnReady.hidden = !inRoom || match.status === "playing" || match.status === "ended";
+    btnReady.hidden = !inRoom || !inLobby;
     var ready = isHost ? match.hostDeckReady : match.guestDeckReady;
     btnReady.textContent = ready ? "デッキ準備済み" : "このデッキで準備完了";
     btnReady.disabled = !!ready;
   }
   if (btnStart) {
-    btnStart.hidden = !inRoom || !isHost || match.status !== "lobby";
-    btnStart.disabled = !(match.hostDeckReady && match.guestDeckReady && match.guestUid);
+    btnStart.hidden = !inRoom || !isHost || !inLobby;
+    var canStart = !!(match.hostDeckReady && match.guestDeckReady && match.guestUid);
+    btnStart.disabled = !canStart;
+    btnStart.textContent = canStart ? "対戦開始" : "対戦開始（相手の準備待ち）";
   }
-  if (btnRejoin) {
-    btnRejoin.hidden = !inRoom || match.status !== "playing";
-  }
-  if (btnEnter) {
-    btnEnter.hidden = !inRoom || match.status !== "playing";
+  if (btnOpenPlay) {
+    var showOpen =
+      inRoom && match.status === "playing" && !isVersusPlayScreenMounted();
+    btnOpenPlay.hidden = !showOpen;
+    btnOpenPlay.textContent = shouldResumeVersusPlayForRoom(match.roomCode)
+      ? "対戦画面へ（続きから）"
+      : "対戦画面へ";
   }
 }
 
@@ -347,6 +363,7 @@ function renderLobbyMatch(match) {
     updateVersusLobbyButtons(null, null);
     return;
   }
+  var isHost = myRole === "host";
   activeRoomCode = match.roomCode;
   setLobbyRoomCode(match.roomCode);
   var opp = versusOpponentLabel(match, myRole);
@@ -360,7 +377,11 @@ function renderLobbyMatch(match) {
       : Math.floor(Number(match.hostSuccessLiveCount) || 0);
   var status = "オンライン ルーム " + match.roomCode + " · 相手: " + opp;
   if (match.status === "waiting") status += " · 相手の参加を待っています…";
-  else if (match.status === "lobby") status += " · ホストが「対戦開始」を押すまで待機";
+  else if (match.status === "lobby") {
+    status += isHost
+      ? " · 両者の準備ができたら「対戦開始」"
+      : " · 準備完了後、ホストの開始を待機";
+  }
   else if (match.status === "playing") {
     status += " · 対戦中（成功ライブ あなた " + mySl + " / 相手 " + oppSl + "）";
   } else if (match.status === "ended") {
@@ -370,6 +391,65 @@ function renderLobbyMatch(match) {
   }
   setLobbyStatus(status);
   updateVersusLobbyButtons(match, myRole);
+  maybeAutoEnterVersusPlayFromLobby(match, myRole);
+}
+
+/** @param {{ allowResume?: boolean, silent?: boolean }} [opts] */
+function enterVersusPlayFromLobby(opts) {
+  if (!lastLobbyMatch || lastLobbyMatch.status !== "playing") return;
+  var u = getCurrentCloudUser() || getEffectiveCloudUser();
+  if (!u || !u.uid || typeof onEnterVersusPlay !== "function") return;
+  var myRole = versusRoleForUid(lastLobbyMatch, u.uid);
+  if (!myRole) return;
+  if (!versusMatchHasOpponent(lastLobbyMatch)) {
+    showToast("相手の参加を待っています");
+    return;
+  }
+  var allowResume = !!(opts && opts.allowResume === true);
+  var payload = buildVersusOnlineEnterPayload(lastLobbyMatch, myRole);
+  if (!allowResume) {
+    payload.resumeFromStorage = false;
+    clearPlayResumeStorage();
+  }
+  if (!deckHasCards(payload.deckMap)) {
+    showToast("デッキを準備してからプレイ画面へ進んでください");
+    return;
+  }
+  persistVersusOnlineSession(lastLobbyMatch.roomCode, myRole, true);
+  onEnterVersusPlay(payload);
+  var dlg = /** @type {HTMLDialogElement|null} */ (el("dlg-versus-lobby"));
+  try {
+    dlg?.close();
+  } catch (_) {
+    /* noop */
+  }
+  if (!(opts && opts.silent)) {
+    showToast(payload.resumeFromStorage ? "対戦画面へ（続きから）" : "対戦画面へ", {
+      duration: 4000,
+    });
+  }
+}
+
+/** @param {import('./versusMatch.js').VersusMatchDoc} match @param {import('./versusMatch.js').VersusRole} myRole */
+function maybeAutoEnterVersusPlayFromLobby(match, myRole) {
+  if (!match || match.status !== "playing" || !myRole) return;
+  if (isVersusPlayScreenMounted()) return;
+  var dlg = /** @type {HTMLDialogElement|null} */ (el("dlg-versus-lobby"));
+  if (!dlg || !dlg.open) return;
+  if (typeof window !== "undefined" && window.__llocgVersusLobbyAutoEnterSeq === match.rematchSeq) {
+    return;
+  }
+  try {
+    if (typeof window !== "undefined") {
+      window.__llocgVersusLobbyAutoEnterSeq = Math.max(
+        0,
+        Math.floor(Number(match.rematchSeq) || 0),
+      );
+    }
+  } catch (_) {
+    /* noop */
+  }
+  enterVersusPlayFromLobby({ allowResume: true, silent: true });
 }
 
 function watchRoom(roomCode) {
@@ -596,8 +676,7 @@ export function initVersusMode(opts) {
   var btnJoin = el("dlg-versus-join");
   var btnReady = el("dlg-versus-ready");
   var btnStart = el("dlg-versus-start");
-  var btnEnter = el("dlg-versus-enter-play");
-  var btnRejoin = el("dlg-versus-rejoin-room");
+  var btnOpenPlay = el("dlg-versus-open-play");
   var btnLeave = el("dlg-versus-leave");
 
   function refreshVersusButton() {
@@ -724,40 +803,13 @@ export function initVersusMode(opts) {
       await startVersusMatch(activeRoomCode);
       clearPlayResumeStorage();
       showToast("対戦を開始しました（先攻は無作為）");
+      enterVersusPlayFromLobby({ allowResume: false, silent: true });
     } catch (err) {
       showToast(String(err.message || err));
     }
   });
 
-  function enterVersusPlayFromLobby(opts) {
-    if (!lastLobbyMatch || lastLobbyMatch.status !== "playing") return;
-    var u = getCurrentCloudUser() || getEffectiveCloudUser();
-    if (!u || !u.uid || typeof onEnterVersusPlay !== "function") return;
-    var myRole = versusRoleForUid(lastLobbyMatch, u.uid);
-    if (!myRole) return;
-    if (!versusMatchHasOpponent(lastLobbyMatch)) {
-      showToast("相手の参加を待っています");
-      return;
-    }
-    var allowResume = !!(opts && opts.allowResume === true);
-    var payload = buildVersusOnlineEnterPayload(lastLobbyMatch, myRole);
-    if (!allowResume) {
-      payload.resumeFromStorage = false;
-      clearPlayResumeStorage();
-    }
-    if (!deckHasCards(payload.deckMap)) {
-      showToast("デッキを準備してからプレイ画面へ進んでください");
-      return;
-    }
-    persistVersusOnlineSession(lastLobbyMatch.roomCode, myRole, true);
-    onEnterVersusPlay(payload);
-    dlg?.close();
-  }
-
-  btnEnter?.addEventListener("click", function () {
-    enterVersusPlayFromLobby();
-  });
-  btnRejoin?.addEventListener("click", function () {
+  btnOpenPlay?.addEventListener("click", function () {
     enterVersusPlayFromLobby({ allowResume: true });
   });
 

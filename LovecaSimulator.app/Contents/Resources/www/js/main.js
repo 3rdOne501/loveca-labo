@@ -456,6 +456,15 @@ function enterVersusPlay(viewDeck, viewGame, payload) {
   activeVersusRoomMounted = sessionKey;
   try {
     prefetchDeckCardImagesFromMap(deckMap, getCard);
+    if (
+      (payload.mode === "localDual" || payload.mode === "localPractice") &&
+      payload.opponentDeckMap
+    ) {
+      prefetchDeckCardImagesFromMap(
+        normalizeDeckMapCounts(payload.opponentDeckMap || {}),
+        getCard,
+      );
+    }
   } catch (_) {
     /* noop */
   }
@@ -485,16 +494,30 @@ function enterVersusPlay(viewDeck, viewGame, payload) {
           if (typeof sim.teardownActivePlayMount === "function") {
             sim.teardownActivePlayMount();
           }
-          sim.mountSimulator(viewGame, deckMap, {
-            versusMatch:
-              payload.mode === "local"
-                ? { mode: "local" }
-                : {
+          var versusMatchArg =
+            payload.mode === "localDual" || payload.mode === "localPractice"
+              ? {
+                  mode: payload.mode,
+                  hostDeckMap: deckMap,
+                  guestDeckMap: normalizeDeckMapCounts(payload.opponentDeckMap || {}),
+                  hostDeckRoleLabels: {
+                    keyCardNos: bundle.keyCardNos,
+                    keyCard2Nos: bundle.keyCard2Nos,
+                    keyCard3Nos: bundle.keyCard3Nos,
+                    middleCardNos: bundle.middleCardNos,
+                  },
+                  guestDeckRoleLabels: payload.opponentDeckRoleLabels || {},
+                  hostDeckLabel: payload.hostDeckLabel || "メインデッキ",
+                  guestDeckLabel: payload.guestDeckLabel || "相手",
+                }
+              : {
                     mode: "online",
                     roomCode: payload.roomCode,
                     myRole: payload.myRole,
                     match: payload.match,
-                  },
+                  };
+          sim.mountSimulator(viewGame, deckMap, {
+            versusMatch: versusMatchArg,
             resumeFromStorage: payload.resumeFromStorage === true,
             onBackToDeck(opts) {
               teardownDeckPileLayoutWatchers();
@@ -550,9 +573,11 @@ function enterVersusPlay(viewDeck, viewGame, payload) {
           });
           window.__llocgVersusPlayMounted = sessionKey;
           showToast(
-            payload.mode === "local"
-              ? "簡易対戦: 相手の成功ライブ枚数は画面上の＋／−で入力してください"
-              : "オンライン対戦: 成功ライブ枚数は自動同期されます",
+            payload.mode === "localPractice"
+              ? "対戦練習: 上部の「〇〇に切替」で盤面をいつでも入れ替えられます"
+              : payload.mode === "localDual"
+                ? "1人対戦: 開幕マリガンから。ターン終了ボタンで盤面が切り替わります"
+                : "オンライン対戦: 成功ライブ枚数は自動同期されます",
           );
         })
         .catch(function (err) {
@@ -727,7 +752,7 @@ function resumeSessionsAfterBoot(viewDeck, viewGame) {
             showToast(
               "ルーム " +
                 pending +
-                " の続きがあります。「簡易対戦」→ ロビーで「ルームに入室」を押してください。",
+                " の続きがあります。「対戦モード」→ ロビーで「対戦画面へ」を押してください。",
               { duration: 8000 },
             );
           }

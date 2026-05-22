@@ -228,7 +228,7 @@ function markRedirectLoginAttempt() {
 function cookieHelpMessage() {
   return (
     "Google ログインには Cookie が必要です。Safari: 設定→プライバシー→「すべての Cookie をブロック」をオフ。" +
-    " Chrome: アドレスバー左の鍵→Cookie→このサイトを許可。簡易対戦だけならログイン不要です。"
+    " Chrome: アドレスバー左の鍵→Cookie→このサイトを許可。一人二役だけならログイン不要です。"
   );
 }
 

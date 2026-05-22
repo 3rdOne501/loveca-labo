@@ -752,7 +752,7 @@ function resumeSessionsAfterBoot(viewDeck, viewGame) {
             showToast(
               "ルーム " +
                 pending +
-                " の続きがあります。「簡易対戦」→ ロビーで「ルームに入室」を押してください。",
+                " の続きがあります。「対戦モード」→ ロビーで「対戦画面へ」を押してください。",
               { duration: 8000 },
             );
           }
