@@ -699,6 +699,18 @@ function appendOppCardItem(container, c, opts) {
     pill.textContent = String(c.cost);
     div.appendChild(pill);
   }
+  if (!c.hiddenFace && c.card_no) {
+    div.classList.add("versus-opp-card--inspectable");
+    div.title = (c.name || c.card_no) + "（クリックで詳細）";
+    div.addEventListener("click", function (ev) {
+      ev.stopPropagation();
+      const cat = getCard(c.card_no);
+      if (!cat) return;
+      import("./cardCatalogDialog.js").then(function (mod) {
+        mod.openCardCatalogDialog(cat, { playMode: true });
+      });
+    });
+  }
   container.appendChild(div);
 }
 
@@ -1353,10 +1365,28 @@ export function openVersusOpponentZoneDialog(board, title, cards) {
 function wireVersusOpponentZoneInspect(board, opts) {
   const wrap = document.getElementById("versus-opponent-board-wrap");
   if (!wrap) return;
+  const liveMode = board.livePublicMode || (board.liveRevealed ? "revealed" : "hidden");
+  const liveFaceUp =
+    liveMode === "revealed"
+      ? [].concat(
+          board.liveArea.left || [],
+          board.liveArea.center || [],
+          board.liveArea.right || [],
+        ).filter(function (c) {
+          return c && !c.hiddenFace && c.card_no;
+        })
+      : [];
   const zones = [
     { sel: "#versus-opp-zone-waiting", title: "控え室", cards: board.waitingRoom },
     { sel: "#versus-opp-zone-resolution", title: "解決", cards: board.resolutionArea },
     { sel: "#versus-opp-zone-sl", title: "成功ライブ", cards: board.successfulLiveArea },
+    { sel: "#versus-opp-live-left", title: "ライブ左", cards: liveFaceUp.length ? board.liveArea.left : [] },
+    {
+      sel: "#versus-opp-live-center",
+      title: "ライブ中央",
+      cards: liveFaceUp.length ? board.liveArea.center : [],
+    },
+    { sel: "#versus-opp-live-right", title: "ライブ右", cards: liveFaceUp.length ? board.liveArea.right : [] },
     { sel: "#versus-opp-stage-left", title: "ステージ左", cards: board.stage.left },
     { sel: "#versus-opp-stage-center", title: "ステージ中央", cards: board.stage.center },
     { sel: "#versus-opp-stage-right", title: "ステージ右", cards: board.stage.right },

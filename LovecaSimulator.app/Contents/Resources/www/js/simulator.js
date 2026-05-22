@@ -6994,15 +6994,16 @@ export function mountSimulator(
   }
 
   function versusTryOrchestrateSuccessFx(remoteMatch) {
-    if (!versusOnlineActive() || !remoteMatch || !versusSession.myRole) return;
-    if (getVersusLiveStep(remoteMatch) !== "successFx") return;
-    if (!canRoleActInVersus(remoteMatch, versusSession.myRole)) return;
+    if (!versusMatchPhaseActive() || !remoteMatch) return;
+    var playRole = getVersusPlayRole();
+    if (!playRole || getVersusLiveStep(remoteMatch) !== "successFx") return;
+    if (!canRoleActInVersus(remoteMatch, playRole)) return;
+    var key = buildVersusPhaseAutoKey(remoteMatch) + ":orchFx:" + String(playRole);
+    if (versusSuccessFxOrchestrateKey === key) return;
+    activateLiveSuccessEffectsAfterJudge();
     if (!boardHasLiveSuccessEffectCards()) return;
     var pend = collectPendingTriggeredEffects(["live_success"]);
     if (!pend || !pend.length) return;
-    var key =
-      buildVersusPhaseAutoKey(remoteMatch) + ":orchFx:" + String(versusSession.myRole);
-    if (versusSuccessFxOrchestrateKey === key) return;
     versusSuccessFxOrchestrateKey = key;
     orchestratePendingTriggeredEffects(["live_success"]);
   }
@@ -9152,11 +9153,22 @@ export function mountSimulator(
     return true;
   }
 
+  function isVersusLiveSuccessFxStep(remoteMatch) {
+    return (
+      versusMatchPhaseActive() &&
+      remoteMatch &&
+      normalizeVersusPhase(remoteMatch) === "live" &&
+      getVersusLiveStep(remoteMatch) === "successFx"
+    );
+  }
+
   /** ライブ成功＋残りエール0確定後、0.5秒待って成功時効果を誘発する */
   function syncLiveSuccessEffectActivation() {
-    if (versusOnlineActive() && isVersusLivePhase(versusSession.remoteMatch)) {
-      clearLiveSuccessEffectSchedule();
-      return;
+    if (versusMatchPhaseActive() && isVersusLivePhase(versusSession.remoteMatch)) {
+      if (!isVersusLiveSuccessFxStep(versusSession.remoteMatch)) {
+        clearLiveSuccessEffectSchedule();
+        return;
+      }
     }
     if (!playLiveSuccessVerdictReady()) {
       clearLiveSuccessEffectSchedule();
@@ -10954,6 +10966,11 @@ export function mountSimulator(
 
   function memberKidouGlowOnStage(mc, cardInst) {
     if (mc.type !== T_MEMBER || !stageColumnKeyHostingMember(cardInst.id)) return false;
+    if (!canUseKidouEffectsNow()) return false;
+    if (versusMatchPhaseActive() && versusSession.remoteMatch) {
+      var kidouRole = getVersusPlayRole();
+      if (!kidouRole || !canRoleActInVersus(versusSession.remoteMatch, kidouRole)) return false;
+    }
     if (isPlayEffectResolved(cardInst, "kidou")) return false;
     if (isInLiveTurnContext()) return false;
     if (!memberHasKidouAbility(mc)) return false;
@@ -11052,7 +11069,7 @@ export function mountSimulator(
       if (cardNoIsBp1002(mc.card_no || c.card_no)) {
         out.glowClasses.push("card-item--bp1002-waiting-top-glow");
       }
-      if (mc.type === T_MEMBER && !isInLiveTurnContext() && memberHasKidouAbility(mc)) {
+      if (mc.type === T_MEMBER && canUseKidouEffectsNow() && memberHasKidouAbility(mc)) {
         var clWait = classifyCardAbility(mc, "kidou");
         var perTurnExhausted = clWait.perTurnLimit
           ? perTurnLimitExhausted(c, "kidou", clWait.perTurnLimit)
@@ -11060,7 +11077,11 @@ export function mountSimulator(
         if (
           clWait.template === "kidou_wait_to_stage" &&
           !isPlayEffectResolved(c, "kidou") &&
-          !perTurnExhausted
+          !perTurnExhausted &&
+          (!versusMatchPhaseActive() ||
+            !versusSession.remoteMatch ||
+            (getVersusPlayRole() &&
+              canRoleActInVersus(versusSession.remoteMatch, getVersusPlayRole())))
         ) {
           out.glowClasses.push("card-item--play-kidou-glow");
           if (!out.pendingEffectKinds) out.pendingEffectKinds = [];
@@ -11075,12 +11096,12 @@ export function mountSimulator(
           !isPlayEffectResolved(c, "live_start") &&
           liveAreaHasLiveCard();
         var pendingLiveSuccessWait =
-          state.liveStatsAfterBegin === true &&
-          playLiveSuccessJudgmentVisible() &&
           c._liveSuccessEffectActive === true &&
           memberHasLiveSuccessAbility(mc) &&
           !isPlayEffectResolved(c, "live_success") &&
-          c._liveSuccessEffectDeclined !== true;
+          c._liveSuccessEffectDeclined !== true &&
+          (isVersusLiveSuccessFxStep(versusSession.remoteMatch) ||
+            (state.liveStatsAfterBegin === true && playLiveSuccessJudgmentVisible()));
         if (!out.pendingEffectKinds) out.pendingEffectKinds = [];
         if (pendingLiveStartWait) {
           out.glowClasses.push("card-item--play-live-start-glow");
@@ -11142,12 +11163,12 @@ export function mountSimulator(
       !isPlayEffectResolved(c, "live_start") &&
       liveAreaHasLiveCard();
     var pendingLiveSuccess =
-      state.liveStatsAfterBegin === true &&
-      playLiveSuccessJudgmentVisible() &&
       c._liveSuccessEffectActive === true &&
       memberHasLiveSuccessAbility(mc) &&
       !isPlayEffectResolved(c, "live_success") &&
-      c._liveSuccessEffectDeclined !== true;
+      c._liveSuccessEffectDeclined !== true &&
+      (isVersusLiveSuccessFxStep(versusSession.remoteMatch) ||
+        (state.liveStatsAfterBegin === true && playLiveSuccessJudgmentVisible()));
 
     if (pendingKidou) out.glowClasses.push("card-item--play-kidou-glow");
     if (pendingToujou) out.glowClasses.push("card-item--play-toujou-glow");
@@ -13083,10 +13104,16 @@ export function mountSimulator(
     }
     var livePublicMode = "hidden";
     if (isVersusLivePhase(versusSession.remoteMatch)) {
-      if (state.liveStatsAfterBegin) livePublicMode = "revealed";
-      else {
-        var vStep = getVersusLiveStep(versusSession.remoteMatch);
-        if (vStep === "set" || vStep === "perf") livePublicMode = "set";
+      var vStepPub = getVersusLiveStep(versusSession.remoteMatch);
+      if (
+        (vStepPub === "perf" || vStepPub === "judgment" || vStepPub === "successFx") &&
+        versusLiveSlotsHaveCards()
+      ) {
+        livePublicMode = "revealed";
+      } else if (vStepPub === "set") {
+        livePublicMode = "set";
+      } else if (state.liveStatsAfterBegin) {
+        livePublicMode = "revealed";
       }
     }
     noteVersusWaitingAddsForReveal();
@@ -13492,8 +13519,10 @@ export function mountSimulator(
       hostSuccessFxDone: false,
       guestSuccessFxDone: false,
       liveJudgmentOutcome: null,
+      liveJudgmentSeq: 0,
       turnNumber: Math.max(1, Math.floor(Number(data.turnNumber) || 1)) + 1,
     });
+    versusJudgmentAppliedSeq = -1;
     applyVersusPhaseFromRemote(versusSession.remoteMatch);
     updateVersusTurnGlow(versusSession.remoteMatch);
     syncVersusMatchBar(versusSession.remoteMatch);
@@ -13550,12 +13579,15 @@ export function mountSimulator(
     });
   }
 
+  var versusOppEffectMirrorFp = "";
+
   function syncVersusOpponentEffectMirrorDialog(remoteMatch) {
     var dlg = document.getElementById("dlg-versus-opp-effect");
     var body = document.getElementById("dlg-versus-opp-effect-body");
     var titleEl = document.getElementById("dlg-versus-opp-effect-title");
     if (!dlg || !body || typeof dlg.showModal !== "function") return;
     if (!versusOnlineActive() || !versusSession.myRole || !remoteMatch) {
+      versusOppEffectMirrorFp = "";
       try {
         dlg.close();
       } catch (_) {}
@@ -13564,18 +13596,38 @@ export function mountSimulator(
     var oppRole = versusSession.myRole === "host" ? "guest" : "host";
     var ui =
       oppRole === "host" ? remoteMatch.hostEffectUi : remoteMatch.guestEffectUi;
-    if (!ui || !ui.cardNo) {
+    var last =
+      oppRole === "host" ? remoteMatch.hostLastAction : remoteMatch.guestLastAction;
+    if (!ui || !ui.cardNo || !last || String(last).indexOf("効果") < 0) {
+      versusOppEffectMirrorFp = "";
       try {
         dlg.close();
       } catch (_) {}
       return;
     }
+    var fp =
+      String(ui.cardNo) +
+      ":" +
+      String(ui.kind || "") +
+      ":" +
+      String(ui.instId || "") +
+      ":" +
+      String(last);
+    if (versusOppEffectMirrorFp === fp && dlg.open) return;
+    versusOppEffectMirrorFp = fp;
     var oppName = versusOpponentLabel(remoteMatch, versusSession.myRole);
     if (titleEl) {
       titleEl.textContent =
         oppName + " — " + (ui.title || abilityKindLabel(ui.kind) || "効果の処理");
     }
     body.textContent = ui.bodyPlain || "（テキストなし）";
+    if (ui.kind === "kidou") {
+      try {
+        dlg.close();
+      } catch (_) {}
+      showToast(oppName + "が起動効果を処理中", { duration: 3200 });
+      return;
+    }
     if (!dlg.open) {
       try {
         dlg.showModal();
@@ -13937,8 +13989,12 @@ export function mountSimulator(
     versusSession.remoteMatch = Object.assign({}, versusSession.remoteMatch, patch);
   }
 
-  function versusMigrateLiveToSuccessForJudgment() {
-    if (!playLiveSuccessVerdictReady()) {
+  /** @param {boolean} [liveSucceeded] パフォーマンス完了時に記録した成否（判定フェイズでは盤面状態がリセット済みのため） */
+  function versusMigrateLiveToSuccessForJudgment(liveSucceeded) {
+    var ok =
+      liveSucceeded === true ||
+      (liveSucceeded !== false && playLiveSuccessVerdictReady());
+    if (!ok) {
       return versusMigrateLiveToWaitingForJudgment();
     }
     var moved = 0;
@@ -14003,15 +14059,18 @@ export function mountSimulator(
     var placedBefore = Array.isArray(state.successfulLiveArea)
       ? state.successfulLiveArea.length
       : 0;
+    var myVerdict =
+      playRole === "host" ? remoteMatch.hostLiveVerdict : remoteMatch.guestLiveVerdict;
+    var mySucceeded = myVerdict === "success";
     var placed = 0;
     if (iWin) {
-      placed = versusMigrateLiveToSuccessForJudgment();
+      placed = versusMigrateLiveToSuccessForJudgment(mySucceeded);
       showVersusLiveScoreOverlay("win");
     } else if (iLose) {
       versusMigrateLiveToWaitingForJudgment();
       showVersusLiveScoreOverlay("lose");
     } else if (iDraw) {
-      placed = versusMigrateLiveToSuccessForJudgment();
+      placed = versusMigrateLiveToSuccessForJudgment(mySucceeded);
       showVersusLiveScoreOverlay("draw");
     }
     resetVersusLocalLiveHandoff();
@@ -14706,14 +14765,21 @@ export function mountSimulator(
           liveTurnStartGlowArmed = true;
         }
       } else if (liveStep === "judgment") {
+        if (!remoteMatch.liveJudgmentOutcome) {
+          versusJudgmentAppliedSeq = Math.max(
+            -1,
+            Math.floor(Number(remoteMatch.liveJudgmentSeq) || 0) - 1,
+          );
+        }
         if (!maybeSkipVersusLiveJudgmentPhase(remoteMatch)) {
           maybeCommitVersusLiveJudgment(remoteMatch);
-          applyVersusLiveJudgmentForMe(remoteMatch);
+          applyVersusLiveJudgmentForMe(versusSession.remoteMatch || remoteMatch);
         }
       } else if (liveStep === "successFx") {
         if (!mineAct) {
           resetVersusLocalLiveHandoff();
         } else {
+          activateLiveSuccessEffectsAfterJudge();
           versusTryAutoSkipSuccessFx(remoteMatch);
           versusTryOrchestrateSuccessFx(remoteMatch);
         }

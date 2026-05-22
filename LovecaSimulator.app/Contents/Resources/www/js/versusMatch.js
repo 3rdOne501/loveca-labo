@@ -1040,6 +1040,7 @@ export async function finishVersusLiveJudgment(roomCode) {
     hostSuccessFxDone: false,
     guestSuccessFxDone: false,
     liveJudgmentOutcome: null,
+    liveJudgmentSeq: 0,
     turnNumber: Math.max(1, Math.floor(Number(data.turnNumber) || 1)) + 1,
     updatedAt: new Date().toISOString(),
   };
