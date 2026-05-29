@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Loveca Labo" />
-    <meta name="loveca-build" content="2026052021" />
+    <meta name="loveca-build" content="2026052034" />
     <title>Loveca Labo</title>
     <!-- 万一以前のバージョンの Service Worker が登録された端末で取り残しが起きた場合に備え、
          先頭で SW 登録を一括解除する。SW 自体は本サイトでは使っていない。 -->
@@ -51,7 +51,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,700;1,9..40,500&family=M+PLUS+Rounded+1c:wght@500;700&family=Noto+Sans+JP:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=2026051866" />
+    <link rel="stylesheet" href="styles.css?v=2026052034" />
     <link rel="stylesheet" href="styles-perf.css?v=2026051910" />
   </head>
   <body>
@@ -208,6 +208,29 @@ python3 -m http.server 8080</pre>
 
       <div class="builder">
         <aside class="search-panel">
+          <div id="cloud-auth-bar" class="cloud-auth-bar cloud-auth-bar--search-top" hidden>
+            <div class="cloud-auth-bar__profile">
+              <img id="cloud-auth-avatar" class="cloud-auth-bar__avatar" alt="" hidden />
+              <div class="cloud-auth-bar__profile-text">
+                <span id="cloud-auth-status" class="cloud-auth-bar__status">未ログイン</span>
+                <label id="player-display-name-wrap" class="player-display-name-wrap" hidden>
+                  <span class="player-display-name-wrap__label">対戦表示名</span>
+                  <input
+                    type="text"
+                    id="input-player-display-name"
+                    class="input player-display-name-input"
+                    maxlength="32"
+                    placeholder="ルームで表示する名前"
+                    autocomplete="nickname"
+                  />
+                </label>
+              </div>
+            </div>
+            <div class="cloud-auth-bar__actions">
+              <button type="button" id="cloud-auth-signin" class="btn sm secondary cloud-auth-bar__signin" title="Google でログイン">Google でログイン</button>
+              <button type="button" id="cloud-auth-signout" class="btn sm secondary cloud-auth-bar__signout" hidden>ログアウト</button>
+            </div>
+          </div>
           <div class="search-panel-tools">
             <h2 class="panel-h2-plain">検索・絞り込み</h2>
             <div class="search-quick-tools">
@@ -395,29 +418,6 @@ python3 -m http.server 8080</pre>
         </section>
 
         <aside class="deck-panel">
-          <div id="cloud-auth-bar" class="cloud-auth-bar cloud-auth-bar--deck-top" hidden>
-            <div class="cloud-auth-bar__profile">
-              <img id="cloud-auth-avatar" class="cloud-auth-bar__avatar" alt="" hidden />
-              <div class="cloud-auth-bar__profile-text">
-                <span id="cloud-auth-status" class="cloud-auth-bar__status">未ログイン</span>
-                <label id="player-display-name-wrap" class="player-display-name-wrap" hidden>
-                  <span class="player-display-name-wrap__label">対戦表示名</span>
-                  <input
-                    type="text"
-                    id="input-player-display-name"
-                    class="input player-display-name-input"
-                    maxlength="32"
-                    placeholder="ルームで表示する名前"
-                    autocomplete="nickname"
-                  />
-                </label>
-              </div>
-            </div>
-            <div class="cloud-auth-bar__actions">
-              <button type="button" id="cloud-auth-signin" class="btn sm secondary cloud-auth-bar__signin" title="Google でログイン">Google でログイン</button>
-              <button type="button" id="cloud-auth-signout" class="btn sm secondary cloud-auth-bar__signout" hidden>ログアウト</button>
-            </div>
-          </div>
           <div class="deck-panel-sticky-head">
             <div class="deck-panel-head-row">
               <h2>メインデッキ</h2>
@@ -1847,6 +1847,32 @@ python3 -m http.server 8080</pre>
       </div>
     </dialog>
 
+    <dialog
+      id="dlg-versus-opp-hand-reveal"
+      class="app-dialog dlg-versus-opp-hand-reveal"
+      aria-labelledby="dlg-versus-opp-hand-reveal-title"
+    >
+      <h2 id="dlg-versus-opp-hand-reveal-title" class="app-dialog__title">相手が手札に加えたカード</h2>
+      <p class="hint zone-inline-help muted">効果で相手が手札に加えたカードを一時公開しています（約6秒）。</p>
+      <div id="dlg-versus-opp-hand-reveal-body" class="dlg-versus-opp-hand-reveal-body"></div>
+      <div class="app-dialog__actions">
+        <button type="button" class="btn secondary" id="dlg-versus-opp-hand-reveal-close">閉じる</button>
+      </div>
+    </dialog>
+
+    <dialog
+      id="dlg-versus-opp-wait-reveal"
+      class="app-dialog dlg-versus-opp-hand-reveal dlg-versus-opp-wait-reveal"
+      aria-labelledby="dlg-versus-opp-wait-reveal-title"
+    >
+      <h2 id="dlg-versus-opp-wait-reveal-title" class="app-dialog__title">相手の控え室に置かれたカード</h2>
+      <p class="hint zone-inline-help muted">相手が控え室に置いたカードを一時公開しています（約6秒）。</p>
+      <div id="dlg-versus-opp-wait-reveal-body" class="dlg-versus-opp-hand-reveal-body"></div>
+      <div class="app-dialog__actions">
+        <button type="button" class="btn secondary" id="dlg-versus-opp-wait-reveal-close">閉じる</button>
+      </div>
+    </dialog>
+
     <dialog id="dlg-versus-lobby" class="app-dialog dlg-versus-lobby" aria-labelledby="dlg-versus-lobby-title">
       <div class="dlg-versus-lobby__header">
         <h2 id="dlg-versus-lobby-title" class="app-dialog__title dlg-versus-lobby__title">対戦モード（総合ルール 1.06）</h2>
@@ -1886,7 +1912,7 @@ python3 -m http.server 8080</pre>
       </details>
       <p class="hint zone-inline-help muted">
         <strong>オンラインルーム</strong> — 2人が別アカウントで参加。成功ライブ枚数・ターン・直近操作を Firestore で共有。
-        手札や場のカードはまだ同期されません（各端末で自分の盤面を操作）。ホストが「対戦開始」後、<strong>ターン終了</strong>で手番を渡します。再読み込み後は<strong>ルームに入室</strong>で対戦画面へ戻れます（ルームからは追い出されません）。
+        手札や場のカードはまだ同期されません（各端末で自分の盤面を操作）。準備完了後、ホストが<strong>対戦開始</strong>すると自動で対戦画面へ入ります。再読み込み後は<strong>対戦画面へ</strong>で復帰できます。
       </p>
       <p id="dlg-versus-lobby-status" class="dlg-versus-lobby-status muted" role="status"></p>
       <details id="dlg-versus-online-wrap" class="dlg-versus-online-wrap" hidden>
@@ -1914,6 +1940,34 @@ python3 -m http.server 8080</pre>
           <button type="button" class="btn primary" id="dlg-versus-open-play" hidden>対戦画面へ</button>
         </div>
       </details>
+    </dialog>
+
+    <dialog
+      id="dlg-versus-opp-effect"
+      class="app-dialog dlg-versus-opp-effect"
+      aria-labelledby="dlg-versus-opp-effect-title"
+    >
+      <h2 id="dlg-versus-opp-effect-title" class="app-dialog__title">相手の効果処理</h2>
+      <p id="dlg-versus-opp-effect-lead" class="hint zone-inline-help muted">
+        相手が効果を解決しています（閲覧のみ）
+      </p>
+      <div id="dlg-versus-opp-effect-body" class="dlg-versus-opp-effect-body"></div>
+      <div class="app-dialog__actions">
+        <button type="button" class="btn secondary" id="dlg-versus-opp-effect-close">閉じる</button>
+      </div>
+    </dialog>
+
+    <dialog
+      id="dlg-versus-action-approve"
+      class="app-dialog dlg-versus-action-approve"
+      aria-labelledby="dlg-versus-action-approve-title"
+    >
+      <h2 id="dlg-versus-action-approve-title" class="app-dialog__title">操作の承認</h2>
+      <p id="dlg-versus-action-approve-lead" class="dlg-versus-action-approve-lead"></p>
+      <div class="app-dialog__actions">
+        <button type="button" class="btn secondary" id="dlg-versus-action-approve-no">いいえ</button>
+        <button type="button" class="btn primary" id="dlg-versus-action-approve-yes">はい</button>
+      </div>
     </dialog>
 
     <dialog id="dlg-ability-guided" class="app-dialog dlg-ability-guided" aria-labelledby="dlg-ability-guided-title">
@@ -1987,32 +2041,32 @@ python3 -m http.server 8080</pre>
       {
         "scopes": {
           "/js/": {
-            "./abilityEffects.js": "./abilityEffects.js?v=2026051866",
-            "./bladeHeart.js": "./bladeHeart.js?v=2026051866",
-            "./cardCatalogDialog.js": "./cardCatalogDialog.js?v=2026051866",
-            "./cardGroups.js": "./cardGroups.js?v=2026051866",
-            "./cards.js": "./cards.js?v=2026051866",
-            "./cloudAuth.js": "./cloudAuth.js?v=2026051866",
-            "./config.js": "./config.js?v=2026051866",
-            "./deckLibrary.js": "./deckLibrary.js?v=2026051866",
-            "./deckbuilder.js": "./deckbuilder.js?v=2026051866",
-            "./decklogImport.js": "./decklogImport.js?v=2026051866",
-            "./firebaseConfig.js": "./firebaseConfig.js?v=2026051866",
-            "./gameStatusIcons.js": "./gameStatusIcons.js?v=2026051866",
-            "./joujiEffects.js": "./joujiEffects.js?v=2026051866",
-            "./liveSpecialBhOverride.js": "./liveSpecialBhOverride.js?v=2026051866",
-            "./main.js": "./main.js?v=2026052021",
-            "./sampleDeckRecipes.js": "./sampleDeckRecipes.js?v=2026051866",
-            "./simulator.js": "./simulator.js?v=2026052021",
-            "./testCardLog.js": "./testCardLog.js?v=2026051866",
-            "./ui.js": "./ui.js?v=2026051866",
-            "./versusBoardSync.js": "./versusBoardSync.js?v=2026051866",
-            "./versusMatch.js": "./versusMatch.js?v=2026051866",
-            "./versusMode.js": "./versusMode.js?v=2026051866"
+            "./abilityEffects.js": "./abilityEffects.js?v=2026052034",
+            "./bladeHeart.js": "./bladeHeart.js?v=2026052034",
+            "./cardCatalogDialog.js": "./cardCatalogDialog.js?v=2026052034",
+            "./cardGroups.js": "./cardGroups.js?v=2026052034",
+            "./cards.js": "./cards.js?v=2026052034",
+            "./cloudAuth.js": "./cloudAuth.js?v=2026052034",
+            "./config.js": "./config.js?v=2026052034",
+            "./deckLibrary.js": "./deckLibrary.js?v=2026052034",
+            "./deckbuilder.js": "./deckbuilder.js?v=2026052034",
+            "./decklogImport.js": "./decklogImport.js?v=2026052034",
+            "./firebaseConfig.js": "./firebaseConfig.js?v=2026052034",
+            "./gameStatusIcons.js": "./gameStatusIcons.js?v=2026052034",
+            "./joujiEffects.js": "./joujiEffects.js?v=2026052034",
+            "./liveSpecialBhOverride.js": "./liveSpecialBhOverride.js?v=2026052034",
+            "./main.js": "./main.js?v=2026052034",
+            "./sampleDeckRecipes.js": "./sampleDeckRecipes.js?v=2026052034",
+            "./simulator.js": "./simulator.js?v=2026052034",
+            "./testCardLog.js": "./testCardLog.js?v=2026052034",
+            "./ui.js": "./ui.js?v=2026052034",
+            "./versusBoardSync.js": "./versusBoardSync.js?v=2026052034",
+            "./versusMatch.js": "./versusMatch.js?v=2026052034",
+            "./versusMode.js": "./versusMode.js?v=2026052034"
           }
         }
       }
     </script>
-    <script type="module" src="js/main.js?v=2026052021"></script>
+    <script type="module" src="js/main.js?v=2026052034"></script>
   </body>
 </html>

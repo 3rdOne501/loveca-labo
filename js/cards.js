@@ -36,21 +36,22 @@ export function getEffectiveCardsJsonUrl() {
   return CARDS_JSON_URL;
 }
 
-/** @returns {string[]} 取得を試す URL（上書き → 同梱 data → CDN） */
+/** @returns {string[]} 取得を試す URL（上書き → CDN → 同梱 data） */
 export function getCardsJsonLoadUrls() {
   /** @type {string[]} */
   const urls = [];
   const o = localStorage.getItem(STORAGE_CARDS_JSON_OVERRIDE);
   if (o != null && String(o).trim() !== "") urls.push(String(o).trim());
+  for (const remote of CARDS_JSON_REMOTE_URLS) {
+    if (remote && urls.indexOf(remote) < 0) urls.push(remote);
+  }
   try {
     if (typeof document !== "undefined" && document.baseURI) {
-      urls.push(new URL(CARDS_JSON_BUNDLED_PATH, document.baseURI).href);
+      const bundled = new URL(CARDS_JSON_BUNDLED_PATH, document.baseURI).href;
+      if (urls.indexOf(bundled) < 0) urls.push(bundled);
     }
   } catch (_) {
     /* noop */
-  }
-  for (const remote of CARDS_JSON_REMOTE_URLS) {
-    if (remote && urls.indexOf(remote) < 0) urls.push(remote);
   }
   return urls;
 }

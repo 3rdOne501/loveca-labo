@@ -23,6 +23,17 @@ echo "リポジトリ: $ROOT"
 echo "ブランチ: $BRANCH  →  $REMOTE/$BRANCH"
 echo
 
+SYNC_CARDS="${ROOT}/scripts/sync-cards-json.sh"
+if [[ -x "$SYNC_CARDS" ]] && command -v curl >/dev/null 2>&1 && command -v python3 >/dev/null 2>&1; then
+  echo "カード DB（llocg_db）を確認しています..."
+  if bash "$SYNC_CARDS"; then
+    echo "cards.json 同期 OK"
+  else
+    echo "警告: cards.json の同期に失敗しました（既存ファイルで続行）" >&2
+  fi
+  echo
+fi
+
 if [[ -n "$(git status --porcelain 2>/dev/null)" ]]; then
   echo "変更をステージしています (git add -A) ..."
   git add -A

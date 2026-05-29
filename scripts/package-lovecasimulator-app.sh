@@ -8,17 +8,21 @@ WWW="$APP/Contents/Resources/www"
 RES="$APP/Contents/Resources"
 DATA_DIR="$ROOT/data"
 CARDS_JSON_SRC="${DATA_DIR}/cards.json"
-CARDS_JSON_URL="${LL_OCG_CARDS_JSON_URL:-https://cdn.jsdelivr.net/gh/wlt233/llocg_db@master/json/cards.json}"
+SYNC_SCRIPT="$ROOT/scripts/sync-cards-json.sh"
 
 mkdir -p "$DATA_DIR"
-if [[ ! -s "$CARDS_JSON_SRC" ]]; then
-  echo "カード DB を取得: $CARDS_JSON_URL"
-  if ! curl -fsSL --max-time 120 "$CARDS_JSON_URL" -o "$CARDS_JSON_SRC.part"; then
-    echo "警告: data/cards.json の取得に失敗しました（オンライン時は CDN から取得します）" >&2
-    rm -f "$CARDS_JSON_SRC.part"
-  else
-    mv "$CARDS_JSON_SRC.part" "$CARDS_JSON_SRC"
+if [[ -x "$SYNC_SCRIPT" ]]; then
+  echo "カード DB を同期..."
+  if ! bash "$SYNC_SCRIPT"; then
+    if [[ ! -s "$CARDS_JSON_SRC" ]]; then
+      echo "エラー: data/cards.json が無く、同期にも失敗しました。" >&2
+      exit 1
+    fi
+    echo "警告: 同期失敗。既存の data/cards.json を同梱します。" >&2
   fi
+elif [[ ! -s "$CARDS_JSON_SRC" ]]; then
+  echo "エラー: data/cards.json がありません。scripts/sync-cards-json.sh を用意してください。" >&2
+  exit 1
 fi
 
 echo "同梱先: $WWW"
