@@ -1053,6 +1053,30 @@ function openVersusOpponentWaitingRevealDialog(cards) {
   });
 }
 
+/** 盤面切替時など、誤って公開トーストが出ないようリセット */
+export function resetVersusOpponentRevealToastState() {
+  lastOppHandRevealToastKey = "";
+  lastOppWaitRevealToastKey = "";
+  if (oppHandRevealDialogTimer) {
+    clearTimeout(oppHandRevealDialogTimer);
+    oppHandRevealDialogTimer = 0;
+  }
+  if (oppWaitRevealDialogTimer) {
+    clearTimeout(oppWaitRevealDialogTimer);
+    oppWaitRevealDialogTimer = 0;
+  }
+  ["dlg-versus-opp-hand-reveal", "dlg-versus-opp-wait-reveal"].forEach(function (id) {
+    var dlg = document.getElementById(id);
+    if (dlg && dlg.open) {
+      try {
+        dlg.close();
+      } catch (_) {
+        /* noop */
+      }
+    }
+  });
+}
+
 /** @param {VersusPublicBoard|null|undefined} board */
 function maybeToastOpponentHandReveal(board) {
   if (!board || !board.handReveal || !board.handReveal.length) return;
@@ -1162,7 +1186,7 @@ function fillOppSecretHand(strip, handCount) {
 
 /**
  * @param {VersusPublicBoard|null} board
- * @param {{ opponentName?: string, updatedAt?: string|null, skipMeta?: boolean, effectCardNo?: string|null, effectKind?: string|null, remoteMatch?: import('./versusMatch.js').VersusMatchDoc|null, myRole?: 'host'|'guest'|null }} [opts]
+ * @param {{ opponentName?: string, updatedAt?: string|null, skipMeta?: boolean, skipRevealToasts?: boolean, effectCardNo?: string|null, effectKind?: string|null, remoteMatch?: import('./versusMatch.js').VersusMatchDoc|null, myRole?: 'host'|'guest'|null }} [opts]
  */
 export function renderVersusOpponentBoard(board, opts) {
   const wrap = document.getElementById("versus-opponent-board-wrap");
@@ -1234,14 +1258,19 @@ export function renderVersusOpponentBoard(board, opts) {
   setCount("versus-opp-energy-wait-count", energyWait);
 
   const handStrip = document.getElementById("versus-opp-zone-hand");
+  const skipRevealToasts = !!(opts && opts.skipRevealToasts);
   if (board.handReveal && board.handReveal.length) {
     fillOppStrip(handStrip, board.handReveal);
-    maybeToastOpponentHandReveal(board);
+    if (!skipRevealToasts) {
+      maybeToastOpponentHandReveal(board);
+    }
   } else {
     fillOppSecretHand(handStrip, board.handCount || 0);
   }
   fillOppStrip(document.getElementById("versus-opp-zone-waiting"), board.waitingRoom);
-  maybeToastOpponentWaitingReveal(board);
+  if (!skipRevealToasts) {
+    maybeToastOpponentWaitingReveal(board);
+  }
   fillOppStrip(document.getElementById("versus-opp-zone-resolution"), board.resolutionArea);
   fillOppStrip(document.getElementById("versus-opp-zone-sl"), board.successfulLiveArea);
   fillOppStrip(document.getElementById("versus-opp-zone-energy"), board.energyArea);

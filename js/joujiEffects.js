@@ -20,9 +20,12 @@ import { T_MEMBER } from "./config.js";
  * @property {Record<number, number>} [heartFlat]
  * @property {number} [liveScorePlus]
  * @property {number} [handCostReduce]
+ * @property {number} [handCostReducePer]
  * @property {number} [handCostReduceTargetCost]
  * @property {string} [handCostReduceSeriesTag]
  * @property {boolean} [handCostReduceNoAbility]
+ * @property {number} [mirrorUnderMaxCost]
+ * @property {string} [batonSeriesOnlyTag]
  * @property {number} [stageCostPlus]
  * @property {number} [opponentLiveNeedHeartPlus]
  * @property {string} [seriesTag]
@@ -72,6 +75,7 @@ import { T_MEMBER } from "./config.js";
  * @property {boolean} cannotSelfActivate
  * @property {boolean} cannotBatonToWaiting
  * @property {boolean} allowsTwoMemberBaton
+ * @property {boolean} [printedHeartsWildcard]
  */
 
 /**
@@ -177,6 +181,10 @@ export function isNativeJoujiSegment(segs, index) {
   var prevText = String(prev.text || "");
   if (/「/.test(prevText) && !/」/.test(prevText)) return false;
   if (/ライブ終了時まで/.test(prevText) && /を得る/.test(prevText)) return false;
+  var prevPlain = segmentPlainText(prevText);
+  if (/[かも]$/.test(prevPlain) || /または$/.test(prevPlain)) {
+    if (/^能力を持/.test(plain) || /^常時/.test(plain)) return false;
+  }
   return true;
 }
 
@@ -271,12 +279,23 @@ export function classifyJoujiSegment(segRaw) {
   if (/相手のステージにいるメンバーはアクティブフェイズにアクティブにならない/.test(p)) {
     return Object.assign({}, base, { kind: "opponent_cannot_activate" });
   }
-  if (/バトンタッチで控え室に置けない/.test(p)) {
+  var batonOnlyEarly = p.match(/『([^』]+)』以外のメンバーカードとのバトンタッチで控え室に置けない/);
+  if (batonOnlyEarly) {
+    return Object.assign({}, base, {
+      kind: "baton_series_only",
+      batonSeriesOnlyTag: batonOnlyEarly[1],
+      requiresStageOnly: true,
+    });
+  }
+  if (/バトンタッチで控え室に置けない/.test(p) && !/以外のメンバーカードとのバトンタッチ/.test(p)) {
     return Object.assign({}, base, { kind: "cannot_baton_to_waiting" });
   }
-  if (/相手のライブカード置き場にあるすべてのライブカード.*必要ハートが多くなる/.test(p)) {
+  if (/相手のライブカード置き場にある(すべてのライブカード|ライブカード1枚).*必要ハートが.*多くなる/.test(p)) {
     var h0 = countHeartIconsBySlot(segRaw)[0] || 1;
     return Object.assign({}, base, { kind: "opponent_live_need_heart", opponentLiveNeedHeartPlus: h0 });
+  }
+  if (/元々持つハートはすべて/.test(p) && /heart0|heart_00|heart_0/.test(p + segRaw)) {
+    return Object.assign({}, base, { kind: "printed_hearts_wildcard", requiresStageOnly: true });
   }
 
   var scorePlus = parseScorePlus(p);
@@ -327,6 +346,28 @@ export function classifyJoujiSegment(segRaw) {
       handCostReduce: Number(grantSeriesHand[3]) || 1,
       handCostReduceTargetCost: Number(grantSeriesHand[1]) || 10,
       handCostReduceSeriesTag: grantSeriesHand[2],
+      requiresStageOnly: true,
+    });
+  }
+
+  var handPerSeries = p.match(
+    /手札にあるこのメンバーカードのコストは、自分のステージにいる『([^』]+)』のメンバー1人につき、(\d+)少なくなる/,
+  );
+  if (handPerSeries) {
+    return Object.assign({}, base, {
+      kind: "hand_cost_per_series_on_stage",
+      handCostReduceSeriesTag: handPerSeries[1],
+      handCostReducePer: Number(handPerSeries[2]) || 2,
+    });
+  }
+
+  if (/下に置かれている.*が持つ.*能力をすべて得る/.test(p)) {
+    var mirCost = p.match(/コスト(\d+)以下/);
+    var mirSer = p.match(/『([^』]+)』/);
+    return Object.assign({}, base, {
+      kind: "mirror_under_card_live_success",
+      mirrorUnderMaxCost: mirCost ? Number(mirCost[1]) : 99,
+      seriesTag: mirSer ? mirSer[1] : null,
       requiresStageOnly: true,
     });
   }
@@ -577,6 +618,7 @@ function emptyJoujiEval() {
     cannotSelfActivate: false,
     cannotBatonToWaiting: false,
     allowsTwoMemberBaton: false,
+    printedHeartsWildcard: false,
   };
 }
 
@@ -595,6 +637,7 @@ function mergeJoujiEval(acc, part) {
   acc.cannotSelfActivate = acc.cannotSelfActivate || part.cannotSelfActivate;
   acc.cannotBatonToWaiting = acc.cannotBatonToWaiting || part.cannotBatonToWaiting;
   acc.allowsTwoMemberBaton = acc.allowsTwoMemberBaton || part.allowsTwoMemberBaton;
+  acc.printedHeartsWildcard = acc.printedHeartsWildcard || part.printedHeartsWildcard;
 }
 
 /** @param {JoujiRule} rule @param {*} inst @param {*} card @param {JoujiBoardContext} ctx */
@@ -624,13 +667,32 @@ function evaluateJoujiRule(rule, inst, card, ctx) {
     case "cannot_baton_to_waiting":
       out.cannotBatonToWaiting = true;
       return out;
+    case "baton_series_only":
+    case "mirror_under_card_live_success":
+      return out;
     case "opponent_cannot_activate":
       return out;
     case "opponent_live_need_heart":
       if (ctx.memberOnStageOrLive(inst)) out.opponentLiveNeedHeartPlus = rule.opponentLiveNeedHeartPlus || 1;
       return out;
+    case "printed_hearts_wildcard":
+      if (ctx.memberOnStageOrLive(inst)) out.printedHeartsWildcard = true;
+      return out;
     case "hand_cost_reduce":
       out.handCostReduction = rule.handCostReduce || 0;
+      return out;
+    case "hand_cost_per_series_on_stage":
+      if (ctx.instInOwnHand && ctx.instInOwnHand(inst)) {
+        var stageCnt = 0;
+        ctx.eachStageColumnMembers().forEach(function (m) {
+          if (!m) return;
+          if (rule.handCostReduceSeriesTag && !ctx.memberMatchesSeries(m, rule.handCostReduceSeriesTag)) {
+            return;
+          }
+          stageCnt++;
+        });
+        out.handCostReduction = stageCnt * (rule.handCostReducePer || 1);
+      }
       return out;
     case "hand_cost_per_other_hand":
       if (ctx.instInOwnHand && ctx.instInOwnHand(inst)) {
@@ -944,6 +1006,31 @@ export function computeJoujiHandCostReductionForCard(targetInst, ctx) {
 export function catalogMemberHasNoAbility(card) {
   var ab = card && card.ability != null ? String(card.ability).trim() : "";
   return ab === "";
+}
+
+/** @param {*} card */
+export function memberHasMirrorUnderLiveSuccessJouji(card) {
+  if (!card) return false;
+  var raws = listNativeJoujiSegmentRaws(card);
+  for (var i = 0; i < raws.length; i++) {
+    var rule = classifyJoujiSegment(raws[i]);
+    if (rule && rule.kind === "mirror_under_card_live_success") return true;
+  }
+  return false;
+}
+
+/** @param {*} inst @param {JoujiBoardContext} ctx */
+export function getJoujiBatonSeriesOnlyTag(inst, ctx) {
+  if (!inst || !ctx) return null;
+  var card = ctx.mergedCatalog(inst);
+  var raws = listNativeJoujiSegmentRaws(card);
+  for (var i = 0; i < raws.length; i++) {
+    var rule = classifyJoujiSegment(raws[i]);
+    if (!rule || rule.kind !== "baton_series_only") continue;
+    if (rule.requiresStageOnly && !ctx.memberOnStageOnly(inst)) continue;
+    return rule.batonSeriesOnlyTag || null;
+  }
+  return null;
 }
 
 export function joujiHeartSlotRead(slots, si) {

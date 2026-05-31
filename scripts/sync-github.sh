@@ -34,6 +34,13 @@ if [[ -x "$SYNC_CARDS" ]] && command -v curl >/dev/null 2>&1 && command -v pytho
   echo
 fi
 
+INDEX_BUILD="${ROOT}/scripts/build-ability-index.mjs"
+if [[ -f "$INDEX_BUILD" ]] && command -v node >/dev/null 2>&1; then
+  echo "能力 index を再生成しています..."
+  node "$INDEX_BUILD" || echo "警告: build-ability-index に失敗しました" >&2
+  echo
+fi
+
 if [[ -n "$(git status --porcelain 2>/dev/null)" ]]; then
   echo "変更をステージしています (git add -A) ..."
   git add -A
