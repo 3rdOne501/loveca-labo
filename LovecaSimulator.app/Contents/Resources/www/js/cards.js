@@ -16,6 +16,9 @@ import {
   setIsScoreLiveCheck,
 } from "./bladeHeart.js";
 
+/** リモートが `{}` だけ返す等の異常応答を弾き、同梱 data/cards.json へフォールバックする */
+const MIN_CATALOG_CARD_COUNT = 50;
+
 let catalog = {};
 let list = [];
 /** 正規化キー → カタログ上の実キー（全角／結合文字などの表記ゆれで getCard が外れないようにする） */
@@ -249,6 +252,16 @@ export function prefetchDeckCardImagesFromMap(deckMap, getCardFn) {
   }
 }
 
+/** @param {unknown} raw */
+function countCatalogCardKeys(raw) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return 0;
+  let n = 0;
+  for (const k of Object.keys(raw)) {
+    if (!String(k).startsWith("_")) n++;
+  }
+  return n;
+}
+
 function ingestCardCatalogJson(raw) {
   catalog = raw;
   catalogKeyByNormalized = new Map();
@@ -279,6 +292,15 @@ export async function loadCardDatabase(statusEl) {
     if (!res.ok) throw new Error("カードデータの取得に失敗しました: " + res.status + " (" + url + ")");
     const json = await res.json();
     if (!json || typeof json !== "object") throw new Error("カードデータの形式が不正です: " + url);
+    const cardCount = countCatalogCardKeys(json);
+    if (cardCount < MIN_CATALOG_CARD_COUNT) {
+      throw new Error(
+        "カードデータが空または件数不足です（" +
+          cardCount +
+          " 件）: " +
+          url,
+      );
+    }
     ingestCardCatalogJson(json);
     if (detail) detail.textContent = "";
     return list;

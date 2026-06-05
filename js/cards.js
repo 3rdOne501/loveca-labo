@@ -16,6 +16,9 @@ import {
   setIsScoreLiveCheck,
 } from "./bladeHeart.js";
 
+/** リモートが `{}` だけ返す等の異常応答を弾き、同梱 data/cards.json へフォールバックする */
+const MIN_CATALOG_CARD_COUNT = 50;
+
 let catalog = {};
 let list = [];
 /** 正規化キー → カタログ上の実キー（全角／結合文字などの表記ゆれで getCard が外れないようにする） */
@@ -250,6 +253,16 @@ export function prefetchDeckCardImagesFromMap(deckMap, getCardFn) {
   }
 }
 
+/** @param {unknown} raw */
+function countCatalogCardKeys(raw) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return 0;
+  let n = 0;
+  for (const k of Object.keys(raw)) {
+    if (!String(k).startsWith("_")) n++;
+  }
+  return n;
+}
+
 function ingestCardCatalogJson(raw) {
   catalog = raw;
   catalogKeyByNormalized = new Map();
@@ -280,6 +293,15 @@ export async function loadCardDatabase(statusEl) {
     if (!res.ok) throw new Error("カードデータの取得に失敗しました: " + res.status + " (" + url + ")");
     const json = await res.json();
     if (!json || typeof json !== "object") throw new Error("カードデータの形式が不正です: " + url);
+    const cardCount = countCatalogCardKeys(json);
+    if (cardCount < MIN_CATALOG_CARD_COUNT) {
+      throw new Error(
+        "カードデータが空または件数不足です（" +
+          cardCount +
+          " 件）: " +
+          url,
+      );
+    }
     ingestCardCatalogJson(json);
     if (detail) detail.textContent = "";
     return list;
@@ -896,15 +918,23 @@ export function uniqueProducts(cards) {
 export function uniqueSeries(cards) {
   const s = new Set();
   cards.forEach((c) => {
-    if (c.series) {
-      String(c.series)
-        .split(/\n/)
-        .map((x) => x.trim())
-        .filter(Boolean)
-        .forEach((x) => s.add(x));
-    }
+    cardSeriesLines(c.series).forEach((x) => s.add(x));
   });
   return [...s].sort();
+}
+
+/** @param {unknown} seriesStr @returns {string[]} */
+export function cardSeriesLines(seriesStr) {
+  return String(seriesStr || "")
+    .split(/\n/)
+    .map((x) => x.trim())
+    .filter(Boolean);
+}
+
+/** @param {unknown} seriesStr @param {string} selected @returns {boolean} */
+export function cardMatchesSeriesFilter(seriesStr, selected) {
+  if (!selected) return true;
+  return cardSeriesLines(seriesStr).includes(selected);
 }
 
 export function uniqueUnits(cards) {
@@ -1033,10 +1063,7 @@ export function filterCards(cards, opts) {
     if (opts.types[T_MEMBER] === false && c.type === T_MEMBER) return false;
     if (opts.types[T_LIVE] === false && c.type === T_LIVE) return false;
     if (opts.product && c.product !== opts.product) return false;
-    if (opts.series) {
-      const ser = String(c.series || "");
-      if (!ser.includes(opts.series)) return false;
-    }
+    if (opts.series && !cardMatchesSeriesFilter(c.series, opts.series)) return false;
     if (opts.unit && c.unit !== opts.unit) return false;
     /* コストに何かしら「外した」チェックがあるとき、ライブはコストを持たないので一覧に出さない */
     if (opts.narrowCostExcludeLive && c.type === T_LIVE) return false;

@@ -7409,7 +7409,12 @@ body.play-mode .btn--manual-mode-on {
   vertical-align: -0.15em;
 }
 .dlg-ability-guided-lead--auto {
-  color: var(--accent-soft, #ffc8e8);
+  color: #fff9fc;
+  background: rgba(28, 10, 24, 0.72);
+  border: 1px solid rgba(255, 168, 210, 0.42);
+  border-radius: 8px;
+  padding: 0.55rem 0.7rem;
+  line-height: 1.5;
 }
 .dlg-deck-to-wait-reveal__grid {
   grid-template-columns: repeat(auto-fill, minmax(4.6rem, 1fr));

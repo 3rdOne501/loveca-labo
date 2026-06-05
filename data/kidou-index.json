@@ -1,11 +1,11 @@
 {
-  "generated": "2026-05-30",
+  "generated": "2026-06-05",
   "trigger": "kidou",
   "total": 245,
   "byTemplate": {
     "kidou_stage_wait_pick_hand": 54,
     "deck_top_to_waiting": 1,
-    "kidou_hand_cost_wait_pick_hand": 29,
+    "kidou_hand_cost_wait_pick_hand": 25,
     "draw_from_deck": 16,
     "deck_top_pick_recover": 5,
     "kidou_wait_to_stage": 4,
@@ -24,6 +24,7 @@
     "kidou_wait_shuffle_deck_bottom_activate": 1,
     "deck_reveal_until_pick": 2,
     "kidou_energy_or_activate_member": 2,
+    "kidou_hand_discard_series_branch": 4,
     "kidou_opp_wait_group_discount_energy": 4,
     "kidou_hand_discard_wait_live_score_pay": 3,
     "kidou_wait_or_hand_for_energy": 4,
@@ -1387,7 +1388,7 @@
     {
       "card_no": "PL!-bp5-003-R＋",
       "name": "南 ことり",
-      "template": "kidou_hand_cost_wait_pick_hand",
+      "template": "kidou_hand_discard_series_branch",
       "automated": true,
       "optional": false,
       "perTurn": 1,
@@ -1396,7 +1397,7 @@
     {
       "card_no": "PL!-bp5-003-P",
       "name": "南 ことり",
-      "template": "kidou_hand_cost_wait_pick_hand",
+      "template": "kidou_hand_discard_series_branch",
       "automated": true,
       "optional": false,
       "perTurn": 1,
@@ -1405,7 +1406,7 @@
     {
       "card_no": "PL!-bp5-003-AR",
       "name": "南 ことり",
-      "template": "kidou_hand_cost_wait_pick_hand",
+      "template": "kidou_hand_discard_series_branch",
       "automated": true,
       "optional": false,
       "perTurn": 1,
@@ -1414,7 +1415,7 @@
     {
       "card_no": "PL!-bp5-003-SEC",
       "name": "南 ことり",
-      "template": "kidou_hand_cost_wait_pick_hand",
+      "template": "kidou_hand_discard_series_branch",
       "automated": true,
       "optional": false,
       "perTurn": 1,

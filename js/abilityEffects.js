@@ -95,6 +95,7 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  *   |'kidou_hand_discard_trigger_ability'
  *   |'yell_reveal_series_live_score_plus'
  *   |'optional_energy_live_score_plus'
+ *   |'live_card_score_plus'
  *   |'live_start_pay_or_hand_discard'
  *   |'toujou_wait_to_member_under'
  *   |'toujou_both_center_position_change'
@@ -214,7 +215,10 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  * @property {string} [excludeCharacterName] 対象から除外するキャラ名
  * @property {number} [energyUnderCount] メンバー下に置くエネルギー枚数
  * @property {number[]} [heartPickSlots] ハート色選択で選べるスロット 1-6
+ * @property {boolean} [heartPerSuccessLive] 成功ライブカード置き場のライブ1枚につきハート付与
  * @property {number} [requiredHeartSlot] 効果で参照するハート色 1-6
+ * @property {number} [liveScoreGrant] ライブの合計スコア＋N
+ * @property {number} [cardScoreGrant] このカードのスコア＋N
  */
 
 export function cardAbilityRawText(card) {
@@ -466,6 +470,11 @@ function textHasHeartColorPickGrant(p) {
   );
 }
 
+/** @param {string} p @returns {boolean} */
+function textHasHeartPerSuccessLiveGrant(p) {
+  return /成功ライブ(?:カード)?置き場にあるカード1枚につき/.test(p);
+}
+
 function classifyOptionalSelfWaitEffect(p, base) {
   if (!base.costSelfWait || !base.hasOptionalCost) return null;
   /** @type {Partial<ClassifiedAbility>} */
@@ -528,7 +537,10 @@ function classifyOptionalSelfWaitEffect(p, base) {
     });
   }
   if (/成功ライブ/.test(p) && /手札に加/.test(p)) {
-    return Object.assign(patch, { template: "toujou_success_live_pick_hand" });
+    return Object.assign(patch, {
+      template: "toujou_success_live_pick_hand",
+      filters: parseAbilityPickFilters(p),
+    });
   }
   var drawM = p.match(/カードを(\d+)枚引/);
   if (drawM && !/控え室から/.test(p) && !/山札の上からカードを/.test(p)) {
@@ -710,6 +722,18 @@ export function parseAbilityPickFilters(p) {
   var slM = p.match(/成功ライブ(?:カード)?置き場にカードが(\d+)枚以上/);
   if (!slM) slM = p.match(/成功ライブ.*置き場.*(\d+)枚以上/);
   if (slM) f.minSuccessLiveCount = Number(slM[1]);
+  if (
+    f.minSuccessLiveCount == null &&
+    /成功ライブ(?:カード)?置き場にカードが1枚以上/.test(p)
+  ) {
+    f.minSuccessLiveCount = 1;
+  }
+  if (
+    f.minSuccessLiveCount == null &&
+    /成功ライブ(?:カード)?置き場にカードがある場合/.test(p)
+  ) {
+    f.minSuccessLiveCount = 1;
+  }
   var needM = p.match(/必要ハートに([^を]+)を(\d+)以上/);
   if (needM) {
     f.minNeedHeartValue = Number(needM[2]);
@@ -744,12 +768,32 @@ export function parseAbilityPickFilters(p) {
 }
 
 /** @param {string} p */
-function parseScorePlusFromText(p) {
-  var m = String(p || "").match(/ライブの合計スコアを[＋+](\d+)/);
+export function parseLiveTotalScorePlusFromText(p) {
+  var s = normalizeFwDigits(String(p || ""));
+  var m = s.match(/ライブの合計スコアを[＋+](\d+)/);
   if (m) return Number(m[1]) || 0;
-  m = String(p || "").match(/合計スコアを[＋+](\d+)/);
+  m = s.match(/合計スコアを[＋+](\d+)/);
   if (m) return Number(m[1]) || 0;
   return 0;
+}
+
+/** @param {string} p */
+export function parseLiveCardScorePlusFromText(p) {
+  var s = normalizeFwDigits(String(p || ""));
+  var m = s.match(/このカードのスコアを[＋+](\d+)/);
+  return m ? Number(m[1]) || 0 : 0;
+}
+
+/** @param {string} p */
+function parseScorePlusFromText(p) {
+  return parseLiveTotalScorePlusFromText(p);
+}
+
+/** 複合効果（スコア以外の大きな処理が同時にある） */
+function isCompoundLiveScoreEffectText(p) {
+  return /その後|以下から|アクティブにする|見る|引く|控え室|デッキ|山札|エネルギーを.*枚までアクティブ|1人につき|1色につき/.test(
+    String(p || ""),
+  );
 }
 
 /**
@@ -896,7 +940,7 @@ export function parseHeartColorPickSlots(p, segRaw) {
   return [1, 2, 3, 4, 5, 6];
 }
 
-/** 成功ライブ置き場に置けない（常時） */
+/** 成功ライブカード置き場に置けない（常時） */
 export function cardCannotPlaceOnSuccessLive(card) {
   if (!card || !card.ability) return false;
   return /成功ライブカード置き場に置くことができない/.test(abilityPlainText(card));
@@ -1146,6 +1190,7 @@ export function classifyCardAbility(card, trigger, segmentRawOverride) {
         template: "heart_color_pick_grant",
         costSelfWait: base.costSelfWait,
         heartPickSlots: parseHeartColorPickSlots(p, segRaw),
+        heartPerSuccessLive: textHasHeartPerSuccessLiveGrant(p),
       });
     }
 
@@ -1199,6 +1244,26 @@ export function classifyCardAbility(card, trigger, segmentRawOverride) {
       return kidouT({
         template: "kidou_stage_wait_pick_hand",
         filters: parseAbilityPickFilters(p),
+      });
+    }
+
+    if (
+      /手札.*控え室に置/.test(p) &&
+      /控え室に置いたカードが/.test(p) &&
+      /デッキの上からカードを(\d+)枚見る/.test(p) &&
+      /カードを(\d+)枚手札に加/.test(p)
+    ) {
+      var hdMus = p.match(/手札を(\d+)枚控え室に置/);
+      var lkMus = p.match(/デッキの上からカードを(\d+)枚見る/);
+      var pkMus = p.match(/カードを(\d+)枚手札に加/);
+      var tagMus = p.match(/控え室に置いたカードが『([^』]+)』/);
+      return kidouT({
+        template: "kidou_hand_discard_series_branch",
+        handDiscardToWaiting: hdMus ? Number(hdMus[1]) : 1,
+        deckTopCount: lkMus ? Number(lkMus[1]) : 4,
+        deckPickCount: pkMus ? Number(pkMus[1]) : 2,
+        branchSeriesTag: tagMus ? tagMus[1] : "μ's",
+        filters: { pickType: T_LIVE },
       });
     }
 
@@ -1778,6 +1843,7 @@ export function classifyCardAbility(card, trigger, segmentRawOverride) {
         template: "heart_color_pick_grant",
         requiresOnStage: true,
         heartPickSlots: parseHeartColorPickSlots(p, segRaw),
+        heartPerSuccessLive: textHasHeartPerSuccessLiveGrant(p),
       });
     }
     var actEn = p.match(/エネルギーを(\d+)枚アクティブにする/);
@@ -1843,7 +1909,8 @@ export function classifyCardAbility(card, trigger, segmentRawOverride) {
       });
     }
     if (
-      /コストが低いメンバーからバトンタッチ/.test(p) &&
+      (/このメンバーよりコストが低いメンバーからバトンタッチ/.test(p) ||
+        /コストが低いメンバーからバトンタッチ/.test(p)) &&
       /自分と相手はそれぞれ/.test(p) &&
       /手札の枚数が(\d+)枚になるまで手札を控え室に置/.test(p) &&
       /カードを(\d+)枚引/.test(p)
@@ -2076,6 +2143,7 @@ export function classifyCardAbility(card, trigger, segmentRawOverride) {
       return withTrigger("live_success", {
         template: "heart_color_pick_grant",
         heartPickSlots: parseHeartColorPickSlots(p, segRaw),
+        heartPerSuccessLive: textHasHeartPerSuccessLiveGrant(p),
       });
     }
     var lsCombo = p.match(/カードを(\d+)枚引き[、,]?手札を(\d+)枚控え室に置/);
@@ -2167,17 +2235,6 @@ export function classifyCardAbility(card, trigger, segmentRawOverride) {
     if (/余剰ハートを持たない/.test(p) && /余剰ハートを2つ以上/.test(p)) {
       return withTrigger("live_success", { template: "surplus_heart_score_modifier" });
     }
-    if (/支払ってもよい/.test(p) && parseScorePlusFromText(p) && !/ライブ終了時まで/.test(p)) {
-      var enLs = parseCostEnergyCount(p + segRaw);
-      return withTrigger("live_success", {
-        template: "grant_jouji_session",
-        liveScoreGrant: parseScorePlusFromText(p),
-        costEnergy: enLs > 0,
-        costEnergyCount: enLs > 0 ? enLs : 1,
-        optional: true,
-        hasOptionalCost: true,
-      });
-    }
     if (/自分と相手はそれぞれ.*エネルギーデッキから.*1枚ウェイト/.test(p)) {
       return withTrigger("live_success", { template: "both_players_energy_deck_wait" });
     }
@@ -2253,6 +2310,16 @@ export function classifyCardAbility(card, trigger, segmentRawOverride) {
         costEnergy: true,
         costEnergyCount: countWikiEnergyIcons(segRaw) || base.costEnergyCount || 1,
         liveScoreGrant: parseScorePlusFromText(p) || 1,
+      });
+    }
+    var cardScLs = parseLiveCardScorePlusFromText(pLs);
+    if (cardScLs > 0 && /このカードのスコア/.test(p) && !isCompoundLiveScoreEffectText(p)) {
+      return withTrigger("live_success", {
+        template: "live_card_score_plus",
+        cardScoreGrant: cardScLs,
+        optional: base.optional,
+        hasOptionalCost: base.hasOptionalCost,
+        filters: parseAbilityPickFilters(p),
       });
     }
     return withTrigger("live_success", { template: "guided_manual" });
@@ -2349,6 +2416,7 @@ export function classifyCardAbility(card, trigger, segmentRawOverride) {
         requiresOnStage: true,
         optional: base.optional,
         heartPickSlots: parseHeartColorPickSlots(p, segRaw),
+        heartPerSuccessLive: textHasHeartPerSuccessLiveGrant(p),
       });
     }
 
@@ -2677,6 +2745,18 @@ export function classifyCardAbility(card, trigger, segmentRawOverride) {
       });
     }
 
+    var cardScLs = parseLiveCardScorePlusFromText(normalizeFwDigits(p));
+    if (cardScLs > 0 && /このカードのスコア/.test(p) && !isCompoundLiveScoreEffectText(p)) {
+      return lsT({
+        template: "live_card_score_plus",
+        cardScoreGrant: cardScLs,
+        optional: base.optional,
+        hasOptionalCost: base.hasOptionalCost,
+        requiresOnStage: true,
+        filters: parseAbilityPickFilters(p),
+      });
+    }
+
     return lsT({ template: "guided_manual", requiresOnStage: true, filters: parseAbilityPickFilters(p) });
   }
   if (enterJouji) {
@@ -2759,6 +2839,7 @@ export function abilityEffectIsAutomated(template) {
     template === "kidou_stage_wait_pick_hand" ||
     template === "kidou_wait_pick_hand" ||
     template === "kidou_hand_cost_wait_pick_hand" ||
+    template === "kidou_hand_discard_series_branch" ||
     template === "kidou_wait_to_stage" ||
     template === "deck_top_to_waiting" ||
     template === "deck_top_look_reorder" ||
@@ -2837,6 +2918,7 @@ export function abilityEffectIsAutomated(template) {
     template === "yell_resolution_live_count_score" ||
     template === "yell_reveal_series_live_score_plus" ||
     template === "optional_energy_live_score_plus" ||
+    template === "live_card_score_plus" ||
     template === "live_start_pay_or_hand_discard" ||
     template === "toujou_wait_to_member_under" ||
     template === "toujou_both_center_position_change" ||

@@ -1,4 +1,4 @@
-import { T_MEMBER } from "./config.js";
+import { T_LIVE, T_MEMBER } from "./config.js";
 
 /**
  * @typedef {object} OpponentBoardDeps
@@ -193,7 +193,25 @@ export function energyCountFromSnapshot(snap) {
   return Array.isArray(snap && snap.energyArea) ? snap.energyArea.length : 0;
 }
 
+/** @param {*} c @returns {boolean} */
+function snapshotSuccessLiveCardIsLive(c) {
+  if (!c) return false;
+  if (c.type === T_LIVE) return true;
+  if (deps && deps.mergedCatalogCard) return deps.mergedCatalogCard(c).type === T_LIVE;
+  return false;
+}
+
+/** 成功ライブカード置き場にあるライブカードの枚数 */
+export function successLiveLiveCardCountFromArea(area) {
+  if (!Array.isArray(area)) return 0;
+  var n = 0;
+  area.forEach(function (c) {
+    if (snapshotSuccessLiveCardIsLive(c)) n++;
+  });
+  return n;
+}
+
 /** @param {object} snap @returns {number} */
 export function successLiveCountFromSnapshot(snap) {
-  return Array.isArray(snap && snap.successfulLiveArea) ? snap.successfulLiveArea.length : 0;
+  return successLiveLiveCardCountFromArea(snap && snap.successfulLiveArea);
 }

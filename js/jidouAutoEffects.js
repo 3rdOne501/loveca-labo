@@ -61,12 +61,21 @@ export function classifyJidouAutoSegment(segRaw) {
   }
   if (/ステージから控え室に置かれたとき/.test(p) && /手札.*控え室/.test(p) && /控え室から/.test(p)) {
     var hd = p.match(/手札を(\d+)枚控え室/);
+    if (/ライブカードとメンバーカード/.test(p) && /それぞれ1枚まで/.test(p)) {
+      return {
+        template: "jidou_leave_stage_hand_pick_recover",
+        eventKind: "leave_stage",
+        handDiscardToWaiting: hd ? Number(hd[1]) : 1,
+        perTurnLimit: perTurn,
+        filters: { pickDualLiveMember: true },
+      };
+    }
     return {
       template: "jidou_leave_stage_hand_pick_recover",
       eventKind: "leave_stage",
       handDiscardToWaiting: hd ? Number(hd[1]) : 1,
       perTurnLimit: perTurn,
-      filters: { pickType: "live", seriesTag: parseSeriesTag(p) },
+      filters: { pickType: /メンバーカード/.test(p) ? "member" : "live", seriesTag: parseSeriesTag(p) },
     };
   }
   if (/ステージから控え室に置かれたとき/.test(p) && /デッキの上からカードを(\d+)枚見る/.test(p)) {

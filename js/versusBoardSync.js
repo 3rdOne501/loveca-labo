@@ -1251,7 +1251,12 @@ export function renderVersusOpponentBoard(board, opts) {
 
   setCount("versus-opp-hand-count", board.handCount || 0);
   setCount("versus-opp-deck-count", board.deckCount);
-  setCount("versus-opp-sl-count", board.successfulLiveArea.length);
+  setCount(
+    "versus-opp-sl-count",
+    (board.successfulLiveArea || []).filter(function (c) {
+      return c && c.type === T_LIVE;
+    }).length,
+  );
   setCount("versus-opp-waiting-count", board.waitingRoom.length);
   setCount("versus-opp-resolution-count", board.resolutionArea.length);
   setCount("versus-opp-energy-active-count", energyActive);
