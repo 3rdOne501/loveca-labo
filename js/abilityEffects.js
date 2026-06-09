@@ -6,6 +6,7 @@ import { T_LIVE, T_MEMBER } from "./config.js";
 import { catalogCardMatchesGroupTag } from "./cardGroups.js";
 import { classifyJidouAutoSegment, jidouEffectIsAutomated } from "./jidouAutoEffects.js";
 import { abilityWikiCanonicalKeys, wikiAbilityStemToCanonical } from "./gameStatusIcons.js";
+import { applyAbilityComposition } from "./abilityComposition.js";
 
 /** トリガーアイコン（能力の発動契機）として扱う canonical キー */
 const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "jouji", "jidou"];
@@ -141,6 +142,14 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  *   |'live_start_optional_energy_waiting_reorder_deck_top'
  *   |'live_start_optional_hearts_wild'
  *   |'live_start_hand_named_discard_hearts_grant'
+ *   |'ability_sequence'
+ *   |'followup_draw_if_live_discarded'
+ *   |'toujou_multi_wait_draw_per_count'
+ *   |'toujou_opp_hand_reveal_no_live_draw'
+ *   |'tiered_cost_draw_if'
+ *   |'tiered_cost_grant_jouji_score'
+ *   |'tiered_cost_grant_jouji_session'
+ *   |'live_start_waiting_deck_bottom_tiered'
  *   |'guided_manual'} AbilityTemplate
  */
 
@@ -219,6 +228,11 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  * @property {number} [requiredHeartSlot] 効果で参照するハート色 1-6
  * @property {number} [liveScoreGrant] ライブの合計スコア＋N
  * @property {number} [cardScoreGrant] このカードのスコア＋N
+ * @property {boolean} [requiresAllEnergyActive]
+ * @property {import('./abilityEffects.js').ClassifiedAbility[]} [steps]
+ * @property {number} [tierCostSum]
+ * @property {number} [revealCount]
+ * @property {Array<{costSum: number, kind: string, liveScoreGrant?: number}>} [costTiers]
  */
 
 export function cardAbilityRawText(card) {
@@ -789,6 +803,24 @@ function parseScorePlusFromText(p) {
   return parseLiveTotalScorePlusFromText(p);
 }
 
+/** @param {string} p @returns {Array<{costSum: number, kind: string, liveScoreGrant?: number}>} */
+function parseWaitingCostTiersFromText(p) {
+  var plain = normalizeFwDigits(String(p || ""));
+  /** @type {Array<{costSum: number, kind: string, liveScoreGrant?: number}>} */
+  var tiers = [];
+  var re = /合計が(\d+)の場合、([^。]+)/g;
+  var m;
+  while ((m = re.exec(plain)) !== null) {
+    var costSum = Number(m[1]) || 0;
+    var effect = m[2];
+    if (/カードを1枚引/.test(effect)) tiers.push({ costSum: costSum, kind: "draw" });
+    else if (/ライブの合計スコア/.test(effect))
+      tiers.push({ costSum: costSum, kind: "live_score", liveScoreGrant: parseLiveTotalScorePlusFromText(effect) || 1 });
+    else if (/を得る/.test(effect)) tiers.push({ costSum: costSum, kind: "grant_wild_heart" });
+  }
+  return tiers;
+}
+
 /** 複合効果（スコア以外の大きな処理が同時にある） */
 function isCompoundLiveScoreEffectText(p) {
   return /その後|以下から|アクティブにする|見る|引く|控え室|デッキ|山札|エネルギーを.*枚までアクティブ|1人につき|1色につき/.test(
@@ -952,7 +984,21 @@ export function cardCannotPlaceOnSuccessLive(card) {
  * @param {string} [segmentRawOverride] 指定時、このセグメント原文だけを分類する
  * @returns {ClassifiedAbility}
  */
-export function classifyCardAbility(card, trigger, segmentRawOverride) {
+export function classifyCardAbility(card, trigger, segmentRawOverride, composeOpts) {
+  var inner = _classifyCardAbilityCore(card, trigger, segmentRawOverride);
+  if (composeOpts && composeOpts.skipCompose) return inner;
+  if (!trigger) return inner;
+  var segForCompose =
+    segmentRawOverride != null && String(segmentRawOverride) !== ""
+      ? String(segmentRawOverride)
+      : abilityRawSegmentForTrigger(card, trigger);
+  if (!segForCompose) return inner;
+  return applyAbilityComposition(card, trigger, segForCompose, inner, function (c, t, raw, o) {
+    return classifyCardAbility(c, t, raw, o);
+  });
+}
+
+function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
   /** @type {ClassifiedAbility} */
   var base = {
     trigger: "none",
@@ -2488,6 +2534,18 @@ export function classifyCardAbility(card, trigger, segmentRawOverride) {
       });
     }
 
+    if (/控え室にあるメンバーカード2枚.*デッキの一番下/.test(p) && /合計が\d+の場合/.test(normalizeFwDigits(p))) {
+      return lsT({
+        template: "live_start_waiting_deck_bottom_tiered",
+        optional: true,
+        hasOptionalCost: true,
+        requiresOnStage: true,
+        deckBottomPickCount: 2,
+        costTiers: parseWaitingCostTiersFromText(p),
+        filters: { pickType: T_MEMBER },
+      });
+    }
+
     if (/ライブ終了時まで/.test(p + segRaw)) {
       var grantBlade = bladeGainFromIcons(segRaw, p);
       var grantScore = parseScorePlusFromText(p) || parseScorePlusFromText(segRaw.replace(/\{\{[^}]+\}\}/g, ""));
@@ -2919,6 +2977,14 @@ export function abilityEffectIsAutomated(template) {
     template === "yell_reveal_series_live_score_plus" ||
     template === "optional_energy_live_score_plus" ||
     template === "live_card_score_plus" ||
+    template === "ability_sequence" ||
+    template === "followup_draw_if_live_discarded" ||
+    template === "toujou_multi_wait_draw_per_count" ||
+    template === "toujou_opp_hand_reveal_no_live_draw" ||
+    template === "tiered_cost_draw_if" ||
+    template === "tiered_cost_grant_jouji_score" ||
+    template === "tiered_cost_grant_jouji_session" ||
+    template === "live_start_waiting_deck_bottom_tiered" ||
     template === "live_start_pay_or_hand_discard" ||
     template === "toujou_wait_to_member_under" ||
     template === "toujou_both_center_position_change" ||

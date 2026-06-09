@@ -67,6 +67,7 @@ import {
   listNativeToujouSegmentRaws,
   parseLiveTotalScorePlusFromText,
 } from "./abilityEffects.js";
+import { lastCostDiscardedIncludesLive } from "./abilityComposition.js";
 import {
   evaluateMemberJouji,
   joujiHeartSlotRead,
@@ -4615,10 +4616,22 @@ export function mountSimulator(
     return opp;
   }
 
+  function allOwnEnergyCardsActive() {
+    var arr = state.energyArea || [];
+    if (!arr.length) return false;
+    for (var ei = 0; ei < arr.length; ei++) {
+      var en = arr[ei];
+      if (!en) continue;
+      if (en.lcWait === true || en.isRotated === true || en.energyWait === true) return false;
+    }
+    return true;
+  }
+
   /** @param {import('./abilityEffects.js').ClassifiedAbility} cl @param {*} mc @param {string} kind */
   function checkCardScorePlusPreconditions(cl, mc, kind) {
     if (kind === "live_start" && !checkAbilityLiveStartPreconditions(cl)) return false;
     if (kind === "live_success" && !checkAbilityLiveSuccessPreconditions(cl)) return false;
+    if (cl.requiresAllEnergyActive && !allOwnEnergyCardsActive()) return false;
     var p = abilityPlainText(mc);
     if (/手札.*相手より多い/.test(p)) {
       if (state.hand.length <= soloOpponentHandCountForAbility()) return false;
@@ -12195,10 +12208,142 @@ export function mountSimulator(
     );
   }
 
+  function executeAbilitySequence(inst, cl, kind, finishResolved, finishGuided) {
+    var steps = cl.steps || [];
+    if (!steps.length) {
+      finishResolved();
+      return;
+    }
+    function runStep(i) {
+      if (i >= steps.length) {
+        finishResolved();
+        return;
+      }
+      var stepCl = steps[i];
+      executeAbilityBody(inst, stepCl, kind, function () {
+        runStep(i + 1);
+      }, finishGuided);
+    }
+    runStep(0);
+  }
+
   /** Body of the effect (post-cost). */
   function executeAbilityBody(inst, cl, kind, finishResolved, finishGuided) {
     var mc = mergedCatalogCard(inst);
     void mc;
+
+    if (cl.template === "ability_sequence") {
+      executeAbilitySequence(inst, cl, kind, finishResolved, finishGuided);
+      return;
+    }
+
+    if (cl.template === "followup_draw_if_live_discarded") {
+      if (lastCostDiscardedIncludesLive(inst) && state.deck.length) {
+        pushHistoryBefore("followup-draw-live-discard");
+        var fd = state.deck.shift();
+        state.hand.push(fd);
+        presentAbilityDrawsToHand([fd], inst);
+        showToast("ライブカードを捨てたので1枚引きました");
+      }
+      finishResolved();
+      return;
+    }
+
+    if (cl.template === "toujou_multi_wait_draw_per_count") {
+      var needW = Math.max(1, Math.floor(Number(cl.oppWaitCount) || 3));
+      var drawPer = Math.max(1, Math.floor(Number(cl.deckDrawCount) || 1));
+      var waitedN = 0;
+      function finishWaitDraw() {
+        pushHistoryBefore("toujou-wait-draw-per");
+        var drawnN = 0;
+        for (var wi = 0; wi < waitedN * drawPer && state.deck.length; wi++) {
+          state.hand.push(state.deck.shift());
+          drawnN++;
+        }
+        if (drawnN) showToast("ウェイト " + waitedN + " 人につき " + drawnN + " 枚引きました");
+        finishResolved();
+      }
+      function waitPickStep() {
+        if (waitedN >= needW) {
+          finishWaitDraw();
+          return;
+        }
+        openPickStageMemberDialog(
+          inst.id,
+          "ステージのメンバーをウェイトにします（" + (waitedN + 1) + "/" + needW + "、キャンセルで確定）。",
+          function (pid) {
+            if (!pid) {
+              if (waitedN) finishWaitDraw();
+              else finishResolved();
+              return;
+            }
+            var mem = findCardInstById(pid);
+            if (mem && mem.lcWait !== true && waitMemberInst(mem)) waitedN++;
+            waitPickStep();
+          },
+        );
+      }
+      waitPickStep();
+      return;
+    }
+
+    if (cl.template === "toujou_opp_hand_reveal_no_live_draw") {
+      var revN = Math.max(1, Math.floor(Number(cl.revealCount) || 3));
+      pushHistoryBefore("toujou-opp-hand-reveal");
+      var noLive = window.confirm(
+        "相手の手札から " +
+          revN +
+          " 枚を公開しましたか？\n公開にライブカードがなかった場合のみ OK で1枚引きます。",
+      );
+      if (noLive && state.deck.length) {
+        var od = state.deck.shift();
+        state.hand.push(od);
+        presentAbilityDrawsToHand([od], inst);
+        showToast("ライブがなかったため1枚引きました");
+      }
+      finishResolved();
+      return;
+    }
+
+    if (cl.template === "tiered_cost_draw_if") {
+      var needSumD = Math.floor(Number(cl.tierCostSum) || 0);
+      if (inst._lastWaitingReorderCostSum === needSumD && state.deck.length) {
+        pushHistoryBefore("tiered-cost-draw");
+        var td = state.deck.shift();
+        state.hand.push(td);
+        presentAbilityDrawsToHand([td], inst);
+        showToast("コスト合計 " + needSumD + " で1枚引きました");
+      }
+      finishResolved();
+      return;
+    }
+
+    if (cl.template === "tiered_cost_grant_jouji_score") {
+      var needSumS = Math.floor(Number(cl.tierCostSum) || 0);
+      if (inst._lastWaitingReorderCostSum === needSumS) {
+        pushHistoryBefore("tiered-cost-score");
+        var plusS = Math.max(1, Math.floor(Number(cl.liveScoreGrant) || 1));
+        bumpLiveScoreEffectBonus(plusS, "コスト合計 " + needSumS + " で合計スコア＋" + plusS);
+      }
+      finishResolved();
+      return;
+    }
+
+    if (cl.template === "tiered_cost_grant_jouji_session") {
+      var needSumG = Math.floor(Number(cl.tierCostSum) || 0);
+      if (inst._lastWaitingReorderCostSum === needSumG) {
+        pushHistoryBefore("tiered-cost-grant");
+        if (!inst._grantedJoujiSegmentRaws) inst._grantedJoujiSegmentRaws = [];
+        var wildSeg = "{{jyouji.png|常時}}元々持つハートはすべて{{heart_00.png|heart0}}として扱う。";
+        if (inst._grantedJoujiSegmentRaws.indexOf(wildSeg) < 0) inst._grantedJoujiSegmentRaws.push(wildSeg);
+        try {
+          syncJoujiPassiveEffectsAll();
+        } catch (_) {}
+        showToast("コスト合計 " + needSumG + " の常時効果を得ました");
+      }
+      finishResolved();
+      return;
+    }
 
     if (cl.template === "live_start_hand_discard_blade_per") {
       if (!checkAbilityLiveStartPreconditions(cl)) {
@@ -13783,6 +13928,90 @@ export function mountSimulator(
       return;
     }
 
+    if (cl.template === "live_start_waiting_deck_bottom_tiered") {
+      if (!checkAbilityLiveStartPreconditions(cl)) {
+        showToast("ライブ開始時効果の条件を満たしていません");
+        finishResolved();
+        return;
+      }
+      var pickBottomN = cl.deckBottomPickCount != null ? Math.max(1, Math.floor(Number(cl.deckBottomPickCount))) : 2;
+      var wPoolB = waitingPickCandidates(cl.filters || { pickType: T_MEMBER }, null);
+      if (wPoolB.length < pickBottomN) {
+        showToast("控え室にメンバーが " + pickBottomN + " 枚ありません");
+        finishResolved();
+        return;
+      }
+      /** @type {*[]} */
+      var pickedBottom = [];
+      function stepBottom(n) {
+        if (pickedBottom.length >= pickBottomN) {
+          pushHistoryBefore("live-start-wait-deck-bottom-tiered");
+          pickedBottom.forEach(function (c) {
+            if (c) state.deck.push(c);
+          });
+          var costSumB = 0;
+          pickedBottom.forEach(function (c) {
+            if (c) costSumB += memberFlooredPrintedCost(c);
+          });
+          var tiers = cl.costTiers || [];
+          var applied = false;
+          tiers.forEach(function (tier) {
+            if (!tier || tier.costSum !== costSumB) return;
+            if (tier.kind === "draw" && state.deck.length) {
+              var db = state.deck.shift();
+              state.hand.push(db);
+              presentAbilityDrawsToHand([db], inst);
+              showToast("コスト合計 " + costSumB + " で1枚引きました");
+              applied = true;
+            } else if (tier.kind === "live_score") {
+              var pls = Math.max(1, Math.floor(Number(tier.liveScoreGrant) || 1));
+              bumpLiveScoreEffectBonus(pls, "コスト合計 " + costSumB + " で合計スコア＋" + pls);
+              applied = true;
+            } else if (tier.kind === "grant_wild_heart") {
+              if (!inst._grantedJoujiSegmentRaws) inst._grantedJoujiSegmentRaws = [];
+              var wh = "{{jyouji.png|常時}}元々持つハートはすべて{{heart_00.png|heart0}}として扱う。";
+              if (inst._grantedJoujiSegmentRaws.indexOf(wh) < 0) inst._grantedJoujiSegmentRaws.push(wh);
+              try {
+                syncJoujiPassiveEffectsAll();
+              } catch (_) {}
+              showToast("コスト合計 " + costSumB + " でALLハート常時効果を得ました");
+              applied = true;
+            }
+          });
+          if (!applied) showToast("デッキ下に並べ替えました（コスト合計 " + costSumB + "）");
+          finishResolved();
+          return;
+        }
+        var remainB = wPoolB.filter(function (c) {
+          return (
+            pickedBottom.findIndex(function (p) {
+              return p && String(p.id) === String(c.id);
+            }) < 0
+          );
+        });
+        openPickFromWaitingDialog(
+          remainB,
+          "控え室からメンバーを " + (pickedBottom.length + 1) + " 枚目（計 " + pickBottomN + " 枚）デッキ下へ。",
+          function (pid) {
+            if (!pid) {
+              finishResolved();
+              return;
+            }
+            for (var wi = 0; wi < state.waitingRoom.length; wi++) {
+              if (state.waitingRoom[wi] && String(state.waitingRoom[wi].id) === String(pid)) {
+                pickedBottom.push(state.waitingRoom.splice(wi, 1)[0]);
+                break;
+              }
+            }
+            stepBottom(n + 1);
+          },
+          { okLabel: "選ぶ", dialogTitle: "控え室 — デッキ下" },
+        );
+      }
+      stepBottom(0);
+      return;
+    }
+
     if (cl.template === "live_start_optional_energy_waiting_reorder_deck_top") {
       if (!checkAbilityLiveStartPreconditions(cl)) {
         showToast("ライブ開始時効果の条件を満たしていません");
@@ -13819,7 +14048,13 @@ export function mountSimulator(
                 var wc = byId[wid];
                 if (wc) state.waitingRoom.push(wc);
               });
-              showToast("選んだカードを山札の上に並べ替えました");
+              var costSum = 0;
+              pickedMem.forEach(function (c) {
+                if (!c) return;
+                costSum += memberFlooredPrintedCost(c);
+              });
+              inst._lastWaitingReorderCostSum = costSum;
+              showToast("選んだカードを山札の上に並べ替えました（コスト合計 " + costSum + "）");
               finishResolved();
             });
             return;
@@ -21870,7 +22105,7 @@ export function mountSimulator(
         hint.hidden = !showMulligan;
         if (!versusMatchPhaseActive()) {
           hint.innerHTML =
-            "<strong>ターン開始まで:</strong> 戻したいカードに<strong>チェック</strong>、「<strong>マリガン実行</strong>」で選択枚を山札に戻しシャッフルして同じ枚数をドローします。<strong>0枚チェックでも実行できます</strong>（そのときはシャッフル・追加ドローはしません）。チェックはカード中央付近の小さな操作域です。タップしづらいときはカードを少し上下に動かしてから再度タップしてください。";
+            "<strong>ターン開始まで:</strong> 戻したいカードに<strong>チェック</strong>、「<strong>マリガン実行</strong>」で選択枚数を山札からドローし、その後選択枚を山札に戻してシャッフルします（ドロー時点では戻すカードは山札に含まれません）。<strong>0枚チェックでも実行できます</strong>（そのときはシャッフル・追加ドローはしません）。チェックはカード中央付近の小さな操作域です。タップしづらいときはカードを少し上下に動かしてから再度タップしてください。";
         }
       }
     }
@@ -22934,8 +23169,7 @@ export function mountSimulator(
     state.hand = state.hand.filter(function (c) {
       return !pickSet.has(c.id);
     });
-    state.deck.push.apply(state.deck, toReturn);
-    state.deck = shuffle(state.deck);
+    /* 戻すカードはドロー時点では山札に含めない。ドロー後に山札へ戻してシャッフル */
     var drawn = 0;
     for (var i = 0; i < k; i++) {
       tryReplenishDeckFromWaitingLoop();
@@ -22943,14 +23177,16 @@ export function mountSimulator(
       state.hand.push(state.deck.shift());
       drawn++;
     }
+    state.deck.push.apply(state.deck, toReturn);
+    state.deck = shuffle(state.deck);
     state.mulliganSelectedIds = [];
     logReplay("mulligan", { returned: k, drawn });
     persistOpeningMulliganRememberedK(k);
     if (drawn === k) {
-      showToast("マリガン: " + k + " 枚を山札に戻してシャッフルし、" + drawn + " 枚ドローしました");
+      showToast("マリガン: " + drawn + " 枚ドローし、選択 " + k + " 枚を山札に戻してシャッフルしました");
     } else {
       showToast(
-        "マリガン: " + k + " 枚を戻しましたが、山札が足りず " + drawn + " 枚しかドローできませんでした",
+        "マリガン: 山札が足りず " + drawn + " 枚しかドローできませんでした（選択 " + k + " 枚は山札に戻してシャッフル）",
       );
     }
     render();

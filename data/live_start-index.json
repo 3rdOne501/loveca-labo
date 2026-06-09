@@ -1,13 +1,14 @@
 {
-  "generated": "2026-06-05",
+  "generated": "2026-06-09",
   "trigger": "live_start",
   "total": 296,
   "byTemplate": {
     "heart_color_pick_grant": 34,
-    "grant_jouji_session": 106,
+    "grant_jouji_session": 98,
     "optional_self_wait_opp_stage": 11,
     "optional_energy_blade_until_live_end": 39,
     "live_start_pay_or_hand_discard": 3,
+    "ability_sequence": 5,
     "live_start_opp_wait_if_stage_hearts": 1,
     "live_start_optional_energy_waiting_reorder_deck_top": 2,
     "energy_deck_to_wait": 4,
@@ -21,6 +22,7 @@
     "live_start_activate_all_stage_members": 2,
     "toujou_success_live_pick_hand": 4,
     "deck_top_to_waiting": 3,
+    "live_start_waiting_deck_bottom_tiered": 4,
     "live_start_pick_player_waiting_deck_bottom": 2,
     "optional_pick_member_wait_opp_stage": 2,
     "draw_from_deck": 10,
@@ -29,7 +31,6 @@
     "live_start_draw_opp_wait": 4,
     "waiting_to_deck_top_by_opp_wait_count": 4,
     "deck_top_pick_recover": 1,
-    "toujou_wait_pick_hand": 1,
     "live_start_side_cost_equal_opp_wait": 4,
     "ability_pick_one": 4,
     "live_start_activate_liella_and_energy": 4,
@@ -117,29 +118,41 @@
     {
       "card_no": "PL!SP-PR-009-PR",
       "name": "米女メイ",
-      "template": "grant_jouji_session",
+      "template": "ability_sequence",
       "automated": true,
       "optional": true,
       "perTurn": 0,
-      "effect": "手札を1枚控え室に置いてもよい：ライブ終了時まで、を得る。これによりライブカードを控え室に置いた場合、さらにカードを1枚引く。"
+      "effect": "手札を1枚控え室に置いてもよい：ライブ終了時まで、を得る。これによりライブカードを控え室に置いた場合、さらにカードを1枚引く。",
+      "steps": [
+        "grant_jouji_session",
+        "followup_draw_if_live_discarded"
+      ]
     },
     {
       "card_no": "PL!SP-PR-011-PR",
       "name": "鬼塚夏美",
-      "template": "grant_jouji_session",
+      "template": "ability_sequence",
       "automated": true,
       "optional": true,
       "perTurn": 0,
-      "effect": "手札を1枚控え室に置いてもよい：ライブ終了時まで、を得る。これによりライブカードを控え室に置いた場合、さらにカードを1枚引く。"
+      "effect": "手札を1枚控え室に置いてもよい：ライブ終了時まで、を得る。これによりライブカードを控え室に置いた場合、さらにカードを1枚引く。",
+      "steps": [
+        "grant_jouji_session",
+        "followup_draw_if_live_discarded"
+      ]
     },
     {
       "card_no": "PL!SP-PR-012-PR",
       "name": "ウィーン・マルガレーテ",
-      "template": "grant_jouji_session",
+      "template": "ability_sequence",
       "automated": true,
       "optional": true,
       "perTurn": 0,
-      "effect": "手札を1枚控え室に置いてもよい：ライブ終了時まで、を得る。これによりライブカードを控え室に置いた場合、さらにカードを1枚引く。"
+      "effect": "手札を1枚控え室に置いてもよい：ライブ終了時まで、を得る。これによりライブカードを控え室に置いた場合、さらにカードを1枚引く。",
+      "steps": [
+        "grant_jouji_session",
+        "followup_draw_if_live_discarded"
+      ]
     },
     {
       "card_no": "PL!SP-PR-021-PR",
@@ -1125,7 +1138,7 @@
     {
       "card_no": "PL!N-bp3-009-R＋",
       "name": "天王寺璃奈",
-      "template": "grant_jouji_session",
+      "template": "live_start_waiting_deck_bottom_tiered",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -1134,7 +1147,7 @@
     {
       "card_no": "PL!N-bp3-009-P",
       "name": "天王寺璃奈",
-      "template": "grant_jouji_session",
+      "template": "live_start_waiting_deck_bottom_tiered",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -1143,7 +1156,7 @@
     {
       "card_no": "PL!N-bp3-009-P＋",
       "name": "天王寺璃奈",
-      "template": "grant_jouji_session",
+      "template": "live_start_waiting_deck_bottom_tiered",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -1152,7 +1165,7 @@
     {
       "card_no": "PL!N-bp3-009-SEC",
       "name": "天王寺璃奈",
-      "template": "grant_jouji_session",
+      "template": "live_start_waiting_deck_bottom_tiered",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -1737,11 +1750,15 @@
     {
       "card_no": "PL!-bp5-010-N",
       "name": "高坂穂乃果",
-      "template": "toujou_wait_pick_hand",
+      "template": "ability_sequence",
       "automated": true,
       "optional": true,
       "perTurn": 0,
-      "effect": "手札を1枚控え室に置いてもよい：自分のデッキの上からカードを3枚控え室に置く。その後、自分の控え室から『A-RISE』のメンバーカードを1枚手札に加える。"
+      "effect": "手札を1枚控え室に置いてもよい：自分のデッキの上からカードを3枚控え室に置く。その後、自分の控え室から『A-RISE』のメンバーカードを1枚手札に加える。",
+      "steps": [
+        "deck_top_to_waiting",
+        "toujou_wait_pick_hand"
+      ]
     },
     {
       "card_no": "PL!-bp5-011-N",
@@ -2160,11 +2177,15 @@
     {
       "card_no": "PL!HS-sd1-002-SD",
       "name": "村野さやか",
-      "template": "grant_jouji_session",
+      "template": "ability_sequence",
       "automated": true,
       "optional": true,
       "perTurn": 0,
-      "effect": "手札を2枚控え室に置いてもよい：自分のデッキの上からカードを5枚見る。その中からメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。これにより『蓮ノ空』のカードを手札に加えた場合、ライブ終了時まで、を得る。"
+      "effect": "手札を2枚控え室に置いてもよい：自分のデッキの上からカードを5枚見る。その中からメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。これにより『蓮ノ空』のカードを手札に加えた場合、ライブ終了時まで、を得る。",
+      "steps": [
+        "deck_top_pick_recover",
+        "grant_jouji_session"
+      ]
     },
     {
       "card_no": "PL!HS-sd1-003-SD",

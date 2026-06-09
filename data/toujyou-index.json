@@ -1,16 +1,17 @@
 {
-  "generated": "2026-06-05",
+  "generated": "2026-06-09",
   "trigger": "toujyou",
   "total": 511,
   "byTemplate": {
     "toujou_success_live_pick_hand": 3,
-    "toujou_wait_pick_hand": 67,
-    "deck_top_pick_recover": 69,
-    "draw_from_deck": 42,
+    "toujou_wait_pick_hand": 63,
+    "deck_top_pick_recover": 68,
+    "draw_from_deck": 39,
     "deck_top_to_waiting": 40,
     "deck_top_look_reorder": 18,
     "ability_pick_one": 16,
     "optional_self_wait_opp_stage": 33,
+    "toujou_opp_hand_reveal_no_live_draw": 1,
     "toujou_hand_stage_enter": 11,
     "grant_jouji_session": 21,
     "draw_then_hand_discard": 43,
@@ -18,6 +19,7 @@
     "draw_until_hand_size": 2,
     "energy_deck_to_wait": 14,
     "activate_energy": 17,
+    "ability_sequence": 12,
     "deck_reveal_until_live": 2,
     "toujou_optional_hand_discard_draw": 2,
     "toujou_deck_top_wait_if_all_members": 2,
@@ -36,15 +38,16 @@
     "live_start_activate_all_stage_members": 2,
     "activate_stage_members_up_to": 4,
     "toujou_wait_pick_trigger_ability": 2,
-    "toujou_self_wait_only": 6,
+    "toujou_self_wait_only": 2,
     "toujou_success_live_score_tiered": 2,
+    "toujou_multi_wait_draw_per_count": 2,
     "toujou_turn_block_effect_activate": 2,
     "toujou_bibi_wait_opp_active_wait": 2,
     "toujou_both_wait_to_empty_stage": 2,
     "toujou_success_live_low_score_grant": 2,
     "toujou_opp_active_wait": 2,
     "success_live_waiting_swap": 4,
-    "toujou_optional_wait_to_deck_top": 2,
+    "toujou_optional_wait_to_deck_top": 1,
     "toujou_deck_top_liella_live_pick": 5,
     "toujou_liella_double_baton_center": 4,
     "live_start_position_change": 4,
@@ -60,7 +63,7 @@
     "toujou_grant_heart_stage_member": 2,
     "deck_top_pick_no_ability_or_jouji": 2,
     "toujou_hand_discard_wait_heart_dual_pick": 2,
-    "toujou_draw_grant_if_from_waiting": 3,
+    "toujou_draw_grant_if_from_waiting": 1,
     "deck_top_count_stage_plus": 4
   },
   "cards": [
@@ -202,7 +205,7 @@
     {
       "card_no": "PL!-PR-014-PR",
       "name": "園田海未",
-      "template": "draw_from_deck",
+      "template": "toujou_opp_hand_reveal_no_live_draw",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -724,20 +727,28 @@
     {
       "card_no": "PL!N-bp1-009-R",
       "name": "天王寺璃奈",
-      "template": "toujou_wait_pick_hand",
+      "template": "ability_sequence",
       "automated": true,
       "optional": true,
       "perTurn": 0,
-      "effect": "手札を1枚控え室に置いてもよい：自分のデッキの上からカードを2枚控え室に置く。その後、自分の控え室からメンバーカードを1枚手札に加える。"
+      "effect": "手札を1枚控え室に置いてもよい：自分のデッキの上からカードを2枚控え室に置く。その後、自分の控え室からメンバーカードを1枚手札に加える。",
+      "steps": [
+        "deck_top_to_waiting",
+        "toujou_wait_pick_hand"
+      ]
     },
     {
       "card_no": "PL!N-bp1-009-P",
       "name": "天王寺璃奈",
-      "template": "toujou_wait_pick_hand",
+      "template": "ability_sequence",
       "automated": true,
       "optional": true,
       "perTurn": 0,
-      "effect": "手札を1枚控え室に置いてもよい：自分のデッキの上からカードを2枚控え室に置く。その後、自分の控え室からメンバーカードを1枚手札に加える。"
+      "effect": "手札を1枚控え室に置いてもよい：自分のデッキの上からカードを2枚控え室に置く。その後、自分の控え室からメンバーカードを1枚手札に加える。",
+      "steps": [
+        "deck_top_to_waiting",
+        "toujou_wait_pick_hand"
+      ]
     },
     {
       "card_no": "PL!N-bp1-010-R",
@@ -2362,7 +2373,7 @@
     {
       "card_no": "PL!-pb1-008-R",
       "name": "小泉花陽",
-      "template": "draw_from_deck",
+      "template": "toujou_multi_wait_draw_per_count",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -2371,7 +2382,7 @@
     {
       "card_no": "PL!-pb1-008-P＋",
       "name": "小泉花陽",
-      "template": "draw_from_deck",
+      "template": "toujou_multi_wait_draw_per_count",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -2659,20 +2670,28 @@
     {
       "card_no": "PL!N-bp4-006-R",
       "name": "近江彼方",
-      "template": "toujou_self_wait_only",
+      "template": "ability_sequence",
       "automated": true,
       "optional": true,
       "perTurn": 0,
-      "effect": "支払ってもよい：自分の手札からコスト4以下の『虹ヶ咲』のメンバーカードを1枚ステージに登場させる。これにより登場したメンバーがブレードハートを持つ場合、このメンバーをウェイトにする。"
+      "effect": "支払ってもよい：自分の手札からコスト4以下の『虹ヶ咲』のメンバーカードを1枚ステージに登場させる。これにより登場したメンバーがブレードハートを持つ場合、このメンバーをウェイトにする。",
+      "steps": [
+        "toujou_hand_stage_enter",
+        "toujou_self_wait_only"
+      ]
     },
     {
       "card_no": "PL!N-bp4-006-P",
       "name": "近江彼方",
-      "template": "toujou_self_wait_only",
+      "template": "ability_sequence",
       "automated": true,
       "optional": true,
       "perTurn": 0,
-      "effect": "支払ってもよい：自分の手札からコスト4以下の『虹ヶ咲』のメンバーカードを1枚ステージに登場させる。これにより登場したメンバーがブレードハートを持つ場合、このメンバーをウェイトにする。"
+      "effect": "支払ってもよい：自分の手札からコスト4以下の『虹ヶ咲』のメンバーカードを1枚ステージに登場させる。これにより登場したメンバーがブレードハートを持つ場合、このメンバーをウェイトにする。",
+      "steps": [
+        "toujou_hand_stage_enter",
+        "toujou_self_wait_only"
+      ]
     },
     {
       "card_no": "PL!N-bp4-007-R＋",
@@ -2983,11 +3002,15 @@
     {
       "card_no": "LL-bp4-001-R＋",
       "name": "絢瀬絵里&朝香果林&葉月 恋",
-      "template": "deck_top_pick_recover",
+      "template": "ability_sequence",
       "automated": true,
       "optional": true,
       "perTurn": 0,
-      "effect": "自分のデッキの上からカードを5枚見る。その中から「絢瀬絵里」か「朝香果林」か「葉月恋」のメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。その後、相手のステージにいる、これにより公開したカードのコスト以下で、かつ元々持つの数が3つ以下のメンバーをすべてウェイトにする。"
+      "effect": "自分のデッキの上からカードを5枚見る。その中から「絢瀬絵里」か「朝香果林」か「葉月恋」のメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。その後、相手のステージにいる、これにより公開したカードのコスト以下で、かつ元々持つの数が3つ以下のメンバーをすべてウェイトにする。",
+      "steps": [
+        "deck_top_pick_recover",
+        "optional_self_wait_opp_stage"
+      ]
     },
     {
       "card_no": "PL!N-pb1-001-R",
@@ -3640,11 +3663,15 @@
     {
       "card_no": "PL!N-bp5-021-N",
       "name": "天王寺璃奈",
-      "template": "toujou_optional_wait_to_deck_top",
+      "template": "ability_sequence",
       "automated": true,
       "optional": true,
       "perTurn": 0,
-      "effect": "自分のデッキの上からカードを2枚控え室に置く。その後、自分の控え室からライブカード1枚を自分のデッキの一番上から4枚目に置いてもよい。"
+      "effect": "自分のデッキの上からカードを2枚控え室に置く。その後、自分の控え室からライブカード1枚を自分のデッキの一番上から4枚目に置いてもよい。",
+      "steps": [
+        "deck_top_to_waiting",
+        "toujou_optional_wait_to_deck_top"
+      ]
     },
     {
       "card_no": "PL!N-bp5-022-N",
@@ -4099,20 +4126,28 @@
     {
       "card_no": "PL!HS-pb1-004-R",
       "name": "百生吟子",
-      "template": "toujou_wait_pick_hand",
+      "template": "ability_sequence",
       "automated": true,
       "optional": true,
       "perTurn": 0,
-      "effect": "手札を1枚控え室に置いてもよい：自分のデッキの上からカードを3枚控え室に置く。その後、自分の控え室から『スリーズブーケ』のライブカードを1枚手札に加える。"
+      "effect": "手札を1枚控え室に置いてもよい：自分のデッキの上からカードを3枚控え室に置く。その後、自分の控え室から『スリーズブーケ』のライブカードを1枚手札に加える。",
+      "steps": [
+        "deck_top_to_waiting",
+        "toujou_wait_pick_hand"
+      ]
     },
     {
       "card_no": "PL!HS-pb1-004-P＋",
       "name": "百生吟子",
-      "template": "toujou_wait_pick_hand",
+      "template": "ability_sequence",
       "automated": true,
       "optional": true,
       "perTurn": 0,
-      "effect": "手札を1枚控え室に置いてもよい：自分のデッキの上からカードを3枚控え室に置く。その後、自分の控え室から『スリーズブーケ』のライブカードを1枚手札に加える。"
+      "effect": "手札を1枚控え室に置いてもよい：自分のデッキの上からカードを3枚控え室に置く。その後、自分の控え室から『スリーズブーケ』のライブカードを1枚手札に加える。",
+      "steps": [
+        "deck_top_to_waiting",
+        "toujou_wait_pick_hand"
+      ]
     },
     {
       "card_no": "PL!HS-pb1-007-R",
@@ -4369,20 +4404,28 @@
     {
       "card_no": "PL!S-bp6-006-R",
       "name": "津島善子",
-      "template": "toujou_draw_grant_if_from_waiting",
+      "template": "ability_sequence",
       "automated": true,
       "optional": false,
       "perTurn": 0,
-      "effect": "カードを2枚引く。その後、控え室から登場している場合、ライブ終了時まで、を得る。"
+      "effect": "カードを2枚引く。その後、控え室から登場している場合、ライブ終了時まで、を得る。",
+      "steps": [
+        "draw_from_deck",
+        "grant_jouji_session"
+      ]
     },
     {
       "card_no": "PL!S-bp6-006-P",
       "name": "津島善子",
-      "template": "toujou_draw_grant_if_from_waiting",
+      "template": "ability_sequence",
       "automated": true,
       "optional": false,
       "perTurn": 0,
-      "effect": "カードを2枚引く。その後、控え室から登場している場合、ライブ終了時まで、を得る。"
+      "effect": "カードを2枚引く。その後、控え室から登場している場合、ライブ終了時まで、を得る。",
+      "steps": [
+        "draw_from_deck",
+        "grant_jouji_session"
+      ]
     },
     {
       "card_no": "PL!S-bp6-011-N",
@@ -4522,20 +4565,28 @@
     {
       "card_no": "PL!HS-bp6-008-R",
       "name": "桂城 泉",
-      "template": "toujou_self_wait_only",
+      "template": "ability_sequence",
       "automated": true,
       "optional": false,
       "perTurn": 0,
-      "effect": "このメンバーをウェイトにする。その後、自分の控え室からスコア４以下の『蓮ノ空』のライブカードを1枚手札に加える。"
+      "effect": "このメンバーをウェイトにする。その後、自分の控え室からスコア４以下の『蓮ノ空』のライブカードを1枚手札に加える。",
+      "steps": [
+        "toujou_self_wait_only",
+        "toujou_wait_pick_hand"
+      ]
     },
     {
       "card_no": "PL!HS-bp6-008-P",
       "name": "桂城 泉",
-      "template": "toujou_self_wait_only",
+      "template": "ability_sequence",
       "automated": true,
       "optional": false,
       "perTurn": 0,
-      "effect": "このメンバーをウェイトにする。その後、自分の控え室からスコア４以下の『蓮ノ空』のライブカードを1枚手札に加える。"
+      "effect": "このメンバーをウェイトにする。その後、自分の控え室からスコア４以下の『蓮ノ空』のライブカードを1枚手札に加える。",
+      "steps": [
+        "toujou_self_wait_only",
+        "toujou_wait_pick_hand"
+      ]
     },
     {
       "card_no": "PL!HS-bp6-012-R",

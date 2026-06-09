@@ -78,7 +78,8 @@ function buildTriggerIndex(catalog, trigger) {
     for (const segRaw of segRaws) {
       if (!segRaw) continue;
       const cl = classifyCardAbility(card, trigger, segRaw);
-      cards.push({
+      /** @type {Record<string, unknown>} */
+      const row = {
         card_no: card.card_no || "",
         name: card.name || "",
         template: cl.template,
@@ -86,7 +87,11 @@ function buildTriggerIndex(catalog, trigger) {
         optional: !!(cl.optional || cl.hasOptionalCost),
         perTurn: cl.perTurnLimit != null ? cl.perTurnLimit : null,
         effect: segmentPlainForIndex(segRaw).slice(0, 240),
-      });
+      };
+      if (cl.template === "ability_sequence" && Array.isArray(cl.steps) && cl.steps.length) {
+        row.steps = cl.steps.map((st) => st.template);
+      }
+      cards.push(row);
     }
   }
   /** @type {Record<string, number>} */

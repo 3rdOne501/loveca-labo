@@ -28,6 +28,9 @@ export const TEMPLATE_HANDLES_OWN_COST = [
   "toujou_bibi_wait_opp_active_wait",
   "live_start_optional_energy_waiting_reorder_deck_top",
   "toujou_main_phase_live_from_waiting",
+  "ability_sequence",
+  "toujou_multi_wait_draw_per_count",
+  "live_start_waiting_deck_bottom_tiered",
 ];
 
 /** executeAbilityBody 内で手動ガイド／常時トラックのみ（自動解決の対象外） */
