@@ -1,12 +1,12 @@
 {
-  "generated": "2026-06-09",
+  "generated": "2026-06-10",
   "trigger": "toujyou",
   "total": 511,
   "byTemplate": {
     "toujou_success_live_pick_hand": 3,
     "toujou_wait_pick_hand": 63,
     "deck_top_pick_recover": 68,
-    "draw_from_deck": 39,
+    "draw_from_deck": 36,
     "deck_top_to_waiting": 40,
     "deck_top_look_reorder": 18,
     "ability_pick_one": 16,
@@ -55,6 +55,7 @@
     "energy_deck_to_active": 3,
     "toujou_baton_both_trim_hand_draw": 3,
     "toujou_grant_opp_live_need_heart_if_stage_hearts": 2,
+    "draw_then_hand_to_deck_bottom": 3,
     "toujou_both_center_position_change": 3,
     "kidou_waiting_to_empty_stage": 1,
     "toujou_hand_discard_draw_plus": 2,
@@ -3555,7 +3556,7 @@
     {
       "card_no": "PL!S-bp5-014-N",
       "name": "渡辺 曜",
-      "template": "draw_from_deck",
+      "template": "draw_then_hand_to_deck_bottom",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -4090,7 +4091,7 @@
     {
       "card_no": "PL!S-sd1-017-SD",
       "name": "小原鞠莉",
-      "template": "draw_from_deck",
+      "template": "draw_then_hand_to_deck_bottom",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -4099,7 +4100,7 @@
     {
       "card_no": "PL!S-sd1-018-SD",
       "name": "黒澤ルビィ",
-      "template": "draw_from_deck",
+      "template": "draw_then_hand_to_deck_bottom",
       "automated": true,
       "optional": false,
       "perTurn": 0,

@@ -1,5 +1,5 @@
 {
-  "generated": "2026-06-09",
+  "generated": "2026-06-10",
   "trigger": "kidou",
   "total": 245,
   "byTemplate": {
@@ -13,13 +13,14 @@
     "kidou_wait_pick_hand": 25,
     "kidou_reveal_hand_cost_threshold": 4,
     "draw_then_hand_discard": 5,
-    "kidou_self_to_wait_recover": 11,
+    "kidou_self_to_wait_recover": 5,
     "energy_deck_to_wait": 6,
     "kidou_hand_discard_trigger_ability": 4,
     "live_start_position_change": 10,
     "grant_jouji_session": 16,
     "heart_color_pick_grant": 8,
     "kidou_wait_member_grant_jouji": 4,
+    "kidou_self_wait_stage_member_swap_recover": 6,
     "kidou_self_wait_hand_enter_energy": 2,
     "kidou_wait_shuffle_deck_bottom_activate": 1,
     "deck_reveal_until_pick": 2,
@@ -966,7 +967,7 @@
     {
       "card_no": "PL!S-bp3-006-R＋",
       "name": "津島善子",
-      "template": "kidou_self_to_wait_recover",
+      "template": "kidou_self_wait_stage_member_swap_recover",
       "automated": true,
       "optional": false,
       "perTurn": 1,
@@ -975,7 +976,7 @@
     {
       "card_no": "PL!S-bp3-006-P",
       "name": "津島善子",
-      "template": "kidou_self_to_wait_recover",
+      "template": "kidou_self_wait_stage_member_swap_recover",
       "automated": true,
       "optional": false,
       "perTurn": 1,
@@ -984,7 +985,7 @@
     {
       "card_no": "PL!S-bp3-006-P＋",
       "name": "津島善子",
-      "template": "kidou_self_to_wait_recover",
+      "template": "kidou_self_wait_stage_member_swap_recover",
       "automated": true,
       "optional": false,
       "perTurn": 1,
@@ -993,7 +994,7 @@
     {
       "card_no": "PL!S-bp3-006-SEC",
       "name": "津島善子",
-      "template": "kidou_self_to_wait_recover",
+      "template": "kidou_self_wait_stage_member_swap_recover",
       "automated": true,
       "optional": false,
       "perTurn": 1,
@@ -2116,7 +2117,7 @@
     {
       "card_no": "PL!S-bp6-003-R",
       "name": "松浦果南",
-      "template": "kidou_self_to_wait_recover",
+      "template": "kidou_self_wait_stage_member_swap_recover",
       "automated": true,
       "optional": false,
       "perTurn": 1,
@@ -2125,7 +2126,7 @@
     {
       "card_no": "PL!S-bp6-003-P",
       "name": "松浦果南",
-      "template": "kidou_self_to_wait_recover",
+      "template": "kidou_self_wait_stage_member_swap_recover",
       "automated": true,
       "optional": false,
       "perTurn": 1,

@@ -1,13 +1,12 @@
 {
-  "generated": "2026-06-09",
+  "generated": "2026-06-10",
   "trigger": "live_success",
-  "total": 101,
+  "total": 97,
   "byTemplate": {
     "yell_resolution_pick_hand": 13,
     "optional_energy_live_score_plus": 3,
     "yell_resolution_count_energy_wait": 1,
     "draw_from_deck": 11,
-    "yell_resolution_live_count_score": 4,
     "draw_then_hand_discard": 17,
     "yell_resolution_energy_wait": 2,
     "yell_resolution_pick_self_score": 2,
@@ -107,42 +106,6 @@
       "optional": true,
       "perTurn": 0,
       "effect": "支払ってもよい：カードを1枚引く。"
-    },
-    {
-      "card_no": "PL!S-bp2-008-R＋",
-      "name": "小原鞠莉",
-      "template": "yell_resolution_live_count_score",
-      "automated": true,
-      "optional": false,
-      "perTurn": 0,
-      "effect": "エールにより公開された自分のカードの中にライブカードが1枚以上ある場合、ライブの合計スコアを＋１する。ライブカードが3枚以上ある場合、代わりに合計スコアを＋２する。」を得る。"
-    },
-    {
-      "card_no": "PL!S-bp2-008-P",
-      "name": "小原鞠莉",
-      "template": "yell_resolution_live_count_score",
-      "automated": true,
-      "optional": false,
-      "perTurn": 0,
-      "effect": "エールにより公開された自分のカードの中にライブカードが1枚以上ある場合、ライブの合計スコアを＋１する。ライブカードが3枚以上ある場合、代わりに合計スコアを＋２する。」を得る。"
-    },
-    {
-      "card_no": "PL!S-bp2-008-P＋",
-      "name": "小原鞠莉",
-      "template": "yell_resolution_live_count_score",
-      "automated": true,
-      "optional": false,
-      "perTurn": 0,
-      "effect": "エールにより公開された自分のカードの中にライブカードが1枚以上ある場合、ライブの合計スコアを＋１する。ライブカードが3枚以上ある場合、代わりに合計スコアを＋２する。」を得る。"
-    },
-    {
-      "card_no": "PL!S-bp2-008-SEC",
-      "name": "小原鞠莉",
-      "template": "yell_resolution_live_count_score",
-      "automated": true,
-      "optional": false,
-      "perTurn": 0,
-      "effect": "エールにより公開された自分のカードの中にライブカードが1枚以上ある場合、ライブの合計スコアを＋１する。ライブカードが3枚以上ある場合、代わりに合計スコアを＋２する。」を得る。"
     },
     {
       "card_no": "PL!SP-bp2-009-R＋",

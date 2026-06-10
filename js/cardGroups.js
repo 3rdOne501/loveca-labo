@@ -57,7 +57,7 @@ export const CARD_GROUP_RULES = [
     id: "edel",
     label: "Edel Note",
     match: function (hay) {
-      return /Edel\s*Note|エデルノート/i.test(hay);
+      return /Edel\s*Note|EdelNote|エデルノート/i.test(hay);
     },
   },
   {
@@ -65,6 +65,20 @@ export const CARD_GROUP_RULES = [
     label: "KALEIDOSCORE",
     match: function (hay) {
       return /KALEIDOSCORE|カレイドスコア/i.test(hay);
+    },
+  },
+  {
+    id: "aqours",
+    label: "Aqours",
+    match: function (hay) {
+      return /Aqours|aqours|サンシャイン/i.test(hay);
+    },
+  },
+  {
+    id: "saintsnow",
+    label: "SaintSnow",
+    match: function (hay) {
+      return /SaintSnow|saintsnow|セイントスノー/i.test(hay);
     },
   },
 ];
