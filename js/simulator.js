@@ -4661,11 +4661,11 @@ export function mountSimulator(
     ensureCardBoardFields(memberInst);
     var printed = memberPrintedBladeCount(memberInst);
     var target = Math.max(0, Math.floor(Number(targetTotal) || 0));
-    memberInst.playBonusBladeAlways = Math.max(0, target - printed);
-    memberInst.playBonusBladeTurn = 0;
+    var alwaysBonus = sanitizeNonNegativeInt(memberInst.playBonusBladeAlways);
+    memberInst.playBonusBladeTurn = Math.max(0, target - printed - alwaysBonus);
     memberInst.playBonusBlade = 0;
     showToast(
-      (mergedCatalogCard(memberInst).name || "メンバー") + " のブレード数を " + target + " にしました（ライブ終了時まで）",
+      (mergedCatalogCard(memberInst).name || "メンバー") + " のブレード数を " + target + " にしました（ターン終了時まで）",
     );
   }
 
@@ -7560,7 +7560,7 @@ export function mountSimulator(
       effectDialogResumeChip.parentNode.removeChild(effectDialogResumeChip);
     }
     effectDialogResumeChip = null;
-    effectDialogPeekSourceInst = null;
+    if (!opts.keepSourceInst) effectDialogPeekSourceInst = null;
     document.body.classList.remove("llocg-effect-dialog-peek");
     if (!opts.skipRender) render();
   }
@@ -7617,7 +7617,7 @@ export function mountSimulator(
 
   /** @param {() => void} resumeFn @param {*} [sourceInst] */
   function showEffectDialogResumeChip(resumeFn, sourceInst) {
-    hideEffectDialogResumeChip({ skipRender: true });
+    hideEffectDialogResumeChip({ skipRender: true, keepSourceInst: true });
     if (sourceInst) effectDialogPeekSourceInst = sourceInst;
     var btn = document.createElement("button");
     btn.type = "button";
@@ -7629,7 +7629,7 @@ export function mountSimulator(
     btn.title = "中断していた効果ダイアログを再開します";
     btn.addEventListener("click", function () {
       var resumeSource = effectDialogPeekSourceInst || sourceInst || null;
-      hideEffectDialogResumeChip();
+      hideEffectDialogResumeChip({ keepSourceInst: true });
       if (resumeSource) effectDialogPeekSourceInst = resumeSource;
       resumeFn();
     });
@@ -7672,7 +7672,7 @@ export function mountSimulator(
     btn.addEventListener("click", function (ev) {
       ev.preventDefault();
       ev.stopPropagation();
-      peekBoardFromDialog(dlg, sourceInst);
+      peekBoardFromDialog(dlg, sourceInst || effectDialogPeekSourceInst);
     });
     var cancelBtn = actionsEl.querySelector(".btn.secondary");
     if (cancelBtn) actionsEl.insertBefore(btn, cancelBtn);
@@ -9852,10 +9852,10 @@ export function mountSimulator(
         ensureCardBoardFields(m);
         var slot = Math.max(1, Math.min(6, Math.floor(Number(g.heartSlot) || 0)));
         var add = Math.max(1, Math.floor(Number(g.count) || 1));
-        m.playBonusHeartSlotsAlways[slot] =
-          sanitizeNonNegativeInt(m.playBonusHeartSlotsAlways[slot]) + add;
+        m.playBonusHeartSlotsTurn[slot] =
+          sanitizeNonNegativeInt(m.playBonusHeartSlotsTurn[slot]) + add;
         if (g.grantBlade) {
-          m.playBonusBladeAlways = sanitizeNonNegativeInt(m.playBonusBladeAlways) + 1;
+          m.playBonusBladeTurn = sanitizeNonNegativeInt(m.playBonusBladeTurn) + 1;
         }
         applied++;
       });
@@ -10339,15 +10339,15 @@ export function mountSimulator(
     var add = Math.floor(Number(n));
     if (memberInst && memberInst.type === T_MEMBER) {
       ensureCardBoardFields(memberInst);
-      memberInst.playBonusBladeAlways = sanitizeNonNegativeInt(memberInst.playBonusBladeAlways) + add;
+      memberInst.playBonusBladeTurn = sanitizeNonNegativeInt(memberInst.playBonusBladeTurn) + add;
       showToast(
         (mergedCatalogCard(memberInst).name || "メンバー") +
           " にブレード " +
           add +
-          " 個（ライブ終了時まで）",
+          " 個（ターン終了時まで）",
       );
     } else {
-      showToast("ブレードを " + add + " 個得ました（ライブ終了時まで）");
+      showToast("ブレードを " + add + " 個得ました（ターン終了時まで）");
     }
     logReplay("ability-blade-gain", { count: add, cardId: memberInst && memberInst.id });
   }
@@ -11123,25 +11123,25 @@ export function mountSimulator(
       return;
     }
     var labels = { left: "左サイド", center: "センター", right: "右サイド" };
-    var pick = window.prompt(
-      (leadText || "移動先エリアを選んでください") +
-        "\n\n" +
-        cols.map(function (c, i) {
-          return String(i + 1) + ": " + labels[c];
-        }).join("\n") +
-        "\n\n番号を入力（キャンセルでスキップ）",
+    var options = cols.map(function (c) {
+      var zoneIcon = c === "left" ? "⬅" : c === "right" ? "➡" : "⬆";
+      return zoneIcon + " " + (labels[c] || c);
+    });
+    openAbilityMultiChoiceDialog(
+      options,
+      1,
+      1,
+      leadText || "移動先エリアを選んでください。",
+      function (picked) {
+        if (!picked || !picked.length) {
+          onDone(null);
+          return;
+        }
+        var idx = options.indexOf(picked[0]);
+        onDone(idx >= 0 ? cols[idx] : null);
+      },
+      inst,
     );
-    if (pick == null || String(pick).trim() === "") {
-      onDone(null);
-      return;
-    }
-    var idx = Number(String(pick).trim()) - 1;
-    if (idx >= 0 && idx < cols.length) {
-      onDone(cols[idx]);
-      return;
-    }
-    showToast("無効な選択です");
-    onDone(null);
   }
 
   /** @param {*} inst @param {(slot: number | null) => void} onDone @param {number[]} [allowedSlots] */
@@ -11168,7 +11168,7 @@ export function mountSimulator(
     var prevOkLabel = btnOk.textContent;
     var prevDialogTitleHtml = dlgTitle ? dlgTitle.innerHTML : "";
     if (lead) {
-      lead.textContent = "好きなハートの色を選んでください（ライブ終了時まで得る）。";
+      lead.textContent = "好きなハートの色を選んでください（ターン終了時まで得る）。";
     }
     if (dlgTitle) {
       if (inst) setEffectProcessingDialogTitle(dlgTitle, inst);
@@ -11241,10 +11241,10 @@ export function mountSimulator(
         ? Math.max(0, Math.floor(Number(count)))
         : 1;
     if (add < 1) return;
-    inst.playBonusHeartSlotsAlways[slot] = sanitizeNonNegativeInt(inst.playBonusHeartSlotsAlways[slot]) + add;
+    inst.playBonusHeartSlotsTurn[slot] = sanitizeNonNegativeInt(inst.playBonusHeartSlotsTurn[slot]) + add;
     var names = ["", "桃", "赤", "黄", "緑", "青", "紫"];
     showToast(
-      "ライブ終了時まで " +
+      "ターン終了時まで " +
         (names[slot] || "ハート") +
         " ハートを" +
         (add === 1 ? "1つ" : add + "つ") +
@@ -11910,7 +11910,7 @@ export function mountSimulator(
    * @param {string} leadText
    * @param {(selected: string[]) => void} onDone
    */
-  function openAbilityMultiChoiceDialog(choices, minPick, maxPick, leadText, onDone) {
+  function openAbilityMultiChoiceDialog(choices, minPick, maxPick, leadText, onDone, sourceInst) {
     var dlg = document.getElementById("dlg-pick-ability-choice");
     var list = document.getElementById("dlg-pick-ability-choice-list");
     var lead = document.getElementById("dlg-pick-ability-choice-lead");
@@ -11990,7 +11990,7 @@ export function mountSimulator(
       } catch (_) {}
       onDone([]);
     }
-    ensureDialogViewBoardButton(dlg.querySelector(".app-dialog__actions"), dlg);
+    ensureDialogViewBoardButton(dlg.querySelector(".app-dialog__actions"), dlg, sourceInst || effectDialogPeekSourceInst);
     btnOk.addEventListener("click", onOk);
     if (btnCx) btnCx.addEventListener("click", onCx);
     dlg.addEventListener("cancel", onCx);
@@ -12371,8 +12371,8 @@ export function mountSimulator(
     [1, 2, 3, 4, 5, 6].forEach(function (slot) {
       var key = slot === 1 ? "heart01" : "heart0" + slot;
       if (Number(bh[key]) > 0) {
-        targetInst.playBonusHeartSlotsAlways[slot] =
-          sanitizeNonNegativeInt(targetInst.playBonusHeartSlotsAlways[slot]) + 1;
+        targetInst.playBonusHeartSlotsTurn[slot] =
+          sanitizeNonNegativeInt(targetInst.playBonusHeartSlotsTurn[slot]) + 1;
       }
     });
   }
@@ -12964,7 +12964,7 @@ export function mountSimulator(
       var gifts = cl.memberHeartBladeGifts || [];
       var appliedG = applyNamedMemberHeartBladeGifts(gifts);
       if (appliedG > 0) {
-        showToast("ステージのメンバーにハート付きブレードを付与しました（ライブ終了時まで）");
+        showToast("ステージのメンバーにハート付きブレードを付与しました（ターン終了時まで）");
       } else {
         showToast("対象のメンバーがステージにいませんでした");
       }
@@ -14733,14 +14733,30 @@ export function mountSimulator(
       var underM = underPool[0];
       var targetCol = emptyCols[0];
       if (emptyCols.length > 1) {
-        var pickCol = window.prompt(
-          "登場先: 1=左 2=センター 3=右\n\n" + emptyCols.map(function (c, i) {
-            return String(i + 1) + "=" + c;
-          }).join(" "),
+        var labelsUnder = { left: "⬅ 左サイド", center: "⬆ センター", right: "➡ 右サイド" };
+        var choicesUnder = emptyCols.map(function (c) {
+          return labelsUnder[c] || c;
+        });
+        openAbilityMultiChoiceDialog(
+          choicesUnder,
+          1,
+          1,
+          "登場させる移動先エリアを選んでください。",
+          function (pickedUnder) {
+            if (pickedUnder && pickedUnder.length) {
+              var ci = choicesUnder.indexOf(pickedUnder[0]);
+              if (ci >= 0 && ci < emptyCols.length) targetCol = emptyCols[ci];
+            }
+            continueEnterUnderMember();
+          },
+          inst,
         );
-        var ci = Number(pickCol) - 1;
-        if (ci >= 0 && ci < emptyCols.length) targetCol = emptyCols[ci];
+        return;
       }
+      continueEnterUnderMember();
+      return;
+
+      function continueEnterUnderMember() {
       var ucol = stageColumnKeyHostingMember(underM.id);
       if (ucol) {
         var slot = state.stage[ucol] || [];
@@ -14757,6 +14773,7 @@ export function mountSimulator(
       finalizeWaitingMemberStageEntry(snapU);
       finishResolved();
       return;
+      }
     }
 
     if (cl.template === "surplus_heart_score_modifier") {
@@ -19569,6 +19586,7 @@ export function mountSimulator(
       showToast("通常フェイズではありません");
       return;
     }
+    clearTurnScopedPlayBonusesEverywhere();
     persistVersusLocalDualActiveBoard();
     var optimisticOk = applyOptimisticVersusTurnEndLocally(mBefore, playRole);
     if (!optimisticOk) return;
@@ -21729,6 +21747,7 @@ export function mountSimulator(
       return;
     }
     pushHistoryBefore("versus-turn-end");
+    clearTurnScopedPlayBonusesEverywhere();
     if (versusLocalDualMatchActive()) {
       persistVersusLocalDualActiveBoard();
       var mBeforeLocal = versusSession.remoteMatch;
@@ -22803,8 +22822,17 @@ export function mountSimulator(
 
   /** Sortable が全ゾーンを毎回作り直すと重く、入力と混ざると固まることがあるので描画を同期的に合体 */
   var renderBurstId = 0;
+  var autoDeckRefreshInRender = false;
   function renderNowImpl() {
     if (!state.previewScratch) state.previewScratch = [];
+    if (!autoDeckRefreshInRender && state.deck.length === 0 && state.waitingRoom.length > 0) {
+      autoDeckRefreshInRender = true;
+      try {
+        tryReplenishDeckFromWaitingLoop();
+      } finally {
+        autoDeckRefreshInRender = false;
+      }
+    }
 
     pruneStageTurnEnteredOffBoard();
     ensureStageMembersLegacyTurnAnchors();
