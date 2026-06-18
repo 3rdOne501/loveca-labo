@@ -9063,6 +9063,7 @@ export function mountSimulator(
     if (!inst) return;
     delete inst._liveSessionYellRevealReduction;
     delete inst._grantedJoujiSegmentRaws;
+    delete inst._grantedTriggerSegmentRaws;
     if (inst.playBonusLiveScore != null) inst.playBonusLiveScore = 0;
   }
 
@@ -12392,6 +12393,25 @@ export function mountSimulator(
     function abortResolved(toastMsg) {
       if (toastMsg) showToast(toastMsg);
       finishResolved();
+    }
+
+    // 登場時は全テンプレートで共通前提を先に評価する。
+    // 個別 handler 側の重複チェックは許容し、未チェック template の取りこぼしを防ぐ。
+    if (kind === "toujyou" && !checkAbilityToujouPreconditions(cl)) {
+      abortResolved("登場時効果の条件を満たしていません");
+      return;
+    }
+    if (kind === "kidou" && !checkAbilityKidouPreconditions(cl)) {
+      abortResolved("起動効果の条件を満たしていません");
+      return;
+    }
+    if (kind === "live_start" && !checkAbilityLiveStartPreconditions(cl)) {
+      abortResolved("ライブ開始時効果の条件を満たしていません");
+      return;
+    }
+    if (kind === "live_success" && !checkAbilityLiveSuccessPreconditions(cl)) {
+      abortResolved("ライブ成功時効果の条件を満たしていません");
+      return;
     }
 
     if (cl.template === "ability_sequence") {

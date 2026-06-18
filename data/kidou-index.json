@@ -1,12 +1,13 @@
 {
-  "generated": "2026-06-10",
+  "generated": "2026-06-18",
   "trigger": "kidou",
-  "total": 245,
+  "total": 248,
   "byTemplate": {
-    "kidou_stage_wait_pick_hand": 54,
+    "kidou_stage_wait_pick_hand": 55,
     "deck_top_to_waiting": 1,
     "kidou_hand_cost_wait_pick_hand": 25,
     "draw_from_deck": 16,
+    "kidou_self_wait_hand_enter_energy": 3,
     "deck_top_pick_recover": 5,
     "kidou_wait_to_stage": 4,
     "activate_energy": 9,
@@ -16,12 +17,11 @@
     "kidou_self_to_wait_recover": 5,
     "energy_deck_to_wait": 6,
     "kidou_hand_discard_trigger_ability": 4,
-    "live_start_position_change": 10,
+    "live_start_position_change": 11,
     "grant_jouji_session": 16,
     "heart_color_pick_grant": 8,
     "kidou_wait_member_grant_jouji": 4,
     "kidou_self_wait_stage_member_swap_recover": 6,
-    "kidou_self_wait_hand_enter_energy": 2,
     "kidou_wait_shuffle_deck_bottom_activate": 1,
     "deck_reveal_until_pick": 2,
     "kidou_energy_or_activate_member": 2,
@@ -63,6 +63,15 @@
       "optional": false,
       "perTurn": 1,
       "effect": "：自分のデッキの上からカードを10枚控え室に置く。"
+    },
+    {
+      "card_no": "PL!-pb1-019-PR",
+      "name": "高坂穂乃果",
+      "template": "kidou_stage_wait_pick_hand",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "このメンバーをステージから控え室に置く：自分の控え室からメンバーカードを1枚手札に加える。"
     },
     {
       "card_no": "PL!-PR-003-PR",
@@ -135,6 +144,15 @@
       "optional": false,
       "perTurn": 1,
       "effect": "このメンバーをウェイトにし、手札を1枚控え室に置く：カードを1枚引く。"
+    },
+    {
+      "card_no": "PL!N-bp3-007-PR",
+      "name": "優木せつ菜",
+      "template": "kidou_self_wait_hand_enter_energy",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "このメンバーをステージから控え室に置く：自分の手札からコスト13以下の「優木せつ菜」のメンバーカードを1枚、このメンバーがいたエリアに登場させる。その後、自分のエネルギー置き場にあるエネルギー1枚をそのメンバーの下に置く。（メンバーの下に置かれているエネルギーカードではコストを支払えない。メンバーがステージから離れたとき、下に置かれているエネルギーカードはエネルギーデッキに置く。）"
     },
     {
       "card_no": "PL!N-PR-003-PR",
@@ -2221,6 +2239,15 @@
       "optional": false,
       "perTurn": 1,
       "effect": "：自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。"
+    },
+    {
+      "card_no": "PL!SP-sd2-002-P",
+      "name": "唐 可可",
+      "template": "live_start_position_change",
+      "automated": true,
+      "optional": false,
+      "perTurn": 1,
+      "effect": "：このメンバーをポジションチェンジする。"
     },
     {
       "card_no": "PL!SP-sd2-002-SD2",

@@ -214,6 +214,12 @@ function main() {
     }
   }
   const jidouManual = jidouCards.filter((c) => c.template === "jidou_manual").length;
+  /** @type {Record<string, number>} */
+  const jidouByTemplate = {};
+  for (const row of jidouCards) {
+    const key = row.template || "none";
+    jidouByTemplate[key] = (jidouByTemplate[key] || 0) + 1;
+  }
   writeFileSync(
     join(DATA_DIR, "jidou-index.json"),
     JSON.stringify(
@@ -223,6 +229,7 @@ function main() {
         total: jidouCards.length,
         automated: jidouCards.length - jidouManual,
         guided_manual: jidouManual,
+        byTemplate: jidouByTemplate,
         cards: jidouCards,
       },
       null,

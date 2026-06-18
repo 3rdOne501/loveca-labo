@@ -3,11 +3,16 @@
  * 能力実行の静的監査（handler 存在に加え、到達不能パス・sequence 整合を検査）。
  * 用法: node scripts/verify-ability-runtime.mjs
  */
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execSync } from "node:child_process";
-import { abilityEffectIsAutomated } from "../js/abilityEffects.js";
+import {
+  abilityEffectIsAutomated,
+  cardAbilityRawText,
+  classifyCardAbility,
+  splitAbilityByTriggers,
+} from "../js/abilityEffects.js";
 import { jidouEffectIsAutomated } from "../js/jidouAutoEffects.js";
 import {
   JIDOU_AUTO_TEMPLATES,
@@ -172,11 +177,95 @@ function checkRegressionHelpers(simSrc) {
   return errors;
 }
 
+function loadCards() {
+  return JSON.parse(read("data/cards.json"));
+}
+
+/** @param {Record<string, any>} cards */
+function pickRepresentativeCardNos(cards) {
+  /** @type {string[]} */
+  const picks = [];
+  const pickedSet = new Set();
+  for (const tr of ["kidou", "toujyou", "live_start", "live_success"]) {
+    const idx = JSON.parse(read(`data/${tr}-index.json`));
+    const rows = idx.cards || [];
+    const byTemplateFirst = new Map();
+    for (const row of rows) {
+      if (!row || !row.template || !row.card_no) continue;
+      if (!byTemplateFirst.has(row.template)) byTemplateFirst.set(row.template, row.card_no);
+    }
+    for (const cardNo of byTemplateFirst.values()) {
+      if (pickedSet.has(cardNo)) continue;
+      pickedSet.add(cardNo);
+      picks.push(cardNo);
+      if (picks.length >= 50) return picks;
+    }
+  }
+  const all = Object.keys(cards).sort();
+  for (const cno of all) {
+    if (pickedSet.has(cno)) continue;
+    pickedSet.add(cno);
+    picks.push(cno);
+    if (picks.length >= 50) break;
+  }
+  return picks.slice(0, 50);
+}
+
+/**
+ * @param {Record<string, any>} cards
+ * @param {string[]} pickedNos
+ */
+function writeClassifySnapshot(cards, pickedNos) {
+  const outDir = join(ROOT, "scripts", "snapshots");
+  mkdirSync(outDir, { recursive: true });
+  /** @type {Array<{card_no: string, name: string, entries: Array<{trigger: string, template: string, filters: object}>}>} */
+  const payload = [];
+  for (const cno of pickedNos) {
+    const card = cards[cno];
+    if (!card) continue;
+    const segs = splitAbilityByTriggers(cardAbilityRawText(card) || "");
+    /** @type {Array<{trigger: string, template: string, filters: object}>} */
+    const entries = [];
+    for (const seg of segs) {
+      if (!seg || !seg.trigger) continue;
+      const trigger = seg.trigger;
+      if (!["kidou", "toujyou", "live_start", "live_success"].includes(trigger)) continue;
+      const cl = classifyCardAbility(card, trigger, seg.text);
+      entries.push({
+        trigger,
+        template: cl.template || "none",
+        filters: cl.filters || {},
+      });
+    }
+    payload.push({
+      card_no: cno,
+      name: String(card.name || ""),
+      entries,
+    });
+  }
+  writeFileSync(
+    join(outDir, "ability-classify-snapshot.json"),
+    JSON.stringify(
+      {
+        generated: new Date().toISOString(),
+        sample_size: payload.length,
+        cards: payload,
+      },
+      null,
+      2,
+    ) + "\n",
+    "utf8",
+  );
+}
+
 function main() {
   execSync("node scripts/build-ability-index.mjs", { cwd: ROOT, stdio: "pipe" });
 
   const simSrc = read("js/simulator.js");
   const handlers = loadHandlerTemplates(simSrc);
+  const cards = loadCards();
+  const pickedNos = pickRepresentativeCardNos(cards);
+  writeClassifySnapshot(cards, pickedNos);
 
   /** @type {string[]} */
   const errors = [];
@@ -238,6 +327,7 @@ function main() {
   console.log(`executeAbilityBody handlers: ${handlers.executeBody.size}`);
   console.log(`runJidouAutoEffect handlers: ${handlers.runJidou.size}`);
   console.log(`index templates checked: ${indexTemplates.size}`);
+  console.log(`snapshot cards: ${pickedNos.length}`);
 
   if (warnings.length) {
     console.log(`\nWarnings (${warnings.length}):`);

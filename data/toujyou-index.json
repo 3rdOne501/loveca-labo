@@ -1,11 +1,11 @@
 {
-  "generated": "2026-06-10",
+  "generated": "2026-06-18",
   "trigger": "toujyou",
-  "total": 511,
+  "total": 514,
   "byTemplate": {
     "toujou_success_live_pick_hand": 3,
     "toujou_wait_pick_hand": 63,
-    "deck_top_pick_recover": 68,
+    "deck_top_pick_recover": 70,
     "draw_from_deck": 36,
     "deck_top_to_waiting": 40,
     "deck_top_look_reorder": 18,
@@ -18,10 +18,10 @@
     "toujou_wait_to_member_under": 1,
     "draw_until_hand_size": 2,
     "energy_deck_to_wait": 14,
+    "toujou_optional_hand_discard_draw": 3,
     "activate_energy": 17,
     "ability_sequence": 12,
     "deck_reveal_until_live": 2,
-    "toujou_optional_hand_discard_draw": 2,
     "toujou_deck_top_wait_if_all_members": 2,
     "toujou_rotate_stage_areas": 2,
     "toujou_optional_self_wait_recover": 2,
@@ -535,6 +535,33 @@
       "optional": true,
       "perTurn": 0,
       "effect": "このメンバーよりコストが低いメンバーからバトンタッチして登場した場合、自分の手札からコスト4以下のメンバーカードを1枚ステージに登場させてもよい。"
+    },
+    {
+      "card_no": "PL!HS-bp1-005-PR",
+      "name": "大沢瑠璃乃",
+      "template": "toujou_optional_hand_discard_draw",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札を3枚まで控え室に置いてもよい：これにより置いた枚数分カードを引く。"
+    },
+    {
+      "card_no": "PL!HS-bp1-011-PR",
+      "name": "村野さやか",
+      "template": "deck_top_pick_recover",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札を1枚控え室に置いてもよい：自分のデッキの上からカードを5枚見る。その中からライブカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
+    },
+    {
+      "card_no": "PL!HS-bp2-010-PR",
+      "name": "日野下花帆",
+      "template": "deck_top_pick_recover",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札を1枚控え室に置いてもよい：自分のデッキの上からカードを5枚見る。その中からメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
     },
     {
       "card_no": "PL!HS-bp2-011-PR",
