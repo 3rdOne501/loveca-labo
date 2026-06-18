@@ -7628,7 +7628,9 @@ export function mountSimulator(
     btn.textContent = "効果を続ける";
     btn.title = "中断していた効果ダイアログを再開します";
     btn.addEventListener("click", function () {
+      var resumeSource = effectDialogPeekSourceInst || sourceInst || null;
       hideEffectDialogResumeChip();
+      if (resumeSource) effectDialogPeekSourceInst = resumeSource;
       resumeFn();
     });
     effectDialogResumeChip = btn;
@@ -7709,6 +7711,20 @@ export function mountSimulator(
       }
     };
     document.addEventListener("cancel", window.__llocgEffectDialogCancelGuard, true);
+  }
+
+  if (!window.__llocgEffectDialogBackdropPeek) {
+    window.__llocgEffectDialogBackdropPeek = function (ev) {
+      if (effectDialogSuppressCancel) return;
+      var t = ev.target;
+      if (!t || t.tagName !== "DIALOG" || !t.open) return;
+      if (!dialogSupportsBoardPeek(t)) return;
+      if (isEffectDialogBoardPeekActive()) return;
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+      peekBoardFromDialog(t, effectDialogPeekSourceInst);
+    };
+    document.addEventListener("click", window.__llocgEffectDialogBackdropPeek, true);
   }
 
   window.__llocgPeekBoardFromDialog = peekBoardFromDialog;
@@ -8609,7 +8625,7 @@ export function mountSimulator(
         render();
         return;
       }
-      showToast("効果テキストの分類が一致しません。ガイドに従って手動で処理してください。");
+      showUnsupportedAbilityWarning(c, kind, cl, "この効果は手動で解決してください。");
       openAbilityGuidedDialog(c, kind, function () {
         markPlayEffectResolved(c, kind);
         render();
@@ -9863,6 +9879,44 @@ export function mountSimulator(
     return true;
   }
 
+  /**
+   * @param {*} inst
+   * @param {string} kind
+   * @param {*} [cl]
+   */
+  function unsupportedAbilityReasonText(inst, kind, cl) {
+    var mc = mergedCatalogCard(inst);
+    var cardNo = mc && mc.card_no ? String(mc.card_no) : "";
+    var timing = abilityTriggerTimingLabel(kind);
+    var tpl = cl && cl.template ? String(cl.template) : "unknown";
+    return (cardNo ? cardNo + " / " : "") + timing + " / template: " + tpl;
+  }
+
+  /**
+   * @param {*} inst
+   * @param {string} kind
+   * @param {*} [cl]
+   */
+  function unsupportedAbilityDialogNote(inst, kind, cl) {
+    return "【自動処理未対応】 " + unsupportedAbilityReasonText(inst, kind, cl);
+  }
+
+  /**
+   * @param {*} inst
+   * @param {string} kind
+   * @param {*} [cl]
+   * @param {string} [messagePrefix]
+   */
+  function showUnsupportedAbilityWarning(inst, kind, cl, messagePrefix) {
+    var reason = unsupportedAbilityReasonText(inst, kind, cl);
+    var head = messagePrefix || "この効果は手動で解決してください。";
+    showToast(head + "（" + reason + "）", {
+      duration: 5200,
+      placement: "center",
+      variant: "manual-unsupported",
+    });
+  }
+
   function syncAbilityGuidedDialogLead(inst, kind) {
     var lead = document.getElementById("dlg-ability-guided-lead");
     if (!lead) return;
@@ -9876,7 +9930,9 @@ export function mountSimulator(
       lead.hidden = false;
       lead.className = "hint zone-inline-help dlg-ability-guided-lead";
       lead.textContent =
-        "この効果は自動操作に未対応です。下の能力文どおり盤面を整え、終わったら「完了」を押してください。";
+        "この効果は自動操作に未対応です（" +
+        unsupportedAbilityReasonText(inst, kind, cl) +
+        "）。下の能力文どおり盤面を整え、終わったら「完了」を押してください。";
     }
   }
 
@@ -10026,12 +10082,17 @@ export function mountSimulator(
       if (typeof onDone === "function") onDone();
       return;
     }
+    var cl = classifyCardAbility(mc, kind);
     if (inst) effectDialogPeekSourceInst = inst;
     syncAbilityGuidedDialogLead(inst, kind);
     var title = document.getElementById("dlg-ability-guided-title");
     if (title) title.textContent = formatAbilityEffectDialogTitle(inst, kind);
     btnDone.textContent = "完了";
     body.innerHTML = abilityEffectBodyHtml(mc, kind);
+    var plainBody = abilityPlainText(mc) || "";
+    if (!abilityEffectIsAutomated(cl.template)) {
+      plainBody += (plainBody ? "\n\n" : "") + unsupportedAbilityDialogNote(inst, kind, cl);
+    }
     pushLocalVersusEffectUi(inst, kind, plainBody);
     function cleanup() {
       hideEffectDialogResumeChipOnDialogCleanup();
@@ -10855,14 +10916,25 @@ export function mountSimulator(
       var btnDone = document.getElementById("dlg-ability-guided-done");
       var btnCx = document.getElementById("dlg-ability-guided-cancel");
       if (!dlg || !body || !btnDone || typeof dlg.showModal !== "function") {
-        showToast("登場時能力を手動で解決してください");
+        showUnsupportedAbilityWarning(cardInst, "toujyou", clT);
         if (onDone) onDone();
         return;
       }
       if (cardInst) effectDialogPeekSourceInst = cardInst;
       var title = document.getElementById("dlg-ability-guided-title");
       if (title) title.textContent = (mc.name || "カード") + " — 登場時";
-      body.innerHTML = abilityEffectBodyHtml(mc, "toujyou");
+      body.innerHTML =
+        '<p class="hint zone-inline-help dlg-ability-guided-lead">' +
+        escapeHtmlPlain(unsupportedAbilityDialogNote(cardInst, "toujyou", clT)) +
+        "</p>" +
+        abilityEffectBodyHtml(mc, "toujyou");
+      pushLocalVersusEffectUi(
+        cardInst,
+        "toujyou",
+        (abilityPlainText(mc) || "") +
+          "\n\n" +
+          unsupportedAbilityDialogNote(cardInst, "toujyou", clT),
+      );
       function cleanup() {
         btnDone.removeEventListener("click", onDoneClick);
         if (btnCx) btnCx.removeEventListener("click", onCx);
@@ -11827,7 +11899,7 @@ export function mountSimulator(
       });
       return;
     }
-    showToast("この選択肢は手動で処理してください: " + t);
+    showUnsupportedAbilityWarning(inst, kind, null, "この選択肢は手動で処理してください: " + t);
     openAbilityGuidedDialog(inst, kind, onDone);
   }
 
@@ -17952,7 +18024,11 @@ export function mountSimulator(
     }
     if (inst) effectDialogPeekSourceInst = inst;
     syncAbilityGuidedDialogLead(inst, kind);
-    pushLocalVersusEffectUi(inst, kind, abilityPlainText(mc) || "");
+    var bodyPlain = abilityPlainText(mc) || "";
+    if (!abilityEffectIsAutomated(item.cl && item.cl.template)) {
+      bodyPlain += (bodyPlain ? "\n\n" : "") + unsupportedAbilityDialogNote(inst, kind, item.cl);
+    }
+    pushLocalVersusEffectUi(inst, kind, bodyPlain);
     var prevDoneLabel = btnDone.textContent;
     if (title) title.textContent = formatAbilityEffectDialogTitle(inst, kind, { mandatory: true });
     body.innerHTML = abilityEffectBodyHtml(mc, kind);

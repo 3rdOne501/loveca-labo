@@ -6583,6 +6583,27 @@ body.play-mode .toast-stack {
   opacity: 1;
   transform: translateY(0);
 }
+.toast--center {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, calc(-50% + 10px));
+  max-width: min(92vw, 30rem);
+  text-align: center;
+  font-size: 0.96rem;
+  line-height: 1.45;
+  border-radius: 16px;
+  padding: 0.85rem 1.15rem;
+  background: linear-gradient(160deg, rgba(60, 20, 54, 0.96), rgba(24, 10, 36, 0.98));
+  border-color: rgba(255, 172, 215, 0.58);
+  box-shadow:
+    0 14px 44px rgba(0, 0, 0, 0.56),
+    0 0 28px rgba(255, 120, 186, 0.34);
+  z-index: 12070;
+}
+.toast--center.is-in {
+  transform: translate(-50%, -50%);
+}
 
 /* プレイ操作が効かないように見える対策（長タスク直後のタップ・iOS の 300ms 遅延軽減） */
 body.play-mode .game-bar button,
@@ -8234,31 +8255,31 @@ body.play-mode .card-art-wrap .card-img {
 }
 body.play-mode .live-slot .card-effect-resolve-btn--live_start,
 body.play-mode .live-slot .card-effect-resolve-btn-row .card-effect-resolve-btn--live_start {
-  font-size: 0.95rem;
-  padding: 0.22rem 0.7rem;
+  font-size: 1.2rem;
+  padding: 0.3rem 0.95rem;
   border-width: 1.5px;
   letter-spacing: 0.03em;
   min-width: 0;
 }
 body.play-mode .live-slot .card-effect-resolve-btn--live_success,
 body.play-mode .live-slot .card-effect-resolve-btn-row .card-effect-resolve-btn--live_success {
-  font-size: 1.06rem;
-  padding: 0.3rem 0.82rem;
+  font-size: 1.34rem;
+  padding: 0.4rem 1.05rem;
   border-width: 1.5px;
   letter-spacing: 0.03em;
   min-width: 0;
 }
 body.play-mode .live-slot .card-effect-resolve-btn-row .card-effect-resolve-btn--live_start {
   flex: 1 1 auto;
-  min-width: 4.2rem;
-  font-size: 0.88rem;
-  padding: 0.2rem 0.45rem;
+  min-width: 5.1rem;
+  font-size: 1rem;
+  padding: 0.28rem 0.6rem;
 }
 body.play-mode .live-slot .card-effect-resolve-btn-row .card-effect-resolve-btn--live_success {
   flex: 1 1 auto;
-  min-width: 4.6rem;
-  font-size: 0.98rem;
-  padding: 0.28rem 0.55rem;
+  min-width: 5.6rem;
+  font-size: 1.12rem;
+  padding: 0.34rem 0.72rem;
 }
 .dlg-pick-kidou-waiting__zone {
   font-size: 0.62rem;
