@@ -341,6 +341,34 @@ export function classifyJidouAutoSegment(segRaw) {
     };
   }
 
+  if (
+    /ステージにいるメンバー/.test(p) &&
+    /能力が解決するたび/.test(p) &&
+    /ライブ終了時まで/.test(p) &&
+    /(icon_all\.png|heart_00\.png|heart0)/i.test(String(segRaw || "")) &&
+    /(live_start\.png|ライブ開始時)/.test(String(segRaw || ""))
+  ) {
+    return {
+      template: "jidou_member_live_start_grant_all_heart",
+      eventKind: "member_live_start_resolved",
+      perTurnLimit: perTurn,
+    };
+  }
+  if (
+    /ステージにいるメンバー/.test(p) &&
+    /能力が解決するたび/.test(p) &&
+    /カードを(\d+)枚引/.test(p) &&
+    /(live_success\.png|ライブ成功時)/.test(String(segRaw || ""))
+  ) {
+    var drLs = p.match(/カードを(\d+)枚引/);
+    return {
+      template: "jidou_member_live_success_draw",
+      eventKind: "member_live_success_resolved",
+      deckDrawCount: drLs ? Number(drLs[1]) : 1,
+      perTurnLimit: perTurn,
+    };
+  }
+
   return { template: "jidou_manual" };
 }
 
@@ -393,6 +421,8 @@ export function jidouEffectIsAutomated(template) {
     template === "jidou_self_active_to_wait_draw_discard" ||
     template === "jidou_energy_placed_grant" ||
     template === "jidou_baton_leave_activate_energy" ||
-    template === "jidou_leave_stage_hand_grant_member"
+    template === "jidou_leave_stage_hand_grant_member" ||
+    template === "jidou_member_live_start_grant_all_heart" ||
+    template === "jidou_member_live_success_draw"
   );
 }

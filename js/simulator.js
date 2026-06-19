@@ -3836,6 +3836,98 @@ export function mountSimulator(
     render();
   }
 
+  function memberInstHasAllHeart(memberInst) {
+    if (!memberInst || memberInst.type !== T_MEMBER) return false;
+    var mc = mergedCatalogCard(memberInst);
+    var bh = mc.base_heart;
+    if (bh && Number(bh.heart0) > 0) return true;
+    var blh = mc.blade_heart;
+    if (blh && Number(blh.b_all) > 0) return true;
+    ensureCardBoardFields(memberInst);
+    if (bonusHeartSlotRead(memberInst, 7) > 0) return true;
+    if (memberInst._baseHeartsWildcardUntilLiveEnd === true) return true;
+    return false;
+  }
+
+  function grantAllHeartUntilLiveEnd(memberInst, count) {
+    if (!memberInst || memberInst.type !== T_MEMBER) return;
+    ensureCardBoardFields(memberInst);
+    var add = Math.max(1, Math.floor(Number(count) || 1));
+    memberInst.playBonusHeartSlotsTurn[7] =
+      sanitizeNonNegativeInt(memberInst.playBonusHeartSlotsTurn[7]) + add;
+    showToast("ライブ終了時まで ALLハートを得ました");
+  }
+
+  function eachLiveFrameLiveCardInsts() {
+    /** @type {*[]} */
+    var out = [];
+    ["left", "center", "right"].forEach(function (col) {
+      (state.liveArea[col] || []).forEach(function (c) {
+        if (c && mergedCatalogCard(c).type === T_LIVE) out.push(c);
+      });
+    });
+    return out;
+  }
+
+  function runJidouLiveBoardEffect(liveInst, cl, segRaw, segIndex, ctx) {
+    if (!liveInst || !cl || isPlayManualMode()) return;
+    void segRaw;
+    var liveName = mergedCatalogCard(liveInst).name || "ライブ";
+    var target = ctx && ctx.targetMember;
+    if (cl.template === "jidou_member_live_start_grant_all_heart") {
+      if (!target || target.type !== T_MEMBER) return;
+      if (memberInstHasAllHeart(target)) return;
+      pushHistoryBefore("jidou-live-start-all-heart");
+      grantAllHeartUntilLiveEnd(target, 1);
+      jidouPerTurnMark(liveInst, segIndex);
+      showToast(
+        "自動（" +
+          liveName +
+          "）: " +
+          (mergedCatalogCard(target).name || "メンバー") +
+          " に ALLハートを付与しました",
+      );
+      render();
+      return;
+    }
+    if (cl.template === "jidou_member_live_success_draw") {
+      var drN = cl.deckDrawCount || 1;
+      if (!state.deck.length) {
+        showToast("自動（" + liveName + "）: 山札がありません");
+        return;
+      }
+      pushHistoryBefore("jidou-live-success-draw");
+      var drawn = [];
+      for (var di = 0; di < drN && state.deck.length; di++) drawn.push(state.deck.shift());
+      drawn.forEach(function (c) {
+        state.hand.push(c);
+      });
+      if (drawn.length) presentAbilityDrawsToHand(drawn, liveInst);
+      jidouPerTurnMark(liveInst, segIndex);
+      showToast("自動（" + liveName + "）: 山札から " + drawn.length + " 枚引きました");
+      render();
+      return;
+    }
+  }
+
+  function fireJidouOnStageMemberAbilityResolved(memberInst, triggerKind) {
+    if (isPlayManualMode() || !memberInst || memberInst.type !== T_MEMBER) return;
+    if (triggerKind !== "live_start" && triggerKind !== "live_success") return;
+    if (stageColumnKeyHostingMember(memberInst.id) == null) return;
+    eachLiveFrameLiveCardInsts().forEach(function (liveInst) {
+      var mc = mergedCatalogCard(liveInst);
+      var raws = listNativeJidouSegmentRaws(mc);
+      for (var i = 0; i < raws.length; i++) {
+        var cl = classifyJidouAutoSegment(raws[i]);
+        if (!cl || cl.template === "jidou_manual") continue;
+        if (triggerKind === "live_start" && cl.eventKind !== "member_live_start_resolved") continue;
+        if (triggerKind === "live_success" && cl.eventKind !== "member_live_success_resolved") continue;
+        if (jidouPerTurnBlocked(liveInst, i, cl.perTurnLimit)) continue;
+        runJidouLiveBoardEffect(liveInst, cl, raws[i], i, { targetMember: memberInst });
+      }
+    });
+  }
+
   function fireJidouAutoForMember(memberInst, eventKind, ctx) {
     if (isPlayManualMode() || !memberInst || memberInst.type !== T_MEMBER) return;
     var mc = mergedCatalogCard(memberInst);
@@ -10468,6 +10560,13 @@ export function mountSimulator(
       done = true;
       if (effectDialogPeekSourceInst === inst) effectDialogPeekSourceInst = null;
       markPlayEffectResolved(inst, resolveKind);
+      if (resolveKind === "live_start" || resolveKind === "live_success") {
+        try {
+          fireJidouOnStageMemberAbilityResolved(inst, resolveKind);
+        } catch (jErr) {
+          console.warn(jErr);
+        }
+      }
       if (versusOnlineActive() && versusSession.myRole) {
         clearVersusEffectHighlight(versusSession.roomCode, versusSession.myRole).catch(function () {
           /* noop */

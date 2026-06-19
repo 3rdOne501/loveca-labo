@@ -71,6 +71,8 @@ export const JIDOU_AUTO_TEMPLATES = [
   "jidou_energy_placed_grant",
   "jidou_baton_leave_activate_energy",
   "jidou_leave_stage_hand_grant_member",
+  "jidou_member_live_start_grant_all_heart",
+  "jidou_member_live_success_draw",
 ];
 
 /** @param {string} template */
