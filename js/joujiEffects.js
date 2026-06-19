@@ -388,7 +388,14 @@ export function classifyJoujiSegment(segRaw) {
     }
     var lily = /『lilywhite』/.test(p);
     if (lily) handRule.handCostReduceSeriesTag = "lilywhite";
-    if (/ウェイト状態の『虹ヶ咲』/.test(p)) handRule.handCostReduceSeriesTag = "虹ヶ咲";
+    if (/ウェイト状態の『([^』]+)』/.test(p) && /ステージ/.test(p)) {
+      var waitSer = p.match(/ウェイト状態の『([^』]+)』/);
+      handRule.kind = "hand_cost_reduce_if_wait_series_on_stage";
+      handRule.waitSeriesOnStageTag = waitSer ? waitSer[1] : null;
+      handRule.handCostReduceSeriesTag = null;
+    } else if (/ウェイト状態の『虹ヶ咲』/.test(p)) {
+      handRule.handCostReduceSeriesTag = "虹ヶ咲";
+    }
     if (/エリアを移動しているかぎり/.test(p)) handRule.notMovedThisTurn = false;
     return handRule;
   }
@@ -680,6 +687,17 @@ function evaluateJoujiRule(rule, inst, card, ctx) {
       return out;
     case "hand_cost_reduce":
       out.handCostReduction = rule.handCostReduce || 0;
+      return out;
+    case "hand_cost_reduce_if_wait_series_on_stage":
+      if (ctx.instInOwnHand && ctx.instInOwnHand(inst)) {
+        var waitHit = false;
+        ctx.eachStageColumnMembers().forEach(function (m) {
+          if (!m || m.lcWait !== true) return;
+          if (rule.waitSeriesOnStageTag && !ctx.memberMatchesSeries(m, rule.waitSeriesOnStageTag)) return;
+          waitHit = true;
+        });
+        if (waitHit) out.handCostReduction = rule.handCostReduce || 0;
+      }
       return out;
     case "hand_cost_per_series_on_stage":
       if (ctx.instInOwnHand && ctx.instInOwnHand(inst)) {

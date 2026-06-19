@@ -3451,6 +3451,19 @@ body.play-mode .card-item .live-turn-pick {
   flex-shrink: 0;
   filter: drop-shadow(0 0 2px rgba(255, 200, 140, 0.45));
 }
+.card-member-bonus-heart-ico-wrap {
+  display: inline-flex;
+  align-items: center;
+  line-height: 0;
+}
+.card-member-bonus-heart-ico-wrap .card-member-bonus-heart-ico,
+.card-member-bonus-heart-ico-wrap img {
+  display: block;
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
 .dlg-member-hb {
   max-width: 28rem;
 }
@@ -7096,6 +7109,61 @@ body.play-mode .site-footer {
 .dlg-cost-payment-self-wait-tile {
   min-width: 12rem;
   max-width: 100%;
+}
+.dlg-cost-self-wait-label {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 180, 220, 0.45);
+  background: rgba(40, 10, 30, 0.55);
+  cursor: pointer;
+  user-select: none;
+}
+.dlg-cost-self-wait-label input[type="checkbox"] {
+  width: 1.35rem;
+  height: 1.35rem;
+  flex: 0 0 auto;
+  accent-color: #ff7eb8;
+  cursor: pointer;
+}
+.dlg-deck-look-reorder__move {
+  min-width: 2rem;
+  padding: 0.15rem 0.35rem;
+  line-height: 1.1;
+  font-weight: 700;
+}
+.card-resolution-bh-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  justify-content: center;
+  margin-top: 0.15rem;
+}
+.card-resolution-bh-btn {
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 6px;
+  padding: 0.1rem;
+  cursor: pointer;
+  opacity: 0.55;
+}
+.card-resolution-bh-btn.is-flipped {
+  opacity: 1;
+  border-color: rgba(255, 210, 120, 0.85);
+  box-shadow: 0 0 0 1px rgba(255, 180, 80, 0.35);
+}
+.card-resolution-bh-btn__ico {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+.toast--center.toast--manual-unsupported {
+  max-width: min(92vw, 36rem);
+  font-size: 1.05rem;
+  line-height: 1.45;
 }
 .dlg-cost-payment-energy-grid {
   margin-top: 0.35rem;

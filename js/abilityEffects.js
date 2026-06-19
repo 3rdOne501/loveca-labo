@@ -216,6 +216,7 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  * @property {string[]} [kidouSegmentRaws]
  * @property {boolean} [requiresSeriesOnStage]
  * @property {string[]} [characterNames]
+ * @property {string | null} [requiresBatonFromSeriesTag] 登場時：指定シリーズのメンバーからのバトンタッチ必須
  * @property {number} [effectDiscardCount] 効果本文での手札→控え室（コストと別）
  * @property {boolean} [postDiscardActivateIfNonBhMember] 捨てた非BHメンバー1枚以上でこのメンバーをアクティブ
  * @property {number} [postDiscardBladeGainIfNonBhAt] 非BHメンバーをこの枚数以上捨てたときブレード付与
@@ -1112,6 +1113,17 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
     /メンバーをウェイトにする/.test(costPart);
   base.costPickMemberWait =
     /メンバー.*ウェイトにしてもよい/.test(costPart) && !base.costSelfWait;
+  base.costMandatoryWaitOtherMember =
+    !base.costSelfWait &&
+    !base.costPickMemberWait &&
+    /このメンバー以外/.test(costPart) &&
+    /メンバー.*ウェイトにする/.test(costPart) &&
+    !/してもよい/.test(costPart);
+  if (base.costMandatoryWaitOtherMember) {
+    base.costWaitOtherMemberFilters = Object.assign(parseAbilityPickFilters(costPart), {
+      pickType: parseAbilityPickFilters(costPart).pickType || T_MEMBER,
+    });
+  }
   base.costOrAlt =
     /ウェイトにするか/.test(costPart) ||
     (/手札.*控え室/.test(costPart) && /か/.test(costPart) && base.costSelfWait);
@@ -1349,9 +1361,11 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
     }
 
     if (/ステージから控え室/.test(p) && /手札に加/.test(p)) {
+      var actEnStgWait = p.match(/エネルギーを(\d+)枚アクティブにする/);
       return kidouT({
         template: "kidou_stage_wait_pick_hand",
         filters: parseAbilityPickFilters(p),
+        energyActiveCount: actEnStgWait ? Number(actEnStgWait[1]) || 1 : undefined,
       });
     }
 
@@ -1467,8 +1481,13 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
       return kidouT(drawDiscardPatch);
     }
 
-    var drawOnlyKd = p.match(/カードを(\d+)枚引/);
-    if (drawOnlyKd && !/控え室から/.test(p) && !/手札.*控え室に置/.test(p.split("：")[1] || "")) {
+    var kidouEffectPart = p.indexOf("：") >= 0 ? p.slice(p.indexOf("：") + 1) : p;
+    var drawOnlyKd = kidouEffectPart.match(/カードを(\d+)枚引/);
+    if (
+      drawOnlyKd &&
+      !/控え室から/.test(kidouEffectPart) &&
+      !/手札.*控え室に置/.test(kidouEffectPart)
+    ) {
       return kidouT({
         template: "draw_from_deck",
         deckDrawCount: Number(drawOnlyKd[1]) || 1,
@@ -1706,6 +1725,15 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
         activateMax: 1,
         requiresOnStage: true,
         filters: parseAbilityPickFilters(p),
+      });
+    }
+    if (/ステージにいるメンバー1人か.*エネルギーを(\d+)枚アクティブ/.test(p)) {
+      var touEnPick = p.match(/エネルギーを(\d+)枚アクティブ/);
+      return twT({
+        template: "toujou_pick_member_or_energy",
+        activateMax: 1,
+        energyActiveCount: touEnPick ? Number(touEnPick[1]) || 2 : 2,
+        requiresOnStage: true,
       });
     }
     if (/手札を(\d+)枚まで控え室に置いてもよい/.test(p) && /置いた枚数分カードを引/.test(p)) {
@@ -1974,12 +2002,16 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
     }
     var edWait = p.match(/エネルギーデッキから.*エネルギーカードを(\d+)枚ウェイト/);
     if (edWait) {
-      return twT({
+      /** @type {Partial<ClassifiedAbility>} */
+      var edWaitPatch = {
         template: "energy_deck_to_wait",
         energyWaitCount: Number(edWait[1]) || 1,
         requiresOnStage: true,
         filters: parseAbilityPickFilters(p),
-      });
+      };
+      var batonSeriesM = p.match(/『([^』]+)』のメンバーからバトンタッチ/);
+      if (batonSeriesM) edWaitPatch.requiresBatonFromSeriesTag = batonSeriesM[1];
+      return twT(edWaitPatch);
     }
     var drawPerMem = p.match(/ステージにいるメンバー1人につき.*カードを(\d+)枚引/);
     if (drawPerMem) {
@@ -2446,6 +2478,9 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
         optional: base.optional,
         hasOptionalCost: base.hasOptionalCost,
         filters: parseAbilityPickFilters(p),
+        requiresYellRevealedAllBladeFlipped:
+          /エールにより公開/.test(p) &&
+          (/ALLブレード|icon_b_all|b_all/.test(p + segRaw) || /ALLブレード/.test(pLs)),
       };
       if (/センターエリア/.test(p) && /移動している/.test(p)) {
         lsScorePatch.requiresCenterMemberMovedThisTurn = true;
@@ -2658,6 +2693,23 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
         bladeSetCount: bladeSetM ? Number(bladeSetM[1]) || 3 : 3,
         requiresOnStage: true,
         filters: parseAbilityPickFilters(p),
+      });
+    }
+
+    if (
+      /手札.*控え室.*もよい/.test(costPart) &&
+      /ウェイト状態のメンバー.*アクティブ/.test(p) &&
+      /ライブ終了時まで/.test(p + segRaw)
+    ) {
+      var hdLsAct = costPart.match(/手札を(\d+)枚控え室/);
+      var heartGrantSlots = parseNamedMemberHeartBladeGifts(p, segRaw);
+      return lsT({
+        template: "live_start_hand_discard_activate_wait_grant",
+        handDiscardToWaiting: hdLsAct ? Number(hdLsAct[1]) || 2 : 2,
+        optional: true,
+        hasOptionalCost: true,
+        requiresOnStage: true,
+        memberHeartBladeGifts: heartGrantSlots.length ? heartGrantSlots : undefined,
       });
     }
 
@@ -3036,6 +3088,7 @@ export function abilityEffectIsAutomated(template) {
     template === "live_start_center_series_blade_set" ||
     template === "live_start_edelnote_blade_heart_pair" ||
     template === "live_start_hand_discard_blade_per" ||
+    template === "live_start_hand_discard_activate_wait_grant" ||
     template === "live_start_hand_blade_per" ||
     template === "toujou_deck_top_wait_if_all_members" ||
     template === "toujou_deck_top_wait_if_all_heart" ||
@@ -3058,6 +3111,7 @@ export function abilityEffectIsAutomated(template) {
     template === "deck_top_count_live_score_plus" ||
     template === "waiting_reorder_deck_top" ||
     template === "activate_stage_members_up_to" ||
+    template === "toujou_pick_member_or_energy" ||
     template === "yell_resolution_pick_hand" ||
     template === "yell_resolution_pick_deck_top" ||
     template === "yell_resolution_energy_wait" ||

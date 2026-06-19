@@ -1,10 +1,10 @@
 {
-  "generated": "2026-06-18",
+  "generated": "2026-06-19",
   "trigger": "live_start",
   "total": 296,
   "byTemplate": {
     "heart_color_pick_grant": 34,
-    "grant_jouji_session": 98,
+    "grant_jouji_session": 94,
     "optional_self_wait_opp_stage": 11,
     "optional_energy_blade_until_live_end": 39,
     "live_start_pay_or_hand_discard": 3,
@@ -22,6 +22,7 @@
     "live_start_activate_all_stage_members": 2,
     "toujou_success_live_pick_hand": 4,
     "deck_top_to_waiting": 3,
+    "live_start_hand_discard_activate_wait_grant": 4,
     "live_start_waiting_deck_bottom_tiered": 4,
     "live_start_pick_player_waiting_deck_bottom": 2,
     "optional_pick_member_wait_opp_stage": 2,
@@ -1102,7 +1103,7 @@
     {
       "card_no": "PL!N-bp3-008-R＋",
       "name": "エマ・ヴェルデ",
-      "template": "grant_jouji_session",
+      "template": "live_start_hand_discard_activate_wait_grant",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -1111,7 +1112,7 @@
     {
       "card_no": "PL!N-bp3-008-P",
       "name": "エマ・ヴェルデ",
-      "template": "grant_jouji_session",
+      "template": "live_start_hand_discard_activate_wait_grant",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -1120,7 +1121,7 @@
     {
       "card_no": "PL!N-bp3-008-P＋",
       "name": "エマ・ヴェルデ",
-      "template": "grant_jouji_session",
+      "template": "live_start_hand_discard_activate_wait_grant",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -1129,7 +1130,7 @@
     {
       "card_no": "PL!N-bp3-008-SEC",
       "name": "エマ・ヴェルデ",
-      "template": "grant_jouji_session",
+      "template": "live_start_hand_discard_activate_wait_grant",
       "automated": true,
       "optional": true,
       "perTurn": 0,

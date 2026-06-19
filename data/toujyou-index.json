@@ -1,5 +1,5 @@
 {
-  "generated": "2026-06-18",
+  "generated": "2026-06-19",
   "trigger": "toujyou",
   "total": 514,
   "byTemplate": {
@@ -19,7 +19,7 @@
     "draw_until_hand_size": 2,
     "energy_deck_to_wait": 14,
     "toujou_optional_hand_discard_draw": 3,
-    "activate_energy": 17,
+    "activate_energy": 15,
     "ability_sequence": 12,
     "deck_reveal_until_live": 2,
     "toujou_deck_top_wait_if_all_members": 2,
@@ -52,6 +52,7 @@
     "toujou_liella_double_baton_center": 4,
     "live_start_position_change": 4,
     "toujou_optional_energy_under": 2,
+    "toujou_pick_member_or_energy": 2,
     "energy_deck_to_active": 3,
     "toujou_baton_both_trim_hand_draw": 3,
     "toujou_grant_opp_live_need_heart_if_stage_hearts": 2,
@@ -3079,7 +3080,7 @@
     {
       "card_no": "PL!N-pb1-008-R",
       "name": "エマ・ヴェルデ",
-      "template": "activate_energy",
+      "template": "toujou_pick_member_or_energy",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -3088,7 +3089,7 @@
     {
       "card_no": "PL!N-pb1-008-P＋",
       "name": "エマ・ヴェルデ",
-      "template": "activate_energy",
+      "template": "toujou_pick_member_or_energy",
       "automated": true,
       "optional": false,
       "perTurn": 0,

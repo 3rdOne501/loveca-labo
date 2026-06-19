@@ -50,6 +50,17 @@ function teardownDeckPileLayoutWatchers() {
       });
   }
 }
+function teardownActivePlayMountFromMain() {
+  if (simulatorModulePromise) {
+    simulatorModulePromise
+      .then(function (m) {
+        m.teardownActivePlayMount();
+      })
+      .catch(function () {
+        /* noop */
+      });
+  }
+}
 import {
   initCloudAuthIfConfigured,
   isCloudSyncAvailable,
@@ -147,6 +158,7 @@ function resetPlayFromVersusLeave() {
     /* noop */
   }
   clearPlayResumeStorage();
+  teardownActivePlayMountFromMain();
   teardownDeckPileLayoutWatchers();
   if (viewGameRef) viewGameRef.hidden = true;
   if (viewDeckRef) viewDeckRef.hidden = false;
@@ -362,8 +374,9 @@ function tryResumePlaySession(viewDeck, viewGame) {
         loadSimulatorModule()
           .then(function (sim) {
             sim.mountSimulator(viewGame, deckMap, {
-              onBackToDeck() {
+              onBackToDeck(opts) {
                 teardownDeckPileLayoutWatchers();
+                teardownActivePlayMountFromMain();
                 clearPlayResumeStorage();
                 viewGame.hidden = true;
                 viewDeck.hidden = false;
@@ -521,6 +534,8 @@ function enterVersusPlay(viewDeck, viewGame, payload) {
             resumeFromStorage: payload.resumeFromStorage === true,
             onBackToDeck(opts) {
               teardownDeckPileLayoutWatchers();
+              teardownActivePlayMountFromMain();
+              clearPlayResumeStorage();
               var wasOnlineVersus =
                 payload.mode === "online" &&
                 payload.roomCode &&
@@ -549,7 +564,6 @@ function enterVersusPlay(viewDeck, viewGame, payload) {
               }
               activeVersusRoomMounted = null;
               delete window.__llocgVersusPlayMounted;
-              clearPlayResumeStorage();
               viewGame.hidden = true;
               viewDeck.hidden = false;
               document.body.classList.remove("play-mode");
