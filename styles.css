@@ -7670,6 +7670,19 @@ dialog.app-dialog:not([open]) {
   margin: -0.2rem 0 0.5rem;
   font-size: 0.76rem;
   word-break: break-all;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.5rem;
+}
+.dlg-card-catalog-subtitle__no {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+.dlg-card-catalog-copy-no {
+  flex-shrink: 0;
+  padding: 0.08rem 0.45rem;
+  font-size: 0.68rem;
+  line-height: 1.2;
 }
 .dlg-card-catalog-body {
   max-height: min(56vh, 22rem);

@@ -558,7 +558,12 @@ export function initDeckBuilder(root, { onStartGame }) {
     if (dlgCat && typeof dlgCat.open === "boolean" && dlgCat.open) {
       dlgCatalogOpen = true;
       var sub = document.getElementById("dlg-card-catalog-subtitle");
-      catalogCardNo = sub && sub.textContent ? String(sub.textContent).trim() : "";
+      catalogCardNo =
+        sub && sub.dataset && sub.dataset.cardNo
+          ? String(sub.dataset.cardNo).trim()
+          : sub && sub.textContent
+            ? String(sub.textContent).trim()
+            : "";
     }
     /** @type {Record<string, unknown>} */
     var payload = {

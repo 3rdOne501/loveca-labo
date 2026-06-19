@@ -1559,6 +1559,10 @@ export function mountSimulator(
     liveTurnHandSpreadPick: false,
     /** 「ライブ開始」後〜次のライブターントップ／ターン開始まで、BH・必要ハート等のパネルを出す */
     liveStatsAfterBegin: false,
+    /** ライブ成功判定確定後（成功時効果中にエール回収しても成功を維持） */
+    liveSuccessVerdictLockedOk: false,
+    liveSuccessVerdictLockedSim: null,
+    liveSuccessVerdictLockedFp: "",
     /** 「ライブ開始」直後〜最初のエールめくりまで（ライブ開始時効果の発光） */
     playLiveStartGlowActive: false,
     /** 登場効果等で「このターンこの列にメンバー登場不可」（例: PL!-pb1-018） */
@@ -5186,12 +5190,23 @@ export function mountSimulator(
     };
   }
 
+  function computeDeckDrawLiveSuccessSimulation(mode) {
+    if (state.liveSuccessVerdictLockedOk === true && state.liveSuccessVerdictLockedSim) {
+      return Object.assign({}, state.liveSuccessVerdictLockedSim, {
+        kind: "verdict",
+        ok: true,
+        pct: 100,
+      });
+    }
+    return computeDeckDrawLiveSuccessSimulationCore(mode);
+  }
+
   /**
    * mode=board: B=盤面ブレード、R=公開(解決)枚数、残り k=max(0,B-R)
    * mode=whole: 山札+控え室の全カードを対象（デッキ全体）
    * いずれも「途中で山札切れ→控え室を山札化して続行」を反映。
    */
-  function computeDeckDrawLiveSuccessSimulation(mode) {
+  function computeDeckDrawLiveSuccessSimulationCore(mode) {
     var runMode = mode === "whole" ? "whole" : "board";
     var b = evaluateLiveMechanicalFulfillmentBundle();
     var n = state.deck.length;
@@ -7318,6 +7333,12 @@ export function mountSimulator(
       liveTurnPickMode: state.liveTurnPickMode === true,
       liveTurnHandSpreadPick: state.liveTurnHandSpreadPick === true,
       liveStatsAfterBegin: state.liveStatsAfterBegin === true,
+      liveSuccessVerdictLockedOk: state.liveSuccessVerdictLockedOk === true,
+      liveSuccessVerdictLockedSim:
+        state.liveSuccessVerdictLockedSim && typeof state.liveSuccessVerdictLockedSim === "object"
+          ? Object.assign({}, state.liveSuccessVerdictLockedSim)
+          : null,
+      liveSuccessVerdictLockedFp: String(state.liveSuccessVerdictLockedFp || ""),
       liveScoreEffectBonus: Math.max(-99, Math.min(99, Math.floor(Number(state.liveScoreEffectBonus) || 0))),
       ealeNoteLiveHitIds: Array.isArray(state.ealeNoteLiveHitIds) ? [...state.ealeNoteLiveHitIds] : [],
       ealeNoteLiveScorePoints: Math.max(0, Math.floor(Number(state.ealeNoteLiveScorePoints) || 0)),
@@ -7513,6 +7534,12 @@ export function mountSimulator(
     state.liveTurnPickMode = s.liveTurnPickMode === true;
     state.liveTurnHandSpreadPick = s.liveTurnHandSpreadPick === true;
     state.liveStatsAfterBegin = s.liveStatsAfterBegin === true;
+    state.liveSuccessVerdictLockedOk = s.liveSuccessVerdictLockedOk === true;
+    state.liveSuccessVerdictLockedSim =
+      s.liveSuccessVerdictLockedSim && typeof s.liveSuccessVerdictLockedSim === "object"
+        ? Object.assign({}, s.liveSuccessVerdictLockedSim)
+        : null;
+    state.liveSuccessVerdictLockedFp = String(s.liveSuccessVerdictLockedFp || "");
     state.liveScoreEffectBonus =
       typeof s.liveScoreEffectBonus === "number" && Number.isFinite(s.liveScoreEffectBonus)
         ? Math.max(-99, Math.min(99, Math.floor(s.liveScoreEffectBonus)))
@@ -8374,14 +8401,55 @@ export function mountSimulator(
     );
   }
 
+  function clearLiveSuccessVerdictLock() {
+    state.liveSuccessVerdictLockedOk = false;
+    state.liveSuccessVerdictLockedSim = null;
+    state.liveSuccessVerdictLockedFp = "";
+  }
+
+  /** エール全めくり成功確定時にスナップショットを固定（成功時効果でエール回収しても判定を維持） */
+  function tryLockLiveSuccessVerdict() {
+    if (state.liveSuccessVerdictLockedOk === true) return true;
+    if (state.liveStatsAfterBegin !== true) return false;
+    try {
+      var sim = computeDeckDrawLiveSuccessSimulationCore(deckLiveSimMode);
+      if (!sim || sim.kind !== "verdict" || sim.ok !== true) return false;
+      var kRem = sim.kRem != null ? Number(sim.kRem) : 0;
+      if (kRem > 0) return false;
+      state.liveSuccessVerdictLockedOk = true;
+      state.liveSuccessVerdictLockedSim = {
+        mode: sim.mode,
+        blade: sim.blade,
+        resR: sim.resR,
+        kRem: 0,
+        n: sim.n,
+        waiting: sim.waiting,
+        totalNeed: sim.totalNeed,
+        alreadyRevealed: sim.alreadyRevealed,
+      };
+      state.liveSuccessVerdictLockedFp =
+        "1:" +
+        String(sim.resR != null ? sim.resR : "") +
+        ":" +
+        String(sim.blade != null ? sim.blade : "") +
+        ":0";
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /** エールを全てめくり切り、ライブ成功判定が確定している */
   function playLiveSuccessVerdictReady() {
     if (state.liveStatsAfterBegin !== true) return false;
+    if (state.liveSuccessVerdictLockedOk === true) return true;
     try {
-      var sim = computeDeckDrawLiveSuccessSimulation(deckLiveSimMode);
+      var sim = computeDeckDrawLiveSuccessSimulationCore(deckLiveSimMode);
       if (!sim || sim.kind !== "verdict" || sim.ok !== true) return false;
       var kRem = sim.kRem != null ? Number(sim.kRem) : 0;
-      return kRem <= 0;
+      if (kRem > 0) return false;
+      tryLockLiveSuccessVerdict();
+      return state.liveSuccessVerdictLockedOk === true;
     } catch (_) {
       return false;
     }
@@ -8392,8 +8460,9 @@ export function mountSimulator(
   }
 
   function liveSuccessVerdictFingerprint() {
+    if (state.liveSuccessVerdictLockedFp) return state.liveSuccessVerdictLockedFp;
     try {
-      var sim = computeDeckDrawLiveSuccessSimulation(deckLiveSimMode);
+      var sim = computeDeckDrawLiveSuccessSimulationCore(deckLiveSimMode);
       if (!sim || sim.kind !== "verdict") return "";
       return (
         String(sim.ok) +
@@ -18028,6 +18097,8 @@ export function mountSimulator(
   }
 
   function activateLiveSuccessEffectsAfterJudge() {
+    tryLockLiveSuccessVerdict();
+    if (state.liveSuccessVerdictLockedOk !== true) return;
     clearLiveSuccessActivationOffPlayZones();
     var cards = collectStageAndLiveBoardCards();
     cards.forEach(function (c) {
@@ -21697,6 +21768,7 @@ export function mountSimulator(
 
   function resetVersusLocalLiveHandoff() {
     state.liveStatsAfterBegin = false;
+    clearLiveSuccessVerdictLock();
     state.liveTurnPickMode = false;
     state.liveTurnSelectedIds = [];
     state.liveTurnHandSpreadPick = false;
@@ -22599,6 +22671,7 @@ export function mountSimulator(
   /** 左上シミュが「判定：成功／失敗」に確定しているとき（kind === verdict）。エールボタン発光停止／ターン開始へ移す判定に使う */
   function liveSimResolutionVerdictLocked() {
     if (state.liveStatsAfterBegin !== true) return false;
+    if (state.liveSuccessVerdictLockedOk === true) return true;
     if (isLightweightPlayMode()) {
       try {
         var bLw = getRenderPassLiveBundle();
@@ -22613,7 +22686,7 @@ export function mountSimulator(
       return false;
     }
     try {
-      var sim = computeDeckDrawLiveSuccessSimulation(deckLiveSimMode);
+      var sim = computeDeckDrawLiveSuccessSimulationCore(deckLiveSimMode);
       return !!(sim && sim.kind === "verdict");
     } catch (_) {
       return false;
@@ -23942,6 +24015,7 @@ export function mountSimulator(
     state.liveTurnSelectedIds = [];
     state.liveTurnHandSpreadPick = false;
     state.liveStatsAfterBegin = false;
+    clearLiveSuccessVerdictLock();
     state.playLiveStartGlowActive = false;
     state.playLiveYellStarted = false;
     state.liveScoreEffectBonus = 0;
@@ -24473,6 +24547,7 @@ export function mountSimulator(
     state.liveTurnSelectedIds = [];
     state.liveTurnHandSpreadPick = state.hand.length >= LIVE_TURN_HAND_SPREAD_MIN;
     state.liveStatsAfterBegin = false;
+    clearLiveSuccessVerdictLock();
     state.playLiveStartGlowActive = false;
     state.playLiveYellStarted = false;
     state.liveScoreEffectBonus = 0;
@@ -24641,6 +24716,7 @@ export function mountSimulator(
     state.ealeNoteLiveHitIds = [];
     state.ealeNoteLiveScorePoints = 0;
     state.pendingDrawYellHandDraws = 0;
+    clearLiveSuccessVerdictLock();
     state.liveStatsAfterBegin = true;
     state.playLiveYellStarted = false;
     state.__liveYellWarnAck = false;

@@ -28,6 +28,68 @@ function escapeHtmlPlain(s) {
 
 const TEXT_NONE_JA = "テキストなし";
 
+var catalogSubtitleCopyWired = false;
+
+function copyTextToClipboard(text, onDone) {
+  var done = typeof onDone === "function" ? onDone : function () {};
+  var val = String(text == null ? "" : text);
+  if (!val) {
+    done(false);
+    return;
+  }
+  if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+    navigator.clipboard
+      .writeText(val)
+      .then(function () {
+        done(true);
+      })
+      .catch(function () {
+        copyTextToClipboardFallback(val, done);
+      });
+    return;
+  }
+  copyTextToClipboardFallback(val, done);
+}
+
+function copyTextToClipboardFallback(text, done) {
+  try {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "readonly");
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.select();
+    var ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    done(!!ok);
+  } catch (_) {
+    done(false);
+  }
+}
+
+function wireCatalogSubtitleCopyOnce(subEl) {
+  if (!subEl || catalogSubtitleCopyWired) return;
+  catalogSubtitleCopyWired = true;
+  subEl.addEventListener("click", function (ev) {
+    var t = ev.target instanceof Element ? ev.target : null;
+    if (!t) return;
+    var btn = t.closest(".dlg-card-catalog-copy-no");
+    if (!btn) return;
+    var no = btn.getAttribute("data-copy-card-no") || subEl.dataset.cardNo || "";
+    if (!no) return;
+    copyTextToClipboard(no, function (ok) {
+      var prev = btn.textContent;
+      btn.textContent = ok ? "コピー済" : "失敗";
+      btn.disabled = true;
+      window.setTimeout(function () {
+        btn.textContent = prev || "コピー";
+        btn.disabled = false;
+      }, 1200);
+    });
+  });
+}
+
 function wikiPlainEmpty(html) {
   if (html == null) return true;
   var t = String(html).replace(/<[^>]*>/g, "").replace(/\s|&nbsp;/g, "").trim();
@@ -233,7 +295,22 @@ export function renderCardCatalogContentInto(c, targets, options) {
 
   var nm = plainOrNone(mc.name || c.name);
   if (h2) h2.textContent = nm;
-  if (sub) sub.textContent = plainOrNone(mc.card_no || c.card_no);
+  if (sub) {
+    var cardNo = mc.card_no != null ? String(mc.card_no).trim() : c.card_no != null ? String(c.card_no).trim() : "";
+    if (!cardNo) {
+      sub.textContent = TEXT_NONE_JA;
+      sub.removeAttribute("data-card-no");
+    } else {
+      sub.dataset.cardNo = cardNo;
+      sub.innerHTML =
+        '<span class="dlg-card-catalog-subtitle__no">' +
+        esc(cardNo) +
+        '</span><button type="button" class="btn xs dlg-card-catalog-copy-no" data-copy-card-no="' +
+        esc(cardNo) +
+        '" title="カード番号をコピー" aria-label="カード番号をコピー">コピー</button>';
+      wireCatalogSubtitleCopyOnce(sub);
+    }
+  }
 
   if (imgCatalog) {
     var src = mc.img || c.img || "";
