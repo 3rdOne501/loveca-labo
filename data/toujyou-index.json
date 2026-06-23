@@ -2717,7 +2717,7 @@
       "effect": "支払ってもよい：自分の手札からコスト4以下の『虹ヶ咲』のメンバーカードを1枚ステージに登場させる。これにより登場したメンバーがブレードハートを持つ場合、このメンバーをウェイトにする。",
       "steps": [
         "toujou_hand_stage_enter",
-        "toujou_self_wait_only"
+        "toujou_self_wait_if_hand_enter_bh"
       ]
     },
     {
@@ -2730,7 +2730,7 @@
       "effect": "支払ってもよい：自分の手札からコスト4以下の『虹ヶ咲』のメンバーカードを1枚ステージに登場させる。これにより登場したメンバーがブレードハートを持つ場合、このメンバーをウェイトにする。",
       "steps": [
         "toujou_hand_stage_enter",
-        "toujou_self_wait_only"
+        "toujou_self_wait_if_hand_enter_bh"
       ]
     },
     {

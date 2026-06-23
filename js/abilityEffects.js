@@ -123,6 +123,9 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  *   |'live_start_waiting_lives_reorder_deck_top'
  *   |'live_start_activate_energy_all_active_score'
  *   |'live_start_yell_blade_remap_blue'
+ *   |'live_start_yell_blade_remap_slot'
+ *   |'live_start_dazzling_named_liella_grant'
+ *   |'toujou_self_wait_if_hand_enter_bh'
  *   |'live_start_trigger_stage_member_live_start'
  *   |'live_success_yell_series_members_all_hearts_score'
  *   |'live_success_tie_block_success_live'
@@ -1290,6 +1293,32 @@ function classifyConditionalGrantJoujiInteractive(p, segRaw, trigger) {
       deckDrawCount: 1,
       bladeGain: bladeGainFromIcons(segRaw, p) || 2,
       requiresNoBladeHeartOnDiscarded: true,
+      requiresOnStage: true,
+    };
+  }
+  if (
+    trigger === "live_start" &&
+    /「澁谷かのん」「ウィーン・マルガレーテ」「鬼塚冬毬」/.test(p) &&
+    /選んだメンバー以外の『Liella!』のメンバー1人は/.test(p) &&
+    /ライブ終了時まで/.test(p)
+  ) {
+    return {
+      template: "live_start_dazzling_named_liella_grant",
+      grantToNamedStageMemberOptions: ["澁谷かのん", "ウィーン・マルガレーテ", "鬼塚冬毬"],
+      filters: { seriesTag: "Liella!" },
+      bladeGain: bladeGainFromIcons(segRaw, p) || 1,
+      requiresOnStage: true,
+    };
+  }
+  if (
+    trigger === "live_start" &&
+    /エールによって公開される自分のカードが持つ/.test(p) &&
+    /すべて.*紫ブレード/.test(p) &&
+    /ライブ終了時まで/.test(p)
+  ) {
+    return {
+      template: "live_start_yell_blade_remap_slot",
+      yellBladeRemapSlot: 6,
       requiresOnStage: true,
     };
   }
@@ -3817,6 +3846,30 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
   }
 
   if (enterLiveStart) {
+    if (!segmentRawOverride && trigger === "live_start") {
+      var lsSegRawsMulti = listNativeLiveStartSegmentRaws(card);
+      if (lsSegRawsMulti.length > 1) {
+        var lsSteps = lsSegRawsMulti
+          .map(function (raw) {
+            return _classifyCardAbilityCore(card, "live_start", raw);
+          })
+          .filter(function (st) {
+            return st && st.template && st.template !== "none" && st.template !== "guided_manual";
+          });
+        if (lsSteps.length > 1) {
+          return withTrigger("live_start", {
+            template: "ability_sequence",
+            steps: lsSteps,
+            optional: false,
+            hasOptionalCost: false,
+            filters: base.filters,
+            requiresOnStage: lsSteps.some(function (st) {
+              return st.requiresOnStage === true;
+            }),
+          });
+        }
+      }
+    }
     var stageAreaMetaLs = (function () {
       var areas = parseStageAreaConstraints(segRaw);
       if (areas.length === 1) return { stageArea: areas[0] };
@@ -4662,7 +4715,7 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
     }
 
     if (/エールによって公開される自分のカードが持つ/.test(p) && /すべて.*青ブレード/.test(p) && /ライブ終了時まで/.test(p)) {
-      return lsT({ template: "live_start_yell_blade_remap_blue", requiresOnStage: true });
+      return lsT({ template: "live_start_yell_blade_remap_slot", yellBladeRemapSlot: 5, requiresOnStage: true });
     }
 
     if (/ステージにいる/.test(p) && /メンバー1人を選ぶ/.test(p) && /ライブ開始時.*能力.*発動/.test(p + segRaw)) {
@@ -4822,6 +4875,7 @@ export function abilityEffectIsAutomated(template) {
     template === "draw_per_stage_member_discard" ||
     template === "draw_until_hand_size" ||
     template === "toujou_hand_stage_enter" ||
+    template === "toujou_self_wait_if_hand_enter_bh" ||
     template === "waiting_to_deck_bottom" ||
     template === "grant_jouji_session" ||
     template === "live_start_yell_reveal_reduction" ||
@@ -4922,6 +4976,8 @@ export function abilityEffectIsAutomated(template) {
     template === "live_start_waiting_lives_reorder_deck_top" ||
     template === "live_start_activate_energy_all_active_score" ||
     template === "live_start_yell_blade_remap_blue" ||
+    template === "live_start_yell_blade_remap_slot" ||
+    template === "live_start_dazzling_named_liella_grant" ||
     template === "live_start_trigger_stage_member_live_start" ||
     template === "live_success_yell_series_members_all_hearts_score" ||
     template === "live_success_tie_block_success_live" ||

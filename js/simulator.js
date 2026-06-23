@@ -1607,6 +1607,8 @@ export function mountSimulator(
     seriesEffectActivatedWaitMembersByTag: {},
     /** ライブ終了時までエール公開カードの非青ブレードを青として扱う（VIVID WORLD 等） */
     liveSessionYellBladeRemapToBlue: false,
+    /** ライブ終了時までエール公開の非対象色ブレードを指定スロットへ集約（5=青, 6=紫） */
+    liveSessionYellBladeRemapSlot: 0,
     /** ライブ終了時まで成功ライブカード置き場への配置を禁止（逃走迷走メビウスループ等） */
     liveSessionBlockSuccessLivePlacement: false,
     /** エールで山札→解決にめくったスコアの実体 id（成功時のみ打点に＋1／枚） */
@@ -2623,6 +2625,7 @@ export function mountSimulator(
   function clearLiveSessionPlayBonusesEverywhere() {
     state.playSessionBladeBonus = 0;
     state.liveSessionYellBladeRemapToBlue = false;
+    state.liveSessionYellBladeRemapSlot = 0;
     state.liveSessionBlockSuccessLivePlacement = false;
     allZonesFlat().forEach(function (c) {
       if (!c || c.type !== T_MEMBER) return;
@@ -2808,6 +2811,11 @@ export function mountSimulator(
       mergedCatalog: mergedCatalogCard,
       ownEnergyCount: function () {
         return (state.energyArea || []).length;
+      },
+      ownActiveEnergyCount: function () {
+        return (state.energyArea || []).filter(function (e) {
+          return e && e.lcActive !== false;
+        }).length;
       },
       opponentEnergyCount: function () {
         if (isDualOpponentBoardMode()) {
@@ -4938,13 +4946,18 @@ export function mountSimulator(
   function addYellRevealedBladeHeartWeights(inst, accum) {
     var temp = {};
     addBladeHeartWeightsPerDisplaySlot(mergedCatalogCard(inst), temp);
-    var remap = state.liveSessionYellBladeRemapToBlue === true;
-    var remapSlots = { 1: true, 2: true, 3: true, 4: true, 6: true, 7: true };
+    var remapSlot =
+      state.liveSessionYellBladeRemapSlot > 0
+        ? Math.floor(Number(state.liveSessionYellBladeRemapSlot))
+        : state.liveSessionYellBladeRemapToBlue === true
+          ? 5
+          : 0;
+    var remapSlots = remapSlot === 6 ? { 1: true, 2: true, 3: true, 4: true, 5: true, 7: true } : { 1: true, 2: true, 3: true, 4: true, 6: true, 7: true };
     Object.keys(temp).forEach(function (k) {
       var slot = Number(k);
       var v = temp[slot];
       if (!Number.isFinite(v) || v === 0) return;
-      var targetSlot = remap && remapSlots[slot] ? 5 : slot;
+      var targetSlot = remapSlot > 0 && remapSlots[slot] ? remapSlot : slot;
       accum[targetSlot] = (accum[targetSlot] || 0) + v;
     });
     return accum;
@@ -8033,6 +8046,7 @@ export function mountSimulator(
           ? Object.assign({}, state.seriesEffectActivatedWaitMembersByTag)
           : {},
       liveSessionYellBladeRemapToBlue: state.liveSessionYellBladeRemapToBlue === true,
+      liveSessionYellBladeRemapSlot: Math.max(0, Math.floor(Number(state.liveSessionYellBladeRemapSlot) || 0)),
       liveSessionBlockSuccessLivePlacement: state.liveSessionBlockSuccessLivePlacement === true,
       liveSuccessVerdictLockedOk: state.liveSuccessVerdictLockedOk === true,
       liveSuccessVerdictLockedSim:
@@ -8249,6 +8263,10 @@ export function mountSimulator(
         ? Object.assign({}, s.seriesEffectActivatedWaitMembersByTag)
         : {};
     state.liveSessionYellBladeRemapToBlue = s.liveSessionYellBladeRemapToBlue === true;
+    state.liveSessionYellBladeRemapSlot = Math.max(
+      0,
+      Math.floor(Number(s.liveSessionYellBladeRemapSlot) || (s.liveSessionYellBladeRemapToBlue ? 5 : 0)),
+    );
     state.liveSessionBlockSuccessLivePlacement = s.liveSessionBlockSuccessLivePlacement === true;
     state.liveSuccessVerdictLockedOk = s.liveSuccessVerdictLockedOk === true;
     state.liveSuccessVerdictLockedSim =
@@ -9301,7 +9319,7 @@ export function mountSimulator(
       return false;
     }
     if (incumbent && incumbent._joujiBatonSeriesOnlyTag) {
-      var enterMc = mergedCatalogCard(memberNew);
+      var enterMc = mergedCatalogCard(memberInst);
       if (!catalogCardMatchesGroupTag(enterMc, incumbent._joujiBatonSeriesOnlyTag)) {
         showToast(
           (mergedCatalogCard(incumbent).name || "メンバー") +
@@ -9321,7 +9339,40 @@ export function mountSimulator(
     if (!state.stage[side]) state.stage[side] = [];
     var mcEnter = mergedCatalogCard(inst);
     var batonIds = Array.isArray(inst._soloBatonMemberIds) ? inst._soloBatonMemberIds.slice() : [];
-    if (
+    var duoMultiBaton =
+      cardAllowsTwoMemberBaton(mcEnter) &&
+      batonIds.length &&
+      !(side === "center" && cardIsSpBp4004Sumire(mcEnter.card_no));
+    if (duoMultiBaton) {
+      batonIds.forEach(function (bid) {
+        var batonMem = findCardInstById(bid);
+        if (batonMem) removeStageMemberToWaiting(batonMem);
+      });
+      var lowestBatonId = null;
+      var lowestBatonCost = Infinity;
+      batonIds.forEach(function (bid) {
+        var batonMem = findCardInstById(bid);
+        if (!batonMem) {
+          batonMem = (state.waitingRoom || []).find(function (w) {
+            return w && String(w.id) === String(bid);
+          });
+        }
+        if (!batonMem) return;
+        var bc = memberFlooredPrintedCost(batonMem);
+        if (bc < lowestBatonCost) {
+          lowestBatonCost = bc;
+          lowestBatonId = String(batonMem.id);
+        }
+      });
+      if (lowestBatonId) inst._toujouBatonFromLowerCostMemberId = lowestBatonId;
+      if (batonIds[0]) inst._toujouBatonPartnerId = String(batonIds[0]);
+      if (incumbent) {
+        var incInBaton = batonIds.some(function (bid) {
+          return incumbent && String(incumbent.id) === String(bid);
+        });
+        if (incInBaton) incumbent = null;
+      }
+    } else if (
       side === "center" &&
       cardIsSpBp4004Sumire(mcEnter.card_no) &&
       batonIds.length >= 2
@@ -9404,8 +9455,15 @@ export function mountSimulator(
       showToast("エネルギー不足のまま登場しました（必要 " + sideInfo.cost + " / アクティブ " + sideInfo.upright + "）");
     }
     var mcPlace = mergedCatalogCard(memberInst);
-    if (cardAllowsTwoMemberBaton(mcPlace) && side === "center" && cardIsSpBp4004Sumire(mcPlace.card_no)) {
-      openSumireCenterDoubleBatonDialog(memberInst, function (proceed, batonIds) {
+    if (cardAllowsTwoMemberBaton(mcPlace)) {
+      var openBatonPick = function (onPicked) {
+        if (cardIsSpBp4004Sumire(mcPlace.card_no) && side === "center") {
+          openSumireCenterDoubleBatonDialog(memberInst, onPicked);
+        } else {
+          openTwoMemberBatonPickDialog(memberInst, onPicked);
+        }
+      };
+      openBatonPick(function (proceed, batonIds) {
         if (!proceed) return;
         if (batonIds && batonIds.length) memberInst._soloBatonMemberIds = batonIds.slice(0, 2);
         else delete memberInst._soloBatonMemberIds;
@@ -14957,7 +15015,10 @@ export function mountSimulator(
     }
 
     if (cl.template === "followup_draw_if_live_discarded") {
-      if (lastCostDiscardedIncludesLive(inst) && state.deck.length) {
+      if (
+        lastCostDiscardedIncludesLive(inst, findCardInstById, state._lastCostPaidHandDiscardedIds) &&
+        state.deck.length
+      ) {
         pushHistoryBefore("followup-draw-live-discard");
         var fd = state.deck.shift();
         state.hand.push(fd);
@@ -20355,18 +20416,104 @@ export function mountSimulator(
       return;
     }
 
-    if (cl.template === "live_start_yell_blade_remap_blue") {
+    if (cl.template === "live_start_yell_blade_remap_blue" || cl.template === "live_start_yell_blade_remap_slot") {
       if (!checkAbilityLiveStartPreconditions(cl)) {
         showToast("ライブ開始時効果の条件を満たしていません");
         finishResolved();
         return;
       }
-      pushHistoryBefore("ls-yell-blade-remap-blue");
-      state.liveSessionYellBladeRemapToBlue = true;
-      showToast(
-        "ライブ終了時まで、エール公開カードの桃/赤/黄/緑/紫/ALLブレードは青ブレードとして扱います",
-      );
+      var remapSlotN =
+        cl.yellBladeRemapSlot != null
+          ? Math.floor(Number(cl.yellBladeRemapSlot))
+          : cl.template === "live_start_yell_blade_remap_blue"
+            ? 5
+            : 0;
+      if (!remapSlotN) {
+        finishResolved();
+        return;
+      }
+      pushHistoryBefore("ls-yell-blade-remap-slot");
+      state.liveSessionYellBladeRemapSlot = remapSlotN;
+      state.liveSessionYellBladeRemapToBlue = remapSlotN === 5;
+      var remapLabel =
+        remapSlotN === 6
+          ? "桃/赤/黄/緑/青/ALLブレードは紫ブレードとして扱います"
+          : "桃/赤/黄/緑/紫/ALLブレードは青ブレードとして扱います";
+      showToast("ライブ終了時まで、エール公開カードの" + remapLabel);
       finishResolved();
+      return;
+    }
+
+    if (cl.template === "live_start_dazzling_named_liella_grant") {
+      if (!checkAbilityLiveStartPreconditions(cl)) {
+        showToast("ライブ開始時効果の条件を満たしていません");
+        finishResolved();
+        return;
+      }
+      var namedOpts = cl.grantToNamedStageMemberOptions || [];
+      var namedPoolDg = [];
+      eachStageColumnMemberInsts().forEach(function (m) {
+        if (!m || m._soloOpponentProxy === true) return;
+        var nmDg = mergedCatalogCard(m).name;
+        for (var ndg = 0; ndg < namedOpts.length; ndg++) {
+          if (memberNameMatchesCharacter(nmDg, namedOpts[ndg])) {
+            namedPoolDg.push(m);
+            break;
+          }
+        }
+      });
+      if (!namedPoolDg.length) {
+        showToast("指名メンバーがステージにいません");
+        finishResolved();
+        return;
+      }
+      pushHistoryBefore("ls-dazzling-named-liella-grant");
+      function pickLiellaOtherDg(excludedId) {
+        var liellaPoolDg = [];
+        eachStageColumnMemberInsts().forEach(function (m) {
+          if (!m || m._soloOpponentProxy === true) return;
+          if (String(m.id) === String(excludedId)) return;
+          if (!catalogCardMatchesGroupTag(mergedCatalogCard(m), (cl.filters && cl.filters.seriesTag) || "Liella!")) return;
+          liellaPoolDg.push(m);
+        });
+        if (!liellaPoolDg.length) {
+          showToast("選んだメンバー以外の『Liella!』メンバーがステージにいません");
+          finishResolved();
+          return;
+        }
+        openPickFromWaitingDialog(
+          liellaPoolDg,
+          "選んだメンバー以外の『Liella!』メンバー1人にブレードを付与します。",
+          function (pid2) {
+            if (!pid2) {
+              finishResolved();
+              return;
+            }
+            var mem2 = findCardInstById(pid2);
+            var mem1 = findCardInstById(excludedId);
+            if (!mem1 || !mem2) {
+              finishResolved();
+              return;
+            }
+            applyGrantJoujiSessionEffect(inst, cl, kind, finishResolved, [mem1, mem2]);
+          },
+        );
+      }
+      if (namedPoolDg.length === 1) {
+        pickLiellaOtherDg(namedPoolDg[0].id);
+        return;
+      }
+      openPickFromWaitingDialog(
+        namedPoolDg,
+        "「澁谷かのん」「ウィーン・マルガレーテ」「鬼塚冬毬」から1人を選びます。",
+        function (pid1) {
+          if (!pid1) {
+            finishResolved();
+            return;
+          }
+          pickLiellaOtherDg(pid1);
+        },
+      );
       return;
     }
 
@@ -20992,6 +21139,7 @@ export function mountSimulator(
               return;
             }
             placeHandMemberOnStageSide(memInst, side, { forceLowEnergy: true });
+            inst._toujouHandStageEnteredMemberId = String(memInst.id);
             finishResolved();
           });
         },
@@ -22381,6 +22529,30 @@ export function mountSimulator(
       pushHistoryBefore("toujou-self-wait");
       waitMemberInst(inst);
       showToast("このメンバーをウェイトにしました");
+      finishResolved();
+      return;
+    }
+
+    if (cl.template === "toujou_self_wait_if_hand_enter_bh") {
+      if (!stageColumnKeyHostingMember(inst.id)) {
+        abortResolved("ステージにいるときのみ解決できます");
+        return;
+      }
+      var enteredHandId = inst._toujouHandStageEnteredMemberId;
+      if (!enteredHandId) {
+        finishResolved();
+        return;
+      }
+      var enteredHandMem = findCardInstById(enteredHandId);
+      if (!enteredHandMem || !cardHasBladeHeart(mergedCatalogCard(enteredHandMem))) {
+        delete inst._toujouHandStageEnteredMemberId;
+        finishResolved();
+        return;
+      }
+      pushHistoryBefore("toujou-self-wait-hand-enter-bh");
+      waitMemberInst(inst);
+      delete inst._toujouHandStageEnteredMemberId;
+      showToast("登場したメンバーがブレードハートを持つため、このメンバーをウェイトにしました");
       finishResolved();
       return;
     }
@@ -24919,18 +25091,13 @@ export function mountSimulator(
         if (toHandDrop && dragUndoSnap) {
           maybeRevealHandAddsFromWaitingOrResolution(dragUndoSnap, evt.from);
         }
-        if (fromHandDrop && toStageCol === "center" && dragIdEnd && dragUndoSnap) {
+        if (fromHandDrop && toStageCol && dragIdEnd && dragUndoSnap) {
           var dragInstCenter = findCardInstById(dragIdEnd);
           var dragMcCenter = dragInstCenter ? mergedCatalogCard(dragInstCenter) : null;
-          if (
-            dragInstCenter &&
-            dragMcCenter &&
-            cardIsSpBp4004Sumire(dragMcCenter.card_no) &&
-            cardAllowsTwoMemberBaton(dragMcCenter)
-          ) {
+          if (dragInstCenter && dragMcCenter && cardAllowsTwoMemberBaton(dragMcCenter)) {
             applyBoard(dragUndoSnap);
             render();
-            placeHandMemberOnStageSide(dragInstCenter, "center", {});
+            placeHandMemberOnStageSide(dragInstCenter, toStageCol, {});
             restoreCardFaceAfterDragging(evt.item);
             clearEnergyDropHints();
             return;

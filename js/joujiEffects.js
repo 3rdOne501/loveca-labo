@@ -33,6 +33,8 @@ import { T_MEMBER } from "./config.js";
  * @property {string} [characterName]
  * @property {string[]} [characterNamesAny]
  * @property {number} [minEnergy]
+ * @property {number} [minActiveEnergy]
+ * @property {Array<{minEnergy: number, heartFlat: Record<number, number>}>} [energyTierHearts]
  * @property {number} [exactEnergy]
  * @property {number} [minSuccessLiveCount]
  * @property {number} [minSuccessLiveScoreSum]
@@ -169,7 +171,14 @@ export function isNativeJoujiSegment(segs, index) {
   var seg = segs[index];
   if (!seg || seg.trigger !== "jouji") return false;
   var plain = segmentPlainText(seg.text);
-  if (plain === "を得る。" || plain === "を得る") return false;
+  if (plain === "を得る。" || plain === "を得る") {
+    if (
+      /\{\{(?:leftside|rightside|center\.png|icon_blade|heart_)/.test(String(seg.text || ""))
+    ) {
+      return true;
+    }
+    return false;
+  }
   if (/^ライブの合計スコア/.test(plain) && /」を得る/.test(plain)) {
     if (index > 0) {
       var prevPQ = segmentPlainText(String(segs[index - 1].text || ""));
@@ -608,6 +617,34 @@ export function classifyJoujiSegment(segRaw) {
     if (/自分のステージにいるメンバーがちょうど2人/.test(p)) bladeRule.exactStageMemberCount = 2;
     if (/自分のステージに名前が異なるメンバーが3人以上/.test(p)) bladeRule.minDistinctNameStageMembers = 3;
     if (/自分のエネルギーが10枚以上あるかぎり/.test(p)) bladeRule.minEnergy = 10;
+    if (/自分のアクティブ状態のエネルギーがあるかぎり/.test(p)) bladeRule.minActiveEnergy = 1;
+    var tierClauseRaws = String(segRaw || "")
+      .split(/。/)
+      .map(function (c) {
+        return String(c || "").trim();
+      })
+      .filter(function (c) {
+        return c && /枚以上あるかぎり/.test(segmentPlainText(c));
+      });
+    if (tierClauseRaws.length >= 2) {
+      /** @type {Array<{minEnergy: number, heartFlat: Record<number, number>}>} */
+      var energyTiers = [];
+      tierClauseRaws.forEach(function (cr) {
+        var cp = segmentPlainText(cr);
+        var emTier = cp.match(/(\d+)枚以上あるかぎり/);
+        var hmTier = countHeartIconsBySlot(cr);
+        if (emTier && Object.keys(hmTier).length) {
+          energyTiers.push({ minEnergy: Number(emTier[1]), heartFlat: hmTier });
+        }
+      });
+      if (energyTiers.length >= 2) {
+        bladeRule.kind = "energy_tier_hearts";
+        bladeRule.energyTierHearts = energyTiers;
+        delete bladeRule.minEnergy;
+        delete bladeRule.heartFlat;
+        bladeRule.bladeFlat = 0;
+      }
+    }
     if (/自分と相手のエネルギーの合計が(\d+)枚以上/.test(p)) {
       var ec2 = p.match(/自分と相手のエネルギーの合計が(\d+)枚以上/);
       if (ec2) bladeRule.minCombinedEnergy = Number(ec2[1]);
@@ -833,6 +870,20 @@ function evaluateJoujiRule(rule, inst, card, ctx) {
 
   if (!conditionMet(rule, inst, card, ctx)) return out;
 
+  if (rule.kind === "energy_tier_hearts" && rule.energyTierHearts && rule.energyTierHearts.length) {
+    rule.energyTierHearts.forEach(function (tier) {
+      if (ctx.ownEnergyCount() < tier.minEnergy) return;
+      Object.keys(tier.heartFlat || {}).forEach(function (sk) {
+        var slotNum = Number(sk);
+        var per = Math.floor(Number(tier.heartFlat[sk]) || 0);
+        if (per > 0 && slotNum >= 1 && slotNum <= 6) {
+          out.heartSlots[slotNum] = (out.heartSlots[slotNum] || 0) + per;
+        }
+      });
+    });
+    return out;
+  }
+
   if (rule.kind === "stage_all_areas_grant_quoted") {
     var grantRaw = String(rule.grantedSegmentRaw || "");
     if (grantRaw && !/^\{\{jyouji/i.test(grantRaw)) {
@@ -926,6 +977,11 @@ function conditionMet(rule, inst, card, ctx) {
   if (rule.selfWait && !ctx.memberIsWait(inst)) return false;
   if (rule.notMovedThisTurn === true && ctx.memberMovedThisTurn(inst)) return false;
   if (rule.minEnergy != null && ctx.ownEnergyCount() < rule.minEnergy) return false;
+  if (rule.minActiveEnergy != null) {
+    var activeN =
+      typeof ctx.ownActiveEnergyCount === "function" ? ctx.ownActiveEnergyCount() : ctx.ownEnergyCount();
+    if (activeN < rule.minActiveEnergy) return false;
+  }
   if (rule.exactEnergy != null && ctx.ownEnergyCount() !== rule.exactEnergy) return false;
   if (rule.minCombinedEnergy != null && ctx.ownEnergyCount() + ctx.opponentEnergyCount() < rule.minCombinedEnergy) {
     return false;

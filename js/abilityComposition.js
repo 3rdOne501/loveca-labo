@@ -130,6 +130,20 @@ export function applyAbilityComposition(card, trigger, segRaw, primary, classify
     ]);
   }
 
+  if (/これにより登場したメンバーがブレードハートを持つ場合/.test(plain) && /このメンバーをウェイトにする/.test(plain)) {
+    return seq([
+      classifyFn(card, trigger, segRaw.split(/。これにより/)[0] + "。", { skipCompose: true }),
+      {
+        trigger: /** @type {import('./abilityEffects.js').AbilityTrigger} */ (trigger),
+        template: "toujou_self_wait_if_hand_enter_bh",
+        optional: false,
+        hasOptionalCost: false,
+        filters: {},
+        requiresOnStage: true,
+      },
+    ]);
+  }
+
   if (/その後/.test(plain) && /エネルギーがすべてアクティブ/.test(plain) && /このカードのスコア/.test(plain)) {
     var partsEn = splitAbilitySegmentClauses(segRaw);
     var actM = plain.match(/エネルギーを(\d+)枚までアクティブ/);
@@ -268,10 +282,19 @@ function classifyWaitingReorderTiered(card, trigger, segRaw, classifyFn) {
 }
 
 /** @param {*} inst */
-export function lastCostDiscardedIncludesLive(inst) {
-  var ids = inst && inst._lastCostPaidHandDiscardedIds;
+/**
+ * @param {*} inst
+ * @param {(id: string) => * | null | undefined} [resolveInst]
+ * @param {string[]} [discardIds]
+ */
+export function lastCostDiscardedIncludesLive(inst, resolveInst, discardIds) {
+  var ids =
+    (discardIds && discardIds.length ? discardIds : null) ||
+    (inst && inst._lastCostPaidHandDiscardedIds) ||
+    [];
   if (!Array.isArray(ids) || !ids.length) return false;
-  return ids.some(function (c) {
+  return ids.some(function (id) {
+    var c = resolveInst ? resolveInst(String(id)) : null;
     return c && (c.type === T_LIVE || String(c.type || "") === T_LIVE);
   });
 }

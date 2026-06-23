@@ -60,8 +60,16 @@ for (const id of Object.keys(cards)) {
       }
     }
     if (tmpl === "ability_sequence") {
-      issues.push("複合連結(途中失敗リスク)");
-      score += 2;
+      var steps = cl.steps || [];
+      var allStepsAuto =
+        steps.length > 0 &&
+        steps.every(function (st) {
+          return st && st.template && abilityEffectIsAutomated(st.template);
+        });
+      if (!allStepsAuto) {
+        issues.push("複合連結(途中失敗リスク)");
+        score += 2;
+      }
     }
     if (tmpl === "passive_track" && trig === "jouji") {
       const rule = classifyJoujiSegment(seg.text);
