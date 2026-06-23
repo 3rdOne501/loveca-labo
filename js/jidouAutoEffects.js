@@ -268,8 +268,71 @@ export function classifyJidouAutoSegment(segRaw) {
       perTurnLimit: perTurn || 1,
     };
   }
+  if (
+    /エールにより自分のカードを1枚以上公開したとき/.test(p) &&
+    /ブレードハートを持つカードが2枚以下/.test(p) &&
+    /もう一度エール/.test(p)
+  ) {
+    return { template: "jidou_yell_retry_low_bh", eventKind: "yell", perTurnLimit: perTurn || 1 };
+  }
   if (/エールにより公開.*ライブカードがない/.test(p) && /もう一度エール/.test(p)) {
     return { template: "jidou_yell_retry_no_live", eventKind: "yell", perTurnLimit: perTurn || 1 };
+  }
+  if (
+    /自分がエールしたとき/.test(p) &&
+    /ブレードハートを持たない/.test(p) &&
+    /『Aqours』/.test(p) &&
+    /追加で.*エール/.test(p)
+  ) {
+    var maxExtraAq = p.match(/(\d+)枚までしか追加でエールできない/);
+    return {
+      template: "jidou_yell_discard_nobh_series_extra_yell",
+      eventKind: "yell",
+      filters: { seriesTag: "Aqours", pickType: "member" },
+      yellCostDivisor: 5,
+      maxExtraYellCount: maxExtraAq ? Number(maxExtraAq[1]) : 4,
+      maxDiscardCount: 1,
+      perTurnLimit: perTurn,
+    };
+  }
+  if (
+    /自分がエールしたとき/.test(p) &&
+    /ブレードハートを持たない/.test(p) &&
+    /『蓮ノ空』/.test(p) &&
+    /等しい枚数のエールを追加/.test(p)
+  ) {
+    var maxDiscHs = p.match(/(\d+)枚まで控え室に置いてもよい/);
+    return {
+      template: "jidou_yell_discard_nobh_series_multi_extra_yell",
+      eventKind: "yell",
+      filters: { seriesTag: "蓮ノ空" },
+      maxDiscardCount: maxDiscHs ? Number(maxDiscHs[1]) : 3,
+      perTurnLimit: perTurn,
+    };
+  }
+  if (/メインフェイズにこのカードが控え室から手札に加えられたとき/.test(p) && /ライブカード置き場に置いてもよい/.test(p)) {
+    var namedLiveM = p.match(/カード名が「([^」]+)」/);
+    return {
+      template: "jidou_waiting_to_hand_place_named_live",
+      eventKind: "waiting_to_hand",
+      namedLiveCard: namedLiveM ? namedLiveM[1] : null,
+      liveSetLimitPenalty: 1,
+      perTurnLimit: perTurn,
+    };
+  }
+  if (/このカードが表向きでライブカード置き場に置かれたとき/.test(p) && /ライブ終了時まで/.test(p) && /メンバー1人/.test(p)) {
+    return {
+      template: "jidou_live_placed_grant_stage_member",
+      eventKind: "live_placed_on_frame",
+      filters: { seriesTag: parseSeriesTag(p) },
+      perTurnLimit: perTurn,
+    };
+  }
+  if (/センターエリアにいる.*μ's.*メンバー.*能力が解決したとき/.test(p) && /ポジションチェンジ/.test(p)) {
+    return { template: "jidou_center_muse_ability_position_change", eventKind: "member_ability_resolved", perTurnLimit: perTurn };
+  }
+  if (/センターエリアにいる.*μ's.*メンバー.*能力が解決したとき/.test(p) && /移動している場合/.test(p) && /スコアを/.test(p)) {
+    return { template: "jidou_center_muse_ability_score_if_moved", eventKind: "member_ability_resolved", perTurnLimit: perTurn };
   }
   if (/自分のカードの効果によって/.test(p) && /相手のステージ.*ウェイト/.test(p) && /カードを(\d+)枚引/.test(p)) {
     var owD = p.match(/コスト(\d+)以下/);
@@ -470,6 +533,13 @@ export function jidouEffectIsAutomated(template) {
     template === "jidou_card_to_waiting_pick_hand" ||
     template === "jidou_live_zone_to_waiting_deck" ||
     template === "jidou_yell_retry_no_live" ||
+    template === "jidou_yell_retry_low_bh" ||
+    template === "jidou_yell_discard_nobh_series_extra_yell" ||
+    template === "jidou_yell_discard_nobh_series_multi_extra_yell" ||
+    template === "jidou_waiting_to_hand_place_named_live" ||
+    template === "jidou_live_placed_grant_stage_member" ||
+    template === "jidou_center_muse_ability_position_change" ||
+    template === "jidou_center_muse_ability_score_if_moved" ||
     template === "jidou_opp_wait_draw" ||
     template === "jidou_series_enter_pay_energy" ||
     template === "jidou_hand_to_waiting_grant" ||

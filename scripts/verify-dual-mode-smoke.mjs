@@ -27,6 +27,9 @@ const CASES = [
   { id: "PL!S-pb1-008-P＋", trigger: "live_start", check: "deck_top_look_reorder_dual" },
   { id: "PL!HS-cl1-012-CL", trigger: "live_success", check: "requiresLiveScoreTieWithOpponent" },
   { id: "PL!-bp5-111-P＋", trigger: "kidou", check: "kidou_hand_discard_activate_wait_opp_bonus" },
+  { id: "PL!-pb1-009-P＋", trigger: "toujyou", check: "optional_self_wait_opp_blade" },
+  { id: "PL!S-bp5-019-L", trigger: "live_success", check: "min_either_success_live" },
+  { id: "PL!S-bp5-010-N", trigger: "toujyou", check: "toujou_grant_opp_live_need_heart" },
 ];
 
 let failed = 0;
@@ -56,6 +59,17 @@ for (const c of CASES) {
   } else if (c.check === "energy_less_than_opponent_wait") {
     if (cl.template !== "energy_less_than_opponent_wait") errs.push(`template ${cl.template}`);
     if (!simSrc.includes("countOpponentEnergyCards")) errs.push("countOpponentEnergyCards missing");
+  } else if (c.check === "optional_self_wait_opp_blade") {
+    if (cl.template !== "optional_self_wait_opp_stage") errs.push(`template ${cl.template}`);
+    if (cl.oppWaitMaxPrintedBlade !== 1) errs.push(`oppWaitMaxPrintedBlade ${cl.oppWaitMaxPrintedBlade}`);
+    if (!simSrc.includes("oppWaitMaxPrintedBlade")) errs.push("blade filter in handler missing");
+  } else if (c.check === "min_either_success_live") {
+    if (cl.filters?.minEitherSuccessLiveCount !== 2) errs.push("minEitherSuccessLiveCount missing");
+    if (cl.filters?.minSuccessLiveCount != null) errs.push("minSuccessLiveCount should be unset");
+    if (cl.filters?.minOpponentSuccessLiveCount != null) errs.push("minOpponentSuccessLiveCount should be unset");
+  } else if (c.check === "toujou_grant_opp_live_need_heart") {
+    if (cl.template !== "toujou_grant_opp_live_need_heart_if_stage_hearts") errs.push(`template ${cl.template}`);
+    if (!simSrc.includes("inactiveOpponentJoujiLiveNeedHeartBump")) errs.push("inactive opponent bump helper missing");
   } else if (cl.template !== c.check) {
     errs.push(`template ${cl.template} != ${c.check}`);
   }

@@ -1581,6 +1581,8 @@ export function mountSimulator(
     playLiveYellStarted: false,
     /** エール追加公開枚数（鬼塚夏美 jidou 等） */
     extraYellRevealAllowance: 0,
+    /** このライブ中にエールで公開したカード id（ライブ成功時のエール公開回収用） */
+    liveTurnYellRevealedCardIds: [],
     /** ライブの計算パネル上の「固有ボーナス点」（打点に手動加算・Undo 可。負も可） */
     liveScoreEffectBonus: 0,
     /** ライブの計算パネル「エール数」表示の手動補正（盤面ブレード合計への加減） */
@@ -3245,6 +3247,95 @@ export function mountSimulator(
     }
   }
 
+  function registerLiveTurnYellRevealedCards(cards) {
+    if (!Array.isArray(cards) || !cards.length) return;
+    if (!Array.isArray(state.liveTurnYellRevealedCardIds)) state.liveTurnYellRevealedCardIds = [];
+    cards.forEach(function (c) {
+      if (!c || c.id == null) return;
+      var sid = String(c.id);
+      if (state.liveTurnYellRevealedCardIds.indexOf(sid) < 0) state.liveTurnYellRevealedCardIds.push(sid);
+    });
+  }
+
+  function listYellRevealedCardsForPick() {
+    var ids = Array.isArray(state.liveTurnYellRevealedCardIds) ? state.liveTurnYellRevealedCardIds : [];
+    /** @type {*[]} */
+    var out = [];
+    ids.forEach(function (sid) {
+      var c = findCardInstById(sid);
+      if (c) out.push(c);
+    });
+    return out;
+  }
+
+  function removeCardFromResolutionOrWaiting(cardId) {
+    var ri = (state.resolutionArea || []).findIndex(function (c) {
+      return c && String(c.id) === String(cardId);
+    });
+    if (ri >= 0) return state.resolutionArea.splice(ri, 1)[0];
+    var wi = (state.waitingRoom || []).findIndex(function (c) {
+      return c && String(c.id) === String(cardId);
+    });
+    if (wi >= 0) return state.waitingRoom.splice(wi, 1)[0];
+    return null;
+  }
+
+  function countResolutionBhCards() {
+    var n = 0;
+    (state.resolutionArea || []).forEach(function (c) {
+      if (c && cardHasBladeHeart(mergedCatalogCard(c))) n++;
+    });
+    return n;
+  }
+
+  function resetYellRetryState() {
+    var movedR = (state.resolutionArea || []).slice();
+    movedR.forEach(function (c) {
+      if (!c) return;
+      state.waitingRoom.push(c);
+      if (Array.isArray(state.ealeNoteLiveHitIds)) {
+        var hi = state.ealeNoteLiveHitIds.indexOf(c.id);
+        if (hi >= 0) state.ealeNoteLiveHitIds.splice(hi, 1);
+      }
+    });
+    state.resolutionArea.length = 0;
+    state.playLiveYellStarted = false;
+    state.ealeNoteLiveHitIds = [];
+    state.ealeNoteLiveScorePoints = 0;
+  }
+
+  /** @param {*} liveInst @returns {string|null} */
+  function placeLiveFromHandToLiveAreaFaceUp(liveInst) {
+    if (!liveInst || liveInst.id == null) return null;
+    var hi = -1;
+    for (var i = 0; i < (state.hand || []).length; i++) {
+      if (state.hand[i] && String(state.hand[i].id) === String(liveInst.id)) {
+        hi = i;
+        break;
+      }
+    }
+    if (hi < 0) return null;
+    var keys = ["center", "left", "right"];
+    for (var ki = 0; ki < keys.length; ki++) {
+      var k = keys[ki];
+      var slot = state.liveArea[k] || [];
+      var hasLive = slot.some(function (c) {
+        return c && c.type === T_LIVE;
+      });
+      if (!hasLive) {
+        var card = state.hand.splice(hi, 1)[0];
+        card.isRotated = false;
+        card.lcWait = false;
+        state.liveArea[k].push(card);
+        try {
+          fireJidouAfterLivePlacedOnFrame(card);
+        } catch (_) {}
+        return k;
+      }
+    }
+    return null;
+  }
+
   function openJidouOptionalEnergyPay(energyCount, leadText, onDone) {
     payAbilityCost(null, { costEnergy: true, costEnergyCount: energyCount || 1 }, false, function (ok) {
       onDone(!!ok);
@@ -3636,24 +3727,30 @@ export function mountSimulator(
         return c && mergedCatalogCard(c).type === T_LIVE;
       });
       if (hasLiveR || !resCardsR.length) return;
-      if (!window.confirm("自動: エール公開にライブがないため、公開カードをすべて控え室に置き、もう一度エールしますか？")) return;
-      pushHistoryBefore("jidou-yell-retry");
-      var movedR = resCardsR.slice();
-      movedR.forEach(function (c) {
-        if (!c) return;
-        state.waitingRoom.push(c);
-        if (Array.isArray(state.ealeNoteLiveHitIds)) {
-          var hi = state.ealeNoteLiveHitIds.indexOf(c.id);
-          if (hi >= 0) state.ealeNoteLiveHitIds.splice(hi, 1);
-        }
-      });
-      state.resolutionArea.length = 0;
-      state.playLiveYellStarted = false;
-      state.ealeNoteLiveHitIds = [];
-      state.ealeNoteLiveScorePoints = 0;
-      jidouPerTurnMark(memberInst, segIndex);
-      showToast("自動: 公開カードを控え室へ。BHを失い、もう一度エールしてください");
-      finishJidouAutoRender();
+      openAbilityConfirmDialog(
+        "自動: エール公開にライブがないため、公開カードをすべて控え室に置き、もう一度エールしますか？",
+        function (ok) {
+          if (!ok) return;
+          pushHistoryBefore("jidou-yell-retry");
+          var movedR = resCardsR.slice();
+          movedR.forEach(function (c) {
+            if (!c) return;
+            state.waitingRoom.push(c);
+            if (Array.isArray(state.ealeNoteLiveHitIds)) {
+              var hi = state.ealeNoteLiveHitIds.indexOf(c.id);
+              if (hi >= 0) state.ealeNoteLiveHitIds.splice(hi, 1);
+            }
+          });
+          state.resolutionArea.length = 0;
+          state.playLiveYellStarted = false;
+          state.ealeNoteLiveHitIds = [];
+          state.ealeNoteLiveScorePoints = 0;
+          jidouPerTurnMark(memberInst, segIndex);
+          showToast("自動: 公開カードを控え室へ。BHを失い、もう一度エールしてください");
+          finishJidouAutoRender();
+        },
+        { sourceInst: memberInst, dialogTitle: "自動: エールやり直し" },
+      );
       return;
     }
     if (cl.template === "jidou_opp_wait_draw") {
@@ -4125,6 +4222,375 @@ export function mountSimulator(
     return out;
   }
 
+  function liveInstWasOnFrameInSnap(cardId, snap) {
+    if (!snap || !snap.liveArea || cardId == null) return false;
+    var sid = String(cardId);
+    return ["left", "center", "right"].some(function (k) {
+      return (snap.liveArea[k] || []).some(function (c) {
+        return c && String(c.id) === sid && mergedCatalogCard(c).type === T_LIVE;
+      });
+    });
+  }
+
+  function markLiveCardMovedThisTurn(liveInst) {
+    if (!liveInst || mergedCatalogCard(liveInst).type !== T_LIVE) return;
+    liveInst._movedLiveAreaThisTurn = true;
+    liveInst._movedLiveAreaTurn = state.turnCount;
+  }
+
+  function yellResolutionRevealPool(filters) {
+    var fromRes = (state.resolutionArea || []).filter(function (c) {
+      return c && catalogCardMatchesPickFilters(mergedCatalogCard(c), filters || {});
+    });
+    if (fromRes.length) return fromRes;
+    return listYellRevealedCardsForPick().filter(function (c) {
+      return c && catalogCardMatchesPickFilters(mergedCatalogCard(c), filters || {});
+    });
+  }
+
+  function runJidouLiveCardAutoEffect(liveInst, cl, segRaw, segIndex, ctx) {
+    if (!liveInst || !cl || isPlayManualMode()) return;
+    var liveName = mergedCatalogCard(liveInst).name || "ライブ";
+    if (cl.template === "jidou_yell_retry_low_bh") {
+      var resCardsLow = state.resolutionArea || [];
+      if (!resCardsLow.length || countResolutionBhCards() > 2) return;
+      openAbilityConfirmDialog(
+        "自動（" +
+          liveName +
+          "）: 公開カードにBHが2枚以下です。すべて控え室に置き、BHを失ってもう一度エールしますか？",
+        function (ok) {
+          if (!ok) return;
+          pushHistoryBefore("jidou-yell-retry-low-bh");
+          resetYellRetryState();
+          jidouPerTurnMark(liveInst, segIndex);
+          showToast("自動（" + liveName + "）: 公開カードを控え室へ。BHを失い、もう一度エールしてください");
+          finishJidouAutoRender();
+        },
+        { sourceInst: liveInst, dialogTitle: "自動: エールやり直し" },
+      );
+      return;
+    }
+    if (cl.template === "jidou_yell_discard_nobh_series_extra_yell") {
+      var aqPool = yellResolutionRevealPool(cl.filters || {}).filter(function (c) {
+        return c && !cardHasBladeHeart(mergedCatalogCard(c));
+      });
+      if (!aqPool.length) {
+        jidouPerTurnMark(liveInst, segIndex);
+        return;
+      }
+      openPickFromWaitingDialog(
+        aqPool,
+        "自動（" +
+          liveName +
+          "）: エール公開からブレードハートを持たない『" +
+          ((cl.filters && cl.filters.seriesTag) || "Aqours") +
+          "』メンバーを1枚まで控え室に置いてもよい（キャンセルで0枚）。",
+        function (pid) {
+          if (!pid) {
+            jidouPerTurnMark(liveInst, segIndex);
+            finishJidouAutoRender();
+            return;
+          }
+          pushHistoryBefore("jidou-yell-aqours-extra");
+          var pickedAq = removeCardFromResolutionOrWaiting(pid);
+          if (pickedAq) state.waitingRoom.push(pickedAq);
+          var costAq = memberFlooredPrintedCost(pickedAq);
+          var extraAq = Math.min(
+            cl.maxExtraYellCount != null ? cl.maxExtraYellCount : 4,
+            Math.floor(costAq / (cl.yellCostDivisor || 5)),
+          );
+          if (extraAq > 0) {
+            state.extraYellRevealAllowance =
+              Math.max(0, Math.floor(Number(state.extraYellRevealAllowance) || 0)) + extraAq;
+            showToast("自動（" + liveName + "）: 追加で " + extraAq + " 枚エールできます");
+          }
+          jidouPerTurnMark(liveInst, segIndex);
+          finishJidouAutoRender();
+        },
+        { dialogTitle: "エール: Aqoursメンバーを控え室へ", okLabel: "控え室へ" },
+      );
+      return;
+    }
+    if (cl.template === "jidou_yell_discard_nobh_series_multi_extra_yell") {
+      var hsPool = yellResolutionRevealPool(cl.filters || {}).filter(function (c) {
+        return c && !cardHasBladeHeart(mergedCatalogCard(c));
+      });
+      if (!hsPool.length) {
+        jidouPerTurnMark(liveInst, segIndex);
+        return;
+      }
+      var maxHs = cl.maxDiscardCount != null ? cl.maxDiscardCount : 3;
+      openPickHandOptionalMultiToWaiting(
+        "自動（" +
+          liveName +
+          "）: エール公開からブレードハートを持たない『" +
+          ((cl.filters && cl.filters.seriesTag) || "蓮ノ空") +
+          "』のカードを" +
+          maxHs +
+          "枚まで控え室に置いてもよい（0枚可）。",
+        function (hc) {
+          return catalogCardMatchesPickFilters(mergedCatalogCard(hc), cl.filters || {}) && !cardHasBladeHeart(mergedCatalogCard(hc));
+        },
+        function (ids) {
+          if (!ids || !ids.length) {
+            jidouPerTurnMark(liveInst, segIndex);
+            finishJidouAutoRender();
+            return;
+          }
+          pushHistoryBefore("jidou-yell-hs-extra");
+          var placedHs = 0;
+          ids.slice(0, maxHs).forEach(function (pid) {
+            var pickedHs = removeCardFromResolutionOrWaiting(pid);
+            if (pickedHs) {
+              state.waitingRoom.push(pickedHs);
+              placedHs++;
+            }
+          });
+          if (placedHs > 0) {
+            state.extraYellRevealAllowance =
+              Math.max(0, Math.floor(Number(state.extraYellRevealAllowance) || 0)) + placedHs;
+            showToast("自動（" + liveName + "）: 追加で " + placedHs + " 枚エールできます");
+          }
+          jidouPerTurnMark(liveInst, segIndex);
+          finishJidouAutoRender();
+        },
+        { okLabel: "捨てる", dialogTitle: "エール: 蓮ノ空を控え室へ" },
+        hsPool,
+      );
+      return;
+    }
+    if (cl.template === "jidou_waiting_to_hand_place_named_live") {
+      var namedLive = cl.namedLiveCard;
+      var handLivePool = (state.hand || []).filter(function (hc) {
+        var hmc = mergedCatalogCard(hc);
+        return hc && hmc.type === T_LIVE && (!namedLive || String(hmc.name || "") === namedLive);
+      });
+      if (!handLivePool.length) {
+        jidouPerTurnMark(liveInst, segIndex);
+        finishJidouAutoRender();
+        return;
+      }
+      openPickFromWaitingDialog(
+        handLivePool,
+        "自動（" +
+          liveName +
+          "）: 手札からカード名が「" +
+          (namedLive || "指定") +
+          "」のライブを表向きでライブ置き場に置いてもよい（キャンセルでスキップ）。",
+        function (pid) {
+          if (!pid) {
+            jidouPerTurnMark(liveInst, segIndex);
+            finishJidouAutoRender();
+            return;
+          }
+          var pickLive = state.hand.find(function (h) {
+            return h && String(h.id) === String(pid);
+          });
+          if (!pickLive) {
+            jidouPerTurnMark(liveInst, segIndex);
+            finishJidouAutoRender();
+            return;
+          }
+          pushHistoryBefore("jidou-wait-hand-place-live");
+          var colPl = placeLiveFromHandToLiveAreaFaceUp(pickLive);
+          if (!colPl) {
+            showToast("空きのライブ枠がありません");
+            jidouPerTurnMark(liveInst, segIndex);
+            finishJidouAutoRender();
+            return;
+          }
+          var penPl = cl.liveSetLimitPenalty != null ? Math.max(0, Math.floor(Number(cl.liveSetLimitPenalty))) : 1;
+          state.liveSetLimitPenaltyPending =
+            Math.max(0, Math.floor(Number(state.liveSetLimitPenaltyPending) || 0)) + penPl;
+          showToast(
+            "自動（" +
+              liveName +
+              "）: " +
+              (mergedCatalogCard(pickLive).name || "ライブ") +
+              " をライブ置き場に置き、次のセット上限が " +
+              penPl +
+              " 枚減ります",
+          );
+          jidouPerTurnMark(liveInst, segIndex);
+          finishJidouAutoRender();
+        },
+        { dialogTitle: "手札 — ライブを置き場へ", okLabel: "ライブ置き場へ" },
+      );
+      return;
+    }
+    if (cl.template === "jidou_live_placed_grant_stage_member") {
+      var gLive = extractStageMemberGrantJouji(segRaw);
+      if (!gLive) {
+        jidouPerTurnMark(liveInst, segIndex);
+        finishJidouAutoRender();
+        return;
+      }
+      var memPoolLive = eachStageColumnMemberInsts().filter(function (m) {
+        return m && catalogCardMatchesPickFilters(mergedCatalogCard(m), cl.filters || {});
+      });
+      if (!memPoolLive.length) {
+        jidouPerTurnMark(liveInst, segIndex);
+        finishJidouAutoRender();
+        return;
+      }
+      openPickStageMemberDialog(null, "自動（" + liveName + "）: 常時効果を得るステージのメンバー1人を選びます。", function (pid) {
+        if (!pid) {
+          jidouPerTurnMark(liveInst, segIndex);
+          finishJidouAutoRender();
+          return;
+        }
+        var tgtMem = findCardInstById(pid);
+        if (!tgtMem || !catalogCardMatchesPickFilters(mergedCatalogCard(tgtMem), cl.filters || {})) {
+          jidouPerTurnMark(liveInst, segIndex);
+          finishJidouAutoRender();
+          return;
+        }
+        pushHistoryBefore("jidou-live-placed-grant");
+        grantJoujiSegmentToMember(tgtMem, gLive);
+        jidouPerTurnMark(liveInst, segIndex);
+        showToast("自動（" + liveName + "）: " + (mergedCatalogCard(tgtMem).name || "メンバー") + " に常時効果を付与しました");
+        finishJidouAutoRender();
+      });
+      return;
+    }
+    if (cl.template === "jidou_center_muse_ability_position_change") {
+      var tgtPc = ctx && ctx.targetMember;
+      if (!tgtPc || stageColumnKeyHostingMember(tgtPc.id) !== "center") return;
+      pushHistoryBefore("jidou-center-muse-position");
+      openPositionChangeColumnPickDialog(
+        tgtPc,
+        cl,
+        "自動（" + liveName + "）: センターμ'sをポジションチェンジします。",
+        function (targetCol) {
+          if (!targetCol) {
+            jidouPerTurnMark(liveInst, segIndex);
+            finishJidouAutoRender();
+            return;
+          }
+          var snapJpc = snapshotBoard();
+          if (!swapStageMemberPositionChange(tgtPc, targetCol)) {
+            showToast("自動: ポジションチェンジできませんでした");
+          } else {
+            try {
+              syncPlayBonusesAfterStageMembershipChange(snapJpc);
+              syncJoujiPassiveEffectsAll();
+            } catch (_) {}
+            markMemberMovedThisTurn(tgtPc);
+            showToast("自動（" + liveName + "）: ポジションチェンジしました");
+          }
+          jidouPerTurnMark(liveInst, segIndex);
+          finishJidouAutoRender();
+        },
+      );
+      return;
+    }
+    if (cl.template === "jidou_center_muse_ability_score_if_moved") {
+      if (
+        !liveInst._movedLiveAreaThisTurn ||
+        Number(liveInst._movedLiveAreaTurn) !== Number(state.turnCount)
+      ) {
+        jidouPerTurnMark(liveInst, segIndex);
+        return;
+      }
+      pushHistoryBefore("jidou-center-muse-score");
+      applyLiveCardScorePlus(liveInst, 1, "自動（" + liveName + "）: 移動済みのためこのライブのスコアを＋1しました");
+      jidouPerTurnMark(liveInst, segIndex);
+      finishJidouAutoRender();
+      return;
+    }
+    void segRaw;
+    void segIndex;
+    void ctx;
+  }
+
+  function fireJidouAutoForLiveCard(liveInst, eventKind, ctx) {
+    if (isPlayManualMode() || !liveInst) return;
+    if (mergedCatalogCard(liveInst).type !== T_LIVE) return;
+    var raws = listNativeJidouSegmentRaws(mergedCatalogCard(liveInst));
+    for (var i = 0; i < raws.length; i++) {
+      var cl = classifyJidouAutoSegment(raws[i]);
+      if (!cl || cl.template === "jidou_manual") continue;
+      if (cl.eventKind !== eventKind && cl.altEventKind !== eventKind) continue;
+      if (jidouPerTurnBlocked(liveInst, i, cl.perTurnLimit)) continue;
+      if (cl.template === "jidou_waiting_to_hand_place_named_live") {
+        if (!isMainPhasePlay() || !ctx || !ctx.movedCard) continue;
+        if (String(ctx.movedCard.id) !== String(liveInst.id)) continue;
+      }
+      if (cl.template === "jidou_live_placed_grant_stage_member") {
+        if (!ctx || !ctx.movedCard) continue;
+        if (String(ctx.movedCard.id) !== String(liveInst.id)) continue;
+      }
+      if (
+        cl.template === "jidou_center_muse_ability_position_change" ||
+        cl.template === "jidou_center_muse_ability_score_if_moved"
+      ) {
+        if (!ctx || !ctx.targetMember) continue;
+        var tm = ctx.targetMember;
+        if (stageColumnKeyHostingMember(tm.id) !== "center") continue;
+        if (!catalogCardMatchesGroupTag(mergedCatalogCard(tm), "μ's")) continue;
+      }
+      if (
+        cl.template === "jidou_yell_retry_low_bh" ||
+        cl.template === "jidou_yell_discard_nobh_series_extra_yell" ||
+        cl.template === "jidou_yell_discard_nobh_series_multi_extra_yell"
+      ) {
+        if (!(state.resolutionArea || []).length) continue;
+      }
+      runJidouLiveCardAutoEffect(liveInst, cl, raws[i], i, ctx);
+    }
+  }
+
+  function fireJidouAfterLivePlacedOnFrame(liveInst) {
+    if (!liveInst) return;
+    fireJidouAutoForLiveCard(liveInst, "live_placed_on_frame", { movedCard: liveInst });
+  }
+
+  function maybeFireJidouAfterWaitingToHand(snapBefore) {
+    if (!isMainPhasePlay() || !snapBefore) return;
+    var beforeHand = new Set(
+      (snapBefore.hand || []).map(function (c) {
+        return c && String(c.id);
+      }),
+    );
+    (state.hand || []).forEach(function (c) {
+      if (!c || beforeHand.has(String(c.id))) return;
+      var wasWaiting = (snapBefore.waitingRoom || []).some(function (w) {
+        return w && String(w.id) === String(c.id);
+      });
+      if (!wasWaiting || mergedCatalogCard(c).type !== T_LIVE) return;
+      fireJidouAutoForLiveCard(c, "waiting_to_hand", { movedCard: c });
+    });
+  }
+
+  function maybeFireJidouAfterLiveAreaChanges(snapBefore) {
+    if (!snapBefore) return;
+    eachLiveFrameLiveCardInsts().forEach(function (lc) {
+      if (!lc || liveInstWasOnFrameInSnap(lc.id, snapBefore)) return;
+      markLiveCardMovedThisTurn(lc);
+      fireJidouAfterLivePlacedOnFrame(lc);
+    });
+    if (!snapBefore.liveArea) return;
+    var cols = ["left", "center", "right"];
+    eachLiveFrameLiveCardInsts().forEach(function (lc) {
+      if (!lc) return;
+      var sid = String(lc.id);
+      var prevCol = null;
+      var curCol = null;
+      for (var ci = 0; ci < cols.length; ci++) {
+        var k = cols[ci];
+        var wasThere = (snapBefore.liveArea[k] || []).some(function (c) {
+          return c && String(c.id) === sid;
+        });
+        var isThere = (state.liveArea[k] || []).some(function (c) {
+          return c && String(c.id) === sid;
+        });
+        if (wasThere) prevCol = k;
+        if (isThere) curCol = k;
+      }
+      if (prevCol && curCol && prevCol !== curCol) markLiveCardMovedThisTurn(lc);
+    });
+  }
+
   function runJidouLiveBoardEffect(liveInst, cl, segRaw, segIndex, ctx) {
     if (!liveInst || !cl || isPlayManualMode()) return;
     void segRaw;
@@ -4182,6 +4648,14 @@ export function mountSimulator(
         runJidouLiveBoardEffect(liveInst, cl, raws[i], i, { targetMember: memberInst });
       }
     });
+    if (
+      stageColumnKeyHostingMember(memberInst.id) === "center" &&
+      catalogCardMatchesGroupTag(mergedCatalogCard(memberInst), "μ's")
+    ) {
+      eachLiveFrameLiveCardInsts().forEach(function (liveInst) {
+        fireJidouAutoForLiveCard(liveInst, "member_ability_resolved", { targetMember: memberInst });
+      });
+    }
   }
 
   function fireJidouAutoForMember(memberInst, eventKind, ctx) {
@@ -4266,6 +4740,9 @@ export function mountSimulator(
     });
     (state.liveArea.left || []).concat(state.liveArea.center || [], state.liveArea.right || []).forEach(function (m) {
       if (m && m.type === T_MEMBER) fireJidouAutoForMember(m, "yell", yellCtx);
+    });
+    eachLiveFrameLiveCardInsts().forEach(function (lc) {
+      fireJidouAutoForLiveCard(lc, "yell", yellCtx);
     });
   }
 
@@ -4875,6 +5352,13 @@ export function mountSimulator(
   }
 
   /** ライブ枠＋プレビューにあるライブの need_heart を色情報スロット別に足し合わせ（成功確率と同一モデル） */
+  function inactiveOpponentJoujiLiveNeedHeartBump() {
+    if (!isDualOpponentBoardMode()) return 0;
+    var snap = getInactiveOpponentSnapshot();
+    if (!snap) return 0;
+    return Math.max(0, Math.floor(Number(snap.joujiOpponentLiveNeedHeartBump) || 0));
+  }
+
   function aggregateNeedHeartSlotsFromLiveArea() {
     var acc = {};
     ["left", "center", "right"].forEach(function (k) {
@@ -4887,6 +5371,10 @@ export function mountSimulator(
       if (!inst || inst.type !== T_LIVE) return;
       addNeedHeartToSlotAccum(mergedCatalogCard(inst), acc);
     });
+    var oppBump = inactiveOpponentJoujiLiveNeedHeartBump();
+    if (oppBump > 0 && sumSlotAccumValues(acc) > 0) {
+      acc[0] = (acc[0] || 0) + oppBump;
+    }
     return acc;
   }
 
@@ -5241,12 +5729,35 @@ export function mountSimulator(
   }
 
   function soloOpponentHandCountForAbility() {
-    var opp = Math.max(0, Math.floor(Number(state.soloOpponentHandCount) || 0));
-    if (opp > 0) return opp;
-    var inp = window.prompt("ソロ: 相手の手札枚数を入力してください", "0");
-    opp = Math.max(0, Math.floor(Number(inp) || 0));
-    state.soloOpponentHandCount = opp;
-    return opp;
+    if (versusOnlineActive()) {
+      var board = getVersusOpponentPublicBoardNow();
+      if (board) return Math.max(0, Math.floor(Number(board.handCount) || 0));
+    }
+    if (isDualOpponentBoardMode()) return countOpponentHandCards();
+    return Math.max(0, Math.floor(Number(state.soloOpponentHandCount) || 0));
+  }
+
+  /** @param {(n: number) => void} onReady */
+  function ensureSoloOpponentHandCount(onReady) {
+    if (versusOnlineActive() || isDualOpponentBoardMode()) {
+      onReady(soloOpponentHandCountForAbility());
+      return;
+    }
+    var cached = Math.max(0, Math.floor(Number(state.soloOpponentHandCount) || 0));
+    if (cached > 0) {
+      onReady(cached);
+      return;
+    }
+    openSoloOpponentNumberPickDialog(
+      "ソロ: 相手の手札枚数を選んでください。",
+      function (n) {
+        if (n != null) state.soloOpponentHandCount = n;
+        onReady(Math.max(0, Math.floor(Number(state.soloOpponentHandCount) || 0)));
+      },
+      function (v) {
+        state.soloOpponentHandCount = v;
+      },
+    );
   }
 
   function countOwnYellRevealedLiveCards() {
@@ -5256,13 +5767,20 @@ export function mountSimulator(
   }
 
   function soloOpponentYellRevealedLiveCountForAbility() {
+    if (versusOnlineActive()) {
+      var board = getVersusOpponentPublicBoardNow();
+      if (board && Array.isArray(board.resolutionArea)) {
+        var n = 0;
+        board.resolutionArea.forEach(function (pc) {
+          if (pc && (pc.type === T_LIVE || pc.type === "ライブ")) n++;
+        });
+        return n;
+      }
+    }
     if (state.soloOpponentYellRevealedLiveCount != null && Number.isFinite(Number(state.soloOpponentYellRevealedLiveCount))) {
       return Math.max(0, Math.floor(Number(state.soloOpponentYellRevealedLiveCount)));
     }
-    var inp = window.prompt("ソロ: 相手のエール公開ライブカード枚数を入力してください", "0");
-    var opp = Math.max(0, Math.floor(Number(inp) || 0));
-    state.soloOpponentYellRevealedLiveCount = opp;
-    return opp;
+    return Math.max(0, Math.floor(Number(state.soloOpponentYellRevealedLiveCount) || 0));
   }
 
   function allOwnEnergyCardsActive() {
@@ -7707,6 +8225,7 @@ export function mountSimulator(
     newInsts.forEach(function (c) {
       registerScoreYellForLiveTotal(c);
     });
+    registerLiveTurnYellRevealedCards(newInsts);
     var rsBh = accumulateResolutionBladeHeartStats();
     var bhLine =
       rsBh.totalBh > 0
@@ -10078,7 +10597,9 @@ export function mountSimulator(
     if (filters.requiresOpponentHandLead != null) {
       var leadN = Math.max(1, Math.floor(Number(filters.requiresOpponentHandLead)));
       var ownHandN = (state.hand || []).length;
-      var oppHandN = countOpponentHandCards();
+      var oppHandN = isDualOpponentBoardMode()
+        ? countOpponentHandCards()
+        : soloOpponentHandCountForAbility();
       if (oppHandN - ownHandN < leadN) return false;
     }
     if (filters.minEitherSuccessLiveCount != null) {
@@ -10141,12 +10662,17 @@ export function mountSimulator(
       });
       return n != null ? n : 0;
     }
-    var stored = Math.max(0, Math.floor(Number(state.soloOpponentSuccessLiveCount) || 0));
-    if (stored > 0) return stored;
-    var entered = window.prompt("相手の成功ライブカード置き場の枚数を入力してください", "0");
-    var v = Math.max(0, Math.floor(Number(entered) || 0));
-    state.soloOpponentSuccessLiveCount = v;
-    return v;
+    if (versusOnlineActive()) {
+      var board = getVersusOpponentPublicBoardNow();
+      if (board && Array.isArray(board.successfulLiveArea)) {
+        return board.successfulLiveArea.filter(function (pc) {
+          return pc && (pc.type === T_LIVE || pc.type === "ライブ");
+        }).length;
+      }
+      var synced = Math.max(0, Math.floor(Number(state.versusOpponentSuccessLiveCount) || 0));
+      if (synced > 0) return synced;
+    }
+    return Math.max(0, Math.floor(Number(state.soloOpponentSuccessLiveCount) || 0));
   }
 
   function sumLiveFrameNeedHeartSlots(slots) {
@@ -10180,6 +10706,12 @@ export function mountSimulator(
         eachStageColumnMemberInsts().forEach(function (m) {
           if (m && m.type === T_MEMBER) costs.push(memberFlooredPrintedCost(m));
         });
+      });
+      return costs;
+    }
+    if (versusOnlineActive()) {
+      eachOnlineOpponentPublicStageMember(function (m) {
+        costs.push(opponentMemberFlooredCostForPick(m));
       });
       return costs;
     }
@@ -10239,18 +10771,29 @@ export function mountSimulator(
       });
       return n != null ? n : 0;
     }
+    if (versusOnlineActive()) {
+      var sumPub = 0;
+      eachOnlineOpponentPublicStageMember(function (m) {
+        var bh = (m && mergedCatalogCard(m).base_heart) || {};
+        for (var s = 1; s <= 6; s++) {
+          var key = s === 1 ? "heart01" : "heart0" + s;
+          if (Number(bh[key]) > 0) sumPub++;
+        }
+        if (m && m.bonusHearts && typeof m.bonusHearts === "object") {
+          Object.keys(m.bonusHearts).forEach(function (k) {
+            sumPub += Math.max(0, Math.floor(Number(m.bonusHearts[k]) || 0));
+          });
+        }
+      });
+      return sumPub;
+    }
     var proxySum = 0;
     eachStageColumnMemberInsts().forEach(function (m) {
       if (!m || !m._soloOpponentProxy) return;
       for (var s = 1; s <= 6; s++) proxySum += memberHeldHeartCountBySlot(m, s);
     });
     if (proxySum > 0) return proxySum;
-    var stored = Math.max(0, Math.floor(Number(state.soloOpponentStageHeartTotal) || 0));
-    if (stored > 0) return stored;
-    var inp = window.prompt("ソロ: 相手ステージのハート総数", "0");
-    var v = Math.max(0, Math.floor(Number(inp) || 0));
-    state.soloOpponentStageHeartTotal = v;
-    return v;
+    return Math.max(0, Math.floor(Number(state.soloOpponentStageHeartTotal) || 0));
   }
 
   function ownSeriesCostSumHigherThanOpponent(seriesTag) {
@@ -10545,11 +11088,25 @@ export function mountSimulator(
 
   /** ソロ: 相手ステージにウェイト状態のメンバーがいるか（入力） */
   function soloOpponentHasWaitMemberForAbility() {
+    if (versusOnlineActive()) {
+      var found = false;
+      eachOnlineOpponentPublicStageMember(function (m) {
+        if (m && m.lcWait) found = true;
+      });
+      return found;
+    }
+    if (isDualOpponentBoardMode()) {
+      var dualFound = false;
+      readInactiveOpponentBoard(function () {
+        eachStageColumnMemberInsts().forEach(function (m) {
+          if (m && m.lcWait === true) dualFound = true;
+        });
+      });
+      return dualFound;
+    }
     if (state.soloOpponentHasWaitMember === true) return true;
     if (state.soloOpponentHasWaitMember === false) return false;
-    var ans = window.confirm("ソロ: 相手のステージにウェイト状態のメンバーがいますか？");
-    state.soloOpponentHasWaitMember = ans;
-    return ans;
+    return false;
   }
 
   /** ステージに指名2人がいて、larger のコスト > smaller のコスト */
@@ -10667,6 +11224,10 @@ export function mountSimulator(
     if (isDualOpponentBoardMode()) {
       return listOpponentHandForDecision().length;
     }
+    if (versusOnlineActive()) {
+      var board = getVersusOpponentPublicBoardNow();
+      if (board) return Math.max(0, Math.floor(Number(board.handCount) || 0));
+    }
     return Math.max(0, Math.floor(Number(state.soloOpponentHandCount) || 0));
   }
 
@@ -10674,6 +11235,10 @@ export function mountSimulator(
     if (isDualOpponentBoardMode()) {
       var snap = getInactiveOpponentSnapshot();
       return snap ? energyCountFromSnapshot(snap) : 0;
+    }
+    if (versusOnlineActive()) {
+      var board = getVersusOpponentPublicBoardNow();
+      if (board && Array.isArray(board.energyArea)) return board.energyArea.length;
     }
     return Math.max(0, Math.floor(Number(state.soloOpponentEnergyCount) || 0));
   }
@@ -10773,12 +11338,23 @@ export function mountSimulator(
       });
       if (Number.isFinite(Number(oppDual))) return Math.max(0, Math.floor(Number(oppDual)));
     }
-    var stored = Math.max(0, Math.floor(Number(state.soloOpponentSuccessLiveScoreSum) || 0));
-    if (stored > 0) return stored;
-    var inp = window.prompt("ソロ: 相手のライブの合計スコア", "0");
-    var opp = Math.max(0, Math.floor(Number(inp) || 0));
-    state.soloOpponentSuccessLiveScoreSum = opp;
-    return opp;
+    if (versusOnlineActive()) {
+      var board = getVersusOpponentPublicBoardNow();
+      if (board && board.liveArea) {
+        var sum = 0;
+        ["left", "center", "right"].forEach(function (k) {
+          (board.liveArea[k] || []).forEach(function (pc) {
+            if (!pc || pc.hiddenFace) return;
+            if (pc.type !== T_LIVE && pc.type !== "ライブ") return;
+            var cat = pc.card_no ? getCard(pc.card_no) : null;
+            var sc = Number(cat && cat.score);
+            if (Number.isFinite(sc) && sc > 0) sum += Math.floor(sc);
+          });
+        });
+        return sum;
+      }
+    }
+    return Math.max(0, Math.floor(Number(state.soloOpponentSuccessLiveScoreSum) || 0));
   }
 
   function soloEnergyLessThanOpponent() {
@@ -10786,15 +11362,10 @@ export function mountSimulator(
     if (isDualOpponentBoardMode()) {
       return own < countOpponentEnergyCards();
     }
+    if (versusOnlineActive()) {
+      return own < countOpponentEnergyCards();
+    }
     var opp = Math.max(0, Math.floor(Number(state.soloOpponentEnergyCount) || 0));
-    if (opp <= 0 && !window.confirm("ソロ: 相手のエネルギー枚数を入力してください（現在は相手エネルギー未設定）。\n続行しますか？")) {
-      return false;
-    }
-    if (opp <= 0) {
-      var inp = window.prompt("相手のエネルギー置き場の枚数", "0");
-      opp = Math.max(0, Math.floor(Number(inp) || 0));
-      state.soloOpponentEnergyCount = opp;
-    }
     return own < opp;
   }
 
@@ -13675,6 +14246,7 @@ export function mountSimulator(
         return c;
       }) : [];
     }
+    if (versusOnlineActive()) return listOnlineOpponentHandForDecision();
     return (state.hand || []).filter(function (c) {
       return c;
     });
@@ -14676,10 +15248,14 @@ export function mountSimulator(
     }, ABILITY_DRAW_TO_DISCARD_PAUSE_MS);
   }
 
-  function openPickHandOptionalMultiToWaiting(leadText, filterFn, onDone, dialogOpts) {
-    var pool = state.hand.filter(function (h) {
-      return h && (!filterFn || filterFn(h));
-    });
+  function openPickHandOptionalMultiToWaiting(leadText, filterFn, onDone, dialogOpts, poolOverride) {
+    var pool = Array.isArray(poolOverride)
+      ? poolOverride.filter(function (h) {
+          return h && (!filterFn || filterFn(h));
+        })
+      : state.hand.filter(function (h) {
+          return h && (!filterFn || filterFn(h));
+        });
     if (!pool.length) {
       onDone([]);
       return;
@@ -14949,7 +15525,6 @@ export function mountSimulator(
   function runOnTargetPlayerBoard(target, fn) {
     if (target === "opponent") {
       if (versusOnlineActive()) {
-        showToast("相手盤面の操作は相手側で行ってください");
         return false;
       }
       if (isDualOpponentBoardMode()) {
@@ -14968,11 +15543,267 @@ export function mountSimulator(
    */
   function readFromTargetPlayerBoard(target, fn) {
     if (target === "opponent") {
-      if (versusOnlineActive()) return null;
       if (isDualOpponentBoardMode()) return readInactiveOpponentBoard(fn);
     }
     return fn();
   }
+
+  function opponentPlayMode() {
+    if (isDualOpponentBoardMode()) return "dual";
+    if (versusOnlineActive()) return "online";
+    return "solo";
+  }
+
+  /** @param {{ dual?: () => void, online?: () => void, solo?: () => void }} handlers */
+  function whenOpponentPlayMode(handlers) {
+    var mode = opponentPlayMode();
+    if (mode === "dual" && handlers.dual) {
+      handlers.dual();
+      return;
+    }
+    if (mode === "online" && handlers.online) {
+      handlers.online();
+      return;
+    }
+    if (handlers.solo) handlers.solo();
+  }
+
+  function getVersusOpponentPublicBoardNow() {
+    if (!versusOnlineActive() || !versusSession.remoteMatch || !versusSession.myRole) return null;
+    return getOpponentBoardPublic(versusSession.remoteMatch, versusSession.myRole);
+  }
+
+  /** @param {*} pc @param {string} [zoneLabel] */
+  function publicVersusCardToPickInst(pc, zoneLabel) {
+    if (!pc) return null;
+    var cat = pc.card_no ? getCard(pc.card_no) : null;
+    /** @type {*} */
+    var inst = {
+      id: pc.id || (pc.card_no ? String(pc.card_no) + "@pub" : "pub-" + Math.random()),
+      card_no: pc.card_no || "",
+      name: pc.name || (cat && cat.name) || pc.card_no || "?",
+      type: pc.type || (cat && cat.type) || T_MEMBER,
+      lcWait: pc.lcWait === true,
+      _publicBoardPick: true,
+      _publicZoneLabel: zoneLabel || "",
+    };
+    if (cat && cat.img) inst.img = cat.img;
+    if (pc.cost != null && Number.isFinite(Number(pc.cost))) inst.cost = Math.floor(Number(pc.cost));
+    if (pc.bonusBlade != null) inst.playBonusBladeAlways = Math.max(0, Math.floor(Number(pc.bonusBlade)));
+    if (pc.hiddenFace) inst.hiddenFace = true;
+    return inst;
+  }
+
+  /** @param {(m: *, col: string) => void} fn */
+  function eachOnlineOpponentPublicStageMember(fn) {
+    var board = getVersusOpponentPublicBoardNow();
+    if (!board || !board.stage) return;
+    ["left", "center", "right"].forEach(function (col) {
+      (board.stage[col] || []).forEach(function (pc) {
+        var inst = publicVersusCardToPickInst(pc, "ステージ " + col);
+        if (!inst) return;
+        if (inst.type !== T_MEMBER && inst.type !== "メンバー") return;
+        fn(inst, col);
+      });
+    });
+  }
+
+  /** @param {(m: *) => boolean} [matchFn] @returns {*[]} */
+  function listOnlineOpponentStageMembers(matchFn) {
+    /** @type {*[]} */
+    var out = [];
+    eachOnlineOpponentPublicStageMember(function (m) {
+      if (!matchFn || matchFn(m)) out.push(m);
+    });
+    return out;
+  }
+
+  function listOnlineOpponentHandForDecision() {
+    var board = getVersusOpponentPublicBoardNow();
+    if (!board) return [];
+    /** @type {*[]} */
+    var cards = [];
+    if (Array.isArray(board.handReveal) && board.handReveal.length) {
+      board.handReveal.forEach(function (pc) {
+        var inst = publicVersusCardToPickInst(pc, "手札（公開）");
+        if (inst) cards.push(inst);
+      });
+      return cards;
+    }
+    var cnt = Math.max(0, Math.floor(Number(board.handCount) || 0));
+    for (var i = 0; i < cnt; i++) {
+      cards.push({
+        id: "opp-hand-secret-" + i,
+        card_no: "",
+        name: "手札 " + (i + 1) + "（非公開）",
+        type: "",
+        hiddenFace: true,
+        _publicBoardPick: true,
+      });
+    }
+    return cards;
+  }
+
+  function onlineOpponentWaitingMembers(filters) {
+    var board = getVersusOpponentPublicBoardNow();
+    if (!board || !Array.isArray(board.waitingRoom)) return [];
+    return board.waitingRoom
+      .map(function (pc) {
+        return publicVersusCardToPickInst(pc, "控え室");
+      })
+      .filter(function (c) {
+        return c && catalogCardMatchesPickFilters(mergedCatalogCard(c), filters || {});
+      });
+  }
+
+  /** @param {*} m */
+  function opponentMemberPrintedBladeForPick(m) {
+    if (!m) return 0;
+    if (m._publicBoardPick) {
+      var cat = mergedCatalogCard(m);
+      var printed = Number(cat.blade);
+      var base = Number.isFinite(printed) && printed >= 0 ? Math.floor(printed) : 0;
+      var bonus = Math.max(0, Math.floor(Number(m.playBonusBladeAlways) || 0));
+      return base + bonus;
+    }
+    return memberPrintedBladeCount(m);
+  }
+
+  /** @param {*} m */
+  function opponentMemberFlooredCostForPick(m) {
+    if (!m) return 0;
+    if (m._publicBoardPick) {
+      var c = Number(m.cost != null ? m.cost : mergedCatalogCard(m).cost);
+      if (Number.isFinite(c) && c >= 1) return Math.min(Math.floor(c), 99);
+    }
+    return memberFlooredPrintedCost(m);
+  }
+
+  /**
+   * @param {string} message
+   * @param {(yes: boolean) => void} onResult
+   * @param {{ sourceInst?: *, dialogTitle?: string }} [opts]
+   */
+  function openAbilityConfirmDialog(message, onResult, opts) {
+    openAbilityMultiChoiceDialog(
+      ["はい", "いいえ"],
+      1,
+      1,
+      message || "この効果を行いますか？",
+      function (picked) {
+        if (!picked || !picked.length) {
+          onResult(false);
+          return;
+        }
+        onResult(picked[0].indexOf("はい") === 0);
+      },
+      opts && opts.sourceInst,
+      { dialogTitle: (opts && opts.dialogTitle) || "確認" },
+    );
+  }
+
+  /**
+   * @param {string} leadText
+   * @param {(n: number|null) => void} onDone
+   * @param {(n: number) => void} [cacheFn]
+   */
+  function openSoloOpponentNumberPickDialog(leadText, onDone, cacheFn) {
+    /** @type {string[]} */
+    var choices = [];
+    for (var i = 0; i <= 15; i++) choices.push(String(i));
+    openAbilityMultiChoiceDialog(
+      choices,
+      1,
+      1,
+      leadText || "ソロ: 相手の数値を選んでください。",
+      function (picked) {
+        if (!picked || !picked.length) {
+          onDone(null);
+          return;
+        }
+        var n = Math.max(0, Math.floor(Number(picked[0]) || 0));
+        if (cacheFn) cacheFn(n);
+        onDone(n);
+      },
+      null,
+      { dialogTitle: "ソロ: 相手の状態" },
+    );
+  }
+
+  /**
+   * @param {*} inst @param {string} kind @param {string} instruction @param {() => void} onDone
+   */
+  function finishOnlineOpponentDelegatedEffect(inst, kind, instruction, onDone) {
+    pushLocalVersusEffectUi(inst, kind, instruction);
+    showToast("相手への指示を送信しました。相手の操作後に「完了」を押してください。");
+    openAbilityGuidedDialog(inst, kind, onDone);
+  }
+
+  /**
+   * @param {*[]} pool
+   * @param {string} leadText
+   * @param {*} inst
+   * @param {string} kind
+   * @param {() => void} finishResolved
+   * @param {{ okLabel?: string, dialogTitle?: string, instructionFor?: (picked: *) => string }} [opts]
+   */
+  function runOnlineOpponentMemberWaitPick(pool, leadText, inst, kind, finishResolved, opts) {
+    if (!pool.length) {
+      showToast("相手のステージに対象メンバーがいません");
+      finishResolved();
+      return;
+    }
+    openPickFromWaitingDialog(
+      pool,
+      "オンライン対戦: 相手の公開ステージから選び、相手にウェイト指示を送ります。\n" + (leadText || ""),
+      function (pid) {
+        if (!pid) {
+          finishResolved();
+          return;
+        }
+        var picked = pool.find(function (c) {
+          return c && String(c.id) === String(pid);
+        });
+        var nm = picked ? mergedCatalogCard(picked).name || "メンバー" : "メンバー";
+        var instr =
+          opts && opts.instructionFor && picked
+            ? opts.instructionFor(picked)
+            : "相手はステージの「" + nm + "」をウェイトにしてください。";
+        finishOnlineOpponentDelegatedEffect(inst, kind, instr, finishResolved);
+      },
+      {
+        okLabel: (opts && opts.okLabel) || "ウェイト指示を送る",
+        dialogTitle: (opts && opts.dialogTitle) || "相手メンバー — オンライン",
+        sourceInst: inst,
+      },
+    );
+  }
+
+  function runOptionalSelfWaitOppStageOnline(inst, cl, kind, finishResolved, matchOppWaitMember, oppWaitLeadOw) {
+    var pool = listOnlineOpponentStageMembers(matchOppWaitMember);
+    runOnlineOpponentMemberWaitPick(pool, oppWaitLeadOw, inst, kind, finishResolved);
+  }
+
+  function runLiveStartSideCostEqualOppWaitOnline(inst, kind, finishResolved, matchOppBladeMember) {
+    var pool = listOnlineOpponentStageMembers(matchOppBladeMember);
+    if (!pool.length) {
+      showToast("相手のステージに対象メンバーがいません");
+      finishResolved();
+      return;
+    }
+    var names = pool
+      .map(function (m) {
+        return mergedCatalogCard(m).name || "メンバー";
+      })
+      .join("、");
+    finishOnlineOpponentDelegatedEffect(
+      inst,
+      kind,
+      "相手はステージの次のメンバーをすべてウェイトにしてください: " + names,
+      finishResolved,
+    );
+  }
+
 
   function boardHasLowScoreLiveCard(maxScore) {
     var cap = Math.floor(Number(maxScore) || 2);
@@ -15008,6 +15839,9 @@ export function mountSimulator(
         card.isRotated = false;
         card.lcWait = false;
         state.liveArea[k].push(card);
+        try {
+          fireJidouAfterLivePlacedOnFrame(card);
+        } catch (_) {}
         return k;
       }
     }
@@ -15356,10 +16190,18 @@ export function mountSimulator(
         });
       };
       if (cl.optional || cl.hasOptionalCost) {
-        if (!window.confirm("このメンバーをウェイトにして、効果（1枚引き→条件付きで1枚控え）を使いますか？")) {
-          finishResolved();
-          return;
-        }
+        openAbilityConfirmDialog(
+          "このメンバーをウェイトにして、効果（1枚引き→条件付きで1枚控え）を使いますか？",
+          function (okKo) {
+            if (!okKo) {
+              finishResolved();
+              return;
+            }
+            koizumiRun();
+          },
+          { sourceInst: inst, dialogTitle: "登場時 — 任意ウェイト" },
+        );
+        return;
       }
       koizumiRun();
       return;
@@ -15592,23 +16434,30 @@ export function mountSimulator(
           finishResolved();
           return;
         }
-        if (!window.confirm("デッキの一番上のカードを控え室に置きますか？（" + (millDone + 1) + "/" + millMax + "回目）")) {
-          if (millDone) showToast("デッキトップを " + millDone + " 枚控え室に置き、ブレードを得ました");
-          else showToast("デッキトップを置きませんでした");
-          finishResolved();
-          return;
-        }
-        pushHistoryBefore("mill-loop-blade");
-        var milled = state.deck.shift();
-        state.waitingRoom.push(milled);
-        millDone++;
-        gainBladesUntilEnd(inst, Math.max(1, Math.floor(Number(cl.bladeGain) || 1)));
-        if (cl.selfWaitIfMilledLive && milled && milled.type === T_LIVE) {
-          if (inst.lcWait !== true) waitMemberInst(inst);
-          millSelfWaited = true;
-          showToast("ライブカードを置いたため、このメンバーをウェイトにしました");
-        }
-        millOneStep();
+        openAbilityConfirmDialog(
+          "デッキの一番上のカードを控え室に置きますか？（" + (millDone + 1) + "/" + millMax + "回目）",
+          function (okMill) {
+            if (!okMill) {
+              if (millDone) showToast("デッキトップを " + millDone + " 枚控え室に置き、ブレードを得ました");
+              else showToast("デッキトップを置きませんでした");
+              finishResolved();
+              return;
+            }
+            pushHistoryBefore("mill-loop-blade");
+            var milled = state.deck.shift();
+            state.waitingRoom.push(milled);
+            millDone++;
+            gainBladesUntilEnd(inst, Math.max(1, Math.floor(Number(cl.bladeGain) || 1)));
+            if (cl.selfWaitIfMilledLive && milled && milled.type === T_LIVE) {
+              if (inst.lcWait !== true) waitMemberInst(inst);
+              millSelfWaited = true;
+              showToast("ライブカードを置いたため、このメンバーをウェイトにしました");
+            }
+            millOneStep();
+          },
+          { sourceInst: inst, dialogTitle: "デッキトップを控え室へ" },
+        );
+        return;
       };
       millOneStep();
       return;
@@ -15738,11 +16587,6 @@ export function mountSimulator(
 
     if (cl.template === "toujou_opp_hand_reveal_no_live_draw") {
       var revN = Math.max(1, Math.floor(Number(cl.revealCount) || 3));
-      if (versusOnlineActive()) {
-        showToast("相手手札の操作は相手側で行ってください");
-        finishResolved();
-        return;
-      }
       var oppHandRev = listOpponentHandForDecision();
       if (!oppHandRev.length) {
         showToast("相手の手札がありません");
@@ -16147,20 +16991,46 @@ export function mountSimulator(
         );
       };
       if (cl.requiresConditionConfirm) {
-        if (
-          !window.confirm(
-            "直前のターンに相手がライブをし、それが成功していない場合のみ使えます。\n条件を満たしていますか？",
-          )
-        ) {
-          finishResolved();
-          return;
-        }
+        openAbilityConfirmDialog(
+          "直前のターンに相手がライブをし、それが成功していない場合のみ使えます。\n条件を満たしていますか？",
+          function (okCond) {
+            if (!okCond) {
+              finishResolved();
+              return;
+            }
+            if (cl.optional) {
+              openAbilityConfirmDialog(
+                "相手に「エマパンチ打つ？」と聞いてもよいです。聞きますか？",
+                function (okAsk) {
+                  if (!okAsk) {
+                    finishResolved();
+                    return;
+                  }
+                  runEmmaPunchAnswer();
+                },
+                { sourceInst: inst, dialogTitle: "エマパンチ" },
+              );
+              return;
+            }
+            runEmmaPunchAnswer();
+          },
+          { sourceInst: inst, dialogTitle: "条件確認" },
+        );
+        return;
       }
       if (cl.optional) {
-        if (!window.confirm("相手に「エマパンチ打つ？」と聞いてもよいです。聞きますか？")) {
-          finishResolved();
-          return;
-        }
+        openAbilityConfirmDialog(
+          "相手に「エマパンチ打つ？」と聞いてもよいです。聞きますか？",
+          function (okAsk2) {
+            if (!okAsk2) {
+              finishResolved();
+              return;
+            }
+            runEmmaPunchAnswer();
+          },
+          { sourceInst: inst, dialogTitle: "エマパンチ" },
+        );
+        return;
       }
       runEmmaPunchAnswer();
       return;
@@ -16501,35 +17371,102 @@ export function mountSimulator(
 
     if (cl.template === "optional_self_wait_opp_stage") {
       var oppMax = cl.oppWaitMaxCost != null ? Number(cl.oppWaitMaxCost) : 4;
+      var maxBladeOw = cl.oppWaitMaxPrintedBlade != null ? Number(cl.oppWaitMaxPrintedBlade) : null;
       var oppCnt = cl.oppWaitCount != null ? Math.max(1, Number(cl.oppWaitCount)) : 1;
-      if (versusOnlineActive()) {
-        showToast("相手のステージのメンバーは、相手盤面でウェイトにしてください");
-        finishGuided();
-        return;
-      }
+      var matchOppWaitMember = function (m) {
+        if (!m || m.type !== T_MEMBER || m.lcWait === true) return false;
+        if (memberFlooredPrintedCost(m) > oppMax) return false;
+        if (maxBladeOw != null && memberPrintedBladeCount(m) > maxBladeOw) return false;
+        return true;
+      };
+      var oppWaitLeadOw =
+        maxBladeOw != null
+          ? "相手のステージにいる元々ブレード" + maxBladeOw + "以下のメンバー1人をウェイトにします。"
+          : "相手のステージにいるコスト" + oppMax + "以下のメンバー1人をウェイトにします。";
       if (oppCnt > 1) {
-        openSoloOpponentMemberWaitPickMultiDialog(
-          oppMax,
-          oppCnt,
-          "相手のステージにいるコスト" + oppMax + "以下のメンバーを最大" + oppCnt + "人までウェイトにします。",
-          function (ok) {
-            if (ok) {
-              try {
-                syncJoujiPassiveEffectsAll();
-              } catch (_) {}
-            }
-            finishResolved();
+        whenOpponentPlayMode({
+          dual: function () {
+            openSoloOpponentMemberWaitPickMultiDialog(
+              oppMax,
+              oppCnt,
+              maxBladeOw != null
+                ? "相手のステージにいる元々ブレード" + maxBladeOw + "以下のメンバーを最大" + oppCnt + "人までウェイトにします。"
+                : "相手のステージにいるコスト" + oppMax + "以下のメンバーを最大" + oppCnt + "人までウェイトにします。",
+              function (ok) {
+                if (ok) {
+                  try {
+                    syncJoujiPassiveEffectsAll();
+                  } catch (_) {}
+                }
+                finishResolved();
+              },
+            );
           },
-        );
+          online: function () {
+            var poolMulti = listOnlineOpponentStageMembers(matchOppWaitMember);
+            if (!poolMulti.length) {
+              showToast("相手のステージに対象メンバーがいません");
+              finishResolved();
+              return;
+            }
+            var names = poolMulti
+              .slice(0, oppCnt)
+              .map(function (m) {
+                return mergedCatalogCard(m).name || "メンバー";
+              })
+              .join("、");
+            finishOnlineOpponentDelegatedEffect(
+              inst,
+              kind,
+              "相手はステージの次のメンバー（最大" + oppCnt + "人）をウェイトにしてください: " + names,
+              finishResolved,
+            );
+          },
+          solo: function () {
+            openSoloOpponentMemberWaitPickMultiDialog(
+              oppMax,
+              oppCnt,
+              maxBladeOw != null
+                ? "相手のステージにいる元々ブレード" + maxBladeOw + "以下のメンバーを最大" + oppCnt + "人までウェイトにします。"
+                : "相手のステージにいるコスト" + oppMax + "以下のメンバーを最大" + oppCnt + "人までウェイトにします。",
+              function (ok) {
+                if (ok) {
+                  try {
+                    syncJoujiPassiveEffectsAll();
+                  } catch (_) {}
+                }
+                finishResolved();
+              },
+            );
+          },
+        });
         return;
       }
-      openSoloOpponentMemberWaitPickDialog(
-        oppMax,
-        "相手のステージにいるコスト" + oppMax + "以下のメンバー1人をウェイトにします。",
-        function () {
-          finishResolved();
+      whenOpponentPlayMode({
+        dual: function () {
+          /** @type {*[]} */
+          var oppWaitPoolOw = [];
+          mutateInactiveOpponentBoard(function () {
+            eachStageColumnMemberInsts().forEach(function (m) {
+              if (matchOppWaitMember(m)) oppWaitPoolOw.push(m);
+            });
+          });
+          openOppWaitPickFromPool(oppWaitPoolOw, oppWaitLeadOw, function () {
+            finishResolved();
+          });
         },
-      );
+        online: function () {
+          runOptionalSelfWaitOppStageOnline(inst, cl, kind, finishResolved, matchOppWaitMember, oppWaitLeadOw);
+        },
+        solo: function () {
+          var oppWaitPoolOwSolo = soloOpponentStageMemberCandidates(oppMax).filter(function (m) {
+            return matchOppWaitMember(m) && !!stageColumnKeyHostingMember(m.id);
+          });
+          openOppWaitPickFromPool(oppWaitPoolOwSolo, oppWaitLeadOw, function () {
+            finishResolved();
+          });
+        },
+      });
       return;
     }
 
@@ -16736,14 +17673,18 @@ export function mountSimulator(
         finishResolved();
       };
       if (cl.optional) {
-        if (
-          !window.confirm(
-            "エネルギーデッキからエネルギーをウェイトで置きますか？（そうすると相手がカードを引きます）",
-          )
-        ) {
-          finishResolved();
-          return;
-        }
+        openAbilityConfirmDialog(
+          "エネルギーデッキからエネルギーをウェイトで置きますか？（そうすると相手がカードを引きます）",
+          function (okHot) {
+            if (!okHot) {
+              finishResolved();
+              return;
+            }
+            runHotPassion();
+          },
+          { sourceInst: inst, dialogTitle: "HOT PASSION!!" },
+        );
+        return;
       }
       runHotPassion();
       return;
@@ -17064,9 +18005,7 @@ export function mountSimulator(
     }
 
     if (cl.template === "yell_resolution_pick_hand") {
-      var resPool = (state.resolutionArea || []).filter(function (c) {
-        return c && catalogCardMatchesPickFilters(mergedCatalogCard(c), cl.filters || {});
-      });
+      var resPool = yellResolutionRevealPool(cl.filters || {});
       if (!resPool.length) {
         showToast("エール公開に選べるカードがありません");
         finishResolved();
@@ -17081,11 +18020,8 @@ export function mountSimulator(
             finishResolved();
             return;
           }
-          var ri = state.resolutionArea.findIndex(function (c) {
-            return c && String(c.id) === String(pid);
-          });
-          if (ri >= 0) {
-            var rc = state.resolutionArea.splice(ri, 1)[0];
+          var rc = removeCardFromResolutionOrWaiting(pid);
+          if (rc) {
             state.hand.push(rc);
             presentAbilityDrawsToHand([rc], inst);
           }
@@ -17132,9 +18068,7 @@ export function mountSimulator(
     }
 
     if (cl.template === "yell_resolution_pick_deck_bottom") {
-      var resDeckBottom = (state.resolutionArea || []).filter(function (c) {
-        return c && catalogCardMatchesPickFilters(mergedCatalogCard(c), cl.filters || {});
-      });
+      var resDeckBottom = yellResolutionRevealPool(cl.filters || {});
       if (!resDeckBottom.length) {
         showToast("エール公開に対象のライブカードがありません");
         finishResolved();
@@ -17152,8 +18086,8 @@ export function mountSimulator(
           var riDb = state.resolutionArea.findIndex(function (c) {
             return c && String(c.id) === String(pid);
           });
-          if (riDb >= 0) {
-            var rcDb = state.resolutionArea.splice(riDb, 1)[0];
+          var rcDb = riDb >= 0 ? state.resolutionArea.splice(riDb, 1)[0] : removeCardFromResolutionOrWaiting(pid);
+          if (rcDb) {
             state.deck.push(rcDb);
             showToast("選んだカードをデッキの一番下に置きました");
           }
@@ -17165,7 +18099,7 @@ export function mountSimulator(
     }
 
     if (cl.template === "yell_resolution_pick_deck_top") {
-      var resDeck = state.resolutionArea || [];
+      var resDeck = yellResolutionRevealPool(cl.filters || {});
       if (!resDeck.length) {
         showToast("エール公開にカードがありません");
         finishResolved();
@@ -17180,11 +18114,8 @@ export function mountSimulator(
             finishResolved();
             return;
           }
-          var riD = state.resolutionArea.findIndex(function (c) {
-            return c && String(c.id) === String(pid);
-          });
-          if (riD >= 0) {
-            var rcD = state.resolutionArea.splice(riD, 1)[0];
+          var rcD = removeCardFromResolutionOrWaiting(pid);
+          if (rcD) {
             state.deck.unshift(rcD);
             showToast("選んだカードをデッキの一番上に置きました");
           }
@@ -17696,81 +18627,90 @@ export function mountSimulator(
         finishResolved();
         return;
       }
-      if (versusOnlineActive()) {
-        showToast("相手盤面の操作は相手側で行ってください");
-        finishGuided();
-        return;
-      }
       pushHistoryBefore("opt-pick-wait-opp-blade-gap");
       var bladeGapMatch = function (m) {
-        if (!m || m.type !== T_MEMBER || m.lcWait === true) return false;
-        return memberPrintedBladeCount(m) <= maxOppBlade;
+        if (!m || m.lcWait === true) return false;
+        if (m.type && m.type !== T_MEMBER && m.type !== "メンバー") return false;
+        return opponentMemberPrintedBladeForPick(m) <= maxOppBlade;
       };
-      if (isDualOpponentBoardMode()) {
-        var oppGapPool = [];
-        mutateInactiveOpponentBoard(function () {
-          eachStageColumnMemberInsts().forEach(function (m) {
-            if (bladeGapMatch(m)) oppGapPool.push(m);
-          });
-        });
-        if (!oppGapPool.length) {
-          showToast("条件を満たす相手メンバーがいません");
-          finishResolved();
-          return;
-        }
-        openPickFromWaitingDialog(
-          oppGapPool,
-          "元々ブレードが " + selfBlade + " より " + gapMin + " 以上少ない相手メンバー1人をウェイトにします。",
-          function (pid) {
-            if (!pid) {
-              finishResolved();
-              return;
-            }
-            mutateInactiveOpponentBoard(function () {
-              var oppM = findCardInstById(pid);
-              if (oppM) waitMemberInst(oppM);
-              try {
-                syncJoujiPassiveEffectsAll();
-              } catch (_) {}
+      whenOpponentPlayMode({
+        dual: function () {
+          var oppGapPool = [];
+          mutateInactiveOpponentBoard(function () {
+            eachStageColumnMemberInsts().forEach(function (m) {
+              if (bladeGapMatch(m)) oppGapPool.push(m);
             });
-            finishResolved();
-          },
-          { okLabel: "ウェイトにする", dialogTitle: "相手メンバーをウェイト" },
-        );
-        return;
-      }
-      var soloGapPool = soloOpponentStageMemberCandidates(99).filter(function (m) {
-        return bladeGapMatch(m) && !!stageColumnKeyHostingMember(m.id);
-      });
-      if (!soloGapPool.length) {
-        showToast("条件を満たす相手想定メンバーがいません");
-        finishResolved();
-        return;
-      }
-      openPickFromWaitingDialog(
-        soloGapPool,
-        "元々ブレードが " + selfBlade + " より " + gapMin + " 以上少ない相手メンバー1人をウェイトにします。",
-        function (pid) {
-          if (!pid) {
+          });
+          if (!oppGapPool.length) {
+            showToast("条件を満たす相手メンバーがいません");
             finishResolved();
             return;
           }
-          var tGap = findCardInstById(pid);
-          if (tGap) {
-            waitMemberInst(tGap);
-            tGap._soloOpponentProxy = true;
-            try {
-              syncJoujiPassiveEffectsAll();
-            } catch (_) {}
+          openPickFromWaitingDialog(
+            oppGapPool,
+            "元々ブレードが " + selfBlade + " より " + gapMin + " 以上少ない相手メンバー1人をウェイトにします。",
+            function (pid) {
+              if (!pid) {
+                finishResolved();
+                return;
+              }
+              mutateInactiveOpponentBoard(function () {
+                var oppM = findCardInstById(pid);
+                if (oppM) waitMemberInst(oppM);
+                try {
+                  syncJoujiPassiveEffectsAll();
+                } catch (_) {}
+              });
+              finishResolved();
+            },
+            { okLabel: "ウェイトにする", dialogTitle: "相手メンバーをウェイト" },
+          );
+        },
+        online: function () {
+          var poolGap = listOnlineOpponentStageMembers(bladeGapMatch);
+          runOnlineOpponentMemberWaitPick(
+            poolGap,
+            "元々ブレードが " + selfBlade + " より " + gapMin + " 以上少ない相手メンバー1人をウェイトにします。",
+            inst,
+            kind,
+            finishResolved,
+          );
+        },
+        solo: function () {
+          var soloGapPool = soloOpponentStageMemberCandidates(99).filter(function (m) {
+            return bladeGapMatch(m) && !!stageColumnKeyHostingMember(m.id);
+          });
+          if (!soloGapPool.length) {
+            showToast("条件を満たす相手想定メンバーがいません");
+            finishResolved();
+            return;
           }
-          finishResolved();
+          openPickFromWaitingDialog(
+            soloGapPool,
+            "元々ブレードが " + selfBlade + " より " + gapMin + " 以上少ない相手メンバー1人をウェイトにします。",
+            function (pid) {
+              if (!pid) {
+                finishResolved();
+                return;
+              }
+              var tGap = findCardInstById(pid);
+              if (tGap) {
+                waitMemberInst(tGap);
+                tGap._soloOpponentProxy = true;
+                try {
+                  syncJoujiPassiveEffectsAll();
+                } catch (_) {}
+              }
+              finishResolved();
+            },
+            {
+              okLabel: "ウェイトにする",
+              dialogTitle: "相手メンバーをウェイト",
+              zoneLabelFn: soloOpponentMemberZoneLabel,
+            },
+          );
         },
-        {
-          okLabel: "ウェイトにする",
-          dialogTitle: "相手メンバーをウェイト",
-          zoneLabelFn: soloOpponentMemberZoneLabel,
-        },
-      );
+      });
       return;
     }
 
@@ -17938,40 +18878,43 @@ export function mountSimulator(
         finishResolved();
         return;
       }
-      if (versusOnlineActive()) {
-        showToast("相手盤面の操作は相手側で行ってください");
-        finishResolved();
-        return;
-      }
       pushHistoryBefore("ls-side-equal-opp-wait");
       var matchOppBladeMember = function (m) {
-        if (!m || m.type !== T_MEMBER || m.lcWait === true) return false;
-        return memberPrintedBladeCount(m) <= 3;
+        if (!m || m.lcWait === true) return false;
+        if (m.type && m.type !== T_MEMBER && m.type !== "メンバー") return false;
+        return opponentMemberPrintedBladeForPick(m) <= 3;
       };
-      if (isDualOpponentBoardMode()) {
-        var waitedSideN = 0;
-        mutateInactiveOpponentBoard(function () {
-          eachStageColumnMemberInsts().forEach(function (m) {
-            if (matchOppBladeMember(m)) {
-              waitMemberInst(m);
-              waitedSideN++;
-            }
+      whenOpponentPlayMode({
+        dual: function () {
+          var waitedSideN = 0;
+          mutateInactiveOpponentBoard(function () {
+            eachStageColumnMemberInsts().forEach(function (m) {
+              if (matchOppBladeMember(m)) {
+                waitMemberInst(m);
+                waitedSideN++;
+              }
+            });
+            try {
+              syncJoujiPassiveEffectsAll();
+            } catch (_) {}
           });
-          try {
-            syncJoujiPassiveEffectsAll();
-          } catch (_) {}
-        });
-        showToast("相手ステージのメンバー " + waitedSideN + " 人をウェイトにしました");
-      } else {
-        var soloOppAll = soloOpponentStageMemberCandidates(99).filter(function (m) {
-          return matchOppBladeMember(m) && !!stageColumnKeyHostingMember(m.id);
-        });
-        soloOppAll.forEach(function (m) {
-          waitMemberInst(m);
-        });
-        showToast("相手想定メンバー " + soloOppAll.length + " 人をウェイトにしました");
-      }
-      finishResolved();
+          showToast("相手ステージのメンバー " + waitedSideN + " 人をウェイトにしました");
+          finishResolved();
+        },
+        online: function () {
+          runLiveStartSideCostEqualOppWaitOnline(inst, kind, finishResolved, matchOppBladeMember);
+        },
+        solo: function () {
+          var soloOppAll = soloOpponentStageMemberCandidates(99).filter(function (m) {
+            return matchOppBladeMember(m) && !!stageColumnKeyHostingMember(m.id);
+          });
+          soloOppAll.forEach(function (m) {
+            waitMemberInst(m);
+          });
+          showToast("相手想定メンバー " + soloOppAll.length + " 人をウェイトにしました");
+          finishResolved();
+        },
+      });
       return;
     }
 
@@ -18060,11 +19003,6 @@ export function mountSimulator(
           finishResolved();
           return;
         }
-        if (target === "opponent" && versusOnlineActive()) {
-          showToast("相手の控え室操作は相手盤面で行ってください");
-          finishGuided();
-          return;
-        }
         var maxPick = cl.deckBottomPickMax != null ? Math.max(1, Math.floor(Number(cl.deckBottomPickMax))) : 1;
         function runPickWaitBottom() {
           var wCand = waitingPickCandidates(cl.filters || { pickType: T_MEMBER }, null);
@@ -18120,7 +19058,32 @@ export function mountSimulator(
           stepPick(0);
         }
         if (target === "opponent") {
-          runOnTargetPlayerBoard("opponent", runPickWaitBottom);
+          whenOpponentPlayMode({
+            dual: function () {
+              runOnTargetPlayerBoard("opponent", runPickWaitBottom);
+            },
+            online: function () {
+              var oppWait = onlineOpponentWaitingMembers(cl.filters || { pickType: T_MEMBER });
+              var names = oppWait
+                .slice(0, maxPick)
+                .map(function (c) {
+                  return mergedCatalogCard(c).name || "カード";
+                })
+                .join("、");
+              finishOnlineOpponentDelegatedEffect(
+                inst,
+                kind,
+                "相手は控え室からメンバーを最大 " +
+                  maxPick +
+                  " 枚、好きな順番で山札の一番下に置いてください。" +
+                  (names ? "（候補: " + names + "）" : ""),
+                finishResolved,
+              );
+            },
+            solo: function () {
+              runOnTargetPlayerBoard("opponent", runPickWaitBottom);
+            },
+          });
           return;
         }
         runPickWaitBottom();
@@ -18140,9 +19103,23 @@ export function mountSimulator(
           finishResolved();
           return;
         }
-        if (target === "opponent" && versusOnlineActive()) {
-          showToast("相手の山札操作は相手盤面で行ってください");
-          finishGuided();
+        if (target === "opponent") {
+          whenOpponentPlayMode({
+            dual: function () {
+              runOnTargetPlayerBoard("opponent", runPeek);
+            },
+            online: function () {
+              finishOnlineOpponentDelegatedEffect(
+                inst,
+                kind,
+                "相手は山札の一番上を見て、任意でそのカードを控え室に置いてください。",
+                finishResolved,
+              );
+            },
+            solo: function () {
+              runOnTargetPlayerBoard("opponent", runPeek);
+            },
+          });
           return;
         }
         function runPeek() {
@@ -18155,16 +19132,19 @@ export function mountSimulator(
           openDeckTopCardsRevealDialog(
             [top],
             function () {
-              var toWait = window.confirm(
-                (mergedCatalogCard(top).name || "カード") + " を控え室に置きますか？（キャンセルでそのまま）",
+              openAbilityConfirmDialog(
+                (mergedCatalogCard(top).name || "カード") + " を控え室に置きますか？（いいえでそのまま）",
+                function (toWait) {
+                  if (toWait) {
+                    state.waitingRoom.push(state.deck.shift());
+                    showToast("山札の一番上を控え室に置きました");
+                  } else {
+                    showToast("山札の一番上を確認しました");
+                  }
+                  finishResolved();
+                },
+                { sourceInst: inst, dialogTitle: "山札の一番上" },
               );
-              if (toWait) {
-                state.waitingRoom.push(state.deck.shift());
-                showToast("山札の一番上を控え室に置きました");
-              } else {
-                showToast("山札の一番上を確認しました");
-              }
-              finishResolved();
             },
             {
               mode: "view",
@@ -18174,10 +19154,6 @@ export function mountSimulator(
               sourceInst: inst,
             },
           );
-        }
-        if (target === "opponent") {
-          runOnTargetPlayerBoard("opponent", runPeek);
-          return;
         }
         runPeek();
       });
@@ -18352,18 +19328,23 @@ export function mountSimulator(
         finishResolved();
         return;
       }
-      var payWild = window.confirm("元々持つハートをすべてワイルドカードにしますか？（キャンセルでスキップ）");
-      if (!payWild) {
-        finishResolved();
-        return;
-      }
-      pushHistoryBefore("live-start-hearts-wild");
-      inst._baseHeartsWildcardUntilLiveEnd = true;
-      try {
-        syncJoujiPassiveEffectsAll();
-      } catch (_) {}
-      showToast("ライブ終了時まで、元々持つハートはすべてワイルドカードになります");
-      finishResolved();
+      openAbilityConfirmDialog(
+        "元々持つハートをすべてワイルドカードにしますか？（いいえでスキップ）",
+        function (payWild) {
+          if (!payWild) {
+            finishResolved();
+            return;
+          }
+          pushHistoryBefore("live-start-hearts-wild");
+          inst._baseHeartsWildcardUntilLiveEnd = true;
+          try {
+            syncJoujiPassiveEffectsAll();
+          } catch (_) {}
+          showToast("ライブ終了時まで、元々持つハートはすべてワイルドカードになります");
+          finishResolved();
+        },
+        { sourceInst: inst, dialogTitle: "ハートをワイルド化" },
+      );
       return;
     }
 
@@ -18722,11 +19703,27 @@ export function mountSimulator(
     if (cl.template === "live_card_score_set_fixed") {
       var targetScore = Math.max(0, Math.floor(Number(cl.cardScoreSet) || 0));
       if (cl.requiresConditionConfirm) {
-        if (!window.confirm("条件を満たしていますか？\n満たしている場合のみ、このカードのスコアを " + targetScore + " にします")) {
-          showToast("条件未達のため、スコアは変わりません");
-          finishResolved();
-          return;
-        }
+        openAbilityConfirmDialog(
+          "条件を満たしていますか？\n満たしている場合のみ、このカードのスコアを " + targetScore + " にします",
+          function (okScore) {
+            if (!okScore) {
+              showToast("条件未達のため、スコアは変わりません");
+              finishResolved();
+              return;
+            }
+            var baseScore2 = Math.floor(Number(mc && mc.score) || 0) + liveInstScoreBonus(inst);
+            var deltaScore2 = targetScore - baseScore2;
+            pushHistoryBefore("live-card-score-set-fixed");
+            if (deltaScore2 !== 0) {
+              bumpLiveScoreEffectBonus(deltaScore2, "このカードのスコアを " + targetScore + " にしました");
+            } else {
+              showToast("すでにスコア " + targetScore + " です");
+            }
+            finishResolved();
+          },
+          { sourceInst: inst, dialogTitle: "スコア固定" },
+        );
+        return;
       }
       var baseScore = Math.floor(Number(mc && mc.score) || 0) + liveInstScoreBonus(inst);
       var deltaScore = targetScore - baseScore;
@@ -19030,21 +20027,21 @@ export function mountSimulator(
         return;
       }
       var slotSur = Math.max(1, Math.min(6, Math.floor(Number(cl.surplusHeartSlot) || 4)));
-      if (
-        !window.confirm(
-          "余剰ハートに heart" +
-            (slotSur === 1 ? "01" : "0" + slotSur) +
-            " を1つ以上持っていますか？",
-        )
-      ) {
-        showToast("条件未達のため発動しません");
-        finishResolved();
-        return;
-      }
-      pushHistoryBefore("ls-surplus-heart-energy-wait");
-      var ewN = addEnergyFromDeckToArea(Math.max(1, Math.floor(Number(cl.energyWaitCount) || 1)), true);
-      showToast("エネルギーデッキから " + ewN + " 枚をウェイトで置きました");
-      finishResolved();
+      openAbilityConfirmDialog(
+        "余剰ハートに heart" + (slotSur === 1 ? "01" : "0" + slotSur) + " を1つ以上持っていますか？",
+        function (okSur) {
+          if (!okSur) {
+            showToast("条件未達のため発動しません");
+            finishResolved();
+            return;
+          }
+          pushHistoryBefore("ls-surplus-heart-energy-wait");
+          var ewN = addEnergyFromDeckToArea(Math.max(1, Math.floor(Number(cl.energyWaitCount) || 1)), true);
+          showToast("エネルギーデッキから " + ewN + " 枚をウェイトで置きました");
+          finishResolved();
+        },
+        { sourceInst: inst, dialogTitle: "余剰ハート確認" },
+      );
       return;
     }
 
@@ -19591,10 +20588,18 @@ export function mountSimulator(
         );
       };
       if (cl.optional || cl.hasOptionalCost) {
-        if (!window.confirm("手札の『DOLLCHESTRA』を1枚控え室に置き、効果を使いますか？")) {
-          finishResolved();
-          return;
-        }
+        openAbilityConfirmDialog(
+          "手札の『DOLLCHESTRA』を1枚控え室に置き、効果を使いますか？",
+          function (okDoll) {
+            if (!okDoll) {
+              finishResolved();
+              return;
+            }
+            runDoll();
+          },
+          { sourceInst: inst, dialogTitle: "DOLLCHESTRA" },
+        );
+        return;
       }
       runDoll();
       return;
@@ -19626,10 +20631,18 @@ export function mountSimulator(
         });
       };
       if (cl.optional || cl.hasOptionalCost) {
-        if (!window.confirm("手札1枚を控え室に置き、コスト＋6後の条件を確認しますか？")) {
-          finishResolved();
-          return;
-        }
+        openAbilityConfirmDialog(
+          "手札1枚を控え室に置き、コスト＋6後の条件を確認しますか？",
+          function (okHasu) {
+            if (!okHasu) {
+              finishResolved();
+              return;
+            }
+            runHasu();
+          },
+          { sourceInst: inst, dialogTitle: "手札捨て＋コスト上昇" },
+        );
+        return;
       }
       runHasu();
       return;
@@ -19754,10 +20767,18 @@ export function mountSimulator(
         applyGrantJoujiSessionEffect(inst, cl, kind, finishResolved);
       };
       if (cl.optional) {
-        if (!window.confirm("控え室のメンバーをすべてシャッフルしてデッキ下に置きますか？")) {
-          finishResolved();
-          return;
-        }
+        openAbilityConfirmDialog(
+          "控え室のメンバーをすべてシャッフルしてデッキ下に置きますか？",
+          function (okFan) {
+            if (!okFan) {
+              finishResolved();
+              return;
+            }
+            runFan();
+          },
+          { sourceInst: inst, dialogTitle: "シャッフルしてデッキ下" },
+        );
+        return;
       }
       runFan();
       return;
@@ -19984,10 +21005,18 @@ export function mountSimulator(
         });
       };
       if (cl.optional) {
-        if (!window.confirm("手札を1枚控え室に置いて効果を得ますか？")) {
-          finishResolved();
-          return;
-        }
+        openAbilityConfirmDialog(
+          "手札を1枚控え室に置いて効果を得ますか？",
+          function (okHyaku) {
+            if (!okHyaku) {
+              finishResolved();
+              return;
+            }
+            runHyakuDiscard();
+          },
+          { sourceInst: inst, dialogTitle: "手札を捨てて効果" },
+        );
+        return;
       }
       runHyakuDiscard();
       return;
@@ -20049,8 +21078,31 @@ export function mountSimulator(
         );
       }
       pushHistoryBefore("ls-energy-under-return-grant");
-      if (cl.optional && !window.confirm("メンバーの下のエネルギーをデッキに戻して効果を得ますか？")) {
-        finishResolved();
+      if (cl.optional) {
+        openAbilityConfirmDialog(
+          "メンバーの下のエネルギーをデッキに戻して効果を得ますか？",
+          function (okAw) {
+            if (!okAw) {
+              finishResolved();
+              return;
+            }
+            openPickFromWaitingDialog(memWithEnergy, "エネルギーを戻すメンバーを選びます。", function (mid) {
+              if (!mid) {
+                finishResolved();
+                return;
+              }
+              var memPick = findCardInstById(mid);
+              if (!memPick) {
+                finishResolved();
+                return;
+              }
+              pickEnergyUnder(memPick, [], function (returnedCount) {
+                runAwakeningEnergyGrant(memPick, returnedCount);
+              });
+            });
+          },
+          { sourceInst: inst, dialogTitle: "エネルギーを戻す" },
+        );
         return;
       }
       openPickFromWaitingDialog(memWithEnergy, "エネルギーを戻すメンバーを選びます。", function (mid) {
@@ -21632,13 +22684,23 @@ export function mountSimulator(
             finishResolved();
             return;
           }
-          if (target === "opponent" && versusOnlineActive()) {
-            showToast("相手の山札操作は相手盤面で行ってください");
-            finishGuided();
-            return;
-          }
           if (target === "opponent") {
-            runOnTargetPlayerBoard("opponent", runDeckLookReorder);
+            whenOpponentPlayMode({
+              dual: function () {
+                runOnTargetPlayerBoard("opponent", runDeckLookReorder);
+              },
+              online: function () {
+                finishOnlineOpponentDelegatedEffect(
+                  inst,
+                  kind,
+                  "相手は山札の上 " + cnt + " 枚を見て、好きな順番で山札の上に戻すか控え室に置いてください。",
+                  finishResolved,
+                );
+              },
+              solo: function () {
+                runOnTargetPlayerBoard("opponent", runDeckLookReorder);
+              },
+            });
             return;
           }
           runDeckLookReorder();
@@ -22594,18 +23656,40 @@ export function mountSimulator(
         return;
       }
       var oppMaxW = cl.oppWaitMaxCost != null ? Number(cl.oppWaitMaxCost) : 4;
-      if (versusOnlineActive()) {
-        showToast("相手のステージのメンバーは、相手盤面でウェイトにしてください");
-        finishResolved();
-        return;
-      }
-      openSoloOpponentMemberWaitPickDialog(
-        oppMaxW,
-        "相手のステージにいるコスト" + oppMaxW + "以下のメンバー1人をウェイトにします。",
-        function () {
-          finishResolved();
+      whenOpponentPlayMode({
+        dual: function () {
+          openSoloOpponentMemberWaitPickDialog(
+            oppMaxW,
+            "相手のステージにいるコスト" + oppMaxW + "以下のメンバー1人をウェイトにします。",
+            function () {
+              finishResolved();
+            },
+          );
         },
-      );
+        online: function () {
+          var matchKidouOw = function (m) {
+            if (!m || m.lcWait === true) return false;
+            return opponentMemberFlooredCostForPick(m) <= oppMaxW;
+          };
+          runOptionalSelfWaitOppStageOnline(
+            inst,
+            cl,
+            kind,
+            finishResolved,
+            matchKidouOw,
+            "相手のステージにいるコスト" + oppMaxW + "以下のメンバー1人をウェイトにします。",
+          );
+        },
+        solo: function () {
+          openSoloOpponentMemberWaitPickDialog(
+            oppMaxW,
+            "相手のステージにいるコスト" + oppMaxW + "以下のメンバー1人をウェイトにします。",
+            function () {
+              finishResolved();
+            },
+          );
+        },
+      });
       return;
     }
 
@@ -23113,33 +24197,38 @@ export function mountSimulator(
       pushHistoryBefore("toujou-heart-dual-pick");
       var discardN = cl.handDiscardToWaiting != null ? Math.floor(Number(cl.handDiscardToWaiting)) : 2;
       if (discardN > 0 && state.hand.length >= discardN) {
-        var payDiscard = window.confirm(
-          "手札を " + discardN + " 枚控え室に置いて効果を得ますか？（キャンセルでコストなし）",
-        );
-        if (payDiscard) {
-          openPickHandOptionalMultiToWaiting(
-            "手札から控え室に置く " + discardN + " 枚を選びます。",
-            function () {
-              return true;
-            },
-            function (handIds) {
-              if (!handIds || handIds.length < discardN) {
-                showToast("手札を " + discardN + " 枚選ばなかったためスキップしました");
-                finishResolved();
-                return;
-              }
-              handIds.slice(0, discardN).forEach(function (hid) {
-                var hi = state.hand.findIndex(function (h) {
-                  return h && String(h.id) === String(hid);
-                });
-                if (hi >= 0) state.waitingRoom.push(state.hand.splice(hi, 1)[0]);
-              });
+        openAbilityConfirmDialog(
+          "手札を " + discardN + " 枚控え室に置いて効果を得ますか？（いいえでコストなし）",
+          function (payDiscard) {
+            if (!payDiscard) {
               runHeartDualPickFromWaiting();
-            },
-            { okLabel: "控え室に置く", dialogTitle: "手札 — 捨て札" },
-          );
-          return;
-        }
+              return;
+            }
+            openPickHandOptionalMultiToWaiting(
+              "手札から控え室に置く " + discardN + " 枚を選びます。",
+              function () {
+                return true;
+              },
+              function (handIds) {
+                if (!handIds || handIds.length < discardN) {
+                  showToast("手札を " + discardN + " 枚選ばなかったためスキップしました");
+                  finishResolved();
+                  return;
+                }
+                handIds.slice(0, discardN).forEach(function (hid) {
+                  var hi = state.hand.findIndex(function (h) {
+                    return h && String(h.id) === String(hid);
+                  });
+                  if (hi >= 0) state.waitingRoom.push(state.hand.splice(hi, 1)[0]);
+                });
+                runHeartDualPickFromWaiting();
+              },
+              { okLabel: "捨てる", dialogTitle: "手札を控え室へ" },
+            );
+          },
+          { sourceInst: inst, dialogTitle: "手札を捨てて効果" },
+        );
+        return;
       }
       runHeartDualPickFromWaiting();
       return;
@@ -23264,23 +24353,24 @@ export function mountSimulator(
         runOppActiveWait();
         return;
       }
-      var doBibiWait = window.confirm("『BiBi』のメンバー1人をウェイトにしますか？（キャンセルでスキップ）");
-      if (!doBibiWait) {
-        runOppActiveWait();
-        return;
-      }
-      openPickFromWaitingDialog(
-        bibiPool,
-        "ウェイトにする『BiBi』メンバー1人を選びます。",
-        function (bibiId) {
-          if (bibiId) {
-            var bibiMem = findCardInstById(bibiId);
-            if (bibiMem) waitMemberInst(bibiMem);
-          }
+      openAbilityConfirmDialog("『BiBi』のメンバー1人をウェイトにしますか？（いいえでスキップ）", function (doBibiWait) {
+        if (!doBibiWait) {
           runOppActiveWait();
-        },
-        { okLabel: "ウェイトにする", dialogTitle: "BiBi — メンバー1人" },
-      );
+          return;
+        }
+        openPickFromWaitingDialog(
+          bibiPool,
+          "ウェイトにする『BiBi』メンバー1人を選びます。",
+          function (bibiId) {
+            if (bibiId) {
+              var bibiMem = findCardInstById(bibiId);
+              if (bibiMem) waitMemberInst(bibiMem);
+            }
+            runOppActiveWait();
+          },
+          { okLabel: "ウェイトにする", dialogTitle: "BiBi — メンバー1人" },
+        );
+      }, { sourceInst: inst, dialogTitle: "BiBi — 任意ウェイト" });
       return;
     }
 
@@ -23317,49 +24407,108 @@ export function mountSimulator(
         } catch (_) {}
         showToast("ライブ終了時まで合計スコア＋1 を得ました");
       }
-      if (versusOnlineActive()) {
-        showToast("相手手札の操作は相手側で行ってください");
-        finishResolved();
-        return;
-      }
-      openOpponentPlayerChoiceDialog(
-        "手札ライブを控え室へ",
-        " 手札からライブカード1枚を控え室に置きますか？（いいえ → 相手は合計スコア＋1）",
-        function (oppPays) {
-          if (oppPays !== true) {
-            grantOppDeclineScoreBonus();
-            finishResolved();
-            return;
-          }
-          var oppLiveHand = listOpponentHandForDecision().filter(function (h) {
-            return h && (h.type === T_LIVE || mergedCatalogCard(h).type === T_LIVE);
-          });
-          if (!oppLiveHand.length) {
-            showToast("相手の手札にライブカードがないため、スコア＋1を得ます");
-            grantOppDeclineScoreBonus();
-            finishResolved();
-            return;
-          }
-          openPickFromWaitingDialog(
-            oppLiveHand,
-            opponentDecisionLeadPrefix() + " 手札のライブ1枚を控え室に置きます。",
-            function (liveHandId) {
-              if (liveHandId) {
-                moveOpponentHandCardToWaiting(liveHandId);
-                showToast("相手のライブ1枚を控え室に置きました");
+      whenOpponentPlayMode({
+        dual: function () {
+          openOpponentPlayerChoiceDialog(
+            "手札ライブを控え室へ",
+            " 手札からライブカード1枚を控え室に置きますか？（いいえ → 相手は合計スコア＋1）",
+            function (oppPays) {
+              if (oppPays !== true) {
+                grantOppDeclineScoreBonus();
+                finishResolved();
+                return;
               }
-              finishResolved();
+              var oppLiveHand = listOpponentHandForDecision().filter(function (h) {
+                return h && (h.type === T_LIVE || mergedCatalogCard(h).type === T_LIVE);
+              });
+              if (!oppLiveHand.length) {
+                showToast("相手の手札にライブカードがないため、スコア＋1を得ます");
+                grantOppDeclineScoreBonus();
+                finishResolved();
+                return;
+              }
+              openPickFromWaitingDialog(
+                oppLiveHand,
+                opponentDecisionLeadPrefix() + " 手札のライブ1枚を控え室に置きます。",
+                function (liveHandId) {
+                  if (liveHandId) {
+                    moveOpponentHandCardToWaiting(liveHandId);
+                    showToast("相手のライブ1枚を控え室に置きました");
+                  }
+                  finishResolved();
+                },
+                {
+                  okLabel: "控え室に置く",
+                  dialogTitle: opponentDecisionDialogTitle("手札ライブ"),
+                  zoneLabelFn: opponentHandZoneLabelForPick,
+                  sourceInst: inst,
+                },
+              );
             },
-            {
-              okLabel: "控え室に置く",
-              dialogTitle: opponentDecisionDialogTitle("手札ライブ"),
-              zoneLabelFn: opponentHandZoneLabelForPick,
-              sourceInst: inst,
-            },
+            inst,
           );
         },
-        inst,
-      );
+        online: function () {
+          openOpponentPlayerChoiceDialog(
+            "手札ライブを控え室へ",
+            " 相手に手札のライブ1枚を控え室に置くか尋ねますか？（いいえ → 相手は合計スコア＋1）",
+            function (oppPays) {
+              if (oppPays !== true) {
+                grantOppDeclineScoreBonus();
+                finishResolved();
+                return;
+              }
+              finishOnlineOpponentDelegatedEffect(
+                inst,
+                kind,
+                "相手は手札からライブカード1枚を控え室に置くか、合計スコア＋1を得てください。",
+                finishResolved,
+              );
+            },
+            inst,
+          );
+        },
+        solo: function () {
+          openOpponentPlayerChoiceDialog(
+            "手札ライブを控え室へ",
+            " 手札からライブカード1枚を控え室に置きますか？（いいえ → 相手は合計スコア＋1）",
+            function (oppPays) {
+              if (oppPays !== true) {
+                grantOppDeclineScoreBonus();
+                finishResolved();
+                return;
+              }
+              var oppLiveHandSolo = listOpponentHandForDecision().filter(function (h) {
+                return h && (h.type === T_LIVE || mergedCatalogCard(h).type === T_LIVE);
+              });
+              if (!oppLiveHandSolo.length) {
+                showToast("相手の手札にライブカードがないため、スコア＋1を得ます");
+                grantOppDeclineScoreBonus();
+                finishResolved();
+                return;
+              }
+              openPickFromWaitingDialog(
+                oppLiveHandSolo,
+                opponentDecisionLeadPrefix() + " 手札のライブ1枚を控え室に置きます。",
+                function (liveHandId) {
+                  if (liveHandId) {
+                    moveOpponentHandCardToWaiting(liveHandId);
+                    showToast("相手のライブ1枚を控え室に置きました");
+                  }
+                  finishResolved();
+                },
+                {
+                  okLabel: "控え室に置く",
+                  dialogTitle: opponentDecisionDialogTitle("手札ライブ"),
+                  zoneLabelFn: opponentHandZoneLabelForPick,
+                  sourceInst: inst,
+                },
+              );
+            },
+            inst,
+          );
+        },
+      });
       return;
     }
 
@@ -23413,20 +24562,6 @@ export function mountSimulator(
       try {
         syncJoujiPassiveEffectsAll();
       } catch (_) {}
-      if (isDualOpponentBoardMode()) {
-        var bumpMirror = Math.max(0, Math.floor(Number(state.joujiOpponentLiveNeedHeartBump) || 0));
-        if (bumpMirror > 0) {
-          mutateInactiveOpponentBoard(
-            function () {
-              state.joujiOpponentLiveNeedHeartBump = Math.max(
-                Math.floor(Number(state.joujiOpponentLiveNeedHeartBump) || 0),
-                bumpMirror,
-              );
-            },
-            { skipRender: true },
-          );
-        }
-      }
       showToast("相手ライブの必要ハート＋" + plusTj + " を付与しました（ライブ終了まで）");
       finishResolved();
       return;
@@ -25538,6 +26673,8 @@ export function mountSimulator(
         warnAfterStageBatonSameTurnPolicy(dragUndoSnap);
         try {
           maybeFireJidouAfterWaitingRoomChanges(dragUndoSnap);
+          maybeFireJidouAfterWaitingToHand(dragUndoSnap);
+          maybeFireJidouAfterLiveAreaChanges(dragUndoSnap);
         } catch (jErr) {
           console.warn(jErr);
         }
@@ -27626,6 +28763,7 @@ export function mountSimulator(
     state.liveTurnHandSpreadPick = false;
     state.playLiveYellStarted = false;
     state.extraYellRevealAllowance = 0;
+    state.liveTurnYellRevealedCardIds = [];
     state.playLiveStartGlowActive = false;
     state.liveBladeManualAdjust = 0;
     clearLiveSuccessEffectSchedule();
@@ -29872,6 +31010,7 @@ export function mountSimulator(
     state.playLiveStartGlowActive = false;
     state.playLiveYellStarted = false;
     state.extraYellRevealAllowance = 0;
+    state.liveTurnYellRevealedCardIds = [];
     state.liveScoreEffectBonus = 0;
     state.ealeNoteLiveHitIds = [];
     state.ealeNoteLiveScorePoints = 0;
@@ -30421,6 +31560,7 @@ export function mountSimulator(
     state.playLiveStartGlowActive = false;
     state.playLiveYellStarted = false;
     state.extraYellRevealAllowance = 0;
+    state.liveTurnYellRevealedCardIds = [];
     state.liveScoreEffectBonus = 0;
     state.ealeNoteLiveHitIds = [];
     state.ealeNoteLiveScorePoints = 0;
@@ -30591,6 +31731,7 @@ export function mountSimulator(
     state.liveStatsAfterBegin = true;
     state.playLiveYellStarted = false;
     state.extraYellRevealAllowance = 0;
+    state.liveTurnYellRevealedCardIds = [];
     state.__liveYellWarnAck = false;
     activateLiveStartEffectsAfterBegin();
     logReplay("live-turn-begin", { nonLiveMoved: movedNonLive });

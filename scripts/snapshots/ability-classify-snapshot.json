@@ -1,5 +1,5 @@
 {
-  "generated": "2026-06-23T05:56:34.281Z",
+  "generated": "2026-06-23T08:57:41.235Z",
   "sample_size": 50,
   "cards": [
     {
@@ -540,7 +540,7 @@
       "entries": [
         {
           "trigger": "kidou",
-          "template": "grant_jouji_session",
+          "template": "kidou_discard_self_draw_grant",
           "filters": {
             "pickType": null,
             "maxCost": null,
@@ -603,6 +603,41 @@
             "minNeedHeartSlot": null,
             "minNeedHeartValue": null,
             "minTotalNeedHeart": null
+          }
+        }
+      ]
+    },
+    {
+      "card_no": "PL!N-bp5-012-R＋",
+      "name": "鐘 嵐珠",
+      "entries": [
+        {
+          "trigger": "kidou",
+          "template": "grant_jouji_session",
+          "filters": {
+            "pickType": null,
+            "maxCost": null,
+            "minCost": null,
+            "seriesTag": null,
+            "minSuccessLiveCount": null,
+            "minNeedHeartSlot": null,
+            "minNeedHeartValue": null,
+            "minTotalNeedHeart": null
+          }
+        },
+        {
+          "trigger": "live_success",
+          "template": "live_score_higher_energy_wait",
+          "filters": {
+            "pickType": null,
+            "maxCost": null,
+            "minCost": null,
+            "seriesTag": null,
+            "minSuccessLiveCount": null,
+            "minNeedHeartSlot": null,
+            "minNeedHeartValue": null,
+            "minTotalNeedHeart": null,
+            "requiresLiveScoreHigherThanOpponent": true
           }
         }
       ]
@@ -685,6 +720,26 @@
           "filters": {
             "pickType": "メンバー",
             "maxCost": 2,
+            "minCost": null,
+            "seriesTag": null,
+            "minSuccessLiveCount": null,
+            "minNeedHeartSlot": null,
+            "minNeedHeartValue": null,
+            "minTotalNeedHeart": null
+          }
+        }
+      ]
+    },
+    {
+      "card_no": "PL!-bp5-111-R",
+      "name": "綺羅ツバサ",
+      "entries": [
+        {
+          "trigger": "kidou",
+          "template": "kidou_hand_discard_activate_wait_opp_bonus",
+          "filters": {
+            "pickType": "ライブ",
+            "maxCost": null,
             "minCost": null,
             "seriesTag": null,
             "minSuccessLiveCount": null,
@@ -1090,46 +1145,6 @@
             "maxCost": 9,
             "minCost": null,
             "seriesTag": "虹ヶ咲",
-            "minSuccessLiveCount": null,
-            "minNeedHeartSlot": null,
-            "minNeedHeartValue": null,
-            "minTotalNeedHeart": null
-          }
-        }
-      ]
-    },
-    {
-      "card_no": "PL!N-PR-028-PR",
-      "name": "宮下 愛",
-      "entries": [
-        {
-          "trigger": "toujyou",
-          "template": "draw_until_hand_size",
-          "filters": {
-            "pickType": null,
-            "maxCost": null,
-            "minCost": null,
-            "seriesTag": null,
-            "minSuccessLiveCount": null,
-            "minNeedHeartSlot": null,
-            "minNeedHeartValue": null,
-            "minTotalNeedHeart": null
-          }
-        }
-      ]
-    },
-    {
-      "card_no": "PL!SP-PR-004-PR",
-      "name": "唐 可可",
-      "entries": [
-        {
-          "trigger": "toujyou",
-          "template": "energy_deck_to_wait",
-          "filters": {
-            "pickType": null,
-            "maxCost": null,
-            "minCost": null,
-            "seriesTag": null,
             "minSuccessLiveCount": null,
             "minNeedHeartSlot": null,
             "minNeedHeartValue": null,

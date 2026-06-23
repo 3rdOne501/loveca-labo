@@ -1465,6 +1465,20 @@ function classifyDrawThenConditionalExtraDraw(p) {
 }
 
 /**
+ * 相手ステージウェイト対象の「元々ブレードN以下」上限を能力文から読む。
+ * @param {string} p
+ * @returns {number | null}
+ */
+function parseOppWaitPrintedBladeLimit(p) {
+  var s = normalizeFwDigits(String(p || ""));
+  var bladeM =
+    s.match(/元々持つの数が(\d+)つ?以下/) ||
+    s.match(/元々持つ[^。]*?ブレードの数が(\d+)つ?以下/) ||
+    s.match(/ブレードが(\d+)つ以下/);
+  return bladeM ? Number(bladeM[1]) : null;
+}
+
+/**
  * LL-bp4-001 系: デッキ上5枚を見る→指定名メンバー1枚を手札→残り控え→
  * 相手ステージの「公開カードのコスト以下 かつ 元々ブレード3以下」を一括ウェイト。
  * @param {string} p
@@ -1482,13 +1496,13 @@ function classifyDeckPeekPickThenOppWait(p, segRaw) {
   var nameRe = /「([^」]+)」/g;
   var nm;
   while ((nm = nameRe.exec(p)) !== null) names.push(nm[1]);
-  var bladeM = s.match(/元々持つ[^。]*?ブレードの数が(\d+)つ?以下/);
+  var bladeMax = parseOppWaitPrintedBladeLimit(p);
   return {
     template: "deck_peek_pick_then_opp_wait",
     deckPeekCount: peekM ? Number(peekM[1]) : 5,
     pickNamedMembers: names,
     oppWaitCostFromPicked: /公開したカードのコスト以下/.test(p),
-    oppWaitMaxPrintedBlade: bladeM ? Number(bladeM[1]) : 3,
+    oppWaitMaxPrintedBlade: bladeMax != null ? bladeMax : 3,
     optional: /もよい/.test(p),
     hasOptionalCost: false,
     filters: {},
@@ -1507,9 +1521,11 @@ function classifyOptionalSelfWaitEffect(p, base) {
   if (/相手のステージ/.test(p) && /ウェイト/.test(p)) {
     var costM = p.match(/コスト(\d+)以下/);
     var oppCntM = p.match(/(\d+)人までウェイト/);
+    var bladeMaxOw = parseOppWaitPrintedBladeLimit(p);
     return Object.assign(patch, {
       template: "optional_self_wait_opp_stage",
-      oppWaitMaxCost: costM ? Number(costM[1]) : 4,
+      oppWaitMaxCost: costM ? Number(costM[1]) : bladeMaxOw != null ? 99 : 4,
+      oppWaitMaxPrintedBlade: bladeMaxOw != null ? bladeMaxOw : undefined,
       oppWaitCount: oppCntM ? Number(oppCntM[1]) : 1,
     });
   }
@@ -1739,20 +1755,23 @@ export function parseAbilityPickFilters(p) {
   if (minCostM) f.minCost = Number(minCostM[1]);
   var seriesM = p.match(/『([^』]+)』/);
   if (seriesM) f.seriesTag = seriesM[1];
-  var slM = p.match(/成功ライブ(?:カード)?置き場にカードが(\d+)枚以上/);
-  if (!slM) slM = p.match(/成功ライブ.*置き場.*(\d+)枚以上/);
-  if (slM) f.minSuccessLiveCount = Number(slM[1]);
-  if (
-    f.minSuccessLiveCount == null &&
-    /成功ライブ(?:カード)?置き場にカードが1枚以上/.test(p)
-  ) {
-    f.minSuccessLiveCount = 1;
-  }
-  if (
-    f.minSuccessLiveCount == null &&
-    /成功ライブ(?:カード)?置き場にカードがある場合/.test(p)
-  ) {
-    f.minSuccessLiveCount = 1;
+  var eitherSlClause = /自分か相手の成功ライブ/.test(p);
+  if (!eitherSlClause) {
+    var slM = p.match(/成功ライブ(?:カード)?置き場にカードが(\d+)枚以上/);
+    if (!slM) slM = p.match(/成功ライブ.*置き場.*(\d+)枚以上/);
+    if (slM) f.minSuccessLiveCount = Number(slM[1]);
+    if (
+      f.minSuccessLiveCount == null &&
+      /成功ライブ(?:カード)?置き場にカードが1枚以上/.test(p)
+    ) {
+      f.minSuccessLiveCount = 1;
+    }
+    if (
+      f.minSuccessLiveCount == null &&
+      /成功ライブ(?:カード)?置き場にカードがある場合/.test(p)
+    ) {
+      f.minSuccessLiveCount = 1;
+    }
   }
   var needM = p.match(/必要ハートに([^を]+)を(\d+)以上/);
   if (needM) {
@@ -1857,8 +1876,10 @@ export function parseAbilityPickFilters(p) {
   if (/自分の成功ライブカード置き場にカードがなく/.test(p)) {
     f.maxOwnSuccessLiveCount = 0;
   }
-  var oppSlM = normalizeFwDigits(p).match(/相手の成功ライブ(?:カード)?置き場にカードが(\d+)枚以上/);
-  if (oppSlM) f.minOpponentSuccessLiveCount = Number(oppSlM[1]) || 0;
+  if (!eitherSlClause) {
+    var oppSlM = normalizeFwDigits(p).match(/相手の成功ライブ(?:カード)?置き場にカードが(\d+)枚以上/);
+    if (oppSlM) f.minOpponentSuccessLiveCount = Number(oppSlM[1]) || 0;
+  }
   if (/自分と相手の成功ライブカード置き場にあるカードの枚数が同じ場合/.test(p)) {
     f.requiresSuccessLiveCountTieWithOpponent = true;
   }
@@ -3432,9 +3453,11 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
     if (/相手のステージ/.test(p) && /ウェイト/.test(p)) {
       var oppCostM = p.match(/コスト(\d+)以下/);
       var oppCntM2 = p.match(/(\d+)人までウェイト/);
+      var bladeMaxTj = parseOppWaitPrintedBladeLimit(p);
       return twT({
         template: "optional_self_wait_opp_stage",
-        oppWaitMaxCost: oppCostM ? Number(oppCostM[1]) : 4,
+        oppWaitMaxCost: oppCostM ? Number(oppCostM[1]) : bladeMaxTj != null ? 99 : 4,
+        oppWaitMaxPrintedBlade: bladeMaxTj != null ? bladeMaxTj : undefined,
         oppWaitCount: oppCntM2 ? Number(oppCntM2[1]) : 1,
         optional: /もよい/.test(p),
         hasOptionalCost: /もよい/.test(p),
