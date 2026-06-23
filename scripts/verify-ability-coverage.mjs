@@ -64,6 +64,8 @@ function main() {
 
   execSync("node scripts/verify-p2-ability-smoke.mjs", { cwd: ROOT, stdio: "inherit" });
 
+  execSync("node scripts/verify-dual-mode-smoke.mjs", { cwd: ROOT, stdio: "inherit" });
+
   execSync("node --check js/abilityEffects.js js/joujiEffects.js js/jidouAutoEffects.js js/abilityRuntimeMeta.js js/simulator.js", {
     cwd: ROOT,
     stdio: "inherit",

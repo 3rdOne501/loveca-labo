@@ -17,6 +17,7 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  *   |'kidou_stage_wait_pick_hand'
  *   |'kidou_wait_pick_hand'
  *   |'kidou_hand_cost_wait_pick_hand'
+ *   |'kidou_hand_discard_activate_wait_opp_bonus'
  *   |'kidou_wait_to_stage'
  *   |'deck_top_to_waiting'
  *   |'deck_top_look_reorder'
@@ -64,6 +65,7 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  *   |'kidou_reveal_hand_cost_threshold'
  *   |'deck_top_count_stage_plus'
  *   |'both_players_energy_deck_wait'
+ *   |'jouji_success_live_waiting_substitute'
  *   |'success_live_waiting_swap'
  *   |'kidou_self_wait_activate_other'
  *   |'deck_top_reveal_top_to_hand_score'
@@ -178,6 +180,8 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  *   |'live_start_pick_player_deck_top_peek'
  *   |'live_start_optional_energy_waiting_reorder_deck_top'
  *   |'live_start_optional_hearts_wild'
+ *   |'live_start_pick_stage_member_printed_hearts_remap'
+ *   |'live_start_pick_live_frame_match_success_live_grant'
  *   |'live_start_hand_named_discard_hearts_grant'
  *   |'ability_sequence'
  *   |'followup_draw_if_live_discarded'
@@ -199,6 +203,34 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  *   |'live_start_need_heart_set_fixed'
  *   |'live_start_need_heart_set_choice'
  *   |'kidou_self_wait_stage_member_swap_recover'
+ *   |'deck_peek_pick_then_opp_wait'
+ *   |'draw_then_conditional_extra_draw'
+ *   |'kidou_discard_self_draw_grant'
+ *   |'kidou_hand_discard_series_branch'
+ *   |'kidou_hand_reveal_grant_if_live'
+ *   |'kidou_reveal_live_opp_decline_grant'
+ *   |'live_start_dollcostra_cost_set_grant_if'
+ *   |'live_start_draw_then_formation_change'
+ *   |'live_start_hand_discard_activate_wait_grant'
+ *   |'live_start_hand_discard_cost_boost_grant_if'
+ *   |'live_start_mill_loop_blade_grant'
+ *   |'live_start_number_reveal_grant_if'
+ *   |'live_start_optional_energy_under_return_grant'
+ *   |'live_start_optional_hand_discard_named_followup_blade'
+ *   |'live_start_optional_shuffle_deck_bottom_grant_if'
+ *   |'live_start_overflow_heart_tiered_draw_reduce'
+ *   |'live_start_pay_or_discard_conditional_grant_members'
+ *   |'live_start_stellar_stream_grant'
+ *   |'live_start_success_score_tiered_reduce_score'
+ *   |'live_start_sunny_day_song_tiered'
+ *   |'live_success_draw_per_series_then_discard_same'
+ *   |'live_success_score_if_stage_live_start_member'
+ *   |'toujou_baton_both_trim_hand_draw'
+ *   |'toujou_baton_discarded_series_per_card'
+ *   |'toujou_both_shuffle_deck_bottom_grant_if'
+ *   |'toujou_draw_then_position_change'
+ *   |'toujou_pick_member_or_energy'
+ *   |'toujou_self_wait_draw_then_conditional_discard'
  *   |'guided_manual'} AbilityTemplate
  */
 
@@ -245,6 +277,8 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  * @property {boolean} [requiresStageMemberHigherThanAllOpponent] 相手全員よりコストが高い自メンバーがいる
  * @property {boolean} [requiresOwnSeriesCostSumHigherThanOpponent] 自『series』コスト合計>相手コスト合計
  * @property {string | null} [ownSeriesCostCompareTag]
+ * @property {boolean} [requiresOwnStageCostSumLowerThanOpponent] 自ステージ全員コスト合計<相手コスト合計
+ * @property {boolean} [requiresOwnStageHeartTotalHigherThanOpponent] 自ステージハート総数>相手ハート総数
  * @property {boolean} [requiresCenterSeriesCostHigherThanOpponent] 自センター『series』コスト>相手センター
  * @property {string | null} [centerSeriesCostCompareTag]
  * @property {string | null} [requiresWaitingLiveNameContains] 控え室にカード名へ指定文字を含むライブカードがある
@@ -256,6 +290,10 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  * @property {string[] | null} [seriesTagsAny] いずれかのシリーズに一致
  * @property {number | null} [minDistinctSeriesMemberNames] ステージに名前の異なる指定シリーズメンバー数
  * @property {string | null} [distinctSeriesMemberNamesTag] 上記のシリーズタグ
+ * @property {boolean} [requiresLiveScoreTieWithOpponent] 自分と相手のライブ合計スコアが同点
+ * @property {boolean} [requiresLiveScoreHigherThanOpponent] ライブ合計スコアが相手より高い
+ * @property {number | null} [requiresOpponentHandLead] 相手の手札が自分よりN枚以上多い
+ * @property {number | null} [minEitherSuccessLiveCount] 自分か相手の成功ライブ置き場がN枚以上
  */
 
 /**
@@ -292,6 +330,7 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  * @property {string} [disableIfSeriesTag]
  * @property {number} [targetHandSize]
  * @property {number} [yellRevealReduction]
+ * @property {boolean} [pickSelfOrOpponent] 自分か相手の盤面を選んで効果を解決
  * @property {number} [minLiveFrameCount]
  * @property {number} [deckTopPickMax]
  * @property {number} [bladeSetCount]
@@ -1059,6 +1098,25 @@ function enrichGrantJoujiPatch(p, segRaw, patch) {
 function classifyConditionalGrantJoujiInteractive(p, segRaw, trigger) {
   if (
     trigger === "live_start" &&
+    /ステージにいる/.test(p) &&
+    /元々持つハートをすべて/.test(p) &&
+    /heart_01|heart01|h01/i.test(String(segRaw || "") + p) &&
+    /ライブ終了時まで/.test(p)
+  ) {
+    var remapSeriesM = p.match(/『([^』]+)』のメンバー1人/);
+    var remapSlotM = (String(segRaw || "") + p).match(/heart_0?(\d)/i);
+    return {
+      template: "live_start_pick_stage_member_printed_hearts_remap",
+      printedHeartsRemapSlot: remapSlotM ? Number(remapSlotM[1]) : 1,
+      filters: {
+        seriesTag: remapSeriesM ? remapSeriesM[1] : null,
+        pickType: T_MEMBER,
+      },
+      requiresOnStage: true,
+    };
+  }
+  if (
+    trigger === "live_start" &&
     /ライブ中の/.test(p) &&
     /ライブカードを1枚選ぶ/.test(p) &&
     /同じカード名のカードが自分の成功ライブカード置き場/.test(p) &&
@@ -1495,7 +1553,7 @@ function classifyOptionalSelfWaitEffect(p, base) {
   if (/控え室から/.test(p) && /手札に加/.test(p) && !/成功ライブ/.test(p)) {
     return Object.assign(patch, {
       template: "toujou_wait_pick_hand",
-      filters: parseAbilityPickFilters(p),
+      filters: mergeAbilityPickFilters(parseAbilityPickFilters(p), parseConditionalPrefixFilters(p)),
     });
   }
   if (/成功ライブ/.test(p) && /手札に加/.test(p)) {
@@ -1816,12 +1874,36 @@ export function parseAbilityPickFilters(p) {
     f.requiresOwnSeriesCostSumHigherThanOpponent = true;
     f.ownSeriesCostCompareTag = costCmpM[1];
   }
+  if (/自分のステージにいるメンバーのコストの合計が相手より低い/.test(p)) {
+    f.requiresOwnStageCostSumLowerThanOpponent = true;
+  }
+  if (
+    /自分のステージにいるメンバーが持つハートの総数が、相手のステージにいるメンバーが持つハートの総数より多い/.test(
+      p,
+    )
+  ) {
+    f.requiresOwnStageHeartTotalHigherThanOpponent = true;
+  }
   var centerCmpM = p.match(
     /センターエリアにいる『([^』]+)』のメンバーのコストが、相手のセンターエリアにいるメンバーより高い/,
   );
   if (centerCmpM) {
     f.requiresCenterSeriesCostHigherThanOpponent = true;
     f.centerSeriesCostCompareTag = centerCmpM[1];
+  }
+  if (/自分と相手のライブの合計スコアが同じ/.test(p)) {
+    f.requiresLiveScoreTieWithOpponent = true;
+  }
+  if (/ライブの合計スコアが相手より高い/.test(p)) {
+    f.requiresLiveScoreHigherThanOpponent = true;
+  }
+  var oppHandLeadM = p.match(/相手の手札の枚数が自分より([０-９\d]+)枚以上多い/);
+  if (oppHandLeadM) {
+    f.requiresOpponentHandLead = Number(normalizeFwDigits(oppHandLeadM[1])) || 0;
+  }
+  if (/自分か相手の成功ライブ/.test(p)) {
+    var eitherSlM = p.match(/(\d+)枚以上/);
+    if (eitherSlM) f.minEitherSuccessLiveCount = Number(eitherSlM[1]) || 0;
   }
   return f;
 }
@@ -2466,6 +2548,19 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
         deckPickCount: pkMus ? Number(pkMus[1]) : 2,
         branchSeriesTag: tagMus ? tagMus[1] : "μ's",
         filters: { pickType: T_LIVE },
+      });
+    }
+
+    if (
+      /手札.*控え室に置/.test(p) &&
+      /ウェイト状態のメンバー.*アクティブ/.test(p) &&
+      /相手のステージにいるメンバーをアクティブにした場合/.test(p)
+    ) {
+      var hdKir = p.match(/手札を(\d+)枚控え室に置/);
+      return kidouT({
+        template: "kidou_hand_discard_activate_wait_opp_bonus",
+        handDiscardToWaiting: hdKir ? Number(hdKir[1]) : 1,
+        filters: Object.assign(parseAbilityPickFilters(p), { pickType: T_LIVE }),
       });
     }
 
@@ -3316,7 +3411,7 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
       return twT({
         template: "toujou_wait_pick_hand",
         requiresOnStage: true,
-        filters: parseAbilityPickFilters(p),
+        filters: mergeAbilityPickFilters(parseAbilityPickFilters(p), parseConditionalPrefixFilters(p)),
       });
     }
     if (
@@ -3560,7 +3655,7 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
     if (/エールにより公開された自分のカードの中から.*手札に加/.test(p)) {
       return withTrigger("live_success", {
         template: "yell_resolution_pick_hand",
-        filters: parseAbilityPickFilters(p),
+        filters: mergeAbilityPickFilters(parseAbilityPickFilters(p), parseConditionalPrefixFilters(p)),
         handDiscardToWaiting: /手札.*控え室/.test(p) ? 1 : null,
         optional: /もよい/.test(p),
         hasOptionalCost: /手札.*控え室.*もよい/.test(p),
@@ -4371,11 +4466,17 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
     }
 
     var lookReorderLs = parseDeckTopCount(p);
-    if (lookReorderLs != null && /見る/.test(p) && /デッキの上に置/.test(p) && /好きな/.test(p)) {
+    if (
+      lookReorderLs != null &&
+      /見る/.test(p) &&
+      /デッキの上に置/.test(p) &&
+      /好きな/.test(p)
+    ) {
       return lsT({
         template: "deck_top_look_reorder",
         deckTopCount: lookReorderLs,
         requiresOnStage: true,
+        pickSelfOrOpponent: /自分か相手を選ぶ/.test(p),
       });
     }
 
@@ -4436,7 +4537,7 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
       return lsT({
         template: "toujou_wait_pick_hand",
         requiresOnStage: true,
-        filters: parseAbilityPickFilters(p),
+        filters: mergeAbilityPickFilters(parseAbilityPickFilters(p), parseConditionalPrefixFilters(p)),
       });
     }
 
@@ -4853,6 +4954,7 @@ export function abilityEffectIsAutomated(template) {
     template === "kidou_stage_wait_pick_hand" ||
     template === "kidou_wait_pick_hand" ||
     template === "kidou_hand_cost_wait_pick_hand" ||
+    template === "kidou_hand_discard_activate_wait_opp_bonus" ||
     template === "kidou_hand_discard_series_branch" ||
     template === "kidou_wait_to_stage" ||
     template === "deck_top_to_waiting" ||
@@ -5035,6 +5137,8 @@ export function abilityEffectIsAutomated(template) {
     template === "live_start_pick_player_deck_top_peek" ||
     template === "live_start_optional_energy_waiting_reorder_deck_top" ||
     template === "live_start_optional_hearts_wild" ||
+    template === "live_start_pick_stage_member_printed_hearts_remap" ||
+    template === "live_start_pick_live_frame_match_success_live_grant" ||
     template === "live_start_hand_named_discard_hearts_grant" ||
     template === "live_success_deck_wait_pick_live" ||
     template === "live_success_enter_under_member" ||

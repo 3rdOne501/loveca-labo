@@ -71,6 +71,7 @@ export function splitAbilitySegmentClauses(segRaw) {
 export function applyAbilityComposition(card, trigger, segRaw, primary, classifyFn) {
   if (!card || !trigger || !segRaw) return primary;
   if (primary.template === "ability_sequence" || primary.template === "kidou_multi_choice") return primary;
+  if (primary.template === "jidou_yell_retry_no_live") return primary;
   // 複数句を1テンプレートで完結させる専用ハンドラは合成展開しない
   if (
     primary.template === "deck_peek_pick_then_opp_wait" ||

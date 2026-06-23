@@ -7,7 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { abilityEffectIsAutomated, classifyCardAbility, listNativeLiveStartSegmentRaws } from "../js/abilityEffects.js";
 import { classifyJidouAutoSegment, jidouEffectIsAutomated, listNativeJidouSegmentRaws } from "../js/jidouAutoEffects.js";
-import { classifyJoujiSegment, memberHasMirrorUnderKidouJouji } from "../js/joujiEffects.js";
+import { classifyJoujiSegment, memberHasMirrorUnderKidouJouji, listNativeJoujiSegmentRaws } from "../js/joujiEffects.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -135,6 +135,40 @@ if (!musicRule || musicRule.kind !== "grant_hand_series_cost_reduce" || !musicRu
   console.log("OK Music S.T.A.R.T!! jouji grant_hand_series_cost_reduce (success live)");
 }
 
+const crossroads = cards["PL!-bp6-024-L"];
+if (!crossroads) {
+  failed++;
+  console.error("MISSING PL!-bp6-024-L");
+} else {
+  const crossCl = classifyCardAbility(crossroads, "jouji");
+  const crossErrs = [];
+  if (crossCl.template !== "jouji_success_live_waiting_substitute") {
+    crossErrs.push(`template: ${crossCl.template}`);
+  }
+  if (!abilityEffectIsAutomated(crossCl.template)) {
+    crossErrs.push("not automated");
+  }
+  if (crossCl.filters?.seriesTag !== "μ's") {
+    crossErrs.push(`seriesTag: ${crossCl.filters?.seriesTag}`);
+  }
+  const crossRaws = listNativeJoujiSegmentRaws(crossroads);
+  if (!crossRaws.length) crossErrs.push("listNativeJoujiSegmentRaws empty");
+  const crossRule = crossRaws[0] ? classifyJoujiSegment(crossRaws[0]) : null;
+  if (!crossRule || crossRule.kind !== "success_live_waiting_substitute") {
+    crossErrs.push(`jouji rule: ${crossRule?.kind}`);
+  }
+  if (!simSrc.includes("placeLiveOnSuccessLiveArea")) crossErrs.push("placeLiveOnSuccessLiveArea missing");
+  if (!simSrc.includes("cardOffersSuccessLiveWaitingSubstitute")) {
+    crossErrs.push("cardOffersSuccessLiveWaitingSubstitute missing");
+  }
+  if (crossErrs.length) {
+    failed++;
+    console.error("FAIL PL!-bp6-024-L jouji", crossErrs.join("; "));
+  } else {
+    console.log("OK PL!-bp6-024-L jouji jouji_success_live_waiting_substitute");
+  }
+}
+
 const makiLs = cards["PL!-pb1-015-R"];
 const makiLsRaws = listNativeLiveStartSegmentRaws(makiLs);
 const makiLsCl = classifyCardAbility(makiLs, "live_start", makiLsRaws[0]);
@@ -183,6 +217,8 @@ const IMPL_MARKERS = [
   "boardBladeForYellReveal",
   "extraYellRevealAllowance",
   "computeSuccessLiveJoujiScoreBonus",
+  "placeLiveOnSuccessLiveArea",
+  "cardOffersSuccessLiveWaitingSubstitute",
 ];
 for (const m of IMPL_MARKERS) {
   if (!simSrc.includes(m)) {

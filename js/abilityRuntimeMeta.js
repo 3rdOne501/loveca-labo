@@ -5,6 +5,7 @@
 /** runClassifiedCardAbility の payAbilityCost をスキップし、handler 側でコスト処理する template */
 export const TEMPLATE_HANDLES_OWN_COST = [
   "kidou_hand_cost_wait_pick_hand",
+  "kidou_hand_discard_activate_wait_opp_bonus",
   "kidou_hand_discard_trigger_ability",
   "kidou_energy_or_activate_member",
   "kidou_energy_deck_pick_live",
@@ -39,6 +40,47 @@ export const TEMPLATE_HANDLES_OWN_COST = [
   "live_start_hand_discard_cost_boost_grant_if",
   "kidou_discard_self_draw_grant",
   "live_start_optional_energy_under_return_grant",
+];
+
+/** 成功ライブ置き場への移動など executeAbilityBody 外（placement 経路）で処理する template */
+export const ABILITY_PLACEMENT_RUNTIME_TEMPLATES = ["jouji_success_live_waiting_substitute"];
+
+/** 相手盤面操作を委譲する simulator ヘルパー（audit-dual-mode-gaps が参照） */
+export const OPPONENT_DUAL_DELEGATE_HELPERS = [
+  "openSoloOpponentMemberWaitPickDialog",
+  "openSoloOpponentMemberWaitPickMultiDialog",
+  "openOppWaitPickFromPool",
+  "mutateInactiveOpponentBoard",
+  "readInactiveOpponentBoard",
+  "readFromTargetPlayerBoard",
+  "runOnTargetPlayerBoard",
+  "runOpponentHandDiscardLoop",
+  "runOpponentHandTrimThenDraw",
+  "openPickSelfOrOpponentDialog",
+  "listOpponentHandForDecision",
+  "moveOpponentHandCardToWaiting",
+  "openOpponentPlayerChoiceDialog",
+  "openOpponentOptionalHandDiscardDialog",
+  "soloOpponentStageMemberCandidates",
+  "listInactiveOpponentMemberCandidates",
+  "runAbilityChoiceTextsSequential",
+  "executeAbilityChoiceText",
+  "countBothPlayersStageMembers",
+  "countOpponentSuccessLiveCards",
+  "ownSeriesCostSumHigherThanOpponent",
+  "opponentStageMemberCosts",
+  "opponentLiveScoreEstimate",
+  "ownLiveScoreEstimate",
+  "listOpponentStageMembersExcludingName",
+  "runPb1018WaitEnterFlow",
+  "grantBladesToAllOpponentStageMembers",
+  "openOpponentAnswerChoiceDialog",
+  "opponentDecisionLeadPrefix",
+  "listOpponentHandForDecision",
+  "listInactiveOpponentMemberCandidates",
+  "setLiveSessionBlockSuccessLivePlacement",
+  "rotateStageAreasClockwiseForPlayer",
+  "syncJoujiPassiveEffectsAll",
 ];
 
 /** executeAbilityBody 内で手動ガイド／常時トラックのみ（自動解決の対象外） */

@@ -5,7 +5,7 @@
   "byTemplate": {
     "kidou_stage_wait_pick_hand": 61,
     "deck_top_to_waiting": 1,
-    "kidou_hand_cost_wait_pick_hand": 25,
+    "kidou_hand_cost_wait_pick_hand": 23,
     "draw_from_deck": 16,
     "kidou_self_wait_hand_enter_energy": 3,
     "deck_top_pick_recover": 5,
@@ -34,6 +34,7 @@
     "kidou_wait_or_hand_for_energy": 4,
     "ability_sequence": 6,
     "kidou_waiting_to_empty_stage": 5,
+    "kidou_hand_discard_activate_wait_opp_bonus": 2,
     "kidou_energy_deck_pick_live": 2,
     "kidou_hand_reveal_to_under": 2,
     "kidou_self_wait_activate_other": 2,
@@ -1922,7 +1923,7 @@
     {
       "card_no": "PL!-bp5-111-R",
       "name": "綺羅ツバサ",
-      "template": "kidou_hand_cost_wait_pick_hand",
+      "template": "kidou_hand_discard_activate_wait_opp_bonus",
       "automated": true,
       "optional": false,
       "perTurn": 1,
@@ -1931,7 +1932,7 @@
     {
       "card_no": "PL!-bp5-111-P＋",
       "name": "綺羅ツバサ",
-      "template": "kidou_hand_cost_wait_pick_hand",
+      "template": "kidou_hand_discard_activate_wait_opp_bonus",
       "automated": true,
       "optional": false,
       "perTurn": 1,

@@ -1510,7 +1510,7 @@
       "card_no": "PL!N-bp4-010-R＋",
       "name": "三船栞子",
       "template": "live_start_pick_live_frame_match_success_live_grant",
-      "automated": false,
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "自分のライブ中の『虹ヶ咲』のライブカードを1枚選ぶ。それと同じカード名のカードが自分の成功ライブカード置き場にある場合、ライブ終了時まで、を得る。"
@@ -1519,7 +1519,7 @@
       "card_no": "PL!N-bp4-010-P",
       "name": "三船栞子",
       "template": "live_start_pick_live_frame_match_success_live_grant",
-      "automated": false,
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "自分のライブ中の『虹ヶ咲』のライブカードを1枚選ぶ。それと同じカード名のカードが自分の成功ライブカード置き場にある場合、ライブ終了時まで、を得る。"
@@ -1528,7 +1528,7 @@
       "card_no": "PL!N-bp4-010-P＋",
       "name": "三船栞子",
       "template": "live_start_pick_live_frame_match_success_live_grant",
-      "automated": false,
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "自分のライブ中の『虹ヶ咲』のライブカードを1枚選ぶ。それと同じカード名のカードが自分の成功ライブカード置き場にある場合、ライブ終了時まで、を得る。"
@@ -1537,7 +1537,7 @@
       "card_no": "PL!N-bp4-010-SEC",
       "name": "三船栞子",
       "template": "live_start_pick_live_frame_match_success_live_grant",
-      "automated": false,
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "自分のライブ中の『虹ヶ咲』のライブカードを1枚選ぶ。それと同じカード名のカードが自分の成功ライブカード置き場にある場合、ライブ終了時まで、を得る。"

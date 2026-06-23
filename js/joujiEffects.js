@@ -410,6 +410,20 @@ export function classifyJoujiSegment(segRaw) {
     });
   }
 
+  if (
+    /成功ライブカード置き場に置く場合/.test(p) &&
+    /代わりに/.test(p) &&
+    /控え室/.test(p) &&
+    /ライブカード/.test(p) &&
+    /置いてもよい/.test(p)
+  ) {
+    var subSeriesM = p.match(/控え室にある『([^』]+)』のライブカード/);
+    return Object.assign({}, base, {
+      kind: "success_live_waiting_substitute",
+      seriesTag: subSeriesM ? subSeriesM[1] : null,
+    });
+  }
+
   var successLiveSelfScore = p.match(
     /このカードが自分の成功ライブカード置き場にあり.*ステージに『([^』]+)』のメンバーがいるかぎり.*このカードのスコアを[＋+](\d+)/,
   );

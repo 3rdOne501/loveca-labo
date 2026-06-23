@@ -12,6 +12,8 @@ import {
   JIDOU_AUTO_TEMPLATES,
   TEMPLATE_HANDLES_OWN_COST,
   TEMPLATES_META_IN_EXECUTE_BODY,
+  ABILITY_PLACEMENT_RUNTIME_TEMPLATES,
+  OPPONENT_DUAL_DELEGATE_HELPERS,
 } from "../js/abilityRuntimeMeta.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -100,6 +102,8 @@ function main() {
   );
   const runJidouTemplates = templatesFromChunk(runJidouChunk);
 
+  const placementRuntime = new Set(ABILITY_PLACEMENT_RUNTIME_TEMPLATES);
+
   /** @type {string[]} */
   const errors = [];
   /** @type {string[]} */
@@ -107,6 +111,7 @@ function main() {
 
   for (const t of automated) {
     if (t === "none" || TEMPLATES_META_IN_EXECUTE_BODY.includes(t)) continue;
+    if (placementRuntime.has(t)) continue;
     if (jidouAutomated.has(t)) {
       if (!runJidouTemplates.has(t) && !executeBodyTemplates.has(t)) {
         warnings.push(`automated jidou "${t}" has no runJidouAutoEffect / executeAbilityBody handler`);
@@ -138,6 +143,15 @@ function main() {
     }
   }
 
+  for (const t of ABILITY_PLACEMENT_RUNTIME_TEMPLATES) {
+    if (!automated.has(t)) {
+      warnings.push(`ABILITY_PLACEMENT_RUNTIME "${t}" not automated`);
+    }
+    if (!simSrc.includes("placeLiveOnSuccessLiveArea")) {
+      errors.push(`placement runtime template "${t}" requires placeLiveOnSuccessLiveArea in simulator.js`);
+    }
+  }
+
   console.log("=== verify-ability-handlers ===\n");
   console.log(`typedef templates: ${typedefAll.size}`);
   console.log(`index templates: ${indexTemplates.size}`);
@@ -146,6 +160,7 @@ function main() {
   console.log(`executeAbilityBody handlers: ${executeBodyTemplates.size}`);
   console.log(`runJidouAutoEffect handlers: ${runJidouTemplates.size}`);
   console.log(`TEMPLATE_HANDLES_OWN_COST: ${TEMPLATE_HANDLES_OWN_COST.length}`);
+  console.log(`ABILITY_PLACEMENT_RUNTIME: ${ABILITY_PLACEMENT_RUNTIME_TEMPLATES.length}`);
 
   if (warnings.length) {
     console.log(`\nWarnings (${warnings.length}):`);
