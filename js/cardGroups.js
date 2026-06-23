@@ -127,11 +127,23 @@ export function cardGroupRuleForTag(tag) {
   return null;
 }
 
-/**
- * @param {*} cat
- * @param {string} tag
- */
 /** cards.json の series から画面上の「学校／世代」ラベル（虹ヶ咲・Liella! 等） */
+/**
+ * ステージの「グループ名」比較用キー（unit → 学校ラベル → series → name）。
+ * @param {*} cat
+ * @returns {string}
+ */
+export function catalogCardGroupKey(cat) {
+  if (!cat) return "";
+  var unit = cat.unit != null ? String(cat.unit).trim() : "";
+  if (unit) return unit;
+  var school = catalogCardSchoolLabel(cat);
+  if (school) return school;
+  var series = cat.series != null ? String(cat.series).trim() : "";
+  if (series) return series;
+  return cat.name != null ? String(cat.name).trim() : "";
+}
+
 export function catalogCardSchoolLabel(cat) {
   if (!cat) return "";
   var series = cat.series != null ? String(cat.series) : "";

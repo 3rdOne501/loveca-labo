@@ -1,14 +1,14 @@
 {
-  "generated": "2026-06-19",
+  "generated": "2026-06-23",
   "trigger": "jidou",
-  "total": 96,
-  "automated": 96,
-  "guided_manual": 0,
+  "total": 105,
+  "automated": 99,
+  "guided_manual": 6,
   "byTemplate": {
     "jidou_leave_stage_activate_one": 2,
     "jidou_yell_grant_jouji": 7,
     "jidou_enter_or_baton_draw": 1,
-    "jidou_area_move_grant_jouji": 9,
+    "jidou_area_move_grant_jouji": 11,
     "jidou_area_move_draw": 1,
     "jidou_leave_stage_hand_pick_recover": 3,
     "jidou_yell_grant_heart": 2,
@@ -30,14 +30,15 @@
     "jidou_move_or_energy_draw_grant": 4,
     "jidou_card_to_waiting_pick_hand": 4,
     "jidou_leave_stage_position_change": 4,
-    "jidou_area_move_activate_energy": 2,
+    "jidou_area_move_activate_energy": 3,
     "jidou_baton_leave_activate_energy": 1,
     "jidou_series_enter_pay_energy": 2,
     "jidou_hand_to_waiting_grant": 2,
     "jidou_series_enter_grant": 2,
     "jidou_live_zone_to_waiting_deck": 4,
     "jidou_series_enter_opp_wait": 2,
-    "jidou_leave_stage_hand_grant_member": 1
+    "jidou_leave_stage_hand_grant_member": 1,
+    "jidou_manual": 6
   },
   "cards": [
     {
@@ -807,6 +808,78 @@
       "automated": true,
       "eventKind": "area_move",
       "effect": "このメンバーがエリアを移動したとき、ライブ終了時まで、を得る。 (対戦相手のカードの効果でも発動する。)"
+    },
+    {
+      "card_no": "PL!SP-pb2-006-R",
+      "name": "桜小路きな子",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "自分のライブが成功するか、このメンバーがエリアを移動したとき、自分の控え室にある『Liella!』のメンバーカードを1枚、このメンバーの下に置く。"
+    },
+    {
+      "card_no": "PL!SP-pb2-006-PP",
+      "name": "桜小路きな子",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "自分のライブが成功するか、このメンバーがエリアを移動したとき、自分の控え室にある『Liella!』のメンバーカードを1枚、このメンバーの下に置く。"
+    },
+    {
+      "card_no": "PL!SP-pb2-011-R",
+      "name": "鬼塚冬毬",
+      "template": "jidou_area_move_grant_jouji",
+      "automated": true,
+      "eventKind": "area_move",
+      "effect": "自分のステージのセンターエリアにいるメンバーがエリアを移動したとき、以下から1つを選ぶ。 ・ライブ終了時まで、を得る。 ・相手のステージにいる元々持つの数が2つ以下のメンバー1人をウェイトにする。 ・カードを1枚引く。"
+    },
+    {
+      "card_no": "PL!SP-pb2-011-PP",
+      "name": "鬼塚冬毬",
+      "template": "jidou_area_move_grant_jouji",
+      "automated": true,
+      "eventKind": "area_move",
+      "effect": "自分のステージのセンターエリアにいるメンバーがエリアを移動したとき、以下から1つを選ぶ。 ・ライブ終了時まで、を得る。 ・相手のステージにいる元々持つの数が2つ以下のメンバー1人をウェイトにする。 ・カードを1枚引く。"
+    },
+    {
+      "card_no": "PL!SP-pb2-020-R",
+      "name": "鬼塚夏美",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "自分がエールしたとき、手札にある『Liella!』のライブカードを1枚控え室に置いてもよい。そうした場合、追加で2枚エールを行う。"
+    },
+    {
+      "card_no": "PL!SP-pb2-020-P＋",
+      "name": "鬼塚夏美",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "自分がエールしたとき、手札にある『Liella!』のライブカードを1枚控え室に置いてもよい。そうした場合、追加で2枚エールを行う。"
+    },
+    {
+      "card_no": "PL!SP-pb2-022-R",
+      "name": "鬼塚冬毬",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "自分のステージにいる『5yncri5e!』のメンバーがセンターエリアに移動したとき、ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!SP-pb2-022-P＋",
+      "name": "鬼塚冬毬",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "自分のステージにいる『5yncri5e!』のメンバーがセンターエリアに移動したとき、ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!SP-pb2-028-N",
+      "name": "桜小路きな子",
+      "template": "jidou_area_move_activate_energy",
+      "automated": true,
+      "eventKind": "area_move",
+      "effect": "自分のメインフェイズの間、このメンバーがエリアを移動したとき、エネルギーを2枚アクティブにする。"
     }
   ]
 }

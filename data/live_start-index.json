@@ -1,18 +1,18 @@
 {
-  "generated": "2026-06-19",
+  "generated": "2026-06-23",
   "trigger": "live_start",
-  "total": 296,
+  "total": 307,
   "byTemplate": {
-    "heart_color_pick_grant": 34,
-    "grant_jouji_session": 94,
+    "heart_color_pick_grant": 35,
+    "grant_jouji_session": 74,
     "optional_self_wait_opp_stage": 11,
-    "optional_energy_blade_until_live_end": 39,
+    "optional_energy_blade_until_live_end": 40,
     "live_start_pay_or_hand_discard": 3,
     "ability_sequence": 5,
     "live_start_opp_wait_if_stage_hearts": 1,
     "live_start_optional_energy_waiting_reorder_deck_top": 2,
     "energy_deck_to_wait": 4,
-    "activate_energy": 2,
+    "activate_energy": 4,
     "live_start_hand_live_to_deck_bottom_look": 4,
     "live_start_hand_blade_per": 4,
     "live_start_yell_reveal_reduction": 4,
@@ -26,22 +26,31 @@
     "live_start_waiting_deck_bottom_tiered": 4,
     "live_start_pick_player_waiting_deck_bottom": 2,
     "optional_pick_member_wait_opp_stage": 2,
-    "draw_from_deck": 10,
-    "live_start_position_change": 12,
+    "draw_from_deck": 9,
+    "live_start_position_change": 14,
     "live_start_pick_player_deck_top_peek": 2,
     "live_start_draw_opp_wait": 4,
     "waiting_to_deck_top_by_opp_wait_count": 4,
-    "deck_top_pick_recover": 1,
+    "live_start_pick_live_frame_match_success_live_grant": 4,
+    "deck_peek_pick_then_opp_wait": 1,
     "live_start_side_cost_equal_opp_wait": 4,
     "ability_pick_one": 4,
     "live_start_activate_liella_and_energy": 4,
+    "live_start_mill_loop_blade_grant": 3,
+    "live_start_dollcostra_cost_set_grant_if": 3,
+    "live_start_number_reveal_grant_if": 2,
     "draw_then_hand_discard": 2,
     "live_start_opp_wait_if_high_cost_on_stage": 2,
     "live_start_live_frame_pick_deck_top": 4,
-    "live_start_opp_wait_max_cost": 2,
+    "live_start_pay_or_discard_conditional_grant_members": 2,
+    "live_start_opp_wait_max_cost": 3,
+    "live_start_optional_hand_discard_named_followup_blade": 2,
+    "live_start_hand_discard_cost_boost_grant_if": 4,
     "live_start_activate_self_if_low_score_live": 2,
     "live_start_opp_wait_exclude_unit": 1,
-    "live_start_hand_named_discard_hearts_grant": 1
+    "live_start_hand_named_discard_hearts_grant": 1,
+    "live_start_draw_then_formation_change": 1,
+    "guided_manual": 4
   },
   "cards": [
     {
@@ -1499,7 +1508,7 @@
     {
       "card_no": "PL!N-bp4-010-R＋",
       "name": "三船栞子",
-      "template": "grant_jouji_session",
+      "template": "live_start_pick_live_frame_match_success_live_grant",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -1508,7 +1517,7 @@
     {
       "card_no": "PL!N-bp4-010-P",
       "name": "三船栞子",
-      "template": "grant_jouji_session",
+      "template": "live_start_pick_live_frame_match_success_live_grant",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -1517,7 +1526,7 @@
     {
       "card_no": "PL!N-bp4-010-P＋",
       "name": "三船栞子",
-      "template": "grant_jouji_session",
+      "template": "live_start_pick_live_frame_match_success_live_grant",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -1526,7 +1535,7 @@
     {
       "card_no": "PL!N-bp4-010-SEC",
       "name": "三船栞子",
-      "template": "grant_jouji_session",
+      "template": "live_start_pick_live_frame_match_success_live_grant",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -1652,7 +1661,7 @@
     {
       "card_no": "LL-bp4-001-R＋",
       "name": "絢瀬絵里&朝香果林&葉月 恋",
-      "template": "deck_top_pick_recover",
+      "template": "deck_peek_pick_then_opp_wait",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -2025,7 +2034,7 @@
     {
       "card_no": "PL!SP-bp5-009-R",
       "name": "鬼塚夏美",
-      "template": "grant_jouji_session",
+      "template": "live_start_mill_loop_blade_grant",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -2034,7 +2043,7 @@
     {
       "card_no": "PL!SP-bp5-009-P",
       "name": "鬼塚夏美",
-      "template": "grant_jouji_session",
+      "template": "live_start_mill_loop_blade_grant",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -2043,7 +2052,7 @@
     {
       "card_no": "PL!SP-bp5-009-AR",
       "name": "鬼塚夏美",
-      "template": "grant_jouji_session",
+      "template": "live_start_mill_loop_blade_grant",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -2088,7 +2097,7 @@
     {
       "card_no": "PL!HS-bp5-005-R",
       "name": "徒町 小鈴",
-      "template": "grant_jouji_session",
+      "template": "live_start_dollcostra_cost_set_grant_if",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -2097,7 +2106,7 @@
     {
       "card_no": "PL!HS-bp5-005-P",
       "name": "徒町 小鈴",
-      "template": "grant_jouji_session",
+      "template": "live_start_dollcostra_cost_set_grant_if",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -2106,7 +2115,7 @@
     {
       "card_no": "PL!HS-bp5-005-AR",
       "name": "徒町 小鈴",
-      "template": "grant_jouji_session",
+      "template": "live_start_dollcostra_cost_set_grant_if",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -2272,7 +2281,7 @@
     {
       "card_no": "PL!HS-pb1-005-R",
       "name": "徒町小鈴",
-      "template": "grant_jouji_session",
+      "template": "live_start_number_reveal_grant_if",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -2281,7 +2290,7 @@
     {
       "card_no": "PL!HS-pb1-005-P＋",
       "name": "徒町小鈴",
-      "template": "grant_jouji_session",
+      "template": "live_start_number_reveal_grant_if",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -2506,7 +2515,7 @@
     {
       "card_no": "PL!S-bp6-007-R",
       "name": "国木田花丸",
-      "template": "grant_jouji_session",
+      "template": "live_start_pay_or_discard_conditional_grant_members",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -2515,7 +2524,7 @@
     {
       "card_no": "PL!S-bp6-007-P",
       "name": "国木田花丸",
-      "template": "grant_jouji_session",
+      "template": "live_start_pay_or_discard_conditional_grant_members",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -2560,7 +2569,7 @@
     {
       "card_no": "PL!HS-bp6-004-R",
       "name": "百生 吟子",
-      "template": "grant_jouji_session",
+      "template": "live_start_optional_hand_discard_named_followup_blade",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -2578,7 +2587,7 @@
     {
       "card_no": "PL!HS-bp6-004-P",
       "name": "百生 吟子",
-      "template": "grant_jouji_session",
+      "template": "live_start_optional_hand_discard_named_followup_blade",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -2587,7 +2596,7 @@
     {
       "card_no": "PL!HS-bp6-005-R＋",
       "name": "徒町 小鈴",
-      "template": "grant_jouji_session",
+      "template": "live_start_hand_discard_cost_boost_grant_if",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -2596,7 +2605,7 @@
     {
       "card_no": "PL!HS-bp6-005-P",
       "name": "徒町 小鈴",
-      "template": "grant_jouji_session",
+      "template": "live_start_hand_discard_cost_boost_grant_if",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -2605,7 +2614,7 @@
     {
       "card_no": "PL!HS-bp6-005-P＋",
       "name": "徒町 小鈴",
-      "template": "grant_jouji_session",
+      "template": "live_start_hand_discard_cost_boost_grant_if",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -2614,7 +2623,7 @@
     {
       "card_no": "PL!HS-bp6-005-SEC",
       "name": "徒町 小鈴",
-      "template": "grant_jouji_session",
+      "template": "live_start_hand_discard_cost_boost_grant_if",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -2713,7 +2722,7 @@
     {
       "card_no": "PL!SP-sd2-001-SD2",
       "name": "澁谷かのん",
-      "template": "draw_from_deck",
+      "template": "live_start_draw_then_formation_change",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -2727,6 +2736,105 @@
       "optional": false,
       "perTurn": 0,
       "effect": "自分のエネルギーが7枚以上ある場合、ライブ終了時まで、このメンバーと自分のステージにいるほかの『Liella!』のメンバー1人は、を得る。"
+    },
+    {
+      "card_no": "PL!SP-pb2-009-R",
+      "name": "鬼塚夏美",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "『Liella!』のメンバー1人をウェイトにしてもよい：相手のステージにいる元々持つの数がこれによりウェイトにしたメンバーが元々持つの数より2つ以上少ないメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "card_no": "PL!SP-pb2-009-PP",
+      "name": "鬼塚夏美",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "『Liella!』のメンバー1人をウェイトにしてもよい：相手のステージにいる元々持つの数がこれによりウェイトにしたメンバーが元々持つの数より2つ以上少ないメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "card_no": "PL!SP-pb2-010-R",
+      "name": "ウィーン・マルガレーテ",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "手札を1枚控え室に置かないかぎり、自分のエネルギー1枚をエネルギーデッキに置く。"
+    },
+    {
+      "card_no": "PL!SP-pb2-010-PP",
+      "name": "ウィーン・マルガレーテ",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "手札を1枚控え室に置かないかぎり、自分のエネルギー1枚をエネルギーデッキに置く。"
+    },
+    {
+      "card_no": "PL!SP-pb2-011-R",
+      "name": "鬼塚冬毬",
+      "template": "live_start_position_change",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "このメンバーをポジションチェンジしてもよい。"
+    },
+    {
+      "card_no": "PL!SP-pb2-011-PP",
+      "name": "鬼塚冬毬",
+      "template": "live_start_position_change",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "このメンバーをポジションチェンジしてもよい。"
+    },
+    {
+      "card_no": "PL!SP-pb2-018-R",
+      "name": "米女メイ",
+      "template": "activate_energy",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のステージにいるこのメンバーと名前の異なる『CatChu!』のメンバー1人につき、エネルギーを1枚アクティブにする。"
+    },
+    {
+      "card_no": "PL!SP-pb2-018-P＋",
+      "name": "米女メイ",
+      "template": "activate_energy",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のステージにいるこのメンバーと名前の異なる『CatChu!』のメンバー1人につき、エネルギーを1枚アクティブにする。"
+    },
+    {
+      "card_no": "PL!SP-pb2-029-N",
+      "name": "米女メイ",
+      "template": "live_start_opp_wait_max_cost",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "相手のステージにいるコスト2以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "card_no": "PL!SP-pb2-030-N",
+      "name": "若菜四季",
+      "template": "heart_color_pick_grant",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "かかのうち1つを選ぶ。ライブ終了時まで、このメンバーが元々持つハートは選んだハートになる。"
+    },
+    {
+      "card_no": "PL!SP-pb2-040-N",
+      "name": "米女メイ",
+      "template": "optional_energy_blade_until_live_end",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "支払ってもよい：ライブ終了時まで、を得る。"
     }
   ]
 }

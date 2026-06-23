@@ -1,9 +1,9 @@
 {
-  "generated": "2026-06-19",
+  "generated": "2026-06-23",
   "trigger": "kidou",
-  "total": 248,
+  "total": 256,
   "byTemplate": {
-    "kidou_stage_wait_pick_hand": 55,
+    "kidou_stage_wait_pick_hand": 61,
     "deck_top_to_waiting": 1,
     "kidou_hand_cost_wait_pick_hand": 25,
     "draw_from_deck": 16,
@@ -18,18 +18,20 @@
     "energy_deck_to_wait": 6,
     "kidou_hand_discard_trigger_ability": 4,
     "live_start_position_change": 11,
-    "grant_jouji_session": 16,
+    "kidou_reveal_live_opp_decline_grant": 2,
     "heart_color_pick_grant": 8,
     "kidou_wait_member_grant_jouji": 4,
     "kidou_self_wait_stage_member_swap_recover": 6,
     "kidou_wait_shuffle_deck_bottom_activate": 1,
     "deck_reveal_until_pick": 2,
+    "kidou_hand_reveal_grant_if_live": 2,
     "kidou_energy_or_activate_member": 2,
+    "grant_jouji_session": 12,
     "kidou_hand_discard_series_branch": 4,
     "kidou_opp_wait_group_discount_energy": 4,
     "kidou_hand_discard_wait_live_score_pay": 3,
     "kidou_wait_or_hand_for_energy": 4,
-    "ability_sequence": 4,
+    "ability_sequence": 6,
     "kidou_waiting_to_empty_stage": 5,
     "kidou_energy_deck_pick_live": 2,
     "kidou_hand_reveal_to_under": 2,
@@ -841,7 +843,7 @@
     {
       "card_no": "PL!S-pb1-006-R",
       "name": "津島善子",
-      "template": "grant_jouji_session",
+      "template": "kidou_reveal_live_opp_decline_grant",
       "automated": true,
       "optional": true,
       "perTurn": 1,
@@ -850,7 +852,7 @@
     {
       "card_no": "PL!S-pb1-006-P＋",
       "name": "津島善子",
-      "template": "grant_jouji_session",
+      "template": "kidou_reveal_live_opp_decline_grant",
       "automated": true,
       "optional": true,
       "perTurn": 1,
@@ -1174,7 +1176,7 @@
     {
       "card_no": "PL!-pb1-013-R",
       "name": "園田海未",
-      "template": "grant_jouji_session",
+      "template": "kidou_hand_reveal_grant_if_live",
       "automated": true,
       "optional": false,
       "perTurn": 1,
@@ -1183,7 +1185,7 @@
     {
       "card_no": "PL!-pb1-013-P＋",
       "name": "園田海未",
-      "template": "grant_jouji_session",
+      "template": "kidou_hand_reveal_grant_if_live",
       "automated": true,
       "optional": false,
       "perTurn": 1,
@@ -2279,6 +2281,86 @@
     {
       "card_no": "PL!SP-sd2-014-SD2",
       "name": "嵐 千砂都",
+      "template": "kidou_stage_wait_pick_hand",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "このメンバーをステージから控え室に置く：自分の控え室からメンバーカードを1枚手札に加える。"
+    },
+    {
+      "card_no": "PL!SP-pb2-002-R",
+      "name": "唐 可可",
+      "template": "ability_sequence",
+      "automated": true,
+      "optional": false,
+      "perTurn": 1,
+      "effect": "手札の『Liella!』のカードを1枚控え室に置く：以下から1つを選ぶ。これにより控え室に置いたカードがブレードハートを持たないメンバーカードの場合、代わりに1つ以上を選ぶ。 ・自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。 ・ライブ終了時まで、自分のステージにいるこのメンバー以外の『Liella!』のメンバー1人は、を得る。",
+      "steps": [
+        "ability_pick_one",
+        "grant_jouji_session"
+      ]
+    },
+    {
+      "card_no": "PL!SP-pb2-002-PP",
+      "name": "唐 可可",
+      "template": "ability_sequence",
+      "automated": true,
+      "optional": false,
+      "perTurn": 1,
+      "effect": "手札の『Liella!』のカードを1枚控え室に置く：以下から1つを選ぶ。これにより控え室に置いたカードがブレードハートを持たないメンバーカードの場合、代わりに1つ以上を選ぶ。 ・自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。 ・ライブ終了時まで、自分のステージにいるこのメンバー以外の『Liella!』のメンバー1人は、を得る。",
+      "steps": [
+        "ability_pick_one",
+        "grant_jouji_session"
+      ]
+    },
+    {
+      "card_no": "PL!SP-pb2-012-R",
+      "name": "澁谷かのん",
+      "template": "kidou_stage_wait_pick_hand",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "このメンバーをステージから控え室に置く：自分の控え室からライブカードを1枚手札に加える。"
+    },
+    {
+      "card_no": "PL!SP-pb2-012-P＋",
+      "name": "澁谷かのん",
+      "template": "kidou_stage_wait_pick_hand",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "このメンバーをステージから控え室に置く：自分の控え室からライブカードを1枚手札に加える。"
+    },
+    {
+      "card_no": "PL!SP-pb2-016-R",
+      "name": "葉月 恋",
+      "template": "kidou_stage_wait_pick_hand",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "このメンバーをステージから控え室に置く：自分の控え室からライブカードを1枚手札に加える。"
+    },
+    {
+      "card_no": "PL!SP-pb2-016-P＋",
+      "name": "葉月 恋",
+      "template": "kidou_stage_wait_pick_hand",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "このメンバーをステージから控え室に置く：自分の控え室からライブカードを1枚手札に加える。"
+    },
+    {
+      "card_no": "PL!SP-pb2-031-N",
+      "name": "鬼塚夏美",
+      "template": "kidou_stage_wait_pick_hand",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "このメンバーをステージから控え室に置く：自分の控え室からメンバーカードを1枚手札に加える。"
+    },
+    {
+      "card_no": "PL!SP-pb2-033-N",
+      "name": "鬼塚冬毬",
       "template": "kidou_stage_wait_pick_hand",
       "automated": true,
       "optional": false,

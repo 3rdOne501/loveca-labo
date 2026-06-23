@@ -1,36 +1,38 @@
 {
-  "generated": "2026-06-19",
+  "generated": "2026-06-23",
   "trigger": "toujyou",
-  "total": 514,
+  "total": 539,
   "byTemplate": {
     "toujou_success_live_pick_hand": 3,
-    "toujou_wait_pick_hand": 63,
-    "deck_top_pick_recover": 70,
-    "draw_from_deck": 36,
+    "toujou_wait_pick_hand": 69,
+    "deck_top_pick_recover": 74,
+    "draw_from_deck": 30,
     "deck_top_to_waiting": 40,
     "deck_top_look_reorder": 18,
     "ability_pick_one": 16,
-    "optional_self_wait_opp_stage": 33,
+    "optional_self_wait_opp_stage": 37,
     "toujou_opp_hand_reveal_no_live_draw": 1,
     "toujou_hand_stage_enter": 11,
     "grant_jouji_session": 21,
-    "draw_then_hand_discard": 43,
+    "draw_then_hand_discard": 45,
     "toujou_wait_to_member_under": 1,
     "draw_until_hand_size": 2,
     "energy_deck_to_wait": 14,
     "toujou_optional_hand_discard_draw": 3,
     "activate_energy": 15,
-    "ability_sequence": 12,
+    "ability_sequence": 13,
     "deck_reveal_until_live": 2,
+    "draw_then_conditional_extra_draw": 2,
     "toujou_deck_top_wait_if_all_members": 2,
     "toujou_rotate_stage_areas": 2,
+    "toujou_draw_then_position_change": 2,
     "toujou_optional_self_wait_recover": 2,
     "toujou_wait_enter_cost_sum": 2,
     "waiting_to_deck_bottom": 4,
     "toujou_baton_discarded_pick_hand": 4,
     "toujou_wait_pick_opp_live": 2,
     "waiting_reorder_deck_top": 3,
-    "toujou_optional_all_members_relocate": 2,
+    "toujou_optional_all_members_relocate": 4,
     "toujou_baton_series_heart_grant": 2,
     "toujou_main_phase_live_from_waiting": 1,
     "toujou_opp_optional_live_discard_or_score": 2,
@@ -43,6 +45,7 @@
     "toujou_multi_wait_draw_per_count": 2,
     "toujou_turn_block_effect_activate": 2,
     "toujou_bibi_wait_opp_active_wait": 2,
+    "toujou_self_wait_draw_then_conditional_discard": 2,
     "toujou_both_wait_to_empty_stage": 2,
     "toujou_success_live_low_score_grant": 2,
     "toujou_opp_active_wait": 2,
@@ -50,7 +53,8 @@
     "toujou_optional_wait_to_deck_top": 1,
     "toujou_deck_top_liella_live_pick": 5,
     "toujou_liella_double_baton_center": 4,
-    "live_start_position_change": 4,
+    "live_start_position_change": 5,
+    "deck_peek_pick_then_opp_wait": 1,
     "toujou_optional_energy_under": 2,
     "toujou_pick_member_or_energy": 2,
     "energy_deck_to_active": 3,
@@ -61,12 +65,14 @@
     "kidou_waiting_to_empty_stage": 1,
     "toujou_hand_discard_draw_plus": 2,
     "toujou_opp_wait_if_high_cost_on_stage": 2,
+    "toujou_both_shuffle_deck_bottom_grant_if": 2,
     "toujou_opp_front_position_change": 2,
     "toujou_grant_heart_stage_member": 2,
     "deck_top_pick_no_ability_or_jouji": 2,
     "toujou_hand_discard_wait_heart_dual_pick": 2,
     "toujou_draw_grant_if_from_waiting": 1,
-    "deck_top_count_stage_plus": 4
+    "deck_top_count_stage_plus": 4,
+    "guided_manual": 2
   },
   "cards": [
     {
@@ -935,7 +941,7 @@
     {
       "card_no": "PL!SP-bp1-008-R",
       "name": "若菜四季",
-      "template": "draw_from_deck",
+      "template": "draw_then_conditional_extra_draw",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -944,7 +950,7 @@
     {
       "card_no": "PL!SP-bp1-008-P",
       "name": "若菜四季",
-      "template": "draw_from_deck",
+      "template": "draw_then_conditional_extra_draw",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -1295,7 +1301,7 @@
     {
       "card_no": "PL!SP-pb1-008-R",
       "name": "若菜四季",
-      "template": "draw_from_deck",
+      "template": "toujou_draw_then_position_change",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -1304,7 +1310,7 @@
     {
       "card_no": "PL!SP-pb1-008-P＋",
       "name": "若菜四季",
-      "template": "draw_from_deck",
+      "template": "toujou_draw_then_position_change",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -2528,7 +2534,7 @@
     {
       "card_no": "PL!-pb1-017-R",
       "name": "小泉花陽",
-      "template": "draw_from_deck",
+      "template": "toujou_self_wait_draw_then_conditional_discard",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -2537,7 +2543,7 @@
     {
       "card_no": "PL!-pb1-017-P＋",
       "name": "小泉花陽",
-      "template": "draw_from_deck",
+      "template": "toujou_self_wait_draw_then_conditional_discard",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -3031,15 +3037,11 @@
     {
       "card_no": "LL-bp4-001-R＋",
       "name": "絢瀬絵里&朝香果林&葉月 恋",
-      "template": "ability_sequence",
+      "template": "deck_peek_pick_then_opp_wait",
       "automated": true,
       "optional": true,
       "perTurn": 0,
-      "effect": "自分のデッキの上からカードを5枚見る。その中から「絢瀬絵里」か「朝香果林」か「葉月恋」のメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。その後、相手のステージにいる、これにより公開したカードのコスト以下で、かつ元々持つの数が3つ以下のメンバーをすべてウェイトにする。",
-      "steps": [
-        "deck_top_pick_recover",
-        "optional_self_wait_opp_stage"
-      ]
+      "effect": "自分のデッキの上からカードを5枚見る。その中から「絢瀬絵里」か「朝香果林」か「葉月恋」のメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。その後、相手のステージにいる、これにより公開したカードのコスト以下で、かつ元々持つの数が3つ以下のメンバーをすべてウェイトにする。"
     },
     {
       "card_no": "PL!N-pb1-001-R",
@@ -4253,7 +4255,7 @@
     {
       "card_no": "PL!HS-pb1-012-R",
       "name": "百生吟子",
-      "template": "grant_jouji_session",
+      "template": "toujou_both_shuffle_deck_bottom_grant_if",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -4262,7 +4264,7 @@
     {
       "card_no": "PL!HS-pb1-012-P＋",
       "name": "百生吟子",
-      "template": "grant_jouji_session",
+      "template": "toujou_both_shuffle_deck_bottom_grant_if",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -4742,6 +4744,239 @@
       "optional": true,
       "perTurn": 0,
       "effect": "このメンバーをポジションチェンジしてもよい。(このメンバーを今いるエリア以外のエリアに移動させる。そのエリアにメンバーがいる場合、そのメンバーはこのメンバーがいたエリアに移動させる。)"
+    },
+    {
+      "card_no": "PL!SP-pb2-000-R",
+      "name": "嵐 千砂都＆鬼塚夏美",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "バトンタッチして登場した場合、このバトンタッチによって控え室に置かれた『Liella!』のメンバーカード1枚につき、カードを1枚引く。ブレードハートを持たない『Liella!』のメンバーカード1枚につき、ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!SP-pb2-000-DUO",
+      "name": "嵐 千砂都＆鬼塚夏美",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "バトンタッチして登場した場合、このバトンタッチによって控え室に置かれた『Liella!』のメンバーカード1枚につき、カードを1枚引く。ブレードハートを持たない『Liella!』のメンバーカード1枚につき、ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!SP-pb2-001-R",
+      "name": "澁谷かのん",
+      "template": "deck_top_pick_recover",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札を1枚控え室に置いてもよい：自分のデッキの上からカードを5枚見る。その中からコスト4以下の『Liella!』のメンバーカードを1枚まで公開する。そのカードを自分のステージのメンバーのいないエリアに登場させるか、手札に加える。残りを控え室に置く。"
+    },
+    {
+      "card_no": "PL!SP-pb2-001-PP",
+      "name": "澁谷かのん",
+      "template": "deck_top_pick_recover",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札を1枚控え室に置いてもよい：自分のデッキの上からカードを5枚見る。その中からコスト4以下の『Liella!』のメンバーカードを1枚まで公開する。そのカードを自分のステージのメンバーのいないエリアに登場させるか、手札に加える。残りを控え室に置く。"
+    },
+    {
+      "card_no": "PL!SP-pb2-005-R",
+      "name": "葉月 恋",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "バトンタッチして登場した場合、このバトンタッチで控え室に置かれた『Liella!』のメンバーカードを1枚、このメンバーの下に置く。"
+    },
+    {
+      "card_no": "PL!SP-pb2-005-PP",
+      "name": "葉月 恋",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "バトンタッチして登場した場合、このバトンタッチで控え室に置かれた『Liella!』のメンバーカードを1枚、このメンバーの下に置く。"
+    },
+    {
+      "card_no": "PL!SP-pb2-009-R",
+      "name": "鬼塚夏美",
+      "template": "optional_self_wait_opp_stage",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "『Liella!』のメンバー1人をウェイトにしてもよい：相手のステージにいる元々持つの数がこれによりウェイトにしたメンバーが元々持つの数より2つ以上少ないメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "card_no": "PL!SP-pb2-009-PP",
+      "name": "鬼塚夏美",
+      "template": "optional_self_wait_opp_stage",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "『Liella!』のメンバー1人をウェイトにしてもよい：相手のステージにいる元々持つの数がこれによりウェイトにしたメンバーが元々持つの数より2つ以上少ないメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "card_no": "PL!SP-pb2-013-R",
+      "name": "唐 可可",
+      "template": "ability_sequence",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札の『KALEIDOSCORE』のカードを1枚控え室に置いてもよい：自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。これにより控え室に置いたカードがブレードハートを持たない場合、カードを1枚引く。",
+      "steps": [
+        "energy_deck_to_wait",
+        "draw_from_deck"
+      ]
+    },
+    {
+      "card_no": "PL!SP-pb2-013-P＋",
+      "name": "唐 可可",
+      "template": "ability_sequence",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札の『KALEIDOSCORE』のカードを1枚控え室に置いてもよい：自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。これにより控え室に置いたカードがブレードハートを持たない場合、カードを1枚引く。",
+      "steps": [
+        "energy_deck_to_wait",
+        "draw_from_deck"
+      ]
+    },
+    {
+      "card_no": "PL!SP-pb2-014-R",
+      "name": "嵐 千砂都",
+      "template": "toujou_optional_all_members_relocate",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分のステージにいるメンバーが『5yncri5e!』のみの場合、自分のステージにいるメンバーをフォーメーションチェンジしてもよい。(メンバーをそれぞれ好きなエリアに移動させてもよい。)"
+    },
+    {
+      "card_no": "PL!SP-pb2-014-P＋",
+      "name": "嵐 千砂都",
+      "template": "toujou_optional_all_members_relocate",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分のステージにいるメンバーが『5yncri5e!』のみの場合、自分のステージにいるメンバーをフォーメーションチェンジしてもよい。(メンバーをそれぞれ好きなエリアに移動させてもよい。)"
+    },
+    {
+      "card_no": "PL!SP-pb2-015-R",
+      "name": "平安名すみれ",
+      "template": "toujou_wait_pick_hand",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札を1枚控え室に置いてもよい：自分の控え室から『CatChu!』のカードを1枚手札に加える。"
+    },
+    {
+      "card_no": "PL!SP-pb2-015-P＋",
+      "name": "平安名すみれ",
+      "template": "toujou_wait_pick_hand",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札を1枚控え室に置いてもよい：自分の控え室から『CatChu!』のカードを1枚手札に加える。"
+    },
+    {
+      "card_no": "PL!SP-pb2-017-R",
+      "name": "桜小路きな子",
+      "template": "deck_top_pick_recover",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札を1枚控え室に置いてもよい：自分のデッキの上からカードを5枚見る。その中から『Liella!』のメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
+    },
+    {
+      "card_no": "PL!SP-pb2-017-P＋",
+      "name": "桜小路きな子",
+      "template": "deck_top_pick_recover",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札を1枚控え室に置いてもよい：自分のデッキの上からカードを5枚見る。その中から『Liella!』のメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
+    },
+    {
+      "card_no": "PL!SP-pb2-019-R",
+      "name": "若菜四季",
+      "template": "toujou_wait_pick_hand",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札を1枚控え室に置いてもよい：自分の控え室から『5yncri5e!』のカードを1枚手札に加える。"
+    },
+    {
+      "card_no": "PL!SP-pb2-019-P＋",
+      "name": "若菜四季",
+      "template": "toujou_wait_pick_hand",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札を1枚控え室に置いてもよい：自分の控え室から『5yncri5e!』のカードを1枚手札に加える。"
+    },
+    {
+      "card_no": "PL!SP-pb2-021-R",
+      "name": "ウィーン・マルガレーテ",
+      "template": "toujou_wait_pick_hand",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札を1枚控え室に置いてもよい：自分の控え室から『KALEIDOSCORE』のカードを1枚手札に加える。"
+    },
+    {
+      "card_no": "PL!SP-pb2-021-P＋",
+      "name": "ウィーン・マルガレーテ",
+      "template": "toujou_wait_pick_hand",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札を1枚控え室に置いてもよい：自分の控え室から『KALEIDOSCORE』のカードを1枚手札に加える。"
+    },
+    {
+      "card_no": "PL!SP-pb2-024-N",
+      "name": "唐 可可",
+      "template": "optional_self_wait_opp_stage",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "相手のステージにいるコスト2以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "card_no": "PL!SP-pb2-025-N",
+      "name": "嵐 千砂都",
+      "template": "live_start_position_change",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "このメンバーをポジションチェンジしてもよい。(このメンバーを今いるエリア以外のエリアに移動させる。そのエリアにメンバーがいる場合、そのメンバーはこのメンバーがいたエリアに移動させる。)"
+    },
+    {
+      "card_no": "PL!SP-pb2-029-N",
+      "name": "米女メイ",
+      "template": "optional_self_wait_opp_stage",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "相手のステージにいるコスト2以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "card_no": "PL!SP-pb2-036-N",
+      "name": "嵐 千砂都",
+      "template": "draw_then_hand_discard",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "カードを2枚引き、手札を2枚控え室に置く。"
+    },
+    {
+      "card_no": "PL!SP-pb2-037-N",
+      "name": "平安名すみれ",
+      "template": "draw_then_hand_discard",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "カードを2枚引き、手札を2枚控え室に置く。"
     }
   ]
 }

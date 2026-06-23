@@ -360,6 +360,8 @@ export {
   listNativeLiveStartSegmentRaws,
   listNativeKidouSegmentRaws,
   cardCannotPlaceOnSuccessLive,
+  cardOffersSuccessLiveWaitingSubstitute,
+  successLiveWaitingSubstitutePickFilters,
   parseQuotedCharacterNames,
 } from "./abilityEffects.js";
 

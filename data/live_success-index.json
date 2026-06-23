@@ -1,12 +1,12 @@
 {
-  "generated": "2026-06-19",
+  "generated": "2026-06-23",
   "trigger": "live_success",
-  "total": 97,
+  "total": 107,
   "byTemplate": {
     "yell_resolution_pick_hand": 13,
     "optional_energy_live_score_plus": 3,
     "yell_resolution_count_energy_wait": 1,
-    "draw_from_deck": 11,
+    "draw_from_deck": 12,
     "draw_then_hand_discard": 17,
     "yell_resolution_energy_wait": 2,
     "yell_resolution_pick_self_score": 2,
@@ -23,7 +23,10 @@
     "deck_top_look_reorder": 1,
     "yell_reveal_series_live_score_plus": 4,
     "yell_resolution_pick_deck_top": 4,
-    "live_success_wait_skip_next_activate": 4
+    "live_success_wait_skip_next_activate": 4,
+    "draw_then_conditional_extra_draw": 1,
+    "guided_manual": 6,
+    "live_success_pick_options": 2
   },
   "cards": [
     {
@@ -884,7 +887,7 @@
     {
       "card_no": "PL!SP-sd2-003-SD2",
       "name": "嵐 千砂都",
-      "template": "draw_from_deck",
+      "template": "draw_then_conditional_extra_draw",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -898,6 +901,96 @@
       "optional": false,
       "perTurn": 0,
       "effect": "カードを1枚引き、手札を1枚控え室に置く。"
+    },
+    {
+      "card_no": "PL!SP-pb2-003-R",
+      "name": "嵐 千砂都",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "このターン、自分の『Liella!』のカードの効果によってこのメンバーがエリアを移動していた場合、ライブの合計スコアを＋１する。"
+    },
+    {
+      "card_no": "PL!SP-pb2-003-PP",
+      "name": "嵐 千砂都",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "このターン、自分の『Liella!』のカードの効果によってこのメンバーがエリアを移動していた場合、ライブの合計スコアを＋１する。"
+    },
+    {
+      "card_no": "PL!SP-pb2-004-R",
+      "name": "平安名すみれ",
+      "template": "draw_from_deck",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のライブカード置き場の中に元々のスコアより高いスコアのライブカードがあるか、エールにより公開された自分のカードの中にを持つライブカードがある場合、カードを1枚引く。"
+    },
+    {
+      "card_no": "PL!SP-pb2-004-PP",
+      "name": "平安名すみれ",
+      "template": "draw_from_deck",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のライブカード置き場の中に元々のスコアより高いスコアのライブカードがあるか、エールにより公開された自分のカードの中にを持つライブカードがある場合、カードを1枚引く。"
+    },
+    {
+      "card_no": "PL!SP-pb2-007-R",
+      "name": "米女メイ",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "支払ってもよい：自分の控え室から『Liella!』のライブカードを1枚手札に加える。"
+    },
+    {
+      "card_no": "PL!SP-pb2-007-PP",
+      "name": "米女メイ",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "支払ってもよい：自分の控え室から『Liella!』のライブカードを1枚手札に加える。"
+    },
+    {
+      "card_no": "PL!SP-pb2-008-R",
+      "name": "若菜四季",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "エールにより公開された自分のカードの中にあるブレードハートを持たない『Liella!』のメンバーカード2枚につき、ライブの合計スコアを＋１する。この能力では合計スコアは２までしか増えない。"
+    },
+    {
+      "card_no": "PL!SP-pb2-008-PP",
+      "name": "若菜四季",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "エールにより公開された自分のカードの中にあるブレードハートを持たない『Liella!』のメンバーカード2枚につき、ライブの合計スコアを＋１する。この能力では合計スコアは２までしか増えない。"
+    },
+    {
+      "card_no": "PL!SP-pb2-010-R",
+      "name": "ウィーン・マルガレーテ",
+      "template": "live_success_pick_options",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "以下から1つを選ぶ。 ・カードを2枚引く。 ・自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。"
+    },
+    {
+      "card_no": "PL!SP-pb2-010-PP",
+      "name": "ウィーン・マルガレーテ",
+      "template": "live_success_pick_options",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "以下から1つを選ぶ。 ・カードを2枚引く。 ・自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。"
     }
   ]
 }

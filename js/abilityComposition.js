@@ -71,6 +71,33 @@ export function splitAbilitySegmentClauses(segRaw) {
 export function applyAbilityComposition(card, trigger, segRaw, primary, classifyFn) {
   if (!card || !trigger || !segRaw) return primary;
   if (primary.template === "ability_sequence" || primary.template === "kidou_multi_choice") return primary;
+  // 複数句を1テンプレートで完結させる専用ハンドラは合成展開しない
+  if (
+    primary.template === "deck_peek_pick_then_opp_wait" ||
+    primary.template === "live_start_sunny_day_song_tiered" ||
+    primary.template === "live_start_overflow_heart_tiered_draw_reduce" ||
+    primary.template === "live_start_success_score_tiered_reduce_score" ||
+    primary.template === "live_start_mill_loop_blade_grant" ||
+    primary.template === "live_start_draw_then_formation_change" ||
+    primary.template === "toujou_self_wait_draw_then_conditional_discard" ||
+    primary.template === "toujou_draw_then_position_change" ||
+    primary.template === "draw_then_conditional_extra_draw" ||
+    primary.template === "live_success_draw_per_series_then_discard_same" ||
+    primary.template === "kidou_hand_reveal_grant_if_live" ||
+    primary.template === "live_start_number_reveal_grant_if" ||
+    primary.template === "live_start_dollcostra_cost_set_grant_if" ||
+    primary.template === "live_start_hand_discard_cost_boost_grant_if" ||
+    primary.template === "toujou_both_shuffle_deck_bottom_grant_if" ||
+    primary.template === "live_start_optional_shuffle_deck_bottom_grant_if" ||
+    primary.template === "live_start_pay_or_discard_conditional_grant_members" ||
+    primary.template === "kidou_reveal_live_opp_decline_grant" ||
+    primary.template === "live_start_optional_hand_discard_named_followup_blade" ||
+    primary.template === "live_start_pick_live_frame_match_success_live_grant" ||
+    primary.template === "live_success_optional_energy_wait_opp_draw" ||
+    primary.template === "live_start_love_screem_opp_answer"
+  ) {
+    return primary;
+  }
 
   var plain = segmentPlainText(segRaw);
 

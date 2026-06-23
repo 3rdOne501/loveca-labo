@@ -31,6 +31,11 @@ export const TEMPLATE_HANDLES_OWN_COST = [
   "ability_sequence",
   "toujou_multi_wait_draw_per_count",
   "live_start_waiting_deck_bottom_tiered",
+  "toujou_self_wait_draw_then_conditional_discard",
+  "live_start_mill_loop_blade_grant",
+  "live_start_pay_or_discard_conditional_grant_members",
+  "live_start_dollcostra_cost_set_grant_if",
+  "live_start_hand_discard_cost_boost_grant_if",
 ];
 
 /** executeAbilityBody 内で手動ガイド／常時トラックのみ（自動解決の対象外） */
