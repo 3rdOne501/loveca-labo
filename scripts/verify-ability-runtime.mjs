@@ -137,15 +137,19 @@ function checkPreconditionConsistency(simSrc) {
 function checkExecuteBodyAbortPaths(executeBodyChunk) {
   /** @type {string[]} */
   const errors = [];
+  /** @param {string} block */
+  function hasContinuation(block) {
+    if (/finishResolved|finishGuided|abortResolved/.test(block)) return true;
+    // 多段効果の継続コールバック（finish は後段で呼ばれる）
+    return /\b(?:after\w*|runOpp\w*|sdsTier\d+|stepPick|tier\d+|done|next|onDone|finish\w*)\s*\(/.test(block);
+  }
   const lines = executeBodyChunk.split("\n");
   for (let i = 0; i < lines.length; i++) {
     if (!/showToast\(/.test(lines[i])) continue;
     for (let j = i; j < Math.min(i + 5, lines.length); j++) {
       if (!/^\s+return;\s*$/.test(lines[j])) continue;
       const block = lines.slice(i, j + 1).join("\n");
-      if (block.includes("finishResolved") || block.includes("finishGuided") || block.includes("abortResolved")) {
-        break;
-      }
+      if (hasContinuation(block)) break;
       errors.push(`executeAbilityBody showToast→return without finish (near line ${i + 1} in body)`);
       break;
     }

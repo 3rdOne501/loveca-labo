@@ -25,7 +25,9 @@
     "yell_resolution_pick_deck_top": 4,
     "live_success_wait_skip_next_activate": 4,
     "draw_then_conditional_extra_draw": 1,
-    "guided_manual": 6,
+    "live_success_liella_effect_moved_score": 2,
+    "live_success_optional_energy_recover_waiting": 2,
+    "live_success_yell_nobh_series_score_capped": 2,
     "live_success_pick_options": 2
   },
   "cards": [
@@ -905,8 +907,8 @@
     {
       "card_no": "PL!SP-pb2-003-R",
       "name": "嵐 千砂都",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "live_success_liella_effect_moved_score",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "このターン、自分の『Liella!』のカードの効果によってこのメンバーがエリアを移動していた場合、ライブの合計スコアを＋１する。"
@@ -914,8 +916,8 @@
     {
       "card_no": "PL!SP-pb2-003-PP",
       "name": "嵐 千砂都",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "live_success_liella_effect_moved_score",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "このターン、自分の『Liella!』のカードの効果によってこのメンバーがエリアを移動していた場合、ライブの合計スコアを＋１する。"
@@ -941,8 +943,8 @@
     {
       "card_no": "PL!SP-pb2-007-R",
       "name": "米女メイ",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "live_success_optional_energy_recover_waiting",
+      "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "支払ってもよい：自分の控え室から『Liella!』のライブカードを1枚手札に加える。"
@@ -950,8 +952,8 @@
     {
       "card_no": "PL!SP-pb2-007-PP",
       "name": "米女メイ",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "live_success_optional_energy_recover_waiting",
+      "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "支払ってもよい：自分の控え室から『Liella!』のライブカードを1枚手札に加える。"
@@ -959,8 +961,8 @@
     {
       "card_no": "PL!SP-pb2-008-R",
       "name": "若菜四季",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "live_success_yell_nobh_series_score_capped",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "エールにより公開された自分のカードの中にあるブレードハートを持たない『Liella!』のメンバーカード2枚につき、ライブの合計スコアを＋１する。この能力では合計スコアは２までしか増えない。"
@@ -968,8 +970,8 @@
     {
       "card_no": "PL!SP-pb2-008-PP",
       "name": "若菜四季",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "live_success_yell_nobh_series_score_capped",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "エールにより公開された自分のカードの中にあるブレードハートを持たない『Liella!』のメンバーカード2枚につき、ライブの合計スコアを＋１する。この能力では合計スコアは２までしか増えない。"

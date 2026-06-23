@@ -25,7 +25,7 @@
     "live_start_hand_discard_activate_wait_grant": 4,
     "live_start_waiting_deck_bottom_tiered": 4,
     "live_start_pick_player_waiting_deck_bottom": 2,
-    "optional_pick_member_wait_opp_stage": 2,
+    "toujou_bibi_wait_opp_active_wait": 2,
     "draw_from_deck": 9,
     "live_start_position_change": 14,
     "live_start_pick_player_deck_top_peek": 2,
@@ -50,7 +50,8 @@
     "live_start_opp_wait_exclude_unit": 1,
     "live_start_hand_named_discard_hearts_grant": 1,
     "live_start_draw_then_formation_change": 1,
-    "guided_manual": 4
+    "optional_pick_member_wait_opp_blade_gap": 2,
+    "live_start_mandatory_energy_deck_unless_hand_discard": 2
   },
   "cards": [
     {
@@ -1283,7 +1284,7 @@
     {
       "card_no": "PL!-pb1-015-R",
       "name": "西木野真姫",
-      "template": "optional_pick_member_wait_opp_stage",
+      "template": "toujou_bibi_wait_opp_active_wait",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -1292,7 +1293,7 @@
     {
       "card_no": "PL!-pb1-015-P＋",
       "name": "西木野真姫",
-      "template": "optional_pick_member_wait_opp_stage",
+      "template": "toujou_bibi_wait_opp_active_wait",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -1509,7 +1510,7 @@
       "card_no": "PL!N-bp4-010-R＋",
       "name": "三船栞子",
       "template": "live_start_pick_live_frame_match_success_live_grant",
-      "automated": true,
+      "automated": false,
       "optional": false,
       "perTurn": 0,
       "effect": "自分のライブ中の『虹ヶ咲』のライブカードを1枚選ぶ。それと同じカード名のカードが自分の成功ライブカード置き場にある場合、ライブ終了時まで、を得る。"
@@ -1518,7 +1519,7 @@
       "card_no": "PL!N-bp4-010-P",
       "name": "三船栞子",
       "template": "live_start_pick_live_frame_match_success_live_grant",
-      "automated": true,
+      "automated": false,
       "optional": false,
       "perTurn": 0,
       "effect": "自分のライブ中の『虹ヶ咲』のライブカードを1枚選ぶ。それと同じカード名のカードが自分の成功ライブカード置き場にある場合、ライブ終了時まで、を得る。"
@@ -1527,7 +1528,7 @@
       "card_no": "PL!N-bp4-010-P＋",
       "name": "三船栞子",
       "template": "live_start_pick_live_frame_match_success_live_grant",
-      "automated": true,
+      "automated": false,
       "optional": false,
       "perTurn": 0,
       "effect": "自分のライブ中の『虹ヶ咲』のライブカードを1枚選ぶ。それと同じカード名のカードが自分の成功ライブカード置き場にある場合、ライブ終了時まで、を得る。"
@@ -1536,7 +1537,7 @@
       "card_no": "PL!N-bp4-010-SEC",
       "name": "三船栞子",
       "template": "live_start_pick_live_frame_match_success_live_grant",
-      "automated": true,
+      "automated": false,
       "optional": false,
       "perTurn": 0,
       "effect": "自分のライブ中の『虹ヶ咲』のライブカードを1枚選ぶ。それと同じカード名のカードが自分の成功ライブカード置き場にある場合、ライブ終了時まで、を得る。"
@@ -2740,8 +2741,8 @@
     {
       "card_no": "PL!SP-pb2-009-R",
       "name": "鬼塚夏美",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "optional_pick_member_wait_opp_blade_gap",
+      "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "『Liella!』のメンバー1人をウェイトにしてもよい：相手のステージにいる元々持つの数がこれによりウェイトにしたメンバーが元々持つの数より2つ以上少ないメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
@@ -2749,8 +2750,8 @@
     {
       "card_no": "PL!SP-pb2-009-PP",
       "name": "鬼塚夏美",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "optional_pick_member_wait_opp_blade_gap",
+      "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "『Liella!』のメンバー1人をウェイトにしてもよい：相手のステージにいる元々持つの数がこれによりウェイトにしたメンバーが元々持つの数より2つ以上少ないメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
@@ -2758,8 +2759,8 @@
     {
       "card_no": "PL!SP-pb2-010-R",
       "name": "ウィーン・マルガレーテ",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "live_start_mandatory_energy_deck_unless_hand_discard",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "手札を1枚控え室に置かないかぎり、自分のエネルギー1枚をエネルギーデッキに置く。"
@@ -2767,8 +2768,8 @@
     {
       "card_no": "PL!SP-pb2-010-PP",
       "name": "ウィーン・マルガレーテ",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "live_start_mandatory_energy_deck_unless_hand_discard",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "手札を1枚控え室に置かないかぎり、自分のエネルギー1枚をエネルギーデッキに置く。"

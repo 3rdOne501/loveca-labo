@@ -4,17 +4,18 @@
   "total": 539,
   "byTemplate": {
     "toujou_success_live_pick_hand": 3,
-    "toujou_wait_pick_hand": 69,
+    "toujou_wait_pick_hand": 65,
     "deck_top_pick_recover": 74,
     "draw_from_deck": 30,
     "deck_top_to_waiting": 40,
     "deck_top_look_reorder": 18,
     "ability_pick_one": 16,
-    "optional_self_wait_opp_stage": 37,
+    "optional_self_wait_opp_stage": 35,
     "toujou_opp_hand_reveal_no_live_draw": 1,
     "toujou_hand_stage_enter": 11,
-    "grant_jouji_session": 21,
+    "grant_jouji_session": 16,
     "draw_then_hand_discard": 45,
+    "toujou_opp_emma_punch_answer": 1,
     "toujou_wait_to_member_under": 1,
     "draw_until_hand_size": 2,
     "energy_deck_to_wait": 14,
@@ -41,6 +42,7 @@
     "activate_stage_members_up_to": 4,
     "toujou_wait_pick_trigger_ability": 2,
     "toujou_self_wait_only": 2,
+    "toujou_opp_stage_member_match_grant": 2,
     "toujou_success_live_score_tiered": 2,
     "toujou_multi_wait_draw_per_count": 2,
     "toujou_turn_block_effect_activate": 2,
@@ -49,6 +51,7 @@
     "toujou_both_wait_to_empty_stage": 2,
     "toujou_success_live_low_score_grant": 2,
     "toujou_opp_active_wait": 2,
+    "toujou_both_wait_pick_live_hand": 4,
     "success_live_waiting_swap": 4,
     "toujou_optional_wait_to_deck_top": 1,
     "toujou_deck_top_liella_live_pick": 5,
@@ -72,7 +75,9 @@
     "toujou_hand_discard_wait_heart_dual_pick": 2,
     "toujou_draw_grant_if_from_waiting": 1,
     "deck_top_count_stage_plus": 4,
-    "guided_manual": 2
+    "toujou_baton_discarded_series_per_card": 2,
+    "toujou_baton_discarded_under": 2,
+    "optional_pick_member_wait_opp_blade_gap": 2
   },
   "cards": [
     {
@@ -429,7 +434,7 @@
     {
       "card_no": "PL!N-PR-022-PR",
       "name": "エマ・ヴェルデ",
-      "template": "grant_jouji_session",
+      "template": "toujou_opp_emma_punch_answer",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -2237,7 +2242,7 @@
     {
       "card_no": "PL!N-bp3-011-R",
       "name": "ミア・テイラー",
-      "template": "grant_jouji_session",
+      "template": "toujou_opp_stage_member_match_grant",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -2246,7 +2251,7 @@
     {
       "card_no": "PL!N-bp3-011-P",
       "name": "ミア・テイラー",
-      "template": "grant_jouji_session",
+      "template": "toujou_opp_stage_member_match_grant",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -2731,7 +2736,7 @@
     {
       "card_no": "PL!N-bp4-007-R＋",
       "name": "優木せつ菜",
-      "template": "toujou_wait_pick_hand",
+      "template": "toujou_both_wait_pick_live_hand",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -2740,7 +2745,7 @@
     {
       "card_no": "PL!N-bp4-007-P",
       "name": "優木せつ菜",
-      "template": "toujou_wait_pick_hand",
+      "template": "toujou_both_wait_pick_live_hand",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -2749,7 +2754,7 @@
     {
       "card_no": "PL!N-bp4-007-P＋",
       "name": "優木せつ菜",
-      "template": "toujou_wait_pick_hand",
+      "template": "toujou_both_wait_pick_live_hand",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -2758,7 +2763,7 @@
     {
       "card_no": "PL!N-bp4-007-SEC",
       "name": "優木せつ菜",
-      "template": "toujou_wait_pick_hand",
+      "template": "toujou_both_wait_pick_live_hand",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -4748,7 +4753,7 @@
     {
       "card_no": "PL!SP-pb2-000-R",
       "name": "嵐 千砂都＆鬼塚夏美",
-      "template": "grant_jouji_session",
+      "template": "toujou_baton_discarded_series_per_card",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -4757,7 +4762,7 @@
     {
       "card_no": "PL!SP-pb2-000-DUO",
       "name": "嵐 千砂都＆鬼塚夏美",
-      "template": "grant_jouji_session",
+      "template": "toujou_baton_discarded_series_per_card",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -4784,8 +4789,8 @@
     {
       "card_no": "PL!SP-pb2-005-R",
       "name": "葉月 恋",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "toujou_baton_discarded_under",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "バトンタッチして登場した場合、このバトンタッチで控え室に置かれた『Liella!』のメンバーカードを1枚、このメンバーの下に置く。"
@@ -4793,8 +4798,8 @@
     {
       "card_no": "PL!SP-pb2-005-PP",
       "name": "葉月 恋",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "toujou_baton_discarded_under",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "バトンタッチして登場した場合、このバトンタッチで控え室に置かれた『Liella!』のメンバーカードを1枚、このメンバーの下に置く。"
@@ -4802,7 +4807,7 @@
     {
       "card_no": "PL!SP-pb2-009-R",
       "name": "鬼塚夏美",
-      "template": "optional_self_wait_opp_stage",
+      "template": "optional_pick_member_wait_opp_blade_gap",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -4811,7 +4816,7 @@
     {
       "card_no": "PL!SP-pb2-009-PP",
       "name": "鬼塚夏美",
-      "template": "optional_self_wait_opp_stage",
+      "template": "optional_pick_member_wait_opp_blade_gap",
       "automated": true,
       "optional": true,
       "perTurn": 0,

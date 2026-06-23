@@ -22,6 +22,13 @@ function parsePerTurnLimit(p) {
   return 0;
 }
 
+function parsePerTurnLimitFromRaw(segRaw, p) {
+  var raw = String(segRaw || "");
+  if (/turn1\.png|ターン1回|ターン１回/.test(raw + p)) return 1;
+  if (/turn2\.png|ターン2回|ターン２回/.test(raw + p)) return 2;
+  return parsePerTurnLimit(p);
+}
+
 /**
  * @param {*} card
  * @returns {string[]}
@@ -54,7 +61,7 @@ export function listNativeJidouSegmentRaws(card) {
 export function classifyJidouAutoSegment(segRaw) {
   var p = normalizeFwDigits(segmentPlainText(segRaw));
   if (!p) return { template: "jidou_manual" };
-  var perTurn = parsePerTurnLimit(p);
+  var perTurn = parsePerTurnLimitFromRaw(segRaw, p);
 
   if (/ステージから控え室に置かれたとき/.test(p) && /メンバー1人をアクティブ/.test(p)) {
     return { template: "jidou_leave_stage_activate_one", eventKind: "leave_stage", perTurnLimit: perTurn };
@@ -369,6 +376,56 @@ export function classifyJidouAutoSegment(segRaw) {
     };
   }
 
+  if (
+    (/自分のライブが成功する/.test(p) || /ライブが成功する/.test(p)) &&
+    /このメンバーがエリアを移動したとき/.test(p) &&
+    /控え室/.test(p) &&
+    /このメンバーの下に置/.test(p)
+  ) {
+    return {
+      template: "jidou_live_success_or_area_move_wait_under",
+      eventKind: "area_move",
+      altEventKind: "live_success_own",
+      filters: { pickType: "member", seriesTag: parseSeriesTag(p) },
+      perTurnLimit: perTurn,
+    };
+  }
+
+  if (
+    /自分がエールしたとき/.test(p) &&
+    /手札にある/.test(p) &&
+    /控え室に置いてもよい/.test(p) &&
+    /追加で2枚エール/.test(p)
+  ) {
+    return {
+      template: "jidou_yell_optional_hand_live_extra_yell",
+      eventKind: "yell",
+      filters: { pickType: "live", seriesTag: parseSeriesTag(p) },
+      extraYellCount: 2,
+      perTurnLimit: perTurn,
+    };
+  }
+
+  if (
+    /ステージにいる/.test(p) &&
+    /センターエリアに移動したとき/.test(p) &&
+    /ライブ終了時まで/.test(p) &&
+    /ブレード/.test(p + segRaw)
+  ) {
+    var bladeN = (String(segRaw || "").match(/\{\{icon_blade/g) || []).length;
+    if (!bladeN) {
+      var bm = p.match(/ブレード.*?(\d+)/);
+      bladeN = bm ? Number(bm[1]) : 0;
+    }
+    return {
+      template: "jidou_series_member_to_center_blade_grant",
+      eventKind: "member_to_center",
+      seriesTag: parseSeriesTag(p),
+      bladeGain: bladeN || 4,
+      perTurnLimit: perTurn,
+    };
+  }
+
   return { template: "jidou_manual" };
 }
 
@@ -423,6 +480,9 @@ export function jidouEffectIsAutomated(template) {
     template === "jidou_baton_leave_activate_energy" ||
     template === "jidou_leave_stage_hand_grant_member" ||
     template === "jidou_member_live_start_grant_all_heart" ||
-    template === "jidou_member_live_success_draw"
+    template === "jidou_member_live_success_draw" ||
+    template === "jidou_live_success_or_area_move_wait_under" ||
+    template === "jidou_yell_optional_hand_live_extra_yell" ||
+    template === "jidou_series_member_to_center_blade_grant"
   );
 }

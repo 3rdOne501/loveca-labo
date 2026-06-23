@@ -22,7 +22,9 @@ import {
   splitAbilityByTriggers,
   cardAbilityRawText,
   abilityEffectIsAutomated,
+  cardOffersSuccessLiveWaitingSubstitute,
 } from "../js/abilityEffects.js";
+import { classifyJoujiSegment } from "../js/joujiEffects.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -136,9 +138,21 @@ function riskOf(card, trig, tmpl) {
 }
 
 /** テンプレートが効果の一部を取りこぼしている疑いを検出 */
-function dropSuspicion(text, tmpl, trig, cl) {
+function dropSuspicion(text, tmpl, trig, cl, card, segRaw) {
   const flags = [];
   const filters = cl && cl.filters ? cl.filters : {};
+  const joujiRule = trig === "jouji" && segRaw ? classifyJoujiSegment(segRaw) : null;
+  const joujiHandlesOpponent =
+    joujiRule &&
+    (joujiRule.kind === "blade_per_opponent_wait" ||
+      joujiRule.kind === "heart_per_opponent_wait" ||
+      joujiRule.kind === "opponent_cannot_activate" ||
+      joujiRule.kind === "opponent_live_need_heart" ||
+      joujiRule.minOpponentWaitOnStage != null);
+  const joujiParsed =
+    joujiRule &&
+    joujiRule.kind &&
+    !["hand_cost_reduce", "hand_cost_per_other_hand", "hand_cost_per_series_on_stage"].includes(joujiRule.kind);
   const hasGrantMeta =
     cl &&
     (cl.grantToCenterMember ||
@@ -164,11 +178,23 @@ function dropSuspicion(text, tmpl, trig, cl) {
     flags.push("逐次効果の後半を取りこぼす疑い");
   }
   // 相手をウェイト/操作する文言があるのに、相手非依存テンプレート
-  if (/相手.{0,12}(ウェイト|アクティブ|控え室|デッキ|引)/.test(text) && !/opp|opponent|both_players/i.test(tmpl)) {
+  const OPPONENT_HANDLED =
+    /opp|opponent|both_players|toujou_both|toujou_baton_both|optional_self_wait_opp|live_start_sunny_day|toujou_wait_pick_opp|toujou_opp_|live_success_optional_energy_wait_opp|live_start_need_heart_reduce|jouji_success_live_waiting/;
+  if (
+    /相手.{0,12}(ウェイト|アクティブ|控え室|デッキ|引)/.test(text) &&
+    !OPPONENT_HANDLED.test(tmpl) &&
+    !(trig === "jouji" && joujiHandlesOpponent) &&
+    !(filters.requiresOpponentWaitMember === true)
+  ) {
     flags.push("相手への作用が未処理の疑い");
   }
   // 「代わりに」置換なのに passive_track / 単純テンプレート
-  if (/代わりに/.test(text) && (tmpl === "passive_track" || SINGLE.test(tmpl))) {
+  if (
+    /代わりに/.test(text) &&
+    (tmpl === "passive_track" || SINGLE.test(tmpl)) &&
+    !(card && cardOffersSuccessLiveWaitingSubstitute(card)) &&
+    joujiRule?.kind !== "stage_all_areas_grant_quoted"
+  ) {
     flags.push("置換(代わりに)が未処理の疑い");
   }
   // 条件付きスコア化なのに無条件 grant 系
@@ -182,8 +208,15 @@ function dropSuspicion(text, tmpl, trig, cl) {
     flags.push("条件分岐を無視して付与する疑い");
   }
   // jouji passive_track で複雑な条件付き付与（joujiEffects 近似）
-  if (trig === "jouji" && tmpl === "passive_track" && /場合/.test(text) && text.length >= 60) {
+  if (trig === "jouji" && tmpl === "passive_track" && /場合/.test(text) && text.length >= 60 && !joujiParsed) {
     flags.push("常時の条件付き付与を近似処理の疑い");
+  }
+  if (
+    trig === "jouji" &&
+    tmpl === "jouji_success_live_waiting_substitute" &&
+    cardOffersSuccessLiveWaitingSubstitute(card)
+  ) {
+    return flags;
   }
   return flags;
 }
@@ -211,10 +244,11 @@ function main() {
       } catch (e) {
         cl = { template: "ERROR:" + e.message };
       }
+      const segObj = segs.find((s) => s.trigger === trig) || {};
       const r = riskOf(card, trig, cl && cl.template);
       total += r.score;
       perTrig.push({ trig, ...r });
-      const ds = dropSuspicion(r.text, r.tmpl, trig, cl);
+      const ds = dropSuspicion(r.text, r.tmpl, trig, cl, card, segObj.text || "");
       ds.forEach((d) => drops.push(`${trig}:${d}`));
     }
 

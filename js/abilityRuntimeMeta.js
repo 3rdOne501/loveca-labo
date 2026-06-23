@@ -11,6 +11,7 @@ export const TEMPLATE_HANDLES_OWN_COST = [
   "kidou_wait_to_stage",
   "kidou_stage_wait_pick_hand",
   "live_start_pay_or_hand_discard",
+  "live_start_mandatory_energy_deck_unless_hand_discard",
   "optional_energy_live_score_plus",
   "deck_reveal_until_live",
   "kidou_hand_discard_wait_live_score_pay",
@@ -36,6 +37,8 @@ export const TEMPLATE_HANDLES_OWN_COST = [
   "live_start_pay_or_discard_conditional_grant_members",
   "live_start_dollcostra_cost_set_grant_if",
   "live_start_hand_discard_cost_boost_grant_if",
+  "kidou_discard_self_draw_grant",
+  "live_start_optional_energy_under_return_grant",
 ];
 
 /** executeAbilityBody 内で手動ガイド／常時トラックのみ（自動解決の対象外） */
@@ -78,6 +81,9 @@ export const JIDOU_AUTO_TEMPLATES = [
   "jidou_leave_stage_hand_grant_member",
   "jidou_member_live_start_grant_all_heart",
   "jidou_member_live_success_draw",
+  "jidou_live_success_or_area_move_wait_under",
+  "jidou_yell_optional_hand_live_extra_yell",
+  "jidou_series_member_to_center_blade_grant",
 ];
 
 /** @param {string} template */

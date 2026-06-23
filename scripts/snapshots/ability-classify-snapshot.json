@@ -1,5 +1,5 @@
 {
-  "generated": "2026-06-18T09:49:45.300Z",
+  "generated": "2026-06-23T05:56:34.281Z",
   "sample_size": 50,
   "cards": [
     {
@@ -78,6 +78,27 @@
             "minNeedHeartSlot": null,
             "minNeedHeartValue": null,
             "minTotalNeedHeart": null
+          }
+        }
+      ]
+    },
+    {
+      "card_no": "PL!N-bp3-007-PR",
+      "name": "優木せつ菜",
+      "entries": [
+        {
+          "trigger": "kidou",
+          "template": "kidou_self_wait_hand_enter_energy",
+          "filters": {
+            "pickType": "メンバー",
+            "maxCost": 13,
+            "minCost": null,
+            "seriesTag": null,
+            "minSuccessLiveCount": null,
+            "minNeedHeartSlot": null,
+            "minNeedHeartValue": null,
+            "minTotalNeedHeart": null,
+            "characterName": "優木せつ菜"
           }
         }
       ]
@@ -330,7 +351,7 @@
       "entries": [
         {
           "trigger": "kidou",
-          "template": "grant_jouji_session",
+          "template": "kidou_reveal_live_opp_decline_grant",
           "filters": {
             "pickType": "ライブ",
             "maxCost": null,
@@ -420,27 +441,6 @@
       ]
     },
     {
-      "card_no": "PL!N-bp3-007-R",
-      "name": "優木せつ菜",
-      "entries": [
-        {
-          "trigger": "kidou",
-          "template": "kidou_self_wait_hand_enter_energy",
-          "filters": {
-            "pickType": "メンバー",
-            "maxCost": 13,
-            "minCost": null,
-            "seriesTag": null,
-            "minSuccessLiveCount": null,
-            "minNeedHeartSlot": null,
-            "minNeedHeartValue": null,
-            "minTotalNeedHeart": null,
-            "characterName": "優木せつ菜"
-          }
-        }
-      ]
-    },
-    {
       "card_no": "LL-bp3-001-R＋",
       "name": "園田海未&津島善子&天王寺璃奈",
       "entries": [
@@ -495,12 +495,52 @@
       ]
     },
     {
+      "card_no": "PL!-pb1-013-R",
+      "name": "園田海未",
+      "entries": [
+        {
+          "trigger": "kidou",
+          "template": "kidou_hand_reveal_grant_if_live",
+          "filters": {
+            "pickType": "ライブ",
+            "maxCost": null,
+            "minCost": null,
+            "seriesTag": null,
+            "minSuccessLiveCount": null,
+            "minNeedHeartSlot": null,
+            "minNeedHeartValue": null,
+            "minTotalNeedHeart": null
+          }
+        }
+      ]
+    },
+    {
       "card_no": "PL!N-bp4-008-R",
       "name": "エマ・ヴェルデ",
       "entries": [
         {
           "trigger": "kidou",
           "template": "kidou_energy_or_activate_member",
+          "filters": {
+            "pickType": null,
+            "maxCost": null,
+            "minCost": null,
+            "seriesTag": "虹ヶ咲",
+            "minSuccessLiveCount": null,
+            "minNeedHeartSlot": null,
+            "minNeedHeartValue": null,
+            "minTotalNeedHeart": null
+          }
+        }
+      ]
+    },
+    {
+      "card_no": "PL!N-pb1-003-R",
+      "name": "桜坂しずく",
+      "entries": [
+        {
+          "trigger": "kidou",
+          "template": "grant_jouji_session",
           "filters": {
             "pickType": null,
             "maxCost": null,
@@ -1019,6 +1059,26 @@
       ]
     },
     {
+      "card_no": "PL!N-PR-022-PR",
+      "name": "エマ・ヴェルデ",
+      "entries": [
+        {
+          "trigger": "toujyou",
+          "template": "toujou_opp_emma_punch_answer",
+          "filters": {
+            "pickType": null,
+            "maxCost": null,
+            "minCost": null,
+            "seriesTag": null,
+            "minSuccessLiveCount": null,
+            "minNeedHeartSlot": null,
+            "minNeedHeartValue": null,
+            "minTotalNeedHeart": null
+          }
+        }
+      ]
+    },
+    {
       "card_no": "PL!N-PR-026-PR",
       "name": "天王寺璃奈",
       "entries": [
@@ -1067,66 +1127,6 @@
           "template": "energy_deck_to_wait",
           "filters": {
             "pickType": null,
-            "maxCost": null,
-            "minCost": null,
-            "seriesTag": null,
-            "minSuccessLiveCount": null,
-            "minNeedHeartSlot": null,
-            "minNeedHeartValue": null,
-            "minTotalNeedHeart": null
-          }
-        }
-      ]
-    },
-    {
-      "card_no": "PL!N-bp1-004-R",
-      "name": "朝香果林",
-      "entries": [
-        {
-          "trigger": "toujyou",
-          "template": "activate_energy",
-          "filters": {
-            "pickType": null,
-            "maxCost": null,
-            "minCost": null,
-            "seriesTag": "虹ヶ咲",
-            "minSuccessLiveCount": null,
-            "minNeedHeartSlot": null,
-            "minNeedHeartValue": null,
-            "minTotalNeedHeart": null
-          }
-        }
-      ]
-    },
-    {
-      "card_no": "PL!N-bp1-009-R",
-      "name": "天王寺璃奈",
-      "entries": [
-        {
-          "trigger": "toujyou",
-          "template": "ability_sequence",
-          "filters": {
-            "pickType": "メンバー",
-            "maxCost": null,
-            "minCost": null,
-            "seriesTag": null,
-            "minSuccessLiveCount": null,
-            "minNeedHeartSlot": null,
-            "minNeedHeartValue": null,
-            "minTotalNeedHeart": null
-          }
-        }
-      ]
-    },
-    {
-      "card_no": "PL!N-bp1-011-R",
-      "name": "ミア・テイラー",
-      "entries": [
-        {
-          "trigger": "toujyou",
-          "template": "deck_reveal_until_live",
-          "filters": {
-            "pickType": "ライブ",
             "maxCost": null,
             "minCost": null,
             "seriesTag": null,

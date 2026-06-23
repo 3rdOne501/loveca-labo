@@ -68,6 +68,20 @@ export const CARD_GROUP_RULES = [
     },
   },
   {
+    id: "dollchestra",
+    label: "DOLLCHESTRA",
+    match: function (hay) {
+      return /DOLLCHESTRA|ドルチェストラ/i.test(hay);
+    },
+  },
+  {
+    id: "syncrise",
+    label: "5yncri5e!",
+    match: function (hay) {
+      return /5yncri5e|syncri5e|シンクリ/i.test(hay);
+    },
+  },
+  {
     id: "aqours",
     label: "Aqours",
     match: function (hay) {
@@ -103,7 +117,13 @@ export function normalizeCardGroupText(s) {
  */
 export function cardGroupHaystack(cat) {
   if (!cat) return "";
-  return [cat.series, cat.product, cat.unit, cat.name].filter(Boolean).join(" ");
+  var parts = [cat.series, cat.product, cat.unit, cat.name].filter(Boolean);
+  if (Array.isArray(cat._extraGroupTags)) {
+    cat._extraGroupTags.forEach(function (t) {
+      if (t) parts.push(String(t));
+    });
+  }
+  return parts.join(" ");
 }
 
 /**

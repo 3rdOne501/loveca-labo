@@ -46,6 +46,8 @@ import { T_MEMBER } from "./config.js";
  * @property {number} [minLiveCardsInFrames]
  * @property {string} [liveSeriesTag]
  * @property {number} [minOpponentWaitOnStage]
+ * @property {Record<number, number>} [heartPerSlot]
+ * @property {string} [grantedSegmentRaw]
  * @property {number} [minOpponentSuccessLive]
  * @property {number} [maxOwnSuccessLive]
  * @property {number} [minOpponentSuccessLiveScoreSum]
@@ -76,6 +78,7 @@ import { T_MEMBER } from "./config.js";
  * @property {boolean} cannotBatonToWaiting
  * @property {boolean} allowsTwoMemberBaton
  * @property {boolean} [printedHeartsWildcard]
+ * @property {string[]} [grantedSegmentRaws]
  */
 
 /**
@@ -252,6 +255,24 @@ export function classifyJoujiSegment(segRaw) {
   if (
     /ステージのエリアすべてに『/.test(p) &&
     /名前が異なる/.test(p) &&
+    /「/.test(String(segRaw)) &&
+    (/」を得る/.test(p) || /」を得る/.test(String(segRaw)))
+  ) {
+    var serTagQuoted = p.match(/ステージのエリアすべてに『([^』]+)』/);
+    var quotedGrantM = String(segRaw).match(/「([\s\S]+?)」を得る/);
+    if (serTagQuoted && quotedGrantM && quotedGrantM[1]) {
+      return Object.assign({}, base, {
+        kind: "stage_all_areas_grant_quoted",
+        seriesTag: serTagQuoted[1],
+        grantedSegmentRaw: quotedGrantM[1],
+        requiresStageOnly: true,
+      });
+    }
+  }
+
+  if (
+    /ステージのエリアすべてに『/.test(p) &&
+    /名前が異なる/.test(p) &&
     /ライブの合計スコア/.test(p) &&
     (/を得る/.test(p) || /」を得る/.test(p))
   ) {
@@ -298,6 +319,35 @@ export function classifyJoujiSegment(segRaw) {
     return Object.assign({}, base, { kind: "printed_hearts_wildcard", requiresStageOnly: true });
   }
 
+  if (/すべての領域にあるこのカードは/.test(p) && /として扱う/.test(p)) {
+    /** @type {string[]} */
+    var extraSeriesTags = [];
+    var extraTagRe = /『([^』]+)』/g;
+    var etm;
+    while ((etm = extraTagRe.exec(p))) extraSeriesTags.push(etm[1]);
+    if (extraSeriesTags.length) {
+      return Object.assign({}, base, {
+        kind: "extra_series_tags_all_zones",
+        extraSeriesTags: extraSeriesTags,
+      });
+    }
+  }
+
+  if (
+    /ステージにいるメンバーが持つ/.test(p) &&
+    /ライブ開始時/.test(p + String(segRaw || "")) &&
+    /能力は発動しない/.test(p)
+  ) {
+    return Object.assign({}, base, {
+      kind: "block_stage_member_live_start",
+      requiresInLiveFrames: true,
+    });
+  }
+
+  if (/成功ライブカード置き場に置くことができない/.test(p)) {
+    return Object.assign({}, base, { kind: "cannot_place_on_success_live" });
+  }
+
   var scorePlus = parseScorePlus(p);
   if (scorePlus > 0 && /ライブの合計スコア/.test(p)) {
     var ebBelow = p.match(/下にエネルギーカードが(\d+)枚以上置かれている/);
@@ -337,6 +387,31 @@ export function classifyJoujiSegment(segRaw) {
     });
   }
 
+  var grantSeriesHandFromSuccessLive = p.match(
+    /このカードが自分の成功ライブカード置き場にあるかぎり.*元々のコストが(\d+)以上の『([^』]+)』.*登場させるためのコストは(\d+)減る/,
+  );
+  if (grantSeriesHandFromSuccessLive) {
+    return Object.assign({}, base, {
+      kind: "grant_hand_series_cost_reduce",
+      handCostReduce: Number(grantSeriesHandFromSuccessLive[3]) || 2,
+      handCostReduceMinCost: Number(grantSeriesHandFromSuccessLive[1]) || 17,
+      handCostReduceSeriesTag: grantSeriesHandFromSuccessLive[2],
+      requiresSuccessLiveSelf: true,
+      nonStacking: /重複しない/.test(p),
+    });
+  }
+
+  var successLiveSelfScore = p.match(
+    /このカードが自分の成功ライブカード置き場にあり.*ステージに『([^』]+)』のメンバーがいるかぎり.*このカードのスコアを[＋+](\d+)/,
+  );
+  if (successLiveSelfScore) {
+    return Object.assign({}, base, {
+      kind: "success_live_self_score_if_series_on_stage",
+      seriesTag: successLiveSelfScore[1],
+      successLiveScorePlus: Number(successLiveSelfScore[2]) || 1,
+    });
+  }
+
   var grantSeriesHand = p.match(
     /コスト(\d+)の『([^』]+)』のメンバーカードを自分の手札から登場させるためのコストは(\d+)減る/,
   );
@@ -361,11 +436,24 @@ export function classifyJoujiSegment(segRaw) {
     });
   }
 
+  var underSeriesCost = p.match(
+    /下にある『([^』]+)』のメンバーカード1枚につき、このメンバーのコストを[＋+](\d+)/,
+  );
+  if (underSeriesCost) {
+    return Object.assign({}, base, {
+      kind: "stage_cost_plus_per_under_series",
+      underSeriesTag: underSeriesCost[1],
+      stageCostPlusPerUnder: Number(underSeriesCost[2]) || 1,
+      requiresStageOnly: true,
+    });
+  }
+
   if (/下に置かれている.*が持つ.*能力をすべて得る/.test(p)) {
     var mirCost = p.match(/コスト(\d+)以下/);
     var mirSer = p.match(/『([^』]+)』/);
+    var isKidou = /\{\{kidou|起動\}\}|起動能力/.test(p + segRaw);
     return Object.assign({}, base, {
-      kind: "mirror_under_card_live_success",
+      kind: isKidou ? "mirror_under_card_kidou" : "mirror_under_card_live_success",
       mirrorUnderMaxCost: mirCost ? Number(mirCost[1]) : 99,
       seriesTag: mirSer ? mirSer[1] : null,
       requiresStageOnly: true,
@@ -432,6 +520,13 @@ export function classifyJoujiSegment(segRaw) {
   }
 
   if (/相手のステージにいるウェイト状態のメンバー1人につき/.test(p)) {
+    var heartMapOppWait = countHeartIconsBySlot(segRaw);
+    if (Object.keys(heartMapOppWait).length > 0) {
+      return Object.assign({}, base, {
+        kind: "heart_per_opponent_wait",
+        heartPerSlot: heartMapOppWait,
+      });
+    }
     return Object.assign({}, base, {
       kind: "blade_per_opponent_wait",
       bladePer: countBladeIcons(segRaw) || 1,
@@ -626,6 +721,7 @@ function emptyJoujiEval() {
     cannotBatonToWaiting: false,
     allowsTwoMemberBaton: false,
     printedHeartsWildcard: false,
+    grantedSegmentRaws: [],
   };
 }
 
@@ -645,6 +741,12 @@ function mergeJoujiEval(acc, part) {
   acc.cannotBatonToWaiting = acc.cannotBatonToWaiting || part.cannotBatonToWaiting;
   acc.allowsTwoMemberBaton = acc.allowsTwoMemberBaton || part.allowsTwoMemberBaton;
   acc.printedHeartsWildcard = acc.printedHeartsWildcard || part.printedHeartsWildcard;
+  if (part.grantedSegmentRaws && part.grantedSegmentRaws.length) {
+    if (!acc.grantedSegmentRaws) acc.grantedSegmentRaws = [];
+    part.grantedSegmentRaws.forEach(function (g) {
+      if (g && acc.grantedSegmentRaws.indexOf(g) < 0) acc.grantedSegmentRaws.push(g);
+    });
+  }
 }
 
 /** @param {JoujiRule} rule @param {*} inst @param {*} card @param {JoujiBoardContext} ctx */
@@ -676,6 +778,7 @@ function evaluateJoujiRule(rule, inst, card, ctx) {
       return out;
     case "baton_series_only":
     case "mirror_under_card_live_success":
+    case "mirror_under_card_kidou":
       return out;
     case "opponent_cannot_activate":
       return out;
@@ -730,6 +833,25 @@ function evaluateJoujiRule(rule, inst, card, ctx) {
 
   if (!conditionMet(rule, inst, card, ctx)) return out;
 
+  if (rule.kind === "stage_all_areas_grant_quoted") {
+    var grantRaw = String(rule.grantedSegmentRaw || "");
+    if (grantRaw && !/^\{\{jyouji/i.test(grantRaw)) {
+      grantRaw = "{{jyouji.png|常時}}" + grantRaw;
+    }
+    if (grantRaw) out.grantedSegmentRaws = [grantRaw];
+    return out;
+  }
+  if (rule.kind === "heart_per_opponent_wait") {
+    var waitN = ctx.opponentStageWaitCount();
+    Object.keys(rule.heartPerSlot || {}).forEach(function (slotKey) {
+      var slotNum = Number(slotKey);
+      var per = Math.floor(Number(rule.heartPerSlot[slotKey]) || 0);
+      if (per > 0 && slotNum >= 1 && slotNum <= 6) {
+        out.heartSlots[slotNum] = (out.heartSlots[slotNum] || 0) + per * waitN;
+      }
+    });
+    return out;
+  }
   if (rule.kind === "live_score_plus" || rule.kind === "live_score_if_energy_below") {
     out.liveScoreBonus = rule.liveScorePlus || 0;
     return out;
@@ -740,6 +862,14 @@ function evaluateJoujiRule(rule, inst, card, ctx) {
     } else {
       out.stageCostDelta = rule.stageCostPlus || 0;
     }
+    return out;
+  }
+  if (rule.kind === "stage_cost_plus_per_under_series") {
+    out.stageCostDelta =
+      (rule.stageCostPlusPerUnder || 1) * ctx.memberCountBelowSeries(inst, rule.underSeriesTag);
+    return out;
+  }
+  if (rule.kind === "success_live_self_score_if_series_on_stage") {
     return out;
   }
   if (rule.kind === "stage_all_areas_series_distinct_score") {
@@ -765,7 +895,9 @@ function evaluateJoujiRule(rule, inst, card, ctx) {
 /** @param {JoujiRule} rule @param {*} inst @param {*} card @param {JoujiBoardContext} ctx */
 function scalingCount(rule, inst, card, ctx) {
   if (rule.kind === "blade_per_own_success_live") return ctx.ownSuccessLiveCount();
-  if (rule.kind === "blade_per_opponent_wait") return ctx.opponentStageWaitCount();
+  if (rule.kind === "blade_per_opponent_wait" || rule.kind === "heart_per_opponent_wait") {
+    return ctx.opponentStageWaitCount();
+  }
   if (rule.kind === "blade_per_energy_below") return ctx.energyCountBelowMember(inst);
   if (rule.kind === "blade_per_stage_member") {
     var n = 0;
@@ -1007,8 +1139,12 @@ export function computeJoujiHandCostReductionForCard(targetInst, ctx) {
     for (var i = 0; i < raws.length; i++) {
       var rule = classifyJoujiSegment(raws[i]);
       if (!rule || rule.kind !== "grant_hand_series_cost_reduce") continue;
+      if (rule.requiresSuccessLiveSelf) continue;
       if (!conditionMet(rule, inst, card, ctx)) continue;
       if (rule.handCostReduceSeriesTag && !catalogCardMatchesGroupTag(mc, rule.handCostReduceSeriesTag)) {
+        continue;
+      }
+      if (rule.handCostReduceMinCost != null && ctx.memberPrintedCost(targetInst) < rule.handCostReduceMinCost) {
         continue;
       }
       if (rule.handCostReduceTargetCost != null && ctx.memberPrintedCost(targetInst) !== rule.handCostReduceTargetCost) {
@@ -1017,7 +1153,50 @@ export function computeJoujiHandCostReductionForCard(targetInst, ctx) {
       red = Math.max(red, rule.handCostReduce || 0);
     }
   });
+  var slLives = ctx.successLiveAreaLiveInsts ? ctx.successLiveAreaLiveInsts() : [];
+  for (var si = 0; si < slLives.length; si++) {
+    var liveInst = slLives[si];
+    if (!liveInst) continue;
+    var liveCard = ctx.mergedCatalog(liveInst);
+    var liveRaws = listNativeJoujiSegmentRaws(liveCard);
+    for (var lj = 0; lj < liveRaws.length; lj++) {
+      var liveRule = classifyJoujiSegment(liveRaws[lj]);
+      if (!liveRule || liveRule.kind !== "grant_hand_series_cost_reduce") continue;
+      if (!liveRule.requiresSuccessLiveSelf) continue;
+      if (liveRule.handCostReduceSeriesTag && !catalogCardMatchesGroupTag(mc, liveRule.handCostReduceSeriesTag)) {
+        continue;
+      }
+      if (liveRule.handCostReduceMinCost != null && ctx.memberPrintedCost(targetInst) < liveRule.handCostReduceMinCost) {
+        continue;
+      }
+      if (liveRule.handCostReduceTargetCost != null && ctx.memberPrintedCost(targetInst) !== liveRule.handCostReduceTargetCost) {
+        continue;
+      }
+      red = Math.max(red, liveRule.handCostReduce || 0);
+    }
+  }
   return red;
+}
+
+/** @param {*} liveInst @param {JoujiBoardContext} ctx */
+export function computeSuccessLiveJoujiScoreBonus(liveInst, ctx) {
+  if (!liveInst || !ctx) return 0;
+  var card = ctx.mergedCatalog(liveInst);
+  var raws = listNativeJoujiSegmentRaws(card);
+  var bonus = 0;
+  for (var i = 0; i < raws.length; i++) {
+    var rule = classifyJoujiSegment(raws[i]);
+    if (!rule || rule.kind !== "success_live_self_score_if_series_on_stage") continue;
+    if (rule.seriesTag) {
+      var hasSeries = false;
+      (ctx.eachStageColumnMembers() || []).forEach(function (m) {
+        if (m && ctx.memberMatchesSeries(m, rule.seriesTag)) hasSeries = true;
+      });
+      if (!hasSeries) continue;
+    }
+    bonus = Math.max(bonus, rule.successLiveScorePlus || 0);
+  }
+  return bonus;
 }
 
 /** @param {*} card */
@@ -1033,6 +1212,17 @@ export function memberHasMirrorUnderLiveSuccessJouji(card) {
   for (var i = 0; i < raws.length; i++) {
     var rule = classifyJoujiSegment(raws[i]);
     if (rule && rule.kind === "mirror_under_card_live_success") return true;
+  }
+  return false;
+}
+
+/** @param {*} card */
+export function memberHasMirrorUnderKidouJouji(card) {
+  if (!card) return false;
+  var raws = listNativeJoujiSegmentRaws(card);
+  for (var i = 0; i < raws.length; i++) {
+    var rule = classifyJoujiSegment(raws[i]);
+    if (rule && rule.kind === "mirror_under_card_kidou") return true;
   }
   return false;
 }

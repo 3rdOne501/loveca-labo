@@ -2,8 +2,8 @@
   "generated": "2026-06-23",
   "trigger": "jidou",
   "total": 105,
-  "automated": 99,
-  "guided_manual": 6,
+  "automated": 105,
+  "guided_manual": 0,
   "byTemplate": {
     "jidou_leave_stage_activate_one": 2,
     "jidou_yell_grant_jouji": 7,
@@ -38,7 +38,9 @@
     "jidou_live_zone_to_waiting_deck": 4,
     "jidou_series_enter_opp_wait": 2,
     "jidou_leave_stage_hand_grant_member": 1,
-    "jidou_manual": 6
+    "jidou_live_success_or_area_move_wait_under": 2,
+    "jidou_yell_optional_hand_live_extra_yell": 2,
+    "jidou_series_member_to_center_blade_grant": 2
   },
   "cards": [
     {
@@ -812,17 +814,17 @@
     {
       "card_no": "PL!SP-pb2-006-R",
       "name": "桜小路きな子",
-      "template": "jidou_manual",
-      "automated": false,
-      "eventKind": null,
+      "template": "jidou_live_success_or_area_move_wait_under",
+      "automated": true,
+      "eventKind": "area_move",
       "effect": "自分のライブが成功するか、このメンバーがエリアを移動したとき、自分の控え室にある『Liella!』のメンバーカードを1枚、このメンバーの下に置く。"
     },
     {
       "card_no": "PL!SP-pb2-006-PP",
       "name": "桜小路きな子",
-      "template": "jidou_manual",
-      "automated": false,
-      "eventKind": null,
+      "template": "jidou_live_success_or_area_move_wait_under",
+      "automated": true,
+      "eventKind": "area_move",
       "effect": "自分のライブが成功するか、このメンバーがエリアを移動したとき、自分の控え室にある『Liella!』のメンバーカードを1枚、このメンバーの下に置く。"
     },
     {
@@ -844,33 +846,33 @@
     {
       "card_no": "PL!SP-pb2-020-R",
       "name": "鬼塚夏美",
-      "template": "jidou_manual",
-      "automated": false,
-      "eventKind": null,
+      "template": "jidou_yell_optional_hand_live_extra_yell",
+      "automated": true,
+      "eventKind": "yell",
       "effect": "自分がエールしたとき、手札にある『Liella!』のライブカードを1枚控え室に置いてもよい。そうした場合、追加で2枚エールを行う。"
     },
     {
       "card_no": "PL!SP-pb2-020-P＋",
       "name": "鬼塚夏美",
-      "template": "jidou_manual",
-      "automated": false,
-      "eventKind": null,
+      "template": "jidou_yell_optional_hand_live_extra_yell",
+      "automated": true,
+      "eventKind": "yell",
       "effect": "自分がエールしたとき、手札にある『Liella!』のライブカードを1枚控え室に置いてもよい。そうした場合、追加で2枚エールを行う。"
     },
     {
       "card_no": "PL!SP-pb2-022-R",
       "name": "鬼塚冬毬",
-      "template": "jidou_manual",
-      "automated": false,
-      "eventKind": null,
+      "template": "jidou_series_member_to_center_blade_grant",
+      "automated": true,
+      "eventKind": "member_to_center",
       "effect": "自分のステージにいる『5yncri5e!』のメンバーがセンターエリアに移動したとき、ライブ終了時まで、を得る。"
     },
     {
       "card_no": "PL!SP-pb2-022-P＋",
       "name": "鬼塚冬毬",
-      "template": "jidou_manual",
-      "automated": false,
-      "eventKind": null,
+      "template": "jidou_series_member_to_center_blade_grant",
+      "automated": true,
+      "eventKind": "member_to_center",
       "effect": "自分のステージにいる『5yncri5e!』のメンバーがセンターエリアに移動したとき、ライブ終了時まで、を得る。"
     },
     {
