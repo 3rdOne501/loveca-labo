@@ -13455,7 +13455,10 @@ export function mountSimulator(
       if (cl.handDiscardToWaiting && cl.handDiscardToWaiting > 0) {
         var picked = body.querySelectorAll('input[name="cost-pay-hand"]:checked');
         for (var i = 0; i < picked.length; i++) hids.push(String(picked[i].value));
-        if (hids.length !== Number(cl.handDiscardToWaiting)) {
+        // 「ウェイトにするか、手札をN枚控え室に置く」のような択一コストでは、
+        // 手札を選ばずにウェイトで支払う選択肢も許可する（cost-or-alt の検証は後段で行う）。
+        var handDiscardIsAlternative = !!(cl.costOrAlt && cl.costSelfWait);
+        if (!handDiscardIsAlternative && hids.length !== Number(cl.handDiscardToWaiting)) {
           showToast("手札からちょうど " + cl.handDiscardToWaiting + " 枚選んでください");
           return;
         }
@@ -13976,6 +13979,32 @@ export function mountSimulator(
       d.lcActive = true;
       d.isRotated = false;
     });
+  }
+
+  /**
+   * 盤面リセット用：ソロの相手盤面トラッキング（成功ライブ枚数・相手スコア・手札・ウェイト等）と
+   * 常設ダミー、常時/ライブセッション由来の補正を初期値へ戻す。
+   * これらは snapshotBoard に含まれず applyBoard でも初期化されないため、明示的に掃除する。
+   */
+  function resetSoloOpponentTrackingState() {
+    state.soloOpponentDummies = [];
+    state.soloOpponentSuccessLiveCount = 0;
+    state.soloOpponentLiveFrameScoreSum = null;
+    state.soloOpponentHandCount = 0;
+    state.soloOpponentYellRevealedLiveCount = null;
+    state.soloOpponentHasWaitMember = null;
+    state.joujiLiveScoreBonus = 0;
+    state.joujiOpponentLiveNeedHeartBump = 0;
+    state.blockStageMemberLiveStartAbilities = false;
+    state.blockEffectMemberActivateTurn = null;
+    state.liveBladeManualAdjust = 0;
+    state.liveSetLimitPenaltyPending = 0;
+    state.liveSetCardCapPenalty = 0;
+    state._liveSetCapAppliedKey = "";
+    state.deckRefreshedThisTurn = false;
+    state.extraYellRevealAllowance = 0;
+    state.liveTurnYellRevealedCardIds = [];
+    state.stageColumnEntryBlocked = { left: false, center: false, right: false };
   }
 
   /** このターン（リセットまで）にウェイトにした相手ダミーの数。 */
@@ -27833,7 +27862,8 @@ export function mountSimulator(
         state.awaitingTurnStart === true
       );
     }
-    return state.awaitingTurnStart === true;
+    // ソロ: 開幕（turnCount===0）のみマリガン札選択を許可。ライブターン終了の待機（turnCount>=1）では不可。
+    return state.awaitingTurnStart === true && state.turnCount === 0;
   }
 
   function syncVersusMatchBar(remoteMatch) {
@@ -30358,8 +30388,8 @@ export function mountSimulator(
     }
   }
 
-  /** liveStatsAfterBegin かつライブ枠にライブが1枚でもあるとき、「1枚ドロー（解決）」を「1枚エール（解決）」へ。
-   * 開始直後で枠が空のときはドローラベルのままにする。
+  /** liveStatsAfterBegin かつライブ枠にライブが1枚でもあるとき、「1枚解決」を「1枚エール」へ。
+   * 開始直後で枠が空のときは解決ラベルのままにする。
    *  対象ボタン: btn-res-draw-one（解決ゾーン横）/ btn-draw-resolution（山札の下のドロー行） */
   function syncLiveYellDrawButtons() {
     var inLive =
@@ -30368,12 +30398,12 @@ export function mountSimulator(
     var groups = [
       {
         ids: ["btn-res-draw-one", "btn-draw-resolution"],
-        liveLabel: "1枚エール（解決）",
+        liveLabel: "1枚エール",
         liveTitle: "ライブ中：山札の先頭1枚を解決ゾーンへ送ります（エール）",
       },
       {
         ids: ["btn-res-draw-all", "btn-draw-resolution-all"],
-        liveLabel: "全てエール（解決）",
+        liveLabel: "全てエール",
         liveTitle: "ライブ中：必要なエール枚数になるまで山札の先頭を一括で解決ゾーンへ送ります（エール）",
       },
     ];
@@ -30638,12 +30668,12 @@ export function mountSimulator(
         liveSimResolutionVerdictLocked() && body.classList.contains("flow-hint--turn-start"),
       );
     }
-    if (state.awaitingTurnStart === true && !openingMulliganExecuteUsed) {
+    if (state.awaitingTurnStart === true && state.turnCount === 0 && !openingMulliganExecuteUsed) {
       body.classList.add("flow-hint--mulligan-execute");
       finalizeTurnStartYellGlow();
       return;
     }
-    if (state.awaitingTurnStart === true && openingMulliganExecuteUsed) {
+    if (state.awaitingTurnStart === true) {
       body.classList.add("flow-hint--turn-start");
       finalizeTurnStartYellGlow();
       return;
@@ -30807,7 +30837,11 @@ export function mountSimulator(
         state.awaitingTurnStart === true &&
         !openingMulliganExecuteUsed &&
         !versusMulliganCommitPending
-      : state.awaitingTurnStart === true && !openingMulliganExecuteUsed;
+      : // ソロ: 開幕マリガンはゲーム開始時・盤面リセット直後（いずれも turnCount===0）のみ。
+        // ライブターン終了などで awaitingTurnStart になっても turnCount>=1 なので再表示しない。
+        state.awaitingTurnStart === true &&
+        state.turnCount === 0 &&
+        !openingMulliganExecuteUsed;
     var showVersusEndTurn = false;
     const hint = $("hand-mulligan-hint");
     if (hint) {
@@ -30866,9 +30900,11 @@ export function mountSimulator(
     }
     const actions = document.querySelector(".hand-zone-actions");
     if (actions) {
-      /* マリガン実行後の開幕中だけ幅を広げる（常時付与すると控え室などの開閉が効かなくなる） */
+      /* マリガン実行後の開幕中・ライブターン終了後の待機中（turnCount>=1）など、
+       * マリガンUIが出ていない待機状態で幅を広げる（常時付与すると控え室などの開閉が効かなくなる） */
       var expandLiveBtns =
-        state.awaitingTurnStart === true && openingMulliganExecuteUsed === true;
+        state.awaitingTurnStart === true &&
+        (openingMulliganExecuteUsed === true || state.turnCount > 0);
       actions.classList.toggle("hand-zone-actions--no-mulligan", expandLiveBtns);
     }
   }
@@ -33106,6 +33142,7 @@ export function mountSimulator(
       persistSessionTexts();
     }
     uid = Math.max(uid, 999);
+    resetSoloOpponentTrackingState();
     logReplay("reset-board");
     openingMulliganExecuteUsed = false;
     openingMulliganRememberedK = null;

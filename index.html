@@ -937,10 +937,10 @@ python3 -m http.server 8080</pre>
                     <h3>解決 <span id="resolution-zone-head-count" class="badge zone-resolution-head-count" aria-live="polite">0</span></h3>
                     <div class="btn-row wrap">
                       <button type="button" class="btn sm primary" id="btn-res-draw-one" title="山札の先頭を1枚解決ゾーンへ（Undo可）">
-                        1枚ドロー（解決）
+                        1枚解決
                       </button>
                       <button type="button" class="btn sm primary" id="btn-res-draw-all" title="ライブ中：必要なエール枚数になるまで山札の先頭を一括で解決ゾーンへ（Undo可）">
-                        全てドロー（解決）
+                        全て解決
                       </button>
                       <button type="button" class="btn sm" id="btn-res-top">デッキ上に戻す</button>
                       <button type="button" class="btn sm" id="btn-res-shuf">戻してシャッフル</button>
@@ -1221,9 +1221,9 @@ python3 -m http.server 8080</pre>
             </div>
             <div class="btn-row draw-row draw-row--top wrap">
               <button type="button" class="btn" id="btn-draw-hand">1枚ドロー（手札）</button>
-              <button type="button" class="btn" id="btn-draw-waiting">1枚ドロー（控室）</button>
-              <button type="button" class="btn" id="btn-draw-resolution">1枚ドロー（解決）</button>
-              <button type="button" class="btn" id="btn-draw-resolution-all">全てドロー（解決）</button>
+              <button type="button" class="btn" id="btn-draw-waiting">1枚控え室へ</button>
+              <button type="button" class="btn" id="btn-draw-resolution">1枚解決</button>
+              <button type="button" class="btn" id="btn-draw-resolution-all">全て解決</button>
             </div>
             <div class="btn-row draw-row draw-row--turn wrap draw-row--turn-versus">
               <button type="button" class="btn primary" id="btn-turn-start" title="解決・ライブ枠を控え室へ送る／手札に山札から 1 枚ドロー／側面エネのウェイト解除・メンバーを縦・アクティブにし側面エネを1枚加算（上限12）。対戦モードの通常フェイズではターン終了。">
