@@ -8,7 +8,7 @@
     "jidou_leave_stage_activate_one": 2,
     "jidou_yell_grant_jouji": 7,
     "jidou_enter_or_baton_draw": 1,
-    "jidou_area_move_grant_jouji": 11,
+    "jidou_area_move_grant_jouji": 9,
     "jidou_area_move_draw": 1,
     "jidou_leave_stage_hand_pick_recover": 3,
     "jidou_yell_grant_heart": 2,
@@ -39,6 +39,7 @@
     "jidou_series_enter_opp_wait": 2,
     "jidou_leave_stage_hand_grant_member": 1,
     "jidou_live_success_or_area_move_wait_under": 2,
+    "jidou_center_member_move_choice": 2,
     "jidou_yell_optional_hand_live_extra_yell": 2,
     "jidou_series_member_to_center_blade_grant": 2
   },
@@ -830,17 +831,17 @@
     {
       "card_no": "PL!SP-pb2-011-R",
       "name": "鬼塚冬毬",
-      "template": "jidou_area_move_grant_jouji",
+      "template": "jidou_center_member_move_choice",
       "automated": true,
-      "eventKind": "area_move",
+      "eventKind": "center_member_area_move",
       "effect": "自分のステージのセンターエリアにいるメンバーがエリアを移動したとき、以下から1つを選ぶ。 ・ライブ終了時まで、を得る。 ・相手のステージにいる元々持つの数が2つ以下のメンバー1人をウェイトにする。 ・カードを1枚引く。"
     },
     {
       "card_no": "PL!SP-pb2-011-PP",
       "name": "鬼塚冬毬",
-      "template": "jidou_area_move_grant_jouji",
+      "template": "jidou_center_member_move_choice",
       "automated": true,
-      "eventKind": "area_move",
+      "eventKind": "center_member_area_move",
       "effect": "自分のステージのセンターエリアにいるメンバーがエリアを移動したとき、以下から1つを選ぶ。 ・ライブ終了時まで、を得る。 ・相手のステージにいる元々持つの数が2つ以下のメンバー1人をウェイトにする。 ・カードを1枚引く。"
     },
     {

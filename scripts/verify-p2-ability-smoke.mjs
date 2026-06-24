@@ -33,6 +33,7 @@ const P0_CASES = [
   { id: "PL!S-pb1-002-R", trigger: "toujyou", template: "toujou_opp_optional_live_discard_or_score" },
   { id: "PL!-PR-014-PR", trigger: "toujyou", template: "toujou_opp_hand_reveal_no_live_draw" },
   { id: "PL!-pb1-015-R", trigger: "toujyou", template: "toujou_bibi_wait_opp_active_wait" },
+  { id: "PL!-bp5-333-R", trigger: "toujyou", template: "optional_self_wait_opp_stage", extra: { oppWaitMaxCost: 9 } },
 ];
 
 /** @type {Array<{id:string, segIndex?:number, template:string, extra?:Record<string, unknown>}>} */
@@ -233,6 +234,19 @@ if (!dualHandlerHasMutate("optional_pick_member_wait_opp_blade_gap")) {
   console.error("FAIL optional_pick_member_wait_opp_blade_gap dual-mode branch missing");
 } else {
   console.log("OK optional_pick_member_wait_opp_blade_gap dual-mode branch");
+}
+
+// bp5-333 等: 相手ステージウェイトはソロで相手代理のみ
+if (!simSrc.includes("function soloOpponentProxyStageMemberCandidates")) {
+  failed++;
+  console.error("FAIL soloOpponentProxyStageMemberCandidates helper missing");
+} else if (
+  !/optional_self_wait_opp_stage[\s\S]{0,4000}soloOpponentActiveStageMemberCandidates\(oppMax\)/.test(simSrc)
+) {
+  failed++;
+  console.error("FAIL optional_self_wait_opp_stage solo pool not restricted to opponent stage");
+} else {
+  console.log("OK optional_self_wait_opp_stage solo opponent-stage pool");
 }
 
 if (failed) {

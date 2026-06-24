@@ -253,7 +253,7 @@ function checkSegment(ctx) {
     }
   }
 
-  const filters = (cl && cl.filters) || {};
+  const filters = Object.assign({}, cl?.preconditionFilters || {}, cl?.filters || {});
   if (
     /自分か相手の成功ライブ/.test(text) &&
     (filters.minSuccessLiveCount != null || filters.minOpponentSuccessLiveCount != null)

@@ -1,5 +1,5 @@
 {
-  "generated": "2026-06-23T08:57:41.235Z",
+  "generated": "2026-06-23T16:53:44.366Z",
   "sample_size": 50,
   "cards": [
     {
@@ -671,7 +671,8 @@
             "minSuccessLiveCount": null,
             "minNeedHeartSlot": null,
             "minNeedHeartValue": null,
-            "minTotalNeedHeart": null
+            "minTotalNeedHeart": null,
+            "minEitherSuccessLiveCount": null
           }
         },
         {
@@ -679,26 +680,6 @@
           "template": "kidou_wait_or_hand_for_energy",
           "filters": {
             "pickType": null,
-            "maxCost": null,
-            "minCost": null,
-            "seriesTag": null,
-            "minSuccessLiveCount": null,
-            "minNeedHeartSlot": null,
-            "minNeedHeartValue": null,
-            "minTotalNeedHeart": null
-          }
-        }
-      ]
-    },
-    {
-      "card_no": "PL!SP-bp5-002-R＋",
-      "name": "唐 可可",
-      "entries": [
-        {
-          "trigger": "kidou",
-          "template": "ability_sequence",
-          "filters": {
-            "pickType": "メンバー",
             "maxCost": null,
             "minCost": null,
             "seriesTag": null,
@@ -846,6 +827,26 @@
       ]
     },
     {
+      "card_no": "PL!SP-pb2-002-R",
+      "name": "唐 可可",
+      "entries": [
+        {
+          "trigger": "kidou",
+          "template": "ability_sequence",
+          "filters": {
+            "pickType": "メンバー",
+            "maxCost": null,
+            "minCost": null,
+            "seriesTag": "Liella!",
+            "minSuccessLiveCount": null,
+            "minNeedHeartSlot": null,
+            "minNeedHeartValue": null,
+            "minTotalNeedHeart": null
+          }
+        }
+      ]
+    },
+    {
       "card_no": "PL!-sd1-001-SD",
       "name": "高坂 穂乃果",
       "entries": [
@@ -853,7 +854,7 @@
           "trigger": "toujyou",
           "template": "toujou_success_live_pick_hand",
           "filters": {
-            "pickType": "ライブ",
+            "pickType": null,
             "maxCost": null,
             "minCost": null,
             "seriesTag": null,

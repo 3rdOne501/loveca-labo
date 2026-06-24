@@ -1,5 +1,48 @@
 {
-  "generatedAt": "2026-06-23T09:00:57.316Z",
-  "count": 0,
-  "rows": []
+  "generatedAt": "2026-06-23T15:42:23.399Z",
+  "count": 3,
+  "rows": [
+    {
+      "id": "PL!HS-cl1-012-CL",
+      "name": "Edelied",
+      "trig": "live_success",
+      "tmpl": "yell_resolution_pick_hand",
+      "risk": 2,
+      "flags": [
+        "デュアル分岐なし"
+      ],
+      "text": "自分と相手のライブの合計スコアが同じ場合、エールにより公開された自分のカードの中から、コスト9以上のメンバーカードを1枚手札に加える。",
+      "variants": [
+        "PL!HS-cl1-012-CL"
+      ]
+    },
+    {
+      "id": "PL!N-bp1-026-L",
+      "name": "Poppin' Up!",
+      "trig": "live_success",
+      "tmpl": "yell_resolution_pick_hand",
+      "risk": 2,
+      "flags": [
+        "デュアル分岐なし"
+      ],
+      "text": "ライブの合計スコアが相手より高い場合、エールにより公開された自分のカードの中から、『虹ヶ咲』のカードを1枚手札に加える。\n\n(必要ハートを確認する時、エールで出たは任意の色のハートとして扱う。)",
+      "variants": [
+        "PL!N-bp1-026-L"
+      ]
+    },
+    {
+      "id": "PL!S-bp5-019-L",
+      "name": "not ALONE not HITORI",
+      "trig": "live_success",
+      "tmpl": "yell_resolution_pick_hand",
+      "risk": 2,
+      "flags": [
+        "デュアル分岐なし"
+      ],
+      "text": "自分か相手の成功ライブカード置き場にカードが2枚以上ある場合、エールにより公開された自分のカードの中から、メンバーカードを2枚まで手札に加える。",
+      "variants": [
+        "PL!S-bp5-019-L"
+      ]
+    }
+  ]
 }

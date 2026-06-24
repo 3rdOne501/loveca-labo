@@ -939,6 +939,9 @@ python3 -m http.server 8080</pre>
                       <button type="button" class="btn sm primary" id="btn-res-draw-one" title="山札の先頭を1枚解決ゾーンへ（Undo可）">
                         1枚ドロー（解決）
                       </button>
+                      <button type="button" class="btn sm primary" id="btn-res-draw-all" title="ライブ中：必要なエール枚数になるまで山札の先頭を一括で解決ゾーンへ（Undo可）">
+                        全てドロー（解決）
+                      </button>
                       <button type="button" class="btn sm" id="btn-res-top">デッキ上に戻す</button>
                       <button type="button" class="btn sm" id="btn-res-shuf">戻してシャッフル</button>
                       <button type="button" class="btn sm" id="btn-res-wait">控室へ</button>
@@ -1036,7 +1039,7 @@ python3 -m http.server 8080</pre>
           </p>
 
           <div id="live-turn-stats-wrap" class="live-turn-stats-wrap" hidden>
-            <details class="live-turn-stats-details" open>
+            <details class="live-turn-stats-details">
               <summary class="live-turn-stats-summary">
                 ライブの計算
                 <span class="live-turn-stats-summary-hint muted">（開閉）</span>
@@ -1220,6 +1223,7 @@ python3 -m http.server 8080</pre>
               <button type="button" class="btn" id="btn-draw-hand">1枚ドロー（手札）</button>
               <button type="button" class="btn" id="btn-draw-waiting">1枚ドロー（控室）</button>
               <button type="button" class="btn" id="btn-draw-resolution">1枚ドロー（解決）</button>
+              <button type="button" class="btn" id="btn-draw-resolution-all">全てドロー（解決）</button>
             </div>
             <div class="btn-row draw-row draw-row--turn wrap draw-row--turn-versus">
               <button type="button" class="btn primary" id="btn-turn-start" title="解決・ライブ枠を控え室へ送る／手札に山札から 1 枚ドロー／側面エネのウェイト解除・メンバーを縦・アクティブにし側面エネを1枚加算（上限12）。対戦モードの通常フェイズではターン終了。">
@@ -1266,7 +1270,7 @@ python3 -m http.server 8080</pre>
             </p>
           </section>
 
-          <section class="zone-block zone-block-preview">
+          <section class="zone-block zone-block-preview" id="zone-block-preview" hidden style="display: none">
             <div
               id="preview-head-expand"
               class="preview-rail-head zone-head-preview-expand"
@@ -1368,6 +1372,9 @@ python3 -m http.server 8080</pre>
                   </button>
                   <button type="button" class="btn sm primary" id="btn-live-turn-begin" disabled>
                     ライブ開始
+                  </button>
+                  <button type="button" class="btn sm" id="btn-live-turn-end" disabled title="ライブターンを終了して待機状態にします（成功ライブの移動を確認後、解決・ライブ枠を控え室へ送ります。ターン数は進めません）">
+                    ターン終了
                   </button>
                   <button type="button" class="btn sm" id="btn-mulligan-execute" disabled>
                     マリガン実行

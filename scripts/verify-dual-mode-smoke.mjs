@@ -34,6 +34,11 @@ const CASES = [
 
 let failed = 0;
 
+/** @param {import('../js/abilityEffects.js').ClassifiedAbility} cl */
+function mergedAbilityFilters(cl) {
+  return Object.assign({}, cl.preconditionFilters || {}, cl.filters || {});
+}
+
 for (const c of CASES) {
   const card = cards[c.id];
   if (!card) {
@@ -43,15 +48,18 @@ for (const c of CASES) {
   }
   const seg = splitAbilityByTriggers(cardAbilityRawText(card)).find((s) => s.trigger === c.trigger);
   const cl = classifyCardAbility(card, c.trigger, seg && seg.text);
+  const filters = mergedAbilityFilters(cl);
   const errs = [];
   if (c.check === "requiresOwnStageCostSumLowerThanOpponent") {
-    if (!cl.filters?.requiresOwnStageCostSumLowerThanOpponent) errs.push("filter missing");
+    if (!filters.requiresOwnStageCostSumLowerThanOpponent) errs.push("filter missing");
   } else if (c.check === "requiresOwnStageHeartTotalHigherThanOpponent") {
-    if (!cl.filters?.requiresOwnStageHeartTotalHigherThanOpponent) errs.push("heart filter missing");
+    if (!filters.requiresOwnStageHeartTotalHigherThanOpponent) errs.push("heart filter missing");
   } else if (c.check === "requiresSuccessLiveCountTieWithOpponent") {
-    if (!cl.filters?.requiresSuccessLiveCountTieWithOpponent) errs.push("success live tie filter missing");
+    if (!filters.requiresSuccessLiveCountTieWithOpponent) errs.push("success live tie filter missing");
   } else if (c.check === "requiresLiveScoreTieWithOpponent") {
-    if (!cl.filters?.requiresLiveScoreTieWithOpponent) errs.push("live score tie filter missing");
+    if (!filters.requiresLiveScoreTieWithOpponent) errs.push("live score tie filter missing");
+    if (!simSrc.includes("soloOpponentLiveFrameScoreSum")) errs.push("solo live frame score state missing");
+    if (!simSrc.includes("ensureSoloOpponentLiveFrameScore")) errs.push("solo live frame score dialog missing");
   } else if (c.check === "deck_top_look_reorder_dual") {
     if (cl.template !== "deck_top_look_reorder") errs.push(`template ${cl.template}`);
     if (!cl.pickSelfOrOpponent) errs.push("pickSelfOrOpponent missing");
@@ -64,9 +72,10 @@ for (const c of CASES) {
     if (cl.oppWaitMaxPrintedBlade !== 1) errs.push(`oppWaitMaxPrintedBlade ${cl.oppWaitMaxPrintedBlade}`);
     if (!simSrc.includes("oppWaitMaxPrintedBlade")) errs.push("blade filter in handler missing");
   } else if (c.check === "min_either_success_live") {
-    if (cl.filters?.minEitherSuccessLiveCount !== 2) errs.push("minEitherSuccessLiveCount missing");
+    if (filters.minEitherSuccessLiveCount !== 2) errs.push("minEitherSuccessLiveCount missing");
     if (cl.filters?.minSuccessLiveCount != null) errs.push("minSuccessLiveCount should be unset");
     if (cl.filters?.minOpponentSuccessLiveCount != null) errs.push("minOpponentSuccessLiveCount should be unset");
+    if (!simSrc.includes("ensureSoloOpponentSuccessLiveCount")) errs.push("solo success live count dialog missing");
   } else if (c.check === "toujou_grant_opp_live_need_heart") {
     if (cl.template !== "toujou_grant_opp_live_need_heart_if_stage_hearts") errs.push(`template ${cl.template}`);
     if (!simSrc.includes("inactiveOpponentJoujiLiveNeedHeartBump")) errs.push("inactive opponent bump helper missing");

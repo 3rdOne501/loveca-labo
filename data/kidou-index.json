@@ -13,7 +13,7 @@
     "activate_energy": 9,
     "kidou_wait_pick_hand": 25,
     "kidou_reveal_hand_cost_threshold": 4,
-    "draw_then_hand_discard": 5,
+    "draw_then_hand_discard": 9,
     "kidou_self_to_wait_recover": 5,
     "energy_deck_to_wait": 6,
     "kidou_hand_discard_trigger_ability": 4,
@@ -32,13 +32,13 @@
     "kidou_hand_discard_wait_live_score_pay": 3,
     "grant_jouji_session": 9,
     "kidou_wait_or_hand_for_energy": 4,
-    "ability_sequence": 6,
     "kidou_waiting_to_empty_stage": 5,
     "kidou_hand_discard_activate_wait_opp_bonus": 2,
     "kidou_energy_deck_pick_live": 2,
     "kidou_hand_reveal_to_under": 2,
     "kidou_self_wait_activate_other": 2,
-    "kidou_self_to_wait_opp_wait": 1
+    "kidou_self_to_wait_opp_wait": 1,
+    "ability_sequence": 2
   },
   "cards": [
     {
@@ -1700,54 +1700,38 @@
     {
       "card_no": "PL!SP-bp5-002-R＋",
       "name": "唐 可可",
-      "template": "ability_sequence",
+      "template": "draw_then_hand_discard",
       "automated": true,
       "optional": false,
       "perTurn": 1,
-      "effect": "このメンバーをウェイトにする：カードを3枚引き、手札を2枚控え室に置く。これにより控え室に置いたカードの中にブレードハートを持たないメンバーカードが1枚以上ある場合、このメンバーをアクティブにする。2枚ある場合、さらにライブ終了時まで、を得る。",
-      "steps": [
-        "draw_then_hand_discard",
-        "grant_jouji_session"
-      ]
+      "effect": "このメンバーをウェイトにする：カードを3枚引き、手札を2枚控え室に置く。これにより控え室に置いたカードの中にブレードハートを持たないメンバーカードが1枚以上ある場合、このメンバーをアクティブにする。2枚ある場合、さらにライブ終了時まで、を得る。"
     },
     {
       "card_no": "PL!SP-bp5-002-P",
       "name": "唐 可可",
-      "template": "ability_sequence",
+      "template": "draw_then_hand_discard",
       "automated": true,
       "optional": false,
       "perTurn": 1,
-      "effect": "このメンバーをウェイトにする：カードを3枚引き、手札を2枚控え室に置く。これにより控え室に置いたカードの中にブレードハートを持たないメンバーカードが1枚以上ある場合、このメンバーをアクティブにする。2枚ある場合、さらにライブ終了時まで、を得る。",
-      "steps": [
-        "draw_then_hand_discard",
-        "grant_jouji_session"
-      ]
+      "effect": "このメンバーをウェイトにする：カードを3枚引き、手札を2枚控え室に置く。これにより控え室に置いたカードの中にブレードハートを持たないメンバーカードが1枚以上ある場合、このメンバーをアクティブにする。2枚ある場合、さらにライブ終了時まで、を得る。"
     },
     {
       "card_no": "PL!SP-bp5-002-AR",
       "name": "唐 可可",
-      "template": "ability_sequence",
+      "template": "draw_then_hand_discard",
       "automated": true,
       "optional": false,
       "perTurn": 1,
-      "effect": "このメンバーをウェイトにする：カードを3枚引き、手札を2枚控え室に置く。これにより控え室に置いたカードの中にブレードハートを持たないメンバーカードが1枚以上ある場合、このメンバーをアクティブにする。2枚ある場合、さらにライブ終了時まで、を得る。",
-      "steps": [
-        "draw_then_hand_discard",
-        "grant_jouji_session"
-      ]
+      "effect": "このメンバーをウェイトにする：カードを3枚引き、手札を2枚控え室に置く。これにより控え室に置いたカードの中にブレードハートを持たないメンバーカードが1枚以上ある場合、このメンバーをアクティブにする。2枚ある場合、さらにライブ終了時まで、を得る。"
     },
     {
       "card_no": "PL!SP-bp5-002-SEC",
       "name": "唐 可可",
-      "template": "ability_sequence",
+      "template": "draw_then_hand_discard",
       "automated": true,
       "optional": false,
       "perTurn": 1,
-      "effect": "このメンバーをウェイトにする：カードを3枚引き、手札を2枚控え室に置く。これにより控え室に置いたカードの中にブレードハートを持たないメンバーカードが1枚以上ある場合、このメンバーをアクティブにする。2枚ある場合、さらにライブ終了時まで、を得る。",
-      "steps": [
-        "draw_then_hand_discard",
-        "grant_jouji_session"
-      ]
+      "effect": "このメンバーをウェイトにする：カードを3枚引き、手札を2枚控え室に置く。これにより控え室に置いたカードの中にブレードハートを持たないメンバーカードが1枚以上ある場合、このメンバーをアクティブにする。2枚ある場合、さらにライブ終了時まで、を得る。"
     },
     {
       "card_no": "PL!SP-bp5-005-R＋",

@@ -95,7 +95,8 @@ export function applyAbilityComposition(card, trigger, segRaw, primary, classify
     primary.template === "live_start_optional_hand_discard_named_followup_blade" ||
     primary.template === "live_start_pick_live_frame_match_success_live_grant" ||
     primary.template === "live_success_optional_energy_wait_opp_draw" ||
-    primary.template === "live_start_love_screem_opp_answer"
+    primary.template === "live_start_love_screem_opp_answer" ||
+    primary.template === "live_start_activate_energy_all_active_score"
   ) {
     return primary;
   }
@@ -103,10 +104,43 @@ export function applyAbilityComposition(card, trigger, segRaw, primary, classify
   var plain = segmentPlainText(segRaw);
 
   /** @param {import('./abilityEffects.js').ClassifiedAbility[]} steps */
+  function mergeDrawDiscardConditionalGrantSteps(steps, plainFull) {
+    if (!steps || steps.length < 2) return steps;
+    var drawIdx = -1;
+    for (var di = 0; di < steps.length; di++) {
+      if (steps[di] && steps[di].template === "draw_then_hand_discard") {
+        drawIdx = di;
+        break;
+      }
+    }
+    if (drawIdx < 0) return steps;
+    if (
+      /控え室に置いたカードの中にブレードハートを持たない/.test(plainFull) &&
+      /このメンバーをアクティブ/.test(plainFull)
+    ) {
+      steps[drawIdx] = Object.assign({}, steps[drawIdx], {
+        postDiscardActivateIfNonBhMember: true,
+      });
+      if (/2枚ある場合/.test(plainFull)) {
+        steps[drawIdx].postDiscardBladeGainIfNonBhAt = 2;
+        steps[drawIdx].postDiscardBladeGainCount = 2;
+      }
+    }
+    return steps.filter(function (st) {
+      if (!st || st.template !== "grant_jouji_session") return true;
+      if (st.liveScoreGrant && st.liveScoreGrant > 0) return true;
+      if (st.grantToNamedStageMemberOptions || st.grantPickStageMembersMax) return true;
+      return !(st.bladeGain && st.bladeGain > 0);
+    });
+  }
+
+  /** @param {import('./abilityEffects.js').ClassifiedAbility[]} steps */
   function seq(steps) {
     var usable = steps.filter(function (st) {
       return st && st.template && st.template !== "none" && st.template !== "guided_manual";
     });
+    usable = mergeDrawDiscardConditionalGrantSteps(usable, plain);
+    if (usable.length === 1) return Object.assign({}, primary, usable[0]);
     if (usable.length < 2) return primary;
     return Object.assign({}, primary, {
       template: "ability_sequence",
@@ -214,6 +248,7 @@ export function applyAbilityComposition(card, trigger, segRaw, primary, classify
     }
     var composed = seq(steps);
     if (composed.template === "ability_sequence") return composed;
+    if (steps.length > 1) return composed;
   }
 
   return primary;

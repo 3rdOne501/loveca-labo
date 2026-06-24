@@ -2,7 +2,7 @@
  * メンバーカードの「自動」能力（jidou）の分類。
  * イベント駆動の実行は simulator.js の fireJidouAutoForMember が担当する。
  */
-import { splitAbilityByTriggers } from "./abilityEffects.js";
+import { splitAbilityByTriggers, parseAbilityBulletChoices } from "./abilityEffects.js";
 
 function segmentPlainText(rawSegment) {
   return String(rawSegment || "")
@@ -123,6 +123,15 @@ export function classifyJidouAutoSegment(segRaw) {
 
   if (/登場か、エリアを移動するたび/.test(p) && /ライブ終了時まで/.test(p)) {
     return { template: "jidou_area_move_grant_jouji", eventKind: "area_move", perTurnLimit: perTurn };
+  }
+  if (/センターエリアにいるメンバーがエリアを移動したとき/.test(p) && /以下から1つを選ぶ/.test(p)) {
+    var centerChoices = parseAbilityBulletChoices(segRaw);
+    return {
+      template: "jidou_center_member_move_choice",
+      eventKind: "center_member_area_move",
+      abilityChoices: centerChoices.length ? centerChoices : parseAbilityBulletChoices(p),
+      perTurnLimit: perTurn,
+    };
   }
   if (/エリアを移動したとき/.test(p) && /ライブ終了時まで/.test(p) && /を得る/.test(p)) {
     return { template: "jidou_area_move_grant_jouji", eventKind: "area_move", perTurnLimit: perTurn };
@@ -515,6 +524,7 @@ export function jidouEffectIsAutomated(template) {
     template === "jidou_leave_stage_draw_discard" ||
     template === "jidou_enter_or_baton_draw" ||
     template === "jidou_area_move_grant_jouji" ||
+    template === "jidou_center_member_move_choice" ||
     template === "jidou_area_move_draw" ||
     template === "jidou_area_move_energy_wait" ||
     template === "jidou_area_move_wait_pick_hand" ||

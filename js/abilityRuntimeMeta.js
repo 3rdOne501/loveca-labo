@@ -40,6 +40,7 @@ export const TEMPLATE_HANDLES_OWN_COST = [
   "live_start_hand_discard_cost_boost_grant_if",
   "kidou_discard_self_draw_grant",
   "live_start_optional_energy_under_return_grant",
+  "live_success_optional_energy_recover_waiting",
 ];
 
 /** 成功ライブ置き場への移動など executeAbilityBody 外（placement 経路）で処理する template */
@@ -94,6 +95,7 @@ export const JIDOU_AUTO_TEMPLATES = [
   "jidou_leave_stage_draw_discard",
   "jidou_enter_or_baton_draw",
   "jidou_area_move_grant_jouji",
+  "jidou_center_member_move_choice",
   "jidou_area_move_draw",
   "jidou_area_move_energy_wait",
   "jidou_area_move_wait_pick_hand",

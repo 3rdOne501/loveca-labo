@@ -433,6 +433,42 @@ export function evaluateNeedHeartFulfillment(supplyAccum, needAccum, options) {
 }
 
 /**
+ * need_heart 充足後に残る余剰ハート（任意プール）の合計。
+ * @param {Record<number, number>} supplyAccum
+ * @param {Record<number, number>} needAccum
+ * @param {{ wildcardAllBump?: number, wildcardBhAllFlex?: number }} [options]
+ * @returns {number}
+ */
+export function computeSurplusHeartsAfterFulfillment(supplyAccum, needAccum, options) {
+  options = options || {};
+  const flexOpt = Number(options.wildcardBhAllFlex);
+  const flex0 = Number.isFinite(flexOpt) ? Math.max(0, Math.floor(flexOpt)) : 0;
+  const afterFlex =
+    flex0 > 0
+      ? applyWildcardBhAllFlexToColoredSupply(supplyAccum, needAccum, flex0)
+      : { supply: Object.assign({}, supplyAccum || {}), remainderFlex: 0 };
+  let supply = afterFlex.supply;
+  for (let slot = 1; slot <= 6; slot++) {
+    var need = needAccum[slot] || 0;
+    if (need <= 0) continue;
+    var have = supply[slot] || 0;
+    if (have < need) return 0;
+    supply[slot] = have - need;
+  }
+  var bump = Number(options.wildcardAllBump);
+  if (!Number.isFinite(bump)) bump = 0;
+  bump = Math.max(0, Math.floor(bump)) + afterFlex.remainderFlex;
+  var pool = [1, 2, 3, 4, 5, 6].reduce(function (acc, slot) {
+    return acc + Math.max(0, supply[slot] || 0);
+  }, 0);
+  pool += Math.max(0, supply[99] || 0);
+  pool += bump;
+  var genNeed = needAccum[0] || 0;
+  if (genNeed > 0 && pool < genNeed) return 0;
+  return Math.max(0, pool - genNeed);
+}
+
+/**
  * evaluateNeedHeartFulfillment と同じ順序で need を照合するときに、複数種の不足がある場合に
  * すべて列挙する（概要欄で「最初の欠色」だけ見せない）。
  * @returns {{ slot: number, deficit: number, needAtFail: number, haveAtFail: number }[]}
