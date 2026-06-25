@@ -14092,7 +14092,7 @@
       }
     },
     "kidou": {
-      "template": "kidou_wait_pick_hand",
+      "template": "kidou_energy_under_pick_waiting_hand",
       "filters": {
         "pickType": "ライブ",
         "maxCost": null,
@@ -14120,7 +14120,7 @@
       }
     },
     "kidou": {
-      "template": "kidou_wait_pick_hand",
+      "template": "kidou_energy_under_pick_waiting_hand",
       "filters": {
         "pickType": "ライブ",
         "maxCost": null,

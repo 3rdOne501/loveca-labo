@@ -57,7 +57,7 @@ export const CARD_GROUP_RULES = [
     id: "edel",
     label: "Edel Note",
     match: function (hay) {
-      return /Edel\s*Note|エデルノート/i.test(hay);
+      return /Edel\s*Note|EdelNote|エデルノート/i.test(hay);
     },
   },
   {
@@ -65,6 +65,34 @@ export const CARD_GROUP_RULES = [
     label: "KALEIDOSCORE",
     match: function (hay) {
       return /KALEIDOSCORE|カレイドスコア/i.test(hay);
+    },
+  },
+  {
+    id: "dollchestra",
+    label: "DOLLCHESTRA",
+    match: function (hay) {
+      return /DOLLCHESTRA|ドルチェストラ/i.test(hay);
+    },
+  },
+  {
+    id: "syncrise",
+    label: "5yncri5e!",
+    match: function (hay) {
+      return /5yncri5e|syncri5e|シンクリ/i.test(hay);
+    },
+  },
+  {
+    id: "aqours",
+    label: "Aqours",
+    match: function (hay) {
+      return /Aqours|aqours|サンシャイン/i.test(hay);
+    },
+  },
+  {
+    id: "saintsnow",
+    label: "SaintSnow",
+    match: function (hay) {
+      return /SaintSnow|saintsnow|セイントスノー/i.test(hay);
     },
   },
 ];
@@ -89,7 +117,13 @@ export function normalizeCardGroupText(s) {
  */
 export function cardGroupHaystack(cat) {
   if (!cat) return "";
-  return [cat.series, cat.product, cat.unit, cat.name].filter(Boolean).join(" ");
+  var parts = [cat.series, cat.product, cat.unit, cat.name].filter(Boolean);
+  if (Array.isArray(cat._extraGroupTags)) {
+    cat._extraGroupTags.forEach(function (t) {
+      if (t) parts.push(String(t));
+    });
+  }
+  return parts.join(" ");
 }
 
 /**
@@ -113,11 +147,23 @@ export function cardGroupRuleForTag(tag) {
   return null;
 }
 
-/**
- * @param {*} cat
- * @param {string} tag
- */
 /** cards.json の series から画面上の「学校／世代」ラベル（虹ヶ咲・Liella! 等） */
+/**
+ * ステージの「グループ名」比較用キー（unit → 学校ラベル → series → name）。
+ * @param {*} cat
+ * @returns {string}
+ */
+export function catalogCardGroupKey(cat) {
+  if (!cat) return "";
+  var unit = cat.unit != null ? String(cat.unit).trim() : "";
+  if (unit) return unit;
+  var school = catalogCardSchoolLabel(cat);
+  if (school) return school;
+  var series = cat.series != null ? String(cat.series).trim() : "";
+  if (series) return series;
+  return cat.name != null ? String(cat.name).trim() : "";
+}
+
 export function catalogCardSchoolLabel(cat) {
   if (!cat) return "";
   var series = cat.series != null ? String(cat.series) : "";

@@ -39,21 +39,22 @@ export function getEffectiveCardsJsonUrl() {
   return CARDS_JSON_URL;
 }
 
-/** @returns {string[]} 取得を試す URL（上書き → 同梱 data → CDN） */
+/** @returns {string[]} 取得を試す URL（上書き → CDN → 同梱 data） */
 export function getCardsJsonLoadUrls() {
   /** @type {string[]} */
   const urls = [];
   const o = localStorage.getItem(STORAGE_CARDS_JSON_OVERRIDE);
   if (o != null && String(o).trim() !== "") urls.push(String(o).trim());
+  for (const remote of CARDS_JSON_REMOTE_URLS) {
+    if (remote && urls.indexOf(remote) < 0) urls.push(remote);
+  }
   try {
     if (typeof document !== "undefined" && document.baseURI) {
-      urls.push(new URL(CARDS_JSON_BUNDLED_PATH, document.baseURI).href);
+      const bundled = new URL(CARDS_JSON_BUNDLED_PATH, document.baseURI).href;
+      if (urls.indexOf(bundled) < 0) urls.push(bundled);
     }
   } catch (_) {
     /* noop */
-  }
-  for (const remote of CARDS_JSON_REMOTE_URLS) {
-    if (remote && urls.indexOf(remote) < 0) urls.push(remote);
   }
   return urls;
 }
@@ -359,6 +360,8 @@ export {
   listNativeLiveStartSegmentRaws,
   listNativeKidouSegmentRaws,
   cardCannotPlaceOnSuccessLive,
+  cardOffersSuccessLiveWaitingSubstitute,
+  successLiveWaitingSubstitutePickFilters,
   parseQuotedCharacterNames,
 } from "./abilityEffects.js";
 
@@ -917,15 +920,23 @@ export function uniqueProducts(cards) {
 export function uniqueSeries(cards) {
   const s = new Set();
   cards.forEach((c) => {
-    if (c.series) {
-      String(c.series)
-        .split(/\n/)
-        .map((x) => x.trim())
-        .filter(Boolean)
-        .forEach((x) => s.add(x));
-    }
+    cardSeriesLines(c.series).forEach((x) => s.add(x));
   });
   return [...s].sort();
+}
+
+/** @param {unknown} seriesStr @returns {string[]} */
+export function cardSeriesLines(seriesStr) {
+  return String(seriesStr || "")
+    .split(/\n/)
+    .map((x) => x.trim())
+    .filter(Boolean);
+}
+
+/** @param {unknown} seriesStr @param {string} selected @returns {boolean} */
+export function cardMatchesSeriesFilter(seriesStr, selected) {
+  if (!selected) return true;
+  return cardSeriesLines(seriesStr).includes(selected);
 }
 
 export function uniqueUnits(cards) {
@@ -1054,10 +1065,7 @@ export function filterCards(cards, opts) {
     if (opts.types[T_MEMBER] === false && c.type === T_MEMBER) return false;
     if (opts.types[T_LIVE] === false && c.type === T_LIVE) return false;
     if (opts.product && c.product !== opts.product) return false;
-    if (opts.series) {
-      const ser = String(c.series || "");
-      if (!ser.includes(opts.series)) return false;
-    }
+    if (opts.series && !cardMatchesSeriesFilter(c.series, opts.series)) return false;
     if (opts.unit && c.unit !== opts.unit) return false;
     /* コストに何かしら「外した」チェックがあるとき、ライブはコストを持たないので一覧に出さない */
     if (opts.narrowCostExcludeLive && c.type === T_LIVE) return false;

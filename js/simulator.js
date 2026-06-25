@@ -23,8 +23,6 @@ import {
   STORAGE_PLAY_RESUME,
   STORAGE_STREAM_MASK_STRENGTH,
   STORAGE_LIGHTWEIGHT_PLAY,
-  cardNoIsMiaTaylorPb1011,
-  cardNoIsZhongLanzhuBp1012,
   T_ENERGY,
   T_LIVE,
   T_MEMBER,
@@ -1574,6 +1572,13 @@ export function mountSimulator(
     liveSuccessVerdictLockedOk: false,
     liveSuccessVerdictLockedSim: null,
     liveSuccessVerdictLockedFp: "",
+    /** 8.3.16: 機械的ライブ失敗時にライブ枠を控え室へ送り済み */
+    liveMechanicalFailFlushed: false,
+    /** 8.4.7: ライブ勝利後の成功ライブ移動を完了済み */
+    liveWinMoveCommitted: false,
+    liveWinMovePending: false,
+    /** 8.4.7: ターン終了後も成功ライブ移動を促す（liveStatsAfterBegin クリア後） */
+    pendingSuccessLiveBench: false,
     /** 「ライブ開始」直後〜最初のエールめくりまで（ライブ開始時効果の発光） */
     playLiveStartGlowActive: false,
     /** 登場効果等で「このターンこの列にメンバー登場不可」（例: PL!-pb1-018） */
@@ -1866,6 +1871,8 @@ export function mountSimulator(
 
   /** メンバー H/B 追加ダイアログの対象（盤面上の実体オブジェクトへの参照） */
   let memberHbDialogTarget = null;
+  /** ダイアログを開いた時点の常時効果分（適用時に手動値へ混ぜないため） */
+  let memberHbDialogJoujiSnapshot = null;
 
   /** ドラッグ開始時点のプレビュー開閉状態（true=折りたたみ）。
    *  ドロップで意図せず展開してしまうのを防ぐためのスナップ。 */
@@ -2533,13 +2540,12 @@ export function mountSimulator(
 
   /** slot7 は need_heart の「任意」支払いプールのみに加算し、同色表示には載せない */
   function memberPlayBonusAllWildcardBump(inst) {
-    return bonusHeartSlotRead(inst, 7) + countBp1012LanzhuBonusAllHeart(inst);
+    return bonusHeartSlotRead(inst, 7);
   }
 
-  function countMiaTaylorEnergyBladeBelow(inst) {
+  /** ステージ列でメンバーより背面側（左）に積まれたエネルギー枚数（常時「下のエネ1枚につき」等） */
+  function countEnergyCardsBelowMemberOnStage(inst) {
     if (!inst || inst.type !== T_MEMBER) return 0;
-    var mc = mergedCatalogCard(inst);
-    if (!cardNoIsMiaTaylorPb1011(mc.card_no)) return 0;
     var col = stageColumnKeyHostingMember(inst.id);
     if (!col) return 0;
     var arr = state.stage[col] || [];
@@ -2568,11 +2574,9 @@ export function mountSimulator(
     var mc = mergedCatalogCard(inst);
     var base = sanitizeNonNegativeInt(mc.blade);
     var extra = sumPlayBonusBlade(inst);
-    var mia = countMiaTaylorEnergyBladeBelow(inst);
-    var lzBlade = countBp1012LanzhuBonusBlade(inst);
     var joujiB = Number(inst.joujiBladeBonus);
     if (!Number.isFinite(joujiB)) joujiB = 0;
-    return Math.max(0, base + extra + mia + lzBlade + Math.floor(joujiB));
+    return Math.max(0, base + extra + Math.floor(joujiB));
   }
 
   function clearMemberManualPlayBonuses(inst) {
@@ -2909,7 +2913,7 @@ export function mountSimulator(
       eachStageColumnMembers: eachStageColumnMemberInsts,
       stageHasAllAreasDistinctSeriesMembers: stageHasAllAreasDistinctSeriesMembers,
       liveFramesHave3PlusWithSeries: bp1012LanzhuSynergyBoardConditionMet,
-      energyCountBelowMember: countMiaTaylorEnergyBladeBelow,
+      energyCountBelowMember: countEnergyCardsBelowMemberOnStage,
       memberCountBelowSeries: function (inst, tag) {
         if (!inst || !tag) return 0;
         var n = 0;
@@ -5287,23 +5291,6 @@ export function mountSimulator(
     return false;
   }
 
-  function countBp1012LanzhuBonusBlade(inst) {
-    if (!inst || inst.type !== T_MEMBER) return 0;
-    if (!memberIsOnStageOrLiveSlot(inst)) return 0;
-    if (!cardNoIsZhongLanzhuBp1012(mergedCatalogCard(inst).card_no)) return 0;
-    if (!bp1012LanzhuSynergyBoardConditionMet()) return 0;
-    return 2;
-  }
-
-  /** ALL ハート（slot7・任意プール）の動的加算分のみ（所持Hダイアログの値とは別） */
-  function countBp1012LanzhuBonusAllHeart(inst) {
-    if (!inst || inst.type !== T_MEMBER) return 0;
-    if (!memberIsOnStageOrLiveSlot(inst)) return 0;
-    if (!cardNoIsZhongLanzhuBp1012(mergedCatalogCard(inst).card_no)) return 0;
-    if (!bp1012LanzhuSynergyBoardConditionMet()) return 0;
-    return 2;
-  }
-
   /** このターンステージへ載せたばかりか（同日バトン注意に利用） */
   function memberIsStageFreshThisTurn(memberInstOrNull) {
     return !!(
@@ -7036,18 +7023,22 @@ export function mountSimulator(
   }
 
   function shouldPromptMoveSuccessfulLiveOnTurnStart(bundle) {
-    if (!state.liveStatsAfterBegin) return false;
-    var b =
-      bundle ||
-      (function () {
-        return evaluateLiveMechanicalFulfillmentBundle();
-      })();
-    var liveCt = b.liveCt;
-    if (!liveCt) return false;
-    var needSum = b.needSum;
-    if (!(needSum > 0)) return false;
+    if (state.liveWinMoveCommitted === true) return false;
+    if (!liveCardsAwaitingSuccessfulBenchPlacement().length) return false;
+    var b = bundle || evaluateLiveMechanicalFulfillmentBundle();
     if (!b.evaluateResult || !b.evaluateResult.ok) return false;
-    return liveCardsAwaitingSuccessfulBenchPlacement().length > 0;
+    if (state.pendingSuccessLiveBench === true) return true;
+    return !!(state.liveStatsAfterBegin && b.liveCt && b.needSum > 0);
+  }
+
+  function maybeMarkPendingSuccessLiveBench() {
+    if (state.liveWinMoveCommitted === true) return;
+    if (!playLiveSuccessVerdictReady()) return;
+    var b = evaluateLiveMechanicalFulfillmentBundle();
+    if (!b.evaluateResult || !b.evaluateResult.ok) return;
+    if (liveCardsAwaitingSuccessfulBenchPlacement().length > 0) {
+      state.pendingSuccessLiveBench = true;
+    }
   }
 
   /** ユーザー承諾済みなど：ライブ枠のライブカードのみ成功置き場へ（メンバーは残してから従来の控え処理へ） */
@@ -7093,6 +7084,7 @@ export function mountSimulator(
     var mc = mergedCatalogCard(liveInst);
     liveInst.isRotated = false;
     liveInst.lcWait = false;
+    clearLiveSuccessActivationOnInst(liveInst);
     if (cannotPlaceLiveOnSuccessLiveArea(mc)) {
       state.waitingRoom.push(liveInst);
       showToast((mc.name || "ライブ") + " は成功ライブカード置き場に置けないため控え室へ送りました");
@@ -7206,73 +7198,102 @@ export function mountSimulator(
     });
   }
 
-  /** @param {{ id: * }[]} pend @param {(id: string | null) => void} onDone */
-  function openPickSuccessLiveDialog(pend, onDone) {
+  /** @param {{ id: * }[]} pend @param {(id: string | null) => void} onDone @param {{ mandatory?: boolean, allowSkip?: boolean, skipLabel?: string, scoreLoss?: boolean }} [opts] */
+  function openPickSuccessLiveDialog(pend, onDone, opts) {
+    opts = opts || {};
     var dlg = document.getElementById("dlg-pick-success-live");
     var list = document.getElementById("dlg-pick-success-live-list");
     var btnOk = document.getElementById("dlg-pick-success-live-ok");
     var btnCx = document.getElementById("dlg-pick-success-live-cancel");
+    var btnSkip = document.getElementById("dlg-pick-success-live-skip");
+    var hintEl = dlg ? dlg.querySelector(".zone-inline-help") : null;
+    var titleEl = document.getElementById("dlg-pick-success-live-title");
+    var actionsEl = dlg ? dlg.querySelector(".dlg-pick-success-live-actions") : null;
     if (!dlg || !list || !btnOk || typeof dlg.showModal !== "function") {
       onDone(pend && pend[0] && pend[0].id != null ? String(pend[0].id) : null);
       return;
     }
+    var scoreLoss = opts.scoreLoss === true;
+    var allowSkip = opts.allowSkip === true || scoreLoss;
+    var mandatory = opts.mandatory === true && !allowSkip;
+    if (titleEl) {
+      titleEl.textContent = scoreLoss
+        ? "成功ライブカード置き場へ置けません"
+        : "成功ライブカード置き場へ置くライブを1枚選ぶ";
+    }
+    if (hintEl) {
+      hintEl.textContent = scoreLoss
+        ? "スコアでライブに敗れたため、成功ライブカード置き場へは置けません。"
+        : "成功置き場へ移すライブカードを 1 枚だけ選んでください。";
+    }
     list.innerHTML = "";
-    pend.forEach(function (c, i) {
-      var mc = mergedCatalogCard(c);
-      var lab = ((mc.card_no != null ? String(mc.card_no) + " " : "") + (mc.name || c.name || "ライブ")).trim();
-      var labEl = document.createElement("label");
-      labEl.className = "dlg-pick-kidou-waiting__tile";
-      var radio = document.createElement("input");
-      radio.type = "radio";
-      radio.name = "pickSuccLive";
-      radio.value = String(c.id);
-      radio.className = "dlg-pick-kidou-waiting__radio";
-      if (i === 0) radio.checked = true;
-      var img = document.createElement("img");
-      img.className = "dlg-pick-kidou-waiting__img";
-      img.alt = lab;
-      img.loading = "lazy";
-      img.decoding = "async";
-      if (mc.img || c.img) img.src = mc.img || c.img;
-      var cap = document.createElement("span");
-      cap.className = "dlg-pick-kidou-waiting__label";
-      cap.textContent = lab;
-      labEl.appendChild(radio);
-      labEl.appendChild(img);
-      labEl.appendChild(cap);
-      list.appendChild(labEl);
-    });
-    function cleanup() {
+    if (!scoreLoss) {
+      pend.forEach(function (c, i) {
+        var mc = mergedCatalogCard(c);
+        var lab = ((mc.card_no != null ? String(mc.card_no) + " " : "") + (mc.name || c.name || "ライブ")).trim();
+        var faceSrc = mc.img || c.img || "";
+        var labEl = document.createElement("label");
+        labEl.className = "dlg-pick-kidou-waiting__tile";
+        var radio = document.createElement("input");
+        radio.type = "radio";
+        radio.name = "pickSuccLive";
+        radio.value = String(c.id);
+        radio.className = "dlg-pick-kidou-waiting__radio";
+        if (i === 0) radio.checked = true;
+        var img = document.createElement("img");
+        img.className = "dlg-pick-kidou-waiting__img";
+        img.alt = lab;
+        img.loading = "eager";
+        img.decoding = "sync";
+        if (faceSrc) img.src = faceSrc;
+        var cap = document.createElement("span");
+        cap.className = "dlg-pick-kidou-waiting__label";
+        cap.textContent = lab;
+        labEl.appendChild(radio);
+        labEl.appendChild(img);
+        labEl.appendChild(cap);
+        list.appendChild(labEl);
+      });
+    }
+    btnOk.hidden = scoreLoss;
+    if (btnCx) btnCx.hidden = mandatory || scoreLoss;
+    if (btnSkip) {
+      btnSkip.textContent = opts.skipLabel || "置かない";
+      btnSkip.hidden = !allowSkip;
+      btnSkip.title = scoreLoss
+        ? "スコア敗北のため成功ライブカード置き場へは置きません"
+        : "成功ライブカード置き場へは置かずに続行します";
+    }
+    ensureDialogViewBoardButton(actionsEl, dlg, effectDialogPeekSourceInst);
+    function closeDialog(result) {
       btnOk.removeEventListener("click", onOk);
-      if (btnCx) btnCx.removeEventListener("click", onCx);
-      dlg.removeEventListener("cancel", onDismiss);
+      if (btnCx) btnCx.removeEventListener("click", onDismiss);
+      if (btnSkip) btnSkip.removeEventListener("click", onDismiss);
+      dlg.removeEventListener("cancel", onCancel);
+      try {
+        dlg.close();
+      } catch (_) {}
+      onDone(result);
     }
     function onOk() {
       var r = list.querySelector('input[name="pickSuccLive"]:checked');
-      cleanup();
-      try {
-        dlg.close();
-      } catch (_) {
-        /* noop */
-      }
-      onDone(r && r.value ? String(r.value) : null);
-    }
-    function onCx() {
-      cleanup();
-      try {
-        dlg.close();
-      } catch (_) {
-        /* noop */
-      }
-      onDone(null);
+      closeDialog(r && r.value ? String(r.value) : null);
     }
     function onDismiss() {
-      cleanup();
-      onDone(null);
+      if (mandatory) return;
+      closeDialog(null);
+    }
+    function onCancel(ev) {
+      if (mandatory) {
+        if (ev && typeof ev.preventDefault === "function") ev.preventDefault();
+        return;
+      }
+      closeDialog(null);
     }
     btnOk.addEventListener("click", onOk);
-    if (btnCx) btnCx.addEventListener("click", onCx);
-    dlg.addEventListener("cancel", onDismiss);
+    if (btnCx) btnCx.addEventListener("click", onDismiss);
+    if (btnSkip && !btnSkip.hidden) btnSkip.addEventListener("click", onDismiss);
+    dlg.addEventListener("cancel", onCancel);
     dlg.showModal();
   }
 
@@ -8199,9 +8220,6 @@ export function mountSimulator(
     var has = false;
     var bladePlay = sumPlayBonusBlade(c);
     var joujiBlade = Math.max(0, Math.floor(Number(c.joujiBladeBonus) || 0));
-    var miaBlade = countMiaTaylorEnergyBladeBelow(c);
-    var lzBlade = countBp1012LanzhuBonusBlade(c);
-    var lzAllHeart = countBp1012LanzhuBonusAllHeart(c);
     if (bladePlay > 0) {
       has = true;
       appendMemberBonusChip(frag, { blade: true, count: bladePlay });
@@ -8209,39 +8227,6 @@ export function mountSimulator(
     if (joujiBlade > 0) {
       has = true;
       appendMemberBonusChip(frag, { blade: true, count: joujiBlade, joujiPrefix: true });
-    }
-    if (miaBlade > 0) {
-      has = true;
-      var spM = document.createElement("span");
-      spM.className = "card-member-bonus-chip card-member-bonus-chip--mia";
-      spM.title = "ミア・テイラー（pb1-011）: 列内でこのメンバーの背面側のエネ1枚につき常時ブレード";
-      var im2 = document.createElement("img");
-      im2.className = "card-member-bonus-blade-ico";
-      im2.src = MEMBER_BONUS_BLADE_IMG;
-      im2.alt = "ブレード";
-      im2.width = 14;
-      im2.height = 14;
-      im2.decoding = "async";
-      spM.appendChild(im2);
-      spM.appendChild(document.createTextNode("常時+" + miaBlade));
-      frag.appendChild(spM);
-    }
-    if (lzBlade > 0) {
-      has = true;
-      var spLzB = document.createElement("span");
-      spLzB.className = "card-member-bonus-chip card-member-bonus-chip--lanzhu";
-      spLzB.title =
-        "鐘 嵐珠（bp1-012）: ライブ枠にライブが3枚以上かつ虹ヶ咲シリーズのライブが1枚以上あるとき、常時ブレード+2";
-      var imLz = document.createElement("img");
-      imLz.className = "card-member-bonus-blade-ico";
-      imLz.src = MEMBER_BONUS_BLADE_IMG;
-      imLz.alt = "ブレード";
-      imLz.width = 14;
-      imLz.height = 14;
-      imLz.decoding = "async";
-      spLzB.appendChild(imLz);
-      spLzB.appendChild(document.createTextNode("条件+" + lzBlade));
-      frag.appendChild(spLzB);
     }
     for (var si = 1; si <= 6; si++) {
       var playV = playBonusHeartSlotOnly(c, si);
@@ -8255,8 +8240,9 @@ export function mountSimulator(
         appendMemberBonusChip(frag, { heartSlot: si, count: joujiV, joujiPrefix: true });
       }
     }
-    var v7 = playBonusHeartSlotOnly(c, 7);
-    if (v7) {
+    var v7Play = playBonusHeartSlotOnly(c, 7);
+    var v7Jouji = playBonusHeartSlotMapGet(c.joujiHeartSlots, 7);
+    if (v7Play > 0) {
       has = true;
       var sp3 = document.createElement("span");
       sp3.className = "card-member-bonus-chip card-member-bonus-chip--all";
@@ -8266,31 +8252,93 @@ export function mountSimulator(
       ic.setAttribute("aria-hidden", "true");
       ic.textContent = "\u2665";
       sp3.appendChild(ic);
-      sp3.appendChild(document.createTextNode("+" + v7));
+      sp3.appendChild(document.createTextNode("+" + v7Play));
       frag.appendChild(sp3);
     }
-    if (lzAllHeart > 0) {
+    if (v7Jouji > 0) {
       has = true;
-      var spLzA = document.createElement("span");
-      spLzA.className = "card-member-bonus-chip card-member-bonus-chip--all card-member-bonus-chip--lanzhu";
-      spLzA.title =
-        "鐘 嵐珠（bp1-012）: ライブ枠にライブが3枚以上かつ虹ヶ咲シリーズのライブが1枚以上あるとき、ALLハート+2（任意プール）";
-      var icLz = document.createElement("span");
-      icLz.className = "card-member-bonus-all-heart";
-      icLz.setAttribute("aria-hidden", "true");
-      icLz.textContent = "\u2665";
-      spLzA.appendChild(icLz);
-      spLzA.appendChild(document.createTextNode("条件+" + lzAllHeart));
-      frag.appendChild(spLzA);
+      var spJ7 = document.createElement("span");
+      spJ7.className = "card-member-bonus-chip card-member-bonus-chip--all card-member-bonus-chip--jouji";
+      spJ7.title = "常時: ALL ハート（任意支払い）";
+      spJ7.appendChild(document.createTextNode("常時:"));
+      var icJ = document.createElement("span");
+      icJ.className = "card-member-bonus-all-heart";
+      icJ.setAttribute("aria-hidden", "true");
+      icJ.textContent = "\u2665";
+      spJ7.appendChild(icJ);
+      spJ7.appendChild(document.createTextNode("+" + v7Jouji));
+      frag.appendChild(spJ7);
     }
     return has ? frag : null;
   }
 
-  function readMemberHbInputsFromDom() {
+  function memberJoujiHbAlwaysBlade(inst) {
+    if (!inst) return 0;
+    return Math.max(0, Math.floor(Number(inst.joujiBladeBonus) || 0));
+  }
+
+  function memberJoujiHbAlwaysHeartSlot(inst, si) {
+    if (!inst) return 0;
+    return joujiHeartSlotRead(inst.joujiHeartSlots, si);
+  }
+
+  function memberDisplayedHbTitle(inst) {
+    if (!inst || inst.type !== T_MEMBER) return "所持ハート／ブレード";
+    ensureCardBoardFields(inst);
+    var blade = sumPlayBonusBlade(inst) + memberJoujiHbAlwaysBlade(inst);
+    var hearts = 0;
+    for (var si = 1; si <= 7; si++) hearts += bonusHeartSlotRead(inst, si);
+    return (
+      "所持ハート／ブレード（常時効果込み: H+" + hearts + " / B+" + blade + "）— 場にいるメンバーのみ・Undo可"
+    );
+  }
+
+  function memberHbAdjustButtonEl(inst) {
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "stance-chip stance-hb";
+    btn.textContent = "+H/B";
+    btn.title = memberDisplayedHbTitle(inst);
+    btn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      e.preventDefault();
+      openMemberHbEditor(inst);
+    });
+    return btn;
+  }
+
+  /** @param {*} inst */
+  function captureMemberHbJoujiSnapshot(inst) {
+    if (!inst) return { blade: 0, hearts: {} };
+    try {
+      syncJoujiPassiveEffectsAll();
+    } catch (_) {}
+    var live =
+      inst.id != null
+        ? allZonesFlat().find(function (c) {
+            return c && c.id === inst.id;
+          })
+        : null;
+    var ref = live || inst;
+    /** @type {Record<number, number>} */
+    var hearts = {};
+    for (var si = 1; si <= 7; si++) {
+      hearts[si] = memberJoujiHbAlwaysHeartSlot(ref, si);
+    }
+    return {
+      blade: memberJoujiHbAlwaysBlade(ref),
+      hearts: hearts,
+    };
+  }
+
+  /** @param {{ blade?: number, hearts?: Record<number, number> } | null} joujiSnap */
+  function readMemberHbInputsFromDom(joujiSnap) {
     var dlg = document.getElementById("dlg-member-hb");
     if (!dlg) {
       return { slotsAlways: {}, slotsTurn: {}, bladeAlways: 0, bladeTurn: 0 };
     }
+    var jBlade = joujiSnap && joujiSnap.blade != null ? Math.max(0, Math.floor(Number(joujiSnap.blade) || 0)) : 0;
+    var jHearts = joujiSnap && joujiSnap.hearts && typeof joujiSnap.hearts === "object" ? joujiSnap.hearts : {};
     function step(sel) {
       var el = dlg.querySelector(sel);
       return el ? sanitizeNonNegativeInt(el.textContent) : 0;
@@ -8298,7 +8346,8 @@ export function mountSimulator(
     var oA = {};
     var oT = {};
     for (var si = 1; si <= 7; si++) {
-      var va = step('[data-member-hb-slot="' + si + '"][data-member-hb-scope="always"]');
+      var jh = Math.max(0, Math.floor(Number(jHearts[si]) || 0));
+      var va = Math.max(0, step('[data-member-hb-slot="' + si + '"][data-member-hb-scope="always"]') - jh);
       if (va > 0) oA[si] = va;
       var vt = step('[data-member-hb-slot="' + si + '"][data-member-hb-scope="turn"]');
       if (vt > 0) oT[si] = vt;
@@ -8306,15 +8355,18 @@ export function mountSimulator(
     return {
       slotsAlways: oA,
       slotsTurn: oT,
-      bladeAlways: step("[data-member-hb-blade][data-member-hb-scope=\"always\"]"),
-      bladeTurn: step("[data-member-hb-blade][data-member-hb-scope=\"turn\"]"),
+      bladeAlways: Math.max(0, step('[data-member-hb-blade][data-member-hb-scope="always"]') - jBlade),
+      bladeTurn: step('[data-member-hb-blade][data-member-hb-scope="turn"]'),
     };
   }
 
-  function fillMemberHbDialog(inst) {
+  function fillMemberHbDialog(inst, joujiSnap) {
     var dlg = document.getElementById("dlg-member-hb");
     if (!dlg || !inst) return;
     ensureCardBoardFields(inst);
+    var snap = joujiSnap || captureMemberHbJoujiSnapshot(inst);
+    var jHearts = snap.hearts || {};
+    var jBlade = snap.blade != null ? Math.max(0, Math.floor(Number(snap.blade) || 0)) : 0;
     var lead = document.getElementById("dlg-member-hb-lead");
     var mc = mergedCatalogCard(inst);
     if (lead) {
@@ -8329,25 +8381,36 @@ export function mountSimulator(
             ? inst.playBonusHeartSlotsTurn
             : inst.playBonusHeartSlots;
       var cur = map && (map[si] !== undefined ? map[si] : map[String(si)]);
+      var total = sanitizeNonNegativeInt(cur);
+      if (scope === "always") total += Math.max(0, Math.floor(Number(jHearts[si]) || 0));
       var el = dlg.querySelector(
         '[data-member-hb-slot="' + si + '"][data-member-hb-scope="' + scope + '"]',
       );
-      if (el) el.textContent = String(sanitizeNonNegativeInt(cur));
+      if (el) el.textContent = String(total);
     }
     for (var si = 1; si <= 7; si++) {
       setSlot(si, "always", "always");
       setSlot(si, "turn", "turn");
     }
     var ba = dlg.querySelector('[data-member-hb-blade][data-member-hb-scope="always"]');
-    if (ba) ba.textContent = String(sanitizeNonNegativeInt(inst.playBonusBladeAlways));
+    if (ba) {
+      ba.textContent = String(sanitizeNonNegativeInt(inst.playBonusBladeAlways) + jBlade);
+    }
     var bt = dlg.querySelector('[data-member-hb-blade][data-member-hb-scope="turn"]');
     if (bt) bt.textContent = String(sanitizeNonNegativeInt(inst.playBonusBladeTurn));
   }
 
   function openMemberHbEditor(inst) {
     if (!inst || inst.type !== T_MEMBER) return;
+    memberHbDialogJoujiSnapshot = captureMemberHbJoujiSnapshot(inst);
     memberHbDialogTarget = inst;
-    fillMemberHbDialog(inst);
+    var live =
+      inst.id != null
+        ? allZonesFlat().find(function (c) {
+            return c && c.id === inst.id;
+          })
+        : null;
+    fillMemberHbDialog(live || inst, memberHbDialogJoujiSnapshot);
     var dlg = document.getElementById("dlg-member-hb");
     if (dlg && typeof dlg.showModal === "function") dlg.showModal();
   }
@@ -8387,6 +8450,7 @@ export function mountSimulator(
     function closeHb() {
       if (dlg) dlg.close();
       memberHbDialogTarget = null;
+      memberHbDialogJoujiSnapshot = null;
     }
     function zeroInputsInDialog() {
       dlg.querySelectorAll(".member-hb-step").forEach(function (el) {
@@ -8402,11 +8466,7 @@ export function mountSimulator(
           return;
         }
         try {
-          var pack = readMemberHbInputsFromDom();
-          pushHistoryBefore("member-hb-adjust");
           var id = tgt && tgt.id;
-          /* tgt がオーファン（state から差し替えられている）の場合、ミューテーションしても画面に出ない。
-           * 必ず allZonesFlat() の中の生きているインスタンスを優先する。 */
           var live = null;
           if (id != null) {
             live = allZonesFlat().find(function (c) {
@@ -8414,6 +8474,10 @@ export function mountSimulator(
             }) || null;
           }
           var real = live || tgt;
+          var pack = readMemberHbInputsFromDom(memberHbDialogJoujiSnapshot);
+          pushHistoryBefore("member-hb-adjust");
+          /* tgt がオーファン（state から差し替えられている）の場合、ミューテーションしても画面に出ない。
+           * 必ず allZonesFlat() の中の生きているインスタンスを優先する。 */
           real.playBonusHeartSlotsAlways = Object.assign({}, pack.slotsAlways);
           real.playBonusHeartSlotsTurn = Object.assign({}, pack.slotsTurn);
           real.playBonusBladeAlways = sanitizeNonNegativeInt(pack.bladeAlways);
@@ -8865,6 +8929,10 @@ export function mountSimulator(
           ? Object.assign({}, state.liveSuccessVerdictLockedSim)
           : null,
       liveSuccessVerdictLockedFp: String(state.liveSuccessVerdictLockedFp || ""),
+      liveMechanicalFailFlushed: state.liveMechanicalFailFlushed === true,
+      liveWinMoveCommitted: state.liveWinMoveCommitted === true,
+      liveWinMovePending: state.liveWinMovePending === true,
+      pendingSuccessLiveBench: state.pendingSuccessLiveBench === true,
       liveScoreEffectBonus: Math.max(-99, Math.min(99, Math.floor(Number(state.liveScoreEffectBonus) || 0))),
       ealeNoteLiveHitIds: Array.isArray(state.ealeNoteLiveHitIds) ? [...state.ealeNoteLiveHitIds] : [],
       ealeNoteLiveScorePoints: Math.max(0, Math.floor(Number(state.ealeNoteLiveScorePoints) || 0)),
@@ -9090,6 +9158,10 @@ export function mountSimulator(
         ? Object.assign({}, s.liveSuccessVerdictLockedSim)
         : null;
     state.liveSuccessVerdictLockedFp = String(s.liveSuccessVerdictLockedFp || "");
+    state.liveMechanicalFailFlushed = s.liveMechanicalFailFlushed === true;
+    state.liveWinMoveCommitted = s.liveWinMoveCommitted === true;
+    state.liveWinMovePending = s.liveWinMovePending === true;
+    state.pendingSuccessLiveBench = s.pendingSuccessLiveBench === true;
     state.liveScoreEffectBonus =
       typeof s.liveScoreEffectBonus === "number" && Number.isFinite(s.liveScoreEffectBonus)
         ? Math.max(-99, Math.min(99, Math.floor(s.liveScoreEffectBonus)))
@@ -9972,6 +10044,137 @@ export function mountSimulator(
     state.liveSuccessVerdictLockedFp = "";
   }
 
+  function clearLiveWinMoveSessionFlags() {
+    state.liveMechanicalFailFlushed = false;
+    state.liveWinMoveCommitted = false;
+    state.liveWinMovePending = false;
+    state.pendingSuccessLiveBench = false;
+  }
+
+  /** 8.3.16: ライブ枠のライブカードをすべて控え室へ */
+  function flushLiveFrameLivesToWaiting() {
+    var moved = 0;
+    ["left", "center", "right"].forEach(function (k) {
+      var slot = state.liveArea[k];
+      var kept = [];
+      slot.forEach(function (c) {
+        if (c && c.type === T_LIVE) {
+          if (c._needHeartDelta) delete c._needHeartDelta;
+          c.isRotated = false;
+          c.lcWait = false;
+          clearLiveSuccessActivationOnInst(c);
+          state.waitingRoom.push(c);
+          moved++;
+        } else {
+          kept.push(c);
+        }
+      });
+      state.liveArea[k] = kept;
+    });
+    if (moved) clearTurnScopedPlayBonusesEverywhere();
+    return moved;
+  }
+
+  function maybeFlushFailedLiveCardsOnMechanicalVerdict() {
+    if (!playLiveMechanicalFailedLocked()) return false;
+    if (state.liveMechanicalFailFlushed === true) return false;
+    state.liveMechanicalFailFlushed = true;
+    var n = flushLiveFrameLivesToWaiting();
+    if (n > 0) {
+      showToast(
+        "ライブ失敗 — ライブカード " + n + " 枚を控え室へ送りました（総合ルール 8.3.16）",
+      );
+      logReplay("live-mechanical-fail-flush", { count: n });
+      render();
+    }
+    return true;
+  }
+
+  /** 8.4.6 相当: 自盤のライブ合計スコアで勝利（同点は両者勝利） */
+  function playerWonLiveJudgment() {
+    if (!playLiveSuccessVerdictReady()) return false;
+    if (liveCardCountOnBoard() <= 0) return false;
+    if (isVersusSenkyurakuState() && liveCardCountOnBoard() >= 2) return false;
+    var own = computeVersusLivePerfScoreTotal();
+    if (versusMatchPhaseActive()) {
+      var oppVs = opponentLiveScoreEstimate();
+      return own >= oppVs;
+    }
+    if (
+      state.soloOpponentLiveFrameScoreSum == null ||
+      !Number.isFinite(Number(state.soloOpponentLiveFrameScoreSum))
+    ) {
+      return true;
+    }
+    var oppSolo = soloOpponentLiveFrameScoreForAbility();
+    return own >= oppSolo;
+  }
+
+  /**
+   * 8.4.7: ライブ勝利時は成功ライブへ1枚必須移動（見送り不可）。
+   * @param {(moved: number) => void} onDone
+   * @param {{ forceWin?: boolean }} [opts]
+   */
+  function enforceMandatorySuccessLiveMove(onDone, opts) {
+    onDone = typeof onDone === "function" ? onDone : function () {};
+    opts = opts || {};
+    if (state.liveWinMovePending === true) return;
+    if (state.liveWinMoveCommitted === true) {
+      onDone(0);
+      return;
+    }
+    if (!opts.forceWin && !playerWonLiveJudgment()) {
+      onDone(0);
+      return;
+    }
+    if (isVersusSenkyurakuState() && liveCardCountOnBoard() >= 2) {
+      state.liveWinMoveCommitted = true;
+      showToast("成功ライブが2枚のため、追加の移動はありません（総合ルール 8.4.7.1）");
+      onDone(0);
+      return;
+    }
+    var pend = liveCardsAwaitingSuccessfulBenchPlacement();
+    if (!pend.length) {
+      state.liveWinMoveCommitted = true;
+      onDone(0);
+      return;
+    }
+    state.liveWinMovePending = true;
+    pushHistoryBefore("live-win-success-move");
+
+    function finishMoved(n) {
+      state.liveWinMoveCommitted = true;
+      state.liveWinMovePending = false;
+      state.pendingSuccessLiveBench = false;
+      if (n > 0) {
+        showToast("ライブ勝利 — 成功ライブカード置き場へ移動しました（総合ルール 8.4.7）");
+        logReplay("live-win-mandatory-move", { moved: n });
+      }
+      render();
+      onDone(n);
+    }
+
+    if (pend.length === 1) {
+      migrateOneLiveCardToSuccessfulAreaById(String(pend[0].id), function (m) {
+        finishMoved(m ? 1 : 0);
+      });
+      return;
+    }
+    openPickSuccessLiveDialog(
+      pend,
+      function (chosenId) {
+        if (!chosenId) {
+          finishMoved(0);
+          return;
+        }
+        migrateOneLiveCardToSuccessfulAreaById(chosenId, function (m) {
+          finishMoved(m ? 1 : 0);
+        });
+      },
+      { mandatory: true },
+    );
+  }
+
   /** エール全めくり成功確定時にスナップショットを固定（成功時効果でエール回収しても判定を維持） */
   function tryLockLiveSuccessVerdict() {
     if (state.liveSuccessVerdictLockedOk === true) return true;
@@ -9998,6 +10201,7 @@ export function mountSimulator(
         ":" +
         String(sim.blade != null ? sim.blade : "") +
         ":0";
+      maybeMarkPendingSuccessLiveBench();
       return true;
     } catch (_) {
       return false;
@@ -10399,6 +10603,10 @@ export function mountSimulator(
     }
     if (kind === "toujyou") expirePendingToujouEffects([String(c.id)]);
     else expirePendingToujouEffects([]);
+    if (kind === "live_success" && !instEligibleForLiveSuccessTrigger(c)) {
+      showToast("ライブ成功時効果は、ライブカード置き場／メンバーエリアのカードでのみ解決できます（総合ルール 9.3.4.3）");
+      return;
+    }
     ensureCardBoardFields(c);
     var mc = mergedCatalogCard(c);
     var cl = classifyCardAbility(mc, kind);
@@ -15313,6 +15521,11 @@ export function mountSimulator(
 
   /** ライブ成功＋残りエール0確定後、0.5秒待って成功時効果を誘発する */
   function syncLiveSuccessEffectActivation() {
+    if (state.liveStatsAfterBegin === true && playLiveMechanicalFailedLocked()) {
+      clearLiveSuccessEffectSchedule();
+      maybeFlushFailedLiveCardsOnMechanicalVerdict();
+      return;
+    }
     if (versusMatchPhaseActive() && isVersusLivePhase(versusSession.remoteMatch)) {
       if (!isVersusLiveSuccessFxStep(versusSession.remoteMatch)) {
         clearLiveSuccessEffectSchedule();
@@ -23528,6 +23741,70 @@ export function mountSimulator(
       return;
     }
 
+    if (cl.template === "kidou_energy_under_pick_waiting_hand") {
+      if (!stageColumnKeyHostingMember(inst.id)) {
+        abortResolved("ステージにいるメンバーでのみ起動できます");
+        return;
+      }
+      if (!checkAbilityKidouPreconditions(cl)) {
+        abortResolved("条件を満たしていません");
+        return;
+      }
+      var enPoolKidou = (state.energyArea || []).filter(function (e) {
+        return e && e.type === T_ENERGY;
+      });
+      if (!enPoolKidou.length) {
+        abortResolved("エネルギー置き場にエネルギーがありません");
+        return;
+      }
+      var kCandUnder = waitingPickCandidates(cl.filters, inst.id);
+      if (!kCandUnder.length) {
+        abortResolved("控え室に対象カードがありません");
+        return;
+      }
+      pushHistoryBefore("kidou-energy-under-wait-hand");
+      openPickFromWaitingDialog(
+        enPoolKidou,
+        "起動: このメンバーの下に置くエネルギーを1枚選びます。",
+        function (eid) {
+          if (!eid) {
+            render();
+            finishResolved();
+            return;
+          }
+          var enPick = state.energyArea.find(function (e) {
+            return e && String(e.id) === String(eid);
+          });
+          if (!enPick || !placeEnergyUnderStageMember(inst, enPick)) {
+            showToast("エネルギーをメンバーの下に置けませんでした");
+            render();
+            finishResolved();
+            return;
+          }
+          try {
+            syncJoujiPassiveEffectsAll();
+          } catch (_) {}
+          openPickFromWaitingDialog(kCandUnder, "起動: 控え室から手札に加えるカードを選びます。", function (pid) {
+            if (!pid) {
+              render();
+              finishResolved();
+              return;
+            }
+            var gotUnder = moveInstFromWaitingToHand(pid, inst);
+            if (!gotUnder) {
+              render();
+              finishResolved();
+              return;
+            }
+            showToast((mergedCatalogCard(gotUnder).name || "カード") + " を手札に加えました");
+            finishResolved();
+          });
+        },
+        { dialogTitle: "起動: エネルギーを下に置く", okLabel: "下に置く" },
+      );
+      return;
+    }
+
     if (cl.template === "kidou_wait_pick_hand") {
       if (!stageColumnKeyHostingMember(inst.id)) {
         abortResolved("ステージにいるメンバーでのみ起動できます");
@@ -25602,10 +25879,40 @@ export function mountSimulator(
     }, 0);
   }
 
-  /** エールで解決にめくったカードはライブ成功時効果の対象にしない（成功置き場のライブは除く） */
+  /** エールで解決にめくったカードはライブ成功時効果の対象にしない */
   function clearLiveSuccessActivationOffPlayZones() {
     (state.resolutionArea || []).forEach(function (c) {
       if (c) c._liveSuccessEffectActive = false;
+    });
+  }
+
+  /**
+   * 総合ルール 9.3.4.3: ライブカードの能力はライブカード置き場にある間のみ有効。
+   * メンバーカードの能力はメンバーエリア（ステージ／ライブ枠上のメンバー）にある間のみ有効。
+   * 成功ライブカード置き場のカードはライブ成功時の誘発・解決対象にしない（8.4.4 は 8.4.7 より前）。
+   */
+  function instEligibleForLiveSuccessTrigger(inst) {
+    if (!inst || inst.id == null) return false;
+    var mc = mergedCatalogCard(inst);
+    if (mc.type === T_LIVE) {
+      return liveSlotColumnKeyHostingCard(inst.id) != null;
+    }
+    if (mc.type === T_MEMBER) {
+      return boardColumnKeyHostingCard(inst.id) != null;
+    }
+    return false;
+  }
+
+  function clearLiveSuccessActivationOnInst(inst) {
+    if (!inst) return;
+    inst._liveSuccessEffectActive = false;
+    inst._liveSuccessEffectDeclined = false;
+  }
+
+  /** 成功ライブ置き場に移ったカードは 9.3.4.3 によりライブ成功時能力が無効になる */
+  function clearLiveSuccessActivationOffSuccessfulLiveArea() {
+    (state.successfulLiveArea || []).forEach(function (c) {
+      clearLiveSuccessActivationOnInst(c);
     });
   }
 
@@ -25618,11 +25925,10 @@ export function mountSimulator(
       console.warn(jErr);
     }
     clearLiveSuccessActivationOffPlayZones();
+    clearLiveSuccessActivationOffSuccessfulLiveArea();
     var cards = collectStageAndLiveBoardCards();
-    (state.successfulLiveArea || []).forEach(function (c) {
-      if (c && c.type === T_LIVE) cards.push(c);
-    });
     cards.forEach(function (c) {
+      if (!instEligibleForLiveSuccessTrigger(c)) return;
       var mc = mergedCatalogCard(c);
       if (!memberHasLiveSuccessAbility(mc) && !instHasGrantedTrigger(c, "live_success")) return;
       if (isPlayEffectResolved(c, "live_success") || c._liveSuccessEffectDeclined === true) return;
@@ -25679,6 +25985,7 @@ export function mountSimulator(
           liveAreaHasLiveCard();
         var pendingLiveSuccessWait =
           c._liveSuccessEffectActive === true &&
+          instEligibleForLiveSuccessTrigger(c) &&
           memberHasLiveSuccessAbility(mc) &&
           !isPlayEffectResolved(c, "live_success") &&
           c._liveSuccessEffectDeclined !== true &&
@@ -25713,25 +26020,6 @@ export function mountSimulator(
       return out;
     }
     if (isPlayGlowExemptZone(zoneId)) {
-      if (
-        zoneId === "zone-success-live" &&
-        (mc.type === T_MEMBER || mc.type === T_LIVE) &&
-        c._liveSuccessEffectActive === true &&
-        memberHasLiveSuccessAbility(mc) &&
-        !isPlayEffectResolved(c, "live_success") &&
-        c._liveSuccessAbilityDisabledByLiveStart !== true &&
-        c._liveSuccessEffectDeclined !== true &&
-        (isVersusLiveSuccessFxStep(versusSession.remoteMatch) ||
-          (state.liveStatsAfterBegin === true && playLiveSuccessJudgmentVisible()))
-      ) {
-        out.glowClasses.push("card-item--play-live-success-glow");
-        out.pendingEffectKinds = [{ kind: "live_success", label: "成功" }];
-        out.effectIcon = "live_success";
-        out.effectGlowKind = "live_success";
-        out.effectResolveKind = "live_success";
-        if (skipDecorGlow) out.glowClasses = [];
-        return out;
-      }
       if (skipDecorGlow) out.glowClasses = [];
       return out;
     }
@@ -25783,6 +26071,7 @@ export function mountSimulator(
       liveAreaHasLiveCard();
     var pendingLiveSuccess =
       c._liveSuccessEffectActive === true &&
+      instEligibleForLiveSuccessTrigger(c) &&
       memberHasLiveSuccessAbility(mc) &&
       !isPlayEffectResolved(c, "live_success") &&
       c._liveSuccessAbilityDisabledByLiveStart !== true &&
@@ -26050,6 +26339,7 @@ export function mountSimulator(
         if (k === "toujyou" && mc.type !== T_MEMBER) return;
         if ((k === "live_start" || k === "live_success") && mc.type !== T_MEMBER && mc.type !== T_LIVE) return;
         if (k === "live_start" && instBlockedFromLiveStartEffect(c)) return;
+        if (k === "live_success" && !instEligibleForLiveSuccessTrigger(c)) return;
         if (!kindAct[k]) return;
         if (kindDeclined[k]) return;
         if (cardHasTrigger(mc, k)) {
@@ -26108,17 +26398,17 @@ export function mountSimulator(
       });
       (state.liveArea[col] || []).forEach(visit);
     });
-    (state.successfulLiveArea || []).forEach(function (c) {
-      visit(c);
-    });
     /**
-     * 解決ゾーンはエール公開や過去の成功ライブ用。
-     * ライブ成功時の誘発対象はステージ／ライブ枠／今成功したライブ置き場のカード。
+     * 解決ゾーンはエール公開用。ライブ成功時の誘発対象はステージ／ライブ枠のみ（総合ルール 9.3.4.3）。
+     * 成功ライブカード置き場のカードは対象外（8.4.4 は 8.4.7 の移動より前）。
      */
     var onlyLiveSuccess =
       seenKinds.size === 1 && seenKinds.has("live_success");
     if (!onlyLiveSuccess) {
       (state.resolutionArea || []).forEach(visit);
+    }
+    if (!onlyLiveSuccess) {
+      (state.successfulLiveArea || []).forEach(visit);
     }
     return result;
   }
@@ -26598,33 +26888,13 @@ export function mountSimulator(
       bar.appendChild(mkWait);
       bar.appendChild(mkAct);
       if (opts.memberHbAdjust === true && c.type === T_MEMBER) {
-        const mkHb = document.createElement("button");
-        mkHb.type = "button";
-        mkHb.className = "stance-chip stance-hb";
-        mkHb.textContent = "+H/B";
-        mkHb.title = "所持ハート／ブレードを追加（場にいるメンバーのみ・非公式・Undo可）";
-        mkHb.addEventListener("click", (e) => {
-          e.stopPropagation();
-          e.preventDefault();
-          openMemberHbEditor(c);
-        });
-        bar.appendChild(mkHb);
+        bar.appendChild(memberHbAdjustButtonEl(c));
       }
       div.appendChild(bar);
     } else if (opts.memberHbAdjust === true && c.type === T_MEMBER) {
       const hbBar = document.createElement("div");
       hbBar.className = "card-member-hb-bar";
-      const mkHb = document.createElement("button");
-      mkHb.type = "button";
-      mkHb.className = "stance-chip stance-hb";
-      mkHb.textContent = "+H/B";
-      mkHb.title = "所持ハート／ブレードを追加（場にいるメンバーのみ・非公式・Undo可）";
-      mkHb.addEventListener("click", (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        openMemberHbEditor(c);
-      });
-      hbBar.appendChild(mkHb);
+      hbBar.appendChild(memberHbAdjustButtonEl(c));
       div.appendChild(hbBar);
     }
 
@@ -26810,7 +27080,7 @@ export function mountSimulator(
           }
           render();
         };
-      var liveSlotFaceDown = state.liveTurnPickMode && isLiveBoard;
+      var liveSlotFaceDown = state.liveTurnPickMode && isLiveBoard && !isEffectDialogBoardPeekActive();
       if (
         (isLiveBoard && state.liveTurnPickMode) ||
         (isLiveBoard && c.type === T_LIVE && !state.liveTurnPickMode)
@@ -27363,6 +27633,10 @@ export function mountSimulator(
             versusSession.myRole
           ) {
             claimVersusFirstFromSuccessLive(versusSession.roomCode, versusSession.myRole);
+          }
+          if (dragIdEnd) {
+            var movedSlInst = findCardInstById(dragIdEnd);
+            if (movedSlInst) clearLiveSuccessActivationOnInst(movedSlInst);
           }
         }
         normalizeAfterDrop(dragUndoSnap, lastDraggedDomId);
@@ -28923,36 +29197,16 @@ export function mountSimulator(
   }
 
   /** @param {boolean} [liveSucceeded] パフォーマンス完了時に記録した成否（判定フェイズでは盤面状態がリセット済みのため） */
-  function versusMigrateLiveToSuccessForJudgment(liveSucceeded) {
+  function versusMigrateLiveToSuccessForJudgment(liveSucceeded, onDone) {
+    onDone = typeof onDone === "function" ? onDone : function () {};
     var ok =
       liveSucceeded === true ||
       (liveSucceeded !== false && playLiveSuccessVerdictReady());
     if (!ok) {
-      return versusMigrateLiveToWaitingForJudgment();
+      onDone(versusMigrateLiveToWaitingForJudgment());
+      return;
     }
-    var moved = 0;
-    if (isVersusSenkyurakuState()) return 0;
-    ["left", "center", "right"].forEach(function (k) {
-      var slot = state.liveArea[k];
-      var kept = [];
-      slot.forEach(function (c) {
-        if (c.type === T_LIVE) {
-          c.isRotated = false;
-          c.lcWait = false;
-          if (cannotPlaceLiveOnSuccessLiveArea(mergedCatalogCard(c))) {
-            state.waitingRoom.push(c);
-          } else {
-            state.successfulLiveArea.push(c);
-            moved++;
-          }
-        } else {
-          kept.push(c);
-        }
-      });
-      state.liveArea[k] = kept;
-    });
-    if (moved) clearTurnScopedPlayBonusesEverywhere();
-    return moved;
+    enforceMandatorySuccessLiveMove(onDone, { forceWin: true });
   }
 
   function versusMigrateLiveToWaitingForJudgment() {
@@ -28993,95 +29247,113 @@ export function mountSimulator(
     var myVerdict =
       playRole === "host" ? remoteMatch.hostLiveVerdict : remoteMatch.guestLiveVerdict;
     var mySucceeded = myVerdict === "success";
-    var placed = 0;
-    if (iWin) {
-      placed = versusMigrateLiveToSuccessForJudgment(mySucceeded);
-      showVersusLiveScoreOverlay("win");
-    } else if (iLose) {
+
+    function afterMigration(placed) {
+      var judgmentSummary =
+        outcome === "draw"
+          ? "引き分け"
+          : iWin
+            ? "勝利"
+            : iLose
+              ? "敗北"
+              : "確定";
+      logReplay("versus-live-judgment", { summary: judgmentSummary });
+      resetVersusLocalLiveHandoff();
+      var placedAfter = successLiveAreaLiveCardCount();
+      var didPlace = placedAfter > placedBefore;
+      var shouldClaimFirst = false;
+      if (didPlace && versusSession.roomCode) {
+        if (iWin) {
+          shouldClaimFirst = true;
+        } else if (iDraw) {
+          var oppSlN = 0;
+          if (versusDualBoardActive()) {
+            var oppRoleDraw = playRole === "host" ? "guest" : "host";
+            var oppSnapDraw = versusLocalDualBoards[oppRoleDraw];
+            oppSlN = successLiveAreaLiveCardCount(oppSnapDraw && oppSnapDraw.successfulLiveArea);
+          } else {
+            var oppBoard = getOpponentBoardPublic(remoteMatch, playRole);
+            oppSlN = successLiveAreaLiveCardCount(oppBoard && oppBoard.successfulLiveArea);
+          }
+          var oppSenkyu = oppSlN === 2;
+          if (oppSenkyu && !isVersusSenkyurakuState()) {
+            shouldClaimFirst = true;
+          }
+        }
+        if (shouldClaimFirst) {
+          if (versusLocalDualMatchActive()) {
+            patchLocalVersusRemoteMatch({
+              firstPlayerRole: playRole,
+              successLiveFirstLocked: true,
+            });
+          } else {
+            claimVersusFirstFromSuccessLive(versusSession.roomCode, playRole).catch(function () {
+              /* noop */
+            });
+          }
+        }
+      }
+      if (versusOnlineActive()) {
+        queueVersusSuccessLivePublicSync();
+        flushVersusBoardPublicSync();
+      } else if (versusDualBoardActive()) {
+        persistVersusLocalDualActiveBoard();
+        syncVersusLocalDualOpponentBoard();
+      }
+      render();
+      var finishDelay = versusLiveJudgmentFinishDelayMs(remoteMatch);
+      if (versusLocalDualMatchActive()) {
+        if (versusJudgmentFinishTimer) clearTimeout(versusJudgmentFinishTimer);
+        var finishLocal = function () {
+          versusJudgmentFinishTimer = 0;
+          applyLocalVersusLiveJudgmentFinish();
+          forceVersusLocalDualBoardSwitchToActive();
+          render();
+        };
+        if (finishDelay <= 0) finishLocal();
+        else versusJudgmentFinishTimer = window.setTimeout(finishLocal, finishDelay);
+      } else if (versusSession.roomCode && versusSession.myRole === "host") {
+        if (versusJudgmentFinishTimer) clearTimeout(versusJudgmentFinishTimer);
+        var finishOnline = function () {
+          versusJudgmentFinishTimer = 0;
+          finishVersusLiveJudgment(versusSession.roomCode)
+            .then(function () {
+              render();
+            })
+            .catch(function (err) {
+              console.warn("[versus] finish judgment:", err);
+            });
+        };
+        if (finishDelay <= 0) finishOnline();
+        else versusJudgmentFinishTimer = window.setTimeout(finishOnline, finishDelay);
+      }
+      void placed;
+    }
+
+    if (iLose) {
       versusMigrateLiveToWaitingForJudgment();
       showVersusLiveScoreOverlay("lose");
-    } else if (iDraw) {
-      placed = versusMigrateLiveToSuccessForJudgment(mySucceeded);
+      afterMigration(0);
+      return;
+    }
+    if (iWin) {
+      showVersusLiveScoreOverlay("win");
+      if (mySucceeded) {
+        versusMigrateLiveToSuccessForJudgment(mySucceeded, afterMigration);
+      } else {
+        versusMigrateLiveToWaitingForJudgment();
+        afterMigration(0);
+      }
+      return;
+    }
+    if (iDraw) {
       showVersusLiveScoreOverlay("draw");
-    }
-    var judgmentSummary =
-      outcome === "draw"
-        ? "引き分け"
-        : iWin
-          ? "勝利"
-          : iLose
-            ? "敗北"
-            : "確定";
-    logReplay("versus-live-judgment", { summary: judgmentSummary });
-    resetVersusLocalLiveHandoff();
-    var placedAfter = successLiveAreaLiveCardCount();
-    var didPlace = placedAfter > placedBefore;
-    var fpBefore = remoteMatch.firstPlayerRole;
-    var shouldClaimFirst = false;
-    if (didPlace && versusSession.roomCode) {
-      if (iWin) {
-        shouldClaimFirst = true;
-      } else if (iDraw) {
-        var oppSlN = 0;
-        if (versusDualBoardActive()) {
-          var oppRoleDraw = playRole === "host" ? "guest" : "host";
-          var oppSnapDraw = versusLocalDualBoards[oppRoleDraw];
-          oppSlN = successLiveAreaLiveCardCount(oppSnapDraw && oppSnapDraw.successfulLiveArea);
-        } else {
-          var oppBoard = getOpponentBoardPublic(remoteMatch, playRole);
-          oppSlN = successLiveAreaLiveCardCount(oppBoard && oppBoard.successfulLiveArea);
-        }
-        var oppSenkyu = oppSlN === 2;
-        if (oppSenkyu && !isVersusSenkyurakuState()) {
-          shouldClaimFirst = true;
-        }
+      if (mySucceeded) {
+        versusMigrateLiveToSuccessForJudgment(mySucceeded, afterMigration);
+      } else {
+        versusMigrateLiveToWaitingForJudgment();
+        afterMigration(0);
       }
-      if (shouldClaimFirst) {
-        if (versusLocalDualMatchActive()) {
-          patchLocalVersusRemoteMatch({
-            firstPlayerRole: playRole,
-            successLiveFirstLocked: true,
-          });
-        } else {
-          claimVersusFirstFromSuccessLive(versusSession.roomCode, playRole).catch(function () {
-            /* noop */
-          });
-        }
-      }
-    }
-    if (versusOnlineActive()) {
-      queueVersusSuccessLivePublicSync();
-      flushVersusBoardPublicSync();
-    } else if (versusDualBoardActive()) {
-      persistVersusLocalDualActiveBoard();
-      syncVersusLocalDualOpponentBoard();
-    }
-    render();
-    var finishDelay = versusLiveJudgmentFinishDelayMs(remoteMatch);
-    if (versusLocalDualMatchActive()) {
-      if (versusJudgmentFinishTimer) clearTimeout(versusJudgmentFinishTimer);
-      var finishLocal = function () {
-        versusJudgmentFinishTimer = 0;
-        applyLocalVersusLiveJudgmentFinish();
-        forceVersusLocalDualBoardSwitchToActive();
-        render();
-      };
-      if (finishDelay <= 0) finishLocal();
-      else versusJudgmentFinishTimer = window.setTimeout(finishLocal, finishDelay);
-    } else if (versusSession.roomCode && versusSession.myRole === "host") {
-      if (versusJudgmentFinishTimer) clearTimeout(versusJudgmentFinishTimer);
-      var finishOnline = function () {
-        versusJudgmentFinishTimer = 0;
-        finishVersusLiveJudgment(versusSession.roomCode)
-          .then(function () {
-            render();
-          })
-          .catch(function (err) {
-            console.warn("[versus] finish judgment:", err);
-          });
-      };
-      if (finishDelay <= 0) finishOnline();
-      else versusJudgmentFinishTimer = window.setTimeout(finishOnline, finishDelay);
     }
   }
 
@@ -31024,17 +31296,9 @@ export function mountSimulator(
 
   /** Sortable が全ゾーンを毎回作り直すと重く、入力と混ざると固まることがあるので描画を同期的に合体 */
   var renderBurstId = 0;
-  var autoDeckRefreshInRender = false;
   function renderNowImpl() {
     if (!state.previewScratch) state.previewScratch = [];
-    if (!autoDeckRefreshInRender && state.deck.length === 0 && state.waitingRoom.length > 0) {
-      autoDeckRefreshInRender = true;
-      try {
-        tryReplenishDeckFromWaitingLoop();
-      } finally {
-        autoDeckRefreshInRender = false;
-      }
-    }
+    /* リフレッシュは「山札から引く直前」の明示処理のみ（render 中の自動補充はターン開始直後など誤タイミングになる） */
 
     pruneStageTurnEnteredOffBoard();
     ensureStageMembersLegacyTurnAnchors();
@@ -31149,8 +31413,11 @@ export function mountSimulator(
     var slots = document.querySelectorAll(".stage-slot.card-strip");
     for (var i = 0; i < slots.length; i++) {
       var slot = slots[i];
-      var n = slot.querySelectorAll('.card-item[data-type="エネルギー"]').length;
-      slot.style.setProperty("--energy-count", String(n));
+      var underN = 0;
+      slot.querySelectorAll(".card-item").forEach(function (n) {
+        if (n && n.dataset && n.dataset.type !== T_MEMBER) underN++;
+      });
+      slot.style.setProperty("--energy-count", String(underN));
     }
   }
 
@@ -31735,6 +32002,7 @@ export function mountSimulator(
     state.liveTurnHandSpreadPick = false;
     state.liveStatsAfterBegin = false;
     clearLiveSuccessVerdictLock();
+    clearLiveWinMoveSessionFlags();
     state.playLiveStartGlowActive = false;
     state.playLiveYellStarted = false;
     state.extraYellRevealAllowance = 0;
@@ -31855,6 +32123,7 @@ export function mountSimulator(
     state.liveTurnHandSpreadPick = false;
     state.liveStatsAfterBegin = false;
     clearLiveSuccessVerdictLock();
+    clearLiveWinMoveSessionFlags();
     state.playLiveStartGlowActive = false;
     state.playLiveYellStarted = false;
     state.extraYellRevealAllowance = 0;
@@ -31955,77 +32224,41 @@ export function mountSimulator(
   }
 
   /**
-   * ライブ判定が成功なのに成功ライブカード置き場へ未移動のライブカードがある場合、
-   * 効果処理ウインドウと同じ黒ピンク基調のダイアログで移動可否を尋ねる。
-   * 尋ねる必要がなければ即 done() を呼ぶ。移動／見送りのいずれでも最後に done() を呼ぶ。
+   * 8.4.7: ターン終了／ターン開始時に成功ライブ移動を促す（ライブ成功直後は行わない）。
    * @param {() => void} done
    */
   function promptMoveSuccessfulLiveThen(done) {
-    var bundleTurn = evaluateLiveMechanicalFulfillmentBundle();
-    if (!shouldPromptMoveSuccessfulLiveOnTurnStart(bundleTurn)) {
+    done = typeof done === "function" ? done : function () {};
+    if (state.liveWinMoveCommitted === true) {
+      done();
+      return;
+    }
+    if (!shouldPromptMoveSuccessfulLiveOnTurnStart()) {
       done();
       return;
     }
     var pend = liveCardsAwaitingSuccessfulBenchPlacement();
-    var seen = [];
-    var seenSet = new Set();
-    pend.forEach(function (c) {
-      var mc = mergedCatalogCard(c);
-      var label = ((mc.card_no != null ? String(mc.card_no) + " " : "") + (mc.name || c.name || "ライブ")).trim();
-      if (!seenSet.has(label)) {
-        seenSet.add(label);
-        seen.push(label);
-      }
-    });
-    var nameLine =
-      seen.length <= 2 ? seen.join("・") : seen.slice(0, 2).join("・") + " ほか計 " + pend.length + " 枚";
-    if (pend.length > 1) {
-      openAbilityConfirmDialog(
-        "ライブ判定は成功ですが、「成功ライブカード置き場」に該当のライブカードが載っていません。\n「" +
-          nameLine +
-          "」のうち 1 枚だけ成功ライブカード置き場へ移しますか？\n（「はい」でカードを選びます。「いいえ」では移しません）",
-        function (okMulti) {
-          if (!okMulti) {
-            done();
-            return;
-          }
-          openPickSuccessLiveDialog(pend, function (chosenId) {
-            if (chosenId != null) {
-              migrateOneLiveCardToSuccessfulAreaById(chosenId, function (m) {
-                if (m) {
-                  showToast("選んだライブカードを成功ライブカード置き場へ移しました");
-                  logReplay("turn-phase-auto-move-success-live", { liveCards: m, pickOne: true });
-                }
-                done();
-              });
-              return;
-            }
-            done();
-          });
-        },
-        { dialogTitle: "成功ライブカードの移動" },
-      );
+    if (!pend.length) {
+      state.liveWinMoveCommitted = true;
+      state.pendingSuccessLiveBench = false;
+      done();
       return;
     }
-    openAbilityConfirmDialog(
-      "ライブ判定は成功ですが、「成功ライブカード置き場」に該当のライブカードが載っていません。\n「" +
-        nameLine +
-        "」を成功ライブカード置き場へ移しますか？\n（「はい」で移動。「いいえ」では自動移動せず、このあとも解決・ライブ枠は控え室へ送られます）",
-      function (okSingle) {
-        if (!okSingle) {
-          done();
-          return;
-        }
-        migratePendingLiveCardsToSuccessfulArea(function (movedN) {
-          if (movedN) {
-            showToast(movedN + " 枚のライブカードを成功ライブカード置き場へ移しました");
-            logReplay("turn-phase-auto-move-success-live", { liveCards: movedN });
-          }
-          done();
-        });
-      },
-      { dialogTitle: "成功ライブカードの移動" },
-    );
+    if (!playerWonLiveJudgment()) {
+      openPickSuccessLiveDialog([], function () {
+        state.liveWinMoveCommitted = true;
+        state.liveWinMovePending = false;
+        state.pendingSuccessLiveBench = false;
+        showToast("スコアでライブに敗れたため、成功ライブカード置き場へは置きませんでした");
+        render();
+        done();
+      }, { allowSkip: true, skipLabel: "置かない", scoreLoss: true });
+      return;
+    }
+    enforceMandatorySuccessLiveMove(function () {
+      state.pendingSuccessLiveBench = false;
+      done();
+    });
   }
 
   function doMulliganExecute(opts) {
@@ -32381,6 +32614,7 @@ export function mountSimulator(
     state.liveTurnHandSpreadPick = state.hand.length >= LIVE_TURN_HAND_SPREAD_MIN;
     state.liveStatsAfterBegin = false;
     clearLiveSuccessVerdictLock();
+    clearLiveWinMoveSessionFlags();
     state.playLiveStartGlowActive = false;
     state.playLiveYellStarted = false;
     state.extraYellRevealAllowance = 0;
@@ -32552,6 +32786,7 @@ export function mountSimulator(
     state.ealeNoteLiveScorePoints = 0;
     state.pendingDrawYellHandDraws = 0;
     clearLiveSuccessVerdictLock();
+    clearLiveWinMoveSessionFlags();
     state.liveStatsAfterBegin = true;
     state.playLiveYellStarted = false;
     state.extraYellRevealAllowance = 0;

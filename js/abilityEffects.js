@@ -16,6 +16,7 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  * @typedef {'none'
  *   |'kidou_stage_wait_pick_hand'
  *   |'kidou_wait_pick_hand'
+ *   |'kidou_energy_under_pick_waiting_hand'
  *   |'kidou_hand_cost_wait_pick_hand'
  *   |'kidou_hand_discard_activate_wait_opp_bonus'
  *   |'kidou_wait_to_stage'
@@ -87,6 +88,7 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  *   |'kidou_wait_member_grant_jouji'
  *   |'kidou_energy_or_activate_member'
  *   |'kidou_energy_deck_pick_live'
+ *   |'kidou_energy_under_pick_waiting_hand'
  *   |'toujou_baton_discarded_pick_hand'
  *   |'toujou_optional_hand_discard_draw'
  *   |'optional_pick_member_wait_opp_stage'
@@ -313,7 +315,7 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  * @property {number} [deckDrawCount]
  * @property {boolean} [requiresOnStage]
  * @property {boolean} [requiresInWaiting]
- * @property {number} [perTurnLimit]   1: ターン1回 / 2: ターン2回
+ * @property {number} [perTurnLimit]   1: ターン1回 / 2: ターン2回 / 0: 制限なし（テキストに明記がない限り）
  * @property {boolean} [costEnergy]
  * @property {boolean} [costSelfWait]
  * @property {number}  [bladeGain]
@@ -2454,7 +2456,7 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
         costOrAlt: true,
         costSelfWait: true,
         handDiscardToWaiting: 1,
-        perTurnLimit: perTurn || 1,
+        perTurnLimit: perTurn,
       });
     }
 
@@ -2465,7 +2467,7 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
         costSelfWait: true,
         handDiscardToWaiting: 1,
         revealMinMemberCost: minMemReveal ? Number(minMemReveal[1]) : 10,
-        perTurnLimit: perTurn || 1,
+        perTurnLimit: perTurn,
       });
     }
 
@@ -2501,7 +2503,7 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
         filters: Object.assign(parseAbilityPickFilters(p), {
           pickType: T_MEMBER,
         }),
-        perTurnLimit: perTurn || 1,
+        perTurnLimit: perTurn,
       });
     }
 
@@ -2509,7 +2511,7 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
       return kidouT({
         template: "kidou_hand_discard_wait_live_score_pay",
         handDiscardToWaiting: 1,
-        perTurnLimit: perTurn || 1,
+        perTurnLimit: perTurn,
       });
     }
 
@@ -2521,7 +2523,7 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
         characterNames: parseQuotedCharacterNames(p),
         waitPickCount: waitPickN ? Number(waitPickN[1]) : 6,
         energyActiveCount: actEnPick ? Number(actEnPick[1]) : 6,
-        perTurnLimit: perTurn || 1,
+        perTurnLimit: perTurn,
       });
     }
 
@@ -2552,7 +2554,7 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
       return kidouT({
         template: "kidou_wait_member_grant_jouji",
         costPickMemberWait: true,
-        perTurnLimit: perTurn || 1,
+        perTurnLimit: perTurn,
       });
     }
 
@@ -2575,7 +2577,7 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
       return kidouT({
         template: "kidou_reveal_hand_cost_threshold",
         costThresholds: [10, 20, 30, 40, 50],
-        perTurnLimit: perTurn || 1,
+        perTurnLimit: perTurn,
       });
     }
 
@@ -2678,7 +2680,7 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
         template: "kidou_hand_discard_trigger_ability",
         handDiscardToWaiting: 1,
         filters: parseAbilityPickFilters(p),
-        perTurnLimit: perTurn || 1,
+        perTurnLimit: perTurn,
       });
     }
 
@@ -2696,6 +2698,20 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
         template: "kidou_energy_deck_pick_live",
         costEnergyCount: enRet ? Number(enRet[1]) : 2,
         filters: Object.assign(parseAbilityPickFilters(p), { pickType: T_LIVE }),
+      });
+    }
+
+    if (
+      /エネルギー置き場/.test(p) &&
+      /エネルギー1枚/.test(p) &&
+      /このメンバーの下に置/.test(p) &&
+      /控え室から/.test(p) &&
+      /手札に加/.test(p)
+    ) {
+      return kidouT({
+        template: "kidou_energy_under_pick_waiting_hand",
+        filters: parseAbilityPickFilters(p),
+        perTurnLimit: perTurn,
       });
     }
 
@@ -5106,6 +5122,7 @@ export function abilityEffectIsAutomated(template) {
   return (
     template === "kidou_stage_wait_pick_hand" ||
     template === "kidou_wait_pick_hand" ||
+    template === "kidou_energy_under_pick_waiting_hand" ||
     template === "kidou_hand_cost_wait_pick_hand" ||
     template === "kidou_hand_discard_activate_wait_opp_bonus" ||
     template === "kidou_hand_discard_series_branch" ||
@@ -5194,6 +5211,7 @@ export function abilityEffectIsAutomated(template) {
     template === "kidou_wait_member_grant_jouji" ||
     template === "kidou_energy_or_activate_member" ||
     template === "kidou_energy_deck_pick_live" ||
+    template === "kidou_energy_under_pick_waiting_hand" ||
     template === "kidou_hand_discard_trigger_ability" ||
     template === "toujou_wait_pick_trigger_ability" ||
     template === "toujou_baton_discarded_pick_hand" ||

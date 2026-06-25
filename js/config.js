@@ -122,16 +122,6 @@ export const STORAGE_TEST_CARD_LOG_SAVE_PREF = "llocg_test_card_log_save_pref_v1
  */
 export const FILTER_PRODUCT_TEST_CARD_LOG = "__llocg_test_card_log__";
 
-/** ミア・テイラー pb1-011 系（R / SEC 等同一扱い・下のエネ1枚につき常時ブレード） */
-export function cardNoIsMiaTaylorPb1011(cardNo) {
-  return /^PL!N-pb1-011-/i.test(String(cardNo || "").trim());
-}
-
-/** 鐘 嵐珠 bp1-012 系（R / P / SEC 等同一扱い・ライブ枠条件で ALLハートとブレード） */
-export function cardNoIsZhongLanzhuBp1012(cardNo) {
-  return /^PL!N-bp1-012-/i.test(String(cardNo || "").trim());
-}
-
 /** Undo 履歴の最大長 */
 export const HISTORY_MAX_STEPS = 35;
 

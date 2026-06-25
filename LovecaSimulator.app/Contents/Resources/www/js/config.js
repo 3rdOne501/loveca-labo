@@ -44,7 +44,7 @@ export const CARDS_JSON_REMOTE_URLS = [
   "https://raw.githubusercontent.com/wlt233/llocg_db/master/json/cards.json",
 ];
 
-/** 同一オリジンに置くオフライン用コピー（`data/cards.json`） */
+/** 同一オリジンに置くオフライン用コピー（`data/cards.json`）。CDN 取得失敗時のフォールバック。 */
 export const CARDS_JSON_BUNDLED_PATH = "data/cards.json";
 
 export const STORAGE_DECK = "llocg_deck";
@@ -121,16 +121,6 @@ export const STORAGE_TEST_CARD_LOG_SAVE_PREF = "llocg_test_card_log_save_pref_v1
  * カード一覧「商品」プルダウン用の疑似商品キー（DB の product とは別。検索・通常一覧では出さず、この項目を選ぶとログだけ表示）
  */
 export const FILTER_PRODUCT_TEST_CARD_LOG = "__llocg_test_card_log__";
-
-/** ミア・テイラー pb1-011 系（R / SEC 等同一扱い・下のエネ1枚につき常時ブレード） */
-export function cardNoIsMiaTaylorPb1011(cardNo) {
-  return /^PL!N-pb1-011-/i.test(String(cardNo || "").trim());
-}
-
-/** 鐘 嵐珠 bp1-012 系（R / P / SEC 等同一扱い・ライブ枠条件で ALLハートとブレード） */
-export function cardNoIsZhongLanzhuBp1012(cardNo) {
-  return /^PL!N-bp1-012-/i.test(String(cardNo || "").trim());
-}
 
 /** Undo 履歴の最大長 */
 export const HISTORY_MAX_STEPS = 35;

@@ -1088,6 +1088,26 @@ body.play-versus-mode .versus-opponent-board .versus-opp-bonus-footer {
 }
 body.play-versus-mode .versus-opponent-board .stage-slot.card-strip {
   min-height: calc(var(--versus-opp-card-h) + 22px);
+  flex-wrap: nowrap;
+  gap: 0;
+  align-items: flex-start;
+  align-content: flex-start;
+  --stage-under-overlap-frac: -0.9;
+}
+body.play-versus-mode .versus-opponent-board .stage-slot .card-item:not([data-type="メンバー"]) {
+  position: relative;
+  z-index: 1;
+  flex: 0 0 auto;
+  align-self: flex-start;
+}
+body.play-versus-mode .versus-opponent-board .stage-slot .card-item[data-type="メンバー"] {
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+body.play-versus-mode .versus-opponent-board .stage-slot .card-item + .card-item {
+  margin-left: calc(var(--versus-opp-card-w) * var(--stage-under-overlap-frac));
 }
 body.play-versus-mode .versus-opponent-board .versus-opp-live-row,
 body.play-versus-mode .versus-opponent-board .versus-opp-stage-row {
@@ -4154,24 +4174,41 @@ body.play-mode #btn-live-turn-begin:not(:disabled):focus-visible {
 }
 
 body.play-mode .stage-slot.card-strip {
-  min-height: calc(var(--loveca-play-h) + 30px);
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  align-content: flex-start;
+  justify-content: center;
+  min-height: 0;
   padding: 5px 6px;
   gap: 0;
-  align-items: flex-end;
-  justify-content: center;
+  overflow: visible;
+  /* メンバー下のカード重なり（9割重ね＝1枚あたり10%だけ見える） */
+  --stage-under-overlap-frac: -0.9;
 }
 
-/* エネをメンバーの下（背面）に重ねる：左からエネを積み、右端のメンバーが最前面 */
-body.play-mode .stage-slot .card-item[data-type="エネルギー"] {
+/* 左から下敷きカードを横一列に積み、右端のメンバーが最前面 */
+body.play-mode .stage-slot .card-item:not([data-type="メンバー"]) {
   position: relative;
   z-index: 1;
-  /* メンバー下に敷くエネルギーはエネルギー置き場と同じスタイルで「深く」重ねる
-     （エネルギー置き場 -0.42 より深い -0.68 を採用してメンバーの邪魔をしない） */
-  margin-right: calc(var(--loveca-play-w) * -0.68);
+  flex: 0 0 auto;
+  width: var(--loveca-play-w);
+  align-self: flex-start;
 }
 body.play-mode .stage-slot .card-item[data-type="メンバー"] {
   position: relative;
   z-index: 2;
+  flex: 0 0 auto;
+  align-self: flex-start;
+}
+body.play-mode .stage-slot .card-item + .card-item {
+  margin-left: calc(var(--loveca-play-w) * var(--stage-under-overlap-frac));
+}
+body.play-mode .stage-slot .card-item:not([data-type="メンバー"]) .card-art-wrap {
+  display: block;
+  line-height: 0;
 }
 
 /* ステージに載せたエネは常に不透明・アクティブ相当の見え方（強制 lcActive と併用） */
@@ -4213,11 +4250,9 @@ body.play-mode .stage-slot.card-strip .card-item[data-type="メンバー"] .card
 body.play-mode .stage-slot.card-strip .card-item[data-type="メンバー"] .card-img.rotated {
   width: calc(var(--loveca-play-w) * 1.26);
 }
-body.play-mode .stage-slot .card-item[data-type="エネルギー"] {
-  margin-right: calc(var(--loveca-play-w) * -0.55);
-}
 body.play-mode .stage-slot.card-strip {
-  transform: translateX(calc(var(--loveca-play-w) * -0.225 * var(--energy-count, 0)));
+  /* 下敷き1枚ごとに見える幅10%ぶん、スロット全体を左へ寄せてメンバーを中央に */
+  transform: translateX(calc(var(--loveca-play-w) * -0.05 * var(--energy-count, 0)));
   transform-origin: top center;
 }
 body.play-mode .stage-slot.card-strip .card-stance-bar,

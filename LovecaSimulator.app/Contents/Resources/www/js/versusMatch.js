@@ -513,6 +513,47 @@ export function describeVersusFlowForRole(match, myRole) {
   return "ライブフェイズ";
 }
 
+/**
+ * ライブフェイズのステップ進行 UI 用
+ * @param {VersusMatchDoc|null|undefined} match
+ * @param {VersusRole|null} myRole
+ * @returns {{ steps: { id: string, label: string, state: 'done'|'active'|'pending'|'wait' }[], hint: string }|null}
+ */
+export function buildVersusLiveStepUi(match, myRole) {
+  if (!match || normalizeVersusPhase(match) !== "live") return null;
+  var step = getVersusLiveStep(match) || "set";
+  var activeRole = match.activePlayerRole;
+  var mineActive = !!(myRole && activeRole === myRole);
+  var order = ["set", "perf", "judgment", "successFx"];
+  var labels = {
+    set: "セット",
+    perf: "パフォーマンス",
+    judgment: "判定",
+    successFx: "成功演出",
+  };
+  var idx = order.indexOf(step);
+  if (idx < 0) idx = 0;
+  /** @type {{ id: string, label: string, state: 'done'|'active'|'pending'|'wait' }[]} */
+  var steps = order.map(function (id, i) {
+    /** @type {'done'|'active'|'pending'|'wait'} */
+    var state = "pending";
+    if (i < idx) state = "done";
+    else if (i === idx) state = "active";
+    return { id: id, label: labels[id] || id, state: state };
+  });
+  var hint = "";
+  if (step === "set") {
+    hint = mineActive ? "ライブカードをセットして「セット完了」" : "相手のセット完了を待っています";
+  } else if (step === "perf") {
+    hint = mineActive ? "エールを進めてパフォーマンスを完了" : "相手のパフォーマンスを待っています";
+  } else if (step === "judgment") {
+    hint = "ホストがライブ勝敗を確定します";
+  } else if (step === "successFx") {
+    hint = mineActive ? "成功時効果を解決して「完了」" : "相手の成功時効果を待っています";
+  }
+  return { steps: steps, hint: hint };
+}
+
 /** @param {VersusMatchDoc|null|undefined} match @param {VersusRole|null} role */
 export function canRoleActInVersus(match, role) {
   if (!match || match.status !== "playing" || !role) return false;

@@ -1,5 +1,5 @@
 /** 軽量トースト（アラート乱発を避ける） */
-export function showToast(message, { duration = 2800 } = {}) {
+export function showToast(message, { duration = 2800, placement = "bottom-right", variant = "" } = {}) {
   let stack = document.getElementById("toast-stack");
   if (!stack) {
     stack = document.createElement("div");
@@ -10,6 +10,8 @@ export function showToast(message, { duration = 2800 } = {}) {
   }
   const t = document.createElement("p");
   t.className = "toast";
+  if (placement === "center") t.classList.add("toast--center");
+  if (variant) t.classList.add("toast--" + String(variant));
   t.textContent = message;
   stack.appendChild(t);
   requestAnimationFrame(function () {
