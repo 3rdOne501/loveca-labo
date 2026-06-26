@@ -448,11 +448,11 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
 
 .builder {
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr) 320px;
-  gap: 1rem;
-  padding: 1rem 1rem 2rem;
-  max-width: 1600px;
-  margin: 0 auto;
+  grid-template-columns: minmax(168px, 196px) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.45rem;
+  padding: 0.35rem 0.45rem 0.55rem;
+  max-width: none;
+  margin: 0;
   align-items: stretch;
   width: 100%;
 }
@@ -483,23 +483,57 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
 
 /* 検索／デッキ列も同じ高さ内でスクロール */
 #view-deck .search-panel,
-#view-deck .deck-panel {
+#view-deck .deck-panel,
+#view-deck .card-panel {
   min-height: 0;
+  overflow: hidden;
+}
+#view-deck .search-panel,
+#view-deck .deck-panel {
   overflow-y: auto;
   overscroll-behavior-y: auto;
   -webkit-overflow-scrolling: touch;
 }
 @media (max-width: 1100px) {
   #view-deck .search-panel,
-  #view-deck .deck-panel {
+  #view-deck .deck-panel,
+  #view-deck .card-panel {
     overflow-y: visible;
   }
 }
 
-/* メインデッキ列: 「登録カード一覧」をラップのみスクロール（パネルがカード枚数で伸びすぎない） */
+/* メインデッキ列: 現在のデッキ一覧は専用スクロール領域 */
 #view-deck .deck-panel {
   display: flex;
   flex-direction: column;
+}
+
+#view-deck .current-deck-grid-scroll {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  align-self: stretch;
+  min-height: 200px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 0.3rem;
+  padding: 0.28rem 0.32rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 140, 190, 0.16);
+  background: rgba(8, 4, 14, 0.35);
+}
+
+#view-deck .current-deck-grid-scroll .card-grid {
+  flex: 0 0 auto;
+}
+
+#view-deck .current-deck-empty {
+  margin: 1.25rem 0.5rem;
+  text-align: center;
+  font-size: 0.82rem;
+  line-height: 1.55;
 }
 
 #view-deck #deck-list-wrap {
@@ -534,7 +568,7 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
     linear-gradient(155deg, rgba(34, 20, 44, 0.82) 0%, rgba(18, 10, 28, 0.92) 100%);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 1rem 1.05rem;
+  padding: 0.62rem 0.68rem;
   box-shadow: var(--shadow-panel);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
@@ -588,12 +622,16 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
   position: sticky;
   top: 0;
   z-index: 28;
-  padding: 0.45rem 0.55rem 0.55rem;
-  margin: 0 -0.35rem 0.55rem;
+  flex-shrink: 0;
+  padding: 0.35rem 0.42rem 0.42rem;
+  margin: 0 -0.2rem 0.35rem;
   border-radius: var(--radius-sm);
   background: linear-gradient(155deg, rgba(34, 20, 44, 0.97) 0%, rgba(18, 10, 28, 0.98) 100%);
   border: 1px solid rgba(255, 120, 180, 0.16);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+#view-deck .card-deck-summary {
+  flex-shrink: 0;
 }
 #view-deck .deck-panel-head-row {
   display: flex;
@@ -1765,10 +1803,8 @@ body.play-versus-mode .game-tools-row #btn-versus-lobby:not([hidden]) {
 #view-deck .card-grid-scroll {
   display: flex;
   flex-direction: column;
-  /* flex-basis 0 で兄弟（panel-title-row/panel-lead）の高さに引きずられず、残り領域を素直に取る */
   flex: 1 1 0;
   align-self: stretch;
-  /* グリッド列・dvh の組み合わせで縦が 0 に潰れる端末向けの保険 */
   min-height: 280px;
   max-height: min(calc(100vh - 8.5rem), 78vh, 980px);
   max-height: min(calc(100svh - 8.5rem), 78svh, 980px);
@@ -1776,8 +1812,8 @@ body.play-versus-mode .game-tools-row #btn-versus-lobby:not([hidden]) {
   overflow-y: auto;
   overscroll-behavior-y: auto;
   -webkit-overflow-scrolling: touch;
-  margin-top: 0.35rem;
-  padding: 0.3rem 0.38rem;
+  margin-top: 0.3rem;
+  padding: 0.28rem 0.32rem;
   border-radius: var(--radius-sm);
   border: 1px solid rgba(255, 140, 190, 0.14);
   background: rgba(8, 4, 14, 0.22);
@@ -1789,7 +1825,7 @@ body.play-versus-mode .game-tools-row #btn-versus-lobby:not([hidden]) {
   flex-direction: column;
   flex: 1 1 0;
   align-self: stretch;
-  min-height: 280px;
+  min-height: 0;
   max-height: min(calc(100vh - 8.5rem), 78vh, 980px);
   max-height: min(calc(100svh - 8.5rem), 78svh, 980px);
   overflow-x: hidden;
@@ -2067,7 +2103,9 @@ body.play-versus-mode .game-tools-row #btn-versus-lobby:not([hidden]) {
 #view-deck.view-deck--deck-registration-open .card-panel-body-stack .deck-library-scroll {
   flex: 1 1 40%;
   min-height: min(200px, 36vh);
+  min-height: min(200px, 36dvh);
   max-height: min(calc(100vh - 8rem), 60vh, 700px);
+  max-height: min(calc(100svh - 8rem), 60svh, 700px);
 }
 .deck-library-head {
   display: flex;

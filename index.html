@@ -332,15 +332,6 @@ python3 -m http.server 8080</pre>
         <section class="card-panel">
           <div class="panel-title-row">
             <h2 id="card-panel-heading">カード一覧</h2>
-            <button
-              type="button"
-              class="btn sm danger"
-              id="btn-clear-current-deck"
-              hidden
-              title="編集中メインデッキの枚数をすべて0にします"
-            >
-              デッキクリア
-            </button>
             <label class="field card-panel-search-field">
               <span class="sr-only">カード名・能力</span>
               <input
@@ -361,16 +352,6 @@ python3 -m http.server 8080</pre>
               >
                 カード一覧
               </button>
-              <span class="card-panel-mode-row__divider" aria-hidden="true"></span>
-              <button
-                type="button"
-                class="btn sm card-panel-mode-btn card-panel-mode-btn--current"
-                id="btn-card-panel-current-deck"
-                aria-pressed="false"
-                title="編集中のメインデッキだけを一覧表示・役割編集・統計"
-              >
-                現在のデッキ
-              </button>
               <button
                 type="button"
                 class="btn sm card-panel-mode-btn card-panel-mode-btn--samples"
@@ -389,7 +370,6 @@ python3 -m http.server 8080</pre>
               </button>
             </div>
           </div>
-          <div id="card-deck-summary" class="card-deck-summary" hidden></div>
           <div class="card-panel-body-stack">
             <div id="card-grid-scroll" class="card-grid-scroll">
               <div id="card-grid-top-spacer" class="card-grid-virtual-spacer" aria-hidden="true"></div>
@@ -420,7 +400,15 @@ python3 -m http.server 8080</pre>
         <aside class="deck-panel">
           <div class="deck-panel-sticky-head">
             <div class="deck-panel-head-row">
-              <h2>メインデッキ</h2>
+              <h2>現在のデッキ</h2>
+              <button
+                type="button"
+                class="btn sm danger"
+                id="btn-clear-current-deck"
+                title="編集中メインデッキの枚数をすべて0にします"
+              >
+                クリア
+              </button>
               <button type="button" class="btn sm secondary" id="btn-tutorial-builder" title="ラブカの流れとこの画面の説明">
                 はじめての方
               </button>
@@ -445,11 +433,17 @@ python3 -m http.server 8080</pre>
                 type="button"
                 class="btn sm secondary"
                 id="btn-deck-registered-peek"
-                title="編集中のメインデッキの内訳・BH・コスト分布を確認"
+                title="編集中のメインデッキの内訳・BH・コスト分布を大きく確認"
               >
-                現在のデッキを見る
+                詳細を見る
               </button>
             </div>
+          </div>
+
+          <div id="card-deck-summary" class="card-deck-summary" hidden></div>
+          <div id="current-deck-grid-scroll" class="current-deck-grid-scroll" aria-label="現在のデッキのカード一覧">
+            <div id="current-deck-grid" class="card-grid"></div>
+            <p id="current-deck-empty" class="current-deck-empty muted" hidden>まだカードが入っていません。左の一覧からタップして追加してください。</p>
           </div>
 
           <details class="deck-panel-section" id="deck-section-preset">

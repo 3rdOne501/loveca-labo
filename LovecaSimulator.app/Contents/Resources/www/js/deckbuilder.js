@@ -527,8 +527,8 @@ export function initDeckBuilder(root, { onStartGame }) {
   let samplePanelOpen = false;
   /** 登録デッキ（保存済みプリセット）一覧パネルを表示するか */
   let deckRegistrationPanelOpen = false;
-  /** 「現在のデッキ」: 編集中メインデッキだけにフィルタ表示するか（旧 登録デッキタブ相当） */
-  let currentDeckPanelOpen = false;
+  /** 左右分割: 右パネルに常時表示（旧トグル廃止・互換用に状態は残す） */
+  let currentDeckPanelOpen = true;
   /** 「再読込」復元時にスクロールを戻すための一次バッファ */
   let pendingBuilderUiRestoreScroll = /** @type {{ card: number, sample: number } | null} */ (null);
   const cards = getAllCards();
@@ -609,7 +609,7 @@ export function initDeckBuilder(root, { onStartGame }) {
     if (!o || (o.v !== 1 && o.v !== 2)) return;
     if (typeof o.samplePanelOpen === "boolean") samplePanelOpen = o.samplePanelOpen;
     if (typeof o.deckRegistrationPanelOpen === "boolean") deckRegistrationPanelOpen = o.deckRegistrationPanelOpen;
-    if (typeof o.currentDeckPanelOpen === "boolean") currentDeckPanelOpen = o.currentDeckPanelOpen;
+    if (typeof o.currentDeckPanelOpen === "boolean") currentDeckPanelOpen = true;
     if (typeof o.deckListOpen === "boolean") deckListOpen = o.deckListOpen;
     if (o.v >= 2) {
       if (typeof o.searchText === "string") searchText = o.searchText;
@@ -1172,7 +1172,7 @@ export function initDeckBuilder(root, { onStartGame }) {
       })
       .sort();
     return [
-      currentDeckPanelOpen ? ("deck|" + computeActiveDeckNosSigForCache()) : "cat",
+      "cat",
       searchText,
       filterProduct,
       filterSeries,
@@ -1293,17 +1293,8 @@ export function initDeckBuilder(root, { onStartGame }) {
       return catalogFilterCached;
     }
     let filtered;
-    if (currentDeckPanelOpen) {
-      filtered = [];
-      for (const no of Object.keys(deckMap)) {
-        if (!((deckMap[no] || 0) > 0)) continue;
-        const c = getCard(no);
-        if (c) filtered.push(c);
-      }
-      filtered = sortRegisteredDeckCards(filtered);
-    } else {
-      const bx = readBhFilterExtras();
-      filtered = filterCards(cards, {
+    const bx = readBhFilterExtras();
+    filtered = filterCards(cards, {
         search: searchText,
         types: filterTypes,
         product: filterProduct || null,
@@ -1323,10 +1314,19 @@ export function initDeckBuilder(root, { onStartGame }) {
         });
       }
       filtered = applyCatalogSortToList(filtered);
-    }
     catalogFilterCacheKey = key;
     catalogFilterCached = filtered;
     return filtered;
+  }
+
+  function computeCurrentDeckCardList() {
+    const filtered = [];
+    for (const no of Object.keys(deckMap)) {
+      if (!((deckMap[no] || 0) > 0)) continue;
+      const c = getCard(no);
+      if (c) filtered.push(c);
+    }
+    return sortRegisteredDeckCards(filtered);
   }
 
   function scheduleRenderDeckList() {
@@ -2610,7 +2610,6 @@ export function initDeckBuilder(root, { onStartGame }) {
   function writeDeckSummaryDom() {
     const deckSummary = el("card-deck-summary");
     if (!deckSummary) return;
-    if (!(deckRegistrationPanelOpen || currentDeckPanelOpen)) return;
     const costCount = {};
     let memTotal = 0;
     let liveTotal = 0;
@@ -2630,6 +2629,11 @@ export function initDeckBuilder(root, { onStartGame }) {
       } else if (effectiveMainDeckCategory(c) === T_LIVE) {
         liveTotal += qty;
       }
+    }
+    if (memTotal + liveTotal + unknown <= 0) {
+      deckSummary.hidden = true;
+      deckSummary.innerHTML = "";
+      return;
     }
     const bhAgg = accumulateBladeHeartWeighted(deckMap);
     const chartCols = Object.keys(costCount)
@@ -2752,7 +2756,8 @@ export function initDeckBuilder(root, { onStartGame }) {
     fav.setAttribute("aria-pressed", on ? "true" : "false");
   }
 
-  function reuseOrCreateCardGridItems(grid, filtered) {
+  function reuseOrCreateCardGridItems(grid, filtered, opts) {
+    opts = opts || {};
     if (!filtered.length) {
       grid.innerHTML = "";
       return;
@@ -2767,9 +2772,9 @@ export function initDeckBuilder(root, { onStartGame }) {
       var wrap = pool.get(no);
       pool.delete(no);
       if (!wrap) {
-        wrap = createCardGridItemWrap(card);
+        wrap = createCardGridItemWrap(card, opts);
       } else {
-        patchVisibleGridThumbsForNos([no]);
+        patchVisibleGridThumbsForNos([no], grid);
         syncThumbFavOnWrap(wrap, no);
       }
       grid.appendChild(wrap);
@@ -2785,13 +2790,11 @@ export function initDeckBuilder(root, { onStartGame }) {
     const grid = el("card-grid");
     if (!grid) return;
     const heading = el("card-panel-heading");
-    const deckSummary = el("card-deck-summary");
     const sampleScroll = el("sample-recipes-scroll");
     const cardScroll = el("card-grid-scroll");
 
     root.classList.toggle("view-deck--sample-panel-open", samplePanelOpen);
     root.classList.toggle("view-deck--deck-registration-open", deckRegistrationPanelOpen);
-    root.classList.toggle("view-deck--current-deck-open", currentDeckPanelOpen);
 
     if (sampleScroll) sampleScroll.hidden = !samplePanelOpen;
     if (cardScroll) cardScroll.hidden = false;
@@ -2799,10 +2802,8 @@ export function initDeckBuilder(root, { onStartGame }) {
     if (libraryScroll) libraryScroll.hidden = !deckRegistrationPanelOpen;
 
     if (heading) {
-      heading.textContent = currentDeckPanelOpen ? "現在のデッキ" : "カード一覧";
+      heading.textContent = "カード一覧";
     }
-    const btnClearDeck = el("btn-clear-current-deck");
-    if (btnClearDeck) btnClearDeck.hidden = !currentDeckPanelOpen;
 
     if (samplePanelOpen) {
       renderSampleRecipesTiles(getSampleDeckRecipes());
@@ -2817,21 +2818,8 @@ export function initDeckBuilder(root, { onStartGame }) {
     const layoutSig =
       (deckRegistrationPanelOpen ? "reg1" : "reg0") +
       "|" +
-      (samplePanelOpen ? "sam1" : "sam0") +
-      "|" +
-      (currentDeckPanelOpen ? "cur1" : "cur0");
+      (samplePanelOpen ? "sam1" : "sam0");
     updateCardHitCountFromFiltered(filtered);
-    const showDeckSummary = deckRegistrationPanelOpen || currentDeckPanelOpen;
-    if (deckSummary) {
-      if (!showDeckSummary) {
-        deckSummary.hidden = true;
-        deckSummary.innerHTML = "";
-      } else if (opts.deckSummary) {
-        flushDeckSummaryDebouncedNow();
-      } else {
-        scheduleDeckSummaryDebounced();
-      }
-    }
     const scrollEl = el("card-grid-scroll");
     const topSp = el("card-grid-top-spacer");
     const botSp = el("card-grid-bottom-spacer");
@@ -2852,6 +2840,7 @@ export function initDeckBuilder(root, { onStartGame }) {
           return c.card_no;
         })
         .join("\u0001");
+      renderCurrentDeckGrid(opts);
       return;
     }
 
@@ -2875,11 +2864,25 @@ export function initDeckBuilder(root, { onStartGame }) {
     cardGridVirtual.active = true;
     cardGridVirtual.list = filtered;
     if (prevPanel === CARD_GRID_VIRTUAL_PANEL && prevLayoutSig === layoutSig) cardGridVirtual.w0 = -1;
-    cardGridVirtual.rowH = (deckRegistrationPanelOpen || currentDeckPanelOpen) ? 268 : 234;
+    cardGridVirtual.rowH = deckRegistrationPanelOpen ? 268 : 234;
     syncVirtualCardGridWindow(true);
     cardGridVirtual.lastOrderedSig = filtered.map(function (c) {
       return c.card_no;
     }).join("\u0001");
+    renderCurrentDeckGrid(opts);
+  }
+
+  function renderCurrentDeckGrid(opts) {
+    opts = opts || { deckSummary: true };
+    if (typeof opts.deckSummary === "undefined") opts.deckSummary = true;
+    const grid = el("current-deck-grid");
+    const empty = el("current-deck-empty");
+    if (!grid) return;
+    const filtered = computeCurrentDeckCardList();
+    if (empty) empty.hidden = filtered.length > 0;
+    reuseOrCreateCardGridItems(grid, filtered, { deckView: true });
+    if (opts.deckSummary) flushDeckSummaryDebouncedNow();
+    else scheduleDeckSummaryDebounced();
   }
 
   function estimateCardGridCols(scrollEl) {
@@ -2900,7 +2903,9 @@ export function initDeckBuilder(root, { onStartGame }) {
     return Math.max(168, h + 10);
   }
 
-  function createCardGridItemWrap(card) {
+  function createCardGridItemWrap(card, opts) {
+    opts = opts || {};
+    const deckView = !!opts.deckView;
     const wrap = document.createElement("div");
     wrap.className = "card-grid-item";
     wrap.dataset.cardNo = String(card.card_no);
@@ -2926,7 +2931,7 @@ export function initDeckBuilder(root, { onStartGame }) {
       rolesHtml +
       qtyBadge +
       `<span class="thumb-type">${escapeHtml(tlab)}</span>${builderCatalogThumbImgHtml(card.img, "deck-builder-card-thumb", {
-        eager: cardGridVirtual.active,
+        eager: deckView || cardGridVirtual.active,
       })}<span class="thumb-cap">${escapeHtml(card.name)}${thumbExtraHtml(card)}</span>`;
     const fav = document.createElement("button");
     fav.type = "button";
@@ -2990,7 +2995,7 @@ export function initDeckBuilder(root, { onStartGame }) {
       })();
     });
     wrap.appendChild(div);
-    if (currentDeckPanelOpen && inDeck) {
+    if (deckView) {
       const roleRow = document.createElement("div");
       roleRow.className = "card-thumb-role-edit-row";
       roleRow.innerHTML =
@@ -3145,8 +3150,8 @@ export function initDeckBuilder(root, { onStartGame }) {
     return pills.length ? '<div class="card-thumb-roles">' + pills.join("") + "</div>" : "";
   }
 
-  function patchVisibleGridThumbsForNos(changedNos) {
-    const grid = el("card-grid");
+  function patchVisibleGridThumbsForNos(changedNos, gridEl) {
+    const grid = gridEl || el("card-grid");
     if (!grid || !changedNos || !changedNos.length) return;
     const esc =
       typeof CSS !== "undefined" && typeof CSS.escape === "function"
@@ -3185,6 +3190,10 @@ export function initDeckBuilder(root, { onStartGame }) {
         badge.remove();
       }
     }
+    if (!gridEl) {
+      const deckGrid = el("current-deck-grid");
+      if (deckGrid) patchVisibleGridThumbsForNos(changedNos, deckGrid);
+    }
   }
 
   function afterDeckMapQuickChange(changedNos) {
@@ -3203,7 +3212,7 @@ export function initDeckBuilder(root, { onStartGame }) {
     }
     const filtered = computeFilteredCardListForGrid();
     updateCardHitCountFromFiltered(filtered);
-    if (deckRegistrationPanelOpen || currentDeckPanelOpen) scheduleDeckSummaryDebounced();
+    scheduleDeckSummaryDebounced();
     const newSig = filtered
       .map(function (c) {
         return c.card_no;
@@ -3211,6 +3220,7 @@ export function initDeckBuilder(root, { onStartGame }) {
       .join("\u0001");
     if (newSig === cardGridVirtual.lastOrderedSig && newSig !== "") {
       patchVisibleGridThumbsForNos(list);
+      renderCurrentDeckGrid({ deckSummary: false });
       return;
     }
     pendingRenderCardGridOpts.deckSummary = false;
@@ -3224,7 +3234,7 @@ export function initDeckBuilder(root, { onStartGame }) {
     scheduleRenderDeckList();
     const filtered = computeFilteredCardListForGrid();
     updateCardHitCountFromFiltered(filtered);
-    if (deckRegistrationPanelOpen || currentDeckPanelOpen) scheduleDeckSummaryDebounced();
+    scheduleDeckSummaryDebounced();
     const newSig = filtered
       .map(function (c) {
         return c.card_no;
@@ -3232,6 +3242,7 @@ export function initDeckBuilder(root, { onStartGame }) {
       .join("\u0001");
     if (newSig === cardGridVirtual.lastOrderedSig && newSig !== "") {
       patchVisibleGridThumbsForNos(no ? [no] : []);
+      renderCurrentDeckGrid({ deckSummary: false });
       return;
     }
     pendingRenderCardGridOpts.deckSummary = false;
@@ -4265,9 +4276,7 @@ export function initDeckBuilder(root, { onStartGame }) {
     const bc = el("btn-card-panel-catalog");
     const bd = el("btn-card-panel-deck");
     const bs = el("btn-card-panel-samples");
-    const bcur = el("btn-card-panel-current-deck");
-    const baseline =
-      !samplePanelOpen && !deckRegistrationPanelOpen && !currentDeckPanelOpen;
+    const baseline = !samplePanelOpen && !deckRegistrationPanelOpen;
     if (bc) {
       bc.setAttribute("aria-pressed", baseline ? "true" : "false");
       bc.classList.toggle("primary", baseline);
@@ -4283,11 +4292,6 @@ export function initDeckBuilder(root, { onStartGame }) {
       bs.classList.toggle("sample-panel-toggle--open", samplePanelOpen);
       bs.classList.toggle("primary", samplePanelOpen);
       bs.classList.toggle("secondary", !samplePanelOpen);
-    }
-    if (bcur) {
-      bcur.setAttribute("aria-pressed", currentDeckPanelOpen ? "true" : "false");
-      bcur.classList.toggle("primary", currentDeckPanelOpen);
-      bcur.classList.toggle("secondary", !currentDeckPanelOpen);
     }
     schedulePersistDeckBuilderUiState();
   }
@@ -4400,7 +4404,6 @@ export function initDeckBuilder(root, { onStartGame }) {
     el("btn-card-panel-catalog")?.addEventListener("click", function () {
       samplePanelOpen = false;
       deckRegistrationPanelOpen = false;
-      currentDeckPanelOpen = false;
       syncCardPanelToggleButtons();
       scheduleRenderCardGrid();
     });
@@ -4414,13 +4417,7 @@ export function initDeckBuilder(root, { onStartGame }) {
       wireRestoreBuiltInButtonOnce();
       scheduleRenderCardGrid();
     });
-    el("btn-card-panel-current-deck")?.addEventListener("click", function () {
-      currentDeckPanelOpen = !currentDeckPanelOpen;
-      syncCardPanelToggleButtons();
-      scheduleRenderCardGrid();
-    });
     el("btn-clear-current-deck")?.addEventListener("click", function () {
-      if (!currentDeckPanelOpen) return;
       if (
         !window.confirm(
           "現在のデッキに入っているカードをすべて0枚にします。\nこの操作は元に戻せません。続行しますか？",
