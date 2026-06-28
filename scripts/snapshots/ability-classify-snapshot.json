@@ -1,5 +1,5 @@
 {
-  "generated": "2026-06-24T04:59:24.255Z",
+  "generated": "2026-06-28T14:52:42.420Z",
   "sample_size": 50,
   "cards": [
     {
@@ -543,6 +543,26 @@
           "template": "kidou_discard_self_draw_grant",
           "filters": {
             "pickType": null,
+            "maxCost": null,
+            "minCost": null,
+            "seriesTag": "虹ヶ咲",
+            "minSuccessLiveCount": null,
+            "minNeedHeartSlot": null,
+            "minNeedHeartValue": null,
+            "minTotalNeedHeart": null
+          }
+        }
+      ]
+    },
+    {
+      "card_no": "PL!N-pb1-011-R",
+      "name": "ミア・テイラー",
+      "entries": [
+        {
+          "trigger": "kidou",
+          "template": "kidou_energy_under_pick_waiting_hand",
+          "filters": {
+            "pickType": "ライブ",
             "maxCost": null,
             "minCost": null,
             "seriesTag": "虹ヶ咲",
@@ -1126,26 +1146,6 @@
             "maxCost": null,
             "minCost": null,
             "seriesTag": null,
-            "minSuccessLiveCount": null,
-            "minNeedHeartSlot": null,
-            "minNeedHeartValue": null,
-            "minTotalNeedHeart": null
-          }
-        }
-      ]
-    },
-    {
-      "card_no": "PL!N-PR-026-PR",
-      "name": "天王寺璃奈",
-      "entries": [
-        {
-          "trigger": "toujyou",
-          "template": "toujou_wait_to_member_under",
-          "filters": {
-            "pickType": "メンバー",
-            "maxCost": 9,
-            "minCost": null,
-            "seriesTag": "虹ヶ咲",
             "minSuccessLiveCount": null,
             "minNeedHeartSlot": null,
             "minNeedHeartValue": null,

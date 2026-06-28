@@ -639,6 +639,7 @@ python3 -m http.server 8080</pre>
           <button type="button" class="btn sm secondary" id="btn-versus-end-turn" hidden>ターン終了</button>
           <button type="button" class="btn sm secondary" id="btn-versus-concede" hidden>投了</button>
           <button type="button" class="btn sm secondary" id="btn-versus-lobby" hidden>対戦ロビー</button>
+          <div id="play-match-log-mount" class="play-match-log-mount"></div>
         </div>
         <div id="versus-play-chrome" class="versus-play-chrome game-bar-row" hidden>
           <span id="versus-turn-badge" class="versus-turn-badge" hidden></span>
@@ -1186,7 +1187,7 @@ python3 -m http.server 8080</pre>
 
         <div class="col col-right">
           <section class="zone-block deck-block">
-            <h3>デッキ <span id="deck-count-num" class="badge">0</span></h3>
+            <h3>デッキ <span id="deck-count-num" class="badge badge--deck-remain" title="山札の残り枚数">0</span></h3>
             <div id="deck-pile-host" class="deck-pile-host" aria-expanded="false">
               <div id="zone-deck" class="deck-pile zone-drop"></div>
               <button type="button" id="btn-deck-toggle" class="btn-deck-toggle">
@@ -1236,30 +1237,18 @@ python3 -m http.server 8080</pre>
             </div>
           </section>
 
-          <section class="zone-block zone-block-waiting">
-            <div
-              id="waiting-head-expand"
-              class="waiting-rail-head zone-head-waiting-expand"
-              role="button"
-              tabindex="0"
-              aria-expanded="false"
-              aria-controls="waiting-row"
-            >
-              <h3 class="waiting-rail-title">
-                控え室 <span id="waiting-rail-count" class="badge">0</span>
-              </h3>
-              <span class="muted waiting-rail-teaser" id="waiting-rail-teaser">クリックで一覧を表示</span>
+          <section class="zone-block zone-block-waiting waiting-block">
+            <h3>控え室 <span id="waiting-count-num" class="badge">0</span></h3>
+            <div id="waiting-pile-host" class="deck-pile-host waiting-pile-host" aria-expanded="false">
+              <div id="zone-waiting" class="deck-pile zone-drop"></div>
+              <button type="button" id="btn-waiting-toggle" class="btn-deck-toggle btn-waiting-toggle">
+                <span id="waiting-toggle-label">0枚 — クリックで控え室を表示</span>
+              </button>
             </div>
-            <div
-              id="zone-waiting-drop-catcher"
-              class="card-strip zone-drop waiting-zone-strip zone-waiting-drop-catcher"
-              aria-label="控え室へドロップ（一覧が閉じているとき）"
-            ></div>
-            <div id="waiting-row" class="waiting-row waiting-row--collapsed" aria-hidden="true">
-              <div id="zone-waiting" class="card-strip zone-drop waiting-zone-strip"></div>
-            </div>
-            <p class="hint zone-inline-help">
-              先入れは列の<strong>左側が先</strong>です。一覧を閉じたまま、カードを<strong>この欄のあたりまで上げてドロップ</strong>すると控え室に入ります（開かなくても可）。一覧は<strong>タイトル付近をクリック</strong>で開けます。
+            <p class="hint waiting-pile-hint zone-inline-help">
+              控え室は<strong>左から</strong>並べ、<strong>見えている領域</strong>に合わせて横
+              <strong id="waiting-row-hint">—</strong> 枚・おおよそ <strong id="waiting-visible-rows-hint">—</strong>
+              行が一度に見えるサイズへ自動調整します（折り返し・スクロール）。先入れは<strong>左側が先</strong>です。
               ライブ開始やターン開始で<strong>自動的に控えへ送られる</strong>カードもここに溜まります。山札が尽きたあとのリフレッシュ結果はダイアログに出ます。
             </p>
           </section>
@@ -1356,6 +1345,7 @@ python3 -m http.server 8080</pre>
             </summary>
             <div class="hand-stick-fold__body">
               <div class="zone-head zone-head--hand">
+                <div id="play-board-chrome-host" class="play-board-chrome-host"></div>
                 <h3 class="hand-zone-title">
                   手札
                   <span id="hand-inline-count" class="badge hand-inline-count" aria-live="polite">0</span>
@@ -1581,7 +1571,7 @@ python3 -m http.server 8080</pre>
         <p>
           <strong>エネルギー</strong>（側面エネ）は中央列の<strong>ステージ直下</strong>にあります。<strong>＋／−</strong> は短タップ、長押しで枚数ダイアログ。開始時・盤リセット後は横向き<strong>ウェイト</strong>から始まり、「ターン開始」で縦に立てられます。
         </p>
-        <p>控え室は<strong>ヘッダをクリック</strong>で一覧の開閉ができます（先に控えへ入れたカードが左）。デッキが尽きると控えが山札へリフレッシュされ、詳細がダイアログに出ます。</p>
+        <p>控え室は山札と同様、<strong>枚数表示をクリック</strong>で一覧の開閉ができます（先に控えへ入れたカードが左）。デッキが尽きると控えが山札へリフレッシュされ、詳細がダイアログに出ます。</p>
         <p>ステージでもメンバーは画像クリックで横向きにできます。メンバーが<strong>空の列へ</strong>載る場合は<strong>バトンタッチ以外の登場</strong>であり、カードDBの<strong>コスト</strong>に応じて<strong>縦の側面エネが足りないと載せられません</strong>。すでにメンバーがいる列への<strong>バトンタッチ</strong>では、支払いは<strong>新メンバーのコストから元メンバーのコストを引いた差分</strong>で、側面エネが差分に足りなくても登場できます（詳細はステージ直下の短文ヘルプ）。<strong>ステージへ載せたターン</strong>のメンバー同士では<strong>バトンタッチはできません</strong>。</p>
         <p>
           <strong>プレビュー</strong>は公式のゾーンではない<strong>任意の駒置き場</strong>です（<strong>ヘッダクリックで一覧の開閉</strong>）。ルール計算から外したいカードを一時置きしたり、手札と分けて「見せてよい束」を置く・配信向けに整理するなどの用途向けです（Undo の対象にはなります）。<strong>プレビューのカードはライブ目安パネルや解決の統計には載りません。「ライブ開始」後</strong>に目安パネルが開きます。

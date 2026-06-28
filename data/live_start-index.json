@@ -1,16 +1,18 @@
 {
-  "generated": "2026-06-26",
+  "generated": "2026-06-28",
   "trigger": "live_start",
   "total": 307,
   "byTemplate": {
     "heart_color_pick_grant": 35,
-    "grant_jouji_session": 74,
+    "grant_jouji_session": 64,
     "optional_self_wait_opp_stage": 11,
     "optional_energy_blade_until_live_end": 40,
     "live_start_pay_or_hand_discard": 3,
     "ability_sequence": 5,
     "live_start_opp_wait_if_stage_hearts": 1,
+    "live_start_hand_discard_same_unit_grant": 2,
     "live_start_optional_energy_waiting_reorder_deck_top": 2,
+    "live_start_hand_named_discard_grant_jouji": 1,
     "energy_deck_to_wait": 4,
     "activate_energy": 4,
     "live_start_hand_live_to_deck_bottom_look": 4,
@@ -21,7 +23,8 @@
     "live_start_optional_hearts_wild": 2,
     "live_start_activate_all_stage_members": 2,
     "toujou_success_live_pick_hand": 4,
-    "deck_top_to_waiting": 3,
+    "deck_top_pick_recover": 2,
+    "live_start_hand_discard_optional_blade_per": 4,
     "live_start_hand_discard_activate_wait_grant": 4,
     "live_start_waiting_deck_bottom_tiered": 4,
     "live_start_pick_player_waiting_deck_bottom": 2,
@@ -38,6 +41,7 @@
     "live_start_activate_liella_and_energy": 4,
     "live_start_mill_loop_blade_grant": 3,
     "live_start_dollcostra_cost_set_grant_if": 3,
+    "live_start_hand_discard_same_group_grant": 3,
     "live_start_number_reveal_grant_if": 2,
     "draw_then_hand_discard": 2,
     "live_start_opp_wait_if_high_cost_on_stage": 2,
@@ -49,6 +53,7 @@
     "live_start_activate_self_if_low_score_live": 2,
     "live_start_opp_wait_exclude_unit": 1,
     "live_start_hand_named_discard_hearts_grant": 1,
+    "deck_top_to_waiting": 1,
     "live_start_draw_then_formation_change": 1,
     "optional_pick_member_wait_opp_blade_gap": 2,
     "live_start_mandatory_energy_deck_unless_hand_discard": 2
@@ -204,7 +209,7 @@
     {
       "card_no": "PL!HS-PR-016-PR",
       "name": "日野下花帆",
-      "template": "grant_jouji_session",
+      "template": "live_start_hand_discard_same_unit_grant",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -213,7 +218,7 @@
     {
       "card_no": "PL!HS-PR-017-PR",
       "name": "村野さやか",
-      "template": "grant_jouji_session",
+      "template": "live_start_hand_discard_same_unit_grant",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -267,7 +272,7 @@
     {
       "card_no": "LL-bp1-001-R＋",
       "name": "上原歩夢&澁谷かのん&日野下花帆",
-      "template": "grant_jouji_session",
+      "template": "live_start_hand_named_discard_grant_jouji",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -888,7 +893,7 @@
     {
       "card_no": "PL!-bp3-007-R",
       "name": "東條 希",
-      "template": "deck_top_to_waiting",
+      "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -897,7 +902,7 @@
     {
       "card_no": "PL!-bp3-007-P",
       "name": "東條 希",
-      "template": "deck_top_to_waiting",
+      "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -969,7 +974,7 @@
     {
       "card_no": "PL!S-bp3-003-R＋",
       "name": "松浦果南",
-      "template": "grant_jouji_session",
+      "template": "live_start_hand_discard_optional_blade_per",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -978,7 +983,7 @@
     {
       "card_no": "PL!S-bp3-003-P",
       "name": "松浦果南",
-      "template": "grant_jouji_session",
+      "template": "live_start_hand_discard_optional_blade_per",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -987,7 +992,7 @@
     {
       "card_no": "PL!S-bp3-003-P＋",
       "name": "松浦果南",
-      "template": "grant_jouji_session",
+      "template": "live_start_hand_discard_optional_blade_per",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -996,7 +1001,7 @@
     {
       "card_no": "PL!S-bp3-003-SEC",
       "name": "松浦果南",
-      "template": "grant_jouji_session",
+      "template": "live_start_hand_discard_optional_blade_per",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -2125,7 +2130,7 @@
     {
       "card_no": "PL!HS-bp5-006-R",
       "name": "安養寺 姫芽",
-      "template": "grant_jouji_session",
+      "template": "live_start_hand_discard_same_group_grant",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -2134,7 +2139,7 @@
     {
       "card_no": "PL!HS-bp5-006-P",
       "name": "安養寺 姫芽",
-      "template": "grant_jouji_session",
+      "template": "live_start_hand_discard_same_group_grant",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -2143,7 +2148,7 @@
     {
       "card_no": "PL!HS-bp5-006-AR",
       "name": "安養寺 姫芽",
-      "template": "grant_jouji_session",
+      "template": "live_start_hand_discard_same_group_grant",
       "automated": true,
       "optional": true,
       "perTurn": 0,

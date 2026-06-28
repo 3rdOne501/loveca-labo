@@ -1,5 +1,5 @@
 {
-  "generated": "2026-06-24",
+  "generated": "2026-06-26",
   "trigger": "kidou",
   "total": 256,
   "byTemplate": {
@@ -11,7 +11,7 @@
     "deck_top_pick_recover": 5,
     "kidou_wait_to_stage": 4,
     "activate_energy": 9,
-    "kidou_wait_pick_hand": 25,
+    "kidou_wait_pick_hand": 23,
     "kidou_reveal_hand_cost_threshold": 4,
     "draw_then_hand_discard": 9,
     "kidou_self_to_wait_recover": 5,
@@ -27,6 +27,7 @@
     "kidou_hand_reveal_grant_if_live": 2,
     "kidou_energy_or_activate_member": 2,
     "kidou_discard_self_draw_grant": 3,
+    "kidou_energy_under_pick_waiting_hand": 2,
     "kidou_hand_discard_series_branch": 4,
     "kidou_opp_wait_group_discount_energy": 4,
     "kidou_hand_discard_wait_live_score_pay": 3,
@@ -1394,7 +1395,7 @@
     {
       "card_no": "PL!N-pb1-011-R",
       "name": "ミア・テイラー",
-      "template": "kidou_wait_pick_hand",
+      "template": "kidou_energy_under_pick_waiting_hand",
       "automated": true,
       "optional": false,
       "perTurn": 1,
@@ -1403,7 +1404,7 @@
     {
       "card_no": "PL!N-pb1-011-P＋",
       "name": "ミア・テイラー",
-      "template": "kidou_wait_pick_hand",
+      "template": "kidou_energy_under_pick_waiting_hand",
       "automated": true,
       "optional": false,
       "perTurn": 1,

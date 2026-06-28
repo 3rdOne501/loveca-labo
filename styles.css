@@ -23,6 +23,12 @@
   --font-display: "M PLUS Rounded 1c", "Noto Sans JP", system-ui, sans-serif;
   --shadow-panel: 0 12px 40px rgba(8, 2, 12, 0.55), 0 0 0 1px rgba(255, 120, 180, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   --shadow-glow-pink: 0 8px 32px rgba(255, 74, 130, 0.22);
+  /* プレイ盤面ゾーン枠（白系・ソリッド） */
+  --zone-frame-border: rgba(255, 255, 255, 0.22);
+  --zone-frame-border-strong: rgba(255, 255, 255, 0.34);
+  --zone-frame-surface: linear-gradient(165deg, rgba(255, 255, 255, 0.045) 0%, rgba(10, 8, 18, 0.58) 100%);
+  --zone-frame-inset: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  --zone-frame-glow: 0 0 0 1px rgba(255, 255, 255, 0.05);
   /* 山札（プレイ）：1行の最大枚数・サムネ幅。開いているときは #deck-pile-host に JS が上書き */
   --deck-cards-per-row: 12;
   --deck-thumb-w-pile: 58px;
@@ -2804,64 +2810,6 @@ body.play-mode .zone-head.zone-head--hand .hand-zone-actions--no-mulligan #btn-l
   font-weight: 800;
 }
 
-/* 控え室: デフォルト一覧非表示・ヘッダクリックで開閉 */
-.zone-block-waiting .waiting-rail-head.zone-head-waiting-expand {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  cursor: pointer;
-  user-select: none;
-  border-radius: var(--radius-sm);
-  padding: 0.3rem 0.45rem;
-  margin-bottom: 0.35rem;
-  border: 1px dashed rgba(255, 160, 200, 0.22);
-  transition: background 0.15s ease;
-}
-.zone-block-waiting .waiting-rail-head.zone-head-waiting-expand:hover {
-  background: rgba(255, 90, 154, 0.08);
-}
-.zone-block-waiting .waiting-rail-title {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: 0.92rem;
-  color: #fcdcec;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-/* 折りたたみ: 一覧 #zone-waiting は非表示のまま DOM に保持（閉じたままドロップ用ゾーンは別枠） */
-.zone-block-waiting .waiting-row--collapsed #zone-waiting {
-  display: none !important;
-}
-.zone-block-waiting:has(.waiting-row:not(.waiting-row--collapsed)) #zone-waiting-drop-catcher {
-  display: none !important;
-}
-.zone-waiting-drop-catcher {
-  min-height: min(9.5rem, 28vh);
-  align-items: center;
-  justify-content: center;
-}
-.zone-waiting-drop-catcher:empty {
-  position: relative;
-}
-.zone-waiting-drop-catcher:empty::before {
-  content: "一覧が閉じているとき：ここへドロップで控え室へ";
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: rgba(255, 200, 220, 0.72);
-  pointer-events: none;
-  line-height: 1.35;
-}
-
 .zone-block-preview .preview-rail-head.zone-head-preview-expand {
   display: flex;
   align-items: flex-start;
@@ -2873,7 +2821,7 @@ body.play-mode .zone-head.zone-head--hand .hand-zone-actions--no-mulligan #btn-l
   border-radius: var(--radius-sm);
   padding: 0.3rem 0.45rem;
   margin-bottom: 0.35rem;
-  border: 1px dashed rgba(255, 160, 200, 0.22);
+  border: 1px solid var(--zone-frame-border);
   transition: background 0.15s ease;
 }
 .zone-block-preview .preview-rail-head.zone-head-preview-expand:hover {
@@ -3240,14 +3188,30 @@ body.play-mode .zone-head.zone-head--hand .hand-zone-actions--no-mulligan #btn-l
 .card-strip {
   min-height: calc(var(--card-h) + 8px); padding: 6px;
   border-radius: var(--radius-sm);
-  border: 1px dashed rgba(255, 160, 200, 0.18);
-  background: linear-gradient(160deg, rgba(255, 90, 130, 0.05), rgba(10, 6, 16, 0.35));
+  border: 1px solid var(--zone-frame-border);
+  background: var(--zone-frame-surface);
+  box-shadow: var(--zone-frame-glow), var(--zone-frame-inset);
   display: flex; flex-wrap: wrap; gap: 4px; align-content: flex-start;
 }
 .card-strip.tall { min-height: 200px; }
 .three-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.35rem; }
 .slot-wrap .slot-label { display: block; font-size: 0.68rem; color: rgba(200, 180, 210, 0.9); margin-bottom: 0.15rem; }
-.stage-slot { min-height: 140px; }
+.stage-slot {
+  min-height: 140px;
+}
+body.play-mode .three-cols:has(.stage-slot) {
+  align-items: stretch;
+}
+body.play-mode .three-cols:has(.stage-slot) .slot-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-height: var(--stage-slot-min-h);
+}
+body.play-mode .three-cols:has(.stage-slot) .stage-slot.card-strip {
+  flex: 1 1 auto;
+  width: 100%;
+}
 .live-slot { min-height: var(--card-h); }
 
 .zone-block h3 {
@@ -3257,8 +3221,9 @@ body.play-mode .zone-head.zone-head--hand .hand-zone-actions--no-mulligan #btn-l
   font-weight: 700;
   color: #fcdcec;
 }
-/* 山札: 左から並べ、横 N 枚で次の行へ */
-#zone-deck.deck-pile {
+/* 山札・控え室: 左から並べ、横 N 枚で次の行へ */
+#zone-deck.deck-pile,
+#zone-waiting.deck-pile {
   display: grid;
   grid-template-columns: repeat(var(--deck-cards-per-row), minmax(var(--deck-thumb-w-pile), max-content));
   grid-auto-flow: row;
@@ -3269,11 +3234,17 @@ body.play-mode .zone-head.zone-head--hand .hand-zone-actions--no-mulligan #btn-l
   align-items: start;
   min-height: 160px;
   padding: 4px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--zone-frame-border);
+  background: var(--zone-frame-surface);
+  box-shadow: var(--zone-frame-glow), var(--zone-frame-inset);
 }
-#zone-deck.deck-pile .card-item {
+#zone-deck.deck-pile .card-item,
+#zone-waiting.deck-pile .card-item {
   width: var(--deck-thumb-w-pile);
 }
-#zone-deck.deck-pile .card-img {
+#zone-deck.deck-pile .card-img,
+#zone-waiting.deck-pile .card-img {
   width: 100%;
   height: auto;
   vertical-align: middle;
@@ -3795,6 +3766,7 @@ body.play-mode {
   --loveca-play-h: calc(var(--loveca-play-w) * var(--loveca-mm-h) / var(--loveca-mm-w));
   --card-h: var(--loveca-play-h);
   --stream-mask-strength: 0.85;
+  --stage-slot-min-h: calc(var(--loveca-play-w) * 1.26 * var(--loveca-mm-h) / var(--loveca-mm-w) + 3.4rem);
 }
 
 /* 16:9 ボタン ON: 通常表示に対しプレイ画面全体を約 85%（ブラウザの表示倍率に相当）に縮小 */
@@ -3972,10 +3944,9 @@ body.play-mode.flow-hint--turn-start.flow-hint--turn-start-yell #btn-turn-start:
 body.play-mode.flow-hint--turn-start.flow-hint--turn-start-yell #btn-turn-start:not(:disabled):hover {
   filter: brightness(1.06);
 }
-body.play-mode.flow-hint--live-success #success-live-zone-shell {
-  border-radius: var(--radius-sm);
+body.play-mode.flow-hint--live-success #zone-success-live.success-live-strip.card-strip {
   outline: 2px solid rgba(255, 160, 210, 0.65);
-  outline-offset: 2px;
+  outline-offset: 0;
   animation: flow-btn-glow 1.55s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -4189,6 +4160,15 @@ body.play-mode .game-board .col.col-right {
   overscroll-behavior-y: contain;
 }
 
+body.play-mode .card-strip {
+  border-color: var(--zone-frame-border-strong);
+  background: linear-gradient(168deg, rgba(255, 255, 255, 0.055) 0%, rgba(12, 8, 20, 0.62) 100%);
+  box-shadow:
+    var(--zone-frame-glow),
+    var(--zone-frame-inset),
+    0 4px 18px rgba(0, 0, 0, 0.22);
+}
+
 body.play-mode .zone-block {
   margin-bottom: 0.45rem;
 }
@@ -4219,12 +4199,25 @@ body.play-mode .stage-slot.card-strip {
   align-items: flex-start;
   align-content: flex-start;
   justify-content: center;
-  min-height: 0;
+  min-height: var(--stage-slot-min-h);
   padding: 5px 6px;
   gap: 0;
   overflow: visible;
   /* メンバー下のカード重なり（9割重ね＝1枚あたり10%だけ見える） */
   --stage-under-overlap-frac: -0.9;
+}
+body.play-mode .stage-slot.card-strip:empty::after {
+  content: "空";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.26);
+  pointer-events: none;
+  user-select: none;
 }
 
 /* 左から下敷きカードを横一列に積み、右端のメンバーが最前面 */
@@ -4678,8 +4671,14 @@ body.play-mode .success-live-strip.card-strip .card-item + .card-item {
   margin-left: calc(var(--loveca-play-w) * -0.55);
 }
 
+body.play-mode .success-live-strip .card-item--success-live-glow {
+  border-radius: 6px;
+  box-shadow:
+    0 0 6px rgba(255, 220, 140, 0.75),
+    0 0 14px rgba(255, 140, 200, 0.38);
+}
 body.play-mode .success-live-strip .card-item--success-live-glow .card-img {
-  filter: drop-shadow(0 0 8px rgba(255, 220, 140, 0.9)) drop-shadow(0 0 20px rgba(255, 140, 200, 0.45));
+  filter: none;
   border-radius: 6px;
 }
 
@@ -4697,12 +4696,9 @@ body.play-mode .live-slot .card-item.card-item--live-h.card-item--live-venue-boo
 }
 
 body.play-mode .success-live-zone-shell {
-  --snsyuraku-glow: 0 0 0 1px rgba(255, 220, 140, 0.35);
   border-radius: var(--radius-sm);
-  transition:
-    box-shadow 0.35s ease,
-    border-color 0.35s ease;
 }
+
 body.play-mode .success-live-chrome-row {
   display: flex;
   align-items: center;
@@ -4735,16 +4731,14 @@ body.play-mode .success-live-msg--youwin {
     transform: scale(1.03);
   }
 }
-body.play-mode .success-live-zone-shell--snsyuraku {
-  padding: 4px;
-  margin: -4px;
-  border: 1px solid rgba(255, 215, 120, 0.55);
+body.play-mode .success-live-zone-shell--snsyuraku #zone-success-live.success-live-strip.card-strip {
+  border-color: rgba(255, 215, 120, 0.55);
   box-shadow:
-    var(--snsyuraku-glow),
-    0 0 24px rgba(255, 200, 100, 0.22),
-    inset 0 0 28px rgba(255, 220, 140, 0.08);
+    0 0 0 1px rgba(255, 220, 140, 0.35),
+    0 0 20px rgba(255, 200, 100, 0.22),
+    inset 0 0 24px rgba(255, 220, 140, 0.08);
 }
-body.play-mode .success-live-zone-shell--win .success-live-strip.card-strip {
+body.play-mode .success-live-zone-shell--win #zone-success-live.success-live-strip.card-strip {
   border-color: rgba(255, 140, 200, 0.55);
   box-shadow: 0 0 20px rgba(255, 120, 180, 0.25);
 }
@@ -5990,19 +5984,6 @@ body.play-mode #zone-hand .card-item[data-type="ライブ"] .card-img.rotated {
   object-fit: contain;
 }
 
-/* 控え室: 10 枚ごとに自動で折り返し（グリッド 10 列） */
-body.play-mode #zone-waiting.waiting-zone-strip {
-  display: grid;
-  grid-template-columns: repeat(10, minmax(0, var(--loveca-play-w, 82px)));
-  gap: 0.42rem 0.32rem;
-  align-content: flex-start;
-  justify-content: start;
-  align-items: start;
-}
-body.play-mode #zone-waiting.waiting-zone-strip .card-item + .card-item {
-  margin-left: 0;
-}
-
 body.play-mode #zone-resolution.resolution-zone-strip.resolution-zone--t1 .card-item + .card-item {
   margin-left: calc(var(--loveca-play-w) * -0.5);
 }
@@ -6057,7 +6038,8 @@ body.play-mode .energy-zone .card-item + .card-item {
   margin-left: calc(var(--loveca-play-w) * -0.42);
 }
 
-body.play-mode #zone-deck.deck-pile .card-item {
+body.play-mode #zone-deck.deck-pile .card-item,
+body.play-mode #zone-waiting.deck-pile .card-item {
   width: min(var(--deck-thumb-w-pile), 19vw);
 }
 
@@ -6093,7 +6075,8 @@ body.play-mode .deck-pile {
   justify-items: stretch;
 }
 
-.deck-pile-host #zone-deck {
+.deck-pile-host #zone-deck,
+.deck-pile-host #zone-waiting {
   order: 2;
 }
 
@@ -6101,7 +6084,8 @@ body.play-mode .deck-pile {
   order: 1;
 }
 
-.deck-pile-host:not(.is-open) #zone-deck {
+.deck-pile-host:not(.is-open) #zone-deck,
+.deck-pile-host:not(.is-open) #zone-waiting {
   grid-area: 1 / 1;
   order: 0;
   align-self: stretch;
@@ -6122,19 +6106,22 @@ body.play-mode .deck-pile {
   padding: 0.45rem 0.6rem;
   font-size: 0.76rem;
   font-weight: 700;
-  border: 1px dashed rgba(255, 150, 200, 0.35);
-  background: linear-gradient(160deg, rgba(255, 80, 130, 0.12), rgba(10, 6, 16, 0.88));
+  border: 1px solid var(--zone-frame-border-strong);
+  background: linear-gradient(168deg, rgba(255, 255, 255, 0.06) 0%, rgba(10, 6, 16, 0.88) 100%);
+  box-shadow: var(--zone-frame-glow), var(--zone-frame-inset);
   color: var(--text);
   z-index: 6;
 }
 
-.deck-pile-host:not(.is-open) #zone-deck.deck-pile {
+.deck-pile-host:not(.is-open) #zone-deck.deck-pile,
+.deck-pile-host:not(.is-open) #zone-waiting.deck-pile {
   min-height: 4.25rem;
   max-height: 4.25rem;
   overflow: hidden;
 }
 
-.deck-pile-host.is-open #zone-deck.deck-pile {
+.deck-pile-host.is-open #zone-deck.deck-pile,
+.deck-pile-host.is-open #zone-waiting.deck-pile {
   min-height: min(24vh, 200px);
   max-height: min(50vh, 520px);
   max-width: 100%;
@@ -6163,8 +6150,8 @@ body.play-mode .deck-pile {
   padding: 0.35rem 0.5rem;
   font-size: 0.74rem;
   font-weight: 700;
-  border: 1px solid rgba(255, 140, 200, 0.25);
-  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--zone-frame-border);
+  background: rgba(255, 255, 255, 0.06);
   color: var(--text);
 }
 
@@ -6273,7 +6260,7 @@ body.play-mode .deck-pile {
     order: 60;
   }
   /* 控え室・プレビュー見出しを手札 sticky (z-index:8) より前面に（重なり時もクリック可） */
-  body.play-mode.chrome-layout-play-mobile-portrait .zone-block-waiting .waiting-rail-head,
+  body.play-mode.chrome-layout-play-mobile-portrait .zone-block-waiting h3,
   body.play-mode.chrome-layout-play-mobile-portrait .zone-block-preview .preview-rail-head {
     position: relative;
     z-index: 9;
@@ -6315,7 +6302,7 @@ body.play-mode .deck-pile {
     user-select: none;
     padding: 0.32rem 0.42rem;
     border-radius: var(--radius-sm);
-    border: 1px dashed rgba(255, 160, 200, 0.32);
+    border: 1px solid var(--zone-frame-border-strong);
     background: rgba(8, 5, 14, 0.4);
     font-size: 0.82rem;
     font-weight: 800;
@@ -6326,7 +6313,7 @@ body.play-mode .deck-pile {
   body.play-mode.chrome-layout-play-mobile-portrait .hand-stick-fold[open] > summary.hand-stick-fold__summary {
     margin-bottom: 0.38rem;
     border-style: solid;
-    border-color: rgba(255, 160, 200, 0.38);
+    border-color: rgba(255, 255, 255, 0.32);
   }
   body.play-mode.chrome-layout-play-mobile-portrait .hand-stick-fold__hint {
     font-size: 0.7rem;
@@ -6898,7 +6885,8 @@ summary {
   color: #ffb0e0;
   font-weight: 800;
 }
-body.play-mode .deck-pile-hint {
+body.play-mode .deck-pile-hint,
+body.play-mode .waiting-pile-hint {
   font-size: 0.65rem;
 }
 
@@ -8419,6 +8407,244 @@ body.play-mode .card-item.card-item--hand-playable-glow .card-img {
     0 0 24px rgba(120, 255, 160, 0.35);
   border-color: rgba(160, 255, 190, 0.5);
 }
+
+/* —— ワンショット操作演出（登場・バトン・ライブ開始・効果） —— */
+body.play-mode .card-item.card-item--play-fx {
+  z-index: 12;
+  overflow: visible;
+  filter: drop-shadow(0 0 12px rgba(255, 140, 200, 0.35));
+}
+body.play-mode .card-item.card-item--play-fx .card-art-wrap,
+body.play-mode .card-item.card-item--play-fx > .card-img {
+  animation: playFxCardPop var(--play-fx-ms, 1000ms) cubic-bezier(0.18, 1.15, 0.32, 1) both;
+  will-change: transform, filter, box-shadow;
+}
+body.play-mode .card-item.card-item--play-fx-enter .card-art-wrap .card-img,
+body.play-mode .card-item.card-item--play-fx-enter > .card-img {
+  animation-name: playFxEnterPop;
+}
+body.play-mode .card-item.card-item--play-fx-baton .card-art-wrap .card-img,
+body.play-mode .card-item.card-item--play-fx-baton > .card-img {
+  animation-name: playFxBatonPop;
+}
+body.play-mode .card-item.card-item--play-fx-position .card-art-wrap .card-img,
+body.play-mode .card-item.card-item--play-fx-position > .card-img {
+  animation-name: playFxPositionPop;
+}
+body.play-mode .card-item.card-item--play-fx-live_start .card-art-wrap .card-img,
+body.play-mode .card-item.card-item--play-fx-live_start > .card-img,
+body.play-mode .card-item.card-item--play-fx-live_card .card-art-wrap .card-img,
+body.play-mode .card-item.card-item--play-fx-live_card > .card-img {
+  animation-name: playFxLivePop;
+}
+body.play-mode .card-item.card-item--play-fx-toujyou .card-art-wrap .card-img,
+body.play-mode .card-item.card-item--play-fx-kidou .card-art-wrap .card-img,
+body.play-mode .card-item.card-item--play-fx-live_success .card-art-wrap .card-img {
+  animation-name: playFxAbilityPop;
+}
+.play-fx-burst {
+  position: absolute;
+  inset: -28%;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 8;
+  opacity: 0;
+  mix-blend-mode: screen;
+  animation: playFxBurstFade var(--play-fx-ms, 1000ms) ease-out both;
+}
+.play-fx-burst--enter {
+  background: radial-gradient(circle at 50% 58%, rgba(160, 255, 200, 0.95) 0%, rgba(80, 220, 140, 0.45) 28%, transparent 72%);
+}
+.play-fx-burst--baton {
+  background: radial-gradient(circle at 50% 85%, rgba(120, 240, 255, 0.9) 0%, rgba(255, 130, 210, 0.55) 35%, transparent 75%);
+}
+.play-fx-burst--position {
+  background: linear-gradient(105deg, transparent 18%, rgba(160, 220, 255, 0.75) 48%, rgba(200, 160, 255, 0.55) 52%, transparent 82%);
+}
+.play-fx-burst--live_start,
+.play-fx-burst--live_card {
+  background: radial-gradient(circle at 50% 38%, rgba(255, 210, 100, 0.95) 0%, rgba(255, 130, 40, 0.55) 32%, transparent 74%);
+}
+.play-fx-burst--toujyou {
+  background: radial-gradient(circle at 50% 50%, rgba(255, 150, 220, 0.92) 0%, rgba(255, 80, 160, 0.45) 38%, transparent 72%);
+}
+.play-fx-burst--kidou {
+  background: radial-gradient(circle at 50% 50%, rgba(100, 230, 255, 0.92) 0%, rgba(60, 160, 255, 0.48) 38%, transparent 72%);
+}
+.play-fx-burst--live_success {
+  background: radial-gradient(circle at 50% 50%, rgba(255, 110, 130, 0.95) 0%, rgba(255, 40, 80, 0.5) 38%, transparent 72%);
+}
+.play-fx-ring {
+  position: absolute;
+  inset: -18%;
+  border-radius: 14px;
+  pointer-events: none;
+  z-index: 9;
+  opacity: 0;
+  border: 3px solid rgba(255, 200, 230, 0.85);
+  box-shadow: 0 0 22px rgba(255, 120, 200, 0.75), 0 0 44px rgba(255, 80, 160, 0.35), inset 0 0 18px rgba(255, 180, 220, 0.35);
+  animation: playFxRingPulse var(--play-fx-ms, 1000ms) ease-out both;
+}
+.play-fx-ring--enter {
+  border-color: rgba(140, 255, 190, 0.95);
+  box-shadow: 0 0 24px rgba(100, 255, 180, 0.85), 0 0 48px rgba(60, 220, 120, 0.45), inset 0 0 20px rgba(160, 255, 200, 0.4);
+}
+.play-fx-ring--baton {
+  border-color: rgba(120, 230, 255, 0.95);
+  box-shadow: 0 0 24px rgba(100, 210, 255, 0.85), 0 0 48px rgba(255, 120, 200, 0.4), inset 0 0 20px rgba(180, 240, 255, 0.35);
+}
+.play-fx-ring--position {
+  border-color: rgba(160, 210, 255, 0.9);
+  box-shadow: 0 0 22px rgba(140, 200, 255, 0.8), 0 0 40px rgba(180, 140, 255, 0.4);
+}
+.play-fx-ring--live_start,
+.play-fx-ring--live_card {
+  border-color: rgba(255, 200, 90, 0.95);
+  box-shadow: 0 0 26px rgba(255, 170, 60, 0.9), 0 0 52px rgba(255, 110, 30, 0.45), inset 0 0 22px rgba(255, 210, 120, 0.4);
+}
+.play-fx-ring--toujyou {
+  border-color: rgba(255, 140, 210, 0.95);
+  box-shadow: 0 0 26px rgba(255, 100, 180, 0.88), 0 0 50px rgba(255, 60, 140, 0.42);
+}
+.play-fx-ring--kidou {
+  border-color: rgba(100, 220, 255, 0.95);
+  box-shadow: 0 0 26px rgba(80, 200, 255, 0.88), 0 0 50px rgba(40, 160, 255, 0.42);
+}
+.play-fx-ring--live_success {
+  border-color: rgba(255, 100, 120, 0.95);
+  box-shadow: 0 0 26px rgba(255, 70, 90, 0.9), 0 0 50px rgba(255, 30, 60, 0.45);
+}
+.play-fx-chip {
+  position: absolute;
+  top: -0.55rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(8px) scale(0.85);
+  z-index: 11;
+  padding: 0.28rem 0.72rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  pointer-events: none;
+  color: #fff;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.45);
+  background: linear-gradient(155deg, rgba(40, 18, 52, 0.96) 0%, rgba(18, 8, 28, 0.94) 100%);
+  border: 2px solid rgba(255, 180, 220, 0.75);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45), 0 0 20px rgba(255, 100, 180, 0.45);
+  animation: playFxChipFloat var(--play-fx-ms, 1000ms) cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.play-fx-chip--enter {
+  border-color: rgba(140, 255, 190, 0.85);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4), 0 0 22px rgba(80, 255, 160, 0.55);
+  color: #eafff3;
+}
+.play-fx-chip--baton {
+  border-color: rgba(120, 230, 255, 0.85);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4), 0 0 22px rgba(100, 210, 255, 0.55);
+  color: #eefaff;
+}
+.play-fx-chip--live_start,
+.play-fx-chip--live_card {
+  border-color: rgba(255, 200, 90, 0.9);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4), 0 0 24px rgba(255, 160, 50, 0.6);
+  color: #fff8e8;
+  font-size: 0.82rem;
+}
+.play-fx-chip--toujyou,
+.play-fx-chip--kidou,
+.play-fx-chip--live_success {
+  font-size: 0.8rem;
+}
+.live-slot--fx-begin {
+  animation: playFxLiveSlotPulse 1600ms ease-out both;
+}
+@keyframes playFxCardPop {
+  0% { transform: scale(0.82); filter: brightness(1.35) saturate(1.2); }
+  55% { transform: scale(1.08); filter: brightness(1.25) saturate(1.15); }
+  100% { transform: scale(1); filter: none; }
+}
+@keyframes playFxEnterPop {
+  0% { transform: scale(0.72) translateY(22px); box-shadow: 0 0 0 rgba(140, 255, 190, 0); filter: brightness(1.4); }
+  28% { transform: scale(1.14) translateY(-6px); box-shadow: 0 0 28px rgba(140, 255, 190, 0.95), 0 0 56px rgba(80, 220, 140, 0.55), 0 0 80px rgba(60, 200, 100, 0.25); }
+  62% { transform: scale(1.06) translateY(-2px); box-shadow: 0 0 22px rgba(140, 255, 190, 0.7), 0 0 40px rgba(80, 220, 140, 0.35); }
+  100% { transform: scale(1) translateY(0); box-shadow: none; filter: none; }
+}
+@keyframes playFxBatonPop {
+  0% { transform: scale(0.75) translateY(28px); box-shadow: 0 0 0 rgba(110, 220, 255, 0); filter: brightness(1.35); }
+  26% { transform: scale(1.16) translateY(-8px); box-shadow: 0 0 26px rgba(110, 220, 255, 0.95), 0 0 52px rgba(255, 120, 200, 0.55), 0 0 72px rgba(80, 180, 255, 0.28); }
+  60% { transform: scale(1.05) translateY(-2px); box-shadow: 0 0 20px rgba(110, 220, 255, 0.65), 0 0 36px rgba(255, 120, 200, 0.35); }
+  100% { transform: scale(1) translateY(0); box-shadow: none; filter: none; }
+}
+@keyframes playFxPositionPop {
+  0% { transform: translateX(-18px) scale(0.88); filter: brightness(1.25); }
+  30% { transform: translateX(10px) scale(1.12); box-shadow: 0 0 24px rgba(140, 200, 255, 0.85), 0 0 44px rgba(180, 140, 255, 0.4); }
+  58% { transform: translateX(-4px) scale(1.04); box-shadow: 0 0 18px rgba(140, 200, 255, 0.55); }
+  100% { transform: translateX(0) scale(1); filter: none; box-shadow: none; }
+}
+@keyframes playFxLivePop {
+  0% { transform: scale(0.78); box-shadow: 0 0 0 rgba(255, 170, 70, 0); filter: brightness(1.4); }
+  30% { transform: scale(1.15); box-shadow: 0 0 32px rgba(255, 170, 70, 0.95), 0 0 64px rgba(255, 120, 40, 0.55), 0 0 88px rgba(255, 80, 20, 0.28); }
+  62% { transform: scale(1.06); box-shadow: 0 0 24px rgba(255, 170, 70, 0.7), 0 0 44px rgba(255, 120, 40, 0.38); }
+  100% { transform: scale(1); box-shadow: none; filter: none; }
+}
+@keyframes playFxAbilityPop {
+  0% { transform: scale(0.86); filter: brightness(1.35) saturate(1.25); }
+  22% { transform: scale(1.12); filter: brightness(1.55) saturate(1.35); }
+  48% { transform: scale(1.06); filter: brightness(1.35) saturate(1.2); }
+  100% { transform: scale(1); filter: none; }
+}
+@keyframes playFxBurstFade {
+  0% { opacity: 0.95; transform: scale(0.65); }
+  35% { opacity: 0.85; transform: scale(1.05); }
+  100% { opacity: 0; transform: scale(1.45); }
+}
+@keyframes playFxRingPulse {
+  0% { opacity: 0; transform: scale(0.7); }
+  18% { opacity: 1; transform: scale(1.02); }
+  55% { opacity: 0.75; transform: scale(1.12); }
+  100% { opacity: 0; transform: scale(1.35); }
+}
+@keyframes playFxChipFloat {
+  0% { opacity: 0; transform: translateX(-50%) translateY(18px) scale(0.7); }
+  12% { opacity: 1; transform: translateX(-50%) translateY(-2px) scale(1.12); }
+  28% { transform: translateX(-50%) translateY(-6px) scale(1.05); }
+  72% { opacity: 1; transform: translateX(-50%) translateY(-10px) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-28px) scale(0.92); }
+}
+@keyframes playFxLiveSlotPulse {
+  0% { box-shadow: inset 0 0 0 rgba(255, 170, 70, 0); background-color: rgba(255, 170, 70, 0); }
+  22% { box-shadow: inset 0 0 48px rgba(255, 170, 70, 0.55), 0 0 32px rgba(255, 130, 40, 0.35); background-color: rgba(255, 140, 50, 0.14); }
+  55% { box-shadow: inset 0 0 36px rgba(255, 170, 70, 0.38), 0 0 22px rgba(255, 130, 40, 0.22); background-color: rgba(255, 140, 50, 0.08); }
+  100% { box-shadow: inset 0 0 0 rgba(255, 170, 70, 0); background-color: transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body.play-mode .card-item.card-item--play-fx .card-art-wrap,
+  body.play-mode .card-item.card-item--play-fx > .card-img,
+  .play-fx-burst,
+  .play-fx-ring,
+  .play-fx-chip,
+  .live-slot--fx-begin {
+    animation: none !important;
+  }
+  body.play-mode .card-item.card-item--play-fx .card-art-wrap .card-img,
+  body.play-mode .card-item.card-item--play-fx > .card-img {
+    filter: brightness(1.18);
+    transition: filter 320ms ease-out;
+  }
+  .play-fx-chip {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-8px) scale(1);
+  }
+}
+body.llocg-lightweight .play-fx-burst,
+body.llocg-lightweight .play-fx-ring,
+body.llocg-lightweight .play-fx-chip,
+body.llocg-lightweight .card-item--play-fx .card-art-wrap,
+body.llocg-lightweight .card-item--play-fx > .card-img {
+  animation: none !important;
+}
+
 body.play-mode .card-item.card-item--bp1002-waiting-top-glow {
   position: relative;
   overflow: visible;
@@ -10292,4 +10518,156 @@ kbd {
   margin-top: 0.38rem;
   padding-top: 0.38rem;
   border-top: 1px solid rgba(255, 140, 190, 0.14);
+}
+
+/* --- Play board chrome: drag trail, chain band, phase rail, zone hints --- */
+body.play-mode.play-drag-active .card-item--dragging {
+  filter: drop-shadow(0 0 10px rgba(255, 160, 210, 0.55)) drop-shadow(0 0 18px rgba(255, 120, 180, 0.28));
+  z-index: 40;
+}
+body.play-mode.play-drag-active .sortable-ghost {
+  opacity: 0.35;
+}
+body.play-mode .zone-drop--legal.card-strip,
+body.play-mode .zone-drop--legal.deck-pile {
+  outline: 2px solid rgba(120, 255, 180, 0.72);
+  outline-offset: -2px;
+  box-shadow: inset 0 0 18px rgba(120, 255, 180, 0.12);
+}
+body.play-mode .zone-drop--illegal.card-strip,
+body.play-mode .zone-drop--illegal.deck-pile {
+  opacity: 0.42;
+  filter: saturate(0.65);
+}
+body.play-mode .zone-drop-ripple {
+  position: absolute;
+  inset: 8%;
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+  border: 2px solid rgba(255, 180, 220, 0.55);
+  animation: zone-drop-ripple 0.62s ease-out forwards;
+}
+@keyframes zone-drop-ripple {
+  from {
+    transform: scale(0.92);
+    opacity: 0.85;
+  }
+  to {
+    transform: scale(1.06);
+    opacity: 0;
+  }
+}
+body.play-mode .card-item--energy-wait-flip .card-img {
+  animation: energy-wait-flip 0.42s ease-in-out;
+}
+@keyframes energy-wait-flip {
+  0% {
+    transform: rotate(0deg);
+  }
+  45% {
+    transform: rotate(92deg) scale(0.94);
+  }
+  100% {
+    transform: rotate(90deg);
+  }
+}
+.play-board-chrome-host {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+  margin-bottom: 0.35rem;
+}
+.play-effect-chain-band {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.28rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: var(--radius-sm);
+  background: rgba(20, 10, 28, 0.72);
+  border: 1px solid rgba(255, 160, 210, 0.35);
+  font-size: 0.78rem;
+}
+.play-effect-chain-band__sep {
+  opacity: 0.55;
+  font-weight: 700;
+}
+.play-effect-chain-band__chip {
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.play-effect-chain-band__chip--active {
+  background: rgba(255, 120, 180, 0.22);
+  border-color: rgba(255, 160, 210, 0.65);
+  box-shadow: 0 0 12px rgba(255, 120, 180, 0.25);
+}
+.play-effect-chain-band__chip--done {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+.live-phase-rail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem;
+}
+.live-phase-rail__step {
+  font-size: 0.72rem;
+  padding: 0.1rem 0.42rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.72);
+}
+.live-phase-rail__step--current {
+  color: #ffe8f5;
+  border-color: rgba(255, 160, 210, 0.65);
+  background: rgba(255, 120, 180, 0.18);
+}
+.live-phase-rail__step--done {
+  color: rgba(180, 255, 210, 0.92);
+  border-color: rgba(120, 255, 180, 0.35);
+}
+.live-phase-rail__line {
+  width: 0.65rem;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.18);
+}
+.badge--deck-remain.badge--deck-low {
+  background: rgba(255, 190, 80, 0.22);
+  border-color: rgba(255, 210, 120, 0.55);
+}
+.badge--deck-remain.badge--deck-critical {
+  background: rgba(255, 90, 90, 0.25);
+  border-color: rgba(255, 140, 140, 0.65);
+  animation: deck-remain-pulse 1.2s ease-in-out infinite;
+}
+.deck-pile-host--low {
+  box-shadow: 0 0 0 1px rgba(255, 200, 100, 0.35);
+}
+@keyframes deck-remain-pulse {
+  50% {
+    filter: brightness(1.12);
+  }
+}
+.versus-match-log-panel__row--jumpable {
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+}
+.versus-match-log-panel__row--jumpable:hover {
+  background: rgba(255, 160, 210, 0.08);
+}
+@media (prefers-reduced-motion: reduce) {
+  body.play-mode .card-item--energy-wait-flip .card-img,
+  body.play-mode .zone-drop-ripple,
+  .badge--deck-remain.badge--deck-critical {
+    animation: none;
+  }
 }

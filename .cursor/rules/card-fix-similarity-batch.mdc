@@ -1,0 +1,45 @@
+---
+description: カード効果修正時は cards.json 全体で類似パターンを検索し一括修正する
+alwaysApply: true
+---
+
+# カード修正 — 類似例の一括対応（必須）
+
+カード不具合・分類ミス・ハンドラ欠落を**1枚だけ**直して終わらない。
+
+## 手順
+
+1. **カード文を読み返す**（総合ルール ver.1.06 + カード文優先）— `data/cards.json` の `ability` を**必ず開いて読む**。他カードの備考・テンプレート名のコピー禁止。
+2. **根因パターンを特定**（例: `残りを控え室` なのに `deck_top_to_waiting`、手札コスト未処理の `grant_jouji_session`）
+3. **`data/cards.json` 全体を検索**して同型テキスト・同型分類を列挙
+4. **分類器（`js/abilityEffects.js`）または共通ハンドラ**で横展開修正（個別 card_no 分岐は最後の手段）
+5. **`scripts/verify-deck-pick-hand-patterns.mjs`** および `scripts/verify-ability-coverage.mjs` を通す  
+   虹ヶ咲 bp1 作業時は **`scripts/verify-niji-bp1.mjs`** + `docs/niji-bp1-verification-list.md` も更新  
+   Liella! bp1 作業時は **`scripts/verify-liella-bp1.mjs`** + `docs/liella-bp1-verification-list.md` も更新  
+   蓮ノ空 bp1 作業時は **`scripts/verify-hasunosora-bp1.mjs`** + `docs/hasunosora-bp1-verification-list.md` も更新  
+   蓮ノ空 pb1 作業時は **`scripts/verify-hasunosora-pb1.mjs`** + `docs/hasunosora-pb1-verification-list.md` も更新  
+   蓮ノ空 bp2 作業時は **`scripts/verify-hasunosora-bp2.mjs`** + `docs/hasunosora-bp2-verification-list.md` も更新  
+   Liella! pb2 作業時は **`scripts/verify-liella-pb2.mjs`** + `docs/liella-pb2-verification-list.md` も更新  
+   Aqours bp2 / NEXTSTEP 作業時は **`scripts/verify-aqours-bp2.mjs`** + `docs/aqours-bp2-verification-list.md` も更新  
+   Liella! bp2 / NEXTSTEP 作業時は **`scripts/verify-liella-bp2.mjs`** + `docs/liella-bp2-verification-list.md` も更新  
+   虹ヶ咲 bp3 / 夏、はじまる。作業時は **`scripts/verify-niji-bp3.mjs`** + `docs/niji-bp3-verification-list.md` も更新  
+   虹ヶ咲 bp4 / SAPPHIREMOON 作業時は **`scripts/verify-niji-bp4.mjs`** + `docs/niji-bp4-verification-list.md` も更新  
+   相手盤面に関わる能力を追加・変更したら **`node scripts/audit-opponent-board-effects.mjs`** でレジストリ再生成
+6. **`data/fix-notes/fixed-cards-registry.md`** に代表カード + 横展開件数を記録
+7. **`docs/*-verification-list.md` を更新する場合**: 備考はカード文の要約のみ。追加後 **`node scripts/audit-verification-list-notes.mjs`** を通す（代表ID・テンプレート・備考と cards.json の突合）
+
+## よくある類似クラスタ
+
+| パターン | 期待テンプレート |
+|---------|----------------|
+| 山札N枚見る → 手札に加える → 残り控え室 | `deck_top_pick_recover`（`deckTopPickMax` / 複数同時選択） |
+| 同上 + 登場 or 手札 | `deck_top_pick_enter_or_hand` |
+| 同上 + 各グループ名につき1枚 | `deck_top_pick_recover` + `deckTopPickDistinctGroup` |
+| 手札の「名前」合計N枚 → 常時付与 | `live_start_hand_named_discard_grant_jouji` |
+| 同じユニット名/グループ名N枚 → 付与 | `live_start_hand_discard_same_unit_grant` / `_same_group_grant` |
+| 手札N枚まで捨て → 1枚につきブレード | `live_start_hand_discard_optional_blade_per` |
+
+## LovecaSimulator.app
+
+`js/abilityEffects.js` / `js/simulator.js` / `js/abilityRuntimeMeta.js` を変更したら  
+`LovecaSimulator.app/Contents/Resources/www/js/` に同期する。

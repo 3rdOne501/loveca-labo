@@ -26,6 +26,7 @@ const CASES = [
   { id: "PL!N-bp4-001-P", trigger: "live_success", check: "energy_less_than_opponent_wait" },
   { id: "PL!S-pb1-008-P＋", trigger: "live_start", check: "deck_top_look_reorder_dual" },
   { id: "PL!HS-cl1-012-CL", trigger: "live_success", check: "requiresLiveScoreTieWithOpponent" },
+  { id: "PL!N-bp1-026-L", trigger: "live_success", check: "requiresLiveScoreHigherThanOpponent" },
   { id: "PL!-bp5-111-P＋", trigger: "kidou", check: "kidou_hand_discard_activate_wait_opp_bonus" },
   { id: "PL!-pb1-009-P＋", trigger: "toujyou", check: "optional_self_wait_opp_blade" },
   { id: "PL!S-bp5-019-L", trigger: "live_success", check: "min_either_success_live" },
@@ -58,6 +59,10 @@ for (const c of CASES) {
     if (!filters.requiresSuccessLiveCountTieWithOpponent) errs.push("success live tie filter missing");
   } else if (c.check === "requiresLiveScoreTieWithOpponent") {
     if (!filters.requiresLiveScoreTieWithOpponent) errs.push("live score tie filter missing");
+    if (!simSrc.includes("soloOpponentLiveFrameScoreSum")) errs.push("solo live frame score state missing");
+    if (!simSrc.includes("ensureSoloOpponentLiveFrameScore")) errs.push("solo live frame score dialog missing");
+  } else if (c.check === "requiresLiveScoreHigherThanOpponent") {
+    if (!filters.requiresLiveScoreHigherThanOpponent) errs.push("live score higher filter missing");
     if (!simSrc.includes("soloOpponentLiveFrameScoreSum")) errs.push("solo live frame score state missing");
     if (!simSrc.includes("ensureSoloOpponentLiveFrameScore")) errs.push("solo live frame score dialog missing");
   } else if (c.check === "deck_top_look_reorder_dual") {

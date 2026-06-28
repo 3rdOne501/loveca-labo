@@ -1,0 +1,3632 @@
+{
+  "generatedAt": "2026-06-28T18:13:26.789Z",
+  "purpose": "対戦モード（localDual / オンライン）本格実装時の実装・テスト計画用。ソロ代行入力で動くカードも含む。",
+  "totalEntries": 264,
+  "uniqueCards": 215,
+  "kindCounts": {
+    "mutate_opponent_live": 19,
+    "mutate_opponent_stage": 148,
+    "opponent_choice": 41,
+    "read_compare": 88,
+    "mutate_opponent_hand": 5,
+    "passive_opponent": 50,
+    "both_players": 15,
+    "mutate_opponent_deck": 32,
+    "mutate_opponent_waiting": 8,
+    "mutate_opponent_success_live": 21,
+    "mutate_opponent_energy": 9,
+    "pick_self_or_opponent": 2
+  },
+  "dualStatusCounts": {
+    "dual_ok": 214,
+    "passive_track": 50
+  },
+  "rows": [
+    {
+      "id": "LL-PR-004-PR",
+      "name": "愛♡スクリ～ム！",
+      "set": "LL-PR",
+      "trig": "live_start",
+      "tmpl": "live_start_love_screem_opp_answer",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_live",
+        "mutate_opponent_stage",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手に何が好き？と聞く。 回答がチョコミントかストロベリーフレイバーかクッキー＆クリームの場合、自分と相手は手札を1枚控え室に置く。 回答があなたの場合、自分と相手はカードを1枚引く。 回答がそれ以外の場合、ライブ終了時まで、自分と相手のステージにいるメンバーはを得る。"
+    },
+    {
+      "id": "LL-bp4-001-R＋",
+      "name": "絢瀬絵里&朝香果林&葉月 恋",
+      "set": "LL-bp4",
+      "trig": "toujyou",
+      "tmpl": "deck_peek_pick_then_opp_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のデッキの上からカードを5枚見る。その中から「絢瀬絵里」か「朝香果林」か「葉月恋」のメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。その後、相手のステージにいる、これにより公開したカードのコスト以下で、かつ元々持つの数が3つ以下のメンバーをすべてウェイトにする。"
+    },
+    {
+      "id": "LL-bp4-001-R＋",
+      "name": "絢瀬絵里&朝香果林&葉月 恋",
+      "set": "LL-bp4",
+      "trig": "live_start",
+      "tmpl": "deck_peek_pick_then_opp_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のデッキの上からカードを5枚見る。その中から「絢瀬絵里」か「朝香果林」か「葉月恋」のメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。その後、相手のステージにいる、これにより公開したカードのコスト以下で、かつ元々持つの数が3つ以下のメンバーをすべてウェイトにする。"
+    },
+    {
+      "id": "PL!-PR-005-PR",
+      "name": "星空 凛",
+      "set": "PL!-PR",
+      "trig": "toujyou",
+      "tmpl": "ability_pick_one",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "以下から1つを選ぶ。 ・カードを1枚引き、手札を1枚控え室に置く。 ・相手のステージにいるすべてのコスト2以下のメンバーをウェイトにする。"
+    },
+    {
+      "id": "PL!-PR-006-PR",
+      "name": "西木野真姫",
+      "set": "PL!-PR",
+      "trig": "toujyou",
+      "tmpl": "ability_pick_one",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "以下から1つを選ぶ。 ・カードを1枚引き、手札を1枚控え室に置く。 ・相手のステージにいるすべてのコスト2以下のメンバーをウェイトにする。"
+    },
+    {
+      "id": "PL!-PR-007-PR",
+      "name": "東條 希",
+      "set": "PL!-PR",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーをウェイトにしてもよい：相手のステージにいるコスト4以下のメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "id": "PL!-PR-007-PR",
+      "name": "東條 希",
+      "set": "PL!-PR",
+      "trig": "live_start",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーをウェイトにしてもよい：相手のステージにいるコスト4以下のメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "id": "PL!-PR-008-PR",
+      "name": "小泉花陽",
+      "set": "PL!-PR",
+      "trig": "toujyou",
+      "tmpl": "ability_pick_one",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "以下から1つを選ぶ。 ・カードを1枚引き、手札を1枚控え室に置く。 ・相手のステージにいるすべてのコスト2以下のメンバーをウェイトにする。"
+    },
+    {
+      "id": "PL!-PR-009-PR",
+      "name": "矢澤にこ",
+      "set": "PL!-PR",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーをウェイトにしてもよい：相手のステージにいるコスト4以下のメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "id": "PL!-PR-009-PR",
+      "name": "矢澤にこ",
+      "set": "PL!-PR",
+      "trig": "live_start",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーをウェイトにしてもよい：相手のステージにいるコスト4以下のメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "id": "PL!-PR-014-PR",
+      "name": "園田海未",
+      "set": "PL!-PR",
+      "trig": "toujyou",
+      "tmpl": "toujou_opp_hand_reveal_no_live_draw",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_hand",
+        "mutate_opponent_live",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手の手札を、自分は見ないで3枚選び公開する。これにより公開されたカードの中にライブカードがない場合、カードを1枚引く。"
+    },
+    {
+      "id": "PL!-bp3-002-P",
+      "name": "絢瀬絵里",
+      "set": "PL!-bp3",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "手札を1枚控え室に置いてもよい：相手のステージにいるコスト4以下のメンバーを2人までウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "id": "PL!-bp3-002-P",
+      "name": "絢瀬絵里",
+      "set": "PL!-bp3",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "passive_opponent"
+      ],
+      "dualStatus": "passive_track",
+      "text": "相手のステージにいるウェイト状態のメンバー1人につき、を得る。"
+    },
+    {
+      "id": "PL!-bp3-002-R",
+      "name": "絢瀬絵里",
+      "set": "PL!-bp3",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "手札を1枚控え室に置いてもよい：相手のステージにいるコスト4以下のメンバーを2人までウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "id": "PL!-bp3-002-R",
+      "name": "絢瀬絵里",
+      "set": "PL!-bp3",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "passive_opponent"
+      ],
+      "dualStatus": "passive_track",
+      "text": "相手のステージにいるウェイト状態のメンバー1人につき、を得る。"
+    },
+    {
+      "id": "PL!-bp3-022-L",
+      "name": "ユメノトビラ",
+      "set": "PL!-bp3",
+      "trig": "live_start",
+      "tmpl": "live_start_deck_reveal_both_stage_members_score",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のデッキの上から、自分と相手のステージにいるメンバー1人につき、1枚公開する。それらの中にあるライブカード1枚につき、このカードのスコアを＋１する。その後、これにより公開したカードを控え室に置く。"
+    },
+    {
+      "id": "PL!-bp3-026-L",
+      "name": "Oh,Love&Peace!",
+      "set": "PL!-bp3",
+      "trig": "live_success",
+      "tmpl": "live_card_score_plus",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージにいるメンバーが持つハートの総数が、相手のステージにいるメンバーが持つハートの総数より多い場合、このカードのスコアを＋１する。"
+    },
+    {
+      "id": "PL!-bp4-001-P",
+      "name": "高坂穂乃果",
+      "set": "PL!-bp4",
+      "trig": "live_start",
+      "tmpl": "draw_from_deck",
+      "automated": true,
+      "kinds": [
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージにいるメンバーのコストの合計が相手より低い場合、カードを1枚引く。"
+    },
+    {
+      "id": "PL!-bp4-001-R",
+      "name": "高坂穂乃果",
+      "set": "PL!-bp4",
+      "trig": "live_start",
+      "tmpl": "draw_from_deck",
+      "automated": true,
+      "kinds": [
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージにいるメンバーのコストの合計が相手より低い場合、カードを1枚引く。"
+    },
+    {
+      "id": "PL!-bp4-009-P",
+      "name": "矢澤にこ",
+      "set": "PL!-bp4",
+      "trig": "toujyou",
+      "tmpl": "toujou_opp_active_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手は、自身のステージにいるアクティブ状態のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!-bp4-009-R",
+      "name": "矢澤にこ",
+      "set": "PL!-bp4",
+      "trig": "toujyou",
+      "tmpl": "toujou_opp_active_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手は、自身のステージにいるアクティブ状態のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!-bp4-018-N",
+      "name": "矢澤にこ",
+      "set": "PL!-bp4",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "passive_opponent",
+        "read_compare"
+      ],
+      "dualStatus": "passive_track",
+      "text": "自分の成功ライブカード置き場にあるカードのスコアの合計が相手より高いかぎり、を得る。"
+    },
+    {
+      "id": "PL!-bp5-004-AR",
+      "name": "園田海未",
+      "set": "PL!-bp5",
+      "trig": "kidou",
+      "tmpl": "kidou_opp_wait_group_discount_energy",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "：相手のステージにいるコスト10以下のメンバー1人をウェイトにする。この能力を起動するためのコストは自分のステージにいるメンバーの中のグループ名1種類につき、減る。"
+    },
+    {
+      "id": "PL!-bp5-004-P",
+      "name": "園田海未",
+      "set": "PL!-bp5",
+      "trig": "kidou",
+      "tmpl": "kidou_opp_wait_group_discount_energy",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "：相手のステージにいるコスト10以下のメンバー1人をウェイトにする。この能力を起動するためのコストは自分のステージにいるメンバーの中のグループ名1種類につき、減る。"
+    },
+    {
+      "id": "PL!-bp5-004-R＋",
+      "name": "園田海未",
+      "set": "PL!-bp5",
+      "trig": "kidou",
+      "tmpl": "kidou_opp_wait_group_discount_energy",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "：相手のステージにいるコスト10以下のメンバー1人をウェイトにする。この能力を起動するためのコストは自分のステージにいるメンバーの中のグループ名1種類につき、減る。"
+    },
+    {
+      "id": "PL!-bp5-004-SEC",
+      "name": "園田海未",
+      "set": "PL!-bp5",
+      "trig": "kidou",
+      "tmpl": "kidou_opp_wait_group_discount_energy",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "：相手のステージにいるコスト10以下のメンバー1人をウェイトにする。この能力を起動するためのコストは自分のステージにいるメンバーの中のグループ名1種類につき、減る。"
+    },
+    {
+      "id": "PL!-bp5-007-AR",
+      "name": "東條 希",
+      "set": "PL!-bp5",
+      "trig": "toujyou",
+      "tmpl": "toujou_baton_both_trim_hand_draw",
+      "automated": true,
+      "kinds": [
+        "both_players",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーよりコストが低いメンバーからバトンタッチして登場した場合、自分と相手はそれぞれ自身の手札の枚数が3枚になるまで手札を控え室に置き、その後、自分と相手はそれぞれカードを3枚引く。"
+    },
+    {
+      "id": "PL!-bp5-007-P",
+      "name": "東條 希",
+      "set": "PL!-bp5",
+      "trig": "toujyou",
+      "tmpl": "toujou_baton_both_trim_hand_draw",
+      "automated": true,
+      "kinds": [
+        "both_players",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーよりコストが低いメンバーからバトンタッチして登場した場合、自分と相手はそれぞれ自身の手札の枚数が3枚になるまで手札を控え室に置き、その後、自分と相手はそれぞれカードを3枚引く。"
+    },
+    {
+      "id": "PL!-bp5-007-R",
+      "name": "東條 希",
+      "set": "PL!-bp5",
+      "trig": "toujyou",
+      "tmpl": "toujou_baton_both_trim_hand_draw",
+      "automated": true,
+      "kinds": [
+        "both_players",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーよりコストが低いメンバーからバトンタッチして登場した場合、自分と相手はそれぞれ自身の手札の枚数が3枚になるまで手札を控え室に置き、その後、自分と相手はそれぞれカードを3枚引く。"
+    },
+    {
+      "id": "PL!-bp5-013-N",
+      "name": "園田海未",
+      "set": "PL!-bp5",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手のステージにいるコスト4以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!-bp5-021-L",
+      "name": "SUNNY DAY SONG",
+      "set": "PL!-bp5",
+      "trig": "live_start",
+      "tmpl": "live_start_sunny_day_song_tiered",
+      "automated": true,
+      "kinds": [
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージにメンバーが1人以上いる場合、自分と相手はカードを1枚引き、手札を1枚控え室に置く。2人以上いる場合、さらに自分のステージにいる『μ's』のメンバー1人は、ライブ終了時まで、を得る。3人以上おり、かつそれぞれ名前が異なる場合、さらにこのカードのスコアを＋１する。"
+    },
+    {
+      "id": "PL!-bp5-024-L",
+      "name": "Private Wars",
+      "set": "PL!-bp5",
+      "trig": "live_start",
+      "tmpl": "ability_pick_one",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージに『A-RISE』のメンバーがいる場合、以下から1つを選ぶ。 ・ウェイト状態のメンバー1人をアクティブにし、ライブ終了時まで、そのメンバーはを得る。 ・相手のステージにいる元々持つが3つ以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!-bp5-111-P＋",
+      "name": "綺羅ツバサ",
+      "set": "PL!-bp5",
+      "trig": "kidou",
+      "tmpl": "kidou_hand_discard_activate_wait_opp_bonus",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_hand",
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "手札を1枚控え室に置く：ウェイト状態のメンバー1人をアクティブにする。これにより相手のステージにいるメンバーをアクティブにした場合、自分の控え室からライブカードを1枚手札に加える。"
+    },
+    {
+      "id": "PL!-bp5-111-R",
+      "name": "綺羅ツバサ",
+      "set": "PL!-bp5",
+      "trig": "kidou",
+      "tmpl": "kidou_hand_discard_activate_wait_opp_bonus",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_hand",
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "手札を1枚控え室に置く：ウェイト状態のメンバー1人をアクティブにする。これにより相手のステージにいるメンバーをアクティブにした場合、自分の控え室からライブカードを1枚手札に加える。"
+    },
+    {
+      "id": "PL!-bp5-333-P＋",
+      "name": "統堂英玲奈",
+      "set": "PL!-bp5",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーをウェイトにしてもよい：相手のステージにいるコスト9以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!-bp5-333-R",
+      "name": "統堂英玲奈",
+      "set": "PL!-bp5",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーをウェイトにしてもよい：相手のステージにいるコスト9以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!-bp6-010-N",
+      "name": "高坂穂乃果",
+      "set": "PL!-bp6",
+      "trig": "kidou",
+      "tmpl": "kidou_self_to_wait_opp_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーをステージから控え室に置く：相手のステージにいるコスト4以下のメンバー1人をウェイトにする。 （ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "id": "PL!-pb1-002-P＋",
+      "name": "絢瀬絵里",
+      "set": "PL!-pb1",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーをウェイトにしてもよい：自分のステージにいるメンバーが『BiBi』のみの場合、相手のステージにいる元々持つの数が3つ以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!-pb1-002-P＋",
+      "name": "絢瀬絵里",
+      "set": "PL!-pb1",
+      "trig": "live_start",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーをウェイトにしてもよい：自分のステージにいるメンバーが『BiBi』のみの場合、相手のステージにいる元々持つの数が3つ以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!-pb1-002-P＋",
+      "name": "絢瀬絵里",
+      "set": "PL!-pb1",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "passive_opponent"
+      ],
+      "dualStatus": "passive_track",
+      "text": "相手のステージにいるウェイト状態のメンバー1人につき、を得る。"
+    },
+    {
+      "id": "PL!-pb1-002-R",
+      "name": "絢瀬絵里",
+      "set": "PL!-pb1",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーをウェイトにしてもよい：自分のステージにいるメンバーが『BiBi』のみの場合、相手のステージにいる元々持つの数が3つ以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!-pb1-002-R",
+      "name": "絢瀬絵里",
+      "set": "PL!-pb1",
+      "trig": "live_start",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーをウェイトにしてもよい：自分のステージにいるメンバーが『BiBi』のみの場合、相手のステージにいる元々持つの数が3つ以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!-pb1-002-R",
+      "name": "絢瀬絵里",
+      "set": "PL!-pb1",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "passive_opponent"
+      ],
+      "dualStatus": "passive_track",
+      "text": "相手のステージにいるウェイト状態のメンバー1人につき、を得る。"
+    },
+    {
+      "id": "PL!-pb1-006-P＋",
+      "name": "西木野真姫",
+      "set": "PL!-pb1",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分の控え室から『μ's』のライブカードを1枚までデッキの一番上に置く。その後、相手のステージにウェイト状態のメンバーがいる場合、カードを1枚引く。"
+    },
+    {
+      "id": "PL!-pb1-006-R",
+      "name": "西木野真姫",
+      "set": "PL!-pb1",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分の控え室から『μ's』のライブカードを1枚までデッキの一番上に置く。その後、相手のステージにウェイト状態のメンバーがいる場合、カードを1枚引く。"
+    },
+    {
+      "id": "PL!-pb1-009-P＋",
+      "name": "矢澤にこ",
+      "set": "PL!-pb1",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手のステージにいる元々持つの数が1つ以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!-pb1-009-P＋",
+      "name": "矢澤にこ",
+      "set": "PL!-pb1",
+      "trig": "toujyou",
+      "tmpl": "toujou_turn_block_effect_activate",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このターン、自分と相手のステージにいるメンバーは、効果によってはアクティブにならない。"
+    },
+    {
+      "id": "PL!-pb1-009-R",
+      "name": "矢澤にこ",
+      "set": "PL!-pb1",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手のステージにいる元々持つの数が1つ以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!-pb1-009-R",
+      "name": "矢澤にこ",
+      "set": "PL!-pb1",
+      "trig": "toujyou",
+      "tmpl": "toujou_turn_block_effect_activate",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このターン、自分と相手のステージにいるメンバーは、効果によってはアクティブにならない。"
+    },
+    {
+      "id": "PL!-pb1-011-P＋",
+      "name": "絢瀬絵里",
+      "set": "PL!-pb1",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージに名前の異なる『BiBi』のメンバーが2人以上いる場合、相手のステージにいるコスト4以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!-pb1-011-R",
+      "name": "絢瀬絵里",
+      "set": "PL!-pb1",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージに名前の異なる『BiBi』のメンバーが2人以上いる場合、相手のステージにいるコスト4以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!-pb1-015-P＋",
+      "name": "西木野真姫",
+      "set": "PL!-pb1",
+      "trig": "toujyou",
+      "tmpl": "toujou_bibi_wait_opp_active_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "『BiBi』のメンバー1人をウェイトにしてもよい：相手は、自身のステージにいるアクティブ状態のメンバー1人をウェイトにする。（この能力はセンターエリアにいる場合のみ発動する。）"
+    },
+    {
+      "id": "PL!-pb1-015-P＋",
+      "name": "西木野真姫",
+      "set": "PL!-pb1",
+      "trig": "live_start",
+      "tmpl": "toujou_bibi_wait_opp_active_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "『BiBi』のメンバー1人をウェイトにしてもよい：相手は、自身のステージにいるアクティブ状態のメンバー1人をウェイトにする。（この能力はセンターエリアにいる場合のみ発動する。）"
+    },
+    {
+      "id": "PL!-pb1-015-R",
+      "name": "西木野真姫",
+      "set": "PL!-pb1",
+      "trig": "toujyou",
+      "tmpl": "toujou_bibi_wait_opp_active_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "『BiBi』のメンバー1人をウェイトにしてもよい：相手は、自身のステージにいるアクティブ状態のメンバー1人をウェイトにする。（この能力はセンターエリアにいる場合のみ発動する。）"
+    },
+    {
+      "id": "PL!-pb1-015-R",
+      "name": "西木野真姫",
+      "set": "PL!-pb1",
+      "trig": "live_start",
+      "tmpl": "toujou_bibi_wait_opp_active_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "『BiBi』のメンバー1人をウェイトにしてもよい：相手は、自身のステージにいるアクティブ状態のメンバー1人をウェイトにする。（この能力はセンターエリアにいる場合のみ発動する。）"
+    },
+    {
+      "id": "PL!-pb1-018-P＋",
+      "name": "矢澤にこ",
+      "set": "PL!-pb1",
+      "trig": "toujyou",
+      "tmpl": "toujou_both_wait_to_empty_stage",
+      "automated": true,
+      "kinds": [
+        "both_players",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分と相手はそれぞれ、自身の控え室からコスト2以下のメンバーカードを1枚、メンバーのいないエリアにウェイト状態で登場させる。（この効果で登場したメンバーのいるエリアには、このターンにメンバーは登場できない。）"
+    },
+    {
+      "id": "PL!-pb1-018-R",
+      "name": "矢澤にこ",
+      "set": "PL!-pb1",
+      "trig": "toujyou",
+      "tmpl": "toujou_both_wait_to_empty_stage",
+      "automated": true,
+      "kinds": [
+        "both_players",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分と相手はそれぞれ、自身の控え室からコスト2以下のメンバーカードを1枚、メンバーのいないエリアにウェイト状態で登場させる。（この効果で登場したメンバーのいるエリアには、このターンにメンバーは登場できない。）"
+    },
+    {
+      "id": "PL!-pb1-030-L",
+      "name": "Cutie Panther",
+      "set": "PL!-pb1",
+      "trig": "live_start",
+      "tmpl": "live_start_need_heart_reduce_fixed",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手のステージにウェイト状態のメンバーがいる場合、このカードを成功させるための必要ハートを減らす。"
+    },
+    {
+      "id": "PL!HS-bp1-023-L",
+      "name": "ド！ド！ド！",
+      "set": "PL!HS-bp1",
+      "trig": "live_success",
+      "tmpl": "live_score_higher_energy_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_deck",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "ライブの合計スコアが相手より高く、かつ自分のステージに『蓮ノ空』のメンバーがいる場合、自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。 (必要ハートを確認する時、エールで出たは任意の色のハートとして扱う。)"
+    },
+    {
+      "id": "PL!HS-bp5-016-N",
+      "name": "桂城 泉",
+      "set": "PL!HS-bp5",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "手札を1枚控え室に置いてもよい：相手のステージにいるコスト4以下のメンバーを2人までウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "id": "PL!HS-bp5-016-N",
+      "name": "桂城 泉",
+      "set": "PL!HS-bp5",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "passive_opponent"
+      ],
+      "dualStatus": "passive_track",
+      "text": "相手のステージにウェイト状態のメンバーが2人以上いるかぎり、を得る。"
+    },
+    {
+      "id": "PL!HS-bp6-004-P",
+      "name": "百生 吟子",
+      "set": "PL!HS-bp6",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手のステージにいるコスト9以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!HS-bp6-004-P",
+      "name": "百生 吟子",
+      "set": "PL!HS-bp6",
+      "trig": "live_start",
+      "tmpl": "live_start_opp_wait_max_cost",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手のステージにいるコスト9以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!HS-bp6-004-R",
+      "name": "百生 吟子",
+      "set": "PL!HS-bp6",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手のステージにいるコスト9以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!HS-bp6-004-R",
+      "name": "百生 吟子",
+      "set": "PL!HS-bp6",
+      "trig": "live_start",
+      "tmpl": "live_start_opp_wait_max_cost",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手のステージにいるコスト9以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!HS-bp6-005-P",
+      "name": "徒町 小鈴",
+      "set": "PL!HS-bp6",
+      "trig": "live_start",
+      "tmpl": "live_start_hand_discard_cost_boost_grant_if",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "手札を1枚控え室に置いてもよい：ライブ終了時まで、このメンバーのコストを＋６する。その後、自分のステージにいる『蓮ノ空』のメンバーのコストの合計が、相手のステージにいるメンバーのコストの合計より高い場合、さらにライブ終了時まで、を得る。"
+    },
+    {
+      "id": "PL!HS-bp6-005-P＋",
+      "name": "徒町 小鈴",
+      "set": "PL!HS-bp6",
+      "trig": "live_start",
+      "tmpl": "live_start_hand_discard_cost_boost_grant_if",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "手札を1枚控え室に置いてもよい：ライブ終了時まで、このメンバーのコストを＋６する。その後、自分のステージにいる『蓮ノ空』のメンバーのコストの合計が、相手のステージにいるメンバーのコストの合計より高い場合、さらにライブ終了時まで、を得る。"
+    },
+    {
+      "id": "PL!HS-bp6-005-R＋",
+      "name": "徒町 小鈴",
+      "set": "PL!HS-bp6",
+      "trig": "live_start",
+      "tmpl": "live_start_hand_discard_cost_boost_grant_if",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "手札を1枚控え室に置いてもよい：ライブ終了時まで、このメンバーのコストを＋６する。その後、自分のステージにいる『蓮ノ空』のメンバーのコストの合計が、相手のステージにいるメンバーのコストの合計より高い場合、さらにライブ終了時まで、を得る。"
+    },
+    {
+      "id": "PL!HS-bp6-005-SEC",
+      "name": "徒町 小鈴",
+      "set": "PL!HS-bp6",
+      "trig": "live_start",
+      "tmpl": "live_start_hand_discard_cost_boost_grant_if",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "手札を1枚控え室に置いてもよい：ライブ終了時まで、このメンバーのコストを＋６する。その後、自分のステージにいる『蓮ノ空』のメンバーのコストの合計が、相手のステージにいるメンバーのコストの合計より高い場合、さらにライブ終了時まで、を得る。"
+    },
+    {
+      "id": "PL!HS-bp6-007-P",
+      "name": "セラス 柳田 リリエンフェルト",
+      "set": "PL!HS-bp6",
+      "trig": "jidou",
+      "tmpl": "jidou_series_enter_opp_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_waiting",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージに『EdelNote』のメンバーが登場したとき、相手は、自身のステージにいるアクティブ状態のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!HS-bp6-007-R",
+      "name": "セラス 柳田 リリエンフェルト",
+      "set": "PL!HS-bp6",
+      "trig": "jidou",
+      "tmpl": "jidou_series_enter_opp_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_waiting",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージに『EdelNote』のメンバーが登場したとき、相手は、自身のステージにいるアクティブ状態のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!HS-bp6-013-R",
+      "name": "徒町 小鈴",
+      "set": "PL!HS-bp6",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手のステージにいる元々持つの数が3つ以下の『DOLLCHESTRA』以外のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!HS-bp6-013-R",
+      "name": "徒町 小鈴",
+      "set": "PL!HS-bp6",
+      "trig": "live_start",
+      "tmpl": "live_start_opp_wait_exclude_unit",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手のステージにいる元々持つの数が3つ以下の『DOLLCHESTRA』以外のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!HS-cl1-004-CL",
+      "name": "百生 吟子",
+      "set": "PL!HS-cl1",
+      "trig": "toujyou",
+      "tmpl": "ability_pick_one",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "以下から1つを選ぶ。 ・自分のデッキの上からカードを3枚控え室に置く。 ・相手のステージにいるコスト2以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!HS-cl1-012-CL",
+      "name": "Edelied",
+      "set": "PL!HS-cl1",
+      "trig": "live_success",
+      "tmpl": "yell_resolution_pick_hand",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_live",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分と相手のライブの合計スコアが同じ場合、エールにより公開された自分のカードの中から、コスト9以上のメンバーカードを1枚手札に加える。"
+    },
+    {
+      "id": "PL!HS-pb1-007-P＋",
+      "name": "セラス 柳田 リリエンフェルト",
+      "set": "PL!HS-pb1",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "passive_opponent"
+      ],
+      "dualStatus": "passive_track",
+      "text": "自分のステージにメンバーがちょうど2人おり、かつ相手のステージにメンバーが3人以上いるかぎり、を得る。"
+    },
+    {
+      "id": "PL!HS-pb1-007-R",
+      "name": "セラス 柳田 リリエンフェルト",
+      "set": "PL!HS-pb1",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "passive_opponent"
+      ],
+      "dualStatus": "passive_track",
+      "text": "自分のステージにメンバーがちょうど2人おり、かつ相手のステージにメンバーが3人以上いるかぎり、を得る。"
+    },
+    {
+      "id": "PL!HS-pb1-008-P＋",
+      "name": "桂城 泉",
+      "set": "PL!HS-pb1",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分と相手のステージにいる元々持つの数が3つ以下のすべてのメンバーをウェイトにする。"
+    },
+    {
+      "id": "PL!HS-pb1-008-P＋",
+      "name": "桂城 泉",
+      "set": "PL!HS-pb1",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "passive_opponent"
+      ],
+      "dualStatus": "passive_track",
+      "text": "相手のステージにいるメンバーはアクティブフェイズにアクティブにならない。"
+    },
+    {
+      "id": "PL!HS-pb1-008-R",
+      "name": "桂城 泉",
+      "set": "PL!HS-pb1",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分と相手のステージにいる元々持つの数が3つ以下のすべてのメンバーをウェイトにする。"
+    },
+    {
+      "id": "PL!HS-pb1-008-R",
+      "name": "桂城 泉",
+      "set": "PL!HS-pb1",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "passive_opponent"
+      ],
+      "dualStatus": "passive_track",
+      "text": "相手のステージにいるメンバーはアクティブフェイズにアクティブにならない。"
+    },
+    {
+      "id": "PL!HS-pb1-010-P＋",
+      "name": "村野さやか",
+      "set": "PL!HS-pb1",
+      "trig": "toujyou",
+      "tmpl": "toujou_opp_wait_if_high_cost_on_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージにコスト10以上のメンバーがいる場合、相手のステージにいるコスト4以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!HS-pb1-010-P＋",
+      "name": "村野さやか",
+      "set": "PL!HS-pb1",
+      "trig": "live_start",
+      "tmpl": "live_start_opp_wait_if_high_cost_on_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージにコスト10以上のメンバーがいる場合、相手のステージにいるコスト4以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!HS-pb1-010-R",
+      "name": "村野さやか",
+      "set": "PL!HS-pb1",
+      "trig": "toujyou",
+      "tmpl": "toujou_opp_wait_if_high_cost_on_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージにコスト10以上のメンバーがいる場合、相手のステージにいるコスト4以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!HS-pb1-010-R",
+      "name": "村野さやか",
+      "set": "PL!HS-pb1",
+      "trig": "live_start",
+      "tmpl": "live_start_opp_wait_if_high_cost_on_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージにコスト10以上のメンバーがいる場合、相手のステージにいるコスト4以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!HS-pb1-012-P＋",
+      "name": "百生吟子",
+      "set": "PL!HS-pb1",
+      "trig": "toujyou",
+      "tmpl": "toujou_both_shuffle_deck_bottom_grant_if",
+      "automated": true,
+      "kinds": [
+        "both_players",
+        "mutate_opponent_deck",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分と相手はそれぞれ、自身の控え室にあるすべてのメンバーカードをシャッフルし、自身のデッキの下に置く。これにより自分と相手のカードが合計20枚以上デッキの下に置かれた場合、自分の控え室からライブカードを1枚手札に加え、ライブ終了時まで、を得る。"
+    },
+    {
+      "id": "PL!HS-pb1-012-R",
+      "name": "百生吟子",
+      "set": "PL!HS-pb1",
+      "trig": "toujyou",
+      "tmpl": "toujou_both_shuffle_deck_bottom_grant_if",
+      "automated": true,
+      "kinds": [
+        "both_players",
+        "mutate_opponent_deck",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分と相手はそれぞれ、自身の控え室にあるすべてのメンバーカードをシャッフルし、自身のデッキの下に置く。これにより自分と相手のカードが合計20枚以上デッキの下に置かれた場合、自分の控え室からライブカードを1枚手札に加え、ライブ終了時まで、を得る。"
+    },
+    {
+      "id": "PL!HS-pb1-014-P＋",
+      "name": "安養寺姫芽",
+      "set": "PL!HS-pb1",
+      "trig": "toujyou",
+      "tmpl": "toujou_opp_front_position_change",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージにいるメンバーが『みらくらぱーく！』のみの場合、相手のステージにいるメンバー1人をこのメンバーの正面のエリアにポジションチェンジさせる。"
+    },
+    {
+      "id": "PL!HS-pb1-014-P＋",
+      "name": "安養寺姫芽",
+      "set": "PL!HS-pb1",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "passive_opponent",
+        "read_compare"
+      ],
+      "dualStatus": "passive_track",
+      "text": "このメンバーの正面のエリアにいる相手のメンバーのコストが、このメンバーのコストより高いかぎり、を得る。"
+    },
+    {
+      "id": "PL!HS-pb1-014-R",
+      "name": "安養寺姫芽",
+      "set": "PL!HS-pb1",
+      "trig": "toujyou",
+      "tmpl": "toujou_opp_front_position_change",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージにいるメンバーが『みらくらぱーく！』のみの場合、相手のステージにいるメンバー1人をこのメンバーの正面のエリアにポジションチェンジさせる。"
+    },
+    {
+      "id": "PL!HS-pb1-014-R",
+      "name": "安養寺姫芽",
+      "set": "PL!HS-pb1",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "passive_opponent",
+        "read_compare"
+      ],
+      "dualStatus": "passive_track",
+      "text": "このメンバーの正面のエリアにいる相手のメンバーのコストが、このメンバーのコストより高いかぎり、を得る。"
+    },
+    {
+      "id": "PL!N-PR-022-PR",
+      "name": "エマ・ヴェルデ",
+      "set": "PL!N-PR",
+      "trig": "toujyou",
+      "tmpl": "toujou_opp_emma_punch_answer",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "直前のターンに相手がライブをし、それが成功していない場合、相手にエマパンチ打つ？と聞いてもよい。 回答がお願いしますの場合、自分は相手にエマパンチする。ライブ終了時まで、相手のステージにいるすべてのメンバーは、を得る。 回答がそれ以外の場合、何もしない。 （相手を傷つけないよう、やさしく、愛をこめて魔法のパンチをすること。）"
+    },
+    {
+      "id": "PL!N-PR-024-PR",
+      "name": "桜坂しずく",
+      "set": "PL!N-PR",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_success_live",
+        "passive_opponent"
+      ],
+      "dualStatus": "passive_track",
+      "text": "自分と相手の成功ライブカード置き場にカードが合計4枚以上あるかぎり、を得る。"
+    },
+    {
+      "id": "PL!N-PR-027-PR",
+      "name": "朝香果林",
+      "set": "PL!N-PR",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "passive_opponent"
+      ],
+      "dualStatus": "passive_track",
+      "text": "自分と相手のステージにメンバーが合計6人いるかぎり、を得る。"
+    },
+    {
+      "id": "PL!N-bp1-026-L",
+      "name": "Poppin' Up!",
+      "set": "PL!N-bp1",
+      "trig": "live_success",
+      "tmpl": "yell_resolution_pick_hand",
+      "automated": true,
+      "kinds": [
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "ライブの合計スコアが相手より高い場合、エールにより公開された自分のカードの中から、『虹ヶ咲』のカードを1枚手札に加える。 (必要ハートを確認する時、エールで出たは任意の色のハートとして扱う。)"
+    },
+    {
+      "id": "PL!N-bp3-010-P",
+      "name": "三船栞子",
+      "set": "PL!N-bp3",
+      "trig": "live_start",
+      "tmpl": "live_start_pick_player_waiting_deck_bottom",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_deck",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分か相手を選ぶ。自分は、そのプレイヤーの控え室にあるメンバーカードを2枚まで、好きな順番でデッキの一番下に置く。"
+    },
+    {
+      "id": "PL!N-bp3-010-R",
+      "name": "三船栞子",
+      "set": "PL!N-bp3",
+      "trig": "live_start",
+      "tmpl": "live_start_pick_player_waiting_deck_bottom",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_deck",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分か相手を選ぶ。自分は、そのプレイヤーの控え室にあるメンバーカードを2枚まで、好きな順番でデッキの一番下に置く。"
+    },
+    {
+      "id": "PL!N-bp3-011-P",
+      "name": "ミア・テイラー",
+      "set": "PL!N-bp3",
+      "trig": "toujyou",
+      "tmpl": "toujou_opp_stage_member_match_grant",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手のステージにいる「ミア・テイラー」以外のメンバーを1人選ぶ。そのメンバーが持つハートと、このメンバーが持つハートの中に同じ色のハートがある場合、ライブ終了時まで、を得る。それぞれのメンバーのコストが同じ場合、元々のの数が同じ場合についても同じことを行う。"
+    },
+    {
+      "id": "PL!N-bp3-011-R",
+      "name": "ミア・テイラー",
+      "set": "PL!N-bp3",
+      "trig": "toujyou",
+      "tmpl": "toujou_opp_stage_member_match_grant",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手のステージにいる「ミア・テイラー」以外のメンバーを1人選ぶ。そのメンバーが持つハートと、このメンバーが持つハートの中に同じ色のハートがある場合、ライブ終了時まで、を得る。それぞれのメンバーのコストが同じ場合、元々のの数が同じ場合についても同じことを行う。"
+    },
+    {
+      "id": "PL!N-bp3-017-N",
+      "name": "宮下 愛",
+      "set": "PL!N-bp3",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーをウェイトにしてもよい：相手のステージにいるコスト4以下のメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "id": "PL!N-bp3-017-N",
+      "name": "宮下 愛",
+      "set": "PL!N-bp3",
+      "trig": "live_start",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーをウェイトにしてもよい：相手のステージにいるコスト4以下のメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "id": "PL!N-bp3-023-N",
+      "name": "ミア・テイラー",
+      "set": "PL!N-bp3",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーをウェイトにしてもよい：相手のステージにいるコスト4以下のメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "id": "PL!N-bp3-023-N",
+      "name": "ミア・テイラー",
+      "set": "PL!N-bp3",
+      "trig": "live_start",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーをウェイトにしてもよい：相手のステージにいるコスト4以下のメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "id": "PL!N-bp4-001-P",
+      "name": "上原歩夢",
+      "set": "PL!N-bp4",
+      "trig": "live_success",
+      "tmpl": "energy_less_than_opponent_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_deck",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のエネルギーが相手より少ない場合、自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。"
+    },
+    {
+      "id": "PL!N-bp4-001-R",
+      "name": "上原歩夢",
+      "set": "PL!N-bp4",
+      "trig": "live_success",
+      "tmpl": "energy_less_than_opponent_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_deck",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のエネルギーが相手より少ない場合、自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。"
+    },
+    {
+      "id": "PL!N-bp4-002-P",
+      "name": "中須かすみ",
+      "set": "PL!N-bp4",
+      "trig": "live_start",
+      "tmpl": "live_start_pick_player_deck_top_peek",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_deck",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分か相手を選ぶ。自分は、そのプレイヤーのデッキの一番上のカードを見る。自分はそのカードを控え室に置いてもよい。"
+    },
+    {
+      "id": "PL!N-bp4-002-R",
+      "name": "中須かすみ",
+      "set": "PL!N-bp4",
+      "trig": "live_start",
+      "tmpl": "live_start_pick_player_deck_top_peek",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_deck",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分か相手を選ぶ。自分は、そのプレイヤーのデッキの一番上のカードを見る。自分はそのカードを控え室に置いてもよい。"
+    },
+    {
+      "id": "PL!N-bp4-003-P",
+      "name": "桜坂しずく",
+      "set": "PL!N-bp4",
+      "trig": "live_success",
+      "tmpl": "draw_from_deck",
+      "automated": true,
+      "kinds": [
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "ライブの合計スコアが相手より高い場合、カードを1枚引く。"
+    },
+    {
+      "id": "PL!N-bp4-003-R",
+      "name": "桜坂しずく",
+      "set": "PL!N-bp4",
+      "trig": "live_success",
+      "tmpl": "draw_from_deck",
+      "automated": true,
+      "kinds": [
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "ライブの合計スコアが相手より高い場合、カードを1枚引く。"
+    },
+    {
+      "id": "PL!N-bp4-004-P",
+      "name": "朝香果林",
+      "set": "PL!N-bp4",
+      "trig": "live_start",
+      "tmpl": "live_start_draw_opp_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "カードを1枚引く。相手のステージにいるコスト9以下のメンバーを1人までウェイトにする。"
+    },
+    {
+      "id": "PL!N-bp4-004-P",
+      "name": "朝香果林",
+      "set": "PL!N-bp4",
+      "trig": "live_start",
+      "tmpl": "waiting_to_deck_top_by_opp_wait_count",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_deck",
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手のステージにいるウェイト状態のメンバーの数まで、自分の控え室にある『虹ヶ咲』のメンバーカードを選ぶ。それらを好きな順番でデッキの上に置く。"
+    },
+    {
+      "id": "PL!N-bp4-004-P＋",
+      "name": "朝香果林",
+      "set": "PL!N-bp4",
+      "trig": "live_start",
+      "tmpl": "live_start_draw_opp_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "カードを1枚引く。相手のステージにいるコスト9以下のメンバーを1人までウェイトにする。"
+    },
+    {
+      "id": "PL!N-bp4-004-P＋",
+      "name": "朝香果林",
+      "set": "PL!N-bp4",
+      "trig": "live_start",
+      "tmpl": "waiting_to_deck_top_by_opp_wait_count",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_deck",
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手のステージにいるウェイト状態のメンバーの数まで、自分の控え室にある『虹ヶ咲』のメンバーカードを選ぶ。それらを好きな順番でデッキの上に置く。"
+    },
+    {
+      "id": "PL!N-bp4-004-R＋",
+      "name": "朝香果林",
+      "set": "PL!N-bp4",
+      "trig": "live_start",
+      "tmpl": "live_start_draw_opp_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "カードを1枚引く。相手のステージにいるコスト9以下のメンバーを1人までウェイトにする。"
+    },
+    {
+      "id": "PL!N-bp4-004-R＋",
+      "name": "朝香果林",
+      "set": "PL!N-bp4",
+      "trig": "live_start",
+      "tmpl": "waiting_to_deck_top_by_opp_wait_count",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_deck",
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手のステージにいるウェイト状態のメンバーの数まで、自分の控え室にある『虹ヶ咲』のメンバーカードを選ぶ。それらを好きな順番でデッキの上に置く。"
+    },
+    {
+      "id": "PL!N-bp4-004-SEC",
+      "name": "朝香果林",
+      "set": "PL!N-bp4",
+      "trig": "live_start",
+      "tmpl": "live_start_draw_opp_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "カードを1枚引く。相手のステージにいるコスト9以下のメンバーを1人までウェイトにする。"
+    },
+    {
+      "id": "PL!N-bp4-004-SEC",
+      "name": "朝香果林",
+      "set": "PL!N-bp4",
+      "trig": "live_start",
+      "tmpl": "waiting_to_deck_top_by_opp_wait_count",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_deck",
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手のステージにいるウェイト状態のメンバーの数まで、自分の控え室にある『虹ヶ咲』のメンバーカードを選ぶ。それらを好きな順番でデッキの上に置く。"
+    },
+    {
+      "id": "PL!N-bp4-005-P",
+      "name": "宮下 愛",
+      "set": "PL!N-bp4",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "手札を1枚控え室に置いてもよい：相手のステージにいるコスト4以下のメンバーを2人までウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "id": "PL!N-bp4-005-R",
+      "name": "宮下 愛",
+      "set": "PL!N-bp4",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "手札を1枚控え室に置いてもよい：相手のステージにいるコスト4以下のメンバーを2人までウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "id": "PL!N-bp4-007-P",
+      "name": "優木せつ菜",
+      "set": "PL!N-bp4",
+      "trig": "toujyou",
+      "tmpl": "toujou_both_wait_pick_live_hand",
+      "automated": true,
+      "kinds": [
+        "both_players",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分と相手はそれぞれ、自身の控え室からライブカードを1枚手札に加える。"
+    },
+    {
+      "id": "PL!N-bp4-007-P",
+      "name": "優木せつ菜",
+      "set": "PL!N-bp4",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_energy",
+        "passive_opponent"
+      ],
+      "dualStatus": "passive_track",
+      "text": "自分と相手のエネルギーの合計が15枚以上あるかぎり、を得る。"
+    },
+    {
+      "id": "PL!N-bp4-007-P",
+      "name": "優木せつ菜",
+      "set": "PL!N-bp4",
+      "trig": "live_success",
+      "tmpl": "both_players_energy_deck_wait",
+      "automated": true,
+      "kinds": [
+        "both_players",
+        "mutate_opponent_deck",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分と相手はそれぞれ、自身のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。"
+    },
+    {
+      "id": "PL!N-bp4-007-P＋",
+      "name": "優木せつ菜",
+      "set": "PL!N-bp4",
+      "trig": "toujyou",
+      "tmpl": "toujou_both_wait_pick_live_hand",
+      "automated": true,
+      "kinds": [
+        "both_players",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分と相手はそれぞれ、自身の控え室からライブカードを1枚手札に加える。"
+    },
+    {
+      "id": "PL!N-bp4-007-P＋",
+      "name": "優木せつ菜",
+      "set": "PL!N-bp4",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_energy",
+        "passive_opponent"
+      ],
+      "dualStatus": "passive_track",
+      "text": "自分と相手のエネルギーの合計が15枚以上あるかぎり、を得る。"
+    },
+    {
+      "id": "PL!N-bp4-007-P＋",
+      "name": "優木せつ菜",
+      "set": "PL!N-bp4",
+      "trig": "live_success",
+      "tmpl": "both_players_energy_deck_wait",
+      "automated": true,
+      "kinds": [
+        "both_players",
+        "mutate_opponent_deck",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分と相手はそれぞれ、自身のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。"
+    },
+    {
+      "id": "PL!N-bp4-007-R＋",
+      "name": "優木せつ菜",
+      "set": "PL!N-bp4",
+      "trig": "toujyou",
+      "tmpl": "toujou_both_wait_pick_live_hand",
+      "automated": true,
+      "kinds": [
+        "both_players",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分と相手はそれぞれ、自身の控え室からライブカードを1枚手札に加える。"
+    },
+    {
+      "id": "PL!N-bp4-007-R＋",
+      "name": "優木せつ菜",
+      "set": "PL!N-bp4",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_energy",
+        "passive_opponent"
+      ],
+      "dualStatus": "passive_track",
+      "text": "自分と相手のエネルギーの合計が15枚以上あるかぎり、を得る。"
+    },
+    {
+      "id": "PL!N-bp4-007-R＋",
+      "name": "優木せつ菜",
+      "set": "PL!N-bp4",
+      "trig": "live_success",
+      "tmpl": "both_players_energy_deck_wait",
+      "automated": true,
+      "kinds": [
+        "both_players",
+        "mutate_opponent_deck",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分と相手はそれぞれ、自身のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。"
+    },
+    {
+      "id": "PL!N-bp4-007-SEC",
+      "name": "優木せつ菜",
+      "set": "PL!N-bp4",
+      "trig": "toujyou",
+      "tmpl": "toujou_both_wait_pick_live_hand",
+      "automated": true,
+      "kinds": [
+        "both_players",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分と相手はそれぞれ、自身の控え室からライブカードを1枚手札に加える。"
+    },
+    {
+      "id": "PL!N-bp4-007-SEC",
+      "name": "優木せつ菜",
+      "set": "PL!N-bp4",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_energy",
+        "passive_opponent"
+      ],
+      "dualStatus": "passive_track",
+      "text": "自分と相手のエネルギーの合計が15枚以上あるかぎり、を得る。"
+    },
+    {
+      "id": "PL!N-bp4-007-SEC",
+      "name": "優木せつ菜",
+      "set": "PL!N-bp4",
+      "trig": "live_success",
+      "tmpl": "both_players_energy_deck_wait",
+      "automated": true,
+      "kinds": [
+        "both_players",
+        "mutate_opponent_deck",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分と相手はそれぞれ、自身のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。"
+    },
+    {
+      "id": "PL!N-bp4-009-P",
+      "name": "天王寺璃奈",
+      "set": "PL!N-bp4",
+      "trig": "live_start",
+      "tmpl": "draw_from_deck",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_deck",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージにいるメンバーのコストの合計が相手より低い場合、カードを2枚引き、自分の手札を1枚デッキの一番上に置く。"
+    },
+    {
+      "id": "PL!N-bp4-009-R",
+      "name": "天王寺璃奈",
+      "set": "PL!N-bp4",
+      "trig": "live_start",
+      "tmpl": "draw_from_deck",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_deck",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージにいるメンバーのコストの合計が相手より低い場合、カードを2枚引き、自分の手札を1枚デッキの一番上に置く。"
+    },
+    {
+      "id": "PL!N-bp4-012-P",
+      "name": "鐘 嵐珠",
+      "set": "PL!N-bp4",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_success_live",
+        "passive_opponent"
+      ],
+      "dualStatus": "passive_track",
+      "text": "相手の成功ライブカード置き場にあるカードのスコアの合計が６以上であるかぎり、ライブの合計スコアを＋１する。"
+    },
+    {
+      "id": "PL!N-bp4-012-R",
+      "name": "鐘 嵐珠",
+      "set": "PL!N-bp4",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_success_live",
+        "passive_opponent"
+      ],
+      "dualStatus": "passive_track",
+      "text": "相手の成功ライブカード置き場にあるカードのスコアの合計が６以上であるかぎり、ライブの合計スコアを＋１する。"
+    },
+    {
+      "id": "PL!N-bp5-002-AR",
+      "name": "中須かすみ",
+      "set": "PL!N-bp5",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "passive_opponent",
+        "read_compare"
+      ],
+      "dualStatus": "passive_track",
+      "text": "自分と相手のステージの中で、このメンバーがほかのすべてのメンバーより多くのハートを持つかぎり、ライブの合計スコアを＋１する。"
+    },
+    {
+      "id": "PL!N-bp5-002-P",
+      "name": "中須かすみ",
+      "set": "PL!N-bp5",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "passive_opponent",
+        "read_compare"
+      ],
+      "dualStatus": "passive_track",
+      "text": "自分と相手のステージの中で、このメンバーがほかのすべてのメンバーより多くのハートを持つかぎり、ライブの合計スコアを＋１する。"
+    },
+    {
+      "id": "PL!N-bp5-002-R",
+      "name": "中須かすみ",
+      "set": "PL!N-bp5",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "passive_opponent",
+        "read_compare"
+      ],
+      "dualStatus": "passive_track",
+      "text": "自分と相手のステージの中で、このメンバーがほかのすべてのメンバーより多くのハートを持つかぎり、ライブの合計スコアを＋１する。"
+    },
+    {
+      "id": "PL!N-bp5-004-AR",
+      "name": "朝香果林",
+      "set": "PL!N-bp5",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーをウェイトにしてもよい：相手のステージにいる元々持つの数がちょうど4つのメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "id": "PL!N-bp5-004-AR",
+      "name": "朝香果林",
+      "set": "PL!N-bp5",
+      "trig": "live_start",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーをウェイトにしてもよい：相手のステージにいる元々持つの数がちょうど4つのメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "id": "PL!N-bp5-004-P",
+      "name": "朝香果林",
+      "set": "PL!N-bp5",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーをウェイトにしてもよい：相手のステージにいる元々持つの数がちょうど4つのメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "id": "PL!N-bp5-004-P",
+      "name": "朝香果林",
+      "set": "PL!N-bp5",
+      "trig": "live_start",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーをウェイトにしてもよい：相手のステージにいる元々持つの数がちょうど4つのメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "id": "PL!N-bp5-004-R",
+      "name": "朝香果林",
+      "set": "PL!N-bp5",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーをウェイトにしてもよい：相手のステージにいる元々持つの数がちょうど4つのメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "id": "PL!N-bp5-004-R",
+      "name": "朝香果林",
+      "set": "PL!N-bp5",
+      "trig": "live_start",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーをウェイトにしてもよい：相手のステージにいる元々持つの数がちょうど4つのメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "id": "PL!N-bp5-007-AR",
+      "name": "優木せつ菜",
+      "set": "PL!N-bp5",
+      "trig": "live_start",
+      "tmpl": "grant_jouji_session",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_success_live",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分と相手の成功ライブカード置き場にあるカードの枚数が同じ場合、ライブ終了時まで、を得る。"
+    },
+    {
+      "id": "PL!N-bp5-007-P",
+      "name": "優木せつ菜",
+      "set": "PL!N-bp5",
+      "trig": "live_start",
+      "tmpl": "grant_jouji_session",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_success_live",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分と相手の成功ライブカード置き場にあるカードの枚数が同じ場合、ライブ終了時まで、を得る。"
+    },
+    {
+      "id": "PL!N-bp5-007-R＋",
+      "name": "優木せつ菜",
+      "set": "PL!N-bp5",
+      "trig": "live_start",
+      "tmpl": "grant_jouji_session",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_success_live",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分と相手の成功ライブカード置き場にあるカードの枚数が同じ場合、ライブ終了時まで、を得る。"
+    },
+    {
+      "id": "PL!N-bp5-007-SEC",
+      "name": "優木せつ菜",
+      "set": "PL!N-bp5",
+      "trig": "live_start",
+      "tmpl": "grant_jouji_session",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_success_live",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分と相手の成功ライブカード置き場にあるカードの枚数が同じ場合、ライブ終了時まで、を得る。"
+    },
+    {
+      "id": "PL!N-bp5-012-AR",
+      "name": "鐘 嵐珠",
+      "set": "PL!N-bp5",
+      "trig": "live_success",
+      "tmpl": "live_score_higher_energy_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_deck",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "ライブの合計スコアが相手より高い場合、自分のエネルギーデッキから、このメンバーの下にあるエネルギーカードの枚数に1を足した枚数のエネルギーカードをウェイト状態で置く。"
+    },
+    {
+      "id": "PL!N-bp5-012-P",
+      "name": "鐘 嵐珠",
+      "set": "PL!N-bp5",
+      "trig": "live_success",
+      "tmpl": "live_score_higher_energy_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_deck",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "ライブの合計スコアが相手より高い場合、自分のエネルギーデッキから、このメンバーの下にあるエネルギーカードの枚数に1を足した枚数のエネルギーカードをウェイト状態で置く。"
+    },
+    {
+      "id": "PL!N-bp5-012-R＋",
+      "name": "鐘 嵐珠",
+      "set": "PL!N-bp5",
+      "trig": "live_success",
+      "tmpl": "live_score_higher_energy_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_deck",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "ライブの合計スコアが相手より高い場合、自分のエネルギーデッキから、このメンバーの下にあるエネルギーカードの枚数に1を足した枚数のエネルギーカードをウェイト状態で置く。"
+    },
+    {
+      "id": "PL!N-bp5-012-SEC",
+      "name": "鐘 嵐珠",
+      "set": "PL!N-bp5",
+      "trig": "live_success",
+      "tmpl": "live_score_higher_energy_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_deck",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "ライブの合計スコアが相手より高い場合、自分のエネルギーデッキから、このメンバーの下にあるエネルギーカードの枚数に1を足した枚数のエネルギーカードをウェイト状態で置く。"
+    },
+    {
+      "id": "PL!N-bp5-027-L",
+      "name": "ミラクル STAY TUNE！",
+      "set": "PL!N-bp5",
+      "trig": "live_start",
+      "tmpl": "live_card_score_plus",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_success_live",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分か相手の成功ライブカード置き場にカードが2枚以上あり、かつ自分のステージに名前の異なるメンバーが3人以上いる場合、このカードのスコアを＋１する。"
+    },
+    {
+      "id": "PL!S-PR-029-PR",
+      "name": "渡辺 曜",
+      "set": "PL!S-PR",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "passive_opponent",
+        "read_compare"
+      ],
+      "dualStatus": "passive_track",
+      "text": "自分か相手のステージにコスト13以上のメンバーがいる場合、を得る。"
+    },
+    {
+      "id": "PL!S-PR-030-PR",
+      "name": "津島善子",
+      "set": "PL!S-PR",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "passive_opponent",
+        "read_compare"
+      ],
+      "dualStatus": "passive_track",
+      "text": "自分か相手のステージにコスト13以上のメンバーがいる場合、を得る。"
+    },
+    {
+      "id": "PL!S-PR-031-PR",
+      "name": "国木田花丸",
+      "set": "PL!S-PR",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "passive_opponent",
+        "read_compare"
+      ],
+      "dualStatus": "passive_track",
+      "text": "自分か相手のステージにコスト13以上のメンバーがいる場合、を得る。"
+    },
+    {
+      "id": "PL!S-PR-039-PR",
+      "name": "渡辺 曜",
+      "set": "PL!S-PR",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_success_live",
+        "passive_opponent"
+      ],
+      "dualStatus": "passive_track",
+      "text": "自分と相手の成功ライブカード置き場にカードが合計4枚以上あるかぎり、を得る。"
+    },
+    {
+      "id": "PL!S-PR-041-PR",
+      "name": "黒澤ルビィ",
+      "set": "PL!S-PR",
+      "trig": "toujyou",
+      "tmpl": "draw_from_deck",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_deck",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分か相手を選ぶ。自分は、そのプレイヤーの控え室にあるライブカードを1枚、そのプレイヤーのデッキの一番下に置く。そうした場合、自分はカードを1枚引く。"
+    },
+    {
+      "id": "PL!S-PR-042-PR",
+      "name": "小原鞠莉",
+      "set": "PL!S-PR",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "passive_opponent"
+      ],
+      "dualStatus": "passive_track",
+      "text": "自分と相手のステージにメンバーが合計6人いるかぎり、を得る。"
+    },
+    {
+      "id": "PL!S-bp2-001-P",
+      "name": "高海千歌",
+      "set": "PL!S-bp2",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_success_live",
+        "passive_opponent",
+        "read_compare"
+      ],
+      "dualStatus": "passive_track",
+      "text": "自分の成功ライブカード置き場のカードが0枚で、かつ相手の成功ライブカード置き場にカードが1枚以上ある場合、を得る。"
+    },
+    {
+      "id": "PL!S-bp2-001-R",
+      "name": "高海千歌",
+      "set": "PL!S-bp2",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_success_live",
+        "passive_opponent",
+        "read_compare"
+      ],
+      "dualStatus": "passive_track",
+      "text": "自分の成功ライブカード置き場のカードが0枚で、かつ相手の成功ライブカード置き場にカードが1枚以上ある場合、を得る。"
+    },
+    {
+      "id": "PL!S-bp3-002-P",
+      "name": "桜内梨子",
+      "set": "PL!S-bp3",
+      "trig": "live_success",
+      "tmpl": "yell_resolution_pick_self_score",
+      "automated": true,
+      "kinds": [
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "ライブの合計スコアが相手より高い場合、このカードを手札に加えてもよい。この能力は、このカードが自分のエールによって公開されている場合のみ発動する。"
+    },
+    {
+      "id": "PL!S-bp3-002-R",
+      "name": "桜内梨子",
+      "set": "PL!S-bp3",
+      "trig": "live_success",
+      "tmpl": "yell_resolution_pick_self_score",
+      "automated": true,
+      "kinds": [
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "ライブの合計スコアが相手より高い場合、このカードを手札に加えてもよい。この能力は、このカードが自分のエールによって公開されている場合のみ発動する。"
+    },
+    {
+      "id": "PL!S-bp3-005-P",
+      "name": "渡辺 曜",
+      "set": "PL!S-bp3",
+      "trig": "live_success",
+      "tmpl": "draw_from_deck",
+      "automated": true,
+      "kinds": [
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "エールにより公開された自分のカードの枚数が、相手がエールによって公開したカードの枚数より少ない場合、カードを1枚引く。"
+    },
+    {
+      "id": "PL!S-bp3-005-R",
+      "name": "渡辺 曜",
+      "set": "PL!S-bp3",
+      "trig": "live_success",
+      "tmpl": "draw_from_deck",
+      "automated": true,
+      "kinds": [
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "エールにより公開された自分のカードの枚数が、相手がエールによって公開したカードの枚数より少ない場合、カードを1枚引く。"
+    },
+    {
+      "id": "PL!S-bp3-007-P",
+      "name": "国木田花丸",
+      "set": "PL!S-bp3",
+      "trig": "kidou",
+      "tmpl": "draw_from_deck",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_deck",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "：自分か相手を選ぶ。自分は、そのプレイヤーの控え室にあるライブカードを1枚、そのプレイヤーのデッキの一番下に置く。そうした場合、自分はカードを1枚引く。"
+    },
+    {
+      "id": "PL!S-bp3-007-R",
+      "name": "国木田花丸",
+      "set": "PL!S-bp3",
+      "trig": "kidou",
+      "tmpl": "draw_from_deck",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_deck",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "：自分か相手を選ぶ。自分は、そのプレイヤーの控え室にあるライブカードを1枚、そのプレイヤーのデッキの一番下に置く。そうした場合、自分はカードを1枚引く。"
+    },
+    {
+      "id": "PL!S-bp3-012-N",
+      "name": "松浦果南",
+      "set": "PL!S-bp3",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーをウェイトにしてもよい：相手のステージにいるコスト4以下のメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "id": "PL!S-bp3-012-N",
+      "name": "松浦果南",
+      "set": "PL!S-bp3",
+      "trig": "live_start",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーをウェイトにしてもよい：相手のステージにいるコスト4以下のメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "id": "PL!S-bp3-017-N",
+      "name": "小原鞠莉",
+      "set": "PL!S-bp3",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーをウェイトにしてもよい：相手のステージにいるコスト4以下のメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "id": "PL!S-bp3-017-N",
+      "name": "小原鞠莉",
+      "set": "PL!S-bp3",
+      "trig": "live_start",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーをウェイトにしてもよい：相手のステージにいるコスト4以下のメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "id": "PL!S-bp3-024-L",
+      "name": "Deep Resonance",
+      "set": "PL!S-bp3",
+      "trig": "live_start",
+      "tmpl": "ability_pick_one",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージのセンターエリアにコスト9以上の『Aqours』のメンバーがいる場合、以下から1つを選ぶ。 ・ライブ終了時まで、自分のステージにいるメンバー1人は、を得る。 ・相手のステージにいるコスト4以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!S-bp5-002-AR",
+      "name": "桜内梨子",
+      "set": "PL!S-bp5",
+      "trig": "live_start",
+      "tmpl": "live_start_side_cost_equal_opp_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージの右サイドエリアと左サイドエリアにいるメンバーのコストが同じ場合、相手のステージにいる元々持つの数が3つ以下のすべてのメンバーをウェイトにする。"
+    },
+    {
+      "id": "PL!S-bp5-002-P",
+      "name": "桜内梨子",
+      "set": "PL!S-bp5",
+      "trig": "live_start",
+      "tmpl": "live_start_side_cost_equal_opp_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージの右サイドエリアと左サイドエリアにいるメンバーのコストが同じ場合、相手のステージにいる元々持つの数が3つ以下のすべてのメンバーをウェイトにする。"
+    },
+    {
+      "id": "PL!S-bp5-002-R＋",
+      "name": "桜内梨子",
+      "set": "PL!S-bp5",
+      "trig": "live_start",
+      "tmpl": "live_start_side_cost_equal_opp_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージの右サイドエリアと左サイドエリアにいるメンバーのコストが同じ場合、相手のステージにいる元々持つの数が3つ以下のすべてのメンバーをウェイトにする。"
+    },
+    {
+      "id": "PL!S-bp5-002-SEC",
+      "name": "桜内梨子",
+      "set": "PL!S-bp5",
+      "trig": "live_start",
+      "tmpl": "live_start_side_cost_equal_opp_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージの右サイドエリアと左サイドエリアにいるメンバーのコストが同じ場合、相手のステージにいる元々持つの数が3つ以下のすべてのメンバーをウェイトにする。"
+    },
+    {
+      "id": "PL!S-bp5-008-AR",
+      "name": "小原鞠莉",
+      "set": "PL!S-bp5",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "passive_opponent"
+      ],
+      "dualStatus": "passive_track",
+      "text": "相手の余剰ハートが2つ以上あるかぎり、自分のライブの合計スコアを＋１する。"
+    },
+    {
+      "id": "PL!S-bp5-008-P",
+      "name": "小原鞠莉",
+      "set": "PL!S-bp5",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "passive_opponent"
+      ],
+      "dualStatus": "passive_track",
+      "text": "相手の余剰ハートが2つ以上あるかぎり、自分のライブの合計スコアを＋１する。"
+    },
+    {
+      "id": "PL!S-bp5-008-R",
+      "name": "小原鞠莉",
+      "set": "PL!S-bp5",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "passive_opponent"
+      ],
+      "dualStatus": "passive_track",
+      "text": "相手の余剰ハートが2つ以上あるかぎり、自分のライブの合計スコアを＋１する。"
+    },
+    {
+      "id": "PL!S-bp5-010-N",
+      "name": "高海千歌",
+      "set": "PL!S-bp5",
+      "trig": "toujyou",
+      "tmpl": "toujou_grant_opp_live_need_heart_if_stage_hearts",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_live",
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージにいるメンバーが持つハートにが合計5つ以上ある場合、相手のライブ開始時、相手のライブカード置き場にあるライブカード1枚は、成功させるための必要ハートが多くなる。"
+    },
+    {
+      "id": "PL!S-bp5-011-N",
+      "name": "桜内梨子",
+      "set": "PL!S-bp5",
+      "trig": "toujyou",
+      "tmpl": "toujou_grant_opp_live_need_heart_if_stage_hearts",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_live",
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージにいるメンバーが持つハートにが合計5つ以上ある場合、相手のライブ開始時、相手のライブカード置き場にあるライブカード1枚は、成功させるための必要ハートが多くなる。"
+    },
+    {
+      "id": "PL!S-bp5-016-N",
+      "name": "国木田花丸",
+      "set": "PL!S-bp5",
+      "trig": "live_start",
+      "tmpl": "grant_jouji_session",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手のステージにいるすべてのメンバーのそれぞれのコストよりコストが高いメンバーが自分のステージにいる場合、ライブ終了時まで、を得る。"
+    },
+    {
+      "id": "PL!S-bp5-019-L",
+      "name": "not ALONE not HITORI",
+      "set": "PL!S-bp5",
+      "trig": "live_success",
+      "tmpl": "yell_resolution_pick_hand",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_success_live",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分か相手の成功ライブカード置き場にカードが2枚以上ある場合、エールにより公開された自分のカードの中から、メンバーカードを2枚まで手札に加える。"
+    },
+    {
+      "id": "PL!S-bp5-022-L",
+      "name": "SELF CONTROL!!",
+      "set": "PL!S-bp5",
+      "trig": "live_success",
+      "tmpl": "live_card_score_plus",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_live",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "エールにより公開されている自分のライブカードの枚数が、エールにより公開されている相手のライブカードの枚数より多い場合、このカードのスコアを＋１する。"
+    },
+    {
+      "id": "PL!S-bp5-111-P＋",
+      "name": "鹿角聖良",
+      "set": "PL!S-bp5",
+      "trig": "jidou",
+      "tmpl": "jidou_area_move_opp_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "mutate_opponent_waiting"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーがエリアを移動したとき、相手のステージにいる元々持つの数が2つ以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!S-bp5-111-R",
+      "name": "鹿角聖良",
+      "set": "PL!S-bp5",
+      "trig": "jidou",
+      "tmpl": "jidou_area_move_opp_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "mutate_opponent_waiting"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーがエリアを移動したとき、相手のステージにいる元々持つの数が2つ以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!S-bp6-001-P",
+      "name": "高海千歌",
+      "set": "PL!S-bp6",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "控え室から登場している場合、相手のステージの右サイドエリアか左サイドエリアにいるコスト13以上のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!S-bp6-001-R",
+      "name": "高海千歌",
+      "set": "PL!S-bp6",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "控え室から登場している場合、相手のステージの右サイドエリアか左サイドエリアにいるコスト13以上のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!S-bp6-007-P",
+      "name": "国木田花丸",
+      "set": "PL!S-bp6",
+      "trig": "live_start",
+      "tmpl": "live_start_pay_or_discard_conditional_grant_members",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_success_live",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "支払うか手札を2枚控え室に置いてもよい：自分の成功ライブカード置き場にカードがなく、かつ相手の成功ライブカード置き場にカードが2枚以上ある場合、ライブ終了時まで、自分のステージにいる『Aqours』のメンバー2人までは「ライブの合計スコアを＋１する。」を得る。"
+    },
+    {
+      "id": "PL!S-bp6-007-R",
+      "name": "国木田花丸",
+      "set": "PL!S-bp6",
+      "trig": "live_start",
+      "tmpl": "live_start_pay_or_discard_conditional_grant_members",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_success_live",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "支払うか手札を2枚控え室に置いてもよい：自分の成功ライブカード置き場にカードがなく、かつ相手の成功ライブカード置き場にカードが2枚以上ある場合、ライブ終了時まで、自分のステージにいる『Aqours』のメンバー2人までは「ライブの合計スコアを＋１する。」を得る。"
+    },
+    {
+      "id": "PL!S-bp6-009-P",
+      "name": "黒澤ルビィ",
+      "set": "PL!S-bp6",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_success_live",
+        "passive_opponent",
+        "read_compare"
+      ],
+      "dualStatus": "passive_track",
+      "text": "相手の成功ライブカード置き場にあるカードの枚数が自分より多いかぎり、その差に等しい数のを得る。"
+    },
+    {
+      "id": "PL!S-bp6-009-P＋",
+      "name": "黒澤ルビィ",
+      "set": "PL!S-bp6",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_success_live",
+        "passive_opponent",
+        "read_compare"
+      ],
+      "dualStatus": "passive_track",
+      "text": "相手の成功ライブカード置き場にあるカードの枚数が自分より多いかぎり、その差に等しい数のを得る。"
+    },
+    {
+      "id": "PL!S-bp6-009-R＋",
+      "name": "黒澤ルビィ",
+      "set": "PL!S-bp6",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_success_live",
+        "passive_opponent",
+        "read_compare"
+      ],
+      "dualStatus": "passive_track",
+      "text": "相手の成功ライブカード置き場にあるカードの枚数が自分より多いかぎり、その差に等しい数のを得る。"
+    },
+    {
+      "id": "PL!S-bp6-009-SEC",
+      "name": "黒澤ルビィ",
+      "set": "PL!S-bp6",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_success_live",
+        "passive_opponent",
+        "read_compare"
+      ],
+      "dualStatus": "passive_track",
+      "text": "相手の成功ライブカード置き場にあるカードの枚数が自分より多いかぎり、その差に等しい数のを得る。"
+    },
+    {
+      "id": "PL!S-bp6-015-N",
+      "name": "津島善子",
+      "set": "PL!S-bp6",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手のステージにいるコスト2以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!S-bp6-022-L",
+      "name": "近未来ハッピーエンド",
+      "set": "PL!S-bp6",
+      "trig": "live_success",
+      "tmpl": "live_card_score_plus",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_energy",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手のエネルギーが自分より多い場合、このカードのスコアを＋１する。"
+    },
+    {
+      "id": "PL!S-bp6-024-L",
+      "name": "コワレヤスキ",
+      "set": "PL!S-bp6",
+      "trig": "live_success",
+      "tmpl": "live_card_score_plus",
+      "automated": true,
+      "kinds": [
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "ライブ終了時まで、相手は余剰ハートをすべて失う。これにより相手が余剰ハートを2つ以上失っている場合、このカードのスコアを＋１する。"
+    },
+    {
+      "id": "PL!S-pb1-001-P＋",
+      "name": "高海千歌",
+      "set": "PL!S-pb1",
+      "trig": "toujyou",
+      "tmpl": "toujou_wait_pick_hand",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_hand",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手の手札の枚数が自分より2枚以上多い場合、自分の控え室からライブカードを1枚手札に加える。"
+    },
+    {
+      "id": "PL!S-pb1-001-R",
+      "name": "高海千歌",
+      "set": "PL!S-pb1",
+      "trig": "toujyou",
+      "tmpl": "toujou_wait_pick_hand",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_hand",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手の手札の枚数が自分より2枚以上多い場合、自分の控え室からライブカードを1枚手札に加える。"
+    },
+    {
+      "id": "PL!S-pb1-002-P＋",
+      "name": "桜内梨子",
+      "set": "PL!S-pb1",
+      "trig": "toujyou",
+      "tmpl": "toujou_opp_optional_live_discard_or_score",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_live",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手は手札からライブカードを1枚控え室に置いてもよい。そうしなかった場合、ライブ終了時まで、「ライブの合計スコアを＋１する。」を得る。"
+    },
+    {
+      "id": "PL!S-pb1-002-R",
+      "name": "桜内梨子",
+      "set": "PL!S-pb1",
+      "trig": "toujyou",
+      "tmpl": "toujou_opp_optional_live_discard_or_score",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_live",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手は手札からライブカードを1枚控え室に置いてもよい。そうしなかった場合、ライブ終了時まで、「ライブの合計スコアを＋１する。」を得る。"
+    },
+    {
+      "id": "PL!S-pb1-005-PR",
+      "name": "渡辺 曜",
+      "set": "PL!S-pb1",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_energy",
+        "passive_opponent",
+        "read_compare"
+      ],
+      "dualStatus": "passive_track",
+      "text": "相手のエネルギーが自分より多い場合、を得る。"
+    },
+    {
+      "id": "PL!S-pb1-005-P＋",
+      "name": "渡辺 曜",
+      "set": "PL!S-pb1",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_energy",
+        "passive_opponent",
+        "read_compare"
+      ],
+      "dualStatus": "passive_track",
+      "text": "相手のエネルギーが自分より多い場合、を得る。"
+    },
+    {
+      "id": "PL!S-pb1-005-R",
+      "name": "渡辺 曜",
+      "set": "PL!S-pb1",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_energy",
+        "passive_opponent",
+        "read_compare"
+      ],
+      "dualStatus": "passive_track",
+      "text": "相手のエネルギーが自分より多い場合、を得る。"
+    },
+    {
+      "id": "PL!S-pb1-006-P＋",
+      "name": "津島善子",
+      "set": "PL!S-pb1",
+      "trig": "kidou",
+      "tmpl": "kidou_reveal_live_opp_decline_grant",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_live",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "手札のライブカードを1枚公開する：相手は手札を1枚控え室に置いてもよい。そうしなかった場合、ライブ終了時まで、を得る。"
+    },
+    {
+      "id": "PL!S-pb1-006-R",
+      "name": "津島善子",
+      "set": "PL!S-pb1",
+      "trig": "kidou",
+      "tmpl": "kidou_reveal_live_opp_decline_grant",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_live",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "手札のライブカードを1枚公開する：相手は手札を1枚控え室に置いてもよい。そうしなかった場合、ライブ終了時まで、を得る。"
+    },
+    {
+      "id": "PL!S-pb1-008-P＋",
+      "name": "小原鞠莉",
+      "set": "PL!S-pb1",
+      "trig": "live_start",
+      "tmpl": "deck_top_look_reorder",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_deck",
+        "pick_self_or_opponent"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分か相手を選ぶ。自分は、そのプレイヤーのデッキの上からカードを2枚見る。その中から好きな枚数を好きな順番でデッキの上に置き、残りを控え室に置く。"
+    },
+    {
+      "id": "PL!S-pb1-008-R",
+      "name": "小原鞠莉",
+      "set": "PL!S-pb1",
+      "trig": "live_start",
+      "tmpl": "deck_top_look_reorder",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_deck",
+        "pick_self_or_opponent"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分か相手を選ぶ。自分は、そのプレイヤーのデッキの上からカードを2枚見る。その中から好きな枚数を好きな順番でデッキの上に置き、残りを控え室に置く。"
+    },
+    {
+      "id": "PL!S-pb1-009-P＋",
+      "name": "黒澤ルビィ",
+      "set": "PL!S-pb1",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_success_live",
+        "passive_opponent"
+      ],
+      "dualStatus": "passive_track",
+      "text": "自分と相手の成功ライブカード置き場にカードが合計3枚以上ある場合、を得る。"
+    },
+    {
+      "id": "PL!S-pb1-009-R",
+      "name": "黒澤ルビィ",
+      "set": "PL!S-pb1",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_success_live",
+        "passive_opponent"
+      ],
+      "dualStatus": "passive_track",
+      "text": "自分と相手の成功ライブカード置き場にカードが合計3枚以上ある場合、を得る。"
+    },
+    {
+      "id": "PL!S-pb1-019-L",
+      "name": "元気全開DAY！DAY！DAY！",
+      "set": "PL!S-pb1",
+      "trig": "live_success",
+      "tmpl": "live_success_opponent_energy_deck_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_deck",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手は、エネルギーデッキからエネルギーカードを1枚ウェイト状態で置く。"
+    },
+    {
+      "id": "PL!S-pb1-021-L",
+      "name": "Strawberry Trapper",
+      "set": "PL!S-pb1",
+      "trig": "live_success",
+      "tmpl": "live_card_score_plus",
+      "automated": true,
+      "kinds": [
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージにいる『Aqours』のメンバーが持つハートに、が合計4個以上あり、このターン、相手が余剰のハートを持たずにライブを成功させていた場合、このカードのスコアを＋２する。"
+    },
+    {
+      "id": "PL!S-pb1-022-L",
+      "name": "逃走迷走メビウスループ",
+      "set": "PL!S-pb1",
+      "trig": "live_success",
+      "tmpl": "live_success_tie_block_success_live",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_live",
+        "opponent_choice",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このターン、ライブに勝利するプレイヤーを決定するとき、自分と相手のライブの合計スコアが同じ場合、ライブ終了時まで、自分と相手は成功ライブカード置き場にカードを置くことができない。"
+    },
+    {
+      "id": "PL!S-pb1-022-L＋",
+      "name": "逃走迷走メビウスループ",
+      "set": "PL!S-pb1",
+      "trig": "live_success",
+      "tmpl": "live_success_tie_block_success_live",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_live",
+        "opponent_choice",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このターン、ライブに勝利するプレイヤーを決定するとき、自分と相手のライブの合計スコアが同じ場合、ライブ終了時まで、自分と相手は成功ライブカード置き場にカードを置くことができない。"
+    },
+    {
+      "id": "PL!SP-PR-021-PR",
+      "name": "澁谷かのん",
+      "set": "PL!SP-PR",
+      "trig": "live_start",
+      "tmpl": "live_start_opp_wait_if_stage_hearts",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージにいるメンバーが持つハートが合計5つ以上ある場合、相手のステージにいるコスト2以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!SP-PR-022-PR",
+      "name": "若菜四季",
+      "set": "PL!SP-PR",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "passive_opponent"
+      ],
+      "dualStatus": "passive_track",
+      "text": "自分と相手のステージにメンバーが合計6人いるかぎり、を得る。"
+    },
+    {
+      "id": "PL!SP-bp1-023-L",
+      "name": "START!! True dreams",
+      "set": "PL!SP-bp1",
+      "trig": "live_success",
+      "tmpl": "live_score_higher_energy_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_deck",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "ライブの合計スコアが相手より高い場合、自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。 (エールで出た1つにつき、成功したライブのスコアの合計に1を加算する。)"
+    },
+    {
+      "id": "PL!SP-bp1-023-SRL",
+      "name": "START!! True dreams",
+      "set": "PL!SP-bp1",
+      "trig": "live_success",
+      "tmpl": "live_score_higher_energy_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_deck",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "ライブの合計スコアが相手より高い場合、自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。"
+    },
+    {
+      "id": "PL!SP-bp2-010-P",
+      "name": "ウィーン・マルガレーテ",
+      "set": "PL!SP-bp2",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_live",
+        "passive_opponent"
+      ],
+      "dualStatus": "passive_track",
+      "text": "相手のライブカード置き場にあるすべてのライブカードは、成功させるための必要ハートが多くなる。"
+    },
+    {
+      "id": "PL!SP-bp2-010-P＋",
+      "name": "ウィーン・マルガレーテ",
+      "set": "PL!SP-bp2",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_live",
+        "passive_opponent"
+      ],
+      "dualStatus": "passive_track",
+      "text": "相手のライブカード置き場にあるすべてのライブカードは、成功させるための必要ハートが多くなる。"
+    },
+    {
+      "id": "PL!SP-bp2-010-R＋",
+      "name": "ウィーン・マルガレーテ",
+      "set": "PL!SP-bp2",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_live",
+        "passive_opponent"
+      ],
+      "dualStatus": "passive_track",
+      "text": "相手のライブカード置き場にあるすべてのライブカードは、成功させるための必要ハートが多くなる。"
+    },
+    {
+      "id": "PL!SP-bp2-010-SEC",
+      "name": "ウィーン・マルガレーテ",
+      "set": "PL!SP-bp2",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_live",
+        "passive_opponent"
+      ],
+      "dualStatus": "passive_track",
+      "text": "相手のライブカード置き場にあるすべてのライブカードは、成功させるための必要ハートが多くなる。"
+    },
+    {
+      "id": "PL!SP-bp2-011-P",
+      "name": "鬼塚冬毬",
+      "set": "PL!SP-bp2",
+      "trig": "toujyou",
+      "tmpl": "toujou_wait_pick_opp_live",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_live",
+        "mutate_opponent_stage",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分の控え室にある、カード名の異なるライブカードを2枚選ぶ。そうした場合、相手はそれらのカードのうち1枚を選ぶ。これにより相手に選ばれたカードを自分の手札に加える。"
+    },
+    {
+      "id": "PL!SP-bp2-011-R",
+      "name": "鬼塚冬毬",
+      "set": "PL!SP-bp2",
+      "trig": "toujyou",
+      "tmpl": "toujou_wait_pick_opp_live",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_live",
+        "mutate_opponent_stage",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分の控え室にある、カード名の異なるライブカードを2枚選ぶ。そうした場合、相手はそれらのカードのうち1枚を選ぶ。これにより相手に選ばれたカードを自分の手札に加える。"
+    },
+    {
+      "id": "PL!SP-bp2-023-L",
+      "name": "Go!! リスタート",
+      "set": "PL!SP-bp2",
+      "trig": "live_start",
+      "tmpl": "live_card_score_plus",
+      "automated": true,
+      "kinds": [
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分の成功ライブカード置き場のカード枚数が相手より少ない場合、このカードのスコアを＋１する。"
+    },
+    {
+      "id": "PL!SP-bp2-023-SRL",
+      "name": "Go!! リスタート",
+      "set": "PL!SP-bp2",
+      "trig": "live_start",
+      "tmpl": "live_card_score_plus",
+      "automated": true,
+      "kinds": [
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分の成功ライブカード置き場のカード枚数が相手より少ない場合、このカードのスコアを＋１する。"
+    },
+    {
+      "id": "PL!SP-bp2-024-L",
+      "name": "ビタミンSUMMER！",
+      "set": "PL!SP-bp2",
+      "trig": "live_success",
+      "tmpl": "live_card_score_plus",
+      "automated": true,
+      "kinds": [
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分の手札の枚数が相手より多い場合、このカードのスコアを＋１する。"
+    },
+    {
+      "id": "PL!SP-bp2-024-SECL",
+      "name": "ビタミンSUMMER!",
+      "set": "PL!SP-bp2",
+      "trig": "live_success",
+      "tmpl": "live_card_score_plus",
+      "automated": true,
+      "kinds": [
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分の手札の枚数が相手より多い場合、このカードのスコアを＋１する。"
+    },
+    {
+      "id": "PL!SP-bp2-024-SRL",
+      "name": "ビタミンSUMMER!",
+      "set": "PL!SP-bp2",
+      "trig": "live_success",
+      "tmpl": "live_card_score_plus",
+      "automated": true,
+      "kinds": [
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分の手札の枚数が相手より多い場合、このカードのスコアを＋１する。"
+    },
+    {
+      "id": "PL!SP-bp4-009-P",
+      "name": "鬼塚夏美",
+      "set": "PL!SP-bp4",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "passive_opponent",
+        "read_compare"
+      ],
+      "dualStatus": "passive_track",
+      "text": "自分のステージにいるメンバーのコストの合計が相手より低いかぎり、を得る。"
+    },
+    {
+      "id": "PL!SP-bp4-009-R",
+      "name": "鬼塚夏美",
+      "set": "PL!SP-bp4",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "passive_opponent",
+        "read_compare"
+      ],
+      "dualStatus": "passive_track",
+      "text": "自分のステージにいるメンバーのコストの合計が相手より低いかぎり、を得る。"
+    },
+    {
+      "id": "PL!SP-bp4-011-P",
+      "name": "鬼塚冬毬",
+      "set": "PL!SP-bp4",
+      "trig": "jidou",
+      "tmpl": "jidou_area_move_opp_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "mutate_opponent_waiting"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーが登場か、エリアを移動したとき、相手のステージにいる元々持つの数が3つ以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!SP-bp4-011-P＋",
+      "name": "鬼塚冬毬",
+      "set": "PL!SP-bp4",
+      "trig": "jidou",
+      "tmpl": "jidou_area_move_opp_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "mutate_opponent_waiting"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーが登場か、エリアを移動したとき、相手のステージにいる元々持つの数が3つ以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!SP-bp4-011-R＋",
+      "name": "鬼塚冬毬",
+      "set": "PL!SP-bp4",
+      "trig": "jidou",
+      "tmpl": "jidou_area_move_opp_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "mutate_opponent_waiting"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーが登場か、エリアを移動したとき、相手のステージにいる元々持つの数が3つ以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!SP-bp4-011-SEC",
+      "name": "鬼塚冬毬",
+      "set": "PL!SP-bp4",
+      "trig": "jidou",
+      "tmpl": "jidou_area_move_opp_wait",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "mutate_opponent_waiting"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "このメンバーが登場か、エリアを移動したとき、相手のステージにいる元々持つの数が3つ以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!SP-bp4-021-N",
+      "name": "ウィーン・マルガレーテ",
+      "set": "PL!SP-bp4",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "passive_opponent",
+        "read_compare"
+      ],
+      "dualStatus": "passive_track",
+      "text": "自分のエネルギーが相手より多いかぎり、を得る。"
+    },
+    {
+      "id": "PL!SP-bp4-024-L",
+      "name": "ノンフィクション!!",
+      "set": "PL!SP-bp4",
+      "trig": "live_start",
+      "tmpl": "live_card_score_plus",
+      "automated": true,
+      "kinds": [
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のセンターエリアにいる『Liella!』のメンバーのコストが、相手のセンターエリアにいるメンバーより高い場合、このカードのスコアを＋１する。"
+    },
+    {
+      "id": "PL!SP-bp4-024-SECL",
+      "name": "ノンフィクション!!",
+      "set": "PL!SP-bp4",
+      "trig": "live_start",
+      "tmpl": "live_card_score_plus",
+      "automated": true,
+      "kinds": [
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のセンターエリアにいる『Liella!』のメンバーのコストが、相手のセンターエリアにいるメンバーより高い場合、このカードのスコアを＋１する。"
+    },
+    {
+      "id": "PL!SP-bp4-024-SRL",
+      "name": "ノンフィクション!!",
+      "set": "PL!SP-bp4",
+      "trig": "live_start",
+      "tmpl": "live_card_score_plus",
+      "automated": true,
+      "kinds": [
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のセンターエリアにいる『Liella!』のメンバーのコストが、相手のセンターエリアにいるメンバーより高い場合、このカードのスコアを＋１する。"
+    },
+    {
+      "id": "PL!SP-bp5-001-AR",
+      "name": "澁谷かのん",
+      "set": "PL!SP-bp5",
+      "trig": "toujyou",
+      "tmpl": "ability_pick_one",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "支払ってもよい：以下から1つを選ぶ。 ・相手のステージにいるコスト4以下のメンバー1人をウェイトにする。 ・カードを1枚引く。"
+    },
+    {
+      "id": "PL!SP-bp5-001-AR",
+      "name": "澁谷かのん",
+      "set": "PL!SP-bp5",
+      "trig": "live_start",
+      "tmpl": "ability_pick_one",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "支払ってもよい：以下から1つを選ぶ。 ・相手のステージにいるコスト4以下のメンバー1人をウェイトにする。 ・カードを1枚引く。"
+    },
+    {
+      "id": "PL!SP-bp5-001-P",
+      "name": "澁谷かのん",
+      "set": "PL!SP-bp5",
+      "trig": "toujyou",
+      "tmpl": "ability_pick_one",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "支払ってもよい：以下から1つを選ぶ。 ・相手のステージにいるコスト4以下のメンバー1人をウェイトにする。 ・カードを1枚引く。"
+    },
+    {
+      "id": "PL!SP-bp5-001-P",
+      "name": "澁谷かのん",
+      "set": "PL!SP-bp5",
+      "trig": "live_start",
+      "tmpl": "ability_pick_one",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "支払ってもよい：以下から1つを選ぶ。 ・相手のステージにいるコスト4以下のメンバー1人をウェイトにする。 ・カードを1枚引く。"
+    },
+    {
+      "id": "PL!SP-bp5-001-R＋",
+      "name": "澁谷かのん",
+      "set": "PL!SP-bp5",
+      "trig": "toujyou",
+      "tmpl": "ability_pick_one",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "支払ってもよい：以下から1つを選ぶ。 ・相手のステージにいるコスト4以下のメンバー1人をウェイトにする。 ・カードを1枚引く。"
+    },
+    {
+      "id": "PL!SP-bp5-001-R＋",
+      "name": "澁谷かのん",
+      "set": "PL!SP-bp5",
+      "trig": "live_start",
+      "tmpl": "ability_pick_one",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "支払ってもよい：以下から1つを選ぶ。 ・相手のステージにいるコスト4以下のメンバー1人をウェイトにする。 ・カードを1枚引く。"
+    },
+    {
+      "id": "PL!SP-bp5-001-SEC",
+      "name": "澁谷かのん",
+      "set": "PL!SP-bp5",
+      "trig": "toujyou",
+      "tmpl": "ability_pick_one",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "支払ってもよい：以下から1つを選ぶ。 ・相手のステージにいるコスト4以下のメンバー1人をウェイトにする。 ・カードを1枚引く。"
+    },
+    {
+      "id": "PL!SP-bp5-001-SEC",
+      "name": "澁谷かのん",
+      "set": "PL!SP-bp5",
+      "trig": "live_start",
+      "tmpl": "ability_pick_one",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "支払ってもよい：以下から1つを選ぶ。 ・相手のステージにいるコスト4以下のメンバー1人をウェイトにする。 ・カードを1枚引く。"
+    },
+    {
+      "id": "PL!SP-bp5-010-AR",
+      "name": "ウィーン・マルガレーテ",
+      "set": "PL!SP-bp5",
+      "trig": "toujyou",
+      "tmpl": "toujou_both_center_position_change",
+      "automated": true,
+      "kinds": [
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分と相手は、自身のステージのセンターにいるメンバーをポジションチェンジする。(センターにいるメンバーを今いるエリア以外のエリアに移動させる。そのエリアにメンバーがいる場合、そのメンバーはセンターエリアに移動させる。)"
+    },
+    {
+      "id": "PL!SP-bp5-010-P",
+      "name": "ウィーン・マルガレーテ",
+      "set": "PL!SP-bp5",
+      "trig": "toujyou",
+      "tmpl": "toujou_both_center_position_change",
+      "automated": true,
+      "kinds": [
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分と相手は、自身のステージのセンターにいるメンバーをポジションチェンジする。(センターにいるメンバーを今いるエリア以外のエリアに移動させる。そのエリアにメンバーがいる場合、そのメンバーはセンターエリアに移動させる。)"
+    },
+    {
+      "id": "PL!SP-bp5-010-R",
+      "name": "ウィーン・マルガレーテ",
+      "set": "PL!SP-bp5",
+      "trig": "toujyou",
+      "tmpl": "toujou_both_center_position_change",
+      "automated": true,
+      "kinds": [
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分と相手は、自身のステージのセンターにいるメンバーをポジションチェンジする。(センターにいるメンバーを今いるエリア以外のエリアに移動させる。そのエリアにメンバーがいる場合、そのメンバーはセンターエリアに移動させる。)"
+    },
+    {
+      "id": "PL!SP-bp5-023-L",
+      "name": "Shooting Voice!!",
+      "set": "PL!SP-bp5",
+      "trig": "live_success",
+      "tmpl": "live_card_score_plus",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_success_live",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分か相手の成功ライブカード置き場にカードが2枚以上あり、かつエールにより公開された自分のカードの中にを持つライブカードが1枚以上ある場合、このカードのスコアを＋２する。"
+    },
+    {
+      "id": "PL!SP-bp5-027-L",
+      "name": "HOT PASSION!!",
+      "set": "PL!SP-bp5",
+      "trig": "live_success",
+      "tmpl": "live_success_optional_energy_wait_opp_draw",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_deck",
+        "mutate_opponent_energy",
+        "mutate_opponent_live",
+        "mutate_opponent_stage",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置いてもよい。そうした場合、相手はカードを1枚引く。"
+    },
+    {
+      "id": "PL!SP-pb1-003-P＋",
+      "name": "嵐 千砂都",
+      "set": "PL!SP-pb1",
+      "trig": "toujyou",
+      "tmpl": "toujou_rotate_stage_areas",
+      "automated": true,
+      "kinds": [
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージにいるメンバーが『5yncri5e!』のみの場合、自分と対戦相手は、センターエリアのメンバーを左サイドエリアに、左サイドエリアのメンバーを右サイドエリアに、右サイドエリアのメンバーをセンターエリアに、それぞれ移動させる。"
+    },
+    {
+      "id": "PL!SP-pb1-003-R",
+      "name": "嵐 千砂都",
+      "set": "PL!SP-pb1",
+      "trig": "toujyou",
+      "tmpl": "toujou_rotate_stage_areas",
+      "automated": true,
+      "kinds": [
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージにいるメンバーが『5yncri5e!』のみの場合、自分と対戦相手は、センターエリアのメンバーを左サイドエリアに、左サイドエリアのメンバーを右サイドエリアに、右サイドエリアのメンバーをセンターエリアに、それぞれ移動させる。"
+    },
+    {
+      "id": "PL!SP-pb2-009-PP",
+      "name": "鬼塚夏美",
+      "set": "PL!SP-pb2",
+      "trig": "toujyou",
+      "tmpl": "optional_pick_member_wait_opp_blade_gap",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "『Liella!』のメンバー1人をウェイトにしてもよい：相手のステージにいる元々持つの数がこれによりウェイトにしたメンバーが元々持つの数より2つ以上少ないメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "id": "PL!SP-pb2-009-PP",
+      "name": "鬼塚夏美",
+      "set": "PL!SP-pb2",
+      "trig": "live_start",
+      "tmpl": "optional_pick_member_wait_opp_blade_gap",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "『Liella!』のメンバー1人をウェイトにしてもよい：相手のステージにいる元々持つの数がこれによりウェイトにしたメンバーが元々持つの数より2つ以上少ないメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "id": "PL!SP-pb2-009-R",
+      "name": "鬼塚夏美",
+      "set": "PL!SP-pb2",
+      "trig": "toujyou",
+      "tmpl": "optional_pick_member_wait_opp_blade_gap",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "『Liella!』のメンバー1人をウェイトにしてもよい：相手のステージにいる元々持つの数がこれによりウェイトにしたメンバーが元々持つの数より2つ以上少ないメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "id": "PL!SP-pb2-009-R",
+      "name": "鬼塚夏美",
+      "set": "PL!SP-pb2",
+      "trig": "live_start",
+      "tmpl": "optional_pick_member_wait_opp_blade_gap",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "『Liella!』のメンバー1人をウェイトにしてもよい：相手のステージにいる元々持つの数がこれによりウェイトにしたメンバーが元々持つの数より2つ以上少ないメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "id": "PL!SP-pb2-011-PP",
+      "name": "鬼塚冬毬",
+      "set": "PL!SP-pb2",
+      "trig": "jidou",
+      "tmpl": "jidou_center_member_move_choice",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージのセンターエリアにいるメンバーがエリアを移動したとき、以下から1つを選ぶ。 ・ライブ終了時まで、を得る。 ・相手のステージにいる元々持つの数が2つ以下のメンバー1人をウェイトにする。 ・カードを1枚引く。"
+    },
+    {
+      "id": "PL!SP-pb2-011-R",
+      "name": "鬼塚冬毬",
+      "set": "PL!SP-pb2",
+      "trig": "jidou",
+      "tmpl": "jidou_center_member_move_choice",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージのセンターエリアにいるメンバーがエリアを移動したとき、以下から1つを選ぶ。 ・ライブ終了時まで、を得る。 ・相手のステージにいる元々持つの数が2つ以下のメンバー1人をウェイトにする。 ・カードを1枚引く。"
+    },
+    {
+      "id": "PL!SP-pb2-024-N",
+      "name": "唐 可可",
+      "set": "PL!SP-pb2",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手のステージにいるコスト2以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!SP-pb2-029-N",
+      "name": "米女メイ",
+      "set": "PL!SP-pb2",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手のステージにいるコスト2以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!SP-pb2-029-N",
+      "name": "米女メイ",
+      "set": "PL!SP-pb2",
+      "trig": "live_start",
+      "tmpl": "live_start_opp_wait_max_cost",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手のステージにいるコスト2以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!SP-pb2-047-L",
+      "name": "Welcome to 僕らのセカイ",
+      "set": "PL!SP-pb2",
+      "trig": "live_start",
+      "tmpl": "live_start_opp_wait_max_cost",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "手札を1枚控え室に置いてもよい：自分のステージにいるメンバーが『Liella!』のみの場合、相手のステージにいるコスト2以下のメンバー1人をウェイトにする。"
+    }
+  ]
+}

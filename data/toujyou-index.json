@@ -1,13 +1,12 @@
 {
-  "generated": "2026-06-26",
+  "generated": "2026-06-28",
   "trigger": "toujyou",
   "total": 539,
   "byTemplate": {
     "toujou_success_live_pick_hand": 3,
-    "toujou_wait_pick_hand": 65,
-    "deck_top_pick_recover": 74,
+    "toujou_wait_pick_hand": 64,
+    "deck_top_pick_recover": 102,
     "draw_from_deck": 30,
-    "deck_top_to_waiting": 40,
     "deck_top_look_reorder": 18,
     "ability_pick_one": 16,
     "optional_self_wait_opp_stage": 35,
@@ -20,6 +19,7 @@
     "draw_until_hand_size": 2,
     "energy_deck_to_wait": 14,
     "toujou_optional_hand_discard_draw": 3,
+    "deck_top_to_waiting": 11,
     "activate_energy": 15,
     "ability_sequence": 13,
     "deck_reveal_until_live": 2,
@@ -76,6 +76,7 @@
     "toujou_draw_grant_if_from_waiting": 1,
     "deck_top_count_stage_plus": 4,
     "toujou_baton_discarded_series_per_card": 2,
+    "deck_top_pick_enter_or_hand": 2,
     "toujou_baton_discarded_under": 2,
     "optional_pick_member_wait_opp_blade_gap": 2
   },
@@ -128,7 +129,7 @@
     {
       "card_no": "PL!-sd1-011-SD",
       "name": "絢瀬 絵里",
-      "template": "deck_top_to_waiting",
+      "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -137,7 +138,7 @@
     {
       "card_no": "PL!-sd1-012-SD",
       "name": "南 ことり",
-      "template": "deck_top_to_waiting",
+      "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -155,7 +156,7 @@
     {
       "card_no": "PL!-sd1-016-SD",
       "name": "東條 希",
-      "template": "deck_top_to_waiting",
+      "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -245,7 +246,7 @@
     {
       "card_no": "PL!-sd1-011-PR",
       "name": "絢瀬絵里",
-      "template": "deck_top_to_waiting",
+      "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -254,7 +255,7 @@
     {
       "card_no": "PL!-sd1-016-PR",
       "name": "東條 希",
-      "template": "deck_top_to_waiting",
+      "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -263,7 +264,7 @@
     {
       "card_no": "PL!S-PR-013-PR",
       "name": "高海千歌",
-      "template": "deck_top_to_waiting",
+      "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -281,7 +282,7 @@
     {
       "card_no": "PL!S-PR-019-PR",
       "name": "国木田花丸",
-      "template": "deck_top_to_waiting",
+      "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -380,7 +381,7 @@
     {
       "card_no": "PL!N-PR-004-PR",
       "name": "中須かすみ",
-      "template": "deck_top_to_waiting",
+      "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -398,7 +399,7 @@
     {
       "card_no": "PL!N-PR-006-PR",
       "name": "朝香果林",
-      "template": "deck_top_to_waiting",
+      "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -425,7 +426,7 @@
     {
       "card_no": "PL!N-PR-013-PR",
       "name": "ミア・テイラー",
-      "template": "deck_top_to_waiting",
+      "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -587,7 +588,7 @@
     {
       "card_no": "PL!HS-PR-001-PR",
       "name": "日野下花帆",
-      "template": "deck_top_to_waiting",
+      "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -596,7 +597,7 @@
     {
       "card_no": "PL!HS-PR-002-PR",
       "name": "村野さやか",
-      "template": "deck_top_to_waiting",
+      "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -605,7 +606,7 @@
     {
       "card_no": "PL!HS-PR-005-PR",
       "name": "大沢瑠璃乃",
-      "template": "deck_top_to_waiting",
+      "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -749,7 +750,7 @@
     {
       "card_no": "PL!N-bp1-007-R",
       "name": "優木せつ菜",
-      "template": "deck_top_to_waiting",
+      "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -758,7 +759,7 @@
     {
       "card_no": "PL!N-bp1-007-P",
       "name": "優木せつ菜",
-      "template": "deck_top_to_waiting",
+      "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -793,7 +794,7 @@
     {
       "card_no": "PL!N-bp1-010-R",
       "name": "三船栞子",
-      "template": "deck_top_to_waiting",
+      "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -802,7 +803,7 @@
     {
       "card_no": "PL!N-bp1-010-P",
       "name": "三船栞子",
-      "template": "deck_top_to_waiting",
+      "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -964,7 +965,7 @@
     {
       "card_no": "PL!SP-bp1-012-N",
       "name": "澁谷かのん",
-      "template": "deck_top_to_waiting",
+      "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -1126,7 +1127,7 @@
     {
       "card_no": "PL!N-sd1-002-SD",
       "name": "中須かすみ",
-      "template": "deck_top_to_waiting",
+      "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -1135,7 +1136,7 @@
     {
       "card_no": "PL!N-sd1-003-SD",
       "name": "桜坂しずく",
-      "template": "deck_top_to_waiting",
+      "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -1225,7 +1226,7 @@
     {
       "card_no": "PL!SP-sd1-008-SD",
       "name": "若菜四季",
-      "template": "deck_top_to_waiting",
+      "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -1234,7 +1235,7 @@
     {
       "card_no": "PL!SP-sd1-009-SD",
       "name": "鬼塚夏美",
-      "template": "deck_top_to_waiting",
+      "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -1261,7 +1262,7 @@
     {
       "card_no": "PL!SP-sd1-017-SD",
       "name": "桜小路きな子",
-      "template": "deck_top_to_waiting",
+      "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -3339,7 +3340,7 @@
     {
       "card_no": "PL!N-pb1-028-N",
       "name": "朝香果林",
-      "template": "deck_top_to_waiting",
+      "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -3348,7 +3349,7 @@
     {
       "card_no": "PL!N-pb1-035-N",
       "name": "ミア・テイラー",
-      "template": "deck_top_to_waiting",
+      "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -4242,7 +4243,7 @@
     {
       "card_no": "PL!HS-pb1-011-R",
       "name": "大沢瑠璃乃",
-      "template": "deck_top_to_waiting",
+      "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -4251,7 +4252,7 @@
     {
       "card_no": "PL!HS-pb1-011-P＋",
       "name": "大沢瑠璃乃",
-      "template": "deck_top_to_waiting",
+      "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -4502,7 +4503,7 @@
     {
       "card_no": "PL!S-bp6-016-N",
       "name": "国木田花丸",
-      "template": "toujou_wait_pick_hand",
+      "template": "deck_top_pick_recover",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -4672,7 +4673,7 @@
     {
       "card_no": "LL-bp6-001-R＋",
       "name": "南 ことり&黒澤ダイヤ&徒町小鈴",
-      "template": "deck_top_to_waiting",
+      "template": "deck_top_pick_recover",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -4708,7 +4709,7 @@
     {
       "card_no": "PL!HS-cl1-007-CL",
       "name": "セラス 柳田 リリエンフェルト",
-      "template": "deck_top_to_waiting",
+      "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -4771,7 +4772,7 @@
     {
       "card_no": "PL!SP-pb2-001-R",
       "name": "澁谷かのん",
-      "template": "deck_top_pick_recover",
+      "template": "deck_top_pick_enter_or_hand",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -4780,7 +4781,7 @@
     {
       "card_no": "PL!SP-pb2-001-PP",
       "name": "澁谷かのん",
-      "template": "deck_top_pick_recover",
+      "template": "deck_top_pick_enter_or_hand",
       "automated": true,
       "optional": true,
       "perTurn": 0,
