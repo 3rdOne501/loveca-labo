@@ -29,14 +29,33 @@
 
 | 状態 | 番号 | ID | 名前 | 主テンプレート | 備考 |
 |------|------|-----|------|----------------|------|
-| [x] | 019 | PL!S-bp3-019-L | MIRACLE WAVE | live_card_score_set_fixed | 成功時: エール公開全BHあり or 余剰ハート2+→**スコア=4** |
+| [x] | 019 | PL!S-bp3-019-L | MIRACLE WAVE | live_card_score_set_fixed | 成功時: エール公開全BH or 余剰ハート2+→**スコア=4** |
 | [x] | 020 | PL!S-bp3-020-L | ダイスキだったらダイジョウブ！ | jidou_yell_retry_low_bh | 自動/ターン1回: エール公開BH2枚以下→全捨て→BH失って再エール |
-| [x] | 021 | PL!S-bp3-021-L | 想いよひとつになれ | grant_jouji_session | ライブ開始: 控え室メンバー1枚山札上任意→メンバー1人にブレード |
-| [ ] | 022 | PL!S-bp3-022-L | Fantastic Departure! | （能力なし） | |
-| [ ] | 023 | PL!S-bp3-023-L | KOKORO Magic "A to Z" | （能力なし） | |
+| [x] | 021 | PL!S-bp3-021-L | 想いよひとつになれ | grant_jouji_session | ライブ開始: 控え室メンバー1枚山札上任意→メンバー1人にブレード **2026-06-28修正** |
+| [x] | 022 | PL!S-bp3-022-L | Fantastic Departure! | （能力なし） | |
+| [x] | 023 | PL!S-bp3-023-L | KOKORO Magic "A to Z" | （能力なし） | |
 | [x] | 024 | PL!S-bp3-024-L | Deep Resonance | ability_pick_one | ライブ開始: センターAqoursコスト9+→**ブレード2付与 or 相手コスト4以下ウェイト** |
-| [x] | 025 | PL!S-bp3-025-L | SUKI for you, DREAM for you! | live_card_score_plus | ライブ開始: Aqours1人選択→BL6+ならスコア+1 |
+| [x] | 025 | PL!S-bp3-025-L | SUKI for you, DREAM for you! | live_card_score_plus | ライブ開始: Aqours1人選択→BL6+ならスコア+1 **2026-06-28修正** |
 
-## 2026-06-28 検証
+## 検証結果（2026-06-28・ライブ 019–025）
 
-能力あり19種: **guided_manual=0**。新規コード修正なし。
+### 修正した
+
+| ID | 名前 | 内容 |
+|----|------|------|
+| PL!S-bp3-019-L | MIRACLE WAVE | エール公開全BH / 余剰ハート2+ の OR 条件を機械判定（`minSurplusHeartsOrYellAllBh` + `yellRevealedAllHaveBladeHeart`） |
+| PL!S-bp3-021-L | 想いよひとつになれ | 控え室→山札上の任意コスト未実装 → `optionalWaitingMemberToDeckTop` で確認→配置後にブレード付与 |
+| PL!S-bp3-025-L | SUKI for you, DREAM for you! | Aqours1人選択＋BL6+条件なしで常に+1 → `grantPickStageMembersMax` + `minPickedMemberBlade` |
+
+### 問題なし
+
+| ID | 名前 | 内容 |
+|----|------|------|
+| PL!S-bp3-020-L | ダイスキだったらダイジョウブ！ | 自動: エール公開BH2枚以下→再エール |
+| PL!S-bp3-022-L | Fantastic Departure! | 能力なし |
+| PL!S-bp3-023-L | KOKORO Magic "A to Z" | 能力なし |
+| PL!S-bp3-024-L | Deep Resonance | センターAqours9+→2択（BL2 / 相手ウェイト） |
+
+## 2026-06-28 検証（メンバー）
+
+能力あり16枚（メンバー）: **guided_manual=0**。

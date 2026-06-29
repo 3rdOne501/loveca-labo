@@ -9,6 +9,7 @@ import {
   classifyCardAbility,
   splitAbilityByTriggers,
 } from "../js/abilityEffects.js";
+import { classifyJoujiSegment } from "../js/joujiEffects.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const cards = JSON.parse(fs.readFileSync(path.join(ROOT, "data/cards.json"), "utf8"));
@@ -49,9 +50,47 @@ const CASES = [
     id: "PL!S-bp2-022-L",
     trigger: "live_success",
     expectTemplate: "live_card_score_plus",
-    check: (cl) => (cl.cardScoreGrant === 2 ? [] : ["cardScoreGrant"]),
+    check: (cl) => {
+      const errs = [];
+      if (cl.cardScoreGrant !== 2) errs.push("cardScoreGrant");
+      if (!cl.filters?.requiresDeckRefreshedThisTurn) errs.push("deck refresh filter");
+      return errs;
+    },
   },
-  { id: "PL!S-bp2-024-L", trigger: "live_success", expectTemplate: "draw_then_hand_discard" },
+  {
+    id: "PL!S-bp2-023-L",
+    trigger: "live_start",
+    expectTemplate: "grant_jouji_session",
+    check: (cl) => {
+      const errs = [];
+      if (!cl.grantToAllStageMembers) errs.push("all stage members");
+      if (cl.grantPickStageMembersMax) errs.push("must not pick one");
+      if (cl.bladeGain !== 1) errs.push("blade 1");
+      if (cl.filters?.requiresOtherSeriesLiveOnFrameTag !== "Aqours") errs.push("frame series");
+      if (cl.filters?.requiresOtherSeriesLiveOnFrameExcludeName !== "MY舞☆TONIGHT") errs.push("exclude name");
+      return errs;
+    },
+  },
+  {
+    id: "PL!S-bp2-024-L",
+    trigger: "live_success",
+    expectTemplate: "draw_then_hand_discard",
+    check: (cl) =>
+      cl.deckDrawCount === 2 && cl.effectDiscardCount === 1 ? [] : ["draw2 discard1"],
+  },
+  {
+    id: "PL!S-bp2-025-L",
+    trigger: "live_start",
+    expectTemplate: "grant_jouji_session",
+    check: (cl) => {
+      const errs = [];
+      if (cl.grantPickStageMembersMax !== 1) errs.push("pick 1");
+      if (cl.bladeGain !== 2) errs.push("blade 2");
+      if (cl.filters?.minSuccessLiveCount !== 2) errs.push("sl 2+");
+      if (cl.grantToAllStageMembers) errs.push("must not grant all");
+      return errs;
+    },
+  },
 ];
 
 let failed = 0;
@@ -81,8 +120,44 @@ for (const c of CASES) {
   }
 }
 
+for (const id of ["PL!S-bp2-019-L", "PL!S-bp2-020-L", "PL!S-bp2-026-L"]) {
+  const card = cards[id];
+  if (!card) {
+    console.error("MISSING", id);
+    failed++;
+    continue;
+  }
+  const raw = cardAbilityRawText(card);
+  if (raw && raw.trim()) {
+    failed++;
+    console.error("FAIL", id, "expected no ability");
+  } else {
+    console.log("OK", id, "no ability");
+  }
+}
+
+{
+  const id = "PL!S-bp2-024-L";
+  const card = cards[id];
+  const raw = cardAbilityRawText(card);
+  const seg = splitAbilityByTriggers(raw).find((s) => s.trigger === "jouji");
+  if (!seg) {
+    failed++;
+    console.error("MISSING SEG", id, "jouji");
+  } else {
+    const jr = classifyJoujiSegment(seg.text);
+    if (jr.kind !== "cannot_place_on_success_live") {
+      failed++;
+      console.error("FAIL", id, "jouji", "kind " + jr.kind);
+    } else {
+      console.log("OK", id, "jouji");
+    }
+  }
+}
+
 if (failed) {
   console.error(`\n${failed} aqours-bp2 case(s) failed`);
   process.exit(1);
 }
-console.log(`\nAll ${CASES.length} aqours-bp2 cases passed`);
+const totalCases = CASES.length + 4;
+console.log(`\nAll ${totalCases} aqours-bp2 cases passed`);

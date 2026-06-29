@@ -40,26 +40,58 @@ const CASES = [
   },
   { id: "PL!-bp3-009-P", trigger: "kidou", expectTemplate: "heart_color_pick_grant" },
   {
-    id: "PL!-bp3-022-L",
+    id: "PL!-bp3-019-L",
     trigger: "live_start",
-    expectTemplate: "live_start_deck_reveal_both_stage_members_score",
+    expectTemplate: "live_card_score_plus",
+    check: (cl) => {
+      const errs = [];
+      if (cl.cardScoreGrant !== 1) errs.push("cardScoreGrant");
+      if (cl.filters?.minLiveFrameCount !== 2) errs.push("minLiveFrameCount");
+      if (cl.filters?.seriesTag !== "μ's") errs.push("seriesTag");
+      return errs;
+    },
   },
   {
     id: "PL!-bp3-023-L",
     trigger: "live_start",
     expectTemplate: "live_start_need_heart_reduce_fixed",
-    check: (cl) =>
-      cl.needHeartReduceMap?.heart0 === 2 ? [] : ["needHeartReduceMap"],
+    check: (cl) => {
+      const errs = [];
+      if (cl.needHeartReduceMap?.heart0 !== 2) errs.push("needHeartReduceMap");
+      if (cl.filters?.requiresStageBladeTotal !== 10) errs.push("requiresStageBladeTotal");
+      return errs;
+    },
   },
   {
     id: "PL!-bp3-024-L",
     trigger: "live_start",
-    expectTemplate: "heart_color_pick_grant",
+    expectTemplate: "ability_sequence",
+    fullTrigger: true,
+    check: (cl) => {
+      const steps = cl.steps || [];
+      if (steps.length !== 2) return ["steps.length"];
+      if (steps[0].template !== "heart_color_pick_grant") return ["step1"];
+      if (steps[1].template !== "live_card_score_plus") return ["step2"];
+      return [];
+    },
+  },
+  {
+    id: "PL!-bp3-025-L",
+    trigger: "live_success",
+    expectTemplate: "live_card_score_plus",
+    check: (cl) => (cl.filters?.requiresZeroSurplusHearts && cl.cardScoreGrant === 1 ? [] : ["surplus/score"]),
   },
   {
     id: "PL!-bp3-026-L",
     trigger: "live_success",
     expectTemplate: "live_card_score_plus",
+    check: (cl) =>
+      cl.filters?.requiresOwnStageHeartTotalHigherThanOpponent && cl.cardScoreGrant === 1 ? [] : ["heart compare"],
+  },
+  {
+    id: "PL!-bp3-022-L",
+    trigger: "live_start",
+    expectTemplate: "live_start_deck_reveal_both_stage_members_score",
   },
 ];
 
@@ -77,7 +109,7 @@ for (const c of CASES) {
     failed++;
     continue;
   }
-  const cl = classifyCardAbility(card, c.trigger, seg.text);
+  const cl = c.fullTrigger ? classifyCardAbility(card, c.trigger) : classifyCardAbility(card, c.trigger, seg.text);
   const errs = [];
   if (cl.template !== c.expectTemplate) errs.push(`template ${cl.template}`);
   if (!abilityEffectIsAutomated(cl.template)) errs.push("not automated");

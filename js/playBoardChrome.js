@@ -218,3 +218,99 @@ export function ensurePlayBoardChromeHost() {
   ensureChainBand();
   ensurePhaseRail();
 }
+
+function spawnPremiumParticles(host, count, palette) {
+  palette = palette || ["#ffd56a", "#ff9a3c", "#fff4c8"];
+  for (var i = 0; i < count; i++) {
+    var p = document.createElement("span");
+    p.className = "premium-board-fx__particle";
+    p.style.setProperty("--p-x", String(8 + Math.random() * 84) + "%");
+    p.style.setProperty("--p-y", String(12 + Math.random() * 76) + "%");
+    p.style.setProperty("--p-delay", String(Math.random() * 0.35) + "s");
+    p.style.setProperty("--p-dur", String(0.9 + Math.random() * 0.8) + "s");
+    p.style.background = palette[i % palette.length];
+    host.appendChild(p);
+  }
+}
+
+/**
+ * 盤面全体の補助演出（テキストバッジ・効果音なし）
+ * @param {'high_cost_enter'|'coin_flip'|'live_powerhouse'} type
+ * @param {{ tier?: number, heads?: boolean }} [opts]
+ */
+export function playPremiumBoardFx(type, opts) {
+  if (!document.body.classList.contains("play-mode") || prefersReducedMotion()) return;
+  opts = opts || {};
+  var tier = Math.max(0, Math.min(2, Math.floor(Number(opts.tier) || 0)));
+
+  var overlay = document.createElement("div");
+  overlay.className = "premium-board-fx premium-board-fx--" + type;
+  if (tier >= 2) overlay.classList.add("premium-board-fx--tier-2");
+  overlay.setAttribute("aria-hidden", "true");
+
+  var vignette = document.createElement("div");
+  vignette.className = "premium-board-fx__vignette";
+  overlay.appendChild(vignette);
+
+  var flash = document.createElement("div");
+  flash.className = "premium-board-fx__flash";
+  overlay.appendChild(flash);
+
+  var rays = document.createElement("div");
+  rays.className = "premium-board-fx__rays";
+  overlay.appendChild(rays);
+
+  var shock = document.createElement("div");
+  shock.className = "premium-board-fx__shockwave";
+  overlay.appendChild(shock);
+
+  if (type === "high_cost_enter") {
+    spawnPremiumParticles(
+      overlay,
+      tier >= 2 ? 44 : 22,
+      tier >= 2 ? ["#fff0a8", "#ff9a3c", "#ff5a8a", "#c9a0ff", "#ffe08a"] : ["#ffe08a", "#ffc14d", "#fff8dc"],
+    );
+    if (tier >= 2) {
+      var shock2 = document.createElement("div");
+      shock2.className = "premium-board-fx__shockwave premium-board-fx__shockwave--delayed";
+      overlay.appendChild(shock2);
+    }
+  } else if (type === "coin_flip") {
+    var coin = document.createElement("div");
+    coin.className = "premium-board-fx__coin" + (opts.heads === false ? " premium-board-fx__coin--tails" : "");
+    coin.setAttribute("aria-hidden", "true");
+    overlay.appendChild(coin);
+    var coinLabel = document.createElement("div");
+    coinLabel.className = "premium-board-fx__title premium-board-fx__title--coin";
+    coinLabel.textContent = opts.heads === false ? "裏" : "表";
+    overlay.appendChild(coinLabel);
+    spawnPremiumParticles(overlay, 14, ["#e8e8f0", "#ffd56a", "#ffffff"]);
+  } else if (type === "live_powerhouse") {
+    var title = document.createElement("div");
+    title.className = "premium-board-fx__title premium-board-fx__title--live";
+    title.textContent = "LIVE START";
+    overlay.appendChild(title);
+    spawnPremiumParticles(overlay, 32, ["#ffb347", "#ff6b2b", "#fff0a8", "#ff3d6e"]);
+  }
+
+  document.body.appendChild(overlay);
+  document.body.classList.add("play-premium-fx-active");
+  if (type === "live_powerhouse") document.body.classList.add("play-premium-live-arena");
+  if (type === "high_cost_enter" && tier >= 2) document.body.classList.add("play-premium-enter-ultra");
+
+  requestAnimationFrame(function () {
+    overlay.classList.add("is-visible");
+  });
+
+  var holdMs =
+    type === "coin_flip" ? 1600 : type === "live_powerhouse" ? 1800 : tier >= 2 ? 1800 : 1500;
+  window.setTimeout(function () {
+    overlay.classList.add("is-out");
+    document.body.classList.remove("play-premium-fx-active", "play-premium-live-arena", "play-premium-enter-ultra");
+    window.setTimeout(function () {
+      try {
+        overlay.remove();
+      } catch (_) {}
+    }, 650);
+  }, holdMs);
+}

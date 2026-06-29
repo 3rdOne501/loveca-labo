@@ -15,7 +15,18 @@ const cards = JSON.parse(fs.readFileSync(path.join(ROOT, "data/cards.json"), "ut
 
 /** @type {Array<{id:string, trigger:string, expectTemplate:string, check?:(cl:any)=>string[]}>} */
 const CASES = [
-  { id: "PL!SP-bp2-001-P", trigger: "toujyou", expectTemplate: "toujou_wait_pick_hand" },
+  {
+    id: "PL!SP-bp2-001-P",
+    trigger: "toujyou",
+    expectTemplate: "toujou_optional_disable_live_start_recover_wait",
+    check: (cl) => {
+      const errs = [];
+      if (!cl.optional) errs.push("optional");
+      if (cl.disableTargetSeriesTag !== "Liella!") errs.push("disable series");
+      if (cl.filters?.seriesTag !== "Liella!") errs.push("recover series");
+      return errs;
+    },
+  },
   {
     id: "PL!SP-bp2-002-P",
     trigger: "toujyou",
@@ -34,6 +45,15 @@ const CASES = [
     check: (cl) => (cl.filters?.seriesTag === "Liella!" ? [] : ["seriesTag"]),
   },
   { id: "PL!SP-bp2-006-P", trigger: "kidou", expectTemplate: "kidou_hand_discard_trigger_ability" },
+  {
+    id: "PL!SP-bp2-007-P",
+    trigger: "toujyou",
+    expectTemplate: "deck_top_pick_recover",
+    check: (cl) =>
+      cl.deckTopCount === 5 && cl.filters?.seriesTag === "Liella!" && cl.filters?.pickType === "メンバー"
+        ? []
+        : ["deckTop/series/member"],
+  },
   { id: "PL!SP-bp2-008-P", trigger: "kidou", expectTemplate: "live_start_position_change" },
   { id: "PL!SP-bp2-009-P", trigger: "live_start", expectTemplate: "live_start_hand_blade_per" },
   { id: "PL!SP-bp2-010-P", trigger: "live_start", expectTemplate: "live_start_yell_reveal_reduction" },
@@ -41,7 +61,19 @@ const CASES = [
   { id: "PL!SP-bp2-013-N", trigger: "toujyou", expectTemplate: "waiting_reorder_deck_top" },
   { id: "PL!SP-bp2-015-N", trigger: "jidou", expectTemplate: "jidou_yell_grant_jouji_no_bh" },
   { id: "PL!SP-bp2-023-L", trigger: "live_start", expectTemplate: "live_card_score_plus" },
-  { id: "PL!SP-bp2-025-L", trigger: "live_success", expectTemplate: "yell_resolution_pick_hand" },
+  { id: "PL!SP-bp2-024-L", trigger: "live_success", expectTemplate: "live_card_score_plus" },
+  {
+    id: "PL!SP-bp2-025-L",
+    trigger: "live_success",
+    expectTemplate: "yell_resolution_pick_hand",
+    check: (cl) => {
+      const pre = cl.preconditionFilters || {};
+      const errs = [];
+      if (pre.minDistinctNamedStageMembersFromList !== 2) errs.push("distinct min");
+      if (!Array.isArray(pre.namedStageMemberList) || pre.namedStageMemberList.length < 3) errs.push("names");
+      return errs;
+    },
+  },
 ];
 
 let failed = 0;

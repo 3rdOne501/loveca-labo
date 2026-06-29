@@ -27,11 +27,28 @@
 
 | 状態 | 番号 | ID | 名前 | 主テンプレート | 備考 |
 |------|------|-----|------|----------------|------|
-| [x] | 023 | PL!SP-bp1-023-L | START!! True dreams | live_score_higher_energy_wait | 相手より高い→Eウェイト |
-| [x] | 024 | PL!SP-bp1-024-L | Tiny Stars | live_start_named_member_heart_blades / live_success_characters_draw | |
-| [ ] | 025 | PL!SP-bp1-025-L | Starlight Prologue | （能力なし） | |
-| [x] | 026 | PL!SP-bp1-026-L | 未来予報ハレルヤ！ | live_start_need_heart_set_fixed | 異名Liella!5人（ステージ+控え室）→必要ハート桃2/黄2/紫2に固定（ALL不要） |
+| [x] | 023 | PL!SP-bp1-023-L | START!! True dreams | live_score_higher_energy_wait | **ライブ成功時**: 自ライブ合計スコア＞相手→Eデッキ1枚ウェイト（相手ライブなし=0扱い FAQ Q66） |
+| [x] | 024 | PL!SP-bp1-024-L | Tiny Stars | live_start_named_member_heart_blades / live_success_characters_draw | LS: かのんh05+刃/可可h01+刃（**ライブ終了時まで**）/ LS成功: 両名在席で1ドロー **2026-06-28修正** |
+| [x] | 025 | PL!SP-bp1-025-L | Starlight Prologue | （能力なし） | ALLブレード説明のみ |
+| [x] | 026 | PL!SP-bp1-026-L | 未来予報ハレルヤ！ | live_start_need_heart_set_fixed | 異名Liella!5人（ステージ+控え室）→必要ハート桃2/黄2/紫2に固定 **2026-06-28修正** |
 | [x] | 027 | PL!SP-bp1-027-L | Sing! Shine! Smile! | live_card_score_plus | エネルギー12枚+1（括弧ドロー説明は除外済） |
+
+## ライブ修正（2026-06-28）
+
+### 修正した
+
+| ID | 名前 | 内容 |
+|----|------|------|
+| PL!SP-bp1-024-L | Tiny Stars | 指名メンバーへのハート+ブレードを `playBonusHeartSlotsAlways` / `playBonusBladeAlways` に変更（ライブ終了時まで） |
+| PL!SP-bp1-026-L | 未来予報ハレルヤ！ | ステージ+控え室の異名カウントで Liella! シリーズ行のキャラ名キーを使用（FAQ Q105 系） |
+| PL!SP-bp1-023-L | START!! True dreams | ソロ時の相手ライブ合計スコア入力を `ensureSoloOpponentLiveFrameScore` 経由に統一 |
+
+### 問題なし
+
+| ID | 名前 | 内容 |
+|----|------|------|
+| PL!SP-bp1-025-L | Starlight Prologue | 能力なし（ALLブレード説明のみ） |
+| PL!SP-bp1-027-L | Sing! Shine! Smile! | エネルギー12枚以上でスコア+1 |
 
 ## 横展開修正（2026-06-28）
 

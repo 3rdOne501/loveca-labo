@@ -115,6 +115,8 @@ function main() {
   execSync("node scripts/audit-muse-bp3-text.mjs", { cwd: ROOT, stdio: "inherit" });
 
   execSync("node scripts/verify-niji-bp4.mjs", { cwd: ROOT, stdio: "inherit" });
+  execSync("node scripts/verify-liella-bp4.mjs", { cwd: ROOT, stdio: "inherit" });
+  execSync("node scripts/verify-mus-bp4.mjs", { cwd: ROOT, stdio: "inherit" });
 
   execSync("node scripts/audit-niji-bp4-text.mjs", { cwd: ROOT, stdio: "inherit" });
 

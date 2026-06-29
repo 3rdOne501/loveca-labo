@@ -88,7 +88,7 @@
 | 74 | PL!-bp3-024-L | 夏色えがおで1,2,Jump! | ライブ | 6 | live_start=ability_sequence | ability_sequence(複合連結),2段効果,条件:場合,選択,長文(82字) |
 | 75 | PL!S-bp3-005-R | 渡辺 曜 | メンバー | 6 | live_success=draw_from_deck | 相手参照,条件:場合,比較,エール公開参照 |
 | 76 | PL!N-bp3-010-R | 三船栞子 | メンバー | 6 | live_start=live_start_pick_player_waiting_deck_bottom | 2段効果,相手参照,選択,プレイヤー選択 |
-| 77 | PL!N-bp3-028-L | ツナガルコネクト | ライブ | 6 | live_start=deck_top_to_waiting | 多段効果(。x4),逐次(その後/さらに),条件:場合,選択,長文(134字) |
+| 77 | PL!N-bp3-028-L | ツナガルコネクト | ライブ | 6 | live_start=live_start_per_series_member_deck_look_reveal_score | 多段効果(。x4),逐次(その後/さらに),条件:場合,選択,長文(134字) |
 | 78 | PL!-pb1-013-R | 園田海未 | メンバー | 6 | kidou=kidou_hand_reveal_grant_if_live | 多段効果(。x3),相手参照,条件:場合,長文(85字) |
 | 79 | PL!-pb1-030-L | Cutie Panther | ライブ | 6 | live_start=live_start_need_heart_reduce_fixed, live_success=live_success_recover_from_waiting | 相手参照,条件:場合,条件:場合,閾値 |
 | 80 | PL!-bp4-002-R＋ | 絢瀬絵里 | メンバー | 6 | jouji=passive_track, kidou=kidou_hand_cost_wait_pick_hand | 条件:かぎり,2段効果,条件:場合,閾値,長文(90字) |

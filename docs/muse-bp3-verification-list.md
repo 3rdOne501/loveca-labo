@@ -36,14 +36,34 @@
 | 状態 | 番号 | ID | 名前 | 主テンプレート | 備考 |
 |------|------|-----|------|----------------|------|
 | [x] | 019 | PL!-bp3-019-L | 僕らのLIVE 君とのLIFE | live_card_score_plus | ライブ開始: ライブ中μ's2枚+→スコア+1 |
-| [ ] | 020 | PL!-bp3-020-L | （能力なし） | | |
-| [ ] | 021 | PL!-bp3-021-L | （能力なし） | | |
+| [x] | 020 | PL!-bp3-020-L | Snow halation | （能力なし） | ALLブレード説明のみ |
+| [x] | 021 | PL!-bp3-021-L | 愛してるばんざーい! | （能力なし） | b_heart06 説明のみ |
 | [x] | 022 | PL!-bp3-022-L | ユメノトビラ | live_start_deck_reveal_both_stage_members_score | 自+相手ステージ人数分公開→ライブ1枚につきスコア+1→公開分控え室 |
 | [x] | 023 | PL!-bp3-023-L | ミはμ'sicのミ | live_start_need_heart_reduce_fixed | ライブ開始: 自ステージBL合計10+→必要heart0-2 |
 | [x] | 024 | PL!-bp3-024-L | 夏色えがおで1,2,Jump! | heart_color_pick_grant / live_card_score_plus | 自成功1枚+→heart選択→μ's1人に付与 / 自成功2枚+→スコア+1 |
 | [x] | 025 | PL!-bp3-025-L | タカラモノズ | live_card_score_plus | 成功時: 余剰ハートなし→スコア+1 |
 | [x] | 026 | PL!-bp3-026-L | Oh,Love&Peace! | grant_jouji_session / live_card_score_plus | ライブ開始 手札2枚捨て任意→メンバー1人BL3 / 成功時 自ハート総数>相手→+1 |
 
-## 2026-06-28 検証
+## 検証結果（2026-06-28・ライブ 019–026）
 
-能力あり22種（PL!-bp3）+ LLクロス1: **guided_manual=0**。新規コード修正なし。
+### 修正した
+
+| ID | 名前 | 内容 |
+|----|------|------|
+| PL!-bp3-019-L | 僕らのLIVE 君とのLIFE | 「ライブ中の『μ's』のカード2枚以上」を `minLiveFrameCount` + シリーズ別カウントで判定 |
+| PL!-bp3-023-L | ミはμ'sicのミ | Wiki トークン除去後もステージBL合計10+を認識（`icon_blade` + `requiresStageBladeTotal`） |
+| PL!-bp3-025-L | タカラモノズ | 「余剰ハートを持たない」を `requiresZeroSurplusHearts` でライブ成功時にチェック |
+
+### 問題なし
+
+| ID | 名前 | 内容 |
+|----|------|------|
+| PL!-bp3-020-L | Snow halation | 能力なし（ALLブレード説明のみ） |
+| PL!-bp3-021-L | 愛してるばんざーい! | 能力なし |
+| PL!-bp3-022-L | ユメノトビラ | 自+相手ステージ人数分公開→ライブ枚数×スコア+1 |
+| PL!-bp3-024-L | 夏色えがおで1,2,Jump! | 2段ライブ開始（ハート色付与 + 成功2枚+で+1）`ability_sequence` |
+| PL!-bp3-026-L | Oh,Love&Peace! | LS: 手札2枚捨て任意→BL3 / 成功時: 自ステージハート総数>相手 |
+
+## 2026-06-28 検証（メンバー）
+
+能力あり22種（PL!-bp3）+ LLクロス1: **guided_manual=0**。

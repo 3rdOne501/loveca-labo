@@ -22,7 +22,29 @@ const CASES = [
     check: (cl) => (cl.energyActiveCount === 2 ? [] : ["energyActiveCount"]),
   },
   { id: "PL!HS-bp1-002-R", trigger: "kidou", expectTemplate: "kidou_self_to_wait_recover" },
-  { id: "PL!HS-bp1-003-R＋", trigger: "kidou", expectTemplate: "kidou_wait_pick_hand" },
+  { id: "PL!HS-bp1-003-R＋", trigger: "kidou", expectTemplate: "kidou_wait_pick_hand",
+    check: (cl) => (cl.filters?.maxCost === 4 && cl.filters?.seriesTag === "蓮ノ空" ? [] : ["maxCost/series"]),
+  },
+  {
+    id: "PL!HS-bp1-004-P",
+    trigger: "live_start",
+    expectTemplate: "live_start_optional_energy_blade_per_live_frame",
+    check: (cl) => {
+      const errs = [];
+      if (cl.bladeGainPerLiveFrame !== 1) errs.push("bladeGainPerLiveFrame");
+      if (cl.costEnergyCount !== 1) errs.push("costEnergyCount");
+      return errs;
+    },
+  },
+  {
+    id: "PL!HS-bp1-006-P",
+    trigger: "live_start",
+    expectTemplate: "heart_color_pick_grant",
+    check: (cl) => (cl.filters?.minStageMembers === 2 ? [] : ["minStageMembers"]),
+  },
+  { id: "PL!HS-bp1-007-R", trigger: "kidou", expectTemplate: "draw_from_deck" },
+  { id: "PL!HS-bp1-010-N", trigger: "toujyou", expectTemplate: "draw_then_hand_discard" },
+  { id: "PL!HS-bp1-014-N", trigger: "toujyou", expectTemplate: "draw_then_hand_discard" },
   { id: "PL!HS-bp1-005-R", trigger: "toujyou", expectTemplate: "toujou_optional_hand_discard_draw" },
   { id: "PL!HS-bp1-008-R", trigger: "toujyou", expectTemplate: "toujou_deck_top_wait_if_all_members" },
   {
@@ -37,7 +59,9 @@ const CASES = [
     expectTemplate: "deck_top_pick_recover",
     check: (cl) => (cl.deckTopCount === 5 ? [] : ["deckTopCount"]),
   },
-  { id: "PL!HS-bp1-021-L", trigger: "live_success", expectTemplate: "yell_resolution_pick_hand" },
+  { id: "PL!HS-bp1-021-L", trigger: "live_success", expectTemplate: "yell_resolution_pick_hand",
+    check: (cl) => (cl.filters?.pickType === "ライブ" && cl.filters?.seriesTag === "蓮ノ空" ? [] : ["pick/series"]),
+  },
   {
     id: "PL!HS-bp1-022-L",
     trigger: "live_success",
@@ -54,7 +78,12 @@ const CASES = [
     id: "PL!HS-bp1-023-L",
     trigger: "live_success",
     expectTemplate: "live_score_higher_energy_wait",
-    check: (cl) => (cl.filters?.requiresLiveScoreHigherThanOpponent ? [] : ["dual-mode filter"]),
+    check: (cl) => {
+      const errs = [];
+      if (!cl.filters?.requiresLiveScoreHigherThanOpponent) errs.push("score higher");
+      if (cl.filters?.minStageSeriesMembers !== 1) errs.push("stage series");
+      return errs;
+    },
   },
 ];
 

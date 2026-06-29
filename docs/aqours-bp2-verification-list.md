@@ -28,13 +28,34 @@ NEXTSTEP は他シリーズにも存在: 蓮ノ空 `PL!HS-bp2`、Liella! `PL!SP-
 
 | 状態 | 番号 | ID | 名前 | 主テンプレート | 備考 |
 |------|------|-----|------|----------------|------|
-| [ ] | 019 | PL!S-bp2-019-L | WATER BLUE NEW WORLD | （能力なし） | |
-| [ ] | 020 | PL!S-bp2-020-L | DREAMY COLOR | （能力なし） | |
+| [x] | 019 | PL!S-bp2-019-L | WATER BLUE NEW WORLD | （能力なし） | |
+| [x] | 020 | PL!S-bp2-020-L | DREAMY COLOR | （能力なし） | |
 | [x] | 021 | PL!S-bp2-021-L | 未体験HORIZON | yell_resolution_pick_deck_bottom | ライブ成功: エール公開ライブ1枚まで山札下 |
-| [x] | 022 | PL!S-bp2-022-L | 未熟DREAMER | live_card_score_plus | ライブ成功: **このターンにデッキリフレッシュ**していた場合スコア+2 |
-| [x] | 023 | PL!S-bp2-023-L | MY舞☆TONIGHT | grant_jouji_session | ライブ開始: ライブ置き場に他Aqoursライブあり→全メンバーにブレード |
+| [x] | 022 | PL!S-bp2-022-L | 未熟DREAMER | live_card_score_plus | ライブ成功: デッキリフレッシュ時スコア+2（`requiresDeckRefreshedThisTurn`） |
+| [x] | 023 | PL!S-bp2-023-L | MY舞☆TONIGHT | grant_jouji_session | ライブ開始: 他Aqoursライブあり→**全**ステージメンバーにブレード **2026-06-28修正**（FAQ Q121） |
 | [x] | 024 | PL!S-bp2-024-L | 君のこころは輝いてるかい？ | jouji passive / draw_then_hand_discard | 常時: 成功ライブ置き場不可 / 成功時: 2ドロー→手札1枚捨て |
 | [x] | 025 | PL!S-bp2-025-L | 青空Jumping Heart | grant_jouji_session | ライブ開始: 自成功2枚+→メンバー1人にブレード2 |
+| [x] | 026 | PL!S-bp2-026-L | ユメ語るよりユメ歌おう | （能力なし） | |
+
+## 検証結果（2026-06-28・ライブ 019–026）
+
+### 修正した
+
+| ID | 名前 | 内容 |
+|----|------|------|
+| PL!S-bp2-022-L | 未熟DREAMER | デッキリフレッシュ条件を `requiresDeckRefreshedThisTurn` として明示化 |
+| PL!S-bp2-023-L | MY舞☆TONIGHT | FAQ Q121 どおり全ステージメンバーへブレード付与。ライブ置き場に「MY舞☆TONIGHT」以外の Aqours ライブ条件を `requiresOtherSeriesLiveOnFrame*` + `grantToAllStageMembers` で配線 |
+
+### 問題なし
+
+| ID | 名前 | 内容 |
+|----|------|------|
+| PL!S-bp2-019-L | WATER BLUE NEW WORLD | 能力なし |
+| PL!S-bp2-020-L | DREAMY COLOR | 能力なし |
+| PL!S-bp2-021-L | 未体験HORIZON | ライブ成功: エール公開ライブ1枚まで山札下 |
+| PL!S-bp2-024-L | 君のこころは輝いてるかい？ | 常時: 成功ライブ置き場不可 / 成功時: 2ドロー→手札1枚捨て |
+| PL!S-bp2-025-L | 青空Jumping Heart | ライブ開始: 自成功2枚+→メンバー1人にブレード2 |
+| PL!S-bp2-026-L | ユメ語るよりユメ歌おう | 能力なし |
 
 ## 既知の横展開修正
 
@@ -42,6 +63,6 @@ NEXTSTEP は他シリーズにも存在: 蓮ノ空 `PL!HS-bp2`、Liella! `PL!SP-
 - **004-P/R**: `jidou_yell_retry_no_live` composition 退行修正
 - **024-L**: 成功ライブカード置き場への配置禁止（常時）
 
-## 2026-06-28 検証
+## 2026-06-28 検証（メンバー）
 
-能力あり16枚: **guided_manual=0**。新規コード修正なし。
+能力あり16枚（メンバー）: **guided_manual=0**。

@@ -43,9 +43,11 @@ export const TEMPLATE_HANDLES_OWN_COST = [
   "live_start_hand_discard_same_group_grant",
   "live_start_hand_discard_optional_blade_per",
   "live_start_hand_discard_series_member_blade_grant",
+  "heart_color_pick_grant",
   "kidou_discard_self_draw_grant",
   "live_start_optional_energy_under_return_grant",
   "live_success_optional_energy_recover_waiting",
+  "optional_energy_blade_until_live_end",
 ];
 
 /** 成功ライブ置き場への移動など executeAbilityBody 外（placement 経路）で処理する template */
@@ -109,6 +111,7 @@ export const JIDOU_AUTO_TEMPLATES = [
   "jidou_yell_grant_jouji_nobh_members",
   "jidou_yell_grant_jouji_no_bh",
   "jidou_yell_grant_heart",
+  "jidou_yell_grant_heart_per_live_capped",
   "jidou_yell_draw",
   "jidou_leave_stage_position_change",
   "jidou_stage_entry_draw_until",

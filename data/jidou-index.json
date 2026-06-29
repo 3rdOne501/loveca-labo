@@ -1,12 +1,12 @@
 {
-  "generated": "2026-06-28",
+  "generated": "2026-06-29",
   "trigger": "jidou",
   "total": 105,
   "automated": 105,
   "guided_manual": 0,
   "byTemplate": {
     "jidou_leave_stage_activate_one": 2,
-    "jidou_yell_grant_jouji": 7,
+    "jidou_yell_grant_jouji": 6,
     "jidou_enter_or_baton_draw": 1,
     "jidou_area_move_grant_jouji": 9,
     "jidou_area_move_draw": 1,
@@ -32,6 +32,7 @@
     "jidou_leave_stage_position_change": 4,
     "jidou_area_move_activate_energy": 3,
     "jidou_baton_leave_activate_energy": 1,
+    "jidou_yell_grant_heart_per_live_capped": 1,
     "jidou_series_enter_pay_energy": 2,
     "jidou_hand_to_waiting_grant": 2,
     "jidou_series_enter_grant": 2,
@@ -329,7 +330,7 @@
       "name": "鬼塚冬毬",
       "template": "jidou_area_move_opp_wait",
       "automated": true,
-      "eventKind": "area_move",
+      "eventKind": "enter_or_baton",
       "effect": "このメンバーが登場か、エリアを移動したとき、相手のステージにいる元々持つの数が3つ以下のメンバー1人をウェイトにする。"
     },
     {
@@ -337,7 +338,7 @@
       "name": "鬼塚冬毬",
       "template": "jidou_area_move_opp_wait",
       "automated": true,
-      "eventKind": "area_move",
+      "eventKind": "enter_or_baton",
       "effect": "このメンバーが登場か、エリアを移動したとき、相手のステージにいる元々持つの数が3つ以下のメンバー1人をウェイトにする。"
     },
     {
@@ -345,7 +346,7 @@
       "name": "鬼塚冬毬",
       "template": "jidou_area_move_opp_wait",
       "automated": true,
-      "eventKind": "area_move",
+      "eventKind": "enter_or_baton",
       "effect": "このメンバーが登場か、エリアを移動したとき、相手のステージにいる元々持つの数が3つ以下のメンバー1人をウェイトにする。"
     },
     {
@@ -353,7 +354,7 @@
       "name": "鬼塚冬毬",
       "template": "jidou_area_move_opp_wait",
       "automated": true,
-      "eventKind": "area_move",
+      "eventKind": "enter_or_baton",
       "effect": "このメンバーが登場か、エリアを移動したとき、相手のステージにいる元々持つの数が3つ以下のメンバー1人をウェイトにする。"
     },
     {
@@ -639,7 +640,7 @@
     {
       "card_no": "PL!S-sd1-001-SD",
       "name": "高海千歌",
-      "template": "jidou_yell_grant_jouji",
+      "template": "jidou_yell_grant_heart_per_live_capped",
       "automated": true,
       "eventKind": "yell",
       "effect": "自分がエールしたとき、ライブ終了時まで、エールにより公開された自分のカードの中のライブカード1枚につき、を得る。この能力ではは3つまでしか得られない。"

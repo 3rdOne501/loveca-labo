@@ -141,6 +141,11 @@
 | PL!HS-bp5-021-L | ジョーショーキリュー | 元々ハート→heart01 リマップ + スコア+1 | コード |
 | PL!S-bp2-004-P/R | 黒澤ダイヤ | `jidou_yell_retry_no_live` composition 退行修正 | コード |
 | PL!N-bp4-010-R＋ | 三船栞子 | `live_start_pick_live_frame_match_success_live_grant` 自動化登録 | コード |
+| PL!N-bp4-027-L | EMOTION | `live_start_score_plus_per_named_success_live`（成功ライブ枚数比例+必要heart0） | verify-niji-bp4 |
+| PL!N-bp4-029-L | Rise Up High! | `grant_jouji_session` + `requiresFirstGameLivePhase` + `cardScoreGrant` | verify-niji-bp4 |
+| PL!N-bp4-031-L | NEO SKY, NEO MAP! | `draw_then_hand_to_deck_top`（全エリア+コスト20+） | verify-niji-bp4 |
+| PL!SP-bp4-026-L | Wish Song | 複数 `live_success` → `ability_sequence` | verify-liella-bp4 |
+| PL!SP-bp4-028-L | DAISUKI FULL POWER | `requiresAnyActiveEnergy` + スコア+1 | verify-liella-bp4 |
 | PL!-bp6-024-L | 錯覚CROSSROADS | `jouji_success_live_waiting_substitute` 分類接続 | コード |
 | PL!-pb1-015-R | 西木野真姫 | ライブ開始時 BiBi+相手アクティブウェイト 誤分類修正 | コード |
 | PL!S-pb1-001-R | 高海千歌 | 相手ライブ必要ハート+ / 手札枚数比較 | コード |
@@ -257,3 +262,5 @@ Liella! bp2 / NEXTSTEP: `scripts/verify-liella-bp2.mjs` + `docs/liella-bp2-verif
 | 2026-06-28 | 蓮ノ空 bp2（NEXTSTEP）+ Liella! pb2: 分類OK・verify/audit スクリプト追加（HS pb2 未収録） |
 | 2026-06-28 | Aqours bp2 / NEXTSTEP: 16枚分類OK、verify-aqours-bp2 + audit-aqours-bp2-text 追加 |
 | 2026-06-28 | Liella! bp2 / NEXTSTEP: 22枚分類OK、verify-liella-bp2 + audit-liella-bp2-text 追加 |
+| 2026-06-28 | 虹ヶ咲 bp4 ライブ027/029/031: 成功ライブ比例・1T目条件・ドロー+山札上 |
+| 2026-06-28 | Liella! bp4 ライブ026/028: 複数live_success分離・アクティブE条件 |

@@ -36,6 +36,47 @@ const CASES = [
     check: (cl) => (cl.deckTopCount === 5 && !cl.optional ? [] : ["deckTopCount/optional"]),
   },
   { id: "PL!HS-bp2-012-N", trigger: "jidou", expectTemplate: "jidou_leave_stage_deck_look_pick" },
+  { id: "PL!HS-bp2-004-P", trigger: "kidou", expectTemplate: "kidou_stage_wait_pick_hand" },
+  {
+    id: "PL!HS-bp2-005-P",
+    trigger: "toujyou",
+    expectTemplate: "toujou_wait_pick_hand",
+    check: (cl) =>
+      cl.optional && cl.filters?.seriesTag === "みらくらぱーく！" && cl.filters?.minStageMembers === 2
+        ? []
+        : ["optional/mira/minStage"],
+  },
+  {
+    id: "PL!HS-bp2-005-P",
+    trigger: "live_start",
+    expectTemplate: "optional_energy_blade_until_live_end",
+    check: (cl) =>
+      cl.bladeGain === 2 && cl.filters?.requiresAllStageAreasFilled ? [] : ["blade/all areas"],
+  },
+  {
+    id: "PL!HS-bp2-007-P",
+    trigger: "toujyou",
+    expectTemplate: "toujou_wait_pick_hand",
+    check: (cl) => {
+      const errs = [];
+      if (cl.requiresBatonFromLowerCostSeriesTag !== "スリーズブーケ") errs.push("baton series");
+      if (cl.filters?.seriesTag !== "蓮ノ空") errs.push("recover 蓮ノ空");
+      if (cl.filters?.pickType !== "ライブ") errs.push("pick live");
+      return errs;
+    },
+  },
+  {
+    id: "PL!HS-bp2-014-N",
+    trigger: "toujyou",
+    expectTemplate: "draw_from_deck",
+    check: (cl) => (cl.grantPlayerCannotLiveUntilLiveEnd ? [] : ["cannot live"]),
+  },
+  {
+    id: "PL!HS-bp2-017-N",
+    trigger: "toujyou",
+    expectTemplate: "draw_from_deck",
+    check: (cl) => (cl.filters?.minWaitingAnyCardCount === 10 ? [] : ["wait 10"]),
+  },
   { id: "PL!HS-bp2-018-N", trigger: "toujyou", expectTemplate: "toujou_main_phase_live_from_waiting" },
   {
     id: "PL!HS-bp2-019-L",
@@ -53,11 +94,54 @@ const CASES = [
         : ["scoreUnitKind/series"],
   },
   {
+    id: "PL!HS-bp2-021-L",
+    trigger: "live_start",
+    expectTemplate: "live_start_need_heart_reduce_fixed",
+    check: (cl) =>
+      cl.needHeartReduceMap?.heart04 === 1 && cl.filters?.requiresBatonMembersThisTurn === 2
+        ? []
+        : ["heart04/baton"],
+  },
+  {
     id: "PL!HS-bp2-022-L",
     trigger: "live_start",
     expectTemplate: "live_card_score_plus",
     check: (cl) =>
       cl.cardScoreGrant === 1 && cl.filters?.minWaitingSeriesLiveCount === 3 ? [] : ["score/waiting"],
+  },
+  {
+    id: "PL!HS-bp2-023-L",
+    trigger: "live_start",
+    expectTemplate: "live_start_need_heart_reduce_fixed",
+    check: (cl) => (cl.needHeartReduceMap?.heart05 === 1 ? [] : ["heart05"]),
+  },
+  {
+    id: "PL!HS-bp2-024-L",
+    trigger: "live_start",
+    expectTemplate: "live_start_need_heart_reduce_fixed",
+    check: (cl) =>
+      cl.needHeartReduceMap?.heart0 === 3 &&
+      cl.filters?.requiresNamedMemberPairCostOrder?.smaller === "徒町小鈴"
+        ? []
+        : ["heart0/pair"],
+  },
+  {
+    id: "PL!HS-bp2-025-L",
+    trigger: "live_start",
+    expectTemplate: "live_start_need_heart_reduce_fixed",
+    check: (cl) => (cl.needHeartReduceMap?.heart01 === 1 ? [] : ["heart01"]),
+  },
+  {
+    id: "PL!HS-bp2-026-L",
+    trigger: "live_start",
+    expectTemplate: "live_card_score_plus",
+    check: (cl) => {
+      const errs = [];
+      if (cl.cardScoreGrant !== 2) errs.push("score +2");
+      const areas = cl.filters?.requiresStageNamedMemberAreas;
+      if (!areas || areas.length !== 3) errs.push("area layout");
+      return errs;
+    },
   },
 ];
 

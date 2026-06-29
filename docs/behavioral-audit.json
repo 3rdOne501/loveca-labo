@@ -1,13 +1,45 @@
 {
-  "generatedAt": "2026-06-28T15:41:45.352Z",
+  "generatedAt": "2026-06-28T19:37:34.317Z",
   "totalCards": 2280,
   "segmentsScanned": 1718,
-  "findingCount": 0,
-  "uniqueCardsWithFindings": 0,
-  "countByIssueType": {},
-  "countBySeverity": {},
+  "findingCount": 1,
+  "uniqueCardsWithFindings": 1,
+  "countByIssueType": {
+    "unautomated": 1
+  },
+  "countBySeverity": {
+    "acceptable_manual": 1
+  },
   "versusOnlineSkipTemplates": [],
   "windowConfirmTemplates": [],
-  "findings": [],
-  "topCards": []
+  "findings": [
+    {
+      "dedupeKey": "PL!S-bp6-019-L::unautomated",
+      "id": "PL!S-bp6-019-L",
+      "name": "Step! ZERO to ONE",
+      "trigger": "live_start",
+      "template": "guided_manual",
+      "issueType": "unautomated",
+      "severity": "acceptable_manual",
+      "detail": "template=guided_manual",
+      "textPreview": "自分のステージにいるメンバーがすべて『Aqours』の場合、このカードのスコアを＋１し、カードを1枚引き、手札からカードを1枚デッキの一番上か一番下に置く。"
+    }
+  ],
+  "topCards": [
+    {
+      "id": "PL!S-bp6-019-L",
+      "name": "Step! ZERO to ONE",
+      "maxSeverity": "acceptable_manual",
+      "issueCount": 1,
+      "issues": [
+        {
+          "issueType": "unautomated",
+          "severity": "acceptable_manual",
+          "trigger": "live_start",
+          "template": "guided_manual",
+          "detail": "template=guided_manual"
+        }
+      ]
+    }
+  ]
 }

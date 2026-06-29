@@ -49,13 +49,40 @@ const CASES = [
     expectTemplate: "live_score_higher_energy_wait",
     check: (cl) => (cl.filters?.requiresLiveScoreHigherThanOpponent ? [] : ["dual-mode filter"]),
   },
-  { id: "PL!SP-bp1-024-L", trigger: "live_start", expectTemplate: "live_start_named_member_heart_blades" },
-  { id: "PL!SP-bp1-024-L", trigger: "live_success", expectTemplate: "live_success_characters_draw" },
+  {
+    id: "PL!SP-bp1-024-L",
+    trigger: "live_start",
+    expectTemplate: "live_start_named_member_heart_blades",
+    check: (cl) => {
+      const g = cl.memberHeartBladeGifts || [];
+      const errs = [];
+      if (g.length !== 2) errs.push("gifts");
+      if (!g.some((x) => x.name === "澁谷かのん" && x.heartSlot === 5 && x.grantBlade)) errs.push("kanon");
+      if (!g.some((x) => x.name === "唐可可" && x.heartSlot === 1 && x.grantBlade)) errs.push("keke");
+      return errs;
+    },
+  },
+  {
+    id: "PL!SP-bp1-024-L",
+    trigger: "live_success",
+    expectTemplate: "live_success_characters_draw",
+    check: (cl) => {
+      const names = cl.characterNames || [];
+      return names.includes("澁谷かのん") && names.includes("唐可可") ? [] : ["characterNames"];
+    },
+  },
   {
     id: "PL!SP-bp1-026-L",
     trigger: "live_start",
     expectTemplate: "live_start_need_heart_set_fixed",
-    check: (cl) => (cl.filters?.minDistinctStageAndWaitingNames === 5 ? [] : ["distinct names"]),
+    check: (cl) => {
+      const errs = [];
+      if (cl.filters?.minDistinctStageAndWaitingNames !== 5) errs.push("distinct names");
+      if (cl.filters?.seriesTag !== "Liella!") errs.push("seriesTag");
+      const m = cl.needHeartSetMap || {};
+      if (m.heart02 !== 2 || m.heart03 !== 2 || m.heart06 !== 2) errs.push("needHeartSetMap");
+      return errs;
+    },
   },
   {
     id: "PL!SP-bp1-027-L",
@@ -92,8 +119,25 @@ for (const c of CASES) {
   }
 }
 
+for (const id of ["PL!SP-bp1-025-L"]) {
+  const card = cards[id];
+  if (!card) {
+    console.error("MISSING", id);
+    failed++;
+    continue;
+  }
+  const triggered = splitAbilityByTriggers(cardAbilityRawText(card)).filter((s) => s.trigger);
+  if (triggered.length) {
+    failed++;
+    console.error("FAIL", id, "expected no triggered ability");
+  } else {
+    console.log("OK", id, "no triggered ability");
+  }
+}
+
 if (failed) {
   console.error(`\n${failed} liella-bp1 case(s) failed`);
   process.exit(1);
 }
-console.log(`\nAll ${CASES.length} liella-bp1 cases passed`);
+const totalCases = CASES.length + 1;
+console.log(`\nAll ${totalCases} liella-bp1 cases passed`);

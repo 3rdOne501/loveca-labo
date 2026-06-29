@@ -40,9 +40,27 @@ const CASES = [
     id: "PL!S-bp3-019-L",
     trigger: "live_success",
     expectTemplate: "live_card_score_set_fixed",
-    check: (cl) => (cl.cardScoreSet === 4 ? [] : ["cardScoreSet"]),
+    check: (cl) => {
+      const errs = [];
+      if (cl.cardScoreSet !== 4) errs.push("cardScoreSet");
+      if (cl.minSurplusHeartsOrYellAllBh !== 2) errs.push("surplus/bh or");
+      if (cl.requiresConditionConfirm) errs.push("must not need confirm");
+      return errs;
+    },
   },
   { id: "PL!S-bp3-020-L", trigger: "jidou", expectTemplate: "jidou_yell_retry_low_bh" },
+  {
+    id: "PL!S-bp3-021-L",
+    trigger: "live_start",
+    expectTemplate: "grant_jouji_session",
+    check: (cl) => {
+      const errs = [];
+      if (!cl.optionalWaitingMemberToDeckTop) errs.push("wait deck top");
+      if (!cl.grantPickStageMembersMax) errs.push("pick 1");
+      if (cl.bladeGain !== 1) errs.push("blade 1");
+      return errs;
+    },
+  },
   {
     id: "PL!S-bp3-024-L",
     trigger: "live_start",
@@ -56,7 +74,14 @@ const CASES = [
     id: "PL!S-bp3-025-L",
     trigger: "live_start",
     expectTemplate: "live_card_score_plus",
-    check: (cl) => (cl.cardScoreGrant === 1 ? [] : ["cardScoreGrant"]),
+    check: (cl) => {
+      const errs = [];
+      if (cl.cardScoreGrant !== 1) errs.push("cardScoreGrant");
+      if (cl.grantPickStageMembersMax !== 1) errs.push("pick 1");
+      if (cl.minPickedMemberBlade !== 6) errs.push("blade 6+");
+      if (cl.filters?.seriesTag !== "Aqours") errs.push("series");
+      return errs;
+    },
   },
 ];
 
@@ -87,8 +112,25 @@ for (const c of CASES) {
   }
 }
 
+for (const id of ["PL!S-bp3-022-L", "PL!S-bp3-023-L"]) {
+  const card = cards[id];
+  if (!card) {
+    console.error("MISSING", id);
+    failed++;
+    continue;
+  }
+  const raw = cardAbilityRawText(card);
+  if (raw && raw.trim()) {
+    failed++;
+    console.error("FAIL", id, "expected no ability");
+  } else {
+    console.log("OK", id, "no ability");
+  }
+}
+
 if (failed) {
   console.error(`\n${failed} aqours-bp3 case(s) failed`);
   process.exit(1);
 }
-console.log(`\nAll ${CASES.length} aqours-bp3 cases passed`);
+const totalCases = CASES.length + 2;
+console.log(`\nAll ${totalCases} aqours-bp3 cases passed`);

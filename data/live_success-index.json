@@ -1,5 +1,5 @@
 {
-  "generated": "2026-06-28",
+  "generated": "2026-06-29",
   "trigger": "live_success",
   "total": 107,
   "byTemplate": {
@@ -12,8 +12,9 @@
     "yell_resolution_pick_self_score": 2,
     "energy_less_than_opponent_wait": 2,
     "both_players_energy_deck_wait": 4,
-    "deck_top_pick_recover": 7,
+    "live_success_deck_wait_pick_live": 4,
     "deck_top_count_live_score_plus": 4,
+    "deck_top_pick_recover": 3,
     "live_success_self_wait_if_others": 3,
     "surplus_heart_score_modifier": 3,
     "live_score_higher_energy_wait": 4,
@@ -294,7 +295,7 @@
     {
       "card_no": "PL!N-bp4-011-R＋",
       "name": "ミア・テイラー",
-      "template": "deck_top_pick_recover",
+      "template": "live_success_deck_wait_pick_live",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -303,7 +304,7 @@
     {
       "card_no": "PL!N-bp4-011-P",
       "name": "ミア・テイラー",
-      "template": "deck_top_pick_recover",
+      "template": "live_success_deck_wait_pick_live",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -312,7 +313,7 @@
     {
       "card_no": "PL!N-bp4-011-P＋",
       "name": "ミア・テイラー",
-      "template": "deck_top_pick_recover",
+      "template": "live_success_deck_wait_pick_live",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -321,7 +322,7 @@
     {
       "card_no": "PL!N-bp4-011-SEC",
       "name": "ミア・テイラー",
-      "template": "deck_top_pick_recover",
+      "template": "live_success_deck_wait_pick_live",
       "automated": true,
       "optional": false,
       "perTurn": 0,

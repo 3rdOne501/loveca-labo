@@ -1,6 +1,14 @@
 /** ソロ／対戦プレイ中のワンショット演出（軽量モード・reduce-motion では無効） */
 
 export const PLAY_FX_MS = 1000;
+/** コスト13+の場で使う効果（登場時・起動・ライブ開始時・成功時） */
+export const PLAY_FX_ABILITY_HIGH_MS = 1400;
+/** コスト13+登場・打点9+ライブ開始 */
+export const PLAY_FX_PREMIUM_MS = 1500;
+/** コスト15+登場 */
+export const PLAY_FX_ULTRA_MS = 1800;
+
+const FIELD_ABILITY_KINDS = { toujyou: true, kidou: true, live_start: true, live_success: true };
 
 /**
  * @param {*} c カードインスタンス
@@ -10,18 +18,78 @@ export function markPlayFx(c, kind) {
   if (!c || typeof c !== "object" || !kind) return;
   c._playFxAt = Date.now();
   c._playFxKind = String(kind);
+  delete c._playFxPremium;
+  delete c._playFxPremiumTier;
+  delete c._playFxAbility;
+  delete c._playFxAbilityHigh;
 }
 
-/** @param {Array<*>} cards @param {string} kind */
-export function markPlayFxMany(cards, kind) {
+/**
+ * @param {*} c
+ * @param {string} kind
+ * @param {1|2} [tier] 1=コスト13+ / 2=コスト15+
+ */
+export function markPlayFxPremium(c, kind, tier) {
+  markPlayFx(c, kind);
+  if (!c || typeof c !== "object") return;
+  c._playFxPremium = true;
+  c._playFxPremiumTier = tier >= 2 ? 2 : 1;
+}
+
+/** 能力解決時の演出。コスト13+は豪華版（1.4秒） */
+export function markPlayFxAbility(c, kind, opts) {
+  markPlayFx(c, kind);
+  if (!c || typeof c !== "object") return;
+  opts = opts || {};
+  var cost = Number(opts.cost);
+  var high =
+    opts.highCost === true ||
+    (Number.isFinite(cost) && cost >= 13);
+  if (high) {
+    c._playFxAbility = true;
+    c._playFxAbilityHigh = true;
+  }
+}
+
+/**
+ * @param {Array<*>} cards
+ * @param {string} kind
+ * @param {{ premium?: boolean, tier?: number }} [opts]
+ */
+export function markPlayFxMany(cards, kind, opts) {
   if (!Array.isArray(cards)) return;
+  opts = opts || {};
   cards.forEach(function (c) {
-    markPlayFx(c, kind);
+    if (opts.premium) markPlayFxPremium(c, kind, opts.tier);
+    else markPlayFx(c, kind);
   });
 }
 
-/** @param {string} [_kind] */
-export function playFxDurationMs(_kind) {
+/**
+ * @param {*} c
+ * @returns {{ premium: boolean, tier: number, ability: boolean }}
+ */
+function playFxMetaFromCard(c) {
+  var tier = Math.max(0, Math.min(2, Math.floor(Number(c._playFxPremiumTier) || 0)));
+  if (c._playFxPremium === true && tier < 1) tier = 1;
+  return {
+    premium: tier > 0,
+    tier: tier,
+    ability: c._playFxAbility === true,
+    abilityHigh: c._playFxAbilityHigh === true,
+  };
+}
+
+/**
+ * @param {string} [_kind]
+ * @param {{ premium?: boolean, tier?: number, ability?: boolean, abilityHigh?: boolean } | boolean} [opts]
+ */
+export function playFxDurationMs(_kind, opts) {
+  if (opts === true) opts = { premium: true };
+  opts = opts || {};
+  if (opts.tier >= 2) return PLAY_FX_ULTRA_MS;
+  if (opts.premium || opts.tier >= 1) return PLAY_FX_PREMIUM_MS;
+  if (opts.abilityHigh) return PLAY_FX_ABILITY_HIGH_MS;
   return PLAY_FX_MS;
 }
 
@@ -29,20 +97,32 @@ export function playFxDurationMs(_kind) {
  * @param {*} c
  * @param {number} [nowMs]
  * @param {boolean} [lightweight]
- * @returns {{ kind: string, durationMs: number } | null}
+ * @returns {{ kind: string, durationMs: number, premium: boolean, tier: number, ability: boolean } | null}
  */
 export function playFxInfo(c, nowMs, lightweight) {
   if (lightweight || !c || !c._playFxAt || !c._playFxKind) return null;
   var now = nowMs != null ? nowMs : Date.now();
   var elapsed = now - Number(c._playFxAt);
   var kind = String(c._playFxKind);
-  var dur = PLAY_FX_MS;
-  if (elapsed > dur + 120) {
+  var meta = playFxMetaFromCard(c);
+  var dur = playFxDurationMs(kind, meta);
+  if (elapsed > dur + 160) {
     delete c._playFxAt;
     delete c._playFxKind;
+    delete c._playFxPremium;
+    delete c._playFxPremiumTier;
+    delete c._playFxAbility;
+    delete c._playFxAbilityHigh;
     return null;
   }
-  return { kind: kind, durationMs: dur };
+  return {
+    kind: kind,
+    durationMs: dur,
+    premium: meta.premium,
+    tier: meta.tier,
+    ability: meta.ability,
+    abilityHigh: meta.abilityHigh,
+  };
 }
 
 /** @param {string} kind */
@@ -56,4 +136,12 @@ export function playFxChipLabel(kind) {
   if (kind === "kidou") return "起動";
   if (kind === "live_success") return "成功時";
   return "効果";
+}
+
+/** 能力系・プレミアム演出ではチップを出さない */
+export function playFxShowsChip(pfx) {
+  if (!pfx) return false;
+  if (pfx.premium || pfx.tier > 0 || pfx.ability || pfx.abilityHigh) return false;
+  if (FIELD_ABILITY_KINDS[pfx.kind]) return false;
+  return true;
 }

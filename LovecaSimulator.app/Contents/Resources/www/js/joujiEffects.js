@@ -62,6 +62,7 @@ import { T_MEMBER } from "./config.js";
  * @property {boolean} [mostHeartsOnBothStages]
  * @property {boolean} [opponentMoreEnergy]
  * @property {boolean} [ownSuccessScoreBeatsOpponent]
+ * @property {boolean} [requiresLiveFrameNoStartSuccessAbility]
  * @property {boolean} [loseBladeInstead]
  * @property {number} [energyBelowMember]
  * @property {number} [minEnergyBelowMember]
@@ -112,6 +113,7 @@ import { T_MEMBER } from "./config.js";
  * @property {(inst: *, tag: string) => boolean} memberMatchesSeries
  * @property {(inst: *) => boolean} memberHasNoPrintedAbility
  * @property {(inst: *) => boolean} memberIsOpponentProxy
+ * @property {() => boolean} liveFrameHasNoStartSuccessAbilityLive
  */
 
 function segmentPlainText(rawSegment) {
@@ -727,6 +729,15 @@ export function classifyJoujiSegment(segRaw) {
     }
     if (/このターンにこのメンバーが移動していない/.test(p)) bladeRule.notMovedThisTurn = true;
     if (/メンバーのコストの合計が相手より低い/.test(p)) bladeRule.kind = "blade_if_lower_stage_cost_sum";
+    if (
+      /ライブ開始時.*能力も.*ライブ成功時.*能力も持たない/.test(p) ||
+      /ライブ中のライブカードに、.*能力も.*能力も持たない/.test(p)
+    ) {
+      bladeRule.requiresLiveFrameNoStartSuccessAbility = true;
+    }
+    if (/成功ライブカード置き場にあるカードのスコアの合計が相手より高い/.test(p)) {
+      bladeRule.ownSuccessScoreBeatsOpponent = true;
+    }
 
     var charM = p.match(/「([^」]+)」がいるかぎり/);
     if (charM) {
@@ -747,6 +758,14 @@ export function classifyJoujiSegment(segRaw) {
       bladeRule.kind = "blade_if_liella_live_need_sum";
       bladeRule.minTotalNeedHeart = 8;
       bladeRule.liveSeriesTag = "Liella!";
+    }
+
+    if (/このカードが自分の成功ライブカード置き場にあるかぎり/.test(p)) {
+      bladeRule.requiresSuccessLiveSelf = true;
+    }
+    var slCenterMemberSer = p.match(/センターエリアにいる『([^』]+)』のメンバー/);
+    if (slCenterMemberSer) {
+      bladeRule.grantMemberSeriesTag = slCenterMemberSer[1];
     }
 
     return bladeRule;
@@ -1119,6 +1138,17 @@ function conditionMet(rule, inst, card, ctx) {
     });
     if (!higher) return false;
   }
+  if (rule.requiresLiveFrameNoStartSuccessAbility) {
+    if (
+      typeof ctx.liveFrameHasNoStartSuccessAbilityLive !== "function" ||
+      !ctx.liveFrameHasNoStartSuccessAbilityLive()
+    ) {
+      return false;
+    }
+  }
+  if (rule.ownSuccessScoreBeatsOpponent) {
+    if (ctx.ownSuccessLiveScoreSum() <= ctx.opponentSuccessLiveScoreSum()) return false;
+  }
   if (rule.kind === "blade_if_lower_stage_cost_sum") {
     var ownSum = 0;
     var oppSum = 0;
@@ -1265,6 +1295,33 @@ export function computeSuccessLiveJoujiScoreBonus(liveInst, ctx) {
       if (!hasSeries) continue;
     }
     bonus = Math.max(bonus, rule.successLiveScorePlus || 0);
+  }
+  return bonus;
+}
+
+/** 成功ライブ置き場の常時が、ステージ上メンバーへ付与するブレード（Love wing bell 等） */
+export function computeSuccessLiveJoujiMemberBladeBonus(memberInst, ctx) {
+  if (!memberInst || memberInst.type !== T_MEMBER || !ctx) return 0;
+  if (ctx.memberOnStageOnly && !ctx.memberOnStageOnly(memberInst)) return 0;
+  var col = ctx.memberStageColumn(memberInst);
+  if (!col) return 0;
+  var bonus = 0;
+  var slLives = ctx.successLiveAreaLiveInsts ? ctx.successLiveAreaLiveInsts() : [];
+  for (var si = 0; si < slLives.length; si++) {
+    var liveInst = slLives[si];
+    if (!liveInst) continue;
+    var liveCard = ctx.mergedCatalog(liveInst);
+    var liveRaws = listNativeJoujiSegmentRaws(liveCard);
+    for (var lj = 0; lj < liveRaws.length; lj++) {
+      var rule = classifyJoujiSegment(liveRaws[lj]);
+      if (!rule || rule.kind !== "blade_conditional") continue;
+      if (!rule.requiresSuccessLiveSelf) continue;
+      if (rule.stageAreas && rule.stageAreas.length && rule.stageAreas.indexOf(col) < 0) continue;
+      if (rule.grantMemberSeriesTag && !ctx.memberMatchesSeries(memberInst, rule.grantMemberSeriesTag)) {
+        continue;
+      }
+      bonus = Math.max(bonus, Math.floor(Number(rule.bladeFlat) || 0));
+    }
   }
   return bonus;
 }

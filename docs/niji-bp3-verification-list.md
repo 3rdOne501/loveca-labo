@@ -36,12 +36,35 @@
 |------|------|-----|------|----------------|------|
 | [x] | 025 | PL!N-bp3-025-L | Awakening Promise | live_start_optional_energy_under_return_grant | メンバー下エネルギー任意枚EDK戻し→1枚につきheart02×3 |
 | [x] | 026 | PL!N-bp3-026-L | サイコーハート | live_start_tiered_success_live_scores | 自成功置き場にスコア1 or 5→+1、両方→+2 |
-| [x] | 027 | PL!N-bp3-027-L | La Bella Patria | live_success_surplus_heart_energy_wait | 成功時: 余剰heart04+かつ虹ヶ咲 on stage→EDK1枚ウェイト |
-| [x] | 028 | PL!N-bp3-028-L | ツナガルコネクト | deck_top_to_waiting | 虹ヶ咲1人につき1枚見て並べ替え→山札上公開→ライブならスコア+1 |
-| [ ] | 029 | PL!N-bp3-029-L | 未来ハーモニー | （能力なし） | |
-| [x] | 030 | PL!N-bp3-030-L | Love U my friends | live_card_score_plus | 成功時: エール公開にALLブレード1枚+→スコア+1 |
+| [x] | 027 | PL!N-bp3-027-L | La Bella Patria | live_success_surplus_heart_energy_wait | 成功時: 余剰heart04+かつ虹ヶ咲 on stage→EDK1枚ウェイト **2026-06-28再修正** |
+| [x] | 028 | PL!N-bp3-028-L | ツナガルコネクト | live_start_per_series_member_deck_look_reveal_score | 虹ヶ咲1人につき1枚見て並べ替え→山札上公開→ライブならスコア+1 **2026-06-28修正** |
+| [x] | 029 | PL!N-bp3-029-L | 未来ハーモニー | （能力なし） | |
+| [x] | 030 | PL!N-bp3-030-L | Love U my friends | live_card_score_plus | 成功時: エール公開にALLブレード1枚+→スコア+1 **2026-06-28再修正** |
 | [x] | 031 | PL!N-bp3-031-L | MONSTER GIRLS | live_card_score_plus_per_unit | 成功時: ウェイトメンバー1人につきスコア+1 |
 
-## 2026-06-28 検証
+## 検証結果（2026-06-28・ライブ 025–031）
 
-能力あり25種: **guided_manual=0**。新規コード修正なし。
+### 修正した
+
+| ID | 名前 | 内容 |
+|----|------|------|
+| PL!N-bp3-027-L | La Bella Patria | 余剰 heart04 条件を手動確認から機械判定へ（`countOwnLiveSurplusForHeartSlot`）。FAQ Q174 準拠 |
+| PL!N-bp3-028-L | ツナガルコネクト | `deck_top_to_waiting` 誤分類 → `live_start_per_series_member_deck_look_reveal_score`（虹ヶ咲人数分の山札操作→上公開→ライブなら+1） |
+| PL!N-bp3-030-L | Love U my friends | ALLブレード条件を「めくり」から「持つ」（b_all 印刷）へ修正 → `requiresYellRevealedAllBladeHeart` |
+
+### 問題なし
+
+| ID | 名前 | 内容 |
+|----|------|------|
+| PL!N-bp3-025-L | Awakening Promise | ライブ開始: メンバー下エネルギー任意枚EDK戻し→1枚につき heart02×3 |
+| PL!N-bp3-026-L | サイコーハート | ライブ開始: 自成功置き場にスコア1 or 5→+1、両方→+2 |
+| PL!N-bp3-029-L | 未来ハーモニー | 能力なし |
+| PL!N-bp3-031-L | MONSTER GIRLS | 成功時: ウェイトメンバー1人につきスコア+1 |
+| PL!N-bp3-032-L | THE SECRET NiGHT | 能力なし（リスト外・同弾） |
+
+## 2026-06-28 検証（メンバー・初回）
+
+能力あり25種: **guided_manual=0**。
+
+- **028-L ツナガルコネクト**: `deck_top_to_waiting` 誤分類を修正（上記ライブ表参照）。
+- ライブ025–031: 分類・回帰テスト追加（`verify-niji-bp3.mjs`）。

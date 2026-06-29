@@ -40,11 +40,49 @@ const CASES = [
     id: "PL!N-bp3-025-L",
     trigger: "live_start",
     expectTemplate: "live_start_optional_energy_under_return_grant",
+    check: (cl) =>
+      cl.grantHeartCountPerEnergy === 3 && cl.requiredHeartSlot === 2 ? [] : ["heart grant meta"],
+  },
+  {
+    id: "PL!N-bp3-026-L",
+    trigger: "live_start",
+    expectTemplate: "live_start_tiered_success_live_scores",
+    check: (cl) =>
+      Array.isArray(cl.tierSuccessLiveScores) &&
+      cl.tierSuccessLiveScores.includes(1) &&
+      cl.tierSuccessLiveScores.includes(5)
+        ? []
+        : ["tier scores 1/5"],
+  },
+  {
+    id: "PL!N-bp3-027-L",
+    trigger: "live_success",
+    expectTemplate: "live_success_surplus_heart_energy_wait",
+    check: (cl) => {
+      const errs = [];
+      if (cl.surplusHeartSlot !== 4) errs.push("surplus heart04");
+      if (cl.filters?.minStageSeriesMembers !== 1) errs.push("stage niji");
+      if (cl.filters?.minStageSeriesMembersTag !== "虹ヶ咲") errs.push("stage tag");
+      return errs;
+    },
   },
   {
     id: "PL!N-bp3-028-L",
     trigger: "live_start",
-    expectTemplate: "deck_top_to_waiting",
+    expectTemplate: "live_start_per_series_member_deck_look_reveal_score",
+    check: (cl) => {
+      const errs = [];
+      if (cl.deckTopCount !== 1) errs.push("deckTopCount");
+      if (cl.cardScoreGrant !== 1) errs.push("score +1");
+      if (cl.filters?.seriesTag !== "虹ヶ咲") errs.push("seriesTag");
+      return errs;
+    },
+  },
+  {
+    id: "PL!N-bp3-030-L",
+    trigger: "live_success",
+    expectTemplate: "live_card_score_plus",
+    check: (cl) => (cl.requiresYellRevealedAllBladeHeart ? [] : ["yell ALL blade heart"]),
   },
   {
     id: "PL!N-bp3-031-L",
@@ -81,8 +119,25 @@ for (const c of CASES) {
   }
 }
 
+for (const id of ["PL!N-bp3-029-L", "PL!N-bp3-032-L"]) {
+  const card = cards[id];
+  if (!card) {
+    console.error("MISSING", id);
+    failed++;
+    continue;
+  }
+  const raw = cardAbilityRawText(card);
+  if (raw && raw.trim()) {
+    failed++;
+    console.error("FAIL", id, "expected no ability");
+  } else {
+    console.log("OK", id, "no ability");
+  }
+}
+
 if (failed) {
   console.error(`\n${failed} niji-bp3 case(s) failed`);
   process.exit(1);
 }
-console.log(`\nAll ${CASES.length} niji-bp3 cases passed`);
+const totalCases = CASES.length + 2;
+console.log(`\nAll ${totalCases} niji-bp3 cases passed`);

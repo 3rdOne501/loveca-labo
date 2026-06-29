@@ -157,17 +157,31 @@ export function classifyJidouAutoSegment(segRaw) {
     };
   }
   if (/登場か、エリアを移動したとき/.test(p) && /相手のステージ.*ウェイト/.test(p)) {
-    return { template: "jidou_area_move_opp_wait", eventKind: "area_move", perTurnLimit: perTurn };
+    var bladeEnterM =
+      p.match(/元々持つ.*?(\d+)つ以下/) ||
+      p.match(/ブレード.*?(\d+)つ以下/) ||
+      p.match(/元々.*?(\d+)つ以下/);
+    return {
+      template: "jidou_area_move_opp_wait",
+      eventKind: "enter_or_baton",
+      altEventKind: "area_move",
+      perTurnLimit: perTurn,
+      oppWaitMaxPrintedBlade: bladeEnterM ? Number(bladeEnterM[1]) : null,
+      oppWaitMaxCost: 99,
+    };
   }
   if (/エリアを移動したとき/.test(p) && /相手のステージ.*ウェイト/.test(p)) {
     var owc = p.match(/コスト(\d+)以下/);
-    var owm = p.match(/元々持つ.*が(\d+)つ以下/);
+    var owm =
+      p.match(/元々持つ.*?(\d+)つ以下/) ||
+      p.match(/ブレード.*?(\d+)つ以下/) ||
+      p.match(/元々.*?(\d+)つ以下/);
     return {
       template: "jidou_area_move_opp_wait",
       eventKind: "area_move",
       perTurnLimit: perTurn,
       oppWaitMaxCost: owc ? Number(owc[1]) : 99,
-      oppWaitMaxIcons: owm ? Number(owm[1]) : 99,
+      oppWaitMaxPrintedBlade: owm ? Number(owm[1]) : null,
     };
   }
   if (/エリアを移動したとき/.test(p) && /エネルギーを(\d+)枚アクティブ/.test(p)) {
@@ -227,6 +241,22 @@ export function classifyJidouAutoSegment(segRaw) {
   }
   if (/エールにより公開.*ブレードハートを持つカードがない/.test(p) && /ライブ終了時まで/.test(p)) {
     return { template: "jidou_yell_grant_jouji_no_bh", eventKind: "yell", perTurnLimit: perTurn };
+  }
+  if (
+    /自分がエールしたとき/.test(p) &&
+    /ライブ終了時まで/.test(p) &&
+    /ライブカード1枚につき/.test(p) &&
+    /(\d+)つまでしか得られない/.test(p) &&
+    /heart_0?2|heart02|h02|赤/.test(String(segRaw || ""))
+  ) {
+    var capHeartM = p.match(/(\d+)つまでしか得られない/);
+    return {
+      template: "jidou_yell_grant_heart_per_live_capped",
+      eventKind: "yell",
+      heartSlot: 2,
+      heartGrantCap: capHeartM ? Number(capHeartM[1]) : 3,
+      perTurnLimit: perTurn,
+    };
   }
   if (/自分がエールしたとき/.test(p) && /ライブ終了時まで/.test(p)) {
     return { template: "jidou_yell_grant_jouji", eventKind: "yell", perTurnLimit: perTurn };
@@ -533,6 +563,7 @@ export function jidouEffectIsAutomated(template) {
     template === "jidou_yell_grant_jouji_nobh_members" ||
     template === "jidou_yell_grant_jouji_no_bh" ||
     template === "jidou_yell_grant_heart" ||
+    template === "jidou_yell_grant_heart_per_live_capped" ||
     template === "jidou_yell_draw" ||
     template === "jidou_leave_stage_position_change" ||
     template === "jidou_stage_entry_draw_until" ||
