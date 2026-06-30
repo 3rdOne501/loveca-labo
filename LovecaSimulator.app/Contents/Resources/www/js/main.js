@@ -33,13 +33,26 @@ let soloPlayStartSeq = 0;
 /** プレイ画面（約1.5万行）— 起動時に読み込まない（デッキ画面だけで固まるのを防ぐ） */
 /** @type {Promise<typeof import('./simulator.js')>|null} */
 let simulatorModulePromise = null;
+/** @type {typeof import('./simulator.js') | null} */
+let simulatorModuleCache = null;
 function loadSimulatorModule() {
   if (!simulatorModulePromise) {
-    simulatorModulePromise = import("./simulator.js");
+    simulatorModulePromise = import("./simulator.js").then(function (m) {
+      simulatorModuleCache = m;
+      return m;
+    });
   }
   return simulatorModulePromise;
 }
 function teardownDeckPileLayoutWatchers() {
+  if (simulatorModuleCache && typeof simulatorModuleCache.teardownDeckPileLayoutWatchers === "function") {
+    try {
+      simulatorModuleCache.teardownDeckPileLayoutWatchers();
+    } catch (_) {
+      /* noop */
+    }
+    return;
+  }
   if (simulatorModulePromise) {
     simulatorModulePromise
       .then(function (m) {
@@ -51,6 +64,14 @@ function teardownDeckPileLayoutWatchers() {
   }
 }
 function teardownActivePlayMountFromMain() {
+  if (simulatorModuleCache && typeof simulatorModuleCache.teardownActivePlayMount === "function") {
+    try {
+      simulatorModuleCache.teardownActivePlayMount();
+    } catch (_) {
+      /* noop */
+    }
+    return;
+  }
   if (simulatorModulePromise) {
     simulatorModulePromise
       .then(function (m) {
@@ -366,6 +387,7 @@ function tryResumePlaySession(viewDeck, viewGame) {
     }
     const deckMap = normalizeDeckMapCounts(pr.board.deckMeta.activePlayDeckMap);
     const dm = pr.board.deckMeta;
+    const resumeSeq = soloPlayStartSeq;
     viewDeck.hidden = true;
     viewGame.hidden = false;
     document.body.classList.add("play-mode");
@@ -373,6 +395,7 @@ function tryResumePlaySession(viewDeck, viewGame) {
       setTimeout(function () {
         loadSimulatorModule()
           .then(function (sim) {
+            if (resumeSeq !== soloPlayStartSeq) return;
             sim.mountSimulator(viewGame, deckMap, {
               onBackToDeck(opts) {
                 teardownDeckPileLayoutWatchers();
@@ -678,6 +701,7 @@ function startApp(viewDeck, viewGame, statusEl) {
                   resumeFromStorage: false,
                   onBackToDeck() {
                     teardownDeckPileLayoutWatchers();
+                    teardownActivePlayMountFromMain();
                     clearPlayResumeStorage();
                     viewGame.hidden = true;
                     viewDeck.hidden = false;

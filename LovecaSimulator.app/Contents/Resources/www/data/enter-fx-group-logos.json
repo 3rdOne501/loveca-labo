@@ -1,0 +1,40 @@
+{
+  "v": 2,
+  "artDir": "assets/game-icons/group-logos/",
+  "seriesLogos": {
+    "muse": "muse_logo.svg",
+    "aqours": "Aqours.png",
+    "liella": "Liella!.png",
+    "nijigasaki": "Love_Live!_Nijigasaki_Gakuen_School_Idol_Doukoukai_logo.png"
+  },
+  "rivalUnitLogos": {
+    "arise": "A-RISE_logo.webp",
+    "saint_snow": "saint-snow-logo.png",
+    "sunny_passion": "sanny_passion.webp"
+  },
+  "hasunosoraUnitLogos": {
+    "default": "hasu.webp",
+    "cerise_bouquet": "suri-zu_bouquet.webp",
+    "dollchestra": "dollchestra.webp",
+    "mirakurapark": "mirakurapark.webp",
+    "edelnote": "Edel_Note_Logo.webp"
+  },
+  "unitLogoPatterns": [
+    {
+      "match": "スリーズブーケ|Cerise",
+      "logo": "cerise_bouquet"
+    },
+    {
+      "match": "DOLLCHESTRA|ドルチェスタ",
+      "logo": "dollchestra"
+    },
+    {
+      "match": "みらくらぱーく|ミラクルパーク|mirakurapark",
+      "logo": "mirakurapark"
+    },
+    {
+      "match": "EdelNote",
+      "logo": "edelnote"
+    }
+  ]
+}

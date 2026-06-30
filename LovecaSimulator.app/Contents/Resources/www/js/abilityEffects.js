@@ -3,7 +3,7 @@
  * ソロプレイの自動処理テンプレートと、手動ガイドへの振り分けに使う。
  */
 import { T_LIVE, T_MEMBER } from "./config.js";
-import { catalogCardGroupKey, catalogCardMatchesGroupTag } from "./cardGroups.js";
+import { catalogCardGroupKey, catalogCardMatchesGroupTag, normalizeQuotedSeriesTag } from "./cardGroups.js";
 import { classifyJidouAutoSegment, jidouEffectIsAutomated } from "./jidouAutoEffects.js";
 import { abilityWikiCanonicalKeys, wikiAbilityStemToCanonical } from "./gameStatusIcons.js";
 import { applyAbilityComposition } from "./abilityComposition.js";
@@ -157,6 +157,7 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  *   |'deck_reveal_until_pick'
  *   |'deck_reveal_until_live'
  *   |'kidou_hand_reveal_to_under'
+ *   |'kidou_heart_color_deck_reveal_pick'
  *   |'kidou_hand_discard_wait_live_score_pay'
  *   |'kidou_self_wait_hand_enter_energy'
  *   |'kidou_wait_shuffle_deck_bottom_activate'
@@ -201,6 +202,7 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  *   |'live_start_hand_discard_optional_blade_per'
  *   |'live_start_hand_discard_series_member_blade_grant'
  *   |'live_start_hand_reveal_deck_place_blade'
+ *   |'live_start_hand_reveal_under_heart_grant'
  *   |'ability_sequence'
  *   |'followup_draw_if_live_discarded'
  *   |'toujou_multi_wait_draw_per_count'
@@ -336,6 +338,8 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  * @property {boolean} [requiresLiveScoreTieWithOpponent] 自分と相手のライブ合計スコアが同点
  * @property {boolean} [requiresLiveScoreHigherThanOpponent] ライブ合計スコアが相手より高い
  * @property {number | null} [requiresOpponentHandLead] 相手の手札が自分よりN枚以上多い
+ * @property {boolean} [requiresYellRevealedNoBladeHeartMember] エール公開にBHなしメンバーが1枚以上
+ * @property {string | null} [minLiveFrameSeriesTag] minLiveFrameCount 時のシリーズ絞り
  * @property {number | null} [minEitherSuccessLiveCount] 自分か相手の成功ライブ置き場がN枚以上
  */
 
@@ -379,6 +383,8 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  * @property {boolean} [pickSelfOrOpponent] 自分か相手の盤面を選んで効果を解決
  * @property {number} [minLiveFrameCount]
  * @property {number} [deckTopPickMax]
+ * @property {number} [deckBottomPickMax] 控え室から山札下へ置く枚数上限
+ * @property {number} [deckDrawOnSuccess] 効果成功後に山札から引く枚数
  * @property {boolean} [deckTopPickDistinctGroup]
  * @property {number} [handDiscardExact]
  * @property {number} [handDiscardMax]
@@ -398,6 +404,7 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  * @property {number} [handDiscardTotalCount] 手札の指定キャラ名カードを合計N枚控え室へ（任意コスト）
  * @property {string | null} [requiresBatonFromSeriesTag] 登場時：指定シリーズのメンバーからのバトンタッチ必須
  * @property {string | null} [requiresBatonFromLowerCostSeriesTag] 低コスト指定シリーズからのバトンタッチ必須
+ * @property {boolean} [requiresBatonFromLowerCostMember] 低コストメンバーからのバトンタッチ必須（シリーズ不問）
  * @property {string | null} [excludeBatonPartnerCharacterName] バトンタッチ元にできないキャラ名
  * @property {string | null} [handDiscardSeriesTag] 手札捨て対象のシリーズタグ
  * @property {string | null} [disableTargetSeriesTag] 登場時: 指定シリーズのメンバーのライブ開始時能力を無効化
@@ -688,6 +695,7 @@ function parseDeckTopCount(p) {
  * @returns {Partial<ClassifiedAbility> | null}
  */
 function classifyDeckTopPickToHandPatch(p, segRaw, extraPatch) {
+  if (/手札をすべて公開/.test(p) && /公開した手札の中にライブカードがない/.test(p)) return null;
   var td = parseDeckTopCount(p);
   if (td == null) return null;
   if (/登場させるか、手札に加える/.test(p)) return null;
@@ -824,6 +832,7 @@ function parsePositionChangeMeta(p, segRaw) {
 
 /** @param {string} p @returns {boolean} */
 function textHasHeartColorPickGrant(p) {
+  if (/デッキの上からカードを\d+枚公開/.test(p) && /指定した色/.test(p)) return false;
   return (
     (/かかのうち.*選ぶ/.test(p) || /好きなハートの色を1つ指定/.test(p) || /選んだハート/.test(p)) &&
     (/ライブ終了時まで/.test(p) || /選んだハート/.test(p)) &&
@@ -2146,6 +2155,13 @@ function matchHandTopReorderCount(p) {
 /** @param {AbilityPickFilters} f @param {string} segRaw @returns {AbilityPickFilters} */
 function enrichPickFiltersFromSegRaw(f, segRaw) {
   if (f.minScore == null && /icon_score/i.test(String(segRaw || ""))) f.minScore = 1;
+  if (f.minNeedHeartSlot == null) {
+    var nhIconM = String(segRaw || "").match(/必要ハートに\{\{heart_0?(\d)[^}]*\}\}を([０-９\d]+)以上/);
+    if (nhIconM) {
+      f.minNeedHeartSlot = Number(nhIconM[1]);
+      f.minNeedHeartValue = Number(normalizeFwDigits(nhIconM[2])) || 0;
+    }
+  }
   return f;
 }
 
@@ -2194,7 +2210,15 @@ export function parseAbilityPickFilters(p) {
   var minCostM = p.match(/コスト(\d+)以上/);
   if (minCostM) f.minCost = Number(minCostM[1]);
   var seriesM = p.match(/『([^』]+)』/) || p.match(/『([^」]+)」/);
-  if (seriesM) f.seriesTag = seriesM[1];
+  if (seriesM) f.seriesTag = normalizeQuotedSeriesTag(seriesM[1]);
+  if (/エールにより公開/.test(p) && /ブレードハートを持たない/.test(p) && /メンバーカード/.test(p)) {
+    f.requiresYellRevealedNoBladeHeartMember = true;
+  }
+  var liveSeriesPresenceM = p.match(/(?:自分の)?ライブカード置き場に『([^』]+)』のカードがある/);
+  if (liveSeriesPresenceM) {
+    f.minLiveFrameCount = 1;
+    f.minLiveFrameSeriesTag = normalizeQuotedSeriesTag(liveSeriesPresenceM[1]);
+  }
   var eitherSlClause = /自分か相手の成功ライブ/.test(p);
   if (!eitherSlClause) {
     var slM = p.match(/成功ライブ(?:カード)?置き場にカードが(\d+)枚以上/);
@@ -2222,6 +2246,10 @@ export function parseAbilityPickFilters(p) {
     var color = needM[1];
     var colorMap = { 桃: 1, 赤: 2, 黄: 3, 緑: 4, 青: 5, 紫: 6 };
     if (colorMap[color] != null) f.minNeedHeartSlot = colorMap[color];
+    var heartPlainM = String(color || "").match(/heart_?0?(\d)/i);
+    if (f.minNeedHeartSlot == null && heartPlainM) {
+      f.minNeedHeartSlot = Number(heartPlainM[1]);
+    }
   }
   var totalNeedM = p.match(/必要ハートの合計が(\d+)以上/);
   if (totalNeedM) f.minTotalNeedHeart = Number(totalNeedM[1]);
@@ -2360,8 +2388,22 @@ export function parseAbilityPickFilters(p) {
     f.minStageSeriesMembers = 1;
     f.minStageSeriesMembersTag = stageSeriesAnyM[1];
   }
-  if (/ステージにほかのメンバーがいる/.test(p) || /ステージに他のメンバーがいる/.test(p)) {
+  if (
+    /ステージにほかのメンバーが(いる|おり)/.test(p) ||
+    /ステージに他のメンバーが(いる|おり)/.test(p)
+  ) {
     f.minStageMembers = 2;
+  }
+  var memOrLiveM = p.match(
+    /コスト([０-９\d]+)以下のメンバーカードか、スコア([０-９\d]+)以下のライブカード/,
+  );
+  if (memOrLiveM) {
+    f.pickFilterAlternatives = [
+      { pickType: T_MEMBER, maxCost: Number(normalizeFwDigits(memOrLiveM[1])) },
+      { pickType: T_LIVE, pickMaxScore: Number(normalizeFwDigits(memOrLiveM[2])) },
+    ];
+    f.pickType = null;
+    f.maxCost = null;
   }
   if (/ステージのエリアすべてにメンバーが登場/.test(p) || /エリアすべてにメンバーが登場/.test(p)) {
     f.requiresAllStageAreasFilled = true;
@@ -2508,6 +2550,28 @@ function isCompoundLiveScoreEffectText(p) {
 }
 
 /**
+ * 「ライブ終了時まで」＋ハート／ブレード付与だが {{jyouji}} マーカーがない単純付与。
+ * 常時セッション合成の対象外（playBonus*Always へ直接付与する）。
+ * @param {string} segRaw
+ */
+export function isPlainLiveEndHeartBladeGrantSegment(segRaw) {
+  var s = String(segRaw || "");
+  if (!/ライブ終了時まで/.test(s)) return false;
+  if (/\{\{jyouji/i.test(s) || /「\{\{jyouji/.test(s)) return false;
+  if (
+    /合計スコア|このカードのスコア|ステージのコスト|元々持つハート|ライブできない|エールによって公開|枚数が[０-９\d]+枚減|必要ハートに含まれる|heart_00|heart_07|icon_all/i.test(
+      s,
+    )
+  ) {
+    return false;
+  }
+  if (!/を得る/.test(s)) return false;
+  if (/\{\{heart_|heart_0[1-6]/i.test(s)) return true;
+  if (/\{\{[^}]*blade/i.test(s) || /ブレード/.test(s)) return true;
+  return false;
+}
+
+/**
  * ライブ開始時効果内で付与される常時テキスト（{{jyouji}} 引用）を抽出。
  * @param {string} segRaw
  * @returns {string[]}
@@ -2556,6 +2620,12 @@ export function catalogCardMatchesSeriesTag(cat, tag) {
  */
 export function catalogCardMatchesPickFilters(cat, filters) {
   if (!cat || !filters) return false;
+  if (filters.pickFilterAlternatives && filters.pickFilterAlternatives.length) {
+    for (var ai = 0; ai < filters.pickFilterAlternatives.length; ai++) {
+      if (catalogCardMatchesPickFilters(cat, filters.pickFilterAlternatives[ai])) return true;
+    }
+    return false;
+  }
   if (filters.pickType && cat.type !== filters.pickType) return false;
   if (filters.maxCost != null) {
     var cost = Number(cat.cost != null ? cat.cost : cat.score);
@@ -3006,6 +3076,25 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
       );
     }
 
+    if (
+      /好きなハートの色を1つ指定/.test(p) &&
+      /デッキの上からカードを(\d+)枚公開/.test(p) &&
+      /指定した色のハートを持つメンバーカードと必要ハートに指定した色を含むライブカードが合計([０-９\d]+)枚含まれる/.test(p)
+    ) {
+      var deckRevealN = p.match(/デッキの上からカードを(\d+)枚公開/);
+      var deckMatchN = p.match(/合計([０-９\d]+)枚含まれる/);
+      return kidouT({
+        template: "kidou_heart_color_deck_reveal_pick",
+        handDiscardToWaiting: /手札を1枚控え室に置/.test(p) ? 1 : null,
+        deckTopCount: deckRevealN ? Number(deckRevealN[1]) : 5,
+        deckRevealMatchCount: deckMatchN ? Number(normalizeFwDigits(deckMatchN[1])) : 5,
+        bladeGain: bladeGainFromIcons(segRaw, p),
+        heartPickSlots: parseHeartColorPickSlots(p, segRaw),
+        filters: parseAbilityPickFilters(p),
+        perTurnLimit: perTurn,
+      });
+    }
+
     if (textHasHeartColorPickGrant(p)) {
       return kidouT({
         template: "heart_color_pick_grant",
@@ -3232,6 +3321,23 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
       return kidouT({
         template: "deck_top_look_reorder",
         deckTopCount: lookReorderKd,
+      });
+    }
+
+    if (
+      /手札をすべて公開/.test(p) &&
+      /公開した手札の中にライブカードがない/.test(p) &&
+      /デッキの上からカードを/.test(p) &&
+      /ライブカード/.test(p) &&
+      /手札に加えてもよい/.test(p)
+    ) {
+      return kidouT({
+        template: "kidou_reveal_all_hand_deck_top_live",
+        deckTopCount: parseDeckTopCount(p) || 5,
+        deckTopPickMax: 1,
+        filters: Object.assign(parseAbilityPickFilters(p), { pickType: T_LIVE }),
+        optional: true,
+        perTurnLimit: perTurn,
       });
     }
 
@@ -3578,7 +3684,12 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
         requiresOnStage: true,
       });
     }
-    if (deckTopMem && /すべて.*heart04.*メンバー/.test(p)) {
+    if (
+      deckTopMem &&
+      /それらがすべて/.test(p) &&
+      /メンバー/.test(p) &&
+      /heart_04|heart04|h04/i.test(String(segRaw || "") + p)
+    ) {
       return twT({
         template: "toujou_deck_top_wait_if_all_heart",
         deckTopCount: deckTopMem ? Number(deckTopMem[1]) : 3,
@@ -3586,7 +3697,12 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
         requiresOnStage: true,
       });
     }
-    if (deckTopMem && /すべて.*heart01.*メンバー/.test(p)) {
+    if (
+      deckTopMem &&
+      /それらがすべて/.test(p) &&
+      /メンバー/.test(p) &&
+      /heart_01|heart01|h01/i.test(String(segRaw || "") + p)
+    ) {
       return twT({
         template: "toujou_deck_top_wait_if_all_heart",
         deckTopCount: deckTopMem ? Number(deckTopMem[1]) : 3,
@@ -3895,6 +4011,12 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
         filters: Object.assign(parseAbilityPickFilters(p), { maxCost: Number(handStage[1]) || 4 }),
       };
       if (/既にメンバーがいるエリア/.test(p)) handStagePatch.allowOccupiedStageColumn = true;
+      if (
+        /このメンバーよりコストが低いメンバーからバトンタッチ/.test(p) &&
+        !/このメンバーよりコストが低い『/.test(p)
+      ) {
+        handStagePatch.requiresBatonFromLowerCostMember = true;
+      }
       return twT(handStagePatch);
     }
     var energyPerDrawM = p.match(/自分のエネルギー(\d+)枚につき.*カードを(\d+)枚引/);
@@ -4002,6 +4124,20 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
     }
     var drawM = p.match(/カードを(\d+)枚引/);
     if (!drawM) drawM = p.match(/デッキから(?:カードを)?(\d+)枚.*手札/);
+    if (
+      /自分か相手を選ぶ/.test(p) &&
+      /控え室.*ライブカード/.test(p) &&
+      /デッキの一番下/.test(p) &&
+      drawM
+    ) {
+      return twT({
+        template: "live_start_pick_player_waiting_deck_bottom",
+        deckBottomPickMax: 1,
+        deckDrawOnSuccess: Number(drawM[1]) || 1,
+        requiresOnStage: true,
+        filters: { pickType: T_LIVE },
+      });
+    }
     if (
       drawM &&
       !p.includes("控え室から") &&
@@ -4324,6 +4460,7 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
         template: "draw_then_hand_discard",
         deckDrawCount: Number(lsCombo[1]) || 1,
         effectDiscardCount: Number(lsCombo[2]) || 1,
+        filters: mergeAbilityPickFilters(parseAbilityPickFilters(p), parseConditionalPrefixFilters(p)),
       });
     }
     if (/デッキの上からカードを(\d+)枚控え室/.test(p) && /控え室.*ライブカード.*手札/.test(p)) {
@@ -4371,6 +4508,17 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
       }
     }
     var lsDraw = pLsSuccess.match(/カードを(\d+)枚引/);
+    if (
+      lsDraw &&
+      /元々持つハートの数より多い数のハートを持つ/.test(p) &&
+      !/2人以上/.test(p)
+    ) {
+      return withTrigger("live_success", {
+        template: "draw_from_deck",
+        deckDrawCount: Number(lsDraw[1]) || 1,
+        filters: { minStageOverflowHeartMembers: 1 },
+      });
+    }
     if (
       lsDraw &&
       !pLsSuccess.includes("控え室から") &&
@@ -4910,6 +5058,24 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
           },
           parsePositionChangeMeta(p, segRaw),
         ),
+      );
+    }
+
+    if (
+      /手札にある/.test(p) &&
+      /メンバーカードを1枚公開/.test(p) &&
+      /このメンバーの下に置/.test(p) &&
+      textHasHeartColorPickGrant(p)
+    ) {
+      return lsT(
+        enrichHeartColorPickGrantPatch(p, segRaw, {
+          template: "live_start_hand_reveal_under_heart_grant",
+          requiresOnStage: true,
+          optional: true,
+          hasOptionalCost: true,
+          filters: parseAbilityPickFilters(p),
+          heartPickSlots: parseHeartColorPickSlots(p, segRaw),
+        }),
       );
     }
 
@@ -6017,6 +6183,7 @@ export function abilityEffectIsAutomated(template) {
     template === "live_success_characters_draw" ||
     template === "heart_color_pick_grant" ||
     template === "kidou_reveal_hand_cost_threshold" ||
+    template === "kidou_reveal_all_hand_deck_top_live" ||
     template === "deck_top_count_stage_plus" ||
     template === "both_players_energy_deck_wait" ||
     template === "jouji_success_live_waiting_substitute" ||
@@ -6108,6 +6275,7 @@ export function abilityEffectIsAutomated(template) {
     template === "deck_reveal_until_pick" ||
     template === "deck_reveal_until_live" ||
     template === "kidou_hand_reveal_to_under" ||
+    template === "kidou_heart_color_deck_reveal_pick" ||
     template === "kidou_hand_discard_wait_live_score_pay" ||
     template === "kidou_self_wait_hand_enter_energy" ||
     template === "kidou_wait_shuffle_deck_bottom_activate" ||
@@ -6152,6 +6320,7 @@ export function abilityEffectIsAutomated(template) {
     template === "live_start_hand_discard_optional_blade_per" ||
     template === "live_start_hand_discard_series_member_blade_grant" ||
     template === "live_start_hand_reveal_deck_place_blade" ||
+    template === "live_start_hand_reveal_under_heart_grant" ||
     template === "live_success_deck_wait_pick_live" ||
     template === "live_success_enter_under_member" ||
     template === "live_start_sunny_day_song_tiered" ||

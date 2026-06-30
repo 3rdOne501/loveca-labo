@@ -42,7 +42,7 @@
 | bp3 | ✅ | ✅ | [muse-bp3-verification-list.md](./muse-bp3-verification-list.md) **2026-06-28 ライブ修正** |
 | bp4 | ✅ | ✅ | [mus-bp4-verification-list.md](./mus-bp4-verification-list.md) **2026-06-28 メンバー+ライブ修正完了** |
 | bp5 | ⬜ | ⬜ | 未作成 |
-| bp6 | ⬜ | ⬜ | 未作成 |
+| bp6 | ✅ | ✅ | `scripts/verify-muse-bp6.mjs` **2026-06-28 メンバー+ライブ修正**（020 jidou 能力種別、022 必要ハート減少 等） |
 
 ### Aqours（`PL!S-bp*` / クロス `LL-bp*`）
 
@@ -121,7 +121,7 @@
 | 7 | LL-bp5 | ライブ | ⬜ | `LL-bp5-002-L` Bring the LOVE! |
 | 8 | PL!HS-cl1 | メンバー | ⬜ | 8 枚 — Edelied 等は [play-verification-list](./play-verification-list.md) B 項 |
 | 9 | PL!HS-cl1 | ライブ | ⬜ | 4 枚 |
-| 10 | LL-PR | ライブ | ⬜ | `LL-PR-004-PR` 愛♡スクリ～ム！ — 複雑カード #67 |
+| 10 | LL-PR | ライブ | ✅ | [ll-pr-verification-list.md](./ll-pr-verification-list.md) **2026-06-28** |
 | 11 | LL-PR | エネルギー | — | 能力なし PR（検証対象外） |
 | 12 | （予備） | — | ⬜ | 新アニバ商品追加時に行を割当 |
 
@@ -138,8 +138,9 @@
 | 虹ヶ咲 sd1 | `PL!N-sd1` | ✅ | ✅ | [niji-sd1-verification-list.md](./niji-sd1-verification-list.md) **2026-06-28** |
 | Liella! sd1 | `PL!SP-sd1` | ✅ | ✅ | [liella-sd1-verification-list.md](./liella-sd1-verification-list.md) **2026-06-28** |
 | 蓮ノ空 sd1 | `PL!HS-sd1` | ✅ | ✅ | [hasunosora-sd1-verification-list.md](./hasunosora-sd1-verification-list.md) **2026-06-28** |
+| Liella! sd2 cheer | `PL!SP-sd2` | ✅ | ✅ | [liella-sd2-verification-list.md](./liella-sd2-verification-list.md) **2026-06-28** |
 
-> `PL!SP-sd2` は別商品のため本リスト 5 種には含めない（必要なら行を追加）。
+> `PL!SP-sd2` は sd1 DUO とは別商品（cheer）。上記 6 行目として追加。
 
 ---
 
@@ -153,6 +154,8 @@
 |----|------|------|
 | PL!SP-pb1-001-PR | 澁谷かのん | [play-verification-list](./play-verification-list.md) A |
 | PL!-PR-014-PR | 園田海未 | play A — 相手手札公開 |
+| PL!-PR-003/004/015-PR | ことり/海未/真姫 | [muse-pr-verification-list.md](./muse-pr-verification-list.md) **2026-06-28** |
+| PL!S-PR-029–042-PR | 曜/善子/花丸/ルビィ等 | [aqours-pr-verification-list.md](./aqours-pr-verification-list.md) **2026-06-28** |
 | PL!HS-PR-032-PR | セラス柳田リリエンフェルト | play A — スコア6+ライブ回収 |
 | PL!SP-pb2-009-R | 鬼塚夏美 | 元々ブレード比較（登場/開始） |
 
@@ -160,12 +163,12 @@
 
 | 接頭 | 枚数（メンバー/ライブ） | 状態 |
 |------|------------------------|------|
-| `PL!-PR` | 14 メンバー | ⬜ 個別 |
-| `PL!S-PR` | 26 メンバー + 3 ライブ | ⬜ 個別 |
-| `PL!N-PR` | 25 メンバー | ⬜ 個別 |
-| `PL!SP-PR` | 17 メンバー | ⬜ 個別 |
-| `PL!HS-PR` | 27 メンバー + 4 ライブ | ⬜ 個別 |
-| `LL-PR` | 1 ライブ + 複雑 1 件 | ⬜ 個別 |
+| `PL!-PR` | 14 メンバー | ✅ | [muse-pr-verification-list.md](./muse-pr-verification-list.md) **2026-06-28** |
+| `PL!S-PR` | 26 メンバー + 3 ライブ | ✅ | [aqours-pr-verification-list.md](./aqours-pr-verification-list.md) **2026-06-28** |
+| `PL!N-PR` | 25 メンバー | ✅ | [niji-pr-verification-list.md](./niji-pr-verification-list.md) **2026-06-28** |
+| `PL!SP-PR` | 17 メンバー | ✅ | [liella-pr-verification-list.md](./liella-pr-verification-list.md) **2026-06-28** |
+| `PL!HS-PR` | 27 メンバー + 4 ライブ | ✅ | [hasunosora-pr-verification-list.md](./hasunosora-pr-verification-list.md) **2026-06-28** |
+| `LL-PR` | 1 ライブ + 複雑 1 件 | ✅ | [ll-pr-verification-list.md](./ll-pr-verification-list.md) **2026-06-28** |
 
 詳細索引: [complex-risky-cards.md](./complex-risky-cards.md) / [play-verification-list.md](./play-verification-list.md)
 
@@ -188,11 +191,22 @@
 # 代表カード回帰（例）
 node scripts/verify-niji-bp1.mjs
 node scripts/verify-hasunosora-bp1.mjs
+node scripts/verify-muse-pr.mjs
+node scripts/verify-aqours-pr.mjs
+node scripts/verify-niji-pr.mjs
+node scripts/verify-liella-pr.mjs
+node scripts/verify-hasunosora-pr.mjs
+node scripts/verify-ll-pr.mjs
 
 # 全文監査（例）
 node scripts/audit-niji-bp1-text.mjs
+node scripts/audit-niji-pr-text.mjs
+node scripts/audit-liella-pr-text.mjs
+node scripts/audit-hasunosora-pr-text.mjs
+node scripts/audit-ll-pr-text.mjs
 
 # 横断カバレッジ
+node scripts/audit-all-pr.mjs
 node scripts/verify-ability-coverage.mjs
 ```
 
@@ -202,6 +216,18 @@ node scripts/verify-ability-coverage.mjs
 
 | 日付 | 内容 |
 |------|------|
+| 2026-06-28 | PL!HS-PR-021-RM/PR 登場ミル条件成立時の heart01 付与漏れ（`toujou_deck_top_wait_if_all_heart` で inline 付与文未抽出） |
+| 2026-06-28 | 全スクール PR 再監査（`audit-all-pr.mjs` 12 本通過）。μ's 以外は新規不具合なし。verify 拡充（Aqours 15 / Niji 13 / Liella 12 / Hasunosora 11 ケース）、横断 `pr-audit-common.mjs` |
+| 2026-06-28 | μ's bp6 ライブ（019–024-L）修正（022 成功ライブ常時の必要ハート減少、020 jidou の能力種別フィルタ・移動判定） |
+| 2026-06-28 | μ's bp6 メンバー（PL!-bp6）修正（µ/μ タグ、001 エール前提、003/006 新テンプレ、009 左右サイドブレード2、012–015 成功ライブ条件） |
+| 2026-06-28 | LL-PR（004 愛♡スクリ～ム！）修正（ライブ終了までブレード、味回答の部分実行、ソロ相手ドロー案内） |
+| 2026-06-28 | 蓮ノ空 PR（PL!HS-PR）修正（019/021 山札3ミル heart04 付与、028 余剰ハート条件ドロー） |
+| 2026-06-28 | Liella! PR（PL!SP-PR）修正（009/011/012 ability_sequence の手札捨てコスト未処理） |
+| 2026-06-28 | 虹ヶ咲 PR（PL!N-PR）修正（003/008/010 手札全公開起動、021 エール回収 OR フィルタ） |
+| 2026-06-28 | Aqours PR（PL!S-PR）修正（029–031 相手C13+、040 エール条件、041 自/相手ライブ山札下、042 両ステージ6人） |
+| 2026-06-28 | μ's PR（PL!-PR）再監査（001/002 任意アクティブ選択、005/006/008 相手全員ウェイト） |
+| 2026-06-28 | μ's PR（PL!-PR）修正（003/004 必要ハート回収フィルタ、015 低コストバトン条件） |
+| 2026-06-28 | Liella! sd2 cheer 修正（008 常時 C13+条件、020 他 Liella! 選択付与）。スタートデッキ 7/11 完了 |
 | 2026-06-28 | 蓮ノ空 sd1 修正（003/005/006/008/013）。スタートデッキ 6/10 完了 |
 | 2026-06-28 | Liella! sd1 DUO 修正（001 エネルギー枚数ドロー、002 占有エリア登場）。スタートデッキ 5/10 完了 |
 | 2026-06-28 | μ's bp3 ライブ修正（019/023/025）。完全修復 bp +1 |

@@ -102,6 +102,13 @@ export function canonicalizeDisplayPunctuation(s) {
   return String(s == null ? "" : s).replace(/!/g, "！").replace(/\?/g, "？");
 }
 
+/** 能力文『…』の μ/µ ゆれを正規化（BP06 等で micro sign が使われる） */
+export function normalizeQuotedSeriesTag(tag) {
+  return String(tag == null ? "" : tag)
+    .trim()
+    .replace(/\u00B5/g, "\u03BC");
+}
+
 /** 全角／半角の記号ゆれを吸収（！! ・ 空白 等） */
 export function normalizeCardGroupText(s) {
   return canonicalizeDisplayPunctuation(s)
@@ -139,7 +146,13 @@ export function cardGroupRuleForTag(tag) {
     if (normalizeCardGroupText(rule.label) === nt) return rule;
     if (normalizeCardGroupText(rule.id) === nt) return rule;
   }
-  if (t === "μ's" || t === "μ’s") {
+  if (
+    t === "μ's" ||
+    t === "μ’s" ||
+    t === "µ's" ||
+    t === "µ’s" ||
+    normalizeQuotedSeriesTag(t) === "μ's"
+  ) {
     return CARD_GROUP_RULES.find(function (r) {
       return r.id === "muse";
     }) || null;
@@ -180,7 +193,7 @@ export function catalogCardSchoolLabel(cat) {
 
 export function catalogCardMatchesGroupTag(cat, tag) {
   if (!cat || !tag) return true;
-  var t = String(tag).trim();
+  var t = normalizeQuotedSeriesTag(tag);
   if (!t) return true;
   var hay = cardGroupHaystack(cat);
   var rule = cardGroupRuleForTag(t);

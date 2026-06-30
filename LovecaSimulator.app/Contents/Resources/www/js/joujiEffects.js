@@ -4,7 +4,7 @@
  */
 import { splitAbilityByTriggers, parseStageAreaConstraints } from "./abilityEffects.js";
 import { wikiAbilityStemToCanonical } from "./gameStatusIcons.js";
-import { catalogCardMatchesGroupTag } from "./cardGroups.js";
+import { catalogCardMatchesGroupTag, normalizeQuotedSeriesTag } from "./cardGroups.js";
 import { T_MEMBER } from "./config.js";
 
 /** @typedef {'left'|'center'|'right'} StageCol */
@@ -61,7 +61,10 @@ import { T_MEMBER } from "./config.js";
  * @property {boolean} [centerHighestCost]
  * @property {boolean} [mostHeartsOnBothStages]
  * @property {boolean} [opponentMoreEnergy]
- * @property {boolean} [ownSuccessScoreBeatsOpponent]
+ * @property {Record<string, number>} [needHeartReduceMap]
+ * @property {number} [minLivePrintedScore]
+ * @property {string} [requiresSuccessLiveSeriesTag] 成功ライブ置き場に指定タグのカードがある
+ * @property {number} [leftRightSideExactPrintedBlade] 左右サイドに元々ブレードNのメンバーがいる
  * @property {boolean} [requiresLiveFrameNoStartSuccessAbility]
  * @property {boolean} [loseBladeInstead]
  * @property {number} [energyBelowMember]
@@ -105,6 +108,7 @@ import { T_MEMBER } from "./config.js";
  * @property {() => number} totalMembersBothStages
  * @property {() => number} opponentExtraHeartSurplus
  * @property {() => StageCol[]} eachStageColumnMembers
+ * @property {() => StageCol[]} eachOpponentStageColumnMembers
  * @property {(tag: string) => boolean} stageHasAllAreasDistinctSeriesMembers
  * @property {() => boolean} liveFramesHave3PlusWithSeries
  * @property {(inst: *) => number} energyCountBelowMember
@@ -382,6 +386,15 @@ export function classifyJoujiSegment(segRaw) {
     if (/センターエリアに登場している場合のみ/.test(p) || /センターエリアに登場した場合のみ/.test(p)) {
       scoreRule.stageAreas = ["center"];
     }
+    var sideBladeM = p.match(/右サイドエリアと左サイドエリアに、元々持つ.*の数が([０-９\d]+)つ/);
+    if (sideBladeM) {
+      scoreRule.leftRightSideExactPrintedBlade =
+        Number(
+          String(sideBladeM[1]).replace(/[０-９]/g, function (ch) {
+            return String.fromCharCode(ch.charCodeAt(0) - 0xfee0);
+          }),
+        ) || 2;
+    }
     var ownSlSc = p.match(/自分の成功ライブカード置き場にあるカードのスコアの合計が(\d+)以上/);
     if (ownSlSc) scoreRule.minSuccessLiveScoreSum = Number(ownSlSc[1]);
     var oppSlSc = p.match(/相手の成功ライブカード置き場にあるカードのスコアの合計が(\d+)以上/);
@@ -406,8 +419,36 @@ export function classifyJoujiSegment(segRaw) {
       kind: "grant_hand_series_cost_reduce",
       handCostReduce: Number(grantSeriesHandFromSuccessLive[3]) || 2,
       handCostReduceMinCost: Number(grantSeriesHandFromSuccessLive[1]) || 17,
-      handCostReduceSeriesTag: grantSeriesHandFromSuccessLive[2],
+      handCostReduceSeriesTag: normalizeQuotedSeriesTag(grantSeriesHandFromSuccessLive[2]),
       requiresSuccessLiveSelf: true,
+      nonStacking: /重複しない/.test(p),
+    });
+  }
+
+  if (
+    /このカードが自分の成功ライブカード置き場にあるかぎり/.test(p) &&
+    /元々のスコアが([０-９\d]+)以上/.test(p) &&
+    /ライブカードの必要ハート/.test(p) &&
+    /減らす/.test(p)
+  ) {
+    var minLiveScoreM = p.match(/元々のスコアが([０-９\d]+)以上/);
+    var liveSeriesReduceM = p.match(/『([^』]+)』のライブカード/);
+    /** @type {Record<string, number>} */
+    var nhReduceMap = {};
+    var heartSlots = countHeartIconsBySlot(segRaw);
+    Object.keys(heartSlots).forEach(function (sk) {
+      var slotN = Number(sk);
+      var cnt = Math.floor(Number(heartSlots[sk]) || 0);
+      if (cnt <= 0) return;
+      var key = slotN === 0 ? "heart0" : slotN === 1 ? "heart01" : "heart0" + slotN;
+      nhReduceMap[key] = (nhReduceMap[key] || 0) + cnt;
+    });
+    return Object.assign({}, base, {
+      kind: "success_live_live_need_heart_reduce",
+      requiresSuccessLiveSelf: true,
+      minLivePrintedScore: Number(normalizeFwDigits(minLiveScoreM[1])) || 5,
+      seriesTag: liveSeriesReduceM ? normalizeQuotedSeriesTag(liveSeriesReduceM[1]) : null,
+      needHeartReduceMap: nhReduceMap,
       nonStacking: /重複しない/.test(p),
     });
   }
@@ -422,7 +463,7 @@ export function classifyJoujiSegment(segRaw) {
     var subSeriesM = p.match(/控え室にある『([^』]+)』のライブカード/);
     return Object.assign({}, base, {
       kind: "success_live_waiting_substitute",
-      seriesTag: subSeriesM ? subSeriesM[1] : null,
+      seriesTag: subSeriesM ? normalizeQuotedSeriesTag(subSeriesM[1]) : null,
     });
   }
 
@@ -622,7 +663,9 @@ export function classifyJoujiSegment(segRaw) {
     if (/自分のライブ中のライブカードが2枚以上/.test(p)) {
       bladeRule.minLiveCardsInFrames = 2;
     }
-    if (/自分か相手のステージにコスト13以上/.test(p)) bladeRule.minCost13OnAnyStage = 13;
+    if (/自分のステージにコスト13以上/.test(p) || /自分か相手のステージにコスト13以上/.test(p)) {
+      bladeRule.minCost13OnAnyStage = 13;
+    }
     if (/自分と相手のステージにメンバーが合計6人/.test(p)) bladeRule.minTotalMembersBothStages = 6;
     var csl = p.match(/自分と相手の成功ライブカード置き場にカードが合計(\d+)枚以上/);
     if (csl) bladeRule.minCombinedSuccessLive = Number(csl[1]);
@@ -762,6 +805,10 @@ export function classifyJoujiSegment(segRaw) {
 
     if (/このカードが自分の成功ライブカード置き場にあるかぎり/.test(p)) {
       bladeRule.requiresSuccessLiveSelf = true;
+    }
+    var slSeriesJoujiM = p.match(/自分の成功ライブカード置き場に『([^』]+)』のカードがある/);
+    if (slSeriesJoujiM) {
+      bladeRule.requiresSuccessLiveSeriesTag = normalizeQuotedSeriesTag(slSeriesJoujiM[1]);
     }
     var slCenterMemberSer = p.match(/センターエリアにいる『([^』]+)』のメンバー/);
     if (slCenterMemberSer) {
@@ -1042,6 +1089,11 @@ function conditionMet(rule, inst, card, ctx) {
     ctx.eachStageColumnMembers().forEach(function (m) {
       if (m && ctx.memberPrintedCost(m) >= 13) has13 = true;
     });
+    if (!has13 && ctx.eachOpponentStageColumnMembers) {
+      ctx.eachOpponentStageColumnMembers().forEach(function (m) {
+        if (m && ctx.memberPrintedCost(m) >= 13) has13 = true;
+      });
+    }
     if (!has13) return false;
   }
   if (rule.minTotalMembersBothStages != null && ctx.totalMembersBothStages() < rule.minTotalMembersBothStages) {
@@ -1052,6 +1104,24 @@ function conditionMet(rule, inst, card, ctx) {
   }
   if (rule.minEnergyBelowMember != null && ctx.energyCountBelowMember(inst) < rule.minEnergyBelowMember) {
     return false;
+  }
+  if (rule.requiresSuccessLiveSeriesTag) {
+    if (
+      typeof ctx.successLiveHasSeriesTag !== "function" ||
+      !ctx.successLiveHasSeriesTag(rule.requiresSuccessLiveSeriesTag)
+    ) {
+      return false;
+    }
+  }
+  if (rule.leftRightSideExactPrintedBlade != null) {
+    var needSideBlade = Number(rule.leftRightSideExactPrintedBlade);
+    if (
+      typeof ctx.stageColumnHasMemberWithExactPrintedBlade !== "function" ||
+      !ctx.stageColumnHasMemberWithExactPrintedBlade("left", needSideBlade) ||
+      !ctx.stageColumnHasMemberWithExactPrintedBlade("right", needSideBlade)
+    ) {
+      return false;
+    }
   }
   if (rule.minLiveCardsInFrames != null) {
     if (rule.liveSeriesTag === "虹ヶ咲") {
@@ -1324,6 +1394,47 @@ export function computeSuccessLiveJoujiMemberBladeBonus(memberInst, ctx) {
     }
   }
   return bonus;
+}
+
+/**
+ * 成功ライブ常時: ライブフレーム上の対象ライブカードへ付与する必要ハート減少。
+ * @param {*} liveTargetInst
+ * @param {JoujiBoardContext} ctx
+ * @returns {Record<string, number>}
+ */
+export function computeSuccessLiveJoujiLiveNeedHeartReduceForCard(liveTargetInst, ctx) {
+  if (!liveTargetInst || !ctx) return {};
+  var targetCard = ctx.mergedCatalog(liveTargetInst);
+  if (!targetCard || targetCard.type !== T_LIVE) return {};
+  var targetScore = Number(targetCard.score) || 0;
+  /** @type {Record<string, number>} */
+  var totalReduce = {};
+  /** @type {Set<string>} */
+  var nonStackingApplied = new Set();
+  var slLives = ctx.successLiveAreaLiveInsts ? ctx.successLiveAreaLiveInsts() : [];
+  for (var si = 0; si < slLives.length; si++) {
+    var slInst = slLives[si];
+    if (!slInst) continue;
+    var slCard = ctx.mergedCatalog(slInst);
+    var liveRaws = listNativeJoujiSegmentRaws(slCard);
+    for (var lj = 0; lj < liveRaws.length; lj++) {
+      var rule = classifyJoujiSegment(liveRaws[lj]);
+      if (!rule || rule.kind !== "success_live_live_need_heart_reduce") continue;
+      if (!rule.requiresSuccessLiveSelf) continue;
+      if (rule.seriesTag && !catalogCardMatchesGroupTag(targetCard, rule.seriesTag)) continue;
+      if (rule.minLivePrintedScore != null && targetScore < rule.minLivePrintedScore) continue;
+      if (rule.nonStacking) {
+        var stackKey = String(slCard.card_no || slInst.card_no || "sl");
+        if (nonStackingApplied.has(stackKey)) continue;
+        nonStackingApplied.add(stackKey);
+      }
+      Object.keys(rule.needHeartReduceMap || {}).forEach(function (k) {
+        var n = Math.floor(Number(rule.needHeartReduceMap[k]) || 0);
+        if (n > 0) totalReduce[k] = (totalReduce[k] || 0) + n;
+      });
+    }
+  }
+  return totalReduce;
 }
 
 /** @param {*} card */

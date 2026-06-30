@@ -29,6 +29,13 @@ function parsePerTurnLimitFromRaw(segRaw, p) {
   return parsePerTurnLimit(p);
 }
 
+function jidouSegmentResolvedAbilityKind(segRaw) {
+  var s = String(segRaw || "");
+  if (/\{\{[^}]*live_start|live_start\.png|ライブ開始時/.test(s)) return "live_start";
+  if (/\{\{[^}]*live_success|live_success\.png|ライブ成功時/.test(s)) return "live_success";
+  return null;
+}
+
 /**
  * @param {*} card
  * @returns {string[]}
@@ -258,6 +265,9 @@ export function classifyJidouAutoSegment(segRaw) {
       perTurnLimit: perTurn,
     };
   }
+  if (/エールしたとき/.test(p) && /同じグループ名.*3枚以上/.test(p) && /ライブ終了時まで/.test(p)) {
+    return { template: "jidou_yell_grant_jouji", eventKind: "yell", perTurnLimit: perTurn, minYellSameGroupMemberCount: 3 };
+  }
   if (/自分がエールしたとき/.test(p) && /ライブ終了時まで/.test(p)) {
     return { template: "jidou_yell_grant_jouji", eventKind: "yell", perTurnLimit: perTurn };
   }
@@ -272,9 +282,6 @@ export function classifyJidouAutoSegment(segRaw) {
     };
   }
 
-  if (/エールしたとき/.test(p) && /同じグループ名.*3枚以上/.test(p) && /ライブ終了時まで/.test(p)) {
-    return { template: "jidou_yell_grant_jouji", eventKind: "yell", perTurnLimit: perTurn };
-  }
   if (/エールにより公開.*ライブカードが1枚以上/.test(p) && /ライブ終了時まで/.test(p)) {
     var slot = 4;
     if (/heart04|heart_04|h04|緑/.test(String(segRaw || ""))) slot = 4;
@@ -367,11 +374,21 @@ export function classifyJidouAutoSegment(segRaw) {
       perTurnLimit: perTurn,
     };
   }
-  if (/センターエリアにいる.*μ's.*メンバー.*能力が解決したとき/.test(p) && /ポジションチェンジ/.test(p)) {
-    return { template: "jidou_center_muse_ability_position_change", eventKind: "member_ability_resolved", perTurnLimit: perTurn };
+  if (/センターエリアにいる/.test(p) && /μ's/.test(p) && /メンバー.*能力が解決したとき/.test(p) && /ポジションチェンジ/.test(p)) {
+    return {
+      template: "jidou_center_muse_ability_position_change",
+      eventKind: "member_ability_resolved",
+      resolvedAbilityKind: jidouSegmentResolvedAbilityKind(segRaw),
+      perTurnLimit: perTurn,
+    };
   }
-  if (/センターエリアにいる.*μ's.*メンバー.*能力が解決したとき/.test(p) && /移動している場合/.test(p) && /スコアを/.test(p)) {
-    return { template: "jidou_center_muse_ability_score_if_moved", eventKind: "member_ability_resolved", perTurnLimit: perTurn };
+  if (/センターエリアにいる/.test(p) && /μ's/.test(p) && /メンバー.*能力が解決したとき/.test(p) && /移動している場合/.test(p) && /スコアを/.test(p)) {
+    return {
+      template: "jidou_center_muse_ability_score_if_moved",
+      eventKind: "member_ability_resolved",
+      resolvedAbilityKind: jidouSegmentResolvedAbilityKind(segRaw),
+      perTurnLimit: perTurn,
+    };
   }
   if (/自分のカードの効果によって/.test(p) && /相手のステージ.*ウェイト/.test(p) && /カードを(\d+)枚引/.test(p)) {
     var owD = p.match(/コスト(\d+)以下/);

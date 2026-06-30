@@ -7122,6 +7122,114 @@ body.play-mode .site-footer {
   border-color: rgba(255, 200, 140, 0.45);
   background: rgba(255, 200, 140, 0.08);
 }
+
+/* 効果ダイアログ内ミニ盤面（フォーメーション／ポジションチェンジ DnD） */
+.dlg-stage-dnd-host {
+  margin: 0.35rem 0 0.15rem;
+}
+.dlg-stage-dnd-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+.dlg-stage-dnd-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+.dlg-stage-dnd-col__label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-align: center;
+  color: rgba(255, 220, 200, 0.92);
+  letter-spacing: 0.02em;
+}
+.dlg-stage-dnd-col__slot {
+  min-height: 9.5rem;
+  padding: 0.45rem 0.35rem 0.55rem;
+  border-radius: 10px;
+  border: 2px dashed rgba(255, 180, 140, 0.28);
+  background: rgba(0, 0, 0, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease,
+    box-shadow 120ms ease;
+}
+.dlg-stage-dnd-col--drag-over .dlg-stage-dnd-col__slot {
+  border-color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 200, 140, 0.12);
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.35),
+    inset 0 0 18px rgba(255, 220, 180, 0.15);
+}
+.dlg-stage-dnd-col--blocked .dlg-stage-dnd-col__slot {
+  opacity: 0.42;
+  border-style: dotted;
+  pointer-events: none;
+}
+.dlg-stage-dnd-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  width: 100%;
+  max-width: 5.75rem;
+  padding: 0.28rem 0.22rem 0.38rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 160, 200, 0.35);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  transition:
+    transform 90ms ease,
+    box-shadow 90ms ease,
+    opacity 90ms ease;
+}
+.dlg-stage-dnd-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 220, 255, 0.7);
+}
+.dlg-stage-dnd-card.is-dragging {
+  opacity: 0.55;
+  cursor: grabbing;
+  transform: scale(0.96);
+}
+.dlg-stage-dnd-card--fixed {
+  cursor: default;
+  opacity: 0.72;
+}
+.dlg-stage-dnd-card--fixed:hover {
+  transform: none;
+}
+.dlg-stage-dnd-card--moving {
+  border-color: rgba(255, 255, 255, 0.85);
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.55),
+    0 0 16px rgba(255, 220, 255, 0.45);
+}
+.dlg-stage-dnd-card__img {
+  width: 100%;
+  aspect-ratio: 63 / 88;
+  object-fit: cover;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.25);
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.45));
+  pointer-events: none;
+}
+.dlg-stage-dnd-card__label {
+  font-size: 0.62rem;
+  line-height: 1.2;
+  color: var(--ink, #ffd6ef);
+  text-align: center;
+  word-break: break-word;
+  max-width: 100%;
+}
+
 .dlg-card-catalog-effect-slot {
   display: flex;
   flex-direction: column;
@@ -8453,17 +8561,32 @@ body.play-mode .card-item.card-item--play-fx-live_success .card-art-wrap .card-i
   animation: playFxBurstFade var(--play-fx-ms, 1000ms) ease-out both;
 }
 .play-fx-burst--enter {
-  background: radial-gradient(circle at 50% 58%, rgba(160, 255, 200, 0.95) 0%, rgba(80, 220, 140, 0.45) 28%, transparent 72%);
+  background: radial-gradient(
+    circle at 50% 58%,
+    var(--play-fx-c-core, rgba(160, 255, 200, 0.95)) 0%,
+    var(--play-fx-c-glow, rgba(80, 220, 140, 0.45)) 28%,
+    transparent 72%
+  );
 }
 .play-fx-burst--baton {
-  background: radial-gradient(circle at 50% 85%, rgba(120, 240, 255, 0.9) 0%, rgba(255, 130, 210, 0.55) 35%, transparent 75%);
+  background: radial-gradient(
+    circle at 50% 85%,
+    var(--play-fx-c-core, rgba(120, 240, 255, 0.9)) 0%,
+    var(--play-fx-c-glow, rgba(255, 130, 210, 0.55)) 35%,
+    transparent 75%
+  );
 }
 .play-fx-burst--position {
   background: linear-gradient(105deg, transparent 18%, rgba(160, 220, 255, 0.75) 48%, rgba(200, 160, 255, 0.55) 52%, transparent 82%);
 }
 .play-fx-burst--live_start,
 .play-fx-burst--live_card {
-  background: radial-gradient(circle at 50% 38%, rgba(255, 210, 100, 0.95) 0%, rgba(255, 130, 40, 0.55) 32%, transparent 74%);
+  background: radial-gradient(
+    circle at 50% 38%,
+    var(--play-fx-c-core, rgba(255, 210, 100, 0.95)) 0%,
+    var(--play-fx-c-glow, rgba(255, 130, 40, 0.55)) 32%,
+    transparent 74%
+  );
 }
 .play-fx-burst--toujyou {
   background: radial-gradient(circle at 50% 50%, rgba(255, 150, 220, 0.92) 0%, rgba(255, 80, 160, 0.45) 38%, transparent 72%);
@@ -8486,12 +8609,22 @@ body.play-mode .card-item.card-item--play-fx-live_success .card-art-wrap .card-i
   animation: playFxRingPulse var(--play-fx-ms, 1000ms) ease-out both;
 }
 .play-fx-ring--enter {
-  border-color: rgba(140, 255, 190, 0.95);
-  box-shadow: 0 0 24px rgba(100, 255, 180, 0.85), 0 0 48px rgba(60, 220, 120, 0.45), inset 0 0 20px rgba(160, 255, 200, 0.4);
+  border-color: var(--play-fx-c-ring, rgba(140, 255, 190, 0.95));
+  box-shadow: var(
+    --play-fx-c-ring-shadow,
+    0 0 24px rgba(100, 255, 180, 0.85),
+    0 0 48px rgba(60, 220, 120, 0.45),
+    inset 0 0 20px rgba(160, 255, 200, 0.4)
+  );
 }
 .play-fx-ring--baton {
-  border-color: rgba(120, 230, 255, 0.95);
-  box-shadow: 0 0 24px rgba(100, 210, 255, 0.85), 0 0 48px rgba(255, 120, 200, 0.4), inset 0 0 20px rgba(180, 240, 255, 0.35);
+  border-color: var(--play-fx-c-ring, rgba(120, 230, 255, 0.95));
+  box-shadow: var(
+    --play-fx-c-ring-shadow,
+    0 0 24px rgba(100, 210, 255, 0.85),
+    0 0 48px rgba(255, 120, 200, 0.4),
+    inset 0 0 20px rgba(180, 240, 255, 0.35)
+  );
 }
 .play-fx-ring--position {
   border-color: rgba(160, 210, 255, 0.9);
@@ -8677,6 +8810,12 @@ body.play-mode .card-item.card-item--play-fx-live_success .card-art-wrap .card-i
   .premium-board-fx__particle {
     animation: none !important;
   }
+  .premium-board-fx__char-icon,
+  .play-fx-char-icon {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+  }
   body.play-mode .card-item.card-item--play-fx .card-art-wrap .card-img,
   body.play-mode .card-item.card-item--play-fx > .card-img {
     filter: brightness(1.18);
@@ -8746,6 +8885,90 @@ body.play-mode .card-item.card-item--play-fx-premium .card-art-wrap .card-img,
 body.play-mode .card-item.card-item--play-fx-premium > .card-img {
   animation-name: playFxPremiumPop !important;
   animation-duration: var(--play-fx-ms, 1500ms) !important;
+}
+.play-fx-char-icon {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  z-index: 28;
+  width: clamp(4.6rem, 58%, 8.5rem);
+  height: clamp(4.6rem, 58%, 8.5rem);
+  max-width: 72%;
+  object-fit: contain;
+  object-position: center center;
+  pointer-events: none;
+  --char-offset: calc((var(--char-idx, 0) - (var(--char-count, 1) - 1) * 0.5) * 102%);
+  transform: translateX(calc(-50% + var(--char-offset, 0px))) translateY(40px) scale(0.15);
+  opacity: 0;
+  filter:
+    drop-shadow(0 0 10px rgba(255, 210, 90, 0.9))
+    drop-shadow(0 0 18px rgba(255, 120, 40, 0.5));
+  animation: playFxCharIconFloat var(--play-fx-ms, 1500ms) cubic-bezier(0.16, 1.1, 0.32, 1) calc(0.06s + var(--char-idx, 0) * 0.05s) both;
+}
+.play-fx-char-icon--ultra {
+  width: clamp(5.2rem, 64%, 9.5rem);
+  height: clamp(5.2rem, 64%, 9.5rem);
+  max-width: 78%;
+}
+.play-fx-group-logo {
+  position: absolute;
+  left: 50%;
+  top: 12%;
+  z-index: 32;
+  width: 168%;
+  min-width: 10.5rem;
+  max-width: 22rem;
+  height: auto;
+  max-height: 168%;
+  object-fit: contain;
+  object-position: center center;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.72);
+  opacity: 0;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.28));
+  animation: playFxGroupLogoFloat var(--play-fx-ms, 1500ms) cubic-bezier(0.16, 1.08, 0.32, 1) 0.04s both;
+}
+.play-fx-group-logo--vector {
+  width: 180%;
+  min-width: 11.5rem;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.22));
+}
+.play-fx-group-logo--live {
+  width: 175%;
+  min-width: 11rem;
+  z-index: 33;
+}
+.play-fx-group-logo--ultra {
+  width: 195%;
+  min-width: 12rem;
+}
+body.play-mode .card-item.card-item--play-fx-has-char-icons .play-fx-group-logo {
+  top: 8%;
+  width: 148%;
+  min-width: 9.5rem;
+  max-width: 19rem;
+}
+body.play-mode .card-item.card-item--play-fx-has-char-icons .play-fx-group-logo--ultra {
+  top: 6%;
+  width: 158%;
+}
+body.play-mode .card-item.card-item--play-fx-has-char-icons .play-fx-char-icon {
+  bottom: -2%;
+  z-index: 30;
+}
+body.play-mode .card-item.card-item--play-fx-has-logo {
+  overflow: visible;
+  z-index: 22;
+}
+body.play-mode .stage-slot.card-strip:has(.card-item--play-fx-has-logo),
+body.play-mode .live-slot:has(.card-item--play-fx-has-logo) {
+  overflow: visible;
+}
+body.play-mode .card-item.card-item--play-fx-premium.card-item--play-fx-has-logo {
+  z-index: 26;
+}
+body.play-mode .card-item.card-item--play-fx-ultra.card-item--play-fx-has-logo {
+  z-index: 32;
 }
 .play-fx-burst--premium {
   inset: -42%;
@@ -8943,6 +9166,44 @@ body.play-premium-fx-active {
   box-shadow: 0 0 10px currentColor;
   animation: premiumFxParticle var(--p-dur, 1.2s) ease-out var(--p-delay, 0s) both;
 }
+.premium-board-fx__char-icons {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: clamp(0.35rem, 2vw, 1.1rem);
+  margin-top: 0.25rem;
+  pointer-events: none;
+}
+.premium-board-fx__char-icon {
+  --char-offset: calc((var(--char-idx, 0) - (var(--char-count, 1) - 1) * 0.5) * 14%);
+  width: clamp(3.5rem, 12vw, 5.5rem);
+  height: clamp(3.5rem, 12vw, 5.5rem);
+  object-fit: contain;
+  object-position: center center;
+  filter:
+    drop-shadow(0 0 16px rgba(255, 210, 90, 0.75))
+    drop-shadow(0 0 28px rgba(255, 120, 40, 0.4));
+  transform: translateX(var(--char-offset, 0)) translateY(64px) scale(0.25);
+  opacity: 0;
+  animation: premiumFxCharIconRise 1.45s cubic-bezier(0.16, 1.12, 0.32, 1) calc(0.08s + var(--char-idx, 0) * 0.07s) both;
+}
+.premium-board-fx__char-icon--group-logo {
+  width: clamp(7rem, 34vw, 16rem);
+  height: clamp(2.8rem, 10vw, 5.5rem);
+  max-height: 22vh;
+  object-fit: contain;
+}
+.premium-board-fx--tier-2 .premium-board-fx__char-icon {
+  width: clamp(4rem, 14vw, 6.5rem);
+  height: clamp(4rem, 14vw, 6.5rem);
+  animation-duration: 1.65s;
+}
+.premium-board-fx--tier-2 .premium-board-fx__char-icon--group-logo {
+  width: clamp(8rem, 38vw, 18rem);
+  height: clamp(3.2rem, 12vw, 6.5rem);
+}
 .premium-board-fx--coin_flip .premium-board-fx__rays {
   opacity: 0.45;
 }
@@ -9026,6 +9287,24 @@ body.play-premium-fx-active {
 @keyframes premiumFxTitleRise {
   0% { opacity: 0; transform: translateY(24px) scale(0.88); }
   100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes premiumFxCharIconRise {
+  0% { opacity: 0; transform: translateX(var(--char-offset, 0)) translateY(56px) scale(0.3); filter: brightness(1.4); }
+  22% { opacity: 1; transform: translateX(var(--char-offset, 0)) translateY(-8px) scale(1.12); filter: brightness(1.25); }
+  48% { opacity: 1; transform: translateX(var(--char-offset, 0)) translateY(-14px) scale(1.04); }
+  100% { opacity: 0; transform: translateX(var(--char-offset, 0)) translateY(-42px) scale(0.92); filter: brightness(1); }
+}
+@keyframes playFxCharIconFloat {
+  0% { opacity: 0; transform: translateX(calc(-50% + var(--char-offset, 0px))) translateY(40px) scale(0.18); }
+  20% { opacity: 1; transform: translateX(calc(-50% + var(--char-offset, 0px))) translateY(-8px) scale(1.22); }
+  55% { opacity: 1; transform: translateX(calc(-50% + var(--char-offset, 0px))) translateY(-18px) scale(1.14); }
+  100% { opacity: 0; transform: translateX(calc(-50% + var(--char-offset, 0px))) translateY(-44px) scale(1); }
+}
+@keyframes playFxGroupLogoFloat {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.55); }
+  22% { opacity: 1; transform: translate(-50%, -50%) scale(1.02); }
+  58% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.92); }
 }
 @keyframes premiumFxCoinFlip {
   0% { transform: perspective(400px) rotateY(0deg) scale(0.5); opacity: 0; }

@@ -1,5 +1,5 @@
 {
-  "generated": "2026-06-29",
+  "generated": "2026-06-30",
   "trigger": "kidou",
   "total": 256,
   "byTemplate": {
@@ -8,18 +8,19 @@
     "kidou_hand_cost_wait_pick_hand": 23,
     "draw_from_deck": 16,
     "kidou_self_wait_hand_enter_energy": 3,
-    "deck_top_pick_recover": 5,
+    "kidou_reveal_all_hand_deck_top_live": 3,
     "kidou_wait_to_stage": 4,
     "activate_energy": 9,
     "kidou_wait_pick_hand": 23,
     "kidou_reveal_hand_cost_threshold": 4,
     "draw_then_hand_discard": 9,
+    "deck_top_pick_recover": 2,
     "kidou_self_to_wait_recover": 5,
     "energy_deck_to_wait": 6,
     "kidou_hand_discard_trigger_ability": 4,
     "live_start_position_change": 11,
     "kidou_reveal_live_opp_decline_grant": 2,
-    "heart_color_pick_grant": 8,
+    "heart_color_pick_grant": 4,
     "kidou_wait_member_grant_jouji": 4,
     "kidou_self_wait_stage_member_swap_recover": 6,
     "kidou_wait_shuffle_deck_bottom_activate": 1,
@@ -37,6 +38,7 @@
     "kidou_hand_discard_activate_wait_opp_bonus": 2,
     "kidou_energy_deck_pick_live": 2,
     "kidou_hand_reveal_to_under": 2,
+    "kidou_heart_color_deck_reveal_pick": 4,
     "kidou_self_wait_activate_other": 2,
     "kidou_self_to_wait_opp_wait": 1,
     "ability_sequence": 2
@@ -162,7 +164,7 @@
     {
       "card_no": "PL!N-PR-003-PR",
       "name": "上原歩夢",
-      "template": "deck_top_pick_recover",
+      "template": "kidou_reveal_all_hand_deck_top_live",
       "automated": true,
       "optional": true,
       "perTurn": 1,
@@ -171,7 +173,7 @@
     {
       "card_no": "PL!N-PR-008-PR",
       "name": "近江彼方",
-      "template": "deck_top_pick_recover",
+      "template": "kidou_reveal_all_hand_deck_top_live",
       "automated": true,
       "optional": true,
       "perTurn": 1,
@@ -189,7 +191,7 @@
     {
       "card_no": "PL!N-PR-010-PR",
       "name": "エマ・ヴェルデ",
-      "template": "deck_top_pick_recover",
+      "template": "kidou_reveal_all_hand_deck_top_live",
       "automated": true,
       "optional": true,
       "perTurn": 1,
@@ -2061,7 +2063,7 @@
     {
       "card_no": "PL!-bp6-006-R＋",
       "name": "西木野真姫",
-      "template": "heart_color_pick_grant",
+      "template": "kidou_heart_color_deck_reveal_pick",
       "automated": true,
       "optional": false,
       "perTurn": 1,
@@ -2070,7 +2072,7 @@
     {
       "card_no": "PL!-bp6-006-P",
       "name": "西木野真姫",
-      "template": "heart_color_pick_grant",
+      "template": "kidou_heart_color_deck_reveal_pick",
       "automated": true,
       "optional": false,
       "perTurn": 1,
@@ -2079,7 +2081,7 @@
     {
       "card_no": "PL!-bp6-006-P＋",
       "name": "西木野真姫",
-      "template": "heart_color_pick_grant",
+      "template": "kidou_heart_color_deck_reveal_pick",
       "automated": true,
       "optional": false,
       "perTurn": 1,
@@ -2088,7 +2090,7 @@
     {
       "card_no": "PL!-bp6-006-SEC",
       "name": "西木野真姫",
-      "template": "heart_color_pick_grant",
+      "template": "kidou_heart_color_deck_reveal_pick",
       "automated": true,
       "optional": false,
       "perTurn": 1,

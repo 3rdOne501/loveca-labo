@@ -9,6 +9,81 @@ export const PLAY_FX_PREMIUM_MS = 1500;
 export const PLAY_FX_ULTRA_MS = 1800;
 
 const FIELD_ABILITY_KINDS = { toujyou: true, kidou: true, live_start: true, live_success: true };
+const ENTER_FX_KINDS = { enter: true, baton: true, live_start: true, live_card: true };
+
+/**
+ * @param {*} c
+ * @returns {{ premium: boolean, tier: number, ability: boolean, abilityHigh: boolean }}
+ */
+function playFxEnterMetaFromCard(c) {
+  var tier = Math.max(0, Math.min(2, Math.floor(Number(c._playFxEnterPremiumTier) || 0)));
+  if (c._playFxEnterPremium === true && tier < 1) tier = 1;
+  return {
+    premium: tier > 0,
+    tier: tier,
+    ability: false,
+    abilityHigh: false,
+  };
+}
+
+/**
+ * 登場・バトン・ライブ配置の演出（能力解決の markPlayFx と独立して保持）
+ * @param {*} c
+ * @param {string} kind enter | baton | live_start | live_card
+ * @param {{ premium?: boolean, tier?: number }} [opts]
+ */
+export function markPlayFxEnter(c, kind, opts) {
+  opts = opts || {};
+  if (!c || typeof c !== "object" || !kind) return;
+  c._playFxEnterAt = Date.now();
+  c._playFxEnterKind = String(kind);
+  if (opts.premium) {
+    c._playFxEnterPremium = true;
+    c._playFxEnterPremiumTier = opts.tier >= 2 ? 2 : 1;
+  } else {
+    delete c._playFxEnterPremium;
+    delete c._playFxEnterPremiumTier;
+  }
+}
+
+/**
+ * @param {*} c
+ * @param {number} [nowMs]
+ * @param {boolean} [lightweight]
+ * @returns {{ kind: string, durationMs: number, premium: boolean, tier: number, ability: boolean, abilityHigh: boolean } | null}
+ */
+export function playFxEnterInfo(c, nowMs, lightweight) {
+  if (lightweight || !c || !c._playFxEnterAt || !c._playFxEnterKind) return null;
+  var now = nowMs != null ? nowMs : Date.now();
+  var elapsed = now - Number(c._playFxEnterAt);
+  var kind = String(c._playFxEnterKind);
+  if (!ENTER_FX_KINDS[kind]) return null;
+  var meta = playFxEnterMetaFromCard(c);
+  var dur = playFxDurationMs(kind, meta);
+  if (elapsed > dur + 160) {
+    delete c._playFxEnterAt;
+    delete c._playFxEnterKind;
+    delete c._playFxEnterPremium;
+    delete c._playFxEnterPremiumTier;
+    return null;
+  }
+  return {
+    kind: kind,
+    durationMs: dur,
+    premium: meta.premium,
+    tier: meta.tier,
+    ability: false,
+    abilityHigh: false,
+  };
+}
+
+/** @param {*} c @param {number} [nowMs] */
+export function playFxEnterRemainingMs(c, nowMs) {
+  var info = playFxEnterInfo(c, nowMs, false);
+  if (!info || !c || !c._playFxEnterAt) return 0;
+  var now = nowMs != null ? nowMs : Date.now();
+  return Math.max(0, info.durationMs + 160 - (now - Number(c._playFxEnterAt)));
+}
 
 /**
  * @param {*} c カードインスタンス
@@ -60,7 +135,10 @@ export function markPlayFxMany(cards, kind, opts) {
   if (!Array.isArray(cards)) return;
   opts = opts || {};
   cards.forEach(function (c) {
-    if (opts.premium) markPlayFxPremium(c, kind, opts.tier);
+    if (ENTER_FX_KINDS[kind]) {
+      if (opts.premium) markPlayFxEnter(c, kind, { premium: true, tier: opts.tier });
+      else markPlayFxEnter(c, kind, {});
+    } else if (opts.premium) markPlayFxPremium(c, kind, opts.tier);
     else markPlayFx(c, kind);
   });
 }

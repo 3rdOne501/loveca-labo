@@ -179,6 +179,10 @@ export function applyAbilityComposition(card, trigger, segRaw, primary, classify
     ]);
   }
 
+  if (/カードを(\d+)枚引/.test(plain) && /その後、控え室から登場している場合/.test(plain)) {
+    return classifyFn(card, trigger, segRaw, { skipCompose: true });
+  }
+
   if (/その後/.test(plain) && /エネルギーがすべてアクティブ/.test(plain) && /このカードのスコア/.test(plain)) {
     var partsEn = splitAbilitySegmentClauses(segRaw);
     var actM = plain.match(/エネルギーを(\d+)枚までアクティブ/);

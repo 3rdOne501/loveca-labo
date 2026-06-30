@@ -1,0 +1,407 @@
+{
+  "v": 4,
+  "kind": "icon-you-member-motif",
+  "source": "アイコンよう/",
+  "artDir": "assets/game-icons/member-icons/",
+  "roster": [
+    {
+      "id": "honoka",
+      "label": "高坂穂乃果",
+      "series": "muse",
+      "file": "honoka.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "eli",
+      "label": "絢瀬絵里",
+      "series": "muse",
+      "file": "eli.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "kotori",
+      "label": "南ことり",
+      "series": "muse",
+      "file": "kotori.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "umi",
+      "label": "園田海未",
+      "series": "muse",
+      "file": "umi.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "rin",
+      "label": "星空 凛",
+      "series": "muse",
+      "file": "rin.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "maki",
+      "label": "西木野真姫",
+      "series": "muse",
+      "file": "maki.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "nozomi",
+      "label": "東條 希",
+      "series": "muse",
+      "file": "nozomi.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "hanayo",
+      "label": "小泉花陽",
+      "series": "muse",
+      "file": "hanayo.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "nico",
+      "label": "矢澤にこ",
+      "series": "muse",
+      "file": "nico.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "chika",
+      "label": "高海千歌",
+      "series": "aqours",
+      "file": "chika.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "riko",
+      "label": "桜内梨子",
+      "series": "aqours",
+      "file": "riko.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "kanan",
+      "label": "松浦果南",
+      "series": "aqours",
+      "file": "kanan.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "dia",
+      "label": "黒澤ダイヤ",
+      "series": "aqours",
+      "file": "dia.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "you",
+      "label": "渡辺 曜",
+      "series": "aqours",
+      "file": "you.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "yoshiko",
+      "label": "津島善子",
+      "series": "aqours",
+      "file": "yoshiko.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "hanamaru",
+      "label": "国木田花丸",
+      "series": "aqours",
+      "file": "hanamaru.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "mari",
+      "label": "小原鞠莉",
+      "series": "aqours",
+      "file": "mari.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "ruby",
+      "label": "黒澤ルビィ",
+      "series": "aqours",
+      "file": "ruby.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "seira",
+      "label": "聖澤セイラ",
+      "series": "aqours",
+      "file": "seira.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "leah",
+      "label": "レイ",
+      "series": "aqours",
+      "file": "leah.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "yu",
+      "label": "高咲 侑",
+      "series": "nijigasaki",
+      "file": "yu.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "ayumu",
+      "label": "上原歩夢",
+      "series": "nijigasaki",
+      "file": "ayumu.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "kasumi",
+      "label": "中須かすみ",
+      "series": "nijigasaki",
+      "file": "kasumi.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "shizuku",
+      "label": "桜坂しずく",
+      "series": "nijigasaki",
+      "file": "shizuku.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "karin",
+      "label": "朝香果林",
+      "series": "nijigasaki",
+      "file": "karin.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "ai",
+      "label": "宮下 愛",
+      "series": "nijigasaki",
+      "file": "ai.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "kanata",
+      "label": "近江彼方",
+      "series": "nijigasaki",
+      "file": "kanata.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "setsuna",
+      "label": "優木せつ菜",
+      "series": "nijigasaki",
+      "file": "setsuna.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "emma",
+      "label": "エマ・ヴェルデ",
+      "series": "nijigasaki",
+      "file": "emma.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "rina",
+      "label": "天王寺璃奈",
+      "series": "nijigasaki",
+      "file": "rina.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "shioriko",
+      "label": "三船栞子",
+      "series": "nijigasaki",
+      "file": "shioriko.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "mia",
+      "label": "ミア・テイラー",
+      "series": "nijigasaki",
+      "file": "mia.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "lanzhu",
+      "label": "鐘 嵐珠",
+      "series": "nijigasaki",
+      "file": "lanzhu.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "kanon",
+      "label": "澁谷かのん",
+      "series": "liella",
+      "file": "kanon.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "keke",
+      "label": "唐 可可",
+      "series": "liella",
+      "file": "keke.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "chisato",
+      "label": "嵐 千砂都",
+      "series": "liella",
+      "file": "chisato.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "sumire",
+      "label": "平安名すみれ",
+      "series": "liella",
+      "file": "sumire.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "ren",
+      "label": "葉月 恋",
+      "series": "liella",
+      "file": "ren.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "kinako",
+      "label": "桜小路きな子",
+      "series": "liella",
+      "file": "kinako.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "mei",
+      "label": "米女メイ",
+      "series": "liella",
+      "file": "mei.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "shiki",
+      "label": "若菜四季",
+      "series": "liella",
+      "file": "shiki.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "natsumi",
+      "label": "鬼塚夏美",
+      "series": "liella",
+      "file": "natsumi.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "margarete",
+      "label": "ウィーン・マルガレーテ",
+      "series": "liella",
+      "file": "margarete.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "tomari",
+      "label": "鬼塚冬鞠",
+      "series": "liella",
+      "file": "tomari.webp",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "yuuna",
+      "label": "聖澤悠奈",
+      "series": "liella",
+      "file": "yuuna.png",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "mao",
+      "label": "柊 摩央",
+      "series": "liella",
+      "file": "mao.png",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "kaho",
+      "label": "日野下花帆",
+      "series": "hasunosora",
+      "file": "kaho.png",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "sayaka",
+      "label": "村野さやか",
+      "series": "hasunosora",
+      "file": "sayaka.png",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "shao",
+      "label": "乙宗 梢",
+      "series": "hasunosora",
+      "file": "shao.png",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "tsuzuri",
+      "label": "夕霧綴理",
+      "series": "hasunosora",
+      "file": "tsuzuri.png",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "rurino",
+      "label": "大沢瑠璃乃",
+      "series": "hasunosora",
+      "file": "rurino.png",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "yoshino",
+      "label": "藤島 慈",
+      "series": "hasunosora",
+      "file": "yoshino.png",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "ginko",
+      "label": "百生 吟子",
+      "series": "hasunosora",
+      "file": "ginko.png",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "kosuzu",
+      "label": "徒町 小鈴",
+      "series": "hasunosora",
+      "file": "kosuzu.png",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "hime",
+      "label": "安養寺 姫芽",
+      "series": "hasunosora",
+      "file": "hime.png",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "ceras",
+      "label": "セラス 柳田 リリエンフェルト",
+      "series": "hasunosora",
+      "file": "ceras.png",
+      "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "izumi",
+      "label": "桂城 泉",
+      "series": "hasunosora",
+      "file": "izumi.png",
+      "sourceUrl": "アイコンよう/"
+    }
+  ]
+}

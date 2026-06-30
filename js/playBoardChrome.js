@@ -234,9 +234,38 @@ function spawnPremiumParticles(host, count, palette) {
 }
 
 /**
+ * @param {Array<{ href: string, label?: string, variant?: string }>} icons
+ * @param {HTMLElement} overlay
+ */
+function appendPremiumCharacterIcons(icons, overlay) {
+  if (!icons || !icons.length || !overlay) return;
+  var wrap = document.createElement("div");
+  wrap.className = "premium-board-fx__char-icons";
+  wrap.setAttribute("aria-hidden", "true");
+  icons.forEach(function (ic, idx) {
+    if (!ic || !ic.href) return;
+    var img = document.createElement("img");
+    img.className = "premium-board-fx__char-icon";
+    var variant = String(ic.variant || "");
+    if (variant === "group" || variant === "unit" || variant === "rival") {
+      img.classList.add("premium-board-fx__char-icon--group-logo");
+    }
+    img.src = String(ic.href);
+    img.alt = String(ic.label || "");
+    img.draggable = false;
+    img.loading = "eager";
+    img.decoding = "async";
+    img.style.setProperty("--char-idx", String(idx));
+    img.style.setProperty("--char-count", String(icons.length));
+    wrap.appendChild(img);
+  });
+  if (wrap.childElementCount) overlay.appendChild(wrap);
+}
+
+/**
  * 盤面全体の補助演出（テキストバッジ・効果音なし）
  * @param {'high_cost_enter'|'coin_flip'|'live_powerhouse'} type
- * @param {{ tier?: number, heads?: boolean }} [opts]
+ * @param {{ tier?: number, heads?: boolean, boardCenterIcons?: Array<{ href: string, label?: string, variant?: string }> }} [opts]
  */
 export function playPremiumBoardFx(type, opts) {
   if (!document.body.classList.contains("play-mode") || prefersReducedMotion()) return;
@@ -265,11 +294,13 @@ export function playPremiumBoardFx(type, opts) {
   overlay.appendChild(shock);
 
   if (type === "high_cost_enter") {
-    spawnPremiumParticles(
-      overlay,
-      tier >= 2 ? 44 : 22,
-      tier >= 2 ? ["#fff0a8", "#ff9a3c", "#ff5a8a", "#c9a0ff", "#ffe08a"] : ["#ffe08a", "#ffc14d", "#fff8dc"],
-    );
+    var particlePalette =
+      opts.palette && Array.isArray(opts.palette.particles) && opts.palette.particles.length
+        ? opts.palette.particles
+        : tier >= 2
+          ? ["#fff0a8", "#ff9a3c", "#ff5a8a", "#c9a0ff", "#ffe08a"]
+          : ["#ffe08a", "#ffc14d", "#fff8dc"];
+    spawnPremiumParticles(overlay, tier >= 2 ? 44 : 22, particlePalette);
     if (tier >= 2) {
       var shock2 = document.createElement("div");
       shock2.className = "premium-board-fx__shockwave premium-board-fx__shockwave--delayed";

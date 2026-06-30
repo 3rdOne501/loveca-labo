@@ -1,0 +1,28 @@
+# LL-PR カード効果検証リスト
+
+`LL-PR-*`（横断 PR）を検証する。
+
+- 自動回帰: `node scripts/verify-ll-pr.mjs`
+- 全文監査: `node scripts/audit-ll-pr-text.mjs`
+- 001–003, 005–008, 007-PRLoveLive!Days: 能力なし（エネルギー／コラボ PR）
+
+## ライブ（能力付き）
+
+| 状態 | 番号 | ID | 名前 | 主テンプレート | 備考 |
+|------|------|-----|------|----------------|------|
+| [x] | 004 | LL-PR-004-PR | 愛♡スクリ～ム！ | live_start_love_screem_opp_answer | LS: 相手回答分岐（味3種→双方1捨て / あなた→双方1ドロー / それ以外→両ステージ全員ブレード） **2026-06-28修正** |
+
+## 2026-06-28 検証
+
+### 修正した
+
+| ID | 内容 |
+|----|------|
+| LL-PR-004-PR | 「それ以外」が `playBonusBladeTurn`（ターン終了）→ `playBonusBladeAlways`（ライブ終了時まで） |
+| LL-PR-004-PR | 味回答で自分手札0枚時に効果全体スキップ → 相手手札1枚捨ては実行（総合ルール 1.3.2） |
+| LL-PR-004-PR | ソロ「あなた」回答で相手ドロー未案内 → トーストで相手1ドローを促す |
+
+### 分類・ハンドラ
+
+- 5択回答 UI（`openOpponentAnswerChoiceDialog`）
+- デュエル時は相手盤面の手札捨て・ドロー・ブレード付与を `mutateInactiveOpponentBoard` で処理
