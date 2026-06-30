@@ -103,6 +103,26 @@ export function classifyJidouAutoSegment(segRaw) {
       perTurnLimit: perTurn,
     };
   }
+  if (
+    /ステージから控え室に置かれたとき/.test(p) &&
+    /バトンタッチしていた/.test(p) &&
+    /エネルギーを(\d+)枚アクティブ/.test(p) &&
+    /コスト(\d+)以上のブレードハートを持たない/.test(p)
+  ) {
+    var aeBh = p.match(/エネルギーを(\d+)枚アクティブ/);
+    var bhThreshAll = [...p.matchAll(/コスト(\d+)以上のブレードハートを持たない/g)];
+    var drawBh = p.match(/さらにカードを(\d+)枚引/);
+    return {
+      template: "jidou_leave_baton_partner_bh_threshold_energy",
+      eventKind: "leave_stage_baton",
+      filters: { seriesTag: parseSeriesTag(p) },
+      energyActiveCount: aeBh ? Number(aeBh[1]) : 2,
+      batonPartnerBhThreshold: bhThreshAll[0] ? Number(bhThreshAll[0][1]) : 10,
+      deckDrawCount: drawBh ? Number(drawBh[1]) : 1,
+      batonPartnerDrawBhThreshold: bhThreshAll[1] ? Number(bhThreshAll[1][1]) : 15,
+      perTurnLimit: perTurn,
+    };
+  }
   if (/ステージから控え室に置かれたとき/.test(p) && /カードを(\d+)枚引/.test(p)) {
     var dr = p.match(/カードを(\d+)枚引/);
     var hd2 = p.match(/手札を(\d+)枚控え室/);
@@ -267,6 +287,21 @@ export function classifyJidouAutoSegment(segRaw) {
   }
   if (/エールしたとき/.test(p) && /同じグループ名.*3枚以上/.test(p) && /ライブ終了時まで/.test(p)) {
     return { template: "jidou_yell_grant_jouji", eventKind: "yell", perTurnLimit: perTurn, minYellSameGroupMemberCount: 3 };
+  }
+  if (
+    /自分がエールしたとき/.test(p) &&
+    /ブレードハートの中に/.test(p) &&
+    /3種類以上/.test(p) &&
+    /6種類以上/.test(p)
+  ) {
+    return {
+      template: "jidou_yell_distinct_bh_tier_grant",
+      eventKind: "yell",
+      perTurnLimit: perTurn,
+      yellDistinctBhMinForHeart: 3,
+      yellDistinctBhMinForJouji: 6,
+      yellGrantHeartSlot: 1,
+    };
   }
   if (/自分がエールしたとき/.test(p) && /ライブ終了時まで/.test(p)) {
     return { template: "jidou_yell_grant_jouji", eventKind: "yell", perTurnLimit: perTurn };
@@ -569,6 +604,7 @@ export function jidouEffectIsAutomated(template) {
     template === "jidou_leave_stage_hand_pick_recover" ||
     template === "jidou_leave_stage_deck_look_pick" ||
     template === "jidou_leave_stage_draw_discard" ||
+    template === "jidou_leave_baton_partner_bh_threshold_energy" ||
     template === "jidou_enter_or_baton_draw" ||
     template === "jidou_area_move_grant_jouji" ||
     template === "jidou_center_member_move_choice" ||
@@ -577,6 +613,7 @@ export function jidouEffectIsAutomated(template) {
     template === "jidou_area_move_wait_pick_hand" ||
     template === "jidou_area_move_opp_wait" ||
     template === "jidou_yell_grant_jouji" ||
+    template === "jidou_yell_distinct_bh_tier_grant" ||
     template === "jidou_yell_grant_jouji_nobh_members" ||
     template === "jidou_yell_grant_jouji_no_bh" ||
     template === "jidou_yell_grant_heart" ||
@@ -606,6 +643,7 @@ export function jidouEffectIsAutomated(template) {
     template === "jidou_self_active_to_wait_draw_discard" ||
     template === "jidou_energy_placed_grant" ||
     template === "jidou_baton_leave_activate_energy" ||
+    template === "jidou_leave_baton_partner_bh_threshold_energy" ||
     template === "jidou_leave_stage_hand_grant_member" ||
     template === "jidou_member_live_start_grant_all_heart" ||
     template === "jidou_member_live_success_draw" ||

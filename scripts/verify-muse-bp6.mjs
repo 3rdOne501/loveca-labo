@@ -26,6 +26,10 @@ const CASES = [
       if (cl.filters?.minLiveFrameCount !== 1) errs.push("minLiveFrameCount");
       if (cl.filters?.minLiveFrameSeriesTag !== "μ's") errs.push("minLiveFrameSeriesTag");
       if (cl.stageArea !== "center") errs.push("stageArea");
+      if (cl.grantToStageSeriesTag !== "μ's" || cl.grantToStageSeriesMax !== 99) {
+        errs.push("grantAllMuseStage");
+      }
+      if (cl.bladeGain !== 1) errs.push("bladeGain");
       return errs;
     },
   },
@@ -42,6 +46,14 @@ const CASES = [
     id: "PL!-bp6-002-P",
     trigger: "toujyou",
     expectTemplate: "deck_top_pick_no_ability_or_jouji",
+    check: (cl) => (!cl.optional && !cl.hasOptionalCost ? [] : ["must-not-skip-peek"]),
+  },
+  {
+    id: "PL!-bp6-004-P",
+    trigger: "toujyou",
+    expectTemplate: "deck_top_pick_recover",
+    check: (cl) =>
+      cl.deckTopCount === 5 && cl.hasOptionalCost && cl.filters?.seriesTag === "μ's" ? [] : ["deck5 muse"],
   },
   {
     id: "PL!-bp6-003-P",
@@ -62,6 +74,18 @@ const CASES = [
     check: (cl) => (cl.requiredHeartSlot === 3 ? [] : ["requiredHeartSlot"]),
   },
   {
+    id: "PL!-bp6-007-P",
+    trigger: "live_success",
+    expectTemplate: "deck_top_reveal_hand_score_grant",
+    check: (cl) => (cl.grantIfNoBhMember && cl.liveScoreGrant === 1 ? [] : ["nobh score"]),
+  },
+  {
+    id: "PL!-bp6-008-P",
+    trigger: "kidou",
+    expectTemplate: "kidou_self_wait_activate_other",
+    check: (cl) => (cl.costSelfWait && cl.perTurnLimit === 1 ? [] : ["self wait"]),
+  },
+  {
     id: "PL!-bp6-006-P",
     trigger: "kidou",
     expectTemplate: "kidou_heart_color_deck_reveal_pick",
@@ -73,6 +97,28 @@ const CASES = [
       if (cl.filters?.seriesTag !== "μ's") errs.push("seriesTag");
       return errs;
     },
+  },
+  {
+    id: "PL!-bp6-011-N",
+    trigger: "live_success",
+    expectTemplate: "draw_then_hand_discard",
+    check: (cl) =>
+      cl.deckDrawCount === 2 && cl.effectDiscardCount === 2 ? [] : ["draw2 discard2"],
+  },
+  {
+    id: "PL!-bp6-012-N",
+    trigger: "jouji",
+    expectTemplate: "passive_track",
+    check: (_cl, seg) => {
+      const rule = classifyJoujiSegment(seg.text);
+      return rule?.requiresSuccessLiveSeriesTag === "Printemps" ? [] : ["printemps sl"];
+    },
+  },
+  {
+    id: "PL!-bp6-016-N",
+    trigger: "live_success",
+    expectTemplate: "deck_top_look_reorder",
+    check: (cl) => (cl.deckTopCount === 3 ? [] : ["deck3"]),
   },
   {
     id: "PL!-bp6-009-P",
@@ -134,7 +180,14 @@ const CASES = [
     id: "PL!-bp6-021-L",
     trigger: "live_success",
     expectTemplate: "live_success_optional_stage_to_waiting_score_recover",
-    check: (cl) => (cl.filters?.seriesTag === "μ's" ? [] : ["seriesTag"]),
+    check: (cl) => {
+      const errs = [];
+      if (!cl.optional) errs.push("optional");
+      if (cl.cardScoreGrant !== 1) errs.push("cardScoreGrant");
+      if (cl.filters?.seriesTag !== "μ's") errs.push("seriesTag");
+      if (cl.recoverPickFilters?.seriesTag !== "μ's") errs.push("recoverSeries");
+      return errs;
+    },
   },
   {
     id: "PL!-bp6-022-L",

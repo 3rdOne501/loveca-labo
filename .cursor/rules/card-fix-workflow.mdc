@@ -1,0 +1,78 @@
+---
+description: ラブカカード効果修正の共通フロー（総合ルール準拠・横展開・検証必須）
+alwaysApply: true
+---
+
+# カード効果修正 — 共通ワークフロー（絶対遵守）
+
+## 正本
+
+1. **カードテキスト**（`data/cards.json` の `ability` を必ず開いて読む）
+2. [総合ルール ver.1.06](https://llofficial-cardgame.com/wordpress/wp-content/uploads/2026/04/28140005/LoveLiveTCG_cr_1.06_260428.pdf)
+3. `docs/rules/LoveLiveTCG_comprehensive_rules_ver1.06.txt`
+
+## 「修正」の定義
+
+修正後にテキストを**読み返し**、以下がテキスト通りか確認してからシミュレーション検証する。ここまでで初めて「修正」。
+
+- 発動条件 / 効果処理 / 発動タイミング / 効果条件
+- 総合ルールとの整合（特に 5.9.1 E支払い、9.x 能力、11.x 登場・ライブ）
+
+## 1枚依頼時の必須手順（Auto 効率版）
+
+```
+1. READ   cards.json で対象カードの ability 全文を読む
+2. CLASSIFY  classifyCardAbility → template / filters を node -e で確認
+3. ROOT     根因パターンを特定（誤テンプレ・コスト未処理・相手盤誤操作 等）
+4. SEARCH   cards.json 全体を同型テキスト・同型分類で grep
+5. FIX      分類器(js/abilityEffects.js) or 共通ハンドラで横展開。card_no 分岐は最後
+6. VERIFY   下記コマンドを実行し失敗があれば修正ループ
+7. RECORD   data/fix-notes/fixed-cards-registry.md + 該当 *-verification-list.md
+8. REPORT   指示カード以外に直したカード・横展開件数をユーザーに報告
+9. SYNC     abilityEffects.js / simulator.js 変更時は LovecaSimulator.app に同期
+```
+
+## 検証コマンド（毎回）
+
+```bash
+node scripts/verify-ability-coverage.mjs      # 横断（他 verify も連鎖実行）
+node scripts/verify-deck-pick-hand-patterns.mjs # 山札見→手札→残り控え室
+node scripts/build-ability-index.mjs           # guided_manual / jidou_manual が 0 か
+```
+
+商品単位作業時は `docs/card-fix-progress.md` の該当 `verify-*.mjs` + `audit-*-text.mjs` も実行。
+
+## 横展開クラスタ（頻出）
+
+| カード文パターン | 期待 |
+|-----------------|------|
+| 山札N枚見る→手札→残り控え室 | `deck_top_pick_recover` |
+| 同上 + 登場 or 手札 | `deck_top_pick_enter_or_hand` |
+| 手札「名前」合計N枚→常時付与 | `live_start_hand_named_discard_grant_jouji` |
+| 手札同ユニット/グループN枚→付与 | `live_start_hand_discard_same_unit_grant` 等 |
+| 相手盤操作 | `soloOpponent*` ヘルパー（自盤操作バグに注意） |
+
+詳細: `.cursor/rules/card-fix-similarity-batch.mdc`
+
+## 記録・未完了
+
+- **修正済み正本**: `data/fix-notes/fixed-cards-registry.md`
+- **商品進捗**: `docs/card-fix-progress.md`（⬜ 行を 0 にする）
+- 作業中に別カードの異常を見つけたら**報告して同時修正**
+- 新テンプレート追加時は registry §14 と verify スクリプトに追記
+
+## 弾×シリーズ×区分 単位の検証（未検証商品）
+
+**1 作業単位** = `card-fix-progress.md` の 1 行（例: Aqours bp5 **メンバー**）。メンバーとライブは**別セッション**で進める。
+
+| スクール | ID 接頭 | リスト slug 例 |
+|---------|---------|---------------|
+| μ's | `PL!-bp*` | muse / mus |
+| Aqours | `PL!S-bp*` | aqours |
+| 虹ヶ咲 | `PL!N-bp*` | niji |
+| Liella! | `PL!SP-bp*` | liella |
+| 蓮ノ空 | `PL!HS-bp*` | hasunosora |
+
+区分: メンバー = `-L` 以外（001–018 付近）/ ライブ = `-L`（019– 付近）。エネルギー `E**` は対象外。
+
+未着手（⬜）なら `docs/<slug>-bp<N>-verification-list.md` + `verify-*.mjs` + `audit-*-text.mjs` を既存弾を雛形に作成。完了条件: リスト全 `[x]` + 両スクリプト OK + `audit-verification-list-notes.mjs` + `card-fix-progress.md` を ✅。**2回目**の深掘り完了後は該当列を ⭕️（`card-fix-progress.md` 凡例参照）。

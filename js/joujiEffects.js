@@ -607,7 +607,15 @@ export function classifyJoujiSegment(segRaw) {
   }
 
   if (/このメンバーがウェイト状態であるかぎり/.test(p)) {
-    return Object.assign({}, base, { kind: "blade_if_self_wait", bladeFlat: countBladeIcons(segRaw), selfWait: true });
+    var heartMapSelfWait = countHeartIconsBySlot(segRaw);
+    /** @type {JoujiRule} */
+    var selfWaitRule = Object.assign({}, base, {
+      kind: "blade_if_self_wait",
+      bladeFlat: countBladeIcons(segRaw),
+      selfWait: true,
+    });
+    if (Object.keys(heartMapSelfWait).length) selfWaitRule.heartFlat = heartMapSelfWait;
+    return selfWaitRule;
   }
 
   if (/を失う/.test(p) && countBladeIcons(segRaw) > 0) {
@@ -1013,10 +1021,19 @@ function evaluateJoujiRule(rule, inst, card, ctx) {
   }
 
   /** @type {Record<number, number>} */
-  var hearts = rule.heartFlat ? rule.heartFlat : {};
+  var hearts = rule.heartFlat ? Object.assign({}, rule.heartFlat) : {};
   var blade = rule.bladeFlat || 0;
+  var scaleN = scalingCount(rule, inst, card, ctx);
   if (rule.bladePer) {
-    blade = rule.bladePer * scalingCount(rule, inst, card, ctx);
+    blade = rule.bladePer * scaleN;
+  }
+  if (
+    (rule.kind === "blade_per_series_on_stage" || rule.kind === "blade_per_series_on_stage_except_self") &&
+    Object.keys(hearts).length
+  ) {
+    Object.keys(hearts).forEach(function (k) {
+      hearts[k] = (hearts[k] || 0) * scaleN;
+    });
   }
   out.bladeBonus = blade;
   out.heartSlots = hearts;

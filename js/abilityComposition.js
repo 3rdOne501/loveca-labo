@@ -135,11 +135,40 @@ export function applyAbilityComposition(card, trigger, segRaw, primary, classify
   }
 
   /** @param {import('./abilityEffects.js').ClassifiedAbility[]} steps */
+  function stripStepCostsWhenParentPaid(steps, parent) {
+    if (!steps || steps.length < 2 || !parent) return steps;
+    var parentHasCost =
+      parent.costEnergy ||
+      parent.costSelfWait ||
+      parent.costPickMemberWait ||
+      parent.costMandatoryWaitOtherMember ||
+      (parent.handDiscardToWaiting && parent.handDiscardToWaiting > 0);
+    if (!parentHasCost) return steps;
+    return steps.map(function (st) {
+      if (!st) return st;
+      var copy = Object.assign({}, st);
+      copy.handDiscardToWaiting = null;
+      copy.costSelfWait = false;
+      copy.costPickMemberWait = false;
+      copy.costMandatoryWaitOtherMember = false;
+      copy.costEnergy = false;
+      copy.costEnergyCount = 0;
+      copy.costOrAlt = false;
+      if (parent.hasOptionalCost || parent.optional) {
+        copy.optional = false;
+        copy.hasOptionalCost = false;
+      }
+      return copy;
+    });
+  }
+
+  /** @param {import('./abilityEffects.js').ClassifiedAbility[]} steps */
   function seq(steps) {
     var usable = steps.filter(function (st) {
       return st && st.template && st.template !== "none" && st.template !== "guided_manual";
     });
     usable = mergeDrawDiscardConditionalGrantSteps(usable, plain);
+    usable = stripStepCostsWhenParentPaid(usable, primary);
     if (usable.length === 1) return Object.assign({}, primary, usable[0]);
     if (usable.length < 2) return primary;
     return Object.assign({}, primary, {

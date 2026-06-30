@@ -21,7 +21,12 @@ const CASES = [
     id: "PL!S-bp6-001-P",
     trigger: "toujyou",
     expectTemplate: "optional_self_wait_opp_stage",
-    check: (cl) => (cl.filters?.minCost === 13 ? [] : ["minCost13"]),
+    check: (cl) =>
+      cl.oppWaitMinCost === 13 &&
+      cl.requiresEnteredFromWaiting &&
+      cl.oppWaitStageAreas?.join() === "left,right"
+        ? []
+        : ["oppWaitMin13 sides waiting"],
   },
   {
     id: "PL!S-bp6-002-P",
@@ -47,7 +52,7 @@ const CASES = [
     trigger: "live_start",
     expectTemplate: "live_start_live_frame_pick_deck_top",
     check: (cl) =>
-      cl.filters?.pickType === "ライブ" && cl.filters?.requiresNoAbility ? [] : ["no-ability live"],
+      cl.filters?.pickType === "ライブ" && cl.excludeTriggerOnPick === "live_start" ? [] : ["no-ability live"],
   },
   {
     id: "PL!S-bp6-005-P",
@@ -98,6 +103,27 @@ const CASES = [
       cl.filters?.minLiveFrameNeedHeartSlotSum === 4 && cl.requiredHeartSlot === 2 ? [] : ["heart02 sum4"],
   },
   {
+    id: "PL!S-bp6-011-N",
+    trigger: "toujyou",
+    expectTemplate: "toujou_draw_discard_if_from_waiting",
+    check: (cl) =>
+      cl.deckDrawCount === 2 && cl.handDiscardToWaiting === 1 && cl.requiresEnteredFromWaiting
+        ? []
+        : ["draw2 discard1 waiting"],
+  },
+  {
+    id: "PL!S-bp6-013-N",
+    trigger: "toujyou",
+    expectTemplate: "grant_jouji_session",
+    check: (cl) => (cl.bladeGain === 2 ? [] : ["blade2"]),
+  },
+  {
+    id: "PL!S-bp6-015-N",
+    trigger: "toujyou",
+    expectTemplate: "optional_self_wait_opp_stage",
+    check: (cl) => (cl.oppWaitMaxCost === 2 ? [] : ["oppWaitMax2"]),
+  },
+  {
     id: "PL!S-bp6-019-L",
     trigger: "live_start",
     expectTemplate: "draw_then_hand_to_deck_top",
@@ -123,7 +149,13 @@ const CASES = [
     id: "PL!S-bp6-022-L",
     trigger: "live_success",
     expectTemplate: "live_card_score_plus",
-    check: (cl) => (cl.requiresOpponentMoreEnergy ? [] : ["opp energy"]),
+    check: (cl) => (cl.cardScoreGrant === 1 ? [] : ["score1"]),
+  },
+  {
+    id: "PL!S-bp6-023-L",
+    trigger: "live_success",
+    expectTemplate: "live_card_score_plus",
+    check: (cl) => (cl.requiresYellRevealedOwnLiveCard && cl.cardScoreGrant === 1 ? [] : ["yell live score1"]),
   },
   {
     id: "PL!S-bp6-024-L",

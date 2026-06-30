@@ -4,7 +4,7 @@
   "total": 307,
   "byTemplate": {
     "heart_color_pick_grant": 31,
-    "grant_jouji_session": 65,
+    "grant_jouji_session": 64,
     "optional_self_wait_opp_stage": 11,
     "optional_energy_blade_until_live_end": 34,
     "live_start_pay_or_hand_discard": 3,
@@ -44,6 +44,7 @@
     "live_start_mill_loop_blade_grant": 3,
     "live_start_dollcostra_cost_set_grant_if": 3,
     "live_start_hand_discard_same_group_grant": 3,
+    "live_start_deck_top_if_all_members_grant": 1,
     "live_start_hand_reveal_deck_place_blade": 1,
     "live_start_number_reveal_grant_if": 2,
     "draw_then_hand_discard": 2,
@@ -57,7 +58,7 @@
     "live_start_activate_self_if_low_score_live": 2,
     "live_start_opp_wait_exclude_unit": 1,
     "live_start_hand_named_discard_hearts_grant": 1,
-    "deck_top_to_waiting": 1,
+    "deck_top_peek_optional_wait": 1,
     "live_start_draw_then_formation_change": 1,
     "optional_pick_member_wait_opp_blade_gap": 2,
     "live_start_mandatory_energy_deck_unless_hand_discard": 2
@@ -2161,7 +2162,7 @@
     {
       "card_no": "PL!HS-bp5-013-N",
       "name": "徒町 小鈴",
-      "template": "grant_jouji_session",
+      "template": "live_start_deck_top_if_all_members_grant",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -2696,7 +2697,7 @@
     {
       "card_no": "PL!HS-cl1-001-CL",
       "name": "日野下花帆",
-      "template": "deck_top_to_waiting",
+      "template": "deck_top_peek_optional_wait",
       "automated": true,
       "optional": true,
       "perTurn": 0,

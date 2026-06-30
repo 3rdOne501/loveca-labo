@@ -6,7 +6,7 @@
   "guided_manual": 0,
   "byTemplate": {
     "jidou_leave_stage_activate_one": 2,
-    "jidou_yell_grant_jouji": 6,
+    "jidou_yell_grant_jouji": 2,
     "jidou_enter_or_baton_draw": 1,
     "jidou_area_move_grant_jouji": 9,
     "jidou_area_move_draw": 1,
@@ -17,7 +17,7 @@
     "jidou_area_move_energy_wait": 2,
     "jidou_yell_grant_jouji_no_bh": 3,
     "jidou_leave_stage_deck_look_pick": 2,
-    "jidou_leave_stage_draw_discard": 6,
+    "jidou_leave_stage_draw_discard": 2,
     "jidou_stage_entry_draw_until": 4,
     "jidou_opp_wait_draw": 2,
     "jidou_self_active_to_wait_draw_discard": 1,
@@ -27,6 +27,8 @@
     "jidou_on_cost_enter_draw": 2,
     "jidou_on_cost_enter_energy_wait": 2,
     "jidou_yell_grant_jouji_nobh_members": 4,
+    "jidou_yell_distinct_bh_tier_grant": 4,
+    "jidou_leave_baton_partner_bh_threshold_energy": 4,
     "jidou_move_or_energy_draw_grant": 4,
     "jidou_card_to_waiting_pick_hand": 4,
     "jidou_leave_stage_position_change": 4,
@@ -432,7 +434,7 @@
     {
       "card_no": "PL!N-bp5-001-R＋",
       "name": "上原歩夢",
-      "template": "jidou_yell_grant_jouji",
+      "template": "jidou_yell_distinct_bh_tier_grant",
       "automated": true,
       "eventKind": "yell",
       "effect": "自分がエールしたとき、エールにより公開された自分のカードが持つブレードハートの中に、、、、、、のうち、3種類以上ある場合、ライブ終了時まで、を得る。6種類以上ある場合、さらにライブ終了時まで、「ライブの合計スコアを＋１する。」を得る。"
@@ -440,7 +442,7 @@
     {
       "card_no": "PL!N-bp5-001-P",
       "name": "上原歩夢",
-      "template": "jidou_yell_grant_jouji",
+      "template": "jidou_yell_distinct_bh_tier_grant",
       "automated": true,
       "eventKind": "yell",
       "effect": "自分がエールしたとき、エールにより公開された自分のカードが持つブレードハートの中に、、、、、、のうち、3種類以上ある場合、ライブ終了時まで、を得る。6種類以上ある場合、さらにライブ終了時まで、「ライブの合計スコアを＋１する。」を得る。"
@@ -448,7 +450,7 @@
     {
       "card_no": "PL!N-bp5-001-AR",
       "name": "上原歩夢",
-      "template": "jidou_yell_grant_jouji",
+      "template": "jidou_yell_distinct_bh_tier_grant",
       "automated": true,
       "eventKind": "yell",
       "effect": "自分がエールしたとき、エールにより公開された自分のカードが持つブレードハートの中に、、、、、、のうち、3種類以上ある場合、ライブ終了時まで、を得る。6種類以上ある場合、さらにライブ終了時まで、「ライブの合計スコアを＋１する。」を得る。"
@@ -456,7 +458,7 @@
     {
       "card_no": "PL!N-bp5-001-SEC",
       "name": "上原歩夢",
-      "template": "jidou_yell_grant_jouji",
+      "template": "jidou_yell_distinct_bh_tier_grant",
       "automated": true,
       "eventKind": "yell",
       "effect": "自分がエールしたとき、エールにより公開された自分のカードが持つブレードハートの中に、、、、、、のうち、3種類以上ある場合、ライブ終了時まで、を得る。6種類以上ある場合、さらにライブ終了時まで、「ライブの合計スコアを＋１する。」を得る。"
@@ -464,33 +466,33 @@
     {
       "card_no": "PL!N-bp5-005-R＋",
       "name": "宮下 愛",
-      "template": "jidou_leave_stage_draw_discard",
+      "template": "jidou_leave_baton_partner_bh_threshold_energy",
       "automated": true,
-      "eventKind": "leave_stage",
+      "eventKind": "leave_stage_baton",
       "effect": "このメンバーがステージから控え室に置かれたとき、このメンバーがコスト10以上のブレードハートを持たない『虹ヶ咲』のメンバーとバトンタッチしていた場合、エネルギーを2枚アクティブにする。コスト15以上のブレードハートを持たない『虹ヶ咲』のメンバーの場合、さらにカードを1枚引く。"
     },
     {
       "card_no": "PL!N-bp5-005-P",
       "name": "宮下 愛",
-      "template": "jidou_leave_stage_draw_discard",
+      "template": "jidou_leave_baton_partner_bh_threshold_energy",
       "automated": true,
-      "eventKind": "leave_stage",
+      "eventKind": "leave_stage_baton",
       "effect": "このメンバーがステージから控え室に置かれたとき、このメンバーがコスト10以上のブレードハートを持たない『虹ヶ咲』のメンバーとバトンタッチしていた場合、エネルギーを2枚アクティブにする。コスト15以上のブレードハートを持たない『虹ヶ咲』のメンバーの場合、さらにカードを1枚引く。"
     },
     {
       "card_no": "PL!N-bp5-005-AR",
       "name": "宮下 愛",
-      "template": "jidou_leave_stage_draw_discard",
+      "template": "jidou_leave_baton_partner_bh_threshold_energy",
       "automated": true,
-      "eventKind": "leave_stage",
+      "eventKind": "leave_stage_baton",
       "effect": "このメンバーがステージから控え室に置かれたとき、このメンバーがコスト10以上のブレードハートを持たない『虹ヶ咲』のメンバーとバトンタッチしていた場合、エネルギーを2枚アクティブにする。コスト15以上のブレードハートを持たない『虹ヶ咲』のメンバーの場合、さらにカードを1枚引く。"
     },
     {
       "card_no": "PL!N-bp5-005-SEC",
       "name": "宮下 愛",
-      "template": "jidou_leave_stage_draw_discard",
+      "template": "jidou_leave_baton_partner_bh_threshold_energy",
       "automated": true,
-      "eventKind": "leave_stage",
+      "eventKind": "leave_stage_baton",
       "effect": "このメンバーがステージから控え室に置かれたとき、このメンバーがコスト10以上のブレードハートを持たない『虹ヶ咲』のメンバーとバトンタッチしていた場合、エネルギーを2枚アクティブにする。コスト15以上のブレードハートを持たない『虹ヶ咲』のメンバーの場合、さらにカードを1枚引く。"
     },
     {

@@ -97,6 +97,28 @@ for (const [id, card] of Object.entries(cards)) {
     ) {
       errors.push(`${id} ${seg.trigger}: heart_color misclass for deck reveal`);
     }
+
+    if (/ステージにいるすべての『/.test(plain) && cl.template === "grant_jouji_session") {
+      if (!cl.grantToStageSeriesTag || cl.grantToStageSeriesMax == null) {
+        errors.push(`${id} ${seg.trigger}: all-stage series grant meta missing`);
+      }
+    }
+
+    if (
+      /能力を持たない/.test(plain) &&
+      /能力を持つ/.test(plain) &&
+      cl.template === "deck_top_pick_no_ability_or_jouji" &&
+      (cl.optional || cl.hasOptionalCost)
+    ) {
+      errors.push(`${id} ${seg.trigger}: deck peek must not be skippable optional`);
+    }
+
+    if (/ステージから控え室に置いてもよい/.test(plain) && /控え室から/.test(plain) && /手札に加える/.test(plain)) {
+      if (cl.template !== "live_success_optional_stage_to_waiting_score_recover") {
+        errors.push(`${id} live_success: optional stage wait recover misclassified`);
+      }
+      if (!cl.optional) errors.push(`${id} live_success: must be optional`);
+    }
   }
 }
 

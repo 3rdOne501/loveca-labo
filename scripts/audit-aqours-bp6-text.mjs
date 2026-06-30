@@ -66,6 +66,12 @@ for (const [id, card] of Object.entries(cards).sort()) {
       }
     }
 
+    if (/相手のエネルギーが自分より多い/.test(plain) && seg.trigger === "live_success") {
+      if (cl.template !== "live_card_score_plus") {
+        errors.push(`${id} live_success: opp-more-energy score misclassified`);
+      }
+    }
+
     if (/相手は余剰ハートをすべて失う/.test(plain)) {
       if (cl.template !== "live_success_opp_lose_surplus_score") {
         errors.push(`${id} live_success: opp surplus loss misclassified`);
@@ -75,6 +81,25 @@ for (const [id, card] of Object.entries(cards).sort()) {
     if (/カードを2枚引/.test(plain) && /控え室から登場している場合/.test(plain)) {
       if (cl.template === "ability_sequence") {
         errors.push(`${id} toujyou: draw+wait grant should not be ability_sequence`);
+      }
+      if (/手札を1枚控え室に置/.test(plain) && cl.template !== "toujou_draw_discard_if_from_waiting") {
+        errors.push(`${id} toujyou: draw+discard from waiting misclassified`);
+      }
+    }
+
+    if (/右サイドエリアか左サイドエリア/.test(plain) && /コスト13以上/.test(plain)) {
+      if (
+        cl.template !== "optional_self_wait_opp_stage" ||
+        cl.oppWaitMinCost !== 13 ||
+        !cl.requiresEnteredFromWaiting
+      ) {
+        errors.push(`${id} toujyou: opp side min-cost13 wait misclassified`);
+      }
+    }
+
+    if (/エールにより公開された自分のカードの中にライブカードがある場合/.test(plain)) {
+      if (cl.template !== "live_card_score_plus" || !cl.requiresYellRevealedOwnLiveCard) {
+        errors.push(`${id} live_success: yell-revealed live score misclassified`);
       }
     }
   }

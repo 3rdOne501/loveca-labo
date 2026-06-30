@@ -1,6 +1,6 @@
 # 修正済みカード台帳
 
-このチャット以降、カード効果修正の正本記録として使用する。
+カード効果修正の**正本記録**。前チャット [fb299c07](fb299c07-066c-458f-946b-4cf93726a9cc)・[d7ba868c](d7ba868c-2fb7-475a-98bb-ce2d64819f7e)・[cd299e25](cd299e25-5fbb-46e3-a736-63f87a9cbb25) の履歴を集約。以降の修正もここに追記する。
 
 - **正本ルール**: [総合ルール ver.1.06](https://llofficial-cardgame.com/wordpress/wp-content/uploads/2026/04/28140005/LoveLiveTCG_cr_1.06_260428.pdf)
 - **「修正」の定義**: テキスト読み返し + 条件・効果・タイミング・効果条件の一致 + シミュレーション検証
@@ -25,7 +25,7 @@
 | PL!S-sd1-002-SD | 桜内梨子 | 登場 | Aqours グループ判定（`cardGroups.js`） | コード |
 | PL!S-sd1-017-SD | 小原鞠莉 | 登場 | `draw_then_hand_to_deck_bottom` 新規 | コード |
 | PL!S-bp3-006-P | 津島善子 | 起動 | `kidou_self_wait_stage_member_swap_recover` | コード |
-| PL!S-bp5-004-P | 黒澤ダイヤ | 登場 | 3択 Aqours ブレード / SaintSnow PC | コード |
+| PL!S-bp5-004-P | 黒澤ダイヤ | 登場 | 2択: 他Aqoursブレード / SaintSnow PC | コード |
 | PL!S-bp6-020-L | 冒険Type A,B,C!! | ライブ開始 | 「」内 live_success 誤分割防止 | コード |
 | PL!HS-pb1-030-L | Edelied | ライブ開始 | `live_start_edelnote_blade_heart_pair` | コード |
 | PL!-bp5-011-N | （ライブ） | ライブ開始 | `grantHeartSlotUntilLiveEnd(0)` バグ修正 | コード |
@@ -246,6 +246,105 @@ Liella! bp2 / NEXTSTEP: `scripts/verify-liella-bp2.mjs` + `docs/liella-bp2-verif
 
 ---
 
+## 15. アニバーサリー クロスメンバー（2026-06-30）
+
+| カード番号 | 名前 | 問題 | 修正 | 検証 |
+|-----------|------|------|------|------|
+| LL-bp1-001-R＋ | 歩夢&かのん&花帆 | `parseQuotedCharacterNames` が付与文を名前に誤収録 | コスト部分のみ名前解析（`：ライブ終了` 前） | verify-ll-anniversary-member |
+| LL-bp6-001-R＋ | ことり&ダイヤ&小鈴 | 捨て札ハート色が枚数分重複・ターン限定 `playBonusHeartSlotsTurn` | `grantUnionHeartColorsFromDiscardedUntilLiveEnd`（FAQ Q246 和集合・ライブ終了まで） | verify-ll-anniversary-member |
+| kidou_wait_shuffle（横展開） | — | 控え室名前が完全一致のみ | `memberNameMatchesCharacter` 照合 | 同上 |
+
+監修のみ（修正なし）: LL-bp1-001-R＋, LL-bp2-001-R＋, LL-bp3-001-R＋, LL-bp4-001-R＋ — 分類・ハンドラ OK。
+
+---
+
+## 14. μ's bp5 メンバー（2026-06-30）
+
+| カード番号 | 名前 | 問題 | 修正 | 横展開 |
+|-----------|------|------|------|--------|
+| PL!-bp5-010-N | 高坂穂乃果 | `ability_sequence` ステップ0が任意コスト継承で山札ミル必須処理がスキップ可能 | `abilityComposition.stripStepCostsWhenParentPaid` | 同型5枚（登場/ライブ開始・手札任意→山札控え室→控え室回収） |
+| PL!-bp5-333-P＋ | 統堂英玲奈 | 常時「自ウェイト時 heart05」が `heartFlat` 未設定 | `blade_if_self_wait` に `countHeartIconsBySlot` 付与 | 同文言1枚 |
+
+`toujou_wait_pick_hand`: `live_start` / `live_success` 文脈でライブ開始時・成功時前提チェックに切替（登場時誤判定防止）。
+
+検証: `verify-muse-bp5.mjs` 26/26、`audit-muse-bp5-text.mjs` OK。
+
+---
+
+## 15. μ's bp5 ライブ（2026-06-30）
+
+| カード番号 | 名前 | 問題 | 修正 | 横展開 |
+|-----------|------|------|------|--------|
+| PL!-bp5-024-L | Private Wars | `parseAbilityBulletChoices` が `{{icon_blade}}` を除去し選択肢が「…はを得る」に／選択肢1がライブカードへブレード付与 | `plainTextFromAbilityWikiMarkup` + `executeAbilityChoiceText` ウェイト復帰→対象メンバーへブレード | `ability_pick_one` + icon_blade 全般 |
+
+`verify-p2-ability-smoke.mjs`: `optional_self_wait_opp_stage` ソロ相手盤チェックのハンドラ窓 4000→8000（既存実装は正、検出漏れのみ）。
+
+検証: `verify-muse-bp5.mjs` 26/26、`audit-muse-bp5-text.mjs` OK（`audit-common-patterns.mjs` 経由）。
+
+---
+
+## 16. Aqours bp5（2026-06-30）
+
+| カード番号 | 名前 | 問題 | 修正 | 横展開 |
+|-----------|------|------|------|--------|
+| PL!S-bp5-005-P | 渡辺 曜 | `heart_color_pick_grant` が自カードのみ付与／「今ターン登場の非Aqours全員」未処理 | `grantToEnteredMembersThisTurn` + `grantExcludeSeriesTag` 分類、`listEnteredStageMembersThisTurn` ハンドラ | 同文言4レアリティ |
+
+検証: `verify-aqours-bp5.mjs` 24/24、`audit-aqours-bp5-text.mjs` OK。
+
+---
+
+## 17. 虹ヶ咲 bp5（2026-06-30）
+
+| カード番号 | 名前 | 問題 | 修正 | 横展開 |
+|-----------|------|------|------|--------|
+| PL!N-bp5-005-P | 宮下 愛 | `jidou_leave_baton_partner_bh_threshold_energy` 新設（バトン相手BH閾値+E活性+条件ドロー） | 同文言4レアリティ |
+
+検証: `verify-niji-bp5.mjs` 35/35、`audit-niji-bp5-text.mjs` OK。
+
+---
+
+## 18. Liella! bp5（2026-06-30）
+
+| 代表ID | 内容 |
+|--------|------|
+| PL!SP-bp5-025-L | `optional_energy_card_score_plus_per_unit`（初回: E4枚につきスコア+1 誤分類修正） |
+| PL!SP-bp5-009-P / 023-L | 2回監修: ミル継続・エール公開スコアライブ前提 |
+
+検証: `verify-liella-bp5.mjs` 35/35、`audit-liella-bp5-text.mjs` OK。
+
+---
+
+## 19. 蓮ノ空 bp5（2026-06-30）
+
+| 代表ID | 内容 |
+|--------|------|
+| PL!HS-bp5-013-N | `live_start_deck_top_if_all_members_grant`（初回: ミル未実行バグ） |
+| PL!HS-bp5-005-P / 022-L | 2回監修: DOLLCHESTRA手札・Retrofuture 2択 |
+
+検証: `verify-hasunosora-bp5.mjs` 24/24、`audit-hasunosora-bp5-text.mjs` OK。
+
+---
+
+## 20. Anniversary2026 bp5 再監修（2026-06-30・2回目）
+
+横展開を含む実行時バグ修正。
+
+| 代表ID | 内容 | 横展開 |
+|--------|------|--------|
+| PL!-bp5-111-P＋ | jouji A-RISE 他1人につき heart05 が人数倍されない | `evaluateJoujiRule` heartFlat×series count |
+| PL!-bp5-002-P / 222-P＋ | 必須ウェイト＋任意手札捨てが全体スキップ可能 | `costHandDiscardOptional`（全5スクール 002/006/008/009 系） |
+| PL!N-bp5-001-P | エール公開BH種類数→heart01＋6種で常時スコア+1 | `jidou_yell_distinct_bh_tier_grant` |
+| PL!N-bp5-004-P | 相手ウェイト「ちょうど4ブレード」 | `oppWaitExactPrintedBlade` |
+| PL!N-bp5-027-L | 自ステージ異名3人条件 | `minDistinctStageMemberNames` |
+| PL!SP-bp5-009-P | ミル後も自ウェイト後に続行（FAQ Q222） | `live_start_mill_loop_blade_grant` |
+| PL!SP-bp5-023-L | エール公開スコアライブ前提 | `icon_score` wiki 平文化対応 |
+| PL!HS-bp5-005-P | DOLLCHESTRA 手札捨て二重UI | 分類から `handDiscardToWaiting` 除去 |
+| PL!HS-bp5-022-L | Retrofuture 2択ハンドラ＋EdelNote C9+前提 | `executeAbilityChoiceText` |
+
+検証: 全5スクール verify/audit OK（計147ケース）。
+
+---
+
 ## 更新履歴
 
 | 日付 | 内容 |
@@ -264,3 +363,11 @@ Liella! bp2 / NEXTSTEP: `scripts/verify-liella-bp2.mjs` + `docs/liella-bp2-verif
 | 2026-06-28 | Liella! bp2 / NEXTSTEP: 22枚分類OK、verify-liella-bp2 + audit-liella-bp2-text 追加 |
 | 2026-06-28 | 虹ヶ咲 bp4 ライブ027/029/031: 成功ライブ比例・1T目条件・ドロー+山札上 |
 | 2026-06-28 | Liella! bp4 ライブ026/028: 複数live_success分離・アクティブE条件 |
+| 2026-06-30 | チャット 0dd2c58a 着手: 共通ルール確定・`card-fix-workflow.mdc` 追加 |
+| 2026-06-30 | アニバーサリー クロスメンバー LL-bp1〜6（001-R＋）一括監修。LL-bp6-001 ハート色和集合+ライブ終了まで修正 |
+| 2026-06-30 | 蓮ノ空 bp5: 013-N ミル未実行修正、verify/audit 新設 |
+| 2026-06-30 | Liella! bp5: 025-L 誤分類修正、verify/audit 新設 |
+| 2026-06-30 | 虹ヶ咲 bp5: 005 `jidou_leave_baton_partner_bh_threshold_energy`、verify/audit 新設 |
+| 2026-06-30 | Aqours bp5: 005 `grantToEnteredMembersThisTurn`、verify/audit ライブ節 |
+| 2026-06-30 | μ's bp5 ライブ: 024 `parseAbilityBulletChoices` / `executeAbilityChoiceText`、`audit-common-patterns.mjs`、p2 smoke 窓拡張 |
+| 2026-06-30 | μ's bp5 メンバー（PL!-bp5）: `abilityComposition` 任意コスト→必須ステップ誤継承修正（横展開5枚）、`blade_if_self_wait` heartFlat、`toujou_wait_pick_hand` live_start/LS 前提 |

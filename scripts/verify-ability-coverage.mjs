@@ -120,6 +120,30 @@ function main() {
 
   execSync("node scripts/audit-niji-bp4-text.mjs", { cwd: ROOT, stdio: "inherit" });
 
+  execSync("node scripts/verify-ll-anniversary-member.mjs", { cwd: ROOT, stdio: "inherit" });
+
+  execSync("node scripts/audit-ll-anniversary-member-text.mjs", { cwd: ROOT, stdio: "inherit" });
+
+  execSync("node scripts/verify-muse-bp5.mjs", { cwd: ROOT, stdio: "inherit" });
+
+  execSync("node scripts/audit-muse-bp5-text.mjs", { cwd: ROOT, stdio: "inherit" });
+
+  execSync("node scripts/verify-aqours-bp5.mjs", { cwd: ROOT, stdio: "inherit" });
+
+  execSync("node scripts/audit-aqours-bp5-text.mjs", { cwd: ROOT, stdio: "inherit" });
+
+  execSync("node scripts/verify-niji-bp5.mjs", { cwd: ROOT, stdio: "inherit" });
+
+  execSync("node scripts/audit-niji-bp5-text.mjs", { cwd: ROOT, stdio: "inherit" });
+
+  execSync("node scripts/verify-liella-bp5.mjs", { cwd: ROOT, stdio: "inherit" });
+
+  execSync("node scripts/audit-liella-bp5-text.mjs", { cwd: ROOT, stdio: "inherit" });
+
+  execSync("node scripts/verify-hasunosora-bp5.mjs", { cwd: ROOT, stdio: "inherit" });
+
+  execSync("node scripts/audit-hasunosora-bp5-text.mjs", { cwd: ROOT, stdio: "inherit" });
+
   execSync("node scripts/audit-verification-list-notes.mjs", { cwd: ROOT, stdio: "inherit" });
 
   execSync("node --check js/abilityEffects.js js/joujiEffects.js js/jidouAutoEffects.js js/abilityRuntimeMeta.js js/simulator.js", {

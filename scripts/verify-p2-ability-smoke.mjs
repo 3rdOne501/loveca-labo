@@ -241,7 +241,7 @@ if (!simSrc.includes("function soloOpponentProxyStageMemberCandidates")) {
   failed++;
   console.error("FAIL soloOpponentProxyStageMemberCandidates helper missing");
 } else if (
-  !/optional_self_wait_opp_stage[\s\S]{0,4000}soloOpponentActiveStageMemberCandidates\(oppMax\)/.test(simSrc)
+  !/optional_self_wait_opp_stage[\s\S]{0,8000}soloOpponentActiveStageMemberCandidates\(oppMax\)/.test(simSrc)
 ) {
   failed++;
   console.error("FAIL optional_self_wait_opp_stage solo pool not restricted to opponent stage");
