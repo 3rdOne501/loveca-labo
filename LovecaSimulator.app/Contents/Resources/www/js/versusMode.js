@@ -6,7 +6,7 @@ import {
   getEffectiveCloudUser,
   isCloudSyncAvailable,
   onCloudUserChange,
-  signInWithGoogle,
+  signInAsGuest,
 } from "./cloudAuth.js";
 import { showToast } from "./ui.js";
 import {
@@ -107,12 +107,13 @@ function setOnlineSectionVisible() {
   if (hint) {
     if (online) {
       hint.textContent =
-        "①ルーム作成 → コード共有 ②相手が参加 ③両者「準備完了」→ ホストが「対戦開始」。公開ゾーンのみ同期（手札・ライブの表面は非公開）。";
+        "①ルーム作成 → コード共有 ②相手が参加 ③両者「準備完了」→ ホストが「対戦開始」。公開ゾーンとスコア集計を同期し、相手対象の効果は対応カードで自動適用・選択リクエストされます（手札・ライブの表面は非公開）。";
     } else if (u && cloudOk && !fsOk) {
       hint.textContent =
         "ログイン済みですが Firestore に接続できません。ページを再読込するか、Firebase の Firestore を有効化してください。";
     } else if (cloudOk) {
-      hint.textContent = "オンラインルームを使うには Google でログインしてください。";
+      hint.textContent =
+        "Google ログインなしでも「ルーム作成／参加」を押すとゲストとして自動ログインします（Google ログインはデッキのクラウド保存に利用）。";
     } else {
       hint.textContent = "オンラインルームを使うには Firebase 設定（firebaseConfig.js）が必要です。";
     }
@@ -728,9 +729,10 @@ export function initVersusMode(opts) {
   btnCreate?.addEventListener("click", async function () {
     var u = getCurrentCloudUser() || getEffectiveCloudUser();
     if (!u) {
-      showToast("オンラインルームには Google ログインが必要です");
-      signInWithGoogle();
-      return;
+      /* Google 未ログインでもゲスト（匿名）で続行できる */
+      showToast("ゲストとしてログインしています…", { duration: 3000 });
+      u = await signInAsGuest();
+      if (!u) return;
     }
     if (!isVersusMatchAvailable()) {
       showToast("Firestore が使えません。再読込するか Firebase で Firestore を有効化してください。", {
@@ -757,9 +759,9 @@ export function initVersusMode(opts) {
   btnJoin?.addEventListener("click", async function () {
     var u = getCurrentCloudUser() || getEffectiveCloudUser();
     if (!u) {
-      showToast("オンラインルームには Google ログインが必要です");
-      signInWithGoogle();
-      return;
+      showToast("ゲストとしてログインしています…", { duration: 3000 });
+      u = await signInAsGuest();
+      if (!u) return;
     }
     var codeInp = /** @type {HTMLInputElement|null} */ (el("dlg-versus-room-code"));
     var code = codeInp && codeInp.value ? codeInp.value.trim() : "";

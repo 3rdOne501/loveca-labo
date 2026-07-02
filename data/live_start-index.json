@@ -1,12 +1,12 @@
 {
-  "generated": "2026-07-01",
+  "generated": "2026-07-02",
   "trigger": "live_start",
   "total": 307,
   "byTemplate": {
     "heart_color_pick_grant": 31,
-    "grant_jouji_session": 60,
+    "grant_jouji_session": 64,
     "optional_self_wait_opp_stage": 11,
-    "optional_energy_blade_until_live_end": 34,
+    "optional_energy_blade_until_live_end": 30,
     "live_start_pay_or_hand_discard": 3,
     "ability_sequence": 5,
     "live_start_opp_wait_if_stage_hearts": 1,
@@ -1034,7 +1034,7 @@
     {
       "card_no": "PL!N-bp3-001-R＋",
       "name": "上原歩夢",
-      "template": "optional_energy_blade_until_live_end",
+      "template": "grant_jouji_session",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -1043,7 +1043,7 @@
     {
       "card_no": "PL!N-bp3-001-P",
       "name": "上原歩夢",
-      "template": "optional_energy_blade_until_live_end",
+      "template": "grant_jouji_session",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -1052,7 +1052,7 @@
     {
       "card_no": "PL!N-bp3-001-P＋",
       "name": "上原歩夢",
-      "template": "optional_energy_blade_until_live_end",
+      "template": "grant_jouji_session",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -1061,7 +1061,7 @@
     {
       "card_no": "PL!N-bp3-001-SEC",
       "name": "上原歩夢",
-      "template": "optional_energy_blade_until_live_end",
+      "template": "grant_jouji_session",
       "automated": true,
       "optional": true,
       "perTurn": 0,

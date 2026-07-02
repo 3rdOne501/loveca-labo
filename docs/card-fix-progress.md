@@ -30,6 +30,8 @@
 
 **完全修復 ✅（pb）**: 収録済み pb は全て完了（μ's / Aqours / 虹ヶ咲 / Liella! pb1、蓮 pb1、Liella pb2）。μ's に pb2–pb5 は**商品なし**
 
+**対戦モード（横断・カード横断機能）** 🔄: localDual Phase 1/2 ✅、online read_compare（Phase 3）・mutate/choice プロトコル（Phase 4 実プレイ4件）・passive online + patchKind 15種（Phase 5 コード）・運用/CI/UX/docs（Phase 6 コード）まで完了。**フルマッチ3シナリオ・耐久4項目・passive 7件・Phase 1 online 20件の 2ブラウザ実プレイ検証が残**（[versus-mode-implementation-plan.md §4](./versus-mode-implementation-plan.md)）。静的 CI（`verify-versus-online-static` / `verify-dual-mode-smoke`）は緑。
+
 ---
 
 ## 1. ブースターパック（bp1–bp6）

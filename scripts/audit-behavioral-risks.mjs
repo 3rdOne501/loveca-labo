@@ -122,6 +122,8 @@ function discoverVersusOnlineSkipTemplates(executeBody, runJidou, runJidouLiveCa
       if (
         /versusOnlineActive\(\)/.test(chunk) &&
         !/whenOpponentPlayMode\(/.test(chunk) &&
+        /* Phase 4: online 効果プロトコル経由なら「スキップ」ではない */
+        !/runVersusOnlineOpponent(Mutate|Choice)\(/.test(chunk) &&
         /相手/.test(chunk) &&
         /(finishResolved|finishGuided|showToast\([^)]*相手)/.test(chunk)
       ) {

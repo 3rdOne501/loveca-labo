@@ -24,6 +24,7 @@ import { T_MEMBER } from "./config.js";
  * @property {number} [handCostReduceTargetCost]
  * @property {string} [handCostReduceSeriesTag]
  * @property {boolean} [handCostReduceNoAbility]
+ * @property {string} [requiresSeriesMemberMovedThisTurn] 指定シリーズのステージメンバーがこのターンにエリア移動済み
  * @property {number} [mirrorUnderMaxCost]
  * @property {string} [batonSeriesOnlyTag]
  * @property {number} [stageCostPlus]
@@ -58,7 +59,6 @@ import { T_MEMBER } from "./config.js";
  * @property {number} [minCombinedSuccessLive]
  * @property {boolean} [selfWait]
  * @property {boolean} [notMovedThisTurn]
- * @property {string} [requiresSeriesMemberMovedThisTurn] ステージの指定シリーズがこのターン移動済み
  * @property {boolean} [centerHighestCost]
  * @property {boolean} [mostHeartsOnBothStages]
  * @property {boolean} [opponentMoreEnergy]
@@ -568,8 +568,8 @@ export function classifyJoujiSegment(segRaw) {
     }
     if (/エリアを移動しているかぎり/.test(p)) {
       handRule.notMovedThisTurn = false;
-      var seriesMovedM = p.match(/ステージにいる『([^』]+)』のメンバーがこのターンにエリアを移動/);
-      if (seriesMovedM) handRule.requiresSeriesMemberMovedThisTurn = seriesMovedM[1];
+      var movedSerKagi = p.match(/『([^』]+)』のメンバーがこのターンにエリアを移動しているかぎり/);
+      if (movedSerKagi) handRule.requiresSeriesMemberMovedThisTurn = movedSerKagi[1];
     }
     return handRule;
   }
@@ -934,7 +934,6 @@ function evaluateJoujiRule(rule, inst, card, ctx) {
       if (ctx.memberOnStageOrLive(inst)) out.printedHeartsWildcard = true;
       return out;
     case "hand_cost_reduce":
-      if (!conditionMet(rule, inst, card, ctx)) return out;
       out.handCostReduction = rule.handCostReduce || 0;
       return out;
     case "hand_cost_reduce_if_wait_series_on_stage":
@@ -1097,15 +1096,6 @@ function scalingCount(rule, inst, card, ctx) {
 function conditionMet(rule, inst, card, ctx) {
   if (rule.selfWait && !ctx.memberIsWait(inst)) return false;
   if (rule.notMovedThisTurn === true && ctx.memberMovedThisTurn(inst)) return false;
-  if (rule.requiresSeriesMemberMovedThisTurn) {
-    var seriesMovedHit = false;
-    ctx.eachStageColumnMembers().forEach(function (m) {
-      if (!m || !ctx.memberMovedThisTurn(m)) return;
-      if (!ctx.memberMatchesSeries(m, rule.requiresSeriesMemberMovedThisTurn)) return;
-      seriesMovedHit = true;
-    });
-    if (!seriesMovedHit) return false;
-  }
   if (rule.minEnergy != null && ctx.ownEnergyCount() < rule.minEnergy) return false;
   if (rule.minActiveEnergy != null) {
     var activeN =
@@ -1222,6 +1212,13 @@ function conditionMet(rule, inst, card, ctx) {
       if (!m || String(m.id) === String(inst.id)) return;
       if (ctx.memberTotalHearts(m) >= mine) beat = false;
     });
+    /* カード文は「自分と相手のステージの中で」— 相手ステージのメンバーとも比較する */
+    if (typeof ctx.eachOpponentStageColumnMembers === "function") {
+      ctx.eachOpponentStageColumnMembers().forEach(function (m) {
+        if (!m || String(m.id) === String(inst.id)) return;
+        if (ctx.memberTotalHearts(m) >= mine) beat = false;
+      });
+    }
     if (!beat) return false;
   }
   if (rule.opponentExtraHeartSurplus != null) {
@@ -1310,6 +1307,15 @@ export function evaluateMemberJouji(card, inst, ctx, extraSegmentRaws) {
         if (pc !== rule.handCostReduceTargetCost) continue;
       }
     }
+    if (rule.kind === "hand_cost_reduce" && rule.requiresSeriesMemberMovedThisTurn) {
+      var movedSerHit = false;
+      ctx.eachStageColumnMembers().forEach(function (sm) {
+        if (movedSerHit || !sm) return;
+        if (!ctx.memberMatchesSeries(sm, rule.requiresSeriesMemberMovedThisTurn)) return;
+        if (typeof ctx.memberMovedThisTurn === "function" && ctx.memberMovedThisTurn(sm)) movedSerHit = true;
+      });
+      if (!movedSerHit) continue;
+    }
     mergeJoujiEval(acc, evaluateJoujiRule(rule, inst, card, ctx));
   }
   return acc;
@@ -1397,26 +1403,7 @@ export function computeJoujiHandCostReductionForCard(targetInst, ctx) {
       red = Math.max(red, liveRule.handCostReduce || 0);
     }
   }
-  (ctx.eachStageColumnMembers() || []).forEach(function (stageInst) {
-    if (!stageInst || !ctx.memberOnStageOnly(stageInst)) return;
-    var stageCard = ctx.mergedCatalog(stageInst);
-    if (!catalogMemberCardSameIdentity(mc, stageCard)) return;
-    var stageRaws = listNativeJoujiSegmentRaws(stageCard);
-    for (var hi = 0; hi < stageRaws.length; hi++) {
-      var handRule = classifyJoujiSegment(stageRaws[hi]);
-      if (!handRule || handRule.kind !== "hand_cost_reduce") continue;
-      if (!conditionMet(handRule, stageInst, stageCard, ctx)) continue;
-      red = Math.max(red, handRule.handCostReduce || 0);
-    }
-  });
   return red;
-}
-
-/** @param {*} targetMc @param {*} sourceMc */
-function catalogMemberCardSameIdentity(targetMc, sourceMc) {
-  if (!targetMc || !sourceMc) return false;
-  if (String(targetMc.name || "") === String(sourceMc.name || "")) return true;
-  return String(targetMc.card_no || "") === String(sourceMc.card_no || "");
 }
 
 /** @param {*} liveInst @param {JoujiBoardContext} ctx */

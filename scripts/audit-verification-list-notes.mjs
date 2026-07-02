@@ -22,6 +22,24 @@ function abilityCorpus(raw) {
   return (plain + " " + hearts.join(" ")).replace(/\s+/g, " ").trim();
 }
 
+/**
+ * 「PL!S-bp6-001-P/R」「PL!S-PR-025–028-PR」「PL!N-bp5-008-P 他」等の
+ * 複合表記から cards.json に実在する代表IDを解決する。
+ * @param {string} rawId
+ * @returns {string | null}
+ */
+function resolveRepresentativeId(rawId) {
+  const full = String(rawId).trim();
+  if (cards[full]) return full;
+  const noOthers = full.replace(/\s*他\s*$/, "").trim();
+  if (cards[noOthers]) return noOthers;
+  const first = noOthers.split(/\s*\/\s*/)[0].replace(/[–—][0-9０-９]+/, "").trim();
+  if (cards[first]) return first;
+  const suffixM = noOthers.match(/(-[A-Z0-9＋+]+)$/);
+  if (suffixM && cards[first + suffixM[1]]) return first + suffixM[1];
+  return null;
+}
+
 /** @param {string} line */
 function parseTableRow(line) {
   if (!/^\| \[[ x]\]/.test(line)) return null;
@@ -53,7 +71,8 @@ for (const file of files) {
   for (const line of fs.readFileSync(path.join(ROOT, "docs", file), "utf8").split("\n")) {
     const row = parseTableRow(line);
     if (!row) continue;
-    const card = cards[row.id];
+    const repId = resolveRepresentativeId(row.id);
+    const card = repId ? cards[repId] : null;
     if (!card) {
       errors.push(`${file} ${row.id}: cards.json に存在しない`);
       continue;

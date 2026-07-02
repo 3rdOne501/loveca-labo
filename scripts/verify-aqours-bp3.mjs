@@ -69,9 +69,14 @@ const CASES = [
   {
     id: "PL!S-bp3-007-P",
     trigger: "kidou",
-    expectTemplate: "draw_from_deck",
+    expectTemplate: "live_start_pick_player_waiting_deck_bottom",
     check: (cl) =>
-      cl.deckDrawCount === 1 && cl.costEnergy && cl.perTurnLimit === 1 ? [] : ["draw/cost/limit"],
+      cl.deckDrawOnSuccess === 1 &&
+      cl.costEnergy &&
+      cl.perTurnLimit === 1 &&
+      cl.filters?.pickType === "ライブ"
+        ? []
+        : ["draw/cost/limit"],
   },
   {
     id: "PL!S-bp3-008-P",

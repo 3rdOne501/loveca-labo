@@ -39,7 +39,7 @@
 **やること（優先度）**
 
 1. **P1 デュアル手動確認**: 両盤でライブフレームスコアを同点にし、エール回収が発動すること
-2. **P2 オンライン**: 相手ライブフレームスコア（加点込み）の同期設計
+2. **P2 オンライン**: 相手ライブフレームスコア（加点込み）の同期設計 — **[x] 2026-07-02 v2 `liveFrameScore` 同期実装**（[versus-online-read-sync.md](./versus-online-read-sync.md)）
 3. **P3 回帰**: `verify-dual-mode-smoke.mjs` に既登録（`requiresLiveScoreTieWithOpponent`）。デュアル実プレイ1回で十分
 
 **コード触るなら**: `yell_resolution_pick_hand` 本体ではなく `opponentLiveScoreEstimate()` のオンライン分岐（`versusBoardSync` 側）
@@ -57,7 +57,7 @@
 **やること**
 
 1. **P1 デュアル手動確認**: 自スコア > 相手スコア → 虹ヶ咲回収。同点・逆転で不発
-2. **P2 オンライン**: 2.1 と同じスコア同期課題
+2. **P2 オンライン**: 2.1 と同じスコア同期課題 — **[x] 2026-07-02 v2 `liveFrameScore` 同期実装**
 3. **P3 回帰**: スモーク登録済み（`PL!N-bp1-026-L` / `requiresLiveScoreHigherThanOpponent`）
 
 ---
@@ -75,7 +75,7 @@
 **やること**
 
 1. **P1 デュアル手動確認**: 相手成功ライブのみ2枚でも発動。自2枚以上ならダイアログ不要
-2. **P2 オンライン**: 成功ライブ枚数のリアルタイム同期
+2. **P2 オンライン**: 成功ライブ枚数のリアルタイム同期 — **[x] 2026-07-02 v2 `successLiveCount`/`successLiveScoreSum` 同期実装**
 3. **P3 回帰**: スモーク登録済み（`min_either_success_live`）
 
 ---
@@ -199,10 +199,14 @@ flowchart TD
 | Phase | 内容 | 完了条件 |
 |-------|------|----------|
 | **0** | `verify-dual-mode-smoke.mjs` + セット別 `verify-*-bp*.mjs` | CI 緑 |
-| **1** | 上表 P1 のデュアル盤手動（20ケース） | チェックリスト `[x]` |
-| **2** | P2 常時効果（010ウィーン、001千歌、002絵里常時等） | 両盤で常時が追従 |
-| **3** | オンライン: スコア・成功ライブ・手札枚数・ステージ変更の同期 | 公開/非公開の設計ドキュメント |
-| **4** | [opponent-board-effects-registry.json](./opponent-board-effects-registry.json) の `dual_ok` 214件を template 単位でサンプリング | template 代表テスト追加 |
+| **1** | 上表 P1 のデュアル盤手動（20ケース） | チェックリスト `[x]`（✅ 2026-07-02） |
+| **2** | P2 常時効果（010ウィーン、001千歌、002絵里常時等） | 両盤で常時が追従（✅ localDual 2026-07-02） |
+| **3** | オンライン: スコア・成功ライブ・手札枚数・ステージ変更の同期 | 公開/非公開の設計ドキュメント（✅ read-sync v2） |
+| **4** | online mutate/choice プロトコル（代表4 template） | 実プレイ 4件 + タイムアウト（✅ 2026-07-02） |
+| **5** | passive online 同期 + patchKind 横展開（15種） | コード + smoke 86（✅ コード / 実プレイ手動は保留） |
+| **6** | 運用・耐久・リリース準備（CI static・フォールバック棚卸し・UX・docs・ユーザーガイド） | **コード/CI/docs 完了（2026-07-03）**。フルマッチ3・耐久4・手動回帰は**実プレイ検証保留** |
+
+> リリース判定は Phase 6 の**実プレイ検証（フルマッチ3シナリオ・耐久4項目）完了後**。現時点はコード面・静的 CI・ドキュメントが整い、2ブラウザ手動検証が残る。
 
 ---
 
@@ -221,42 +225,121 @@ flowchart TD
 
 ## 6. チェックリスト（Phase 1 手動）
 
-実施したら `[ ]` → `[x]` に変更。
+実施したら `[ ]` → `[x]` に変更。**2026-07-02 全20件完了**（テンプレ修正: async ダイアログ×相手盤ミューテーション分離、jouji スナップショット永続化、swapActiveSnap 導入）。
 
 ### Liella bp2
-- [ ] PL!SP-bp2-011-P デュアル: 相手選択
-- [ ] PL!SP-bp2-023-L デュアル: 成功ライブ枚数比較
-- [ ] PL!SP-bp2-024-L デュアル: 手札枚数比較
+- [x] PL!SP-bp2-011-P デュアル: 相手選択
+- [x] PL!SP-bp2-023-L デュアル: 成功ライブ枚数比較
+- [x] PL!SP-bp2-024-L デュアル: 手札枚数比較
 
 ### Aqours bp2
-- [ ] PL!S-bp2-001-P デュアル: 常時ブレード3
+- [x] PL!S-bp2-001-P デュアル: 常時ブレード3
 
 ### Niji bp3
-- [ ] PL!N-bp3-010-P デュアル: 自分/相手の控え室
-- [ ] PL!N-bp3-011-P デュアル: 相手ステージ同名付与
-- [ ] PL!N-bp3-017-N デュアル: optional_self_wait_opp_stage
+- [x] PL!N-bp3-010-P デュアル: 自分/相手の控え室
+- [x] PL!N-bp3-011-P デュアル: 相手ステージ同名付与
+- [x] PL!N-bp3-017-N デュアル: optional_self_wait_opp_stage
 
 ### Aqours bp3
-- [ ] PL!S-bp3-002-P デュアル: ライブスコア比較
-- [ ] PL!S-bp3-007-P デュアル: 相手山札から引く
-- [ ] PL!S-bp3-024-L デュアル: ability_pick_one 相手枝
+- [x] PL!S-bp3-002-P デュアル: ライブスコア比較
+- [x] PL!S-bp3-007-P デュアル: 相手山札から引く
+- [x] PL!S-bp3-024-L デュアル: ability_pick_one 相手枝
 
 ### µ's bp3
-- [ ] PL!-bp3-002-P デュアル: 相手2人ウェイト
-- [ ] PL!-bp3-022-L デュアル: 両ステージ人数公開
-- [ ] PL!-bp3-026-L デュアル: ハート総数比較
+- [x] PL!-bp3-002-P デュアル: 相手2人ウェイト
+- [x] PL!-bp3-022-L デュアル: 両ステージ人数公開
+- [x] PL!-bp3-026-L デュアル: ハート総数比較
 
 ### 旧 dual_gap（横展開確認）
-- [ ] PL!HS-cl1-012-CL デュアル: ライブスコア同点
-- [ ] PL!N-bp1-026-L デュアル: ライブスコアより高い
-- [ ] PL!S-bp5-019-L デュアル: どちらか成功ライブ2+
+- [x] PL!HS-cl1-012-CL デュアル: ライブスコア同点
+- [x] PL!N-bp1-026-L デュアル: ライブスコアより高い
+- [x] PL!S-bp5-019-L デュアル: どちらか成功ライブ2+
 
 ### Niji bp4（SAPPHIREMOON）
-- [ ] PL!N-bp4-001-P デュアル: エネルギー枚数比較
-- [ ] PL!N-bp4-002-P デュアル: 自分/相手の山札上peek
-- [ ] PL!N-bp4-004-P デュアル: 相手ウェイト→山札上枚数
-- [ ] PL!N-bp4-007-P デュアル: 両者ライブ回収 / 両者EDK
-- [ ] PL!N-bp4-012-P デュアル: 相手成功ライブスコア6+
+- [x] PL!N-bp4-001-P デュアル: エネルギー枚数比較
+- [x] PL!N-bp4-002-P デュアル: 自分/相手の山札上peek
+- [x] PL!N-bp4-004-P デュアル: 相手ウェイト→山札上枚数
+- [x] PL!N-bp4-007-P デュアル: 両者ライブ回収 / 両者EDK
+- [x] PL!N-bp4-012-P デュアル: 相手成功ライブスコア6+
+
+## 6.5 チェックリスト（Phase 4 online 手動 — 2ブラウザ）
+
+コード実装は 2026-07-02 完了（[versus-online-effect-protocol.md](./versus-online-effect-protocol.md)）。
+**ゲスト（匿名）ログイン対応済み**のため Google アカウント不要。2タブ（別オリジン、例: `localhost:8125` と `localhost:8126`）で実施できる。
+
+### プロトコル層 E2E（実 Firestore・2クライアント）— 2026-07-02 実施済み ✅
+
+- [x] ゲスト匿名ログイン → ルーム作成/参加/対戦開始（host/guest 別 UID）
+- [x] EffectRequest `deck_draw_top` → 対象側自動適用（手札6→7）→ ack `{ok:true, applied:1}` → resolved
+- [x] ChoiceRequest → 対象側 `#dlg-versus-remote-choice` 表示 → 選択 → ChoiceResponse `{pickedIds}` → resolved
+- [x] 冪等: 同一 requestId の再 snapshot で二重適用なし（手札 7 のまま）
+- [x] cancel 経路: pending → cancelled / 不明 patchKind → ack `{ok:false}`・盤面無変化
+
+### 実カード盤面フロー（対象カード入りデッキで実プレイ）— 2026-07-02 実施済み ✅
+
+実 Firestore・匿名2クライアント（`localhost:8125` host / `localhost:8126` guest）、対象4種入り 60 枚デッキで実プレイ（ルーム KEVQ）。
+
+- [x] PL!N-bp3-017-N online: guest 登場→コスト支払い→ host 公開ステージから宮下愛（cost4）を選択 → host 盤で自動ウェイト（rotated）・`stageWaitCount` 0→1・ack `{ok:true, applied:1}`
+- [x] PL!N-bp3-011-P online: host 登場 → guest 公開ステージ（ルビィ/果南）から選択 → heart06 一致判定 → host ミアにブレード2（read_compare のみ・相手盤無変更）
+- [x] PL!N-bp3-010-P online: host ライブ開始で live_start 誘発 →「相手」選択 → guest 公開控え室のメンバーのみ2枚選択 → guest 盤で控え室5→3・山札 46 に自動移動・ack `{ok:true, applied:2}`
+- [x] PL!SP-bp2-011-P online: host 控え室の異名ライブ2枚選択 → guest に `#dlg-versus-remote-choice`（2択）→ guest が1枚選択 → host 手札に自動追加・控え室から除去
+- [x] タイムアウト: guest 切断（タブ離脱）中に host が `waiting_to_deck_bottom` 送信 → 120s 後 request `cancelled`・待ちバナー消滅・効果スキップで続行（総合ルール 1.3.2）。guest はリロード→ロビー再オープンでルーム復帰確認
+
+いずれもソロ入力ダイアログなし・localDual と同一の盤面結果。発動側には「相手の操作/選択を待っています…」バナー、対象側には適用 toast + プレイログ（`相手効果を適用: <template> → N件`）。
+
+軽微（盤面影響なし・要追跡）: 検証1で対象側プレイログに「→ 1件」と「→ 0件」の2行が同時刻に記録されるケースを観測（適用自体は1件のみで冪等）。
+
+---
+
+## 6.6 チェックリスト（Phase 5 — Phase 1 手動20件の online 再検証 — 2ブラウザ）
+
+§6 と同一20 ID を **2ブラウザ online** で再実施する（合格: ソロ入力ダイアログなし・localDual と同一盤面・クラッシュなし）。**未実施**。
+
+- [ ] PL!SP-bp2-011-P / [ ] PL!SP-bp2-023-L / [ ] PL!SP-bp2-024-L
+- [ ] PL!S-bp2-001-P
+- [ ] PL!N-bp3-010-P / [ ] PL!N-bp3-011-P / [ ] PL!N-bp3-017-N
+- [ ] PL!S-bp3-002-P / [ ] PL!S-bp3-007-P / [ ] PL!S-bp3-024-L
+- [ ] PL!-bp3-002-P / [ ] PL!-bp3-022-L / [ ] PL!-bp3-026-L
+- [ ] PL!HS-cl1-012-CL / [ ] PL!N-bp1-026-L / [ ] PL!S-bp5-019-L
+- [ ] PL!N-bp4-001-P / [ ] PL!N-bp4-002-P / [ ] PL!N-bp4-004-P / [ ] PL!N-bp4-007-P / [ ] PL!N-bp4-012-P
+
+## 6.7 チェックリスト（Phase 5 — passive_track online 7件 — 2ブラウザ）
+
+常時効果のコードは実装済み（[read-sync §6](./versus-online-read-sync.md)）。実プレイ検証は**未実施**。
+
+- [ ] PL!SP-bp2-010-P: 相手 liveArea → 必要ハート+1（B型・`imposeOpponentLiveNeedHeartDelta`）
+- [ ] PL!S-bp2-001-P: 自成功0 & 相手成功1+ → ブレード3
+- [ ] PL!-bp3-002-P: 相手ウェイト人数に追従
+- [ ] PL!N-bp4-012-P: 相手成功ライブ合計6+
+- [ ] PL!N-bp4-007-P: 両者E合計15+（常時枝）
+- [ ] PL!-bp4-018-N: read_compare 常時（自>相 成功スコア）
+- [ ] PL!N-bp5-002-P: 相手ウェイト+read 複合（両ステージ最多ハート）
+
+---
+
+## 8. Phase 5 online template 代表サンプリング
+
+template 単位で online 動作を代表1枚で確認する（214枚全 E2E はしない）。`online` 列: コード実装済み=◐、実プレイ確認=[x]。
+
+| 相互作用 | 件数 | 代表 template | 代表 ID | patchKind | online |
+|----------|------|---------------|---------|-----------|--------|
+| mutate_opponent_stage | 148 | `optional_self_wait_opp_stage` | PL!N-bp3-017-N | stage_wait_members | [x] |
+| mutate_opponent_stage（活性化） | — | （活性化系） | — | stage_activate_members | ◐ |
+| mutate_opponent_stage（控え戻し） | — | （控え戻し系） | — | stage_return_waiting | ◐ |
+| mutate_opponent_hand | — | （手札 discard 系） | — | hand_discard_pick | ◐ |
+| mutate_opponent_waiting | — | （控え回収系） | — | waiting_to_hand | ◐ |
+| mutate_opponent_deck | 32 | `draw_from_deck` | PL!S-bp3-007-P | deck_draw_top / deck_discard_top / deck_shuffle | ◐ |
+| mutate_opponent_live | 20 | `toujou_grant_opp_live_need_heart` | PL!S-bp5-010-N | live_to_waiting / live_need_heart_delta(未) | ◐ |
+| mutate_opponent_energy | — | （E ウェイト/控え系） | — | energy_to_wait / energy_discard | ◐ |
+| mutate_opponent_success_live | — | （成功ライブ剥がし系） | — | success_live_to_waiting | ◐ |
+| opponent_choice | 41 | `toujou_wait_pick_opp_live` | PL!SP-bp2-011-P | live_pick_to_hand(Choice) | [x] |
+| both_players | 15 | （007 優木 等） | PL!N-bp4-007-P | 連鎖リクエスト（未実装） | ☐ |
+| read_compare | 88 | `yell_resolution_pick_hand` | PL!HS-cl1-012-CL | read のみ（Phase 3） | ◐ |
+| passive_track | 50 | passive 再計算トリガー | PL!SP-bp2-010-P | v2 集計（imposeOpponentLiveNeedHeartDelta 等） | ◐ |
+
+**凡例**: ◐ = 対象側 `applyVersusEffectPatchLocally` / ctx online 分岐は実装済み（発動側 template 接続 or 実プレイ確認が残る）。☐ = 未実装。
+
+**残タスク**: 各 mutate template の発動側で `runOnTargetPlayerBoard(target, fn, onlineReq)` に patchKind 付き `onlineReq` を渡す接続（Step 2 横展開）、both_players 連鎖（Step 3）、上記 online 列の実プレイ確認。
 
 ---
 

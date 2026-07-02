@@ -66,6 +66,8 @@ function main() {
 
   execSync("node scripts/verify-dual-mode-smoke.mjs", { cwd: ROOT, stdio: "inherit" });
 
+  execSync("node scripts/verify-versus-online-static.mjs", { cwd: ROOT, stdio: "inherit" });
+
   execSync("node scripts/verify-play-checklist.mjs", { cwd: ROOT, stdio: "inherit" });
 
   execSync("node scripts/verify-deck-pick-hand-patterns.mjs", { cwd: ROOT, stdio: "inherit" });

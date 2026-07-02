@@ -598,6 +598,57 @@ export async function signInWithGoogle() {
   return signInWithGoogleInteractive();
 }
 
+/**
+ * ゲスト（匿名）ログイン — Google アカウント不要でオンライン対戦に参加できる。
+ * Firestore rules は `request.auth != null` のみを要求するため匿名ユーザーで満たせる。
+ * Firebase コンソールで Anonymous プロバイダの有効化が必要。
+ * @returns {Promise<CloudUserSummary|null>}
+ */
+export async function signInAsGuest() {
+  if (!(await ensureCloudAuthReady())) {
+    showToast("Firebase を初期化できません。firebaseConfig.js とネットワークを確認してください。", {
+      duration: 8000,
+    });
+    return null;
+  }
+  if (_auth && _auth.currentUser) {
+    currentUser = userFromFirebaseAuthUser(_auth.currentUser);
+    return currentUser;
+  }
+  if (!_authApi || typeof _authApi.signInAnonymously !== "function") {
+    showToast("この Firebase SDK ではゲストログインを利用できません。", { duration: 6000 });
+    return null;
+  }
+  try {
+    const cred = await _authApi.signInAnonymously(_auth);
+    if (cred && cred.user) {
+      applySignedInUser(cred.user);
+      showToast("ゲストとしてログインしました（データはこの端末のゲストIDに紐づきます）", { duration: 5000 });
+      return currentUser;
+    }
+  } catch (err) {
+    console.warn("[cloudAuth] signInAnonymously failed:", err);
+    if (err && (err.code === "auth/operation-not-allowed" || err.code === "auth/admin-restricted-operation")) {
+      showToast(
+        "ゲストログインが無効です。Firebase コンソール → Authentication → Sign-in method → 「匿名」を有効化してください。",
+        { duration: 12000 },
+      );
+    } else {
+      showToast("ゲストログインに失敗しました: " + formatAuthError(err), { duration: 8000 });
+    }
+  }
+  return null;
+}
+
+/** 現在のユーザーが匿名（ゲスト）かどうか */
+export function isGuestCloudUser() {
+  try {
+    return !!(_auth && _auth.currentUser && _auth.currentUser.isAnonymous);
+  } catch (_) {
+    return false;
+  }
+}
+
 export async function signOutCloud() {
   if (!cloudSyncEnabled || !_auth || !_authApi) return;
   setPreferGoogleAutoLogin(false);

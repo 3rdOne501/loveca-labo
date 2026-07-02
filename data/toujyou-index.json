@@ -1,7 +1,7 @@
 {
-  "generated": "2026-07-01",
+  "generated": "2026-07-02",
   "trigger": "toujyou",
-  "total": 543,
+  "total": 544,
   "byTemplate": {
     "toujou_wait_pick_hand": 61,
     "deck_top_pick_recover": 107,
@@ -9,16 +9,16 @@
     "deck_mill_conditional_draw": 1,
     "deck_top_look_reorder": 16,
     "ability_pick_one": 16,
-    "optional_self_wait_opp_stage": 33,
+    "optional_self_wait_opp_stage": 34,
     "toujou_opp_hand_reveal_no_live_draw": 1,
     "toujou_hand_stage_enter": 11,
-    "grant_jouji_session": 12,
+    "grant_jouji_session": 9,
     "live_start_pick_player_waiting_deck_bottom": 1,
     "draw_then_hand_discard": 45,
     "toujou_opp_emma_punch_answer": 1,
     "toujou_wait_to_member_under": 1,
     "draw_until_hand_size": 2,
-    "draw_from_deck": 31,
+    "draw_from_deck": 30,
     "energy_deck_to_wait": 14,
     "toujou_optional_hand_discard_draw": 3,
     "deck_top_to_waiting": 6,
@@ -48,6 +48,7 @@
     "toujou_wait_pick_trigger_ability": 2,
     "toujou_self_wait_only": 2,
     "toujou_opp_stage_member_match_grant": 2,
+    "toujou_optional_energy_under": 3,
     "toujou_success_live_score_tiered": 2,
     "toujou_multi_wait_draw_per_count": 2,
     "toujou_turn_block_effect_activate": 2,
@@ -63,10 +64,10 @@
     "toujou_liella_double_baton_center": 4,
     "live_start_position_change": 5,
     "deck_peek_pick_then_opp_wait": 1,
-    "toujou_optional_energy_under": 2,
     "toujou_pick_member_or_energy": 2,
     "energy_deck_to_active": 3,
     "toujou_baton_both_trim_hand_draw": 3,
+    "toujou_optional_pay_wait_recover_grant": 3,
     "toujou_grant_opp_live_need_heart_if_stage_hearts": 2,
     "draw_then_hand_to_deck_bottom": 3,
     "toujou_both_center_position_change": 3,
@@ -656,6 +657,15 @@
       "optional": false,
       "perTurn": 0,
       "effect": "自分の控え室から、スコア6以上のライブカードを1枚手札に加える。"
+    },
+    {
+      "card_no": "PL!HS-PR-035-PR",
+      "name": "百生吟子",
+      "template": "optional_self_wait_opp_stage",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "相手の控え室にあるメンバーカードを3枚選び、相手のデッキの下に好きな順番で置いてもよい。そうした場合、相手のステージにいる元々持つの数が3つ以下のメンバー1人をウェイトにする。"
     },
     {
       "card_no": "LL-bp1-001-R＋",
@@ -2288,7 +2298,7 @@
     {
       "card_no": "PL!N-bp3-013-N",
       "name": "上原歩夢",
-      "template": "draw_from_deck",
+      "template": "toujou_optional_energy_under",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -3369,7 +3379,7 @@
       "name": "絢瀬絵里",
       "template": "deck_top_pick_recover",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "このメンバーをウェイトにし、手札を1枚控え室に置いてもよい：自分のデッキの上からカードを5枚見る。その中からコスト9以上の『μ's』のメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
     },
@@ -3378,7 +3388,7 @@
       "name": "絢瀬絵里",
       "template": "deck_top_pick_recover",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "このメンバーをウェイトにし、手札を1枚控え室に置いてもよい：自分のデッキの上からカードを5枚見る。その中からコスト9以上の『μ's』のメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
     },
@@ -3387,7 +3397,7 @@
       "name": "絢瀬絵里",
       "template": "deck_top_pick_recover",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "このメンバーをウェイトにし、手札を1枚控え室に置いてもよい：自分のデッキの上からカードを5枚見る。その中からコスト9以上の『μ's』のメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
     },
@@ -3567,7 +3577,7 @@
       "name": "津島善子",
       "template": "deck_top_pick_recover",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "このメンバーをウェイトにし、手札を1枚控え室に置いてもよい：自分のデッキの上からカードを5枚見る。その中からコスト9以上の『Aqours』のメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
     },
@@ -3576,7 +3586,7 @@
       "name": "津島善子",
       "template": "deck_top_pick_recover",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "このメンバーをウェイトにし、手札を1枚控え室に置いてもよい：自分のデッキの上からカードを5枚見る。その中からコスト9以上の『Aqours』のメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
     },
@@ -3585,14 +3595,14 @@
       "name": "津島善子",
       "template": "deck_top_pick_recover",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "このメンバーをウェイトにし、手札を1枚控え室に置いてもよい：自分のデッキの上からカードを5枚見る。その中からコスト9以上の『Aqours』のメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
     },
     {
       "card_no": "PL!S-bp5-009-R",
       "name": "黒澤ルビィ",
-      "template": "grant_jouji_session",
+      "template": "toujou_optional_pay_wait_recover_grant",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -3601,7 +3611,7 @@
     {
       "card_no": "PL!S-bp5-009-P",
       "name": "黒澤ルビィ",
-      "template": "grant_jouji_session",
+      "template": "toujou_optional_pay_wait_recover_grant",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -3610,7 +3620,7 @@
     {
       "card_no": "PL!S-bp5-009-AR",
       "name": "黒澤ルビィ",
-      "template": "grant_jouji_session",
+      "template": "toujou_optional_pay_wait_recover_grant",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -3684,7 +3694,7 @@
       "name": "天王寺璃奈",
       "template": "deck_top_pick_recover",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "このメンバーをウェイトにし、手札を1枚控え室に置いてもよい：自分のデッキの上からカードを5枚見る。その中からコスト9以上の『虹ヶ咲』のメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
     },
@@ -3693,7 +3703,7 @@
       "name": "天王寺璃奈",
       "template": "deck_top_pick_recover",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "このメンバーをウェイトにし、手札を1枚控え室に置いてもよい：自分のデッキの上からカードを5枚見る。その中からコスト9以上の『虹ヶ咲』のメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
     },
@@ -3702,7 +3712,7 @@
       "name": "天王寺璃奈",
       "template": "deck_top_pick_recover",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "このメンバーをウェイトにし、手札を1枚控え室に置いてもよい：自分のデッキの上からカードを5枚見る。その中からコスト9以上の『虹ヶ咲』のメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
     },
@@ -3841,7 +3851,7 @@
       "name": "若菜四季",
       "template": "deck_top_pick_recover",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "このメンバーをウェイトにし、手札を1枚控え室に置いてもよい：自分のデッキの上からカードを5枚見る。その中からコスト9以上の『Liella!』のメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
     },
@@ -3850,7 +3860,7 @@
       "name": "若菜四季",
       "template": "deck_top_pick_recover",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "このメンバーをウェイトにし、手札を1枚控え室に置いてもよい：自分のデッキの上からカードを5枚見る。その中からコスト9以上の『Liella!』のメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
     },
@@ -3859,7 +3869,7 @@
       "name": "若菜四季",
       "template": "deck_top_pick_recover",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "このメンバーをウェイトにし、手札を1枚控え室に置いてもよい：自分のデッキの上からカードを5枚見る。その中からコスト9以上の『Liella!』のメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
     },
@@ -3985,7 +3995,7 @@
       "name": "桂城 泉",
       "template": "deck_top_pick_recover",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "このメンバーをウェイトにし、手札を1枚控え室に置いてもよい：自分のデッキの上からカードを5枚見る。その中からコスト9以上の『蓮ノ空』のメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
     },
@@ -3994,7 +4004,7 @@
       "name": "桂城 泉",
       "template": "deck_top_pick_recover",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "このメンバーをウェイトにし、手札を1枚控え室に置いてもよい：自分のデッキの上からカードを5枚見る。その中からコスト9以上の『蓮ノ空』のメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
     },
@@ -4003,7 +4013,7 @@
       "name": "桂城 泉",
       "template": "deck_top_pick_recover",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "このメンバーをウェイトにし、手札を1枚控え室に置いてもよい：自分のデッキの上からカードを5枚見る。その中からコスト9以上の『蓮ノ空』のメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
     },
@@ -4048,7 +4058,7 @@
       "name": "優木あんじゅ",
       "template": "deck_top_pick_recover",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "このメンバーをウェイトにし、手札を1枚控え室に置いてもよい：自分のデッキの上からカードを3枚見る。その中から1枚を手札に加える。残りを控え室に置く。"
     },
@@ -4057,7 +4067,7 @@
       "name": "優木あんじゅ",
       "template": "deck_top_pick_recover",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "このメンバーをウェイトにし、手札を1枚控え室に置いてもよい：自分のデッキの上からカードを3枚見る。その中から1枚を手札に加える。残りを控え室に置く。"
     },

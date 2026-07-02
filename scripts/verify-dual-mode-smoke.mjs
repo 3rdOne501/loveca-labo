@@ -12,6 +12,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 const cards = JSON.parse(fs.readFileSync(path.join(ROOT, "data/cards.json"), "utf8"));
 const simSrc = fs.readFileSync(path.join(ROOT, "js/simulator.js"), "utf8");
+const joujiSrc = fs.readFileSync(path.join(ROOT, "js/joujiEffects.js"), "utf8");
+const oppBoardSrc = fs.readFileSync(path.join(ROOT, "js/opponentBoard.js"), "utf8");
 
 /** @type {Array<{id:string, trigger:string, check:string}>} */
 const CASES = [
@@ -38,6 +40,24 @@ const CASES = [
   { id: "PL!N-bp4-004-P", trigger: "live_start", check: "live_start_draw_opp_wait" },
   { id: "PL!N-bp3-011-P", trigger: "toujyou", check: "toujou_opp_stage_member_match_grant" },
   { id: "PL!-bp3-022-L", trigger: "live_start", check: "live_start_deck_reveal_both_stage_members_score" },
+  /* Phase 1 残り10件（2026-07 追加） */
+  { id: "PL!SP-bp2-023-L", trigger: "live_start", check: "score_plus_success_live_less" },
+  { id: "PL!SP-bp2-024-L", trigger: "live_success", check: "score_plus_hand_more" },
+  { id: "PL!N-bp3-017-N", trigger: "toujyou", check: "optional_self_wait_opp_stage_cost4" },
+  { id: "PL!S-bp3-002-P", trigger: "live_success", check: "yell_resolution_pick_self_score" },
+  { id: "PL!S-bp3-024-L", trigger: "live_start", check: "ability_pick_one_opp_wait_branch" },
+  { id: "PL!N-bp4-001-P", trigger: "live_success", check: "energy_less_than_opponent_wait" },
+  { id: "PL!N-bp4-002-P", trigger: "live_start", check: "live_start_pick_player_deck_top_peek" },
+  { id: "PL!N-bp4-007-P", trigger: "toujyou", check: "toujou_both_wait_pick_live_hand" },
+  { id: "PL!N-bp4-007-P", trigger: "live_success", check: "both_players_energy_deck_wait" },
+  { id: "PL!N-bp4-012-P", trigger: "jouji", check: "passive_opp_success_live_score_sum" },
+  /* Phase 2 常時効果 代表（2026-07 追加） */
+  { id: "PL!SP-bp2-010-P", trigger: "jouji", check: "passive_opp_live_need_heart_bump" },
+  { id: "PL!S-bp2-001-P", trigger: "jouji", check: "passive_blade_own0_opp1_success" },
+  { id: "PL!-bp3-002-P", trigger: "jouji", check: "passive_per_opp_wait" },
+  { id: "PL!N-bp4-007-P", trigger: "jouji", check: "passive_combined_energy" },
+  { id: "PL!-bp4-018-N", trigger: "jouji", check: "passive_own_success_score_beats_opp" },
+  { id: "PL!N-bp5-002-P", trigger: "jouji", check: "passive_most_hearts_both_stages" },
 ];
 
 let failed = 0;
@@ -112,10 +132,70 @@ for (const c of CASES) {
   } else if (c.check === "live_start_deck_reveal_both_stage_members_score") {
     if (cl.template !== "live_start_deck_reveal_both_stage_members_score") errs.push(`template ${cl.template}`);
     if (!simSrc.includes("countBothPlayersStageMembers")) errs.push("countBothPlayersStageMembers missing");
+  } else if (c.check === "score_plus_success_live_less") {
+    if (cl.template !== "live_card_score_plus") errs.push(`template ${cl.template}`);
+    if (!simSrc.includes("countOpponentSuccessLiveCards")) errs.push("countOpponentSuccessLiveCards missing");
+  } else if (c.check === "score_plus_hand_more") {
+    if (cl.template !== "live_card_score_plus") errs.push(`template ${cl.template}`);
+    if (!simSrc.includes("soloOpponentHandCountForAbility")) errs.push("opponent hand count helper missing");
+  } else if (c.check === "optional_self_wait_opp_stage_cost4") {
+    if (cl.template !== "optional_self_wait_opp_stage") errs.push(`template ${cl.template}`);
+    if (filters.maxCost !== 4) errs.push(`maxCost ${filters.maxCost}`);
+  } else if (c.check === "yell_resolution_pick_self_score") {
+    if (cl.template !== "yell_resolution_pick_self_score") errs.push(`template ${cl.template}`);
+    if (!filters.requiresLiveScoreHigherThanOpponent) errs.push("live score higher filter missing");
+    if (!simSrc.includes("opponentLiveScoreEstimate")) errs.push("opponentLiveScoreEstimate missing");
+  } else if (c.check === "ability_pick_one_opp_wait_branch") {
+    if (cl.template !== "ability_pick_one") errs.push(`template ${cl.template}`);
+    const hasOppBranch = (cl.abilityChoices || []).some((t) => /相手のステージ/.test(String(t)));
+    if (!hasOppBranch) errs.push("opp stage choice branch missing");
+    if (!simSrc.includes("openOppWaitPickFromPool")) errs.push("openOppWaitPickFromPool missing");
+  } else if (c.check === "live_start_pick_player_deck_top_peek") {
+    if (cl.template !== "live_start_pick_player_deck_top_peek") errs.push(`template ${cl.template}`);
+    if (!simSrc.includes("openPickSelfOrOpponentDialog")) errs.push("openPickSelfOrOpponentDialog missing");
+    if (!simSrc.includes("dualOppPeek")) errs.push("dual opp deck peek branch missing");
+  } else if (c.check === "toujou_both_wait_pick_live_hand") {
+    if (cl.template !== "toujou_both_wait_pick_live_hand") errs.push(`template ${cl.template}`);
+    if (!simSrc.includes("readInactiveOpponentBoard")) errs.push("readInactiveOpponentBoard missing");
+  } else if (c.check === "both_players_energy_deck_wait") {
+    if (cl.template !== "both_players_energy_deck_wait") errs.push(`template ${cl.template}`);
+    if (!simSrc.includes("mutateInactiveOpponentBoard")) errs.push("mutateInactiveOpponentBoard missing");
+  } else if (c.check === "passive_opp_success_live_score_sum") {
+    if (cl.template !== "passive_track") errs.push(`template ${cl.template}`);
+    if (!joujiSrc.includes("minOpponentSuccessLiveScoreSum")) errs.push("jouji score-sum rule missing");
+    if (!simSrc.includes("successLiveScoreSumFromSnapshot")) errs.push("snapshot score-sum reader missing");
+  } else if (c.check === "passive_opp_live_need_heart_bump") {
+    if (cl.template !== "passive_track") errs.push(`template ${cl.template}`);
+    if (!joujiSrc.includes("opponent_live_need_heart")) errs.push("jouji need-heart rule missing");
+    if (!simSrc.includes("inactiveOpponentJoujiLiveNeedHeartBump")) errs.push("inactive bump reader missing");
+    if (!simSrc.includes("joujiOpponentLiveNeedHeartBump:")) errs.push("bump not in board snapshot");
+  } else if (c.check === "passive_blade_own0_opp1_success") {
+    if (cl.template !== "passive_track") errs.push(`template ${cl.template}`);
+    if (!joujiSrc.includes("minOpponentSuccessLive")) errs.push("jouji opp success rule missing");
+    if (!simSrc.includes("successLiveCountFromSnapshot")) errs.push("snapshot success count reader missing");
+  } else if (c.check === "passive_per_opp_wait") {
+    if (cl.template !== "passive_track") errs.push(`template ${cl.template}`);
+    if (!joujiSrc.includes("per_opponent_wait")) errs.push("jouji per-opp-wait rule missing");
+    if (!simSrc.includes("countStageWaitMembersFromSnapshot")) errs.push("snapshot wait count reader missing");
+  } else if (c.check === "passive_combined_energy") {
+    if (cl.template !== "passive_track") errs.push(`template ${cl.template}`);
+    if (!joujiSrc.includes("minCombinedEnergy")) errs.push("jouji combined energy rule missing");
+    if (!simSrc.includes("energyCountFromSnapshot")) errs.push("snapshot energy reader missing");
+  } else if (c.check === "passive_own_success_score_beats_opp") {
+    if (cl.template !== "passive_track") errs.push(`template ${cl.template}`);
+    if (!joujiSrc.includes("ownSuccessScoreBeatsOpponent")) errs.push("jouji score compare rule missing");
+  } else if (c.check === "passive_most_hearts_both_stages") {
+    if (cl.template !== "passive_track") errs.push(`template ${cl.template}`);
+    if (!joujiSrc.includes("mostHeartsOnBothStages")) errs.push("jouji most-hearts rule missing");
+    if (!joujiSrc.includes("eachOpponentStageColumnMembers().forEach")) errs.push("opp stage compare missing");
   } else if (cl.template !== c.check) {
     errs.push(`template ${cl.template} != ${c.check}`);
   }
   if (!simSrc.includes("isDualOpponentBoardMode")) errs.push("no dual mode in simulator");
+  if (c.check.startsWith("passive_")) {
+    if (!oppBoardSrc.includes("swapActiveSnap")) errs.push("swap-aware snapshot missing in opponentBoard");
+    if (!oppBoardSrc.includes("syncPassiveEffects")) errs.push("passive sync hook missing in opponentBoard");
+  }
   const needDelegate =
     c.check.indexOf("optional_pick") >= 0 ||
     c.check.indexOf("opp_hand") >= 0 ||
@@ -145,8 +225,113 @@ for (const c of CASES) {
   }
 }
 
-if (failed) {
-  console.error(`\n${failed} dual-mode smoke check(s) failed`);
+/* Phase 3: online read 同期（VersusPublicBoard v2）の静的チェック */
+const vbsSrc = fs.readFileSync(path.join(ROOT, "js/versusBoardSync.js"), "utf8");
+const V2_CHECKS = [
+  ["VERSUS_BOARD_PUBLIC_V = 2", vbsSrc.includes("VERSUS_BOARD_PUBLIC_V = 2")],
+  ["VERSUS_BOARD_AGGREGATE_FIELDS", vbsSrc.includes("VERSUS_BOARD_AGGREGATE_FIELDS")],
+  ["v1 read compat", vbsSrc.includes("isAcceptableVersusBoardVersion")],
+  ["aggregate fingerprint", /aggFp/.test(vbsSrc)],
+  ["computeVersusBoardAggregates", simSrc.includes("computeVersusBoardAggregates")],
+  ["liveFrameScore read", simSrc.includes("board.liveFrameScore")],
+  ["successLiveCount read", simSrc.includes("successLiveCount")],
+  ["stageHeartTotal read", simSrc.includes("stageHeartTotal")],
+  ["stageWaitCount read", simSrc.includes("stageWaitCount")],
+  ["score bump push hook", /bumpLiveScoreEffectBonus[\s\S]{0,600}scheduleVersusBoardPublicSync/.test(simSrc)],
+];
+let v2failed = 0;
+for (const [label, ok] of V2_CHECKS) {
+  if (ok) console.log("OK online-read-v2", label);
+  else {
+    v2failed++;
+    console.error("FAIL online-read-v2", label);
+  }
+}
+
+/* Phase 4: online 効果プロトコル（mutate / choice）の静的チェック */
+const vmSrc = fs.readFileSync(path.join(ROOT, "js/versusMatch.js"), "utf8");
+const P4_CHECKS = [
+  ["versusMatch requestVersusEffectAction", vmSrc.includes("export async function requestVersusEffectAction")],
+  ["versusMatch resolveVersusEffectAction", vmSrc.includes("export async function resolveVersusEffectAction")],
+  ["versusMatch requestVersusChoiceAction", vmSrc.includes("export async function requestVersusChoiceAction")],
+  ["versusMatch resolveVersusChoiceAction", vmSrc.includes("export async function resolveVersusChoiceAction")],
+  ["sim runVersusOnlineOpponentMutate", simSrc.includes("function runVersusOnlineOpponentMutate")],
+  ["sim runVersusOnlineOpponentChoice", simSrc.includes("function runVersusOnlineOpponentChoice")],
+  ["sim applyVersusEffectPatchLocally", simSrc.includes("function applyVersusEffectPatchLocally")],
+  ["sim syncVersusEffectProtocol hooked", /syncVersusEffectProtocol\(remoteMatch\)/.test(simSrc)],
+  ["patchKind stage_wait_members", simSrc.includes('"stage_wait_members"')],
+  ["patchKind waiting_to_deck_bottom", simSrc.includes('"waiting_to_deck_bottom"')],
+  ["patchKind stage_grant_heart", simSrc.includes('"stage_grant_heart"')],
+  ["patchKind deck_draw_top", simSrc.includes('"deck_draw_top"')],
+  ["runOnTargetPlayerBoard online unblock", /runOnTargetPlayerBoard\(target, fn, onlineReq\)/.test(simSrc)],
+  ["template1 wait via protocol", /runOptionalSelfWaitOppStageOnline[\s\S]{0,1600}stage_wait_members/.test(simSrc)],
+  ["template3 wdb via protocol", /live_start_pick_player_waiting_deck_bottom"[\s\S]{0,6000}waiting_to_deck_bottom/.test(simSrc)],
+  ["template4 choice via protocol", /toujou_wait_pick_opp_live"[\s\S]{0,4000}runVersusOnlineOpponentChoice/.test(simSrc)],
+  ["template2 online public stage", /listOpponentStageMembersExcludingName[\s\S]{0,900}listOnlineOpponentStageMembers/.test(simSrc)],
+  ["remote choice dialog wired", simSrc.includes("dlg-versus-remote-choice")],
+  ["idempotent applied ids", simSrc.includes("appliedEffectIds")],
+];
+let p4failed = 0;
+for (const [label, ok] of P4_CHECKS) {
+  if (ok) console.log("OK online-effect-p4", label);
+  else {
+    p4failed++;
+    console.error("FAIL online-effect-p4", label);
+  }
+}
+
+/* Phase 5: passive online 同期 + patchKind 横展開 + v2 集計追加 */
+const boardSrc = fs.readFileSync(path.join(ROOT, "js/versusBoardSync.js"), "utf8");
+const P5_CHECKS = [
+  [
+    "passive recompute on opp board change",
+    /applyVersusOpponentBoardFromRemote[\s\S]{0,2400}syncJoujiPassiveEffectsAll\(\)/.test(simSrc),
+  ],
+  [
+    "ctx eachOpponentStageColumnMemberInsts online branch",
+    /eachOpponentStageColumnMemberInsts[\s\S]{0,600}versusOnlineActive\(\)[\s\S]{0,200}listOnlineOpponentStageMembers/.test(
+      simSrc,
+    ),
+  ],
+  [
+    "ctx inactiveOpponentJoujiLiveNeedHeartBump online branch",
+    /inactiveOpponentJoujiLiveNeedHeartBump[\s\S]{0,600}imposeOpponentLiveNeedHeartDelta/.test(simSrc),
+  ],
+  [
+    "aggregate imposeOpponentLiveNeedHeartDelta emitted",
+    /imposeOpponentLiveNeedHeartDelta:\s*Math\.max/.test(simSrc),
+  ],
+  ["aggregate bonusHeartSurplusTotal emitted", /bonusHeartSurplusTotal:\s*bonusHeartSurplus/.test(simSrc)],
+  [
+    "v2 field list includes imposeOpponentLiveNeedHeartDelta",
+    boardSrc.includes('"imposeOpponentLiveNeedHeartDelta"'),
+  ],
+  ["v2 field list includes bonusHeartSurplusTotal", boardSrc.includes('"bonusHeartSurplusTotal"')],
+  ["patchKind stage_activate_members", simSrc.includes('"stage_activate_members"')],
+  ["patchKind stage_return_waiting", simSrc.includes('"stage_return_waiting"')],
+  ["patchKind hand_discard_pick", simSrc.includes('"hand_discard_pick"')],
+  ["patchKind hand_to_waiting", simSrc.includes('"hand_to_waiting"')],
+  ["patchKind waiting_to_hand", simSrc.includes('"waiting_to_hand"')],
+  ["patchKind live_to_waiting", simSrc.includes('"live_to_waiting"')],
+  ["patchKind energy_to_wait", simSrc.includes('"energy_to_wait"')],
+  ["patchKind energy_discard", simSrc.includes('"energy_discard"')],
+  ["patchKind success_live_to_waiting", simSrc.includes('"success_live_to_waiting"')],
+  ["patchKind deck_discard_top", simSrc.includes('"deck_discard_top"')],
+  ["patchKind deck_shuffle", simSrc.includes('"deck_shuffle"')],
+];
+let p5failed = 0;
+for (const [label, ok] of P5_CHECKS) {
+  if (ok) console.log("OK online-effect-p5", label);
+  else {
+    p5failed++;
+    console.error("FAIL online-effect-p5", label);
+  }
+}
+
+if (failed || v2failed || p4failed || p5failed) {
+  console.error(`\n${failed + v2failed + p4failed + p5failed} dual-mode smoke check(s) failed`);
   process.exit(1);
 }
-console.log(`\nAll ${CASES.length} dual-mode smoke checks passed`);
+console.log(
+  `\nAll ${CASES.length + V2_CHECKS.length + P4_CHECKS.length + P5_CHECKS.length} dual-mode smoke checks passed`,
+);

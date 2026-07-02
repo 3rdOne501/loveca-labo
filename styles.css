@@ -1633,6 +1633,39 @@ body.play-versus-mode .versus-opponent-board__surface .versus-opp-card--facing .
 body.play-versus-mode .versus-opponent-board {
   position: relative;
 }
+.versus-effect-wait-banner {
+  position: fixed;
+  left: 50%;
+  bottom: 4.2rem;
+  transform: translateX(-50%);
+  z-index: 60;
+  padding: 0.45rem 1.1rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #e8f4ff;
+  background: rgba(16, 40, 64, 0.92);
+  border: 1px solid rgba(120, 200, 255, 0.5);
+  box-shadow: 0 0 16px rgba(80, 170, 255, 0.3);
+  animation: versus-opp-effect-label-pulse 1.2s ease-in-out infinite;
+  text-align: center;
+}
+.versus-effect-wait-banner__main {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.versus-effect-wait-banner__sub {
+  margin-top: 0.15rem;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: rgba(200, 226, 250, 0.85);
+}
+.dlg-versus-remote-choice-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0.6rem 0;
+}
 @keyframes versus-opp-effect-label-pulse {
   0%,
   100% {

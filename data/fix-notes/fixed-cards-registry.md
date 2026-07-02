@@ -471,10 +471,102 @@ Liella! bp2 / NEXTSTEP: `scripts/verify-liella-bp2.mjs` + `docs/liella-bp2-verif
 
 ---
 
+## 30. localDual Phase 1 完了 + Phase 2 常時追従（2026-07-02）
+
+| 代表ID / template | 症状 | 横展開 |
+|--------|------|--------|
+| PL!N-bp3-010-P `live_start_pick_player_waiting_deck_bottom` | 非同期ダイアログ内ミューテーションが盤スワップ解除後に走り**自分の盤**を書き換え | 候補ID読取→ダイアログ→`mutateInactiveOpponentBoard` 内で ID 突合 splice の3段構成へ。`live_start_pick_player_deck_top_peek`（PL!N-bp4-002-P）/ `deck_top_look_reorder` も同型修正 |
+| PL!SP-bp2-010-P `passive_track`（ウィーン） | `snapshotBoard()` が `joujiLiveScoreBonus` / `joujiOpponentLiveNeedHeartBump` を保存せず、盤切替で常時効果消失 | `snapshotBoard`/`applyBoard` に jouji フィールド追加。全 passive_track 50件に効く |
+| PL!N-bp4-012-P `passive_opp_success_score`（鐘嵐珠） | `opponentSuccessLiveScoreSum` が `readInactiveOpponentBoard` 経由で `applyBoard→sync` 再帰 | `successLiveScoreSumFromSnapshot` でスナップ直読み。`opponentSuccessLiveCount` 同型 |
+| opponentBoard.js swap 全般 | `read/mutateInactiveOpponentBoard` 中は `ctx.opponent*` が**自陣を相手扱い** | `swapActiveSnap` 導入: スワップ中 `getInactiveOpponentSnapshot()` がアクティブ側スナップを返す |
+| `mutateInactiveOpponentBoard` | 相手盤変更後に常時が未同期のままスナップ保存 | `deps.syncPassiveEffects`（=`syncJoujiPassiveEffectsAll`）をスナップ前に呼ぶフック追加 |
+| PL!N-bp5-002-P `mostHeartsOnBothStages` | 「自分と相手のステージの中で」なのに自ステージのみ比較 | `ctx.eachOpponentStageColumnMembers()` も比較対象に |
+| PL!S-bp2-001-P `opponentExtraHeartSurplus` | jouji ctx がソロ入力値のみ参照（dual 非対応） | `countOpponentBonusHeartTokens`（dual-aware）へ |
+| scripts/audit-verification-list-notes.mjs | 複合ID表記（`001-P/R`・`025–028-PR`・`008-P 他`）を「存在しない」誤検知 | `resolveRepresentativeId` で代表IDへ解決 |
+
+---
+
+## 31. 対戦モード Phase 3 — online read_compare 同期（2026-07-02）
+
+| 対象 / template | 内容 | 横展開 |
+|--------|------|--------|
+| `VersusPublicBoard` v1→v2（versusBoardSync.js） | 公開ボードに read_compare 用の数値集計9種を追加（`liveFrameScore`・`successLiveCount`・`successLiveScoreSum`・`stageHeartTotal`・`stageWaitCount`・`energyCount` 等）。v1 読み取り互換・fingerprint に集計を追加 | read_compare 88件の online 判定が加点・常時込みで localDual と同式に |
+| `opponentLiveScoreEstimate` ほか read ヘルパー | online 分岐が印刷スコア合計のみ／ソロ入力値参照だった | v2 集計優先 → v1 fallback → ソロ入力の3段に統一。jouji ctx の `opponentSuccessLiveScoreSum`・`opponentStageWaitCount`・`opponentStageMemberCount`・`opponentEnergyCount` に online 分岐追加 |
+| `bumpLiveScoreEffectBonus` | スコア加点が render を経ず公開ボード未同期 | `scheduleVersusBoardPublicSync()` 明示呼び出し + `getVersusOpponentPublicBoardNow` メモ化 |
+
+設計メモ: [docs/versus-online-read-sync.md](../../docs/versus-online-read-sync.md)。mutate / 相手選択 UI は Phase 4。
+
+---
+
+## 32. 対戦モード Phase 4 — online mutate/choice プロトコル（2026-07-02）
+
+| 対象 / template | 内容 | 横展開 |
+|--------|------|--------|
+| `runOnTargetPlayerBoard`（online 全面ブロック） | online で相手対象 mutate が `return false` 固定 | `onlineReq`（patchKind 付き）指定時に `runVersusOnlineOpponentMutate` でリクエスト送信。Peer-authoritative: 相手盤は相手クライアントのみが変更 |
+| `optional_self_wait_opp_stage`（PL!N-bp3-017-N） | online がテキスト指示+手動完了のみ | `stage_wait_members` パッチ送信 → 対象側自動適用 → ack |
+| `toujou_opp_stage_member_match_grant`（PL!N-bp3-011-P） | online がソロ代行ダミー参照（相手実盤を見ない） | 公開ステージ（`bonusHearts` 込み。`publicVersusCardToPickInst` に写像追加）から選択 |
+| `live_start_pick_player_waiting_deck_bottom`（PL!N-bp3-010-P） | online がテキスト指示のみ | 発動側が公開控え室から選択（カード文「自分は…置く」）→ `waiting_to_deck_bottom` パッチ |
+| `toujou_wait_pick_opp_live`（PL!SP-bp2-011-P） | 「相手が選ぶ」を発動側端末で代行 | `ChoiceRequest`/`ChoiceResponse` で相手クライアントが実選択 → 発動側手札へ |
+| versusMatch.js API | — | `requestVersusEffectAction` 等7関数・8 Firestore フィールド（host/guest 対称）。requestId 冪等・120s タイムアウト・boardActionRequest 排他 |
+
+設計書: [docs/versus-online-effect-protocol.md](../../docs/versus-online-effect-protocol.md)。未対応 template は `finishOnlineOpponentDelegatedEffect`（テキスト指示）に fallback。
+
+**実カード盤面フロー検証（2026-07-02）**: 対象4種入りデッキで実 Firestore 2クライアント実プレイ。4件 + タイムアウト（切断→120s cancelled→スキップ続行）すべて合格（protocol.md §9）。付随修正: `opponentDecisionLeadPrefix` / `opponentDecisionDialogTitle` に online 分岐追加（online 中の相手対象ダイアログが「ソロプレイ: 相手として…」と誤表記されていた）。
+
+---
+
+## 33. 対戦モード Phase 5 — 常時 online 追従 + patchKind 横展開（2026-07-02）
+
+**passive_track online 同期（コード）**: 相手公開盤の変化検知（`applyVersusOpponentBoardFromRemote`）時に
+`syncJoujiPassiveEffectsAll()` を実行して相手依存の常時を再計算。jouji ctx に online 分岐追加。
+
+| 対応 | 内容 |
+|------|------|
+| 再計算トリガー | 相手公開盤 fp 変化→自盤常時を再評価（A型48件が追従） |
+| `eachOpponentStageColumnMemberInsts` online | 公開ステージ→合成 inst（両ステージ最多ハート/コスト系） |
+| `totalMembersBothStages` online | `this.opponentStageMemberCount()`（sibling bare 参照バグも修正） |
+| `opponentExtraHeartSurplus` online | v2 新規 `bonusHeartSurplusTotal` を参照 |
+| B型 `inactiveOpponentJoujiLiveNeedHeartBump` online | v2 新規 `imposeOpponentLiveNeedHeartDelta`（PL!SP-bp2-010: 相手が課す必要ハート+1 を peer が読む） |
+
+**patchKind 横展開（`applyVersusEffectPatchLocally` 対象側適用）**: Phase 4 の5種に加え11種追加
+（`stage_activate_members` / `stage_return_waiting` / `hand_discard_pick` / `hand_to_waiting` /
+`waiting_to_hand` / `live_to_waiting` / `energy_to_wait` / `energy_discard` /
+`success_live_to_waiting` / `deck_discard_top` / `deck_shuffle`）。registry kind に対応・card_no 分岐なし。
+
+verify-dual-mode-smoke 86件 OK（P5 チェック18件追加）。behavioral skip 0 / findings 0 / dual_gap 0 維持。app 同期済み。
+未了: 各 mutate template の発動側 onlineReq 接続（Step 2 横展開）・both_players（Step 3）・実プレイ手動検証（passive 7 / Phase 1 20 / サンプリング）。
+
+設計: [read-sync §6](../../docs/versus-online-read-sync.md) / [effect-protocol §3](../../docs/versus-online-effect-protocol.md)。
+
+---
+
+## 34. 対戦モード Phase 6 — 運用・耐久・リリース準備（コード面 2026-07-03）
+
+実プレイ非依存の部分を実装（ユーザー選択 `code_only`）。フルマッチ・耐久・手動回帰は実プレイ検証保留。
+
+| 対応 | 内容 |
+|------|------|
+| CI static | `scripts/verify-versus-online-static.mjs` 新規（patchKind 15種 / 関数 / フック / v2 出力 / 代表非skip = 31チェック）。`verify-ability-coverage` から連鎖 |
+| フォールバック棚卸し | `docs/versus-online-known-gaps.md` 新規（区分 A 移行済 / B 意図的除外 / C 未接続 dual_ok 6サイト） |
+| template 移行（2件） | `optional_pick_member_wait_opp_blade_gap`（`runOnlineOpponentMemberWaitPick`）・`live_start_side_cost_equal_opp_wait` を `stage_wait_members` プロトコルへ（テキスト代行 → 自動適用） |
+| UX | ロビー文言を Phase 3–5 実態に更新・待ちバナーに経過秒/残り秒/キャンセル不可・remote-choice 表示時に opp-effect ミラーを閉じる |
+| docs | effect-protocol §10 運用/障害時、read-sync §7 push頻度/fingerprint、user-guide 新規、implementation-plan Phase 6 行、play-verification-list B 節、card-fix-progress 対戦行 |
+
+残 fallback: `finishOnlineOpponentDelegatedEffect` 定義1 + 呼び出し6サイト（known-gaps §3）。verify-versus-online-static 31 / smoke 86 / ability-coverage OK。app 同期済み。
+
+---
+
 ## 更新履歴
 
 | 日付 | 内容 |
 |------|------|
+| 2026-07-03 | 対戦 Phase 6（コード）: verify-versus-online-static 新設 + coverage 連鎖、known-gaps.md、2 template を stage_wait_members へ移行、待ちバナー/ロビー文言/ダイアログ重複の UX、user-guide 新設 |
+| 2026-07-02 | 対戦 Phase 5（コード）: passive online 再計算トリガー + ctx online 分岐 + v2 集計2種（imposeOpponentLiveNeedHeartDelta/bonusHeartSurplusTotal）+ patchKind 11種追加。smoke 86件 |
+| 2026-07-02 | 対戦 Phase 4 完了: 代表4カード + タイムアウトを実プレイで検証（online 手動 5/5）。opponentDecision 文言の online 分岐追加 |
+| 2026-07-02 | 対戦: ゲスト（匿名）ログイン追加（`signInAsGuest`）。ルーム作成/参加が Google 不要に。Phase 4 プロトコル E2E を実 Firestore 2クライアントで検証 |
+| 2026-07-02 | 対戦 Phase 4: online mutate/choice プロトコル（EffectRequest/ChoiceRequest）、代表4 template 実装、versus-online-effect-protocol.md 新設 |
+| 2026-07-02 | 対戦 Phase 3: VersusPublicBoard v2（read 集計9種）、online read_compare を localDual 同式に統一、versus-online-read-sync.md 新設 |
+| 2026-07-02 | localDual Phase 1 全20件 [x] + Phase 2 常時7件: async ダイアログ×相手盤分離、jouji スナップ永続化、swapActiveSnap、syncPassiveEffects フック、dual-mode-smoke 39件 |
 | 2026-07-02 | localDual Phase 1: stripOpponentBonusHeartsAndCount dual 同期、verify-dual-mode-phase1.mjs 追加、dual_gap 監査 0 件 |
 | 2026-06-28 | 再検証: 鬼塚夏美 ブレード比較の誤分類修正、ノンフィクション!! 左サイド条件付与の復元 |
 | 2026-06-28 | play-verification-list 43行: verify-play-checklist.mjs 37/37 OK。未完了リスト B → 0件 |

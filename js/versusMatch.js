@@ -75,6 +75,14 @@ const ROOM_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
  * @property {VersusEffectUi|null} [hostEffectUi]
  * @property {VersusEffectUi|null} [guestEffectUi]
  * @property {VersusBoardActionRequest|null} [boardActionRequest]
+ * @property {VersusEffectRequest|null} [hostEffectRequest]
+ * @property {VersusEffectRequest|null} [guestEffectRequest]
+ * @property {VersusEffectAck|null} [hostEffectAck]
+ * @property {VersusEffectAck|null} [guestEffectAck]
+ * @property {VersusChoiceRequest|null} [hostChoiceRequest]
+ * @property {VersusChoiceRequest|null} [guestChoiceRequest]
+ * @property {VersusChoiceResponse|null} [hostChoiceResponse]
+ * @property {VersusChoiceResponse|null} [guestChoiceResponse]
  * @property {boolean} [hostOpeningMulliganDone]
  * @property {boolean} [guestOpeningMulliganDone]
  * @property {number} [rematchSeq]
@@ -96,6 +104,51 @@ const ROOM_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
  * @property {'undo'|'redo'|'deck_face_up'|'res_deck_top'|'res_deck_shuffle'} action
  * @property {'pending'|'approved'|'denied'} status
  * @property {string} requestedAt
+ */
+
+/** @typedef {Object} VersusEffectRequest
+ * @property {string} id
+ * @property {'host'|'guest'} fromRole
+ * @property {'pending'|'resolved'|'cancelled'} status
+ * @property {string} kind        // toujyou | live_start | kidou | jidou など
+ * @property {string} cardNo
+ * @property {string} template
+ * @property {{ patchKind: string } & Record<string, unknown>} payload
+ * @property {string} requestedAt  // ISO
+ * @property {string} [expiresAt]  // ISO
+ */
+
+/** @typedef {Object} VersusEffectAck
+ * @property {string} requestId
+ * @property {boolean} ok
+ * @property {Record<string, unknown>} [resultPayload]
+ * @property {string} respondedAt
+ */
+
+/** @typedef {Object} VersusChoiceOption
+ * @property {string} id
+ * @property {string} label
+ * @property {string} [cardNo]
+ * @property {string} [instId]
+ */
+
+/** @typedef {Object} VersusChoiceRequest
+ * @property {string} id
+ * @property {'host'|'guest'} fromRole
+ * @property {'pending'|'resolved'|'cancelled'} status
+ * @property {string} cardNo
+ * @property {string} template
+ * @property {string} prompt
+ * @property {VersusChoiceOption[]} options
+ * @property {number} pickCount
+ * @property {string} requestedAt
+ * @property {string} [expiresAt]
+ */
+
+/** @typedef {Object} VersusChoiceResponse
+ * @property {string} requestId
+ * @property {string[]} pickedIds
+ * @property {string} respondedAt
  */
 
 export function isVersusMatchAvailable() {
@@ -229,6 +282,15 @@ export async function createVersusRoom(deckMap) {
       guestBoardPublic: null,
       hostBoardAt: null,
       guestBoardAt: null,
+      boardActionRequest: null,
+      hostEffectRequest: null,
+      guestEffectRequest: null,
+      hostEffectAck: null,
+      guestEffectAck: null,
+      hostChoiceRequest: null,
+      guestChoiceRequest: null,
+      hostChoiceResponse: null,
+      guestChoiceResponse: null,
     };
     try {
       await api.setDoc(ref, doc);
@@ -372,6 +434,14 @@ export async function startVersusMatch(roomCode) {
     hostEffectUi: null,
     guestEffectUi: null,
     boardActionRequest: null,
+    hostEffectRequest: null,
+    guestEffectRequest: null,
+    hostEffectAck: null,
+    guestEffectAck: null,
+    hostChoiceRequest: null,
+    guestChoiceRequest: null,
+    hostChoiceResponse: null,
+    guestChoiceResponse: null,
   });
 }
 
@@ -1253,6 +1323,238 @@ export async function clearVersusBoardActionRequest(roomCode) {
 }
 
 /**
+ * オンライン相手盤面効果プロトコル: 効果リクエストを送信（依頼側）
+ * @param {string} roomCode
+ * @param {'host'|'guest'} fromRole
+ * @param {{ kind: string, cardNo: string, template: string, patchPayload: ({ patchKind: string } & Record<string, unknown>) }} payload
+ * @returns {Promise<VersusEffectRequest>}
+ */
+export async function requestVersusEffectAction(roomCode, fromRole, payload) {
+  requireUser();
+  const { api } = fs();
+  const ref = matchRef(roomCode);
+  const snap = await api.getDoc(ref);
+  if (!snap.exists()) throw new Error("ルームが見つかりません。");
+  const cur = /** @type {VersusMatchDoc} */ (snap.data());
+  const pre = fromRole;
+  const existing = cur[pre + "EffectRequest"];
+  if (existing && existing.status === "pending") {
+    throw new Error("処理待ちの効果リクエストがあります。");
+  }
+  if (cur.boardActionRequest && cur.boardActionRequest.status === "pending") {
+    throw new Error("承認待ちの盤面操作があります。完了後に効果を送信してください。");
+  }
+  const now = new Date().toISOString();
+  /** @type {VersusEffectRequest} */
+  const req = {
+    id: "eff-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8),
+    fromRole: fromRole,
+    status: "pending",
+    kind: payload.kind,
+    cardNo: payload.cardNo,
+    template: payload.template,
+    payload: payload.patchPayload,
+    requestedAt: now,
+    expiresAt: new Date(Date.now() + 120000).toISOString(),
+  };
+  try {
+    await api.updateDoc(ref, {
+      [pre + "EffectRequest"]: req,
+      [pre + "EffectAck"]: null,
+      updatedAt: new Date().toISOString(),
+    });
+    return req;
+  } catch (err) {
+    console.warn("[versusMatch] effect request failed:", err);
+    throw err;
+  }
+}
+
+/**
+ * オンライン相手盤面効果プロトコル: 効果リクエストへ応答（受け側が書き込み。fromRole は依頼側の役割）
+ * @param {string} roomCode
+ * @param {'host'|'guest'} fromRole
+ * @param {string} requestId
+ * @param {{ ok: boolean, resultPayload?: Record<string, unknown> }} result
+ * @returns {Promise<boolean>}
+ */
+export async function resolveVersusEffectAction(roomCode, fromRole, requestId, result) {
+  requireUser();
+  const { api } = fs();
+  const ref = matchRef(roomCode);
+  const snap = await api.getDoc(ref);
+  if (!snap.exists()) return false;
+  const data = /** @type {VersusMatchDoc} */ (snap.data());
+  const pre = fromRole;
+  const req = data[pre + "EffectRequest"];
+  if (!req || req.id !== requestId || req.status !== "pending") return false;
+  const now = new Date().toISOString();
+  await api.updateDoc(ref, {
+    [pre + "EffectRequest"]: Object.assign({}, req, { status: "resolved" }),
+    [pre + "EffectAck"]: {
+      requestId: requestId,
+      ok: result.ok !== false,
+      resultPayload: result.resultPayload || null,
+      respondedAt: now,
+    },
+    updatedAt: now,
+  });
+  return true;
+}
+
+/**
+ * オンライン相手盤面効果プロトコル: 効果リクエストを取消（依頼側のタイムアウト等）
+ * @param {string} roomCode
+ * @param {'host'|'guest'} fromRole
+ * @param {string} requestId
+ * @returns {Promise<boolean>}
+ */
+export async function cancelVersusEffectAction(roomCode, fromRole, requestId) {
+  requireUser();
+  const { api } = fs();
+  const ref = matchRef(roomCode);
+  const snap = await api.getDoc(ref);
+  if (!snap.exists()) return false;
+  const data = /** @type {VersusMatchDoc} */ (snap.data());
+  const pre = fromRole;
+  const req = data[pre + "EffectRequest"];
+  if (!req || req.id !== requestId || req.status !== "pending") return false;
+  await api.updateDoc(ref, {
+    [pre + "EffectRequest"]: Object.assign({}, req, { status: "cancelled" }),
+    updatedAt: new Date().toISOString(),
+  });
+  return true;
+}
+
+/**
+ * オンライン相手盤面効果プロトコル: 選択肢リクエストを送信（依頼側）
+ * @param {string} roomCode
+ * @param {'host'|'guest'} fromRole
+ * @param {{ cardNo: string, template: string, prompt: string, options: VersusChoiceOption[], pickCount: number }} choicePayload
+ * @returns {Promise<VersusChoiceRequest>}
+ */
+export async function requestVersusChoiceAction(roomCode, fromRole, choicePayload) {
+  requireUser();
+  const { api } = fs();
+  const ref = matchRef(roomCode);
+  const snap = await api.getDoc(ref);
+  if (!snap.exists()) throw new Error("ルームが見つかりません。");
+  const cur = /** @type {VersusMatchDoc} */ (snap.data());
+  const pre = fromRole;
+  const existing = cur[pre + "ChoiceRequest"];
+  if (existing && existing.status === "pending") {
+    throw new Error("処理待ちの効果リクエストがあります。");
+  }
+  if (cur.boardActionRequest && cur.boardActionRequest.status === "pending") {
+    throw new Error("承認待ちの盤面操作があります。完了後に効果を送信してください。");
+  }
+  const now = new Date().toISOString();
+  /** @type {VersusChoiceRequest} */
+  const req = {
+    id: "cho-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8),
+    fromRole: fromRole,
+    status: "pending",
+    cardNo: choicePayload.cardNo,
+    template: choicePayload.template,
+    prompt: choicePayload.prompt,
+    options: choicePayload.options,
+    pickCount: choicePayload.pickCount,
+    requestedAt: now,
+    expiresAt: new Date(Date.now() + 120000).toISOString(),
+  };
+  try {
+    await api.updateDoc(ref, {
+      [pre + "ChoiceRequest"]: req,
+      [pre + "ChoiceResponse"]: null,
+      updatedAt: new Date().toISOString(),
+    });
+    return req;
+  } catch (err) {
+    console.warn("[versusMatch] choice request failed:", err);
+    throw err;
+  }
+}
+
+/**
+ * オンライン相手盤面効果プロトコル: 選択肢リクエストへ応答（受け側が書き込み。fromRole は依頼側の役割）
+ * @param {string} roomCode
+ * @param {'host'|'guest'} fromRole
+ * @param {string} requestId
+ * @param {string[]} pickedIds
+ * @returns {Promise<boolean>}
+ */
+export async function resolveVersusChoiceAction(roomCode, fromRole, requestId, pickedIds) {
+  requireUser();
+  const { api } = fs();
+  const ref = matchRef(roomCode);
+  const snap = await api.getDoc(ref);
+  if (!snap.exists()) return false;
+  const data = /** @type {VersusMatchDoc} */ (snap.data());
+  const pre = fromRole;
+  const req = data[pre + "ChoiceRequest"];
+  if (!req || req.id !== requestId || req.status !== "pending") return false;
+  const now = new Date().toISOString();
+  await api.updateDoc(ref, {
+    [pre + "ChoiceRequest"]: Object.assign({}, req, { status: "resolved" }),
+    [pre + "ChoiceResponse"]: {
+      requestId: requestId,
+      pickedIds: (pickedIds || []).map(function (x) {
+        return String(x);
+      }),
+      respondedAt: now,
+    },
+    updatedAt: now,
+  });
+  return true;
+}
+
+/**
+ * オンライン相手盤面効果プロトコル: 選択肢リクエストを取消（依頼側のタイムアウト等）
+ * @param {string} roomCode
+ * @param {'host'|'guest'} fromRole
+ * @param {string} requestId
+ * @returns {Promise<boolean>}
+ */
+export async function cancelVersusChoiceAction(roomCode, fromRole, requestId) {
+  requireUser();
+  const { api } = fs();
+  const ref = matchRef(roomCode);
+  const snap = await api.getDoc(ref);
+  if (!snap.exists()) return false;
+  const data = /** @type {VersusMatchDoc} */ (snap.data());
+  const pre = fromRole;
+  const req = data[pre + "ChoiceRequest"];
+  if (!req || req.id !== requestId || req.status !== "pending") return false;
+  await api.updateDoc(ref, {
+    [pre + "ChoiceRequest"]: Object.assign({}, req, { status: "cancelled" }),
+    updatedAt: new Date().toISOString(),
+  });
+  return true;
+}
+
+/**
+ * オンライン相手盤面効果プロトコル: 効果／選択肢の全リクエストをクリア（リセット・退出時）
+ * @param {string} roomCode
+ * @param {'host'|'guest'} role
+ */
+export async function clearVersusEffectRequest(roomCode, role) {
+  requireUser();
+  const { api } = fs();
+  const ref = matchRef(roomCode);
+  try {
+    await api.updateDoc(ref, {
+      [role + "EffectRequest"]: null,
+      [role + "EffectAck"]: null,
+      [role + "ChoiceRequest"]: null,
+      [role + "ChoiceResponse"]: null,
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.warn("[versusMatch] clear effect request failed:", err);
+  }
+}
+
+/**
  * ひとつ戻るに伴う共有マッチ状態の巻き戻し（両者同期用）
  * @param {string} roomCode
  * @param {Record<string, unknown>} snap
@@ -1395,6 +1697,14 @@ export async function resetVersusMatchForNextGame(roomCode) {
     hostEffectUi: null,
     guestEffectUi: null,
     boardActionRequest: null,
+    hostEffectRequest: null,
+    guestEffectRequest: null,
+    hostEffectAck: null,
+    guestEffectAck: null,
+    hostChoiceRequest: null,
+    guestChoiceRequest: null,
+    hostChoiceResponse: null,
+    guestChoiceResponse: null,
   });
 }
 

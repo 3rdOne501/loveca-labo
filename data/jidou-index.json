@@ -1,12 +1,12 @@
 {
-  "generated": "2026-07-01",
+  "generated": "2026-07-02",
   "trigger": "jidou",
-  "total": 105,
-  "automated": 105,
+  "total": 106,
+  "automated": 106,
   "guided_manual": 0,
   "byTemplate": {
     "jidou_leave_stage_activate_one": 2,
-    "jidou_yell_grant_jouji": 2,
+    "jidou_yell_grant_jouji": 3,
     "jidou_enter_or_baton_draw": 1,
     "jidou_area_move_grant_jouji": 9,
     "jidou_area_move_draw": 1,
@@ -86,6 +86,14 @@
       "automated": true,
       "eventKind": "enter_or_baton",
       "effect": "自分のステージに、このメンバーか、ほかのメンバーがバトンタッチして登場したとき、カードを1枚引く。"
+    },
+    {
+      "card_no": "PL!SP-PR-024-PR",
+      "name": "平安名すみれ",
+      "template": "jidou_yell_grant_jouji",
+      "automated": true,
+      "eventKind": "yell",
+      "effect": "自分がエールしたとき、エールにより公開された自分のカードの中に、を持つ『Liella!』のライブカードが1枚以上ある場合、ライブ終了時まで、を得る。"
     },
     {
       "card_no": "PL!SP-pb1-006-R",

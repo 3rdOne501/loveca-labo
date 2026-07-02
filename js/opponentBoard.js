@@ -9,11 +9,19 @@ import { T_LIVE, T_MEMBER } from "./config.js";
  * @property {(snap: object) => void} applyBoard
  * @property {() => void} [render]
  * @property {() => void} [syncOpponentView]
+ * @property {() => void} [syncPassiveEffects] 盤面変更後に常時効果を再計算（スナップ保存前に呼ぶ）
  * @property {(inst: *) => object} mergedCatalogCard
  */
 
 /** @type {OpponentBoardDeps|null} */
 let deps = null;
+
+/**
+ * read/mutateInactiveOpponentBoard 中は state が非アクティブ盤に差し替わるため、
+ * その間の「相手盤スナップ」は退避済みのアクティブ盤（＝適用中盤面から見た真の相手）を返す。
+ * @type {object|null}
+ */
+let swapActiveSnap = null;
 
 /** @param {OpponentBoardDeps} d */
 export function initOpponentBoardApi(d) {
@@ -33,6 +41,7 @@ export function getInactiveOpponentRole() {
 /** @returns {object|null} */
 export function getInactiveOpponentSnapshot() {
   if (!isDualOpponentBoardMode() || !deps) return null;
+  if (swapActiveSnap) return swapActiveSnap;
   var role = getInactiveOpponentRole();
   if (!role) return null;
   var boards = deps.getDualBoards();
@@ -52,10 +61,13 @@ export function readInactiveOpponentBoard(fn) {
   var oppSnap = boards[role];
   if (!oppSnap) return null;
   var activeSnap = deps.snapshotBoard();
+  var prevSwapSnap = swapActiveSnap;
+  swapActiveSnap = activeSnap;
   deps.applyBoard(oppSnap);
   try {
     return fn();
   } finally {
+    swapActiveSnap = prevSwapSnap;
     deps.applyBoard(activeSnap);
   }
 }
@@ -74,13 +86,21 @@ export function mutateInactiveOpponentBoard(fn, opts) {
   var oppSnap = boards[role];
   if (!oppSnap) return null;
   var activeSnap = deps.snapshotBoard();
+  var prevSwapSnap = swapActiveSnap;
+  swapActiveSnap = activeSnap;
   deps.applyBoard(oppSnap);
   var result = null;
   try {
     result = fn();
+    if (deps.syncPassiveEffects) {
+      try {
+        deps.syncPassiveEffects();
+      } catch (_) {}
+    }
     boards[role] = deps.snapshotBoard();
     if (deps.syncOpponentView) deps.syncOpponentView();
   } finally {
+    swapActiveSnap = prevSwapSnap;
     deps.applyBoard(activeSnap);
     if (!opts || opts.skipRender !== true) {
       if (deps.render) deps.render();

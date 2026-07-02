@@ -14,7 +14,53 @@ import { showToast } from "./ui.js";
 import { boardMemberEffectIconHtml } from "./gameStatusIcons.js";
 import { getVersusLiveStep } from "./versusMatch.js";
 
-export const VERSUS_BOARD_PUBLIC_V = 1;
+export const VERSUS_BOARD_PUBLIC_V = 2;
+/** v1 ボードも読み取り互換（集計フィールドが無いだけ） */
+export const VERSUS_BOARD_PUBLIC_V_MIN = 1;
+
+/** @param {unknown} v */
+function isAcceptableVersusBoardVersion(v) {
+  const n = Number(v);
+  return Number.isFinite(n) && n >= VERSUS_BOARD_PUBLIC_V_MIN && n <= VERSUS_BOARD_PUBLIC_V;
+}
+
+/**
+ * v2 集計フィールド（read_compare 用の数値。古いボードは undefined = 読み手側で fallback）
+ * stageWaitCount は「この盤の持ち主のステージのウェイト人数」（読み手にとっての相手ウェイト人数）。
+ */
+export const VERSUS_BOARD_AGGREGATE_FIELDS = [
+  "liveFrameScore",
+  "liveFrameScoreBase",
+  "liveFrameScoreBonus",
+  "successLiveCount",
+  "successLiveScoreSum",
+  "stageHeartTotal",
+  "stageMemberCount",
+  "stageWaitCount",
+  "energyCount",
+  /* Phase 5: この盤の持ち主が相手（=読み手）に課す常時デバフ。
+   * imposeOpponentLiveNeedHeartDelta = 相手ライブの必要ハート +N（PL!SP-bp2-010 等 B型）。 */
+  "imposeOpponentLiveNeedHeartDelta",
+  /* bonusHeartSurplusTotal = この盤の持ち主のステージ上ボーナス（余剰）ハート合計。 */
+  "bonusHeartSurplusTotal",
+];
+
+/** liveFrameScoreBonus のみ負値許容 */
+const AGGREGATE_ALLOW_NEGATIVE = { liveFrameScoreBonus: true };
+
+/**
+ * 入力オブジェクトから集計フィールドを正規化コピー（無ければ undefined のまま）
+ * @param {Record<string, unknown>} src
+ * @param {Record<string, unknown>} out
+ */
+function copyVersusBoardAggregates(src, out) {
+  for (const key of VERSUS_BOARD_AGGREGATE_FIELDS) {
+    const n = Number(src[key]);
+    if (!Number.isFinite(n)) continue;
+    const v = Math.floor(n);
+    out[key] = AGGREGATE_ALLOW_NEGATIVE[key] ? Math.max(-99, Math.min(99, v)) : Math.max(0, v);
+  }
+}
 
 /** @typedef {Object} VersusPublicCard
  * @property {string} id
@@ -49,6 +95,15 @@ export const VERSUS_BOARD_PUBLIC_V = 1;
  * @property {"hidden"|"set"|"revealed"} [livePublicMode]
  * @property {VersusPublicCard[]} [handReveal]
  * @property {VersusPublicCard[]} [waitingReveal]
+ * @property {number} [liveFrameScore] v2: ライブ合計スコア（base+効果+常時。加点込み）
+ * @property {number} [liveFrameScoreBase] v2: 内訳（印刷+カード個別加点）
+ * @property {number} [liveFrameScoreBonus] v2: 内訳（効果+常時。負値あり）
+ * @property {number} [successLiveCount] v2: 成功ライブ置き場のライブ枚数
+ * @property {number} [successLiveScoreSum] v2: 成功ライブ合計スコア（加点込み）
+ * @property {number} [stageHeartTotal] v2: この盤のステージ総ハート（印刷スロット+ボーナス）
+ * @property {number} [stageMemberCount] v2: ステージ人数（proxy 除く）
+ * @property {number} [stageWaitCount] v2: ステージのウェイト人数（読み手の「相手ウェイト」）
+ * @property {number} [energyCount] v2: エネルギー枚数
  */
 
 /** @param {unknown} raw */
@@ -304,7 +359,8 @@ export function boardToVersusPublic(board) {
   const handCount = stripCardList(b.hand).length;
   const handReveal = stripCardList(b.handReveal);
   const waitingReveal = stripCardList(b.waitingReveal);
-  return {
+  /** @type {Record<string, unknown>} */
+  const out = {
     v: VERSUS_BOARD_PUBLIC_V,
     ts: Date.now(),
     turnCount:
@@ -329,7 +385,10 @@ export function boardToVersusPublic(board) {
     stage: stage,
     liveArea: liveArea,
     liveRevealed: liveRevealed,
+    livePublicMode: liveMode,
   };
+  copyVersusBoardAggregates(b, out);
+  return /** @type {VersusPublicBoard} */ (out);
 }
 
 /**
@@ -346,9 +405,11 @@ export function boardToVersusPublic(board) {
  *   previewScratch?: unknown[],
  *   turnCount: number,
  * }} st
+ * @param {Record<string, number>} [aggregates] v2 集計フィールド（simulator 側で算出）
  */
-export function boardToVersusPublicFromState(st) {
+export function boardToVersusPublicFromState(st, aggregates) {
   return boardToVersusPublic({
+    ...(aggregates && typeof aggregates === "object" ? aggregates : null),
     deck: st.deck,
     hand: st.hand,
     stage: st.stage,
@@ -388,13 +449,18 @@ export function boardToVersusPublicFromStateForLocalDual(st) {
 
 /** @param {VersusPublicBoard|null|undefined} board */
 export function fingerprintVersusPublicBoard(board) {
-  if (!board || board.v !== VERSUS_BOARD_PUBLIC_V) return "";
+  if (!board || !isAcceptableVersusBoardVersion(board.v)) return "";
   function ids(list) {
     return Array.isArray(list) ? list.map((c) => c.id).join(",") : "";
   }
   function trip(t) {
     return ids(t && t.left) + "|" + ids(t && t.center) + "|" + ids(t && t.right);
   }
+  /* v2: 集計数値の変化（スコア加点等。配置が変わらなくても push させる） */
+  const aggFp = VERSUS_BOARD_AGGREGATE_FIELDS.map((k) => {
+    const n = Number(/** @type {Record<string, unknown>} */ (board)[k]);
+    return Number.isFinite(n) ? String(Math.floor(n)) : "";
+  }).join(",");
   return [
     board.turnCount,
     board.deckCount,
@@ -408,6 +474,7 @@ export function fingerprintVersusPublicBoard(board) {
     ids(board.energyArea),
     trip(board.stage),
     trip(board.liveArea),
+    aggFp,
   ].join("\x1e");
 }
 
@@ -430,20 +497,23 @@ export function buildVersusBoardFirestorePatch(role, board) {
   const safe = sanitizeVersusPublicBoardForFirestore(board);
   const now = new Date().toISOString();
   const rev = Math.max(0, Math.floor(Number(safe.ts) || Date.now()));
+  /** @type {Record<string, unknown>} */
+  const meta = {
+    v: VERSUS_BOARD_PUBLIC_V,
+    ts: safe.ts,
+    deckCount: safe.deckCount,
+    turnCount: safe.turnCount,
+    handCount: safe.handCount,
+    liveRevealed: safe.liveRevealed === true,
+    livePublicMode: safe.livePublicMode || (safe.liveRevealed ? "revealed" : "hidden"),
+    stageCount: countTriple(safe.stage),
+    liveCount: countTriple(safe.liveArea),
+  };
+  copyVersusBoardAggregates(safe, meta);
   return {
     updatedAt: now,
     [pre + "BoardPublic"]: safe,
-    [pre + "BoardMeta"]: {
-      v: VERSUS_BOARD_PUBLIC_V,
-      ts: safe.ts,
-      deckCount: safe.deckCount,
-      turnCount: safe.turnCount,
-      handCount: safe.handCount,
-      liveRevealed: safe.liveRevealed === true,
-      livePublicMode: safe.livePublicMode || (safe.liveRevealed ? "revealed" : "hidden"),
-      stageCount: countTriple(safe.stage),
-      liveCount: countTriple(safe.liveArea),
-    },
+    [pre + "BoardMeta"]: meta,
     [pre + "HandPublic"]: [],
     [pre + "WaitingPublic"]: safe.waitingRoom,
     [pre + "ResolutionPublic"]: safe.resolutionArea,
@@ -466,7 +536,8 @@ export function assemblePublicBoardFromMatchFields(match, pre) {
   const metaRaw = match[pre + "BoardMeta"] || match[pre + "BoardPublic"];
   if (!metaRaw || typeof metaRaw !== "object") return null;
   const meta = /** @type {Record<string, unknown>} */ (metaRaw);
-  if (Number(meta.v) !== VERSUS_BOARD_PUBLIC_V) return null;
+  /* v1 も読み取り互換（v2 集計フィールドは undefined のまま → 読み手が fallback） */
+  if (!isAcceptableVersusBoardVersion(meta.v)) return null;
 
   const nested =
     match[pre + "BoardPublic"] && typeof match[pre + "BoardPublic"] === "object"
@@ -504,7 +575,8 @@ export function assemblePublicBoardFromMatchFields(match, pre) {
         ? stripLiveAreaSetMode(liveRawFull)
         : redactLiveAreaPublic(liveRawFull);
 
-  return {
+  /** @type {Record<string, unknown>} */
+  const assembled = {
     v: VERSUS_BOARD_PUBLIC_V,
     ts: Math.max(0, Math.floor(Number(meta.ts) || 0)),
     turnCount: Math.max(0, Math.floor(Number(meta.turnCount) || 0)),
@@ -539,13 +611,17 @@ export function assemblePublicBoardFromMatchFields(match, pre) {
     liveRevealed: liveRevealed,
     livePublicMode: liveMode,
   };
+  /* v2 集計: meta 優先、なければ nested BoardPublic から（v1 は両方欠落 → undefined） */
+  if (nested) copyVersusBoardAggregates(nested, assembled);
+  copyVersusBoardAggregates(meta, assembled);
+  return /** @type {VersusPublicBoard} */ (assembled);
 }
 
 /** @param {unknown} raw */
 export function normalizeVersusPublicBoard(raw) {
   if (!raw || typeof raw !== "object") return null;
   const o = /** @type {Record<string, unknown>} */ (raw);
-  if (Number(o.v) !== VERSUS_BOARD_PUBLIC_V) return null;
+  if (!isAcceptableVersusBoardVersion(o.v)) return null;
   return boardToVersusPublic(o);
 }
 

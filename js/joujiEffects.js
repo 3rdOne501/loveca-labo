@@ -24,6 +24,7 @@ import { T_MEMBER } from "./config.js";
  * @property {number} [handCostReduceTargetCost]
  * @property {string} [handCostReduceSeriesTag]
  * @property {boolean} [handCostReduceNoAbility]
+ * @property {string} [requiresSeriesMemberMovedThisTurn] 指定シリーズのステージメンバーがこのターンにエリア移動済み
  * @property {number} [mirrorUnderMaxCost]
  * @property {string} [batonSeriesOnlyTag]
  * @property {number} [stageCostPlus]
@@ -565,7 +566,11 @@ export function classifyJoujiSegment(segRaw) {
     } else if (/ウェイト状態の『虹ヶ咲』/.test(p)) {
       handRule.handCostReduceSeriesTag = "虹ヶ咲";
     }
-    if (/エリアを移動しているかぎり/.test(p)) handRule.notMovedThisTurn = false;
+    if (/エリアを移動しているかぎり/.test(p)) {
+      handRule.notMovedThisTurn = false;
+      var movedSerKagi = p.match(/『([^』]+)』のメンバーがこのターンにエリアを移動しているかぎり/);
+      if (movedSerKagi) handRule.requiresSeriesMemberMovedThisTurn = movedSerKagi[1];
+    }
     return handRule;
   }
 
@@ -1207,6 +1212,13 @@ function conditionMet(rule, inst, card, ctx) {
       if (!m || String(m.id) === String(inst.id)) return;
       if (ctx.memberTotalHearts(m) >= mine) beat = false;
     });
+    /* カード文は「自分と相手のステージの中で」— 相手ステージのメンバーとも比較する */
+    if (typeof ctx.eachOpponentStageColumnMembers === "function") {
+      ctx.eachOpponentStageColumnMembers().forEach(function (m) {
+        if (!m || String(m.id) === String(inst.id)) return;
+        if (ctx.memberTotalHearts(m) >= mine) beat = false;
+      });
+    }
     if (!beat) return false;
   }
   if (rule.opponentExtraHeartSurplus != null) {
@@ -1294,6 +1306,15 @@ export function evaluateMemberJouji(card, inst, ctx, extraSegmentRaws) {
         var pc = ctx.memberPrintedCost(inst);
         if (pc !== rule.handCostReduceTargetCost) continue;
       }
+    }
+    if (rule.kind === "hand_cost_reduce" && rule.requiresSeriesMemberMovedThisTurn) {
+      var movedSerHit = false;
+      ctx.eachStageColumnMembers().forEach(function (sm) {
+        if (movedSerHit || !sm) return;
+        if (!ctx.memberMatchesSeries(sm, rule.requiresSeriesMemberMovedThisTurn)) return;
+        if (typeof ctx.memberMovedThisTurn === "function" && ctx.memberMovedThisTurn(sm)) movedSerHit = true;
+      });
+      if (!movedSerHit) continue;
     }
     mergeJoujiEval(acc, evaluateJoujiRule(rule, inst, card, ctx));
   }
