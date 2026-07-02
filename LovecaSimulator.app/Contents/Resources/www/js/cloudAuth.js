@@ -576,6 +576,26 @@ export function getCloudFirestore() {
   return { db: _db, api: _firestoreApi };
 }
 
+/**
+ * テスト専用フック（scripts/verify-versus-online-sim.mjs）。
+ * Firebase 実接続なしで versusMatch.js の Firestore 経路を Node 上で駆動するための注入口。
+ * 本番コードからは呼ばれない（window/実 Firebase 経路とは独立）。
+ * @param {{ db: any, api: any, user: { uid: string, displayName?: string }|null }|null} inject
+ */
+export function __setTestCloudFirestore(inject) {
+  if (!inject) {
+    _db = null;
+    _firestoreApi = null;
+    cloudSyncEnabled = false;
+    currentUser = null;
+    return;
+  }
+  _db = inject.db;
+  _firestoreApi = inject.api;
+  cloudSyncEnabled = true;
+  currentUser = inject.user || null;
+}
+
 export function getCurrentCloudUser() {
   return currentUser;
 }

@@ -556,10 +556,53 @@ verify-dual-mode-smoke 86件 OK（P5 チェック18件追加）。behavioral ski
 
 ---
 
+## 35. 対戦モード Phase 6b — online 検証の自動化（2026-07-03）
+
+「2ブラウザ手動検証が難しい」との判断を受け、プロトコル往復を Node でヘッドレス検証できるようにした。
+
+| 対応 | 内容 |
+|------|------|
+| 純粋コア抽出 | `applyVersusEffectPatchLocally` の 15 patchKind 盤面変更ロジックを **`js/versusEffectPatch.js`**（DOM 非依存 `applyVersusEffectPatch(board, payload, hooks)`）へ切り出し。simulator.js は hooks 注入の薄いラッパーで委譲（挙動不変） |
+| テスト注入口 | `js/cloudAuth.js` に `__setTestCloudFirestore()`（テスト専用・本番非経路）を追加し、実 `versusMatch.js` を in-memory Firestore モックで駆動可能に |
+| 統合ハーネス | **`scripts/verify-versus-online-sim.mjs`** 新規。host/guest 2クライアントで 15 patchKind 往復・choice 往復・冪等・排他（処理待ち/`boardActionRequest`）・タイムアウト cancel・v2 集計契約 = 22チェック。`verify-ability-coverage` から連鎖 |
+| 静的更新 | verify-versus-online-static / verify-dual-mode-smoke の patchKind チェックを純粋モジュール参照＋機能適用に更新（static 32 / smoke 87） |
+| docs | fullmatch-checklist に「自動化された検証」節を追加（真の手動は 実 Firestore 遅延・UI 描画・カード固有配線の 3 点のみに縮小） |
+
+これで手動 2ブラウザは「実 Firestore の遅延/再接続」「UI 描画・ダイアログ」「発動側配線がプロトコルへ繋がるか」の実機確認に限定。verify-versus-online-sim 22 / static 32 / smoke 87 / ability-coverage OK。app 同期済み（simulator.js / cloudAuth.js / versusEffectPatch.js）。
+
+---
+
+## 36. 対戦モード UX 改善 — リロード復帰 / 演出同期 / フェーズ告知 / 手札ドック / 盤面視認性（2026-07-03）
+
+ユーザー要望 4 件を実装。
+
+| 対応 | 内容 |
+|------|------|
+| リロードで自盤消失を修正 | `teardownVersusModeSession({skipLeaveRoom:true})` が pagehide の直後に `clearPlayResumeStorage()` を呼び、flush 済みの自盤スナップショットを削除していた（根因）。skip 分岐では resume を消さないよう変更（`js/versusMode.js`）。再入場が新規開幕デッキで始まる問題を解消 |
+| 演出の相手同期 | 一過性演出チャネル `{role}PlayFxEvent` を追加（`js/versusMatch.js` `pushVersusPlayFxEvent`）。登場（`triggerPlayFxOnBoardDrop`）・効果使用（`runPlayFxBeforeAction`）で emit、`applyRemoteVersusMatch` で id 差分検出し `flashVersusOpponentPlayFx`（`js/versusBoardSync.js`）で相手盤面の該当カードにパルス＋チップ。初回同期の過去イベントは再生しない |
+| フェーズ告知 | `applyRemoteVersusMatch` で prev/cur を比較し `maybeShowVersusPhaseAnnounce`。優先権/フェーズ/liveStep/turn 変化を viewer 相対文言（あなたのターン / 相手のメインフェイズ / ライブターン / 相手のライブ開始 等）で両画面に大きく表示。軽量モードはトースト代替 |
+| 手札を中央下に固定 | ツールバー「手札を下に固定」トグル（`#btn-hand-dock`）。`STORAGE_HAND_DOCK_BOTTOM` に永続、`body.play-hand-docked-bottom` で `#hand-stick-fold` を `position:fixed` 中央下ドック。ソロ・対戦・全レイアウト共通 |
+| 相手盤面の視認性 | ゾーンを枠線で明確化、見出し強調、成功ライブ（勝利条件 1.2.1）をアクセント枠で強調、ステージ見出しを強調（CSS のみ・DOM 非改変の第1弾） |
+
+verify-ability-coverage OK / versus-online-sim 22 / static 32 / smoke 87。app 同期済み（simulator.js / versusMatch.js / versusBoardSync.js / versusMode.js / config.js / index.html / styles.css）。
+
+### 追補（同日・微調整 4 件）
+
+| 対応 | 内容 |
+|------|------|
+| フェーズ告知フェードアウト | `showVersusPhaseAnnounce` を 2.5 秒表示 → CSS `opacity` トランジション（0.55s）でフェードアウト → 非表示に変更（`versus-phase-announce-overlay--out`）。旧: 2.4 秒で即消し |
+| 残りエール数を対戦に表示 | full versus UI ではライブ成功確率パネル（残りエール数含む）を非表示にしていたため、上部チェイン帯 `#versus-remaining-yell` に `残りエール = max(0, ブレード計 − 解決済み)` を常時表示（`syncVersusRemainingYellReadout`、`syncDeckLiveSimPanel` の versus 分岐から更新） |
+| 下部固定手札のはみ出し修正 | `#hand-stick-fold` に `box-sizing:border-box` + `width:min(100%,1040px)` + `max-width:calc(100vw-12px)`。内側 body/hand-row も border-box・`max-width:100%`、`#zone-hand` を `flex-wrap:wrap` |
+| 下部固定時の「次のターンへ」＋背景透過 | `#btn-hand-dock-turn`（`#btn-turn-start` に委譲）を `body.play-hand-docked-bottom` の時だけ表示。ドック背景を薄く（alpha 0.72/0.97 → 0.2/0.52、blur 12→5px） |
+
+---
+
 ## 更新履歴
 
 | 日付 | 内容 |
 |------|------|
+| 2026-07-03 | 対戦UX: リロード自盤消失の根因修正（skipLeaveRoom で resume を消さない）、演出の相手同期（PlayFxEvent）、フェーズ変更の大型告知、手札の中央下ドックトグル、相手盤面ゾーンの視認性向上 |
+| 2026-07-03 | 対戦 Phase 6b（自動検証）: patchKind コアを js/versusEffectPatch.js へ抽出、cloudAuth に __setTestCloudFirestore、verify-versus-online-sim.mjs 新設（2クライアント 22チェック）を coverage 連鎖 |
 | 2026-07-03 | 対戦 Phase 6（コード）: verify-versus-online-static 新設 + coverage 連鎖、known-gaps.md、2 template を stage_wait_members へ移行、待ちバナー/ロビー文言/ダイアログ重複の UX、user-guide 新設 |
 | 2026-07-02 | 対戦 Phase 5（コード）: passive online 再計算トリガー + ctx online 分岐 + v2 集計2種（imposeOpponentLiveNeedHeartDelta/bonusHeartSurplusTotal）+ patchKind 11種追加。smoke 86件 |
 | 2026-07-02 | 対戦 Phase 4 完了: 代表4カード + タイムアウトを実プレイで検証（online 手動 5/5）。opponentDecision 文言の online 分岐追加 |

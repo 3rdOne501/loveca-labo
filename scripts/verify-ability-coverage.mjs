@@ -68,6 +68,8 @@ function main() {
 
   execSync("node scripts/verify-versus-online-static.mjs", { cwd: ROOT, stdio: "inherit" });
 
+  execSync("node scripts/verify-versus-online-sim.mjs", { cwd: ROOT, stdio: "inherit" });
+
   execSync("node scripts/verify-play-checklist.mjs", { cwd: ROOT, stdio: "inherit" });
 
   execSync("node scripts/verify-deck-pick-hand-patterns.mjs", { cwd: ROOT, stdio: "inherit" });
@@ -148,7 +150,7 @@ function main() {
 
   execSync("node scripts/audit-verification-list-notes.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node --check js/abilityEffects.js js/joujiEffects.js js/jidouAutoEffects.js js/abilityRuntimeMeta.js js/simulator.js", {
+  execSync("node --check js/abilityEffects.js js/joujiEffects.js js/jidouAutoEffects.js js/abilityRuntimeMeta.js js/simulator.js js/versusEffectPatch.js", {
     cwd: ROOT,
     stdio: "inherit",
   });

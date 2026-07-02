@@ -1410,6 +1410,49 @@ export function hideVersusOpponentBoard() {
   if (wrap) wrap.hidden = true;
 }
 
+/**
+ * 相手が起こした一過性の演出（登場/効果使用等）を、こちらの「相手盤面」上で再生する。
+ * 対象カード tile（data-card-no 一致）にパルス＋チップを重ねる。tile 未検出時は
+ * 相手盤面上部にフローティングチップを出す（盤面反映より fx が先に届くケースの保険）。
+ * @param {{ kind?: string, cardNo?: string|null, label?: string|null }} event
+ */
+export function flashVersusOpponentPlayFx(event) {
+  if (!event) return;
+  const wrap = document.getElementById("versus-opponent-board-wrap");
+  if (!wrap || wrap.hidden) return;
+  const label = event.label ? String(event.label) : "演出";
+  const cardNo = event.cardNo ? String(event.cardNo).replace(/"/g, "") : "";
+  let tile = null;
+  if (cardNo) {
+    tile = wrap.querySelector('.card-item[data-card-no="' + cardNo + '"]');
+  }
+  const chip = document.createElement("span");
+  chip.className = "versus-opp-fx-chip";
+  chip.textContent = label;
+  if (tile) {
+    tile.classList.add("versus-opp-card--fx-pulse");
+    tile.appendChild(chip);
+    window.setTimeout(function () {
+      try {
+        tile.classList.remove("versus-opp-card--fx-pulse");
+        chip.remove();
+      } catch (_) {
+        /* noop */
+      }
+    }, 1300);
+  } else {
+    chip.classList.add("versus-opp-fx-chip--float");
+    wrap.appendChild(chip);
+    window.setTimeout(function () {
+      try {
+        chip.remove();
+      } catch (_) {
+        /* noop */
+      }
+    }, 1300);
+  }
+}
+
 /** @type {VersusPublicBoard|null} */
 let lastOppInspectBoard = null;
 

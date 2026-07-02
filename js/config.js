@@ -98,6 +98,8 @@ export const STORAGE_VERSUS_LAST_ROOM = "llocg_versus_last_room_v1";
 export const STORAGE_STREAM_MASK_STRENGTH = "llocg_stream_mask_strength";
 /** プレイ画面: 軽量モード（低画質サムネ・エフェクト簡略・確率計算抑制） */
 export const STORAGE_LIGHTWEIGHT_PLAY = "llocg_lightweight_play_v1";
+/** プレイ画面: 手札を中央下に固定（スマホ風ドック。ソロ/対戦 共通） */
+export const STORAGE_HAND_DOCK_BOTTOM = "llocg_hand_dock_bottom_v1";
 /** 一度 Google ログインしたら次回以降自動でセッション復元を試みる（"0" で無効） */
 export const STORAGE_GOOGLE_AUTO_LOGIN = "llocg_google_auto_login_v1";
 /** デッキ編集で設定する対戦用プレイヤー名（Google ログイン時） */

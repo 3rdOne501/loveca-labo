@@ -1002,6 +1002,43 @@ body.play-versus-mode .versus-opponent-board .slot-label {
   margin-bottom: 0.06rem;
   opacity: 0.8;
 }
+
+/* 相手盤面の視認性向上（総合ルールのゾーンを枠で明確化・見出し強調） */
+body.play-versus-mode .versus-opp-rail-zone {
+  border: 1px solid rgba(140, 170, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.025);
+  padding: 0.16rem 0.26rem;
+}
+body.play-versus-mode .versus-opponent-board__cell--center {
+  border-right: 1px solid rgba(140, 170, 255, 0.14);
+  border-left: 1px solid rgba(140, 170, 255, 0.14);
+  padding: 0 0.28rem;
+}
+/* 勝利条件（総合ルール 1.2.1）の成功ライブを強調して追いやすく */
+body.play-versus-mode .versus-opponent-board__cell--sl {
+  border-color: rgba(255, 200, 110, 0.55);
+  background: rgba(255, 190, 90, 0.07);
+}
+body.play-versus-mode .versus-opponent-board__cell--sl .versus-opp-zone-heading {
+  color: #ffd98a;
+}
+body.play-versus-mode .versus-opp-zone-heading,
+body.play-versus-mode .versus-opponent-board .stage-title-bar__h {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: rgba(228, 238, 255, 0.96);
+}
+body.play-versus-mode .versus-opponent-board .versus-opp-zone-heading .badge,
+body.play-versus-mode .versus-opponent-board .energy-fold__counts .badge {
+  font-weight: 800;
+  font-size: 0.72rem;
+}
+/* ステージ（メンバーエリア）＝相手の主戦場を少し目立たせる */
+body.play-versus-mode .versus-opponent-board__center-stage .stage-title-bar__h {
+  color: #bfe0ff;
+}
 body.play-versus-mode .versus-opponent-board .card-strip {
   min-height: calc(var(--versus-opp-card-h) + 4px);
   padding: 2px 3px;
@@ -1473,6 +1510,251 @@ body.play-versus-mode #view-game.view-game--versus {
     0 0 56px rgba(140, 180, 255, 0.45);
   white-space: nowrap;
 }
+/* フェーズ変更アナウンス（優先権/フェーズ変化で両画面へ大きく表示） */
+.versus-phase-announce-overlay {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, -50%);
+  z-index: 224;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.9rem 2.2rem;
+  border-radius: 16px;
+  background: rgba(10, 16, 30, 0.86);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  box-shadow:
+    0 0 56px rgba(255, 255, 255, 0.28),
+    0 10px 40px rgba(0, 0, 0, 0.55);
+  animation: versus-phase-announce-in 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  opacity: 1;
+  transition: opacity 0.55s ease;
+}
+.versus-phase-announce-overlay.versus-phase-announce-overlay--out {
+  opacity: 0;
+}
+.versus-phase-announce-overlay__main {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.9rem, 7vw, 3.2rem);
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  color: #ffffff;
+  white-space: nowrap;
+  text-shadow:
+    0 0 20px rgba(255, 255, 255, 0.95),
+    0 0 40px rgba(200, 220, 255, 0.6);
+}
+.versus-phase-announce-overlay__sub {
+  margin: 0;
+  font-size: clamp(0.85rem, 3vw, 1.15rem);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: rgba(226, 236, 255, 0.92);
+  white-space: nowrap;
+}
+.versus-phase-announce-overlay--mine {
+  border-color: rgba(120, 235, 190, 0.75);
+  box-shadow:
+    0 0 56px rgba(70, 220, 160, 0.4),
+    0 10px 40px rgba(0, 0, 0, 0.55);
+}
+.versus-phase-announce-overlay--mine .versus-phase-announce-overlay__main {
+  color: #d8fff0;
+  text-shadow:
+    0 0 20px rgba(90, 240, 180, 0.95),
+    0 0 42px rgba(40, 200, 150, 0.6);
+}
+.versus-phase-announce-overlay--opp {
+  border-color: rgba(255, 150, 190, 0.75);
+  box-shadow:
+    0 0 56px rgba(255, 90, 150, 0.4),
+    0 10px 40px rgba(0, 0, 0, 0.55);
+}
+.versus-phase-announce-overlay--opp .versus-phase-announce-overlay__main {
+  color: #ffe0ee;
+  text-shadow:
+    0 0 20px rgba(255, 110, 170, 0.95),
+    0 0 42px rgba(230, 60, 130, 0.6);
+}
+@keyframes versus-phase-announce-in {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.82);
+  }
+  60% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.04);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* 相手盤面での一過性演出（登場/効果使用ミラー） */
+.versus-opp-card--fx-pulse {
+  position: relative;
+  animation: versus-opp-fx-pulse 1.2s ease-out;
+  z-index: 3;
+}
+@keyframes versus-opp-fx-pulse {
+  0% {
+    box-shadow: 0 0 0 rgba(255, 240, 160, 0);
+    filter: brightness(1);
+  }
+  25% {
+    box-shadow:
+      0 0 14px rgba(255, 235, 150, 0.95),
+      0 0 26px rgba(255, 200, 120, 0.7);
+    filter: brightness(1.25);
+  }
+  100% {
+    box-shadow: 0 0 0 rgba(255, 240, 160, 0);
+    filter: brightness(1);
+  }
+}
+.versus-opp-fx-chip {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  color: #2a1c00;
+  background: linear-gradient(135deg, #ffe9a8, #ffce6b);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  animation: versus-opp-fx-chip-in 1.3s ease-out forwards;
+}
+.versus-opp-fx-chip--float {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+@keyframes versus-opp-fx-chip-in {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(6px) scale(0.85);
+  }
+  18% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1.05);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px) scale(1);
+  }
+}
+
+/* ------------------------------------------------------------------
+ * 手札を中央下に固定（スマホ風ドック・ユーザートグル）
+ * ソロ・対戦とも body.play-hand-docked-bottom で有効。全レイアウト共通。
+ * ------------------------------------------------------------------ */
+body.play-mode.play-hand-docked-bottom #hand-stick-fold.hand-stick-fold {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  box-sizing: border-box;
+  width: min(100%, 1040px);
+  max-width: calc(100vw - 12px);
+  max-height: 42vh;
+  max-height: 42svh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  z-index: 60;
+  margin: 0;
+  padding: 0.3rem 0.6rem max(0.4rem, env(safe-area-inset-bottom, 0px));
+  /* 後ろの盤面が透けて見えるよう背景を薄く（要望） */
+  background: linear-gradient(180deg, rgba(12, 16, 30, 0.2), rgba(9, 12, 22, 0.52));
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border: 1px solid rgba(150, 180, 255, 0.22);
+  border-bottom: none;
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.4);
+}
+/* 内側の構造ラッパーが横幅を超えないように */
+body.play-mode.play-hand-docked-bottom #hand-stick-fold.hand-stick-fold .hand-stick-fold__body,
+body.play-mode.play-hand-docked-bottom #hand-row {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+body.play-mode.play-hand-docked-bottom #zone-hand.hand-zone {
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+/* 「次のターンへ」ボタンは下部固定時のみ表示 */
+.btn-hand-dock-turn {
+  display: none;
+}
+body.play-hand-docked-bottom .btn-hand-dock-turn {
+  display: inline-flex;
+}
+
+/* 対戦チェイン帯の残りエール表示 */
+.versus-remaining-yell {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(255, 190, 90, 0.14);
+  border: 1px solid rgba(255, 200, 110, 0.5);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #ffe0a8;
+  white-space: nowrap;
+}
+.versus-remaining-yell__val {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #ffd98a;
+}
+/* 固定手札に隠れないよう各列の下部に余白 */
+body.play-mode.play-hand-docked-bottom .game-board .col {
+  padding-bottom: 42vh;
+  padding-bottom: 42svh;
+}
+/* ドック内は手札を中央寄せ */
+body.play-mode.play-hand-docked-bottom #hand-row {
+  display: flex;
+  justify-content: center;
+}
+body.play-mode.play-hand-docked-bottom #zone-hand.hand-zone {
+  justify-content: center;
+}
+/* ドック時は開閉サマリーを表示（デスクトップでも操作できるように） */
+body.play-mode.play-hand-docked-bottom #hand-stick-fold.hand-stick-fold > summary.hand-stick-fold__summary {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  padding: 0.1rem 0.2rem 0.25rem;
+}
+/* 折りたたみ時は最小の高さに */
+body.play-mode.play-hand-docked-bottom #hand-stick-fold.hand-stick-fold:not([open]) {
+  max-height: none;
+}
+body.play-mode.play-hand-docked-bottom #hand-stick-fold.hand-stick-fold:not([open]) .hand-stick-fold__body {
+  display: none;
+}
+
 .versus-live-score-overlay {
   position: absolute;
   left: 50%;

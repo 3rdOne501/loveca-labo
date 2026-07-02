@@ -1,7 +1,23 @@
 # 対戦モード — 実プレイ検証チェックリスト（2ブラウザ）
 
 online 対戦のリリース判定に必要な**手動検証**の記録用。`[ ]` → `[x]` に更新。
-コード・静的CIは緑（`verify-versus-online-static` 31 / `verify-dual-mode-smoke` 86 / `verify-ability-coverage` OK）。
+コード・静的CIは緑（`verify-versus-online-static` 32 / `verify-dual-mode-smoke` 87 / `verify-versus-online-sim` 22 / `verify-ability-coverage` OK）。
+
+## 自動化された検証（手動不要・CI で毎回実行）
+
+「2ブラウザで人が操作しないと確認できない」と思われていた**プロトコル往復**は Node ハーネスで自動化済み。
+`node scripts/verify-versus-online-sim.mjs`（in-memory Firestore モック + 実 `versusMatch.js` + 純粋 `versusEffectPatch.js` で host/guest 2クライアントを回す）が以下を毎回検証する:
+
+| 自動検証項目 | 対応する手動項目 |
+|---|---|
+| 15 patchKind すべて「依頼→対象が自盤へ適用→ack→依頼側 resolve」 | E の mutate 系 / A-3 の効果発火の**ロジック核** |
+| choice 往復（対象が選び依頼側が pickedIds 受領） | E `opponent_choice` の**プロトコル核** |
+| 冪等性（同一 snapshot 再処理で二重適用しない） | B の再描画・再受信耐性 |
+| 排他（処理待ち効果 / `boardActionRequest` 中は新規リクエスト拒否） | B-4 |
+| タイムアウト cancel（対象未応答 → cancelled 化） | B-2 |
+| v2 集計フィールド契約（`imposeOpponentLiveNeedHeartDelta` 等） | C の passive 配線 |
+
+**残る真の手動項目**は「実 Firestore の遅延・再接続」「UI 描画・ダイアログ表示」「カード固有の発動側配線がプロトコルへ正しく繋がるか」の 3 点に限られる（下表の実機確認）。
 
 ## 準備
 - ゲスト（匿名）ログインで別UID2つ。別オリジン2タブ推奨（例: `localhost:8125` host / `localhost:8126` guest）。

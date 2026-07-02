@@ -853,7 +853,10 @@ export function teardownVersusModeSession(opts) {
   } else if (!skipLeave) {
     forgetVersusRoomPersistence();
   } else {
-    clearPlayResumeStorage();
+    /* skipLeaveRoom=true はリロード(pagehide)や「ロビーへ」で【ルームに残る】ケース。
+     * このとき STORAGE_PLAY_RESUME を消すと、直前に flush した自盤スナップショットが失われ、
+     * 再入場（対戦画面へ）が新規開幕デッキで始まってしまう（＝リロードで盤面が消えるバグ）。
+     * よってここでは resume を消さず、自動再入場フラグのみ解除する。 */
     delete window.__llocgVersusAutoEnterPending;
   }
 }

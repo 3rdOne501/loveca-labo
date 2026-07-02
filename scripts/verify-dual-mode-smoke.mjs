@@ -250,6 +250,8 @@ for (const [label, ok] of V2_CHECKS) {
 
 /* Phase 4: online 効果プロトコル（mutate / choice）の静的チェック */
 const vmSrc = fs.readFileSync(path.join(ROOT, "js/versusMatch.js"), "utf8");
+/* Phase 6: patchKind 分岐は純粋モジュール js/versusEffectPatch.js に切り出し済み */
+const patchSrc = fs.readFileSync(path.join(ROOT, "js/versusEffectPatch.js"), "utf8");
 const P4_CHECKS = [
   ["versusMatch requestVersusEffectAction", vmSrc.includes("export async function requestVersusEffectAction")],
   ["versusMatch resolveVersusEffectAction", vmSrc.includes("export async function resolveVersusEffectAction")],
@@ -258,11 +260,12 @@ const P4_CHECKS = [
   ["sim runVersusOnlineOpponentMutate", simSrc.includes("function runVersusOnlineOpponentMutate")],
   ["sim runVersusOnlineOpponentChoice", simSrc.includes("function runVersusOnlineOpponentChoice")],
   ["sim applyVersusEffectPatchLocally", simSrc.includes("function applyVersusEffectPatchLocally")],
+  ["sim delegates to applyVersusEffectPatch", /applyVersusEffectPatch\(state, payload, \{/.test(simSrc)],
   ["sim syncVersusEffectProtocol hooked", /syncVersusEffectProtocol\(remoteMatch\)/.test(simSrc)],
-  ["patchKind stage_wait_members", simSrc.includes('"stage_wait_members"')],
-  ["patchKind waiting_to_deck_bottom", simSrc.includes('"waiting_to_deck_bottom"')],
-  ["patchKind stage_grant_heart", simSrc.includes('"stage_grant_heart"')],
-  ["patchKind deck_draw_top", simSrc.includes('"deck_draw_top"')],
+  ["patchKind stage_wait_members", patchSrc.includes('"stage_wait_members"')],
+  ["patchKind waiting_to_deck_bottom", patchSrc.includes('"waiting_to_deck_bottom"')],
+  ["patchKind stage_grant_heart", patchSrc.includes('"stage_grant_heart"')],
+  ["patchKind deck_draw_top", patchSrc.includes('"deck_draw_top"')],
   ["runOnTargetPlayerBoard online unblock", /runOnTargetPlayerBoard\(target, fn, onlineReq\)/.test(simSrc)],
   ["template1 wait via protocol", /runOptionalSelfWaitOppStageOnline[\s\S]{0,1600}stage_wait_members/.test(simSrc)],
   ["template3 wdb via protocol", /live_start_pick_player_waiting_deck_bottom"[\s\S]{0,6000}waiting_to_deck_bottom/.test(simSrc)],
@@ -307,17 +310,17 @@ const P5_CHECKS = [
     boardSrc.includes('"imposeOpponentLiveNeedHeartDelta"'),
   ],
   ["v2 field list includes bonusHeartSurplusTotal", boardSrc.includes('"bonusHeartSurplusTotal"')],
-  ["patchKind stage_activate_members", simSrc.includes('"stage_activate_members"')],
-  ["patchKind stage_return_waiting", simSrc.includes('"stage_return_waiting"')],
-  ["patchKind hand_discard_pick", simSrc.includes('"hand_discard_pick"')],
-  ["patchKind hand_to_waiting", simSrc.includes('"hand_to_waiting"')],
-  ["patchKind waiting_to_hand", simSrc.includes('"waiting_to_hand"')],
-  ["patchKind live_to_waiting", simSrc.includes('"live_to_waiting"')],
-  ["patchKind energy_to_wait", simSrc.includes('"energy_to_wait"')],
-  ["patchKind energy_discard", simSrc.includes('"energy_discard"')],
-  ["patchKind success_live_to_waiting", simSrc.includes('"success_live_to_waiting"')],
-  ["patchKind deck_discard_top", simSrc.includes('"deck_discard_top"')],
-  ["patchKind deck_shuffle", simSrc.includes('"deck_shuffle"')],
+  ["patchKind stage_activate_members", patchSrc.includes('"stage_activate_members"')],
+  ["patchKind stage_return_waiting", patchSrc.includes('"stage_return_waiting"')],
+  ["patchKind hand_discard_pick", patchSrc.includes('"hand_discard_pick"')],
+  ["patchKind hand_to_waiting", patchSrc.includes('"hand_to_waiting"')],
+  ["patchKind waiting_to_hand", patchSrc.includes('"waiting_to_hand"')],
+  ["patchKind live_to_waiting", patchSrc.includes('"live_to_waiting"')],
+  ["patchKind energy_to_wait", patchSrc.includes('"energy_to_wait"')],
+  ["patchKind energy_discard", patchSrc.includes('"energy_discard"')],
+  ["patchKind success_live_to_waiting", patchSrc.includes('"success_live_to_waiting"')],
+  ["patchKind deck_discard_top", patchSrc.includes('"deck_discard_top"')],
+  ["patchKind deck_shuffle", patchSrc.includes('"deck_shuffle"')],
 ];
 let p5failed = 0;
 for (const [label, ok] of P5_CHECKS) {

@@ -5,7 +5,7 @@
  * 失敗時 exit 1 — verify-ability-coverage から連鎖 invoke される。
  *
  * 検証内容:
- *  1. applyVersusEffectPatchLocally に全 patchKind 分岐がある
+ *  1. js/versusEffectPatch.js が全 patchKind を機能的に適用でき、simulator.js が委譲する
  *  2. runVersusOnlineOpponentMutate / runVersusOnlineOpponentChoice が simulator.js に存在
  *  3. syncVersusEffectProtocol が applyRemoteVersusMatch から呼ばれる
  *  4. VersusPublicBoard v2 集計フィールドが boardToVersusPublicFromState の出力に載る
@@ -21,7 +21,7 @@ const simSrc = fs.readFileSync(path.join(ROOT, "js/simulator.js"), "utf8");
 /** @type {[string, boolean][]} */
 const checks = [];
 
-/* --- 1. patchKind 分岐（対象側適用） --- */
+/* --- 1. patchKind 分岐（純粋モジュール js/versusEffectPatch.js） --- */
 const REQUIRED_PATCH_KINDS = [
   // Phase 4
   "stage_wait_members",
@@ -41,11 +41,59 @@ const REQUIRED_PATCH_KINDS = [
   "deck_discard_top",
   "deck_shuffle",
 ];
-const patchBodyStart = simSrc.indexOf("function applyVersusEffectPatchLocally");
-checks.push(["applyVersusEffectPatchLocally 存在", patchBodyStart >= 0]);
-for (const pk of REQUIRED_PATCH_KINDS) {
-  /* `patchKind === "X"` は applyVersusEffectPatchLocally 内のみに出現 */
-  checks.push([`patchKind 分岐: ${pk}`, simSrc.includes(`patchKind === "${pk}"`)]);
+/* simulator.js は純粋モジュールへ委譲する薄いラッパー */
+checks.push([
+  "applyVersusEffectPatchLocally が applyVersusEffectPatch へ委譲",
+  simSrc.includes("function applyVersusEffectPatchLocally") &&
+    /applyVersusEffectPatch\(state, payload, \{/.test(simSrc),
+]);
+try {
+  const patchMod = await import(path.join(ROOT, "js/versusEffectPatch.js"));
+  const { VERSUS_EFFECT_PATCH_KINDS, applyVersusEffectPatch } = patchMod;
+  for (const pk of REQUIRED_PATCH_KINDS) {
+    /* エクスポート一覧に含まれ、かつ既知 payload で ok:true を返すことを機能確認 */
+    const board = {
+      deck: [{ id: "d1" }, { id: "d2" }],
+      hand: [{ id: "h1" }],
+      stage: { left: [{ id: "s1" }], center: [], right: [] },
+      liveArea: { left: [{ id: "L1", type: "ライブ" }], center: [], right: [] },
+      waitingRoom: [{ id: "w1" }],
+      resolutionArea: [],
+      successfulLiveArea: [{ id: "sl1" }],
+      energyArea: [{ id: "e1", lcActive: true }],
+    };
+    const payloadFor = {
+      stage_wait_members: { patchKind: pk, instIds: ["s1"] },
+      stage_grant_heart: { patchKind: pk, instId: "s1", slot: 1, count: 1 },
+      stage_activate_members: { patchKind: pk },
+      stage_return_waiting: { patchKind: pk, instIds: ["s1"] },
+      hand_discard_pick: { patchKind: pk, count: 1 },
+      hand_to_waiting: { patchKind: pk, instIds: ["h1"] },
+      waiting_to_hand: { patchKind: pk, instIds: ["w1"] },
+      waiting_to_deck_bottom: { patchKind: pk, instIds: ["w1"] },
+      live_to_waiting: { patchKind: pk, instIds: ["L1"] },
+      energy_to_wait: { patchKind: pk, count: 1 },
+      energy_discard: { patchKind: pk, count: 1 },
+      success_live_to_waiting: { patchKind: pk, count: 1 },
+      deck_draw_top: { patchKind: pk, count: 1 },
+      deck_discard_top: { patchKind: pk, count: 1 },
+      deck_shuffle: { patchKind: pk },
+    }[pk];
+    const r = applyVersusEffectPatch(board, payloadFor);
+    checks.push([
+      `patchKind: ${pk}`,
+      VERSUS_EFFECT_PATCH_KINDS.includes(pk) && r && r.ok === true,
+    ]);
+  }
+  checks.push([
+    "不明 patchKind は ok:false",
+    applyVersusEffectPatch(
+      { deck: [], hand: [], stage: { left: [], center: [], right: [] }, liveArea: { left: [], center: [], right: [] }, waitingRoom: [], resolutionArea: [], successfulLiveArea: [], energyArea: [] },
+      { patchKind: "__unknown__" },
+    ).ok === false,
+  ]);
+} catch (err) {
+  checks.push([`versusEffectPatch import (${err && err.message})`, false]);
 }
 
 /* --- 2. 発動側リクエスト関数 --- */

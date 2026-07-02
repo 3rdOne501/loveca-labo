@@ -625,6 +625,15 @@ python3 -m http.server 8080</pre>
           >
             軽量
           </button>
+          <button
+            type="button"
+            class="btn sm secondary"
+            id="btn-hand-dock"
+            aria-pressed="false"
+            title="ONにすると手札を画面中央下に固定します（スマホのような配置。ソロ・対戦とも有効）"
+          >
+            手札を下に固定
+          </button>
           <button type="button" class="btn sm secondary" id="btn-zone-hints" aria-pressed="false">
             ゾーン説明を表示
           </button>
@@ -643,6 +652,10 @@ python3 -m http.server 8080</pre>
         </div>
         <div id="versus-play-chrome" class="versus-play-chrome game-bar-row" hidden>
           <span id="versus-turn-badge" class="versus-turn-badge" hidden></span>
+          <span id="versus-remaining-yell" class="versus-remaining-yell" title="ライブ成功に必要な残りエール（ブレード計 − 解決済み）" hidden>
+            <span class="versus-remaining-yell__label">残りエール</span>
+            <strong id="versus-remaining-yell-val" class="versus-remaining-yell__val" aria-live="polite">0</strong>
+          </span>
           <button
             type="button"
             class="btn primary btn-versus-dual-board-switch"
@@ -1351,6 +1364,9 @@ python3 -m http.server 8080</pre>
                   <span id="hand-inline-count" class="badge hand-inline-count" aria-live="polite">0</span>
                 </h3>
                 <div class="hand-zone-actions">
+                  <button type="button" class="btn sm primary btn-hand-dock-turn" id="btn-hand-dock-turn" title="ターン開始／対戦の通常フェイズではターン終了（下部固定手札のとき表示）">
+                    次のターンへ
+                  </button>
                   <button type="button" class="btn sm primary" id="btn-live-turn-primary" disabled>
                     ライブターン開始
                   </button>

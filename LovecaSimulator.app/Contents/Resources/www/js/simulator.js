@@ -23,6 +23,7 @@ import {
   STORAGE_PLAY_RESUME,
   STORAGE_STREAM_MASK_STRENGTH,
   STORAGE_LIGHTWEIGHT_PLAY,
+  STORAGE_HAND_DOCK_BOTTOM,
   T_ENERGY,
   T_LIVE,
   T_MEMBER,
@@ -113,6 +114,7 @@ import {
   pushVersusBoardPublic,
   pushVersusEffectHighlight,
   pushVersusEffectUi,
+  pushVersusPlayFxEvent,
   requestVersusBoardAction,
   respondVersusBoardAction,
   clearVersusBoardActionRequest,
@@ -152,7 +154,9 @@ import {
   hideVersusOpponentBoard,
   renderVersusOpponentBoard,
   resetVersusOpponentRevealToastState,
+  flashVersusOpponentPlayFx,
 } from "./versusBoardSync.js";
+import { applyVersusEffectPatch } from "./versusEffectPatch.js";
 import {
   initOpponentBoardApi,
   isDualOpponentBoardMode,
@@ -2051,6 +2055,46 @@ export function mountSimulator(
 
   state.playLightweightMode = loadPlayLightweightModeFromStorage();
   syncPlayLightweightModeChrome();
+
+  /* 手札を中央下に固定（スマホ風ドック）。ソロ・対戦とも body クラスで制御 */
+  function loadHandDockBottomFromStorage() {
+    try {
+      return sessionStorage.getItem(STORAGE_HAND_DOCK_BOTTOM) === "1";
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function persistHandDockBottom(on) {
+    try {
+      sessionStorage.setItem(STORAGE_HAND_DOCK_BOTTOM, on ? "1" : "0");
+    } catch (_) {}
+  }
+
+  function syncHandDockBottomChrome() {
+    var on = state.handDockBottom === true;
+    var btn = document.getElementById("btn-hand-dock");
+    if (btn) {
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+      btn.classList.toggle("btn-hand-dock-on", on);
+    }
+    if (document.body) {
+      document.body.classList.toggle("play-hand-docked-bottom", on);
+    }
+  }
+
+  function toggleHandDockBottom() {
+    state.handDockBottom = !state.handDockBottom;
+    persistHandDockBottom(state.handDockBottom);
+    syncHandDockBottomChrome();
+    showToast(
+      state.handDockBottom ? "手札を中央下に固定しました" : "手札の固定を解除しました",
+    );
+    render();
+  }
+
+  state.handDockBottom = loadHandDockBottomFromStorage();
+  syncHandDockBottomChrome();
 
   /** 同一 render パス内の live 判定バンドル再利用 */
   var renderPassLiveBundle = null;
@@ -6095,6 +6139,24 @@ export function mountSimulator(
     );
   }
 
+  /** online: 一過性の演出（登場/効果使用）を相手クライアントへ通知（盤面同期とは別チャネル） */
+  function emitVersusPlayFxEvent(inst, kind) {
+    if (!inst || !kind) return;
+    if (!versusOnlineActive() || !versusSession || !versusSession.myRole) return;
+    var mc = mergedCatalogCard(inst);
+    var cardNo = mc && mc.card_no ? String(mc.card_no) : inst.card_no ? String(inst.card_no) : "";
+    if (!cardNo) return;
+    try {
+      pushVersusPlayFxEvent(versusSession.roomCode, versusSession.myRole, {
+        kind: kind,
+        cardNo: cardNo,
+        label: playFxChipLabel(kind),
+      });
+    } catch (_) {
+      /* noop */
+    }
+  }
+
   function triggerPlayFxOnBoardDrop(snapBeforeDrag) {
     if (isLightweightPlayMode() || !snapBeforeDrag) return;
     var prev = stageMemberIdSetFromSnap(snapBeforeDrag);
@@ -6123,6 +6185,7 @@ export function mountSimulator(
       } else {
         markPlayFxEnter(inst, enterKind, {});
       }
+      emitVersusPlayFxEvent(inst, enterKind);
     });
     now.forEach(function (id) {
       if (!prev.has(id)) return;
@@ -8234,12 +8297,29 @@ export function mountSimulator(
     ban.textContent = "";
   }
 
+  /** 対戦モードの残りエール（ブレード計 − 解決済み）を上部チェイン帯に表示 */
+  function syncVersusRemainingYellReadout() {
+    var host = document.getElementById("versus-remaining-yell");
+    var val = document.getElementById("versus-remaining-yell-val");
+    if (!host || !val) return;
+    if (!isFullVersusPlayUi()) {
+      host.hidden = true;
+      return;
+    }
+    var bladeK = Math.max(0, Math.floor(boardBladeForYellReveal()));
+    var resR = Array.isArray(state.resolutionArea) ? state.resolutionArea.length : 0;
+    var kRem = Math.max(0, bladeK - resR);
+    val.textContent = String(kRem);
+    host.hidden = false;
+  }
+
   function syncDeckLiveSimPanel() {
     if (isFullVersusPlayUi()) {
       cancelDeckLiveSimDeferred();
       clearDeckLiveSimDesktopToolbarMirror();
       var liveSimWrapSkip = root.querySelector(".zone-block-deck-live-sim-under-preview");
       if (liveSimWrapSkip) liveSimWrapSkip.hidden = true;
+      syncVersusRemainingYellReadout();
       return;
     }
     var liveSimWrap = root.querySelector(".zone-block-deck-live-sim-under-preview");
@@ -11560,6 +11640,7 @@ export function mountSimulator(
     } else {
       markPlayFx(inst, k);
     }
+    emitVersusPlayFxEvent(inst, k);
     renderSynchronouslyOnce();
     var meta = playFxMetaFromInst(inst);
     window.setTimeout(action, playFxDurationMs(k, meta));
@@ -19279,194 +19360,16 @@ export function mountSimulator(
    * @returns {{ ok: boolean, applied: number }}
    */
   function applyVersusEffectPatchLocally(payload) {
-    var patchKind = payload ? String(payload.patchKind || "") : "";
-    var applied = 0;
-    if (patchKind === "stage_wait_members") {
-      var waitIds = Array.isArray(payload.instIds) ? payload.instIds : [];
-      waitIds.forEach(function (pid) {
-        var found = null;
-        eachStageColumnMemberInsts().forEach(function (m) {
-          if (m && String(m.id) === String(pid)) found = m;
-        });
-        if (found && found.lcWait !== true) {
-          waitMemberInst(found);
-          applied++;
-        }
-      });
-    } else if (patchKind === "stage_grant_heart") {
-      var grantSlot = Math.floor(Number(payload.slot) || 0);
-      var grantCount = Math.max(1, Math.floor(Number(payload.count) || 1));
-      if (grantSlot >= 1 && grantSlot <= 6) {
-        eachStageColumnMemberInsts().forEach(function (m) {
-          if (!m || String(m.id) !== String(payload.instId)) return;
-          ensureCardBoardFields(m);
-          m.playBonusHeartSlotsAlways[grantSlot] =
-            Math.floor(Number(m.playBonusHeartSlotsAlways[grantSlot]) || 0) + grantCount;
-          applied++;
-        });
-      }
-    } else if (patchKind === "deck_draw_top") {
-      var drawN = Math.max(1, Math.floor(Number(payload.count) || 1));
-      /** @type {*[]} */
-      var drawnP4 = [];
-      for (var dp = 0; dp < drawN && state.deck.length; dp++) drawnP4.push(state.deck.shift());
-      drawnP4.forEach(function (c) {
-        state.hand.push(c);
-      });
-      applied = drawnP4.length;
-    } else if (patchKind === "waiting_to_deck_bottom") {
-      var wdbIds = Array.isArray(payload.instIds) ? payload.instIds : [];
-      wdbIds.forEach(function (pid) {
-        var wi = state.waitingRoom.findIndex(function (c) {
-          return c && String(c.id) === String(pid);
-        });
-        if (wi >= 0) {
-          state.deck.push(state.waitingRoom.splice(wi, 1)[0]);
-          applied++;
-        }
-      });
-    } else if (patchKind === "stage_activate_members") {
-      /* mutate_opponent_stage: 指定 inst（無ければ全員）をアクティブ化 */
-      var actIds = Array.isArray(payload.instIds) ? payload.instIds : [];
-      eachStageColumnMemberInsts().forEach(function (m) {
-        if (!m) return;
-        var hit = !actIds.length || actIds.some(function (pid) {
-          return String(pid) === String(m.id);
-        });
-        if (hit && (m.lcWait === true || m.lcActive === false || m.isRotated === true)) {
-          m.lcWait = false;
-          m.lcActive = true;
-          m.isRotated = false;
-          applied++;
-        }
-      });
-    } else if (patchKind === "stage_return_waiting") {
-      /* mutate_opponent_stage: ステージ→控え室 */
-      var retIds = Array.isArray(payload.instIds) ? payload.instIds : [];
-      retIds.forEach(function (pid) {
-        var foundRet = null;
-        eachStageColumnMemberInsts().forEach(function (m) {
-          if (m && String(m.id) === String(pid)) foundRet = m;
-        });
-        if (foundRet && removeStageMemberToWaiting(foundRet)) applied++;
-      });
-    } else if (patchKind === "hand_discard_pick" || patchKind === "hand_to_waiting") {
-      /* mutate_opponent_hand: 手札→控え室（discard）。instIds 指定 or count 枚 */
-      var handIds = Array.isArray(payload.instIds) ? payload.instIds : [];
-      if (handIds.length) {
-        handIds.forEach(function (pid) {
-          var hi = state.hand.findIndex(function (c) {
-            return c && String(c.id) === String(pid);
-          });
-          if (hi >= 0) {
-            state.waitingRoom.push(state.hand.splice(hi, 1)[0]);
-            applied++;
-          }
-        });
-      } else {
-        var discN = Math.max(1, Math.floor(Number(payload.count) || 1));
-        for (var hd = 0; hd < discN && state.hand.length; hd++) {
-          state.waitingRoom.push(state.hand.pop());
-          applied++;
-        }
-      }
-    } else if (patchKind === "waiting_to_hand") {
-      /* mutate_opponent_waiting: 控え室→手札 */
-      var wthIds = Array.isArray(payload.instIds) ? payload.instIds : [];
-      wthIds.forEach(function (pid) {
-        var wthi = state.waitingRoom.findIndex(function (c) {
-          return c && String(c.id) === String(pid);
-        });
-        if (wthi >= 0) {
-          state.hand.push(state.waitingRoom.splice(wthi, 1)[0]);
-          applied++;
-        }
-      });
-    } else if (patchKind === "live_to_waiting") {
-      /* mutate_opponent_live: ライブ置き場→控え室 */
-      var ltwIds = Array.isArray(payload.instIds) ? payload.instIds : [];
-      ["left", "center", "right"].forEach(function (col) {
-        var slot = state.liveArea[col] || [];
-        for (var li = slot.length - 1; li >= 0; li--) {
-          var lc = slot[li];
-          if (!lc) continue;
-          var lhit = !ltwIds.length || ltwIds.some(function (pid) {
-            return String(pid) === String(lc.id);
-          });
-          if (lhit) {
-            lc.lcWait = false;
-            state.waitingRoom.push(slot.splice(li, 1)[0]);
-            applied++;
-          }
-        }
-      });
-    } else if (patchKind === "energy_to_wait") {
-      /* mutate_opponent_energy: アクティブE→ウェイト（総合ルール 5.9.1） */
-      var ewN = Math.max(1, Math.floor(Number(payload.count) || 1));
-      var ewDone = 0;
-      (state.energyArea || []).forEach(function (e) {
-        if (ewDone >= ewN || !e) return;
-        if (e.lcActive !== false && e.lcWait !== true) {
-          e.lcActive = false;
-          e.lcWait = true;
-          ewDone++;
-          applied++;
-        }
-      });
-    } else if (patchKind === "energy_discard") {
-      /* mutate_opponent_energy: E→控え室 */
-      var edIds = Array.isArray(payload.instIds) ? payload.instIds : [];
-      if (edIds.length) {
-        edIds.forEach(function (pid) {
-          var ei = state.energyArea.findIndex(function (c) {
-            return c && String(c.id) === String(pid);
-          });
-          if (ei >= 0) {
-            state.waitingRoom.push(state.energyArea.splice(ei, 1)[0]);
-            applied++;
-          }
-        });
-      } else {
-        var edN = Math.max(1, Math.floor(Number(payload.count) || 1));
-        for (var ed = 0; ed < edN && state.energyArea.length; ed++) {
-          state.waitingRoom.push(state.energyArea.pop());
-          applied++;
-        }
-      }
-    } else if (patchKind === "success_live_to_waiting") {
-      /* mutate_opponent_success_live: 成功ライブ→控え室 */
-      var slwIds = Array.isArray(payload.instIds) ? payload.instIds : [];
-      if (slwIds.length) {
-        slwIds.forEach(function (pid) {
-          var si = state.successfulLiveArea.findIndex(function (c) {
-            return c && String(c.id) === String(pid);
-          });
-          if (si >= 0) {
-            state.waitingRoom.push(state.successfulLiveArea.splice(si, 1)[0]);
-            applied++;
-          }
-        });
-      } else {
-        var slwN = Math.max(1, Math.floor(Number(payload.count) || 1));
-        for (var slw = 0; slw < slwN && state.successfulLiveArea.length; slw++) {
-          state.waitingRoom.push(state.successfulLiveArea.pop());
-          applied++;
-        }
-      }
-    } else if (patchKind === "deck_discard_top") {
-      /* mutate_opponent_deck: 山札上→控え室 */
-      var ddN = Math.max(1, Math.floor(Number(payload.count) || 1));
-      for (var dd = 0; dd < ddN && state.deck.length; dd++) {
-        state.waitingRoom.push(state.deck.shift());
-        applied++;
-      }
-    } else if (patchKind === "deck_shuffle") {
-      /* mutate_opponent_deck: 山札シャッフル */
-      state.deck = shuffle(state.deck);
-      applied = 1;
-    } else {
-      return { ok: false, applied: 0 };
-    }
+    /* Phase 6: 盤面変更コアは純粋モジュール js/versusEffectPatch.js に委譲（Node で自動検証可能）。
+     * simulator 固有の副作用（field 初期化・登場効果クリア・render・公開 push）は hooks とラッパーで維持。 */
+    var res = applyVersusEffectPatch(state, payload, {
+      eachStageMembers: eachStageColumnMemberInsts,
+      waitMember: waitMemberInst,
+      removeStageToWaiting: removeStageMemberToWaiting,
+      ensureFields: ensureCardBoardFields,
+      shuffle: shuffle,
+    });
+    if (!res.ok) return res;
     try {
       syncJoujiPassiveEffectsAll();
     } catch (_) {}
@@ -19474,7 +19377,7 @@ export function mountSimulator(
     try {
       flushVersusBoardPublicSync();
     } catch (_) {}
-    return { ok: true, applied: applied };
+    return res;
   }
 
   /** 対象側: リモート選択ダイアログ */
@@ -35636,6 +35539,163 @@ export function mountSimulator(
     }, 3600);
   }
 
+  /* ------------------------------------------------------------------
+   * フェーズ変更アナウンス（優先権/フェーズが変わるたびに両画面へ大きく表示）
+   * ------------------------------------------------------------------ */
+  var versusPhaseAnnounceTimer = 0;
+  var versusPhaseAnnounceHideTimer = 0;
+
+  function ensureVersusPhaseAnnounceChrome() {
+    ensureVersusOverlayChrome();
+    var viewGame = document.getElementById("view-game");
+    if (!viewGame) return;
+    if (!document.getElementById("versus-phase-announce-overlay")) {
+      var ov = document.createElement("div");
+      ov.id = "versus-phase-announce-overlay";
+      ov.className = "versus-phase-announce-overlay";
+      ov.hidden = true;
+      ov.setAttribute("aria-live", "assertive");
+      var main = document.createElement("p");
+      main.className = "versus-phase-announce-overlay__main";
+      main.textContent = "";
+      var sub = document.createElement("p");
+      sub.className = "versus-phase-announce-overlay__sub";
+      sub.textContent = "";
+      ov.appendChild(main);
+      ov.appendChild(sub);
+      viewGame.appendChild(ov);
+    }
+  }
+
+  /** @param {string} mainText @param {string} subText @param {'mine'|'opp'|'neutral'} tone */
+  function showVersusPhaseAnnounce(mainText, subText, tone) {
+    if (isLightweightPlayMode()) {
+      /* 軽量モードは大きなアニメを出さずトーストで代替 */
+      try {
+        showToast(subText ? mainText + " — " + subText : mainText, { duration: 2000 });
+      } catch (_) {}
+      return;
+    }
+    ensureVersusPhaseAnnounceChrome();
+    var el = document.getElementById("versus-phase-announce-overlay");
+    if (!el) return;
+    var main = el.querySelector(".versus-phase-announce-overlay__main");
+    var sub = el.querySelector(".versus-phase-announce-overlay__sub");
+    if (main) main.textContent = mainText || "";
+    if (sub) sub.textContent = subText || "";
+    el.classList.remove(
+      "versus-phase-announce-overlay--mine",
+      "versus-phase-announce-overlay--opp",
+      "versus-phase-announce-overlay--neutral",
+      "versus-phase-announce-overlay--out",
+    );
+    el.classList.add("versus-phase-announce-overlay--" + (tone || "neutral"));
+    /* 再アニメーションのため一旦隠して再表示 */
+    el.hidden = true;
+    void el.offsetWidth;
+    el.hidden = false;
+    if (versusPhaseAnnounceTimer) {
+      clearTimeout(versusPhaseAnnounceTimer);
+      versusPhaseAnnounceTimer = 0;
+    }
+    if (versusPhaseAnnounceHideTimer) {
+      clearTimeout(versusPhaseAnnounceHideTimer);
+      versusPhaseAnnounceHideTimer = 0;
+    }
+    /* 2.5 秒表示 → フェードアウト（CSS opacity トランジション 0.55s）→ 非表示 */
+    versusPhaseAnnounceTimer = window.setTimeout(function () {
+      versusPhaseAnnounceTimer = 0;
+      if (!el) return;
+      el.classList.add("versus-phase-announce-overlay--out");
+      versusPhaseAnnounceHideTimer = window.setTimeout(function () {
+        versusPhaseAnnounceHideTimer = 0;
+        if (el) {
+          el.hidden = true;
+          el.classList.remove("versus-phase-announce-overlay--out");
+        }
+      }, 600);
+    }, 2500);
+  }
+
+  /**
+   * 優先権/フェーズの遷移を検出して viewer 相対の文言で両画面に告知。
+   * online のみ。prev が無い（初回/復帰直後）は出さない。
+   * @param {*} prevMatch @param {*} curMatch
+   */
+  function maybeShowVersusPhaseAnnounce(prevMatch, curMatch) {
+    if (!versusOnlineActive() || !curMatch || !prevMatch) return;
+    var myRole = versusSession.myRole;
+    if (!myRole) return;
+    var phasePrev = normalizeVersusPhase(prevMatch);
+    var phaseCur = normalizeVersusPhase(curMatch);
+    var stepPrev = getVersusLiveStep(prevMatch);
+    var stepCur = getVersusLiveStep(curMatch);
+    var rolePrev = prevMatch.activePlayerRole || null;
+    var roleCur = curMatch.activePlayerRole || null;
+    var turnPrev = Math.floor(Number(prevMatch.turnNumber) || 0);
+    var turnCur = Math.floor(Number(curMatch.turnNumber) || 0);
+    var mineTurn = roleCur === myRole;
+    var isMull = function (p) {
+      return p === "firstMulligan" || p === "secondMulligan";
+    };
+    var isNormal = function (p) {
+      return p === "firstNormal" || p === "secondNormal";
+    };
+
+    /* 1) フェーズ遷移 */
+    if (phaseCur !== phasePrev) {
+      if (isMull(phaseCur)) {
+        showVersusPhaseAnnounce("マリガン", "手札を選び直せます", "neutral");
+        return;
+      }
+      if (phaseCur === "live") {
+        if (mineTurn) showVersusPhaseAnnounce("ライブターン", "あなたのライブ開始", "mine");
+        else showVersusPhaseAnnounce("相手のライブ開始", "相手がライブを行います", "opp");
+        return;
+      }
+      if (isNormal(phaseCur)) {
+        if (mineTurn) showVersusPhaseAnnounce("あなたのターン", "メインフェイズ開始", "mine");
+        else showVersusPhaseAnnounce("相手のターン", "相手のメインフェイズ", "opp");
+        return;
+      }
+      return;
+    }
+
+    /* 2) ライブ内のステップ遷移 */
+    if (phaseCur === "live" && stepCur && stepCur !== stepPrev) {
+      var pfx = mineTurn ? "" : "相手の";
+      if (stepCur === "set") showVersusPhaseAnnounce(pfx + "ライブ準備", "ライブ・エールをセット", mineTurn ? "mine" : "opp");
+      else if (stepCur === "perf") showVersusPhaseAnnounce(pfx + "パフォーマンス", "ライブスコア判定へ", mineTurn ? "mine" : "opp");
+      else if (stepCur === "judgment") showVersusPhaseAnnounce("ジャッジ", "ライブ成功判定", "neutral");
+      else if (stepCur === "successFx") showVersusPhaseAnnounce(pfx + "ライブ成功", "成功時効果", mineTurn ? "mine" : "opp");
+      return;
+    }
+
+    /* 3) 通常フェーズのターン受け渡し（優先権 or ターン番号の変化） */
+    if (isNormal(phaseCur) && (roleCur !== rolePrev || turnCur !== turnPrev)) {
+      if (mineTurn) showVersusPhaseAnnounce("あなたのターン", "メインフェイズ開始", "mine");
+      else showVersusPhaseAnnounce("相手のターン", "相手のメインフェイズ", "opp");
+      return;
+    }
+  }
+
+  /** 相手が起こした一過性演出イベント（登場/効果使用）を自画面の相手盤面でミラー再生 */
+  var versusLastOppPlayFxId = "";
+
+  function maybeFlashOpponentPlayFxFromRemote(remoteMatch) {
+    if (!versusOnlineActive() || !remoteMatch || !versusSession.myRole) return;
+    var oppField = versusSession.myRole === "host" ? "guestPlayFxEvent" : "hostPlayFxEvent";
+    var ev = remoteMatch[oppField];
+    if (!ev || !ev.id) return;
+    if (String(ev.id) === versusLastOppPlayFxId) return;
+    var firstSeen = versusLastOppPlayFxId === "";
+    versusLastOppPlayFxId = String(ev.id);
+    /* マウント直後（初回同期）に過去イベントを再生しない */
+    if (firstSeen) return;
+    if (isLightweightPlayMode()) return;
+    flashVersusOpponentPlayFx(ev);
+  }
+
   function isVersusSenkyurakuState() {
     return successLiveAreaLiveCardCount() === 2;
   }
@@ -36868,8 +36928,18 @@ export function mountSimulator(
       versusLastKnownFirstPlayerRole = remoteMatch.firstPlayerRole;
     }
     syncVersusMatchBar(remoteMatch);
+    try {
+      maybeShowVersusPhaseAnnounce(prevMatch, remoteMatch);
+    } catch (announceErr) {
+      console.warn("[versus] phase announce failed:", announceErr);
+    }
     syncVersusOppSlDisplay();
     applyVersusOpponentBoardFromRemote(remoteMatch);
+    try {
+      maybeFlashOpponentPlayFxFromRemote(remoteMatch);
+    } catch (fxErr) {
+      console.warn("[versus] opp play fx mirror failed:", fxErr);
+    }
     syncVersusOpponentActionFeed(remoteMatch);
     syncVersusBoardActionRequest(remoteMatch);
     try {
@@ -39806,6 +39876,16 @@ export function mountSimulator(
 
   $("btn-play-lightweight")?.addEventListener("click", function () {
     togglePlayLightweightMode();
+  });
+
+  $("btn-hand-dock")?.addEventListener("click", function () {
+    toggleHandDockBottom();
+  });
+
+  $("btn-hand-dock-turn")?.addEventListener("click", function () {
+    /* 下部固定手札用の「次のターンへ」＝既存のターン開始/ターン終了アクションに委譲 */
+    var b = $("btn-turn-start");
+    if (b && !b.disabled) b.click();
   });
 
   function saveSnapshotSlot(si) {

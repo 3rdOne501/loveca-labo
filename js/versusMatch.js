@@ -1239,6 +1239,35 @@ export async function pushVersusEffectHighlight(roomCode, role, cardNo, ui) {
   await pushVersusEffectUi(roomCode, role, payload);
 }
 
+/**
+ * 一過性の演出イベント（登場/効果使用など）を相手に伝える。盤面ではなく「演出」の同期用。
+ * 相手クライアントは新しい id を検出したら自分の相手盤面上で同種のエフェクトを再生する。
+ * @param {string} roomCode
+ * @param {VersusRole} role
+ * @param {{ kind: string, cardNo?: string|null, label?: string|null, tier?: number }} event
+ */
+export async function pushVersusPlayFxEvent(roomCode, role, event) {
+  if (!roomCode || !role || !event || !event.kind) return;
+  const field = role === "host" ? "hostPlayFxEvent" : "guestPlayFxEvent";
+  const payload = {
+    id: "fx-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+    kind: String(event.kind),
+    cardNo: event.cardNo != null ? String(event.cardNo) : null,
+    label: event.label != null ? String(event.label) : null,
+    tier: Math.max(0, Math.floor(Number(event.tier) || 0)),
+    at: new Date().toISOString(),
+  };
+  try {
+    const { api } = fs();
+    await api.updateDoc(matchRef(roomCode), {
+      [field]: payload,
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.warn("[versusMatch] play fx event push failed:", err);
+  }
+}
+
 /** @param {string} roomCode @param {VersusRole} role */
 export async function clearVersusEffectHighlight(roomCode, role) {
   await pushVersusEffectUi(roomCode, role, null);
