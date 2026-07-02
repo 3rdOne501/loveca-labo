@@ -31,6 +31,13 @@ const CASES = [
   { id: "PL!-pb1-009-P＋", trigger: "toujyou", check: "optional_self_wait_opp_blade" },
   { id: "PL!S-bp5-019-L", trigger: "live_success", check: "min_either_success_live" },
   { id: "PL!S-bp5-010-N", trigger: "toujyou", check: "toujou_grant_opp_live_need_heart" },
+  { id: "PL!SP-bp2-011-P", trigger: "toujyou", check: "toujou_wait_pick_opp_live" },
+  { id: "PL!N-bp3-010-P", trigger: "live_start", check: "live_start_pick_player_waiting_deck_bottom" },
+  { id: "PL!S-bp3-007-P", trigger: "kidou", check: "live_start_pick_player_waiting_deck_bottom_kidou" },
+  { id: "PL!-bp3-002-P", trigger: "toujyou", check: "optional_self_wait_opp_stage" },
+  { id: "PL!N-bp4-004-P", trigger: "live_start", check: "live_start_draw_opp_wait" },
+  { id: "PL!N-bp3-011-P", trigger: "toujyou", check: "toujou_opp_stage_member_match_grant" },
+  { id: "PL!-bp3-022-L", trigger: "live_start", check: "live_start_deck_reveal_both_stage_members_score" },
 ];
 
 let failed = 0;
@@ -84,6 +91,27 @@ for (const c of CASES) {
   } else if (c.check === "toujou_grant_opp_live_need_heart") {
     if (cl.template !== "toujou_grant_opp_live_need_heart_if_stage_hearts") errs.push(`template ${cl.template}`);
     if (!simSrc.includes("inactiveOpponentJoujiLiveNeedHeartBump")) errs.push("inactive opponent bump helper missing");
+  } else if (c.check === "live_start_pick_player_waiting_deck_bottom") {
+    if (cl.template !== "live_start_pick_player_waiting_deck_bottom") errs.push(`template ${cl.template}`);
+    if (!simSrc.includes("runOnTargetPlayerBoard")) errs.push("runOnTargetPlayerBoard missing");
+    if (!simSrc.includes("openPickSelfOrOpponentDialog")) errs.push("openPickSelfOrOpponentDialog missing");
+  } else if (c.check === "live_start_pick_player_waiting_deck_bottom_kidou") {
+    if (cl.template !== "live_start_pick_player_waiting_deck_bottom") errs.push(`template ${cl.template}`);
+    if (cl.deckDrawOnSuccess !== 1) errs.push("deckDrawOnSuccess missing");
+    if (!simSrc.includes("runOnTargetPlayerBoard")) errs.push("runOnTargetPlayerBoard missing");
+  } else if (c.check === "optional_self_wait_opp_stage") {
+    if (cl.template !== "optional_self_wait_opp_stage") errs.push(`template ${cl.template}`);
+    if (cl.oppWaitCount !== 2) errs.push(`oppWaitCount ${cl.oppWaitCount}`);
+    if (!simSrc.includes("whenOpponentPlayMode")) errs.push("whenOpponentPlayMode missing");
+  } else if (c.check === "live_start_draw_opp_wait") {
+    if (cl.template !== "live_start_draw_opp_wait") errs.push(`template ${cl.template}`);
+    if (!simSrc.includes("openSoloOpponentMemberWaitPickMultiDialog")) errs.push("opp wait multi dialog missing");
+  } else if (c.check === "toujou_opp_stage_member_match_grant") {
+    if (cl.template !== "toujou_opp_stage_member_match_grant") errs.push(`template ${cl.template}`);
+    if (!simSrc.includes("listOpponentStageMembersExcludingName")) errs.push("listOpponentStageMembersExcludingName missing");
+  } else if (c.check === "live_start_deck_reveal_both_stage_members_score") {
+    if (cl.template !== "live_start_deck_reveal_both_stage_members_score") errs.push(`template ${cl.template}`);
+    if (!simSrc.includes("countBothPlayersStageMembers")) errs.push("countBothPlayersStageMembers missing");
   } else if (cl.template !== c.check) {
     errs.push(`template ${cl.template} != ${c.check}`);
   }

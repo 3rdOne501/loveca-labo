@@ -68,7 +68,7 @@ const CASES = [
   {
     id: "PL!SP-bp5-008-AR",
     trigger: "toujyou",
-    expectTemplate: "toujou_deck_top_liella_live_pick",
+    expectTemplate: "deck_top_pick_recover",
     check(cl) {
       const e = [];
       if (cl.filters?.pickType !== "メンバー") e.push("pickType!=メンバー");

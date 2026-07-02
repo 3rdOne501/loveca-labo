@@ -47,9 +47,15 @@
 | PL!-bp5-111-P＋ | jouji: A-RISE 他メンバー数×heart05（`evaluateJoujiRule`） |
 | PL!-bp5-002-P / 222-P＋ | `costHandDiscardOptional`: 必須ウェイト＋任意手札1枚 |
 
-### 問題なし（再確認）
+## 2026-06-30 メンバー3回監修
 
-001/003/005–015、012/016/017/018 能力なし、333 jouji。ライブ 019–024 は初回修正済みの再確認のみ。
+| ID | 内容 |
+|----|------|
+| PL!-bp5-002-P / 222-P＋ | `costHandDiscardOptional` 時に効果本文の「〜してもよい」で `optional:true` になり「支払わない」で必須ウェイトごとスキップ可能 → `optional:false` 明示 |
+
+### 問題なし（3回目再確認）
+
+001/003–015、111 jouji/kidou、333 toujyou/jouji。004 jidou icon_all、003 jouji 異名3人、006 live_start ドロー、013 相手C4ウェイト、014 heart05/06 回収、005/007/009/010/011 各分類・ハンドラ OK。
 
 ## 2026-06-30 初回修正
 

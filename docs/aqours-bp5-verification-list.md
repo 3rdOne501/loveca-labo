@@ -11,13 +11,13 @@
 |------|------|------------|----------------|------|
 | [x] | 001 | PL!S-bp5-001-P | draw_from_deck + jouji | 無能力メンバーからバトン登場→1ドロー / 常時: 無能力メンバー登場コスト-1 |
 | [x] | 002 | PL!S-bp5-002-P | live_start_side_cost_equal_opp_wait | 左右サイドのコストが同じなら相手C↓1人ウェイト |
-| [x] | 003 | PL!S-bp5-003-P | toujou_wait_pick_hand | 任意: ブレードハート無メンバー2枚まで捨→控え室Aqoursライブ回収 |
-| [x] | 004 | PL!S-bp5-004-P | ability_pick_one | 他Aqours1人にブレード or SaintSnowポジションチェンジ |
+| [x] | 003 | PL!S-bp5-003-P | toujou_wait_pick_hand | 任意: BHなしメンバー2枚まで捨→同数Aqoursライブ回収 **2026-06-28: handDiscardNoBladeHeartMax** |
+| [x] | 004 | PL!S-bp5-004-P | ability_pick_one | 他Aqours1人にブレード or SaintSnowポジションチェンジ **2026-06-28: 選択肢フィルタ・Aqours付与** |
 | [x] | 005 | PL!S-bp5-005-P | heart_color_pick_grant | 任意手札1捨→ハート色選択→今ターン登場の非Aqours全員に付与 |
 | [x] | 006 | PL!S-bp5-006-P | deck_top_pick_recover | 自ウェイト必須+任意手札1捨→山札5見→Aqours C9+メンバー回収 |
 | [x] | 007 | PL!S-bp5-007-P | deck_top_pick_recover | ライブ成功: 山札4見→heart04×2以上メンバー回収 |
 | [x] | 008 | PL!S-bp5-008-P | jouji (live_score_plus) | 相手余剰ハート2+→ライブ合計スコア+1 |
-| [x] | 009 | PL!S-bp5-009-P | grant_jouji_session | 登場: ライブ終了時までブレード2 |
+| [x] | 009 | PL!S-bp5-009-P | toujou_optional_pay_wait_recover_grant | 任意E→SaintSnow回収→ブレード2 **2026-06-28: E支払い+回収+付与** |
 | [x] | 010 | PL!S-bp5-010-N | toujou_grant_opp_live_need_heart_if_stage_hearts | ステージheart02合計5+→相手LS時ライブ必要ハート+1 |
 | [x] | 011 | PL!S-bp5-011-N | toujou_grant_opp_live_need_heart_if_stage_hearts | ステージheart05合計5+→相手LS時ライブ必要ハート+1 |
 | [x] | 012 / 018 | — | — | 能力なし |
@@ -59,7 +59,23 @@
 
 ### 問題なし（再確認）
 
-001 バトンドロー+常時、002 左右コスト同→相手ウェイト（センター）、003–006、008 相手余剰ハート jouji、009–017、111/222 起動ポジチェン+自動。
+001 バトンドロー+常時、002 左右コスト同→相手ウェイト（センター）、005–008、010–017、111/222 起動ポジチェン+自動。
+
+## 2026-06-28 3回監修（メンバー 001–018 / 111 / 222）
+
+`node scripts/verify-aqours-bp5.mjs` **29ケース**。
+
+### 修正した
+
+| ID | 内容 |
+|----|------|
+| PL!S-bp5-003-P | BHなしメンバー最大2枚捨→同数Aqoursライブ回収が1枚回収のみ → `handDiscardNoBladeHeartMax` + `recoverCountMatchesDiscarded` |
+| PL!S-bp5-004-P | 2択: 他Aqoursブレード付与がシリーズ未フィルタ → `abilityChoiceTextPreconditionMet` + `executeAbilityChoiceText` Aqours絞り |
+| PL!S-bp5-009-P | 任意E→SaintSnow回収→ブレード2が `grant_jouji_session` のみ → `toujou_optional_pay_wait_recover_grant` |
+
+### 問題なし（再確認）
+
+001 バトンドロー+常時、002 左右コスト同→相手ウェイト（センター）、005–008、010–017、111/222 起動ポジチェン+自動。006 必須ウェイト+任意手札（`optional:false` 明示済み）。
 
 ## 2026-06-28 修正（メンバー）
 

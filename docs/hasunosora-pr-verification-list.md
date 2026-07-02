@@ -3,6 +3,7 @@
 `PL!HS-PR-*`（PRカード / 蓮ノ空）をカード番号順に検証する。
 
 - 自動回帰: `node scripts/verify-hasunosora-pr.mjs`
+- 任意E自動ウェイト: `node scripts/verify-optional-energy-auto-pay.mjs`
 - 全文監査: `node scripts/audit-hasunosora-pr-text.mjs`
 - エネルギー・能力なし（003–009, 013, 015, 024–025, 030, 033–034+）は対象外
 
@@ -13,7 +14,7 @@
 | [x] | 001–002, 005 | PL!HS-PR-001/002/005-PR | deck_top_pick_recover + optional_energy_blade_until_live_end | 登場: 任意1捨→山札3見 / LS: 任意E2→ブレード2 |
 | [x] | 014, 026 | PL!HS-PR-014/026-PR | kidou_stage_wait_pick_hand | 起動退場→控え室回収 |
 | [x] | 016–017 | PL!HS-PR-016/017-PR | live_start_hand_discard_same_unit_grant | LS: 同ユニット2枚捨→ブレード2 |
-| [x] | 018, 022 | PL!HS-PR-018/022-PR | optional_energy_blade_until_live_end | LS: 任意E→ブレード |
+| [x] | 018, 022 | PL!HS-PR-018/022-PR | optional_energy_blade_until_live_end | LS: 任意E→ブレード。解決時E自動ウェイト（支払いダイアログ省略） |
 | [x] | 019 | PL!HS-PR-019-PR / 019-RM | toujou_deck_top_wait_if_all_heart | 登場: 山札3ミル→全員heart04→heart04付与 |
 | [x] | 021 | PL!HS-PR-021-PR / 021-RM | toujou_deck_top_wait_if_all_heart | 登場: 山札3ミル→全員heart01→heart01付与 **2026-06-28 付与漏れ修正** |
 | [x] | 020, 023 | PL!HS-PR-020/023-PR | live_start_optional_energy_waiting_reorder_deck_top | LS: 任意E→控え室2枚山札上 |

@@ -83,7 +83,8 @@ const CASES = [
   {
     id: "PL!SP-bp5-006-P",
     trigger: "kidou",
-    expectTemplate: "live_start_position_change",
+    expectTemplate: "kidou_deck_top_wait_position_change",
+    check: (cl) => (cl.deckTopCount === 3 && cl.perTurnLimit === 1 ? [] : ["mill3 turn1"]),
   },
   {
     id: "PL!SP-bp5-007-P",
@@ -141,6 +142,13 @@ const CASES = [
     id: "PL!SP-bp5-013-N",
     trigger: "toujyou",
     expectTemplate: "deck_top_pick_recover",
+    check: (cl) => {
+      const alts = cl.filters?.pickFilterAlternatives;
+      if (!alts || alts.length !== 2) return ["pick alts"];
+      const sunny = alts.find((a) => a.seriesTag === "SunnyPassion");
+      const liella = alts.find((a) => a.seriesTag === "Liella!" && a.requiresHasBladeHeart);
+      return sunny && liella ? [] : ["sunny or liella bh"];
+    },
   },
   {
     id: "PL!SP-bp5-015-N",
@@ -161,7 +169,8 @@ const CASES = [
     trigger: "jouji",
     jouji: true,
     expectTemplate: "hand_cost_reduce",
-    check: (cl) => (cl.handCostReduce === 2 ? [] : ["hand -2"]),
+    check: (cl) =>
+      cl.handCostReduce === 2 && cl.requiresSeriesMemberMovedThisTurn === "Liella!" ? [] : ["liella moved -2"],
   },
   {
     id: "PL!SP-bp5-025-L",
@@ -200,7 +209,8 @@ const CASES = [
     id: "PL!SP-bp5-014-N",
     trigger: "toujyou",
     expectTemplate: "draw_from_deck",
-    check: (cl) => (cl.deckDrawCount === 1 ? [] : ["draw1"]),
+    check: (cl) =>
+      cl.deckDrawCount === 1 && cl.filters?.requiresOtherStageMemberMovedThisTurn ? [] : ["draw1 other moved"],
   },
   {
     id: "PL!SP-bp5-020-N",

@@ -44,10 +44,14 @@ const CASES = [
     id: "PL!S-bp5-003-P",
     trigger: "toujyou",
     expectTemplate: "toujou_wait_pick_hand",
-    check: (cl) =>
-      cl.optional && cl.hasOptionalCost && cl.filters?.seriesTag === "Aqours" && cl.filters?.pickType === "ライブ"
-        ? []
-        : ["optional live recover"],
+    check: (cl) => {
+      const errs = [];
+      if (!cl.optional || !cl.hasOptionalCost) errs.push("optional cost");
+      if (cl.handDiscardNoBladeHeartMax !== 2) errs.push("no-bh max 2");
+      if (!cl.recoverCountMatchesDiscarded) errs.push("match discard count");
+      if (cl.filters?.seriesTag !== "Aqours" || cl.filters?.pickType !== "ライブ") errs.push("aqours live");
+      return errs;
+    },
   },
   {
     id: "PL!S-bp5-004-P",
@@ -128,8 +132,14 @@ const CASES = [
   {
     id: "PL!S-bp5-009-P",
     trigger: "toujyou",
-    expectTemplate: "grant_jouji_session",
-    check: (cl) => (cl.bladeGain === 2 ? [] : ["blade2"]),
+    expectTemplate: "toujou_optional_pay_wait_recover_grant",
+    check: (cl) => {
+      const errs = [];
+      if (!cl.optional || !cl.hasOptionalCost || !cl.costEnergy) errs.push("optional E cost");
+      if (cl.bladeGain !== 2) errs.push("blade2");
+      if (cl.recoverFilters?.seriesTag !== "SaintSnow") errs.push("saint snow recover");
+      return errs;
+    },
   },
   {
     id: "PL!S-bp5-010-N",

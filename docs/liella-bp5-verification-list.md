@@ -14,14 +14,14 @@
 | [x] | 003 | PL!SP-bp5-003-P | jouji + live_start_activate_liella_and_energy | 常時: Liella!手札C10↓コスト-2 / LS: Liella!アクティブ+E |
 | [x] | 004 | PL!SP-bp5-004-P | jidou_move_or_energy_draw_grant | 移動orE支払い→1ドロー+常時付与 |
 | [x] | 005 | PL!SP-bp5-005-P | grant_jouji_session + jidou_card_to_waiting_pick_hand | 起動: 山札3ミル→Liella!メンバー枚数×ブレード / 自動: 手札→控え室回収 |
-| [x] | 006 | PL!SP-bp5-006-P | kidou live_start_position_change | 起動ポジチェン |
+| [x] | 006 | PL!SP-bp5-006-P | kidou_deck_top_wait_position_change | 起動: 山札3ミル→ポジションチェンジ **2026-06-30修正** |
 | [x] | 007 | PL!SP-bp5-007-P | deck_top_pick_recover | 登場: 山札見→回収 |
 | [x] | 008 | PL!SP-bp5-008-P | deck_top_pick_recover | 自ウェイト必須+任意手札1捨→山札5見→Liella! C9+メンバー回収 |
 | [x] | 009 | PL!SP-bp5-009-P | live_start_mill_loop_blade_grant | 任意: 山札1枚ミル×4回まで→ライブミル時自ウェイト+ブレード1 |
 | [x] | 010 | PL!SP-bp5-010-P | toujou_both_center_position_change | 登場: 両者センター入替ポジチェン |
 | [x] | 011 | PL!SP-bp5-011-P | jouji (blade_conditional ×3) | 左/センター/右エリア別ハート付与 |
 | [x] | 012 | PL!SP-bp5-012-N | jouji blade_if_liella_live_need_sum | Liella!ライブ必要ハート合計8+→heart03 |
-| [x] | 013–017 | PL!SP-bp5-013-N 他 | deck_top_pick_recover / draw / grant_jouji 等 | Nレア追加分 |
+| [x] | 013–017 | PL!SP-bp5-013-N 他 | deck_top_pick_recover / draw / grant_jouji 等 | 013 OR回収 / 014 他メンバー移動条件 / 017 Liella!移動時手札-2 **2026-06-30修正** |
 | [x] | 018 / 019 / 022 | — | — | 能力なし |
 | [x] | 020 | PL!SP-bp5-020-N | draw_from_deck ×2 | 起動/LS成功: 1ドロー |
 | [x] | 021 | PL!SP-bp5-021-N | energy_deck_to_wait | 起動: エネルギーデッキ→ウェイト |
@@ -51,3 +51,12 @@
 | PL!SP-bp5-023-L | エール公開スコアライブ前提（`icon_score` wiki 対応） |
 | PL!SP-bp5-005-P | 起動: 山札3ミル→『Liella!』メンバー枚数×ブレード（`bladeGainPerCostMilledMember`） |
 | PL!SP-bp5-015-N | 登場: センターのみブレード2（`requiresSelfInStageArea`、FAQ Q240） |
+
+## 2026-06-30 メンバー3回監修（不具合修正）
+
+| ID | 内容 |
+|----|------|
+| PL!SP-bp5-006-P | 起動「山札3枚ミル→ポジチェン」が `live_start_position_change` 誤分類→`kidou_deck_top_wait_position_change` |
+| PL!SP-bp5-013-N | 山札公開 OR 条件（SunnyPassion / Liella!+BH）が SunnyPassion のみ→`pickFilterAlternatives` |
+| PL!SP-bp5-014-N | 登場「ほかのメンバー移動時1ドロー」が無条件→`requiresOtherStageMemberMovedThisTurn` |
+| PL!SP-bp5-017-N | 常時手札-2が Liella!移動条件なし→`requiresSeriesMemberMovedThisTurn` + ステージ常時から手札へ伝播 |

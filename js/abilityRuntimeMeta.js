@@ -54,6 +54,36 @@ export const TEMPLATE_HANDLES_OWN_COST = [
   "optional_energy_blade_until_live_end",
 ];
 
+/**
+ * 解決ボタン押下時、コスト支払いダイアログを挟まず固定Eを自動ウェイトしてよい template。
+ * 「E支払ってもよい：」のみ（手札捨て・ウェイト等の択一コストなし、可変Eなし）。
+ */
+export const TEMPLATE_OPTIONAL_ENERGY_ONLY_AUTO_PAY = [
+  "optional_energy_blade_until_live_end",
+  "optional_energy_live_score_plus",
+  "live_success_optional_energy_recover_waiting",
+  "grant_jouji_session",
+];
+
+/** @param {import('./abilityEffects.js').ClassifiedAbility | null | undefined} cl */
+export function classifiedAbilityIsOptionalEnergyOnlyCost(cl) {
+  if (!cl || !cl.costEnergy || !cl.hasOptionalCost) return false;
+  if (cl.costEnergyVariable) return false;
+  if (TEMPLATE_OPTIONAL_ENERGY_ONLY_AUTO_PAY.indexOf(cl.template) < 0) return false;
+  if (
+    cl.costSelfWait ||
+    cl.costPickMemberWait ||
+    cl.costMandatoryWaitOtherMember ||
+    (cl.handDiscardToWaiting && cl.handDiscardToWaiting > 0) ||
+    cl.costOrAlt ||
+    cl.handDiscardExact ||
+    cl.handDiscardSeriesTag
+  ) {
+    return false;
+  }
+  return true;
+}
+
 /** 成功ライブ置き場への移動など executeAbilityBody 外（placement 経路）で処理する template */
 export const ABILITY_PLACEMENT_RUNTIME_TEMPLATES = ["jouji_success_live_waiting_substitute"];
 
@@ -84,6 +114,8 @@ export const OPPONENT_DUAL_DELEGATE_HELPERS = [
   "opponentLiveScoreEstimate",
   "ownLiveScoreEstimate",
   "listOpponentStageMembersExcludingName",
+  "eachOpponentStageColumnMemberInsts",
+  "stripOpponentBonusHeartsAndCount",
   "runPb1018WaitEnterFlow",
   "grantBladesToAllOpponentStageMembers",
   "openOpponentAnswerChoiceDialog",

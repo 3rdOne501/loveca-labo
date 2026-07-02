@@ -44,7 +44,7 @@
 | bp2 | — | — | 実カード未発売 |
 | bp3 | ⭕️ | ⭕️ | [muse-bp3-verification-list.md](./muse-bp3-verification-list.md) **2026-06-30 2回監修完了**（007 3分割山札、008 ウェイト対象heart03×2） |
 | bp4 | ⭕️ | ⭕️ | [mus-bp4-verification-list.md](./mus-bp4-verification-list.md) **2026-06-30 2回監修完了**（002/005/019–023 再確認） |
-| bp5 | ⭕️ | ⭕️ | [muse-bp5-verification-list.md](./muse-bp5-verification-list.md) **2026-06-30 2回監修完了**（004 E4、111 jouji、002/222 必須ウェイト） |
+| bp5 | ⭕️ | ⭕️ | [muse-bp5-verification-list.md](./muse-bp5-verification-list.md) **2026-06-30 メンバー3回監修**（002/222 optional フラグ） |
 | bp6 | ⭕️ | ⭕️ | [muse-bp6-verification-list.md](./muse-bp6-verification-list.md) **2026-06-28 ライブ2回監修**（020 FAQ255 / 021任意確認） |
 
 ### Aqours（`PL!S-bp*` / クロス `LL-bp*`）
@@ -66,7 +66,7 @@
 | bp2 | — | — | 実カード未発売 |
 | bp3 | ⭕️ | ⭕️ | [niji-bp3-verification-list.md](./niji-bp3-verification-list.md) **2026-06-30 2回監修完了**（001 全ステージブレード、013 E下+ドロー） |
 | bp4 | ⭕️ | ⭕️ | [niji-bp4-verification-list.md](./niji-bp4-verification-list.md) **2026-06-30 2回監修完了**（011 ライブ回収・007/025/026 再確認） |
-| bp5 | ⭕️ | ⭕️ | [niji-bp5-verification-list.md](./niji-bp5-verification-list.md) **2026-06-30 2回監修完了**（015/026 全6色ハート合算、012/013 他） |
+| bp5 | ⭕️ | ⭕️ | [niji-bp5-verification-list.md](./niji-bp5-verification-list.md) **2026-06-30 メンバー3回監修**（011 2択前提 / 014 E2） |
 | bp6 | — | — | 実カード未発売 |
 
 ### Liella!（`PL!SP-bp*` / クロス `LL-bp*`）
@@ -260,6 +260,7 @@ node scripts/verify-ability-coverage.mjs
 | 2026-06-30 | Aqours sd1 2回監修: 収録22枚精査。新規修正なし。verify 22/audit OK。⭕️⭕️ |
 | 2026-06-30 | μ's sd1 2回監修: 収録22枚精査。006 成功ライブ0枚時スキップ修正。verify 23/audit OK。⭕️⭕️ |
 | 2026-06-30 | 虹 bp3 メンバー2回監修: 001 E下+全ステージブレード / 013 E下+2ドロー。verify 17ケース。bp3 完全⭕️ |
+| 2026-06-28 | 虹ヶ咲 bp4 030-L: 成功ライブに虹がなくても2択のどちらか1つは発動可能（ブースト条件の誤前提化を修正） |
 | 2026-06-30 | 蓮 bp5 メンバー2回監修: 001 ミル条件ブレード / 003 同グループメンバーheart01。verify 25ケース。bp5 完全⭕️ |
 | 2026-06-30 | **アニバーサリー 2回監修完了**（#1–10）: LL-bp1 任意コスト0枚スキップ修正。verify 計25ケース。LL-bp5/cl1/LL-PR 再確認 |
 | 2026-06-30 | Liella! bp2/bp4 2回監修: 再確認のみ。verify 14+33ケース。bp2/bp4 完全⭕️ |
@@ -269,6 +270,10 @@ node scripts/verify-ability-coverage.mjs
 | 2026-06-30 | Liella! pb2 メンバー2回監修（000–041）: **004 LS条件ドロー修正**（drawOrPreconditions）。verify 37ケース |
 | 2026-06-30 | Liella! pb2 ライブ2回監修（045–050）: 6枚再確認・コード修正なし。046/047 verify 追加。計16ケース |
 | 2026-06-30 | Liella! pb2 2回監修: 全51枚再確認・新規修正なし。verify 14ケース |
+| 2026-06-30 | 虹ヶ咲 bp5 メンバー3回監修: 011 2択前提+2枚回収 / 014 E2支払い。verify 36/audit OK |
+| 2026-06-30 | μ's bp5 メンバー3回監修: 002/222 `costHandDiscardOptional` 時 `optional:false`。verify 26/audit OK |
+| 2026-06-30 | 蓮 bp5 メンバー3回監修: 001 起動手札公開→名前包含回収 / 013 ミル全メンバー判定。verify 27/audit OK |
+| 2026-06-30 | Liella! bp5 メンバー再監修: 006 ミル→ポジチェン / 013 OR回収 / 014 移動条件ドロー / 017 手札コスト減。verify 35/audit OK |
 | 2026-06-30 | Liella! bp5 メンバー2回監修: 005 ミル比例ブレード / 015 センター登場限定。verify 35ケース。bp5 完全⭕️ |
 | 2026-06-30 | 虹ヶ咲 bp5 メンバー2回監修: 012 起動E下+ドロー+heart / 013 E下前提。verify 36ケース。bp5 完全⭕️ |
 | 2026-06-30 | μ's bp5 メンバー2回監修完了: 004 起動E4（割引説明のE除外）。verify 26ケース。bp5 完全⭕️ |
@@ -276,7 +281,7 @@ node scripts/verify-ability-coverage.mjs
 | 2026-06-30 | Aqours pb1 2回監修: 013–015 山札公開メンバーorライブ / 020–021 ステージハート合計+相手余剰0成功 |
 | 2026-06-30 | μ's pb1 ライブ2回監修: 029/030/032 条件フィルタ修正 |
 | 2026-06-30 | μ's pb1 メンバー2回監修: 003 Printemps人数×E活性 / 007 成功ライブ減コスト+μ'sライブ回収 |
-| 2026-06-30 | Aqours bp5 メンバー2回監修: 007 heart04×2回収条件。verify 29ケース。bp5 完全⭕️ |
+| 2026-06-28 | Aqours bp5 メンバー3回監修: 003 BHなし捨→同数ライブ回収 / 004 Aqours2択フィルタ / 009 任意E→SaintSnow回収+ブレード2。verify 29/audit OK |
 | 2026-06-30 | Aqours bp3 メンバー2回監修: 001 センター起動 / 005 エール枚数比較 / 008 回収スコア条件。verify 22ケース |
 | 2026-06-30 | 虹ヶ咲 bp5 メンバー2回監修: 015/026 ステージ合算6色ハート前提。verify 38ケース。bp5 完全⭕️ |
 | 2026-06-30 | 蓮ノ空 bp6 2回監修: 013 登場時 DOLLCHESTRA 除外フィルタ。verify 42ケース |

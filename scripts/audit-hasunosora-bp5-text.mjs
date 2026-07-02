@@ -69,6 +69,12 @@ for (let n = 1; n <= 22; n++) {
 
     errors.push(...auditCommonAbilityPatterns({ id, trigger: seg.trigger, plain, cl }));
 
+    if (/カード名がすべて含まれるライブカード/.test(plain) && /手札のライブカードを1枚公開/.test(plain)) {
+      if (cl.template !== "kidou_reveal_live_wait_pick_name_contains") {
+        errors.push(`${id} kidou: reveal live wait name contains pick`);
+      }
+    }
+
     if (/DOLLCHESTRA/.test(plain) && /コストが10以上/.test(plain) && /ライブ終了時まで/.test(plain)) {
       if (cl.template !== "live_start_dollcostra_cost_set_grant_if") {
         errors.push(`${id} live_start: dollcostra cost set grant`);

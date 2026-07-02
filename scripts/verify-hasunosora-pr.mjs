@@ -61,6 +61,15 @@ const CASES = [
     check: (cl) => (cl.deckTopPickCount === 2 && cl.costEnergy ? [] : ["E reorder2"]),
   },
   {
+    id: "PL!HS-PR-022-PR",
+    trigger: "live_start",
+    expectTemplate: "optional_energy_blade_until_live_end",
+    check: (cl) =>
+      cl.costEnergy && cl.hasOptionalCost && cl.costEnergyCount === 1 && cl.bladeGain === 2
+        ? []
+        : ["E1 blade2 optional"],
+  },
+  {
     id: "PL!HS-PR-027-PR",
     trigger: "live_success",
     expectTemplate: "yell_resolution_pick_hand",

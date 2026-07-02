@@ -137,6 +137,11 @@ function isOpponentMetaOnlyReference(text, tmpl) {
 }
 
 /** @param {import('../js/abilityEffects.js').ClassifiedAbility} cl */
+function mergedAbilityFilters(cl) {
+  return Object.assign({}, cl && cl.preconditionFilters, cl && cl.filters);
+}
+
+/** @param {import('../js/abilityEffects.js').ClassifiedAbility} cl */
 function classifiedStepsDualOk(cl) {
   const steps = cl && cl.steps;
   if (!Array.isArray(steps) || !steps.length) return false;
@@ -201,18 +206,18 @@ for (const id of Object.keys(cards)) {
     ) {
       dualOk = true;
     }
+    const mf = mergedAbilityFilters(cl);
     if (
       !dualOk &&
       cl &&
-      cl.filters &&
       preconditionHelpersDual &&
-      (cl.filters.requiresLiveScoreHigherThanOpponent ||
-        cl.filters.requiresLiveScoreTieWithOpponent ||
-        cl.filters.requiresOpponentHandLead != null ||
-        cl.filters.requiresCenterSeriesCostHigherThanOpponent ||
-        cl.filters.requiresOwnStageCostSumLowerThanOpponent ||
-        cl.filters.requiresOwnStageHeartTotalHigherThanOpponent ||
-        cl.filters.minEitherSuccessLiveCount != null)
+      (mf.requiresLiveScoreHigherThanOpponent ||
+        mf.requiresLiveScoreTieWithOpponent ||
+        mf.requiresOpponentHandLead != null ||
+        mf.requiresCenterSeriesCostHigherThanOpponent ||
+        mf.requiresOwnStageCostSumLowerThanOpponent ||
+        mf.requiresOwnStageHeartTotalHigherThanOpponent ||
+        mf.minEitherSuccessLiveCount != null)
     ) {
       dualOk = true;
     }

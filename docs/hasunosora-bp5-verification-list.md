@@ -9,7 +9,7 @@
 
 | 状態 | 番号 | ID（代表） | 主テンプレート | 備考 |
 |------|------|------------|----------------|------|
-| [x] | 001 | PL!HS-bp5-001-P | deck_mill_conditional_blade_grant + kidou_wait_pick_hand | 登場: 山札4ミル→ライブあればブレード2 / 起動E2: ライブ公開→控え室回収 |
+| [x] | 001 | PL!HS-bp5-001-P | deck_mill_conditional_blade_grant + kidou_reveal_live_wait_pick_name_contains | 登場: 山札4ミル→ライブあればブレード2 / 起動E2: 手札ライブ公開→名前包含で控え室回収 **2026-06-30修正** |
 | [x] | 002 | PL!HS-bp5-002-P | jouji + kidou_waiting_to_empty_stage | 異コスト3人→ブレード+heart05 / 起動: 空きエリア登場 |
 | [x] | 003 | PL!HS-bp5-003-P | jidou + live_start_hand_discard_group_member_grant | 退場ポジチェン / LS任意手札1捨→同グループメンバー1人へheart01 |
 | [x] | 004 | PL!HS-bp5-004-P | jouji blade_per_stage_member | C4+メンバー1人につきブレード2（スリーズブーケ除外） |
@@ -54,3 +54,10 @@
 |----|------|
 | PL!HS-bp5-001-P | 登場: 山札4ミル→ライブ含有時のみブレード2（`deck_mill_conditional_blade_grant`） |
 | PL!HS-bp5-003-P | LS: 捨て札と同グループのメンバー1人へheart01（`live_start_hand_discard_group_member_grant`） |
+
+## 2026-06-30 メンバー3回監修
+
+| ID | 内容 |
+|----|------|
+| PL!HS-bp5-001-P | 起動「手札ライブ公開→名前包含で控え室回収」が `kidou_wait_pick_hand` 誤分類（公開・名前条件なし）→`kidou_reveal_live_wait_pick_name_contains`（FAQ Q236/Q237） |
+| PL!HS-bp5-013-N | 山札3ミル全メンバー判定が `inst.type` 直参照→`mergedCatalogCard` 経由 |

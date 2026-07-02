@@ -268,6 +268,8 @@ const CASES = [
       if (cl.choiceBoostSeriesTag !== "虹ヶ咲") errs.push("boost tag");
       if (cl.choiceBoostMax !== 2) errs.push("boost max 2");
       if ((cl.abilityChoices || []).length !== 2) errs.push("2 choices");
+      if (cl.filters?.minSuccessLiveSeriesTag) errs.push("boost must not be SL precondition");
+      if (cl.filters?.minSuccessLiveCount) errs.push("boost must not set SL count");
       return errs;
     },
   },

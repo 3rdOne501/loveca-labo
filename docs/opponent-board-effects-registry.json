@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-06-28T18:13:26.789Z",
+  "generatedAt": "2026-07-02T00:56:48.729Z",
   "purpose": "対戦モード（localDual / オンライン）本格実装時の実装・テスト計画用。ソロ代行入力で動くカードも含む。",
   "totalEntries": 264,
   "uniqueCards": 215,
   "kindCounts": {
-    "mutate_opponent_live": 19,
+    "mutate_opponent_live": 20,
     "mutate_opponent_stage": 148,
     "opponent_choice": 41,
     "read_compare": 88,
@@ -1066,7 +1066,7 @@
       "name": "桂城 泉",
       "set": "PL!HS-pb1",
       "trig": "toujyou",
-      "tmpl": "optional_self_wait_opp_stage",
+      "tmpl": "toujou_both_sides_wait_all_printed_blade",
       "automated": true,
       "kinds": [
         "mutate_opponent_stage"
@@ -1093,7 +1093,7 @@
       "name": "桂城 泉",
       "set": "PL!HS-pb1",
       "trig": "toujyou",
-      "tmpl": "optional_self_wait_opp_stage",
+      "tmpl": "toujou_both_sides_wait_all_printed_blade",
       "automated": true,
       "kinds": [
         "mutate_opponent_stage"
@@ -1804,7 +1804,7 @@
       "name": "天王寺璃奈",
       "set": "PL!N-bp4",
       "trig": "live_start",
-      "tmpl": "draw_from_deck",
+      "tmpl": "draw_then_hand_to_deck_top",
       "automated": true,
       "kinds": [
         "mutate_opponent_deck",
@@ -1818,7 +1818,7 @@
       "name": "天王寺璃奈",
       "set": "PL!N-bp4",
       "trig": "live_start",
-      "tmpl": "draw_from_deck",
+      "tmpl": "draw_then_hand_to_deck_top",
       "automated": true,
       "kinds": [
         "mutate_opponent_deck",
@@ -2168,7 +2168,7 @@
       "name": "黒澤ルビィ",
       "set": "PL!S-PR",
       "trig": "toujyou",
-      "tmpl": "draw_from_deck",
+      "tmpl": "live_start_pick_player_waiting_deck_bottom",
       "automated": true,
       "kinds": [
         "mutate_opponent_deck",
@@ -2278,7 +2278,7 @@
       "name": "国木田花丸",
       "set": "PL!S-bp3",
       "trig": "kidou",
-      "tmpl": "draw_from_deck",
+      "tmpl": "live_start_pick_player_waiting_deck_bottom",
       "automated": true,
       "kinds": [
         "mutate_opponent_deck",
@@ -2292,7 +2292,7 @@
       "name": "国木田花丸",
       "set": "PL!S-bp3",
       "trig": "kidou",
-      "tmpl": "draw_from_deck",
+      "tmpl": "live_start_pick_player_waiting_deck_bottom",
       "automated": true,
       "kinds": [
         "mutate_opponent_deck",
@@ -2701,9 +2701,10 @@
       "name": "コワレヤスキ",
       "set": "PL!S-bp6",
       "trig": "live_success",
-      "tmpl": "live_card_score_plus",
+      "tmpl": "live_success_opp_lose_surplus_score",
       "automated": true,
       "kinds": [
+        "mutate_opponent_live",
         "opponent_choice"
       ],
       "dualStatus": "dual_ok",

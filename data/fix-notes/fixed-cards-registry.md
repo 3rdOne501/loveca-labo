@@ -25,7 +25,9 @@
 | PL!S-sd1-002-SD | 桜内梨子 | 登場 | Aqours グループ判定（`cardGroups.js`） | コード |
 | PL!S-sd1-017-SD | 小原鞠莉 | 登場 | `draw_then_hand_to_deck_bottom` 新規 | コード |
 | PL!S-bp3-006-P | 津島善子 | 起動 | `kidou_self_wait_stage_member_swap_recover` | コード |
+| PL!S-bp5-003-P | 松浦果南 | 登場 | BHなしメンバー最大2枚捨→同数Aqoursライブ回収 | コード |
 | PL!S-bp5-004-P | 黒澤ダイヤ | 登場 | 2択: 他Aqoursブレード / SaintSnow PC | コード |
+| PL!S-bp5-009-P | 黒澤ルビィ | 登場 | 任意E→SaintSnow回収→ブレード2 | コード |
 | PL!S-bp6-020-L | 冒険Type A,B,C!! | ライブ開始 | 「」内 live_success 誤分割防止 | コード |
 | PL!HS-pb1-030-L | Edelied | ライブ開始 | `live_start_edelnote_blade_heart_pair` | コード |
 | PL!-bp5-011-N | （ライブ） | ライブ開始 | `grantHeartSlotUntilLiveEnd(0)` バグ修正 | コード |
@@ -34,6 +36,7 @@
 | PL!SP-sd2-023-SD2 | 始まりは君の空 | ライブ開始 | 成功ライブ誤マッチ修正 → スコア+5 | コード |
 | PL!SP-bp4-025-L | Special Color | 開始/成功 | センター Liella! ブレード3 + 移動条件+1 | コード |
 | PL!N-bp1-012-P | 鐘嵐珠 | 常時 | ALL ハート代用（`wildcardBhAllFlex`） | コード |
+| PL!N-bp4-030-L | Daydream Mermaid | ライブ成功 | 虹ヶ咲成功ライブ有無は複数選択ブーストのみ（発動条件ではない） | コード |
 
 ---
 
@@ -91,6 +94,7 @@
 | PL!SP-pb2-004-R | 平安名すみれ | ライブ成功 | `draw_from_deck` + `drawOrPreconditions` | コード |
 | PL!SP-pb2-005-R | 葉月恋 | 登場 | `toujou_baton_discarded_under` + 常時起動ミラー | コード |
 | PL!SP-pb2-007-R | 米女メイ | ライブ成功 | `live_success_optional_energy_recover_waiting` | コード |
+| PL!HS-PR-022-PR 他 | 任意Eのみ blade/score/recover/grant | 固定E未徴収→自動ウェイト（`TEMPLATE_OPTIONAL_ENERGY_ONLY_AUTO_PAY`） | 横展開 ~30枚 |
 | PL!SP-pb2-008-R | 唐可可 | ライブ成功 | `live_success_yell_nobh_series_score_capped` | コード |
 | PL!SP-pb2-009-R | 鬼塚夏美 | 登場/開始 | `optional_pick_member_wait_opp_blade_gap` | コード |
 | PL!SP-pb2-010-R | ウィーン・マルガレーテ | ライブ開始 | `live_start_mandatory_energy_deck_unless_hand_discard` | コード |
@@ -139,7 +143,7 @@
 
 | カード番号 | 名前 | 修正概要 | 検証 |
 |-----------|------|---------|------|
-| PL!HS-bp5-021-L | ジョーショーキリュー | 元々ハート→heart01 リマップ + スコア+1 | コード |
+| PL!HS-bp5-021-L | ジョーショーキリュー | 元々ハート→heart01 リマップが syncJouji で消える不具合修正 + 桃チップ表示 | コード |
 | PL!S-bp2-004-P/R | 黒澤ダイヤ | `jidou_yell_retry_no_live` composition 退行修正 | コード |
 | PL!N-bp4-010-R＋ | 三船栞子 | `live_start_pick_live_frame_match_success_live_grant` 自動化登録 | コード |
 | PL!N-bp4-027-L | EMOTION | `live_start_score_plus_per_named_success_live`（成功ライブ枚数比例+必要heart0） | verify-niji-bp4 |
@@ -337,7 +341,7 @@ Liella! bp2 / NEXTSTEP: `scripts/verify-liella-bp2.mjs` + `docs/liella-bp2-verif
 | 代表ID | 内容 | 横展開 |
 |--------|------|--------|
 | PL!-bp5-111-P＋ | jouji A-RISE 他1人につき heart05 が人数倍されない | `evaluateJoujiRule` heartFlat×series count |
-| PL!-bp5-002-P / 222-P＋ | 必須ウェイト＋任意手札捨てが全体スキップ可能 | `costHandDiscardOptional`（全5スクール 002/006/008/009 系） |
+| PL!-bp5-002-P / 222-P＋ | 必須ウェイト＋任意手札捨てが全体スキップ可能 | `costHandDiscardOptional` + `optional:false`（全5スクール 002/006/008/009 系） |
 | PL!N-bp5-001-P | エール公開BH種類数→heart01＋6種で常時スコア+1 | `jidou_yell_distinct_bh_tier_grant` |
 | PL!N-bp5-004-P | 相手ウェイト「ちょうど4ブレード」 | `oppWaitExactPrintedBlade` |
 | PL!N-bp5-015-N | 桜坂しずく | ライブ開始 | `requiresStageCollectiveHeartSlots` | ステージ合算で全6色ハート→ブレード2（FAQ Q216） | コード |
@@ -432,13 +436,46 @@ Liella! bp2 / NEXTSTEP: `scripts/verify-liella-bp2.mjs` + `docs/liella-bp2-verif
 | PL!SP-pb1-010-R | E10+「ある場合」未判定で常時コスト+4 | jouji `stage_cost_plus` の `minEnergy`（`あるかぎり`/`ある場合`） |
 | PL!SP-pb1-023-L | CatChu 2人未満でスコア+1も封鎖（FAQ Q97 違反） | `live_start_activate_energy_all_active_score` 活性化とスコア判定分離 |
 
+### Liella! bp5 メンバー3回監修（2026-06-30）
+
+| 代表ID | 症状 | 横展開 |
+|--------|------|--------|
+| PL!SP-bp5-006-P | 起動「山札3ミル→ポジチェン」が `live_start_position_change` 誤分類（ミル未実行） | `kidou_deck_top_wait_position_change` |
+| PL!SP-bp5-013-N | 山札公開 OR（SunnyPassion / Liella!+BH）が SunnyPassion のみ | `pickFilterAlternatives` + `requiresHasBladeHeart` |
+| PL!SP-bp5-014-N | 登場「ほかのメンバー移動時1ドロー」が無条件 | `requiresOtherStageMemberMovedThisTurn` |
+| PL!SP-bp5-017-N | 常時手札-2が Liella!移動条件なし | `requiresSeriesMemberMovedThisTurn` + ステージ常時→手札伝播 |
+
+### 蓮ノ空 bp5 メンバー3回監修（2026-06-30）
+
+| 代表ID | 症状 | 横展開 |
+|--------|------|--------|
+| PL!HS-bp5-001-P | 起動「手札ライブ公開→名前包含回収」が汎用 `kidou_wait_pick_hand` | `kidou_reveal_live_wait_pick_name_contains`（FAQ Q236/Q237） |
+| PL!HS-bp5-013-N | ミル3枚全メンバー判定が `inst.type` 直参照 | `mergedCatalogCard(c).type` |
+
+---
+
+## 28. 虹ヶ咲 bp5 メンバー3回監修（2026-06-30）
+
+| 代表ID | 内容 | 横展開 |
+|--------|------|--------|
+| PL!N-bp5-011-P | 2択登場: 異名/異グループライブ3+ 前提・2枚回収 | `abilityChoiceTextPreconditionMet` / `ability_pick_one` 選択肢フィルタ |
+| PL!N-bp5-014-N | 起動 E2+手札1捨→控え室ライブ回収で E 未支払い | `kidou_hand_cost_wait_pick_hand` 先頭 `payAbilityCost`（Liella/Aqours 同型 kidou） |
+
+---
+
+## 29. localDual Phase 1 — 相手余剰ハート剥奪（2026-07-02）
+
+| 代表ID | 内容 | 横展開 |
+|--------|------|--------|
+| PL!S-bp6-024-L | `live_success_opp_lose_surplus_score`: dual 時 `mutateInactiveOpponentBoard` 経由で相手ステージの余剰ハートを剥奪・UI 同期 | `stripOpponentBonusHeartsAndCount` 共通 + `eachOpponentStageColumnMemberInsts` を dual 委譲ヘルパー登録（レジストリ dual_gap 0 件） |
+
 ---
 
 ## 更新履歴
 
 | 日付 | 内容 |
 |------|------|
-| 2026-06-28 | 前チャット全件（fb299c07, d7ba868c）+ fix-notes + play-verification-list から初版作成 |
+| 2026-07-02 | localDual Phase 1: stripOpponentBonusHeartsAndCount dual 同期、verify-dual-mode-phase1.mjs 追加、dual_gap 監査 0 件 |
 | 2026-06-28 | 再検証: 鬼塚夏美 ブレード比較の誤分類修正、ノンフィクション!! 左サイド条件付与の復元 |
 | 2026-06-28 | play-verification-list 43行: verify-play-checklist.mjs 37/37 OK。未完了リスト B → 0件 |
 | 2026-06-28 | PL!S-bp2-005-P 複数同時選択、PL!HS-pb1-011-R 等29件 deck_top_pick_recover 誤分類、LL-bp1-001-R＋ 手札コスト+スコア二重加算 |
@@ -456,7 +493,9 @@ Liella! bp2 / NEXTSTEP: `scripts/verify-liella-bp2.mjs` + `docs/liella-bp2-verif
 | 2026-06-30 | チャット 0dd2c58a 着手: 共通ルール確定・`card-fix-workflow.mdc` 追加 |
 | 2026-06-30 | アニバーサリー クロスメンバー LL-bp1〜6（001-R＋）一括監修。LL-bp6-001 ハート色和集合+ライブ終了まで修正 |
 | 2026-06-30 | 蓮ノ空 bp5: 013-N ミル未実行修正、verify/audit 新設 |
-| 2026-06-30 | Liella! bp5: 025-L 誤分類修正、verify/audit 新設 |
+| 2026-06-30 | 虹ヶ咲 bp5 メンバー3回監修: 011 2択前提 / 014 E2。verify 36/audit OK |
+| 2026-06-30 | Liella! bp5 メンバー3回監修: 006 ミル→ポジチェン / 013 OR回収 / 014 移動条件ドロー / 017 手札コスト減。verify 35/audit OK |
+| 2026-06-30 | μ's bp5 メンバー3回監修: 002/222 `costHandDiscardOptional` 時 `optional:false`。verify 26/audit OK |
 | 2026-06-30 | 虹ヶ咲 bp5: 005 `jidou_leave_baton_partner_bh_threshold_energy`、verify/audit 新設 |
 | 2026-06-30 | Aqours bp5: 005 `grantToEnteredMembersThisTurn`、verify/audit ライブ節 |
 | 2026-06-30 | μ's bp5 ライブ: 024 `parseAbilityBulletChoices` / `executeAbilityChoiceText`、`audit-common-patterns.mjs`、p2 smoke 窓拡張 |

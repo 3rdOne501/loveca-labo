@@ -92,7 +92,7 @@ const CASES = [
       if (cl.deckTopCount !== 5 || cl.filters?.minCost !== 9 || cl.filters?.seriesTag !== "虹ヶ咲") {
         errs.push("deck5 niji");
       }
-      if (!cl.costSelfWait || !cl.costHandDiscardOptional || cl.hasOptionalCost) {
+      if (!cl.costSelfWait || !cl.costHandDiscardOptional || cl.hasOptionalCost || cl.optional) {
         errs.push("mandatory wait optional hand");
       }
       return errs;
@@ -166,15 +166,22 @@ const CASES = [
     check: (cl) => (cl.abilityChoices?.length === 2 ? [] : ["choices"]),
   },
   {
+    id: "PL!N-bp5-014-N",
+    trigger: "kidou",
+    expectTemplate: "kidou_hand_cost_wait_pick_hand",
+    check: (cl) =>
+      cl.costEnergy &&
+      cl.costEnergyCount === 2 &&
+      cl.filters?.seriesTag === "虹ヶ咲" &&
+      cl.handDiscardToWaiting === 1
+        ? []
+        : ["E2 hand discard niji live"],
+  },
+  {
     id: "PL!N-bp5-012-P",
     trigger: "live_success",
     expectTemplate: "live_score_higher_energy_wait",
     check: (cl) => (cl.filters?.requiresLiveScoreHigherThanOpponent ? [] : ["score higher"]),
-  },
-  {
-    id: "PL!N-bp5-014-N",
-    trigger: "kidou",
-    expectTemplate: "kidou_hand_cost_wait_pick_hand",
   },
   {
     id: "PL!N-bp5-019-N",

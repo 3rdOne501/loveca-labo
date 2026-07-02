@@ -37,7 +37,12 @@ const CASES = [
       if (cl.deckTopCount !== 5 || cl.filters?.minCost !== 9 || cl.filters?.seriesTag !== "μ's") {
         errs.push("deck5 muse");
       }
-      if (!cl.costSelfWait || !cl.costHandDiscardOptional || cl.hasOptionalCost) {
+      if (
+        !cl.costSelfWait ||
+        !cl.costHandDiscardOptional ||
+        cl.hasOptionalCost ||
+        cl.optional
+      ) {
         errs.push("mandatory wait + optional hand");
       }
       return errs;
@@ -194,7 +199,9 @@ const CASES = [
     check: (cl) => {
       const errs = [];
       if (cl.deckTopCount !== 3 || !cl.costSelfWait) errs.push("wait peek3 pick");
-      if (!cl.costHandDiscardOptional || cl.hasOptionalCost) errs.push("optional hand only");
+      if (!cl.costHandDiscardOptional || cl.hasOptionalCost || cl.optional) {
+        errs.push("optional hand only");
+      }
       return errs;
     },
   },

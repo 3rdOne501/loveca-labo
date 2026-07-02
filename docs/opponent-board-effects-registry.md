@@ -7,7 +7,7 @@
 - **デュアル未対応の疑い（高リスクのみ）**: [dual-mode-gap-audit.json](./dual-mode-gap-audit.json)（`node scripts/audit-dual-mode-gaps.mjs`）
 - **手動プレイ確認**: [play-verification-list.md](./play-verification-list.md)
 
-生成: 2026-06-28 — **264** 能力セグメント / **215** 枚
+生成: 2026-07-02 — **264** 能力セグメント / **215** 枚
 
 ## dualStatus（実装状況の目安）
 
@@ -30,7 +30,7 @@
 - `mutate_opponent_hand` (5): 相手手札（捨て・公開・加える等）
 - `mutate_opponent_waiting` (8): 相手控え室
 - `mutate_opponent_deck` (32): 相手山札
-- `mutate_opponent_live` (19): 相手ライブ置き場
+- `mutate_opponent_live` (20): 相手ライブ置き場
 - `mutate_opponent_energy` (9): 相手エネルギー
 - `mutate_opponent_success_live` (21): 相手成功ライブ置き場
 - `both_players` (15): 自分と相手はそれぞれ（同時処理）
@@ -89,8 +89,8 @@
 | PL!S-bp3-002-R | 桜内梨子 | live_success | `yell_resolution_pick_self_score` | read_compare | `dual_ok` |
 | PL!S-bp3-005-P | 渡辺 曜 | live_success | `draw_from_deck` | read_compare | `dual_ok` |
 | PL!S-bp3-005-R | 渡辺 曜 | live_success | `draw_from_deck` | read_compare | `dual_ok` |
-| PL!S-bp3-007-P | 国木田花丸 | kidou | `draw_from_deck` | mutate_opponent_deck, read_compare | `dual_ok` |
-| PL!S-bp3-007-R | 国木田花丸 | kidou | `draw_from_deck` | mutate_opponent_deck, read_compare | `dual_ok` |
+| PL!S-bp3-007-P | 国木田花丸 | kidou | `live_start_pick_player_waiting_deck_bottom` | mutate_opponent_deck, read_compare | `dual_ok` |
+| PL!S-bp3-007-R | 国木田花丸 | kidou | `live_start_pick_player_waiting_deck_bottom` | mutate_opponent_deck, read_compare | `dual_ok` |
 | PL!S-bp3-012-N | 松浦果南 | toujyou | `optional_self_wait_opp_stage` | mutate_opponent_stage | `dual_ok` |
 | PL!S-bp3-012-N | 松浦果南 | live_start | `optional_self_wait_opp_stage` | mutate_opponent_stage | `dual_ok` |
 | PL!S-bp3-017-N | 小原鞠莉 | toujyou | `optional_self_wait_opp_stage` | mutate_opponent_stage | `dual_ok` |
@@ -140,8 +140,8 @@
 | PL!N-bp4-007-SEC | 優木せつ菜 | toujyou | `toujou_both_wait_pick_live_hand` | both_players, opponent_choice | `dual_ok` |
 | PL!N-bp4-007-SEC | 優木せつ菜 | jouji | `passive_track` | mutate_opponent_energy, passive_opponent | `passive_track` |
 | PL!N-bp4-007-SEC | 優木せつ菜 | live_success | `both_players_energy_deck_wait` | both_players, mutate_opponent_deck, opponent_choice | `dual_ok` |
-| PL!N-bp4-009-P | 天王寺璃奈 | live_start | `draw_from_deck` | mutate_opponent_deck, read_compare | `dual_ok` |
-| PL!N-bp4-009-R | 天王寺璃奈 | live_start | `draw_from_deck` | mutate_opponent_deck, read_compare | `dual_ok` |
+| PL!N-bp4-009-P | 天王寺璃奈 | live_start | `draw_then_hand_to_deck_top` | mutate_opponent_deck, read_compare | `dual_ok` |
+| PL!N-bp4-009-R | 天王寺璃奈 | live_start | `draw_then_hand_to_deck_top` | mutate_opponent_deck, read_compare | `dual_ok` |
 | PL!N-bp4-012-P | 鐘 嵐珠 | jouji | `passive_track` | mutate_opponent_success_live, passive_opponent | `passive_track` |
 | PL!N-bp4-012-R | 鐘 嵐珠 | jouji | `passive_track` | mutate_opponent_success_live, passive_opponent | `passive_track` |
 
@@ -290,9 +290,9 @@
 |----|------|------------|----------|-------|------------|
 | PL!HS-pb1-007-P＋ | セラス 柳田 リリエンフェルト | jouji | `passive_track` | mutate_opponent_stage, passive_opponent | `passive_track` |
 | PL!HS-pb1-007-R | セラス 柳田 リリエンフェルト | jouji | `passive_track` | mutate_opponent_stage, passive_opponent | `passive_track` |
-| PL!HS-pb1-008-P＋ | 桂城 泉 | toujyou | `optional_self_wait_opp_stage` | mutate_opponent_stage | `dual_ok` |
+| PL!HS-pb1-008-P＋ | 桂城 泉 | toujyou | `toujou_both_sides_wait_all_printed_blade` | mutate_opponent_stage | `dual_ok` |
 | PL!HS-pb1-008-P＋ | 桂城 泉 | jouji | `passive_track` | mutate_opponent_stage, passive_opponent | `passive_track` |
-| PL!HS-pb1-008-R | 桂城 泉 | toujyou | `optional_self_wait_opp_stage` | mutate_opponent_stage | `dual_ok` |
+| PL!HS-pb1-008-R | 桂城 泉 | toujyou | `toujou_both_sides_wait_all_printed_blade` | mutate_opponent_stage | `dual_ok` |
 | PL!HS-pb1-008-R | 桂城 泉 | jouji | `passive_track` | mutate_opponent_stage, passive_opponent | `passive_track` |
 | PL!HS-pb1-010-P＋ | 村野さやか | toujyou | `toujou_opp_wait_if_high_cost_on_stage` | mutate_opponent_stage | `dual_ok` |
 | PL!HS-pb1-010-P＋ | 村野さやか | live_start | `live_start_opp_wait_if_high_cost_on_stage` | mutate_opponent_stage | `dual_ok` |
@@ -375,7 +375,7 @@
 | PL!S-bp6-009-SEC | 黒澤ルビィ | jouji | `passive_track` | mutate_opponent_success_live, passive_opponent, read_compare | `passive_track` |
 | PL!S-bp6-015-N | 津島善子 | toujyou | `optional_self_wait_opp_stage` | mutate_opponent_stage | `dual_ok` |
 | PL!S-bp6-022-L | 近未来ハッピーエンド | live_success | `live_card_score_plus` | mutate_opponent_energy, read_compare | `dual_ok` |
-| PL!S-bp6-024-L | コワレヤスキ | live_success | `live_card_score_plus` | opponent_choice | `dual_ok` |
+| PL!S-bp6-024-L | コワレヤスキ | live_success | `live_success_opp_lose_surplus_score` | mutate_opponent_live, opponent_choice | `dual_ok` |
 
 ### PL!S-pb1 (17)
 
@@ -407,7 +407,7 @@
 | PL!S-PR-030-PR | 津島善子 | jouji | `passive_track` | mutate_opponent_stage, passive_opponent, read_compare | `passive_track` |
 | PL!S-PR-031-PR | 国木田花丸 | jouji | `passive_track` | mutate_opponent_stage, passive_opponent, read_compare | `passive_track` |
 | PL!S-PR-039-PR | 渡辺 曜 | jouji | `passive_track` | mutate_opponent_success_live, passive_opponent | `passive_track` |
-| PL!S-PR-041-PR | 黒澤ルビィ | toujyou | `draw_from_deck` | mutate_opponent_deck, read_compare | `dual_ok` |
+| PL!S-PR-041-PR | 黒澤ルビィ | toujyou | `live_start_pick_player_waiting_deck_bottom` | mutate_opponent_deck, read_compare | `dual_ok` |
 | PL!S-PR-042-PR | 小原鞠莉 | jouji | `passive_track` | mutate_opponent_stage, passive_opponent | `passive_track` |
 
 ### PL!SP-bp1 (2)

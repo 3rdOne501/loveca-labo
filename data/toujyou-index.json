@@ -1,5 +1,5 @@
 {
-  "generated": "2026-06-30",
+  "generated": "2026-07-01",
   "trigger": "toujyou",
   "total": 543,
   "byTemplate": {
@@ -18,7 +18,7 @@
     "toujou_opp_emma_punch_answer": 1,
     "toujou_wait_to_member_under": 1,
     "draw_until_hand_size": 2,
-    "draw_from_deck": 30,
+    "draw_from_deck": 31,
     "energy_deck_to_wait": 14,
     "toujou_optional_hand_discard_draw": 3,
     "deck_top_to_waiting": 6,
@@ -48,7 +48,6 @@
     "toujou_wait_pick_trigger_ability": 2,
     "toujou_self_wait_only": 2,
     "toujou_opp_stage_member_match_grant": 2,
-    "toujou_optional_energy_under": 3,
     "toujou_success_live_score_tiered": 2,
     "toujou_multi_wait_draw_per_count": 2,
     "toujou_turn_block_effect_activate": 2,
@@ -64,6 +63,7 @@
     "toujou_liella_double_baton_center": 4,
     "live_start_position_change": 5,
     "deck_peek_pick_then_opp_wait": 1,
+    "toujou_optional_energy_under": 2,
     "toujou_pick_member_or_energy": 2,
     "energy_deck_to_active": 3,
     "toujou_baton_both_trim_hand_draw": 3,
@@ -2288,7 +2288,7 @@
     {
       "card_no": "PL!N-bp3-013-N",
       "name": "上原歩夢",
-      "template": "toujou_optional_energy_under",
+      "template": "draw_from_deck",
       "automated": true,
       "optional": true,
       "perTurn": 0,

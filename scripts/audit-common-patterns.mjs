@@ -81,6 +81,9 @@ export function auditCommonAbilityPatterns(ctx) {
   if (/メンバーをウェイトにし、手札.*置いてもよい/.test(plain) && cl.costSelfWait && !cl.costHandDiscardOptional) {
     errors.push(`${id} ${trigger}: mandatory wait + optional hand needs costHandDiscardOptional`);
   }
+  if (cl.costHandDiscardOptional && cl.optional) {
+    errors.push(`${id} ${trigger}: costHandDiscardOptional must not set optional (whole effect skippable)`);
+  }
 
   if (/ちょうど\d+つ/.test(plain) && /元々持つ.*ブレード/.test(plain) && cl.template === "optional_self_wait_opp_stage") {
     if (cl.oppWaitExactPrintedBlade == null) {

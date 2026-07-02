@@ -316,9 +316,9 @@ export function playPremiumBoardFx(type, opts) {
         : tier >= 2
           ? ["#fff0a8", "#ff9a3c", "#ff5a8a", "#c9a0ff", "#ffe08a"]
           : isMid
-            ? ["#ffe8c8", "#ffd08a", "#fff6e8"]
+            ? ["#ffe8b0", "#ffc86a", "#fff4d8", "#e8b4ff"]
             : ["#ffe08a", "#ffc14d", "#fff8dc"];
-    spawnPremiumParticles(overlay, tier >= 2 ? 44 : isMid ? 8 : 22, particlePalette);
+    spawnPremiumParticles(overlay, tier >= 2 ? 44 : isMid ? 16 : 22, particlePalette);
     if (tier >= 2) {
       var shock2 = document.createElement("div");
       shock2.className = "premium-board-fx__shockwave premium-board-fx__shockwave--delayed";
@@ -359,7 +359,7 @@ export function playPremiumBoardFx(type, opts) {
         : tier >= 2
           ? 1800
           : isMid
-            ? 1000
+            ? 1250
             : 1500;
   window.setTimeout(function () {
     overlay.classList.add("is-out");

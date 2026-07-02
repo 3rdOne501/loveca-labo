@@ -488,8 +488,6 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  * @property {number} [minYellRevealedLiveCount] OR 条件: エール公開ライブカード枚数下限
  * @property {number} [minStageDistinctHeartSlots] OR 条件: ステージメンバー合算ハート色種類下限
  * @property {boolean} [scorePlusOrStageMoved] OR 条件: このターンにステージメンバーがエリア移動
- * @property {boolean} [drawOrPreconditions] ライブ成功時ドローの OR 複合条件（PL!SP-pb2-004-R 等）
- * @property {boolean} [requiresLiveAreaScoreAbovePrinted] OR: ライブ置き場に元々より高いスコアのライブがある
  * @property {number} [minMemberHeartTotal] series_stage_members_min_hearts 用のハート下限
  * @property {number} [liveScoreCapMax] ライブ合計スコア加算の上限
  * @property {number} [oppBladeGapMin] 相手ブレードが自メンバーより N 以上少ない条件
@@ -2520,7 +2518,10 @@ export function parseAbilityPickFilters(p, segRaw) {
     f.requiresOwnYellRevealCountLessThanOpponent = true;
   }
   var succLiveSeriesPresenceM = p.match(/(?:自分の)?成功ライブカード置き場に『([^』]+)』(?:のカード)?がある/);
-  if (succLiveSeriesPresenceM) {
+  var succLiveSeriesChoiceBoost =
+    succLiveSeriesPresenceM &&
+    /成功ライブ(?:カード)?置き場に『[^』]+』(?:のカード)?がある場合[,，、]?\s*代わりに/.test(p);
+  if (succLiveSeriesPresenceM && !succLiveSeriesChoiceBoost) {
     f.minSuccessLiveSeriesTag = normalizeQuotedSeriesTag(succLiveSeriesPresenceM[1]);
     if (f.minSuccessLiveCount == null) f.minSuccessLiveCount = 1;
   }
@@ -4049,13 +4050,10 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
         requiresOnStage: true,
       });
     }
-    if (/エネルギー置き場.*下に置/.test(p) && /もよい/.test(p)) {
-      var underEuTjM = p.match(/エネルギー(\d+)枚/);
-      var drawEuTjM = p.match(/カードを(\d+)枚引/);
+    if (/エネルギー置き場.*エネルギー2枚.*下に置/.test(p)) {
       return twT({
         template: "toujou_optional_energy_under",
-        energyUnderCount: underEuTjM ? Number(underEuTjM[1]) : 1,
-        deckDrawCount: drawEuTjM ? Number(drawEuTjM[1]) : null,
+        energyUnderCount: 2,
         optional: true,
         hasOptionalCost: true,
         requiresOnStage: true,
@@ -4948,7 +4946,8 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
     if (/以下から1つを選ぶ/.test(p)) {
       var lsChoices = parseAbilityBulletChoices(segRaw);
       var boostM = p.match(/成功ライブカード置き場に『([^』]+)』のカードがある場合/);
-      return withTrigger("live_success", {
+      /** @type {Partial<ClassifiedAbility>} */
+      var lsPickPatch = {
         template: "live_success_pick_options",
         abilityChoices: lsChoices.length ? lsChoices : parseAbilityBulletChoices(p),
         choiceMin: 1,
@@ -4956,7 +4955,16 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
         choiceBoostSeriesTag: boostM ? boostM[1] : null,
         choiceBoostMin: boostM ? 1 : null,
         choiceBoostMax: boostM ? Math.max(1, lsChoices.length || 2) : null,
-      });
+      };
+      if (boostM) {
+        var choiceSeriesFromBullets = /『[^』]+』/.test(lsPickPatch.abilityChoices.join(" "));
+        lsPickPatch.filters = Object.assign({}, base.filters, {
+          minSuccessLiveSeriesTag: null,
+          minSuccessLiveCount: null,
+          seriesTag: choiceSeriesFromBullets ? base.filters.seriesTag : null,
+        });
+      }
+      return withTrigger("live_success", lsPickPatch);
     }
     if (/ライブ終了時まで/.test(p + segRaw) && /を得る/.test(p)) {
       var grantBladeLs = bladeGainFromIcons(segRaw, p);
@@ -5055,20 +5063,6 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
         template: "draw_from_deck",
         deckDrawCount: Number(lsDraw[1]) || 1,
         filters: { minStageOverflowHeartMembers: 1 },
-      });
-    }
-    if (
-      lsDraw &&
-      /元々のスコアより高いスコアのライブカードがある/.test(p) &&
-      /エールにより公開/.test(p) &&
-      /ライブカードがある場合/.test(p)
-    ) {
-      return withTrigger("live_success", {
-        template: "draw_from_deck",
-        deckDrawCount: Number(lsDraw[1]) || 1,
-        drawOrPreconditions: true,
-        requiresLiveAreaScoreAbovePrinted: true,
-        requiresYellRevealedOwnLiveCard: true,
       });
     }
     if (
@@ -5648,28 +5642,6 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
     var perFrameBladeLs = classifyOptionalEnergyBladePerLiveFrame(segRaw, p, base);
     if (perFrameBladeLs) {
       return lsT(Object.assign({ requiresOnStage: true }, perFrameBladeLs));
-    }
-    if (
-      /エネルギー置き場.*このメンバーの下に置/.test(p) &&
-      /カードを(\d+)枚引/.test(p) &&
-      /ステージにいるメンバー/.test(p) &&
-      /ライブ終了時まで/.test(p + segRaw) &&
-      bladeGainFromIcons(segRaw, p) > 0
-    ) {
-      var drawEuLsM = p.match(/カードを(\d+)枚引/);
-      var underEuLsM = p.match(/エネルギー(\d+)枚/);
-      return lsT(
-        enrichGrantJoujiPatch(p, segRaw, {
-          template: "grant_jouji_session",
-          energyUnderCount: underEuLsM ? Number(underEuLsM[1]) : 1,
-          deckDrawCount: drawEuLsM ? Number(drawEuLsM[1]) : 1,
-          bladeGain: bladeGainFromIcons(segRaw, p),
-          grantToAllStageMembers: true,
-          optional: true,
-          hasOptionalCost: true,
-          requiresOnStage: true,
-        }),
-      );
     }
     var energyBladeLs = classifyOptionalEnergyBladeUntilLiveEnd(segRaw, p, base);
     if (energyBladeLs) {

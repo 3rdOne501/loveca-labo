@@ -26,8 +26,14 @@ const CASES = [
   {
     id: "PL!HS-bp5-001-P",
     trigger: "kidou",
-    expectTemplate: "kidou_wait_pick_hand",
+    expectTemplate: "kidou_reveal_live_wait_pick_name_contains",
     check: (cl) => (cl.costEnergyCount === 2 && cl.perTurnLimit === 1 ? [] : ["E2"]),
+  },
+  {
+    id: "PL!HS-bp5-002-P",
+    trigger: "kidou",
+    expectTemplate: "kidou_waiting_to_empty_stage",
+    check: (cl) => (cl.filters?.maxCost === 2 && cl.costEnergyCount === 2 ? [] : ["E2 c2"]),
   },
   {
     id: "PL!HS-bp5-002-P",
@@ -86,6 +92,13 @@ const CASES = [
     expectTemplate: "toujou_wait_pick_hand",
     check: (cl) =>
       cl.optional && cl.filters?.seriesTag === "EdelNote" && cl.handDiscardToWaiting === 2 ? [] : ["edelnote"],
+  },
+  {
+    id: "PL!HS-bp5-007-P",
+    trigger: "jouji",
+    jouji: true,
+    expectTemplate: "blade_if_series_on_stage",
+    check: (cl) => (cl.seriesTag === "EdelNote" && cl.bladeFlat === 2 ? [] : ["edelnote blade"]),
   },
   {
     id: "PL!HS-bp5-008-P",
@@ -253,4 +266,15 @@ if (failed) {
   console.error(`\nverify-hasunosora-bp5: ${failed} failed`);
   process.exit(1);
 }
+
+const simSrc = fs.readFileSync(path.join(ROOT, "js/simulator.js"), "utf8");
+if (/function clearMemberJoujiComputed[\s\S]{0,400}delete inst\._printedHeartsRemapSlotUntilLiveEnd/.test(simSrc)) {
+  console.error("FAIL clearMemberJoujiComputed must not wipe _printedHeartsRemapSlotUntilLiveEnd");
+  process.exit(1);
+}
+if (!/clearLiveSessionPlayBonusesEverywhere[\s\S]{0,400}delete c\._printedHeartsRemapSlotUntilLiveEnd/.test(simSrc)) {
+  console.error("FAIL live end must clear _printedHeartsRemapSlotUntilLiveEnd");
+  process.exit(1);
+}
+
 console.log(`\nverify-hasunosora-bp5: ${CASES.length + NO_ABILITY.length} OK`);

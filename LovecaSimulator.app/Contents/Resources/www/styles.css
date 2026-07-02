@@ -8547,12 +8547,9 @@ body.play-mode .card-item.card-item--play-fx-live_card > .card-img {
 }
 body.play-mode .card-item.card-item--play-fx-toujyou .card-art-wrap .card-img,
 body.play-mode .card-item.card-item--play-fx-kidou .card-art-wrap .card-img,
+body.play-mode .card-item.card-item--play-fx-jidou .card-art-wrap .card-img,
 body.play-mode .card-item.card-item--play-fx-live_success .card-art-wrap .card-img {
   animation-name: playFxAbilityPop;
-}
-body.play-mode .card-item.card-item--play-fx-jidou .card-art-wrap .card-img,
-body.play-mode .card-item.card-item--play-fx-jidou > .card-img {
-  animation-name: playFxEnterPop;
 }
 .play-fx-burst {
   position: absolute;
@@ -8600,13 +8597,7 @@ body.play-mode .card-item.card-item--play-fx-jidou > .card-img {
   background: radial-gradient(circle at 50% 50%, rgba(100, 230, 255, 0.92) 0%, rgba(60, 160, 255, 0.48) 38%, transparent 72%);
 }
 .play-fx-burst--jidou {
-  background: radial-gradient(
-    circle at 50% 58%,
-    rgba(160, 255, 200, 0.95) 0%,
-    rgba(80, 220, 140, 0.48) 32%,
-    rgba(60, 200, 120, 0.22) 44%,
-    transparent 72%
-  );
+  background: radial-gradient(circle at 50% 50%, rgba(140, 255, 180, 0.92) 0%, rgba(60, 220, 120, 0.48) 38%, transparent 72%);
 }
 .play-fx-burst--live_success {
   background: radial-gradient(circle at 50% 50%, rgba(255, 110, 130, 0.95) 0%, rgba(255, 40, 80, 0.5) 38%, transparent 72%);
@@ -8659,7 +8650,7 @@ body.play-mode .card-item.card-item--play-fx-jidou > .card-img {
 }
 .play-fx-ring--jidou {
   border-color: rgba(140, 255, 190, 0.95);
-  box-shadow: 0 0 26px rgba(100, 255, 180, 0.88), 0 0 50px rgba(60, 220, 120, 0.45), inset 0 0 20px rgba(160, 255, 200, 0.35);
+  box-shadow: 0 0 26px rgba(100, 255, 180, 0.88), 0 0 50px rgba(60, 220, 120, 0.42);
 }
 .play-fx-ring--live_success {
   border-color: rgba(255, 100, 120, 0.95);
@@ -8690,11 +8681,6 @@ body.play-mode .card-item.card-item--play-fx-jidou > .card-img {
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4), 0 0 22px rgba(80, 255, 160, 0.55);
   color: #eafff3;
 }
-.play-fx-chip--jidou {
-  border-color: rgba(140, 255, 190, 0.85);
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4), 0 0 22px rgba(80, 255, 160, 0.55);
-  color: #eafff3;
-}
 .play-fx-chip--baton {
   border-color: rgba(120, 230, 255, 0.85);
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4), 0 0 22px rgba(100, 210, 255, 0.55);
@@ -8712,6 +8698,11 @@ body.play-mode .card-item.card-item--play-fx-jidou > .card-img {
 .play-fx-chip--jidou,
 .play-fx-chip--live_success {
   font-size: 0.8rem;
+}
+.play-fx-chip--jidou {
+  border-color: rgba(140, 255, 190, 0.9);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4), 0 0 24px rgba(80, 255, 160, 0.58);
+  color: #eafff3;
 }
 
 /* —— 効果不発 —— */
@@ -8927,7 +8918,7 @@ body.play-mode .card-item.card-item--play-fx-ability {
 body.play-mode .card-item.card-item--play-fx-ability .card-art-wrap .card-img,
 body.play-mode .card-item.card-item--play-fx-ability > .card-img {
   animation-name: playFxAbilityPop !important;
-  animation-duration: var(--play-fx-ms, 1150ms) !important;
+  animation-duration: var(--play-fx-ms, 1400ms) !important;
 }
 body.play-mode .card-item.card-item--play-fx-ability.card-item--play-fx-toujyou .card-art-wrap .card-img,
 body.play-mode .card-item.card-item--play-fx-ability.card-item--play-fx-toujyou > .card-img {
@@ -8936,10 +8927,6 @@ body.play-mode .card-item.card-item--play-fx-ability.card-item--play-fx-toujyou 
 body.play-mode .card-item.card-item--play-fx-ability.card-item--play-fx-kidou .card-art-wrap .card-img,
 body.play-mode .card-item.card-item--play-fx-ability.card-item--play-fx-kidou > .card-img {
   animation-name: playFxAbilityKidouPop !important;
-}
-body.play-mode .card-item.card-item--play-fx-ability.card-item--play-fx-jidou .card-art-wrap .card-img,
-body.play-mode .card-item.card-item--play-fx-ability.card-item--play-fx-jidou > .card-img {
-  animation-name: playFxEnterPop !important;
 }
 body.play-mode .card-item.card-item--play-fx-ability.card-item--play-fx-live_start .card-art-wrap .card-img,
 body.play-mode .card-item.card-item--play-fx-ability.card-item--play-fx-live_start > .card-img {
@@ -8951,23 +8938,23 @@ body.play-mode .card-item.card-item--play-fx-ability.card-item--play-fx-live_suc
 }
 .play-fx-burst--ability {
   inset: -36%;
-  animation: playFxAbilityBurst var(--play-fx-ms, 1150ms) ease-out both;
+  animation: playFxAbilityBurst var(--play-fx-ms, 1400ms) ease-out both;
 }
 .play-fx-burst--inner {
   inset: -22%;
   opacity: 0.85;
-  animation: playFxAbilityBurstInner var(--play-fx-ms, 1150ms) ease-out 0.06s both;
+  animation: playFxAbilityBurstInner var(--play-fx-ms, 1400ms) ease-out 0.06s both;
 }
 .play-fx-ring--ability {
   inset: -24%;
   border-width: 3px;
-  animation: playFxAbilityRing var(--play-fx-ms, 1150ms) ease-out both;
+  animation: playFxAbilityRing var(--play-fx-ms, 1400ms) ease-out both;
 }
 .play-fx-ring--outer {
   inset: -42%;
   border-width: 2px;
   opacity: 0.9;
-  animation: playFxPremiumRingOuter var(--play-fx-ms, 1150ms) ease-out 0.08s both;
+  animation: playFxPremiumRingOuter var(--play-fx-ms, 1400ms) ease-out 0.08s both;
 }
 
 /* —— プレミアム演出（コスト13+・打点9+ライブ） —— */
@@ -9075,13 +9062,20 @@ body.play-mode .card-item.card-item--play-fx-has-char-icons .play-fx-group-logo-
   transform: translate(-50%, 0) scale(0.85);
   transform-origin: center bottom;
   opacity: 0;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.28));
+  filter:
+    drop-shadow(0 0 14px rgba(255, 255, 255, 1))
+    drop-shadow(0 0 28px rgba(255, 255, 255, 0.88))
+    drop-shadow(0 0 48px rgba(255, 255, 255, 0.62))
+    drop-shadow(0 0 72px rgba(255, 255, 255, 0.38));
   animation: playFxGroupLogoFloatAbove var(--play-fx-ms, 1500ms) cubic-bezier(0.16, 1.08, 0.32, 1) 0.04s both;
 }
 .play-fx-group-logo--vector {
   width: min(190%, 14rem);
   min-width: 8rem;
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.22));
+  filter:
+    drop-shadow(0 0 12px rgba(255, 255, 255, 0.95))
+    drop-shadow(0 0 24px rgba(255, 255, 255, 0.78))
+    drop-shadow(0 0 40px rgba(255, 255, 255, 0.52));
 }
 .play-fx-group-logo--live {
   width: 175%;
@@ -9163,77 +9157,74 @@ body.play-mode .card-item.card-item--play-fx-ultra.card-item--play-fx-has-logo {
   border-color: rgba(255, 160, 220, 0.75);
 }
 
-/* —— ミッド演出（コスト10–12登場・控えめ） —— */
+/* —— ミッド演出（コスト10登場） —— */
 body.play-mode .card-item.card-item--play-fx-mid {
   z-index: 20;
-  filter: drop-shadow(0 0 10px rgba(255, 200, 120, 0.28));
+  filter: drop-shadow(0 0 16px rgba(255, 190, 100, 0.42)) drop-shadow(0 0 28px rgba(200, 140, 255, 0.22));
 }
 body.play-mode .card-item.card-item--play-fx-mid .card-art-wrap .card-img,
 body.play-mode .card-item.card-item--play-fx-mid > .card-img {
   animation-name: playFxMidPop !important;
-  animation-duration: var(--play-fx-ms, 1080ms) !important;
+  animation-duration: var(--play-fx-ms, 1280ms) !important;
 }
 .play-fx-burst--mid {
-  inset: -24%;
-  background: radial-gradient(
-    circle at 50% 48%,
-    rgba(255, 235, 185, 0.72) 0%,
-    rgba(255, 190, 95, 0.32) 34%,
-    transparent 68%
-  );
-  animation: playFxMidBurst var(--play-fx-ms, 1080ms) ease-out both;
+  inset: -34%;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(255, 235, 170, 0.92) 0%, rgba(255, 175, 70, 0.5) 26%, rgba(200, 140, 255, 0.28) 48%, transparent 70%),
+    conic-gradient(from 0deg at 50% 50%, rgba(255, 215, 130, 0.42), rgba(255, 120, 180, 0.28), rgba(140, 210, 255, 0.28), rgba(255, 215, 130, 0.42));
+  animation: playFxMidBurst var(--play-fx-ms, 1280ms) ease-out both;
 }
 .play-fx-burst--inner.play-fx-burst--mid {
-  inset: -16%;
-  opacity: 0.55;
-  animation: playFxMidBurstInner var(--play-fx-ms, 1080ms) ease-out 0.05s both;
+  inset: -22%;
+  opacity: 0.75;
+  animation: playFxMidBurstInner var(--play-fx-ms, 1280ms) ease-out 0.05s both;
 }
 .play-fx-ring--mid {
-  inset: -16%;
-  border-width: 2px;
-  border-color: rgba(255, 215, 150, 0.72);
+  inset: -22%;
+  border-width: 3px;
+  border-color: rgba(255, 210, 140, 0.9);
   box-shadow:
-    0 0 14px rgba(255, 185, 90, 0.45),
-    inset 0 0 12px rgba(255, 230, 175, 0.22);
-  animation: playFxMidRing var(--play-fx-ms, 1080ms) ease-out both;
+    0 0 22px rgba(255, 175, 70, 0.75),
+    0 0 40px rgba(200, 120, 255, 0.35),
+    inset 0 0 18px rgba(255, 230, 170, 0.32);
+  animation: playFxMidRing var(--play-fx-ms, 1280ms) ease-out both;
 }
 .play-fx-ring--outer.play-fx-ring--mid {
-  inset: -28%;
-  border-width: 1px;
-  border-color: rgba(255, 210, 160, 0.42);
-  animation: playFxPremiumRingOuter var(--play-fx-ms, 1080ms) ease-out 0.07s both;
+  inset: -38%;
+  border-width: 2px;
+  border-color: rgba(220, 170, 255, 0.62);
+  animation: playFxPremiumRingOuter var(--play-fx-ms, 1280ms) ease-out 0.07s both;
 }
 .premium-board-fx--tier-mid .premium-board-fx__flash {
-  opacity: 0.32;
-  background: radial-gradient(circle at 50% 48%, rgba(255, 215, 140, 0.28) 0%, transparent 58%);
+  opacity: 0.55;
+  background: radial-gradient(circle at 50% 48%, rgba(255, 220, 150, 0.42) 0%, transparent 62%);
 }
 .premium-board-fx--tier-mid .premium-board-fx__rays {
-  opacity: 0.18;
+  opacity: 0.38;
 }
 .premium-board-fx--tier-mid .premium-board-fx__shockwave {
-  border-color: rgba(255, 200, 120, 0.38);
-  opacity: 0.65;
+  border-color: rgba(255, 200, 120, 0.55);
 }
 @keyframes playFxMidPop {
-  0% { transform: scale(0.88) translateY(8px); filter: brightness(1.12); }
-  32% { transform: scale(1.04) translateY(-2px); box-shadow: 0 0 14px rgba(255, 200, 110, 0.5); }
-  62% { transform: scale(1.02) translateY(0); box-shadow: 0 0 10px rgba(255, 200, 110, 0.28); }
+  0% { transform: scale(0.78) translateY(14px); filter: brightness(1.32); }
+  32% { transform: scale(1.1) translateY(-5px); box-shadow: 0 0 22px rgba(255, 200, 110, 0.82), 0 0 40px rgba(180, 130, 255, 0.38); }
+  62% { transform: scale(1.04) translateY(-1px); box-shadow: 0 0 16px rgba(255, 200, 110, 0.55); }
   100% { transform: scale(1) translateY(0); filter: none; box-shadow: none; }
 }
 @keyframes playFxMidBurst {
-  0% { opacity: 0; transform: scale(0.5); }
-  22% { opacity: 0.75; transform: scale(1); }
-  100% { opacity: 0; transform: scale(1.22); }
+  0% { opacity: 0; transform: scale(0.35); }
+  22% { opacity: 1; transform: scale(1.05); }
+  100% { opacity: 0; transform: scale(1.45); }
 }
 @keyframes playFxMidBurstInner {
-  0% { opacity: 0; transform: scale(0.6); }
-  28% { opacity: 0.55; transform: scale(0.95); }
-  100% { opacity: 0; transform: scale(1.12); }
+  0% { opacity: 0; transform: scale(0.5); }
+  28% { opacity: 0.85; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.25); }
 }
 @keyframes playFxMidRing {
-  0% { opacity: 0; transform: scale(0.65); }
-  24% { opacity: 0.85; transform: scale(1); }
-  100% { opacity: 0; transform: scale(1.18); }
+  0% { opacity: 0; transform: scale(0.55); }
+  24% { opacity: 1; transform: scale(1.02); }
+  100% { opacity: 0; transform: scale(1.35); }
 }
 
 /* —— ウルトラ演出（コスト15+） —— */
@@ -9647,22 +9638,103 @@ body.play-premium-fx-active {
   }
 }
 @keyframes playFxGroupLogoFloatAbove {
-  0% { opacity: 0; transform: translate(-50%, 14px) scale(0.55); }
-  22% { opacity: 1; transform: translate(-50%, 0) scale(1.02); }
-  58% { opacity: 1; transform: translate(-50%, -4px) scale(1); }
-  100% { opacity: 0; transform: translate(-50%, -16px) scale(0.92); }
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 14px) scale(0.55);
+    filter:
+      drop-shadow(0 0 8px rgba(255, 255, 255, 0.55))
+      drop-shadow(0 0 16px rgba(255, 255, 255, 0.35));
+  }
+  22% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1.02);
+    filter:
+      drop-shadow(0 0 18px rgba(255, 255, 255, 1))
+      drop-shadow(0 0 36px rgba(255, 255, 255, 0.92))
+      drop-shadow(0 0 56px rgba(255, 255, 255, 0.72))
+      drop-shadow(0 0 80px rgba(255, 255, 255, 0.48));
+  }
+  58% {
+    opacity: 1;
+    transform: translate(-50%, -4px) scale(1);
+    filter:
+      drop-shadow(0 0 16px rgba(255, 255, 255, 0.98))
+      drop-shadow(0 0 32px rgba(255, 255, 255, 0.82))
+      drop-shadow(0 0 52px rgba(255, 255, 255, 0.58));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -16px) scale(0.92);
+    filter:
+      drop-shadow(0 0 10px rgba(255, 255, 255, 0.45))
+      drop-shadow(0 0 20px rgba(255, 255, 255, 0.28));
+  }
 }
 @keyframes playFxGroupLogoFloatMultiAbove {
-  0% { opacity: 0; transform: translate(calc(-50% + var(--group-offset, 0px)), 14px) scale(0.55); }
-  22% { opacity: 1; transform: translate(calc(-50% + var(--group-offset, 0px)), 0) scale(1.02); }
-  58% { opacity: 1; transform: translate(calc(-50% + var(--group-offset, 0px)), -4px) scale(1); }
-  100% { opacity: 0; transform: translate(calc(-50% + var(--group-offset, 0px)), -16px) scale(0.92); }
+  0% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--group-offset, 0px)), 14px) scale(0.55);
+    filter:
+      drop-shadow(0 0 8px rgba(255, 255, 255, 0.55))
+      drop-shadow(0 0 16px rgba(255, 255, 255, 0.35));
+  }
+  22% {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--group-offset, 0px)), 0) scale(1.02);
+    filter:
+      drop-shadow(0 0 18px rgba(255, 255, 255, 1))
+      drop-shadow(0 0 36px rgba(255, 255, 255, 0.92))
+      drop-shadow(0 0 56px rgba(255, 255, 255, 0.72))
+      drop-shadow(0 0 80px rgba(255, 255, 255, 0.48));
+  }
+  58% {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--group-offset, 0px)), -4px) scale(1);
+    filter:
+      drop-shadow(0 0 16px rgba(255, 255, 255, 0.98))
+      drop-shadow(0 0 32px rgba(255, 255, 255, 0.82))
+      drop-shadow(0 0 52px rgba(255, 255, 255, 0.58));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--group-offset, 0px)), -16px) scale(0.92);
+    filter:
+      drop-shadow(0 0 10px rgba(255, 255, 255, 0.45))
+      drop-shadow(0 0 20px rgba(255, 255, 255, 0.28));
+  }
 }
 @keyframes playFxGroupLogoFloatTriAbove {
-  0% { opacity: 0; transform: translate(calc(-50% + var(--group-tri-x, 0px)), calc(var(--group-tri-y, 0px) + 14px)) scale(0.55); }
-  22% { opacity: 1; transform: translate(calc(-50% + var(--group-tri-x, 0px)), var(--group-tri-y, 0px)) scale(1.02); }
-  58% { opacity: 1; transform: translate(calc(-50% + var(--group-tri-x, 0px)), calc(var(--group-tri-y, 0px) - 4px)) scale(1); }
-  100% { opacity: 0; transform: translate(calc(-50% + var(--group-tri-x, 0px)), calc(var(--group-tri-y, 0px) - 16px)) scale(0.92); }
+  0% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--group-tri-x, 0px)), calc(var(--group-tri-y, 0px) + 14px)) scale(0.55);
+    filter:
+      drop-shadow(0 0 8px rgba(255, 255, 255, 0.55))
+      drop-shadow(0 0 16px rgba(255, 255, 255, 0.35));
+  }
+  22% {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--group-tri-x, 0px)), var(--group-tri-y, 0px)) scale(1.02);
+    filter:
+      drop-shadow(0 0 18px rgba(255, 255, 255, 1))
+      drop-shadow(0 0 36px rgba(255, 255, 255, 0.92))
+      drop-shadow(0 0 56px rgba(255, 255, 255, 0.72))
+      drop-shadow(0 0 80px rgba(255, 255, 255, 0.48));
+  }
+  58% {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--group-tri-x, 0px)), calc(var(--group-tri-y, 0px) - 4px)) scale(1);
+    filter:
+      drop-shadow(0 0 16px rgba(255, 255, 255, 0.98))
+      drop-shadow(0 0 32px rgba(255, 255, 255, 0.82))
+      drop-shadow(0 0 52px rgba(255, 255, 255, 0.58));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--group-tri-x, 0px)), calc(var(--group-tri-y, 0px) - 16px)) scale(0.92);
+    filter:
+      drop-shadow(0 0 10px rgba(255, 255, 255, 0.45))
+      drop-shadow(0 0 20px rgba(255, 255, 255, 0.28));
+  }
 }
 @keyframes premiumFxCoinFlip {
   0% { transform: perspective(400px) rotateY(0deg) scale(0.5); opacity: 0; }

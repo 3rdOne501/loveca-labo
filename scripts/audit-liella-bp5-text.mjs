@@ -75,6 +75,30 @@ for (let n = 1; n <= 27; n++) {
       }
     }
 
+    if (/『SunnyPassion』のメンバーカードかブレードハートを持つ『Liella!』のメンバー/.test(plain)) {
+      const alts = cl.filters?.pickFilterAlternatives;
+      if (!alts || alts.length !== 2) errors.push(`${id} ${seg.trigger}: sunny/liella bh OR pick missing`);
+    }
+
+    if (/ほかのメンバーがエリアを移動している場合/.test(plain) && /カードを1枚引/.test(plain)) {
+      if (cl.template !== "draw_from_deck" || !cl.filters?.requiresOtherStageMemberMovedThisTurn) {
+        errors.push(`${id} ${seg.trigger}: other member moved draw misclassified`);
+      }
+    }
+
+    if (seg.trigger === "jouji" && /『Liella!』のメンバーがこのターンにエリアを移動しているかぎり/.test(plain)) {
+      const rule = classifyJoujiSegment(seg.text);
+      if (rule.kind !== "hand_cost_reduce" || rule.requiresSeriesMemberMovedThisTurn !== "Liella!") {
+        errors.push(`${id} jouji: liella moved hand cost reduce misclassified`);
+      }
+    }
+
+    if (/デッキの上からカードを3枚控え室に置く：このメンバーはポジションチェンジ/.test(plain)) {
+      if (cl.template !== "kidou_deck_top_wait_position_change" || cl.deckTopCount !== 3) {
+        errors.push(`${id} kidou: deck mill3 position change misclassified`);
+      }
+    }
+
     if (/このターン中にエリアを移動したメンバー1人は/.test(plain) && /ハートを1つ選ぶ/.test(plain)) {
       if (cl.template !== "live_start_moved_members_pick_heart_grant") {
         errors.push(`${id} live_start: moved members heart pick`);

@@ -1,20 +1,20 @@
 /** ソロ／対戦プレイ中のワンショット演出（軽量モード・reduce-motion では無効） */
 
 export const PLAY_FX_MS = 1000;
+/** 起動／登場時／ライブ開始時・成功時・自動の解決ボタン押下 */
+export const PLAY_FX_FIELD_MS = 700;
 /** 効果不発 */
 export const PLAY_FX_FIZZLE_MS = 920;
-/** コスト10–12登場（控えめ） */
-export const PLAY_FX_MID_MS = 1080;
-/** 能力解決（標準） */
-export const PLAY_FX_ABILITY_MS = 850;
-/** コスト13+の能力解決 */
-export const PLAY_FX_ABILITY_HIGH_MS = 1150;
+/** コスト10登場（旧11–12相当） */
+export const PLAY_FX_MID_MS = 1280;
+/** コスト13+の場で使う効果（登場時・起動・ライブ開始時・成功時） */
+export const PLAY_FX_ABILITY_HIGH_MS = 1200;
 /** コスト13+登場・打点9+ライブ開始 */
 export const PLAY_FX_PREMIUM_MS = 1500;
 /** コスト15+登場 */
 export const PLAY_FX_ULTRA_MS = 1800;
 
-const FIELD_ABILITY_KINDS = { toujyou: true, kidou: true, jidou: true, live_start: true, live_success: true };
+const FIELD_ABILITY_KINDS = { toujyou: true, kidou: true, live_start: true, live_success: true };
 const ENTER_FX_KINDS = { enter: true, baton: true, live_start: true, live_card: true };
 
 /**
@@ -177,14 +177,15 @@ function playFxMetaFromCard(c) {
  * @param {string} [_kind]
  * @param {{ premium?: boolean, tier?: number, ability?: boolean, abilityHigh?: boolean } | boolean} [opts]
  */
-export function playFxDurationMs(_kind, opts) {
+export function playFxDurationMs(kind, opts) {
   if (opts === true) opts = { premium: true };
   opts = opts || {};
   if (opts.tier >= 2) return PLAY_FX_ULTRA_MS;
   if (opts.premium && opts.mid) return PLAY_FX_MID_MS;
   if (opts.premium || opts.tier >= 1) return PLAY_FX_PREMIUM_MS;
   if (opts.abilityHigh) return PLAY_FX_ABILITY_HIGH_MS;
-  if (FIELD_ABILITY_KINDS[_kind]) return PLAY_FX_ABILITY_MS;
+  var k = kind || "";
+  if (FIELD_ABILITY_KINDS[k] || k === "jidou") return PLAY_FX_FIELD_MS;
   return PLAY_FX_MS;
 }
 
@@ -215,7 +216,7 @@ export function enterFxOptsFromMemberCost(cost) {
   var c = Math.floor(Number(cost) || 0);
   if (c >= 15) return { premium: true, tier: 2 };
   if (c >= 13) return { premium: true, tier: 1 };
-  if (c >= 10) return { mid: true };
+  if (c === 10) return { mid: true };
   return {};
 }
 
@@ -265,9 +266,10 @@ export function playFxChipLabel(kind) {
   return "効果";
 }
 
-/** 能力系・プレミアム演出ではチップを出さない（登場時・起動・自動等は表示） */
+/** 能力系・プレミアム演出ではチップを出さない */
 export function playFxShowsChip(pfx) {
   if (!pfx) return false;
   if (pfx.premium || pfx.tier > 0 || pfx.ability || pfx.abilityHigh) return false;
+  if (FIELD_ABILITY_KINDS[pfx.kind]) return false;
   return true;
 }
