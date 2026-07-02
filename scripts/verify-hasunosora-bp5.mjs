@@ -20,8 +20,8 @@ const CASES = [
   {
     id: "PL!HS-bp5-001-P",
     trigger: "toujyou",
-    expectTemplate: "grant_jouji_session",
-    check: (cl) => (cl.bladeGain === 2 ? [] : ["blade2"]),
+    expectTemplate: "deck_mill_conditional_blade_grant",
+    check: (cl) => (cl.deckTopCount === 4 && cl.bladeGain === 2 ? [] : ["mill4 blade2"]),
   },
   {
     id: "PL!HS-bp5-001-P",
@@ -41,6 +41,17 @@ const CASES = [
     trigger: "jidou",
     jidou: true,
     expectTemplate: "jidou_leave_stage_position_change",
+  },
+  {
+    id: "PL!HS-bp5-003-P",
+    trigger: "live_start",
+    expectTemplate: "live_start_hand_discard_group_member_grant",
+    check: (cl) =>
+      cl.handDiscardExact === 1 &&
+      cl.grantToDiscardedCardGroupMember &&
+      cl.requiredHeartSlot === 1
+        ? []
+        : ["group member heart01"],
   },
   {
     id: "PL!HS-bp5-004-P",

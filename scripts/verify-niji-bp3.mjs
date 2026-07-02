@@ -16,6 +16,17 @@ const cards = JSON.parse(fs.readFileSync(path.join(ROOT, "data/cards.json"), "ut
 /** @type {Array<{id:string, trigger:string, expectTemplate:string, check?:(cl:any)=>string[]}>} */
 const CASES = [
   {
+    id: "PL!N-bp3-001-P",
+    trigger: "live_start",
+    expectTemplate: "grant_jouji_session",
+    check: (cl) => {
+      const errs = [];
+      if (cl.energyUnderCount !== 1 || cl.deckDrawCount !== 1) errs.push("E under draw1");
+      if (!cl.grantToAllStageMembers || cl.bladeGain !== 2) errs.push("all blade2");
+      return errs;
+    },
+  },
+  {
     id: "PL!N-bp3-003-P",
     trigger: "toujyou",
     expectTemplate: "toujou_wait_pick_trigger_ability",
@@ -34,6 +45,13 @@ const CASES = [
     expectTemplate: "live_start_pick_player_waiting_deck_bottom",
   },
   { id: "PL!N-bp3-011-P", trigger: "toujyou", expectTemplate: "toujou_opp_stage_member_match_grant" },
+  {
+    id: "PL!N-bp3-013-N",
+    trigger: "toujyou",
+    expectTemplate: "toujou_optional_energy_under",
+    check: (cl) =>
+      cl.energyUnderCount === 1 && cl.deckDrawCount === 2 && cl.optional ? [] : ["E1 draw2"],
+  },
   { id: "PL!N-bp3-017-N", trigger: "toujyou", expectTemplate: "optional_self_wait_opp_stage" },
   { id: "PL!N-bp3-017-N", trigger: "live_start", expectTemplate: "optional_self_wait_opp_stage" },
   {

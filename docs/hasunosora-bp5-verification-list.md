@@ -9,12 +9,12 @@
 
 | 状態 | 番号 | ID（代表） | 主テンプレート | 備考 |
 |------|------|------------|----------------|------|
-| [x] | 001 | PL!HS-bp5-001-P | grant_jouji_session + kidou_wait_pick_hand | 登場: ブレード2 / 起動E2: ウェイト→控え室ライブ回収 |
+| [x] | 001 | PL!HS-bp5-001-P | deck_mill_conditional_blade_grant + kidou_wait_pick_hand | 登場: 山札4ミル→ライブあればブレード2 / 起動E2: ライブ公開→控え室回収 |
 | [x] | 002 | PL!HS-bp5-002-P | jouji + kidou_waiting_to_empty_stage | 異コスト3人→ブレード+heart05 / 起動: 空きエリア登場 |
-| [x] | 003 | PL!HS-bp5-003-P | jidou_leave_stage_position_change + grant_jouji_session | 退場ポジチェン / LS任意手札1捨→ブレード2 |
+| [x] | 003 | PL!HS-bp5-003-P | jidou + live_start_hand_discard_group_member_grant | 退場ポジチェン / LS任意手札1捨→同グループメンバー1人へheart01 |
 | [x] | 004 | PL!HS-bp5-004-P | jouji blade_per_stage_member | C4+メンバー1人につきブレード2（スリーズブーケ除外） |
 | [x] | 005 | PL!HS-bp5-005-P | live_start_dollcostra_cost_set_grant_if | DOLLCHESTRA在席+任意DOLLCHESTRA手札1捨→コスト参照→C10+でheart05付与 |
-| [x] | 006 | PL!HS-bp5-006-P | live_start_hand_discard_same_group_grant | 同名2枚捨→ライブ終了時までブレード2 |
+| [x] | 006 | PL!HS-bp5-006-P | live_start_hand_discard_same_group_grant | 同名2枚捨→ライブ終了時までheart01×2 |
 | [x] | 007 | PL!HS-bp5-007-P | toujou_wait_pick_hand + jouji | 任意手札2捨→EdelNoteライブ回収 / EdelNote在席→ブレード2 |
 | [x] | 008 | PL!HS-bp5-008-P | deck_top_pick_recover | 登場: 山札見→回収 |
 | [x] | 009 / 010 / 012 / 015 | — | — | 能力なし |
@@ -47,3 +47,10 @@
 |----|------|
 | PL!HS-bp5-005-P | DOLLCHESTRA 手札捨て二重UI解消 |
 | PL!HS-bp5-022-L | Retrofuture 2択ハンドラ＋EdelNote C9+前提 |
+
+## 2026-06-30 メンバー2回監修
+
+| ID | 内容 |
+|----|------|
+| PL!HS-bp5-001-P | 登場: 山札4ミル→ライブ含有時のみブレード2（`deck_mill_conditional_blade_grant`） |
+| PL!HS-bp5-003-P | LS: 捨て札と同グループのメンバー1人へheart01（`live_start_hand_discard_group_member_grant`） |

@@ -65,8 +65,12 @@ const CASES = [
     id: "PL!-bp5-004-P",
     trigger: "kidou",
     expectTemplate: "kidou_opp_wait_group_discount_energy",
-    check: (cl) =>
-      cl.filters?.maxCost === 10 && cl.energyCostDiscountPerGroup === 1 ? [] : ["opp wait discount"],
+    check: (cl) => {
+      const errs = [];
+      if (cl.filters?.maxCost !== 10 || cl.energyCostDiscountPerGroup !== 1) errs.push("opp wait discount");
+      if (cl.costEnergyCount !== 4) errs.push("costEnergyCount");
+      return errs;
+    },
   },
   {
     id: "PL!-bp5-004-P",

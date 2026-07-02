@@ -56,6 +56,23 @@ for (const [id, card] of Object.entries(cards).sort(
       }
     }
 
+    if (
+      /エネルギー置き場.*下に置/.test(plain) &&
+      /ステージにいるメンバー/.test(plain) &&
+      /ライブ終了時まで/.test(plain) &&
+      seg.trigger === "live_start"
+    ) {
+      if (cl.template !== "grant_jouji_session" || !cl.grantToAllStageMembers) {
+        errors.push(`${id} live_start: E under all-stage blade grant`);
+      }
+    }
+
+    if (/エネルギー置き場.*下に置/.test(plain) && /カードを.*枚引/.test(plain) && seg.trigger === "toujyou") {
+      if (cl.template !== "toujou_optional_energy_under") {
+        errors.push(`${id} toujyou: optional energy under draw`);
+      }
+    }
+
     if (cl.template === "draw_from_deck" && /このカードのスコア/.test(plain)) {
       errors.push(`${id} ${seg.trigger}: draw_from_deck misclass for score effect`);
     }

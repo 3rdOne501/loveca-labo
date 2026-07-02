@@ -10,7 +10,7 @@
 
 | 状態 | 番号 | 代表ID | 名前 | 主テンプレート | 備考 |
 |------|------|--------|------|----------------|------|
-| [x] | 001 | PL!N-bp3-001-P | 上原歩夢 | live_start (energy under + grant) | ライブ開始: エネルギー1枚を下に置いてもよい→1ドロー→全メンバーブレード2 |
+| [x] | 001 | PL!N-bp3-001-P | 上原歩夢 | grant_jouji_session | 任意E下→1ドロー→全ステージメンバーブレード2 **2026-06-30 2回監修** |
 | [x] | 002 | PL!N-bp3-002-P | 中須かすみ | live_start:heart_color_pick_grant | 手札1枚捨て任意→ハート色指定→他虹ヶ咲1人にそのハート1 |
 | [x] | 003 | PL!N-bp3-003-P | 桜坂しずく | toujou_wait_pick_trigger_ability | 控え室コスト4以下虹ヶ咲メンバー1枚→その**登場**能力1つ（コストあれば支払い） |
 | [x] | 004 | PL!N-bp3-004-P | 朝香果林 | kidou_hand_cost_wait_pick_hand | 起動: 自らウェイト+手札1枚捨て→控え室虹ヶ咲ライブ1枚回収 |
@@ -22,7 +22,7 @@
 | [x] | 010 | PL!N-bp3-010-P | 三船栞子 | live_start_pick_player_waiting_deck_bottom | ライブ開始: 自分か相手→その控え室メンバー2枚まで山札下 **ソロは相手代行** |
 | [x] | 011 | PL!N-bp3-011-P | ミア・テイラー | toujou_opp_stage_member_match_grant | 相手ステージ1人選択→ハート同色ならブレード（コスト/元BL同も可）**ソロは相手代行** |
 | [x] | 012 | PL!N-bp3-012-P | 鐘嵐珠 | deck_top_pick_recover | 手札1枚捨て任意→4枚見て虹ヶ咲1枚回収 |
-| [x] | 013 | PL!N-bp3-013-N | 上原歩夢 | draw_from_deck | エネルギー1枚を下に置いてもよい→2ドロー |
+| [x] | 013 | PL!N-bp3-013-N | 上原歩夢 | toujou_optional_energy_under | 任意E下→2ドロー **2026-06-30 2回監修** |
 | [x] | 014 | PL!N-bp3-014-N | 中須かすみ | live_start:heart_color_pick_grant | heart01/03/04から1色→元ハートがその色に変化 |
 | [x] | 015 | PL!N-bp3-015-N | 桜坂しずく | live_start:heart_color_pick_grant | heart02/05/06から1色→元ハートがその色に変化 |
 | [x] | 017 | PL!N-bp3-017-N | 宮下愛 | optional_self_wait_opp_stage | 登場/ライブ開始: 自ウェイト任意→相手コスト4以下1人ウェイト |
@@ -68,3 +68,11 @@
 
 - **028-L ツナガルコネクト**: `deck_top_to_waiting` 誤分類を修正（上記ライブ表参照）。
 - ライブ025–031: 分類・回帰テスト追加（`verify-niji-bp3.mjs`）。
+
+## 2026-06-30 メンバー2回監修
+
+| ID | 内容 |
+|----|------|
+| PL!N-bp3-001-P | LS: 任意E下→1ドロー→全ステージブレード2（`grant_jouji_session` + `grantToAllStageMembers`） |
+| PL!N-bp3-013-N | 登場: 任意E下→2ドロー（`toujou_optional_energy_under` + `deckDrawCount`） |
+| （他001–024） | guided_manual=0、分類再確認のみ |

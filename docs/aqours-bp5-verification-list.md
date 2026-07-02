@@ -44,7 +44,22 @@
 | ID | 内容 |
 |----|------|
 | PL!S-bp5-005-P | `heart_color_pick_grant`: 今ターン登場の非Aqours全員へハート付与（`grantToEnteredMembersThisTurn`） |
+| PL!S-bp5-007-P | 山札公開回収: `minPrintedHeartBySlot`（heart04を2つ以上）で1枚だけでは拾えない不具合を修正 |
 | （横展開） | `audit-common-patterns.mjs` 経由で verify/audit ライブ節追加 |
+
+## 2026-06-30 2回監修（メンバー 001–018 / 111 / 222）
+
+`node scripts/verify-aqours-bp5.mjs` **29ケース**（メンバー全能力＋ライブ代表＋能力なし3）。
+
+### 修正した
+
+| ID | 内容 |
+|----|------|
+| PL!S-bp5-007-P | 上記 `minPrintedHeartBySlot`（2回監修で発見・修正） |
+
+### 問題なし（再確認）
+
+001 バトンドロー+常時、002 左右コスト同→相手ウェイト（センター）、003–006、008 相手余剰ハート jouji、009–017、111/222 起動ポジチェン+自動。
 
 ## 2026-06-28 修正（メンバー）
 

@@ -263,18 +263,33 @@ function appendPremiumCharacterIcons(icons, overlay) {
 }
 
 /**
+ * @param {HTMLElement} overlay
+ * @param {{ core?: string, glow?: string, secondary?: string, ring?: string, particles?: string[] } | null | undefined} palette
+ */
+function applyPremiumBoardFxPalette(overlay, palette) {
+  if (!overlay || !palette) return;
+  overlay.classList.add("premium-board-fx--themed");
+  if (palette.core) overlay.style.setProperty("--premium-fx-core", palette.core);
+  if (palette.glow) overlay.style.setProperty("--premium-fx-glow", palette.glow);
+  if (palette.secondary) overlay.style.setProperty("--premium-fx-secondary", palette.secondary);
+  if (palette.ring) overlay.style.setProperty("--premium-fx-ring", palette.ring);
+}
+
+/**
  * 盤面全体の補助演出（テキストバッジ・効果音なし）
  * @param {'high_cost_enter'|'coin_flip'|'live_powerhouse'} type
- * @param {{ tier?: number, heads?: boolean, boardCenterIcons?: Array<{ href: string, label?: string, variant?: string }> }} [opts]
+ * @param {{ tier?: number, mid?: boolean, heads?: boolean, palette?: { core?: string, glow?: string, secondary?: string, ring?: string, particles?: string[] }, boardCenterIcons?: Array<{ href: string, label?: string, variant?: string }> }} [opts]
  */
 export function playPremiumBoardFx(type, opts) {
   if (!document.body.classList.contains("play-mode") || prefersReducedMotion()) return;
   opts = opts || {};
   var tier = Math.max(0, Math.min(2, Math.floor(Number(opts.tier) || 0)));
+  var isMid = opts.mid === true;
 
   var overlay = document.createElement("div");
   overlay.className = "premium-board-fx premium-board-fx--" + type;
   if (tier >= 2) overlay.classList.add("premium-board-fx--tier-2");
+  if (isMid) overlay.classList.add("premium-board-fx--tier-mid");
   overlay.setAttribute("aria-hidden", "true");
 
   var vignette = document.createElement("div");
@@ -294,13 +309,16 @@ export function playPremiumBoardFx(type, opts) {
   overlay.appendChild(shock);
 
   if (type === "high_cost_enter") {
+    applyPremiumBoardFxPalette(overlay, opts.palette || null);
     var particlePalette =
       opts.palette && Array.isArray(opts.palette.particles) && opts.palette.particles.length
         ? opts.palette.particles
         : tier >= 2
           ? ["#fff0a8", "#ff9a3c", "#ff5a8a", "#c9a0ff", "#ffe08a"]
-          : ["#ffe08a", "#ffc14d", "#fff8dc"];
-    spawnPremiumParticles(overlay, tier >= 2 ? 44 : 22, particlePalette);
+          : isMid
+            ? ["#ffe8c8", "#ffd08a", "#fff6e8"]
+            : ["#ffe08a", "#ffc14d", "#fff8dc"];
+    spawnPremiumParticles(overlay, tier >= 2 ? 44 : isMid ? 8 : 22, particlePalette);
     if (tier >= 2) {
       var shock2 = document.createElement("div");
       shock2.className = "premium-board-fx__shockwave premium-board-fx__shockwave--delayed";
@@ -334,7 +352,15 @@ export function playPremiumBoardFx(type, opts) {
   });
 
   var holdMs =
-    type === "coin_flip" ? 1600 : type === "live_powerhouse" ? 1800 : tier >= 2 ? 1800 : 1500;
+    type === "coin_flip"
+      ? 1600
+      : type === "live_powerhouse"
+        ? 1800
+        : tier >= 2
+          ? 1800
+          : isMid
+            ? 1000
+            : 1500;
   window.setTimeout(function () {
     overlay.classList.add("is-out");
     document.body.classList.remove("play-premium-fx-active", "play-premium-live-arena", "play-premium-enter-ultra");

@@ -38,6 +38,7 @@ const CASES = [
     id: "PL!S-bp5-002-P",
     trigger: "live_start",
     expectTemplate: "live_start_side_cost_equal_opp_wait",
+    check: (cl) => (cl.stageArea === "center" ? [] : ["center"]),
   },
   {
     id: "PL!S-bp5-003-P",
@@ -91,10 +92,14 @@ const CASES = [
     id: "PL!S-bp5-007-P",
     trigger: "live_success",
     expectTemplate: "deck_top_pick_recover",
-    check: (cl) =>
-      cl.deckTopCount === 4 && cl.optional && cl.filters?.pickType === "メンバー" && cl.filters?.heartSlotsAny?.[0] === 4
-        ? []
-        : ["deck4 heart04 member"],
+    check: (cl) => {
+      const errs = [];
+      if (cl.deckTopCount !== 4 || !cl.optional || cl.filters?.pickType !== "メンバー") {
+        errs.push("deck4 optional member");
+      }
+      if (cl.filters?.minPrintedHeartBySlot?.[4] !== 2) errs.push("heart04 min 2");
+      return errs;
+    },
   },
   {
     id: "PL!S-bp5-008-P",
@@ -156,9 +161,26 @@ const CASES = [
     expectTemplate: "live_start_position_change",
   },
   {
+    id: "PL!S-bp5-111-P＋",
+    trigger: "jidou",
+    expectTemplate: "jidou_area_move_opp_wait",
+    check: (cl) => (cl.oppWaitMaxPrintedBlade === 2 ? [] : ["opp blade 2"]),
+  },
+  {
     id: "PL!S-bp5-222-P＋",
     trigger: "kidou",
     expectTemplate: "live_start_position_change",
+    check: (cl) =>
+      cl.positionTargetSeriesTags?.includes("Aqours") && cl.positionTargetSeriesTags?.includes("SaintSnow")
+        ? []
+        : ["target series"],
+  },
+  {
+    id: "PL!S-bp5-222-P＋",
+    trigger: "jidou",
+    expectTemplate: "jidou_area_move_activate_energy",
+    check: (cl) =>
+      cl.perTurnLimit === 1 && cl.energyActiveCount === 2 ? [] : ["turn1 energy2"],
   },
   {
     id: "PL!S-bp5-019-L",
@@ -223,8 +245,8 @@ for (const c of CASES) {
   const errs = [];
   if (c.jouji) {
     if (c.expectTemplate !== cl.kind) errs.push(`template ${cl.kind}`);
-  } else if (c.trigger === "jouji") {
-    if (c.expectTemplate !== "passive_track") errs.push("jouji passive_track expected");
+  } else if (c.trigger === "jouji" && c.expectTemplate === "passive_track") {
+    if (cl.template !== "passive_track") errs.push("jouji passive_track expected");
   } else {
     if (cl.template !== c.expectTemplate) errs.push(`template ${cl.template}`);
     if (!abilityEffectIsAutomated(cl.template)) errs.push("not automated");
@@ -238,8 +260,24 @@ for (const c of CASES) {
   }
 }
 
+for (const id of ["PL!S-bp5-012-N", "PL!S-bp5-018-N", "PL!S-bp5-021-L"]) {
+  const card = cards[id];
+  if (!card) {
+    console.error("MISSING", id);
+    failed++;
+    continue;
+  }
+  const raw = cardAbilityRawText(card);
+  if (raw && raw.trim()) {
+    failed++;
+    console.error("FAIL", id, "expected no ability");
+  } else {
+    console.log("OK", id, "no ability");
+  }
+}
+
 if (failed) {
   console.error(`\nverify-aqours-bp5: ${failed} failed`);
   process.exit(1);
 }
-console.log(`\nverify-aqours-bp5: ${CASES.length} OK`);
+console.log(`\nverify-aqours-bp5: ${CASES.length + 3} OK`);

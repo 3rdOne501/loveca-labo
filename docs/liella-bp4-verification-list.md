@@ -99,3 +99,13 @@
 | PL!SP-bp4-027-L | Chance Day, Chance Way! | 成功: ステージLiella!のみ→任意フォーメーションチェンジ |
 | PL!SP-bp4-029-L | 追いかける夢の先で | 能力なし |
 | PL!SP-bp4-030-L | Second Sparkle | 能力なし |
+
+## 2026-06-30 2回監修
+
+| ID | 内容 |
+|----|------|
+| （全体） | 全68枚再確認。`guided_manual=0`。新規コード修正なし |
+| PL!SP-bp4-001-P | `requiresStageOnlySeries`（ステージLiella!のみ）を再確認 |
+| PL!SP-bp4-008-P | 左右サイド別登場 `ability_sequence` を再確認 |
+| PL!SP-bp4-011-P | 移動時相手元BH3以下ウェイトを再確認 |
+| verify | 33ケースすべて通過 |

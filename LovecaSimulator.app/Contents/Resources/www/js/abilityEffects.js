@@ -30,6 +30,7 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  *   |'toujou_success_live_pick_hand'
  *   |'toujou_success_live_hand_reveal_swap'
  *   |'deck_mill_conditional_draw'
+ *   |'deck_mill_conditional_blade_grant'
  *   |'draw_from_deck'
  *   |'draw_then_hand_discard'
  *   |'passive_track'
@@ -63,6 +64,7 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  *   |'toujou_deck_top_wait_if_all_members'
  *   |'toujou_deck_top_wait_if_all_heart'
  *   |'toujou_both_wait_to_empty_stage'
+ *   |'toujou_both_sides_wait_all_printed_blade'
  *   |'toujou_both_wait_pick_live_hand'
  *   |'toujou_opp_stage_member_match_grant'
  *   |'toujou_opp_emma_punch_answer'
@@ -203,6 +205,7 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  *   |'live_start_hand_named_discard_grant_jouji'
  *   |'live_start_hand_discard_same_unit_grant'
  *   |'live_start_hand_discard_same_group_grant'
+ *   |'live_start_hand_discard_group_member_grant'
  *   |'live_start_hand_discard_optional_blade_per'
  *   |'live_start_hand_discard_series_member_blade_grant'
  *   |'live_start_hand_reveal_deck_place_blade'
@@ -270,24 +273,33 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  * @property {number | null} [minCost]
  * @property {string | null} [seriesTag] 『…』の中身
  * @property {number | null} [minSuccessLiveCount]
+ * @property {string | null} [minSuccessLiveSeriesTag] 成功ライブ置き場に指定タグのカードがある
  * @property {number | null} [minNeedHeartSlot] 1-6
  * @property {number | null} [minNeedHeartValue]
  * @property {number | null} [minTotalNeedHeart]
  * @property {number | null} [minSuccessLiveScoreSum]
  * @property {number | null} [minEnergyCount]
  * @property {number | null} [minCostMemberOnStage]
+ * @property {number | null} [minExactCostMemberOnStage] ステージにコストちょうどNのメンバー（以上ではない）
+ * @property {boolean} [excludeSelfFromStageCostCheck] 上記チェックから能力発動元メンバーを除外
  * @property {string | null} [characterNameOnStage]
  * @property {string | null} [characterName]
  * @property {boolean} [acceptNoAbilityOrNativeJouji]
  * @property {number[]} [heartSlotsAny] メンバーがいずれかのスロットを持つ
+ * @property {Object.<number, number>} [minPrintedHeartBySlot] メンバーカード印刷ハートのスロット別下限（例: heart04×2）
  * @property {boolean} [requiresStageMemberMovedThisTurn] このターン中にエリア移動したメンバー参照
  * @property {boolean} [requiresSelfMovedThisTurn] このカード（メンバー）自身がこのターン中にエリア移動
  * @property {number | null} [minStageHeartSlot] ステージにいるメンバーの所持ハート色スロット 1-6
  * @property {number | null} [minStageHeartCount] 上記スロット所持数の下限
+ * @property {number[]} [requiresStageCollectiveHeartSlots] ステージ全メンバー合算で各スロットが1つ以上
  * @property {'left'|'center'|'right'|null} [stageArea] 上記ハート条件を満たすメンバーのエリア
  * @property {number | null} [minDistinctStageAndWaitingNames] ステージ＋控え室で名前が異なるメンバー数
  * @property {number | null} [minStageSeriesMembers] ステージに『minStageSeriesMembersTag』のメンバーがN人以上
  * @property {string | null} [minStageSeriesMembersTag] 上記カウント対象のシリーズ
+ * @property {number | null} [minStageSeriesHeartSlotTotal] ステージの『tag』メンバーが持つ指定色ハートの合計下限
+ * @property {number | null} [minStageSeriesHeartSlot] 上記のハート色スロット 1-6
+ * @property {string | null} [minStageSeriesHeartSlotTag] 上記カウント対象のシリーズ
+ * @property {boolean} [requiresOpponentSucceededLiveZeroSurplusThisTurn] 相手が余剰ハート0でライブ成功済み
  * @property {number | null} [minStageMembers] ステージにメンバーがN人以上
  * @property {number | null} [maxHandCount] 自分の手札がN枚以下
  * @property {number | null} [requiresSelfScoreEquals] このカードのスコアがNの場合
@@ -298,6 +310,7 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  * @property {string | null} [waitingSeriesCardTag]
  * @property {number | null} [minWaitingAnyCardCount] 控え室のカード総数がN枚以上（シリーズ不問）
  * @property {boolean} [requiresAllStageAreasFilled] 左・センター・右すべてにメンバーがいる
+ * @property {boolean} [requiresAnyStageMemberWithEnergyUnder] ステージにエネルギーが下にあるメンバーが1人以上
  * @property {number | null} [minWaitingSeriesMemberCount] 控え室に『waitingSeriesMemberTag』のメンバーがN枚以上
  * @property {string | null} [waitingSeriesMemberTag]
  * @property {number | null} [maxOwnSuccessLiveCount] 自分の成功ライブ置き場の上限枚数（0=空）
@@ -347,6 +360,7 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  * @property {number | null} [requiresOpponentHandLead] 相手の手札が自分よりN枚以上多い
  * @property {boolean} [requiresYellRevealedNoBladeHeartMember] エール公開にBHなしメンバーが1枚以上
  * @property {boolean} [requiresYellRevealedOwnLiveCard] エール公開に自分のライブカードが1枚以上
+ * @property {boolean} [requiresOwnYellRevealCountLessThanOpponent] 自エール公開枚数が相手より少ない
  * @property {boolean} [requiresEnteredFromWaiting] 控え室から登場している場合のみ
  * @property {number} [oppWaitMinCost] 相手ステージウェイト対象の最低コスト
  * @property {Array<'left'|'center'|'right'>} [oppWaitStageAreas] 相手ステージウェイト対象エリア
@@ -385,6 +399,7 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  * @property {number} [choiceBoostMax]
  * @property {'left'|'center'|'right'|null} [stageArea]
  * @property {Array<'left'|'center'|'right'>} [stageAreas]
+ * @property {Partial<AbilityPickFilters>} [energyOnPickedLiveFilters] kidou_stage_wait_pick_hand: 回収ライブが条件を満たすときのみエネルギーアクティブ
  * @property {number} [energyActiveCount]
  * @property {number} [energyWaitCount]
  * @property {number} [oppDeckDrawCount] 相手が山札から引く枚数
@@ -399,6 +414,7 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  * @property {number} [deckBottomPickMax] 控え室から山札下へ置く枚数上限
  * @property {number} [deckDrawOnSuccess] 効果成功後に山札から引く枚数
  * @property {boolean} [deckTopPickDistinctGroup]
+ * @property {boolean} [deckTopPickSplitHandDeckWaiting] 見たN枚を手札・山札上・控え室へ1枚ずつ振り分け
  * @property {number} [handDiscardExact]
  * @property {number} [handDiscardMax]
  * @property {number} [bladeGainPerLiveFrame] ライブ中のカード1枚につき付与するブレード数
@@ -413,6 +429,9 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  * @property {AbilityTrigger} [excludeTriggerOnPick]
  * @property {string[]} [kidouSegmentRaws]
  * @property {boolean} [requiresSeriesOnStage]
+ * @property {boolean} [requiresSeriesEnteredThisTurn] このターンにシリーズメンバーが登場済み
+ * @property {boolean} [pickMaxCostBelowHandDiscarded] 手札捨て参照より低コストのみ控え室から回収
+ * @property {boolean} [handDiscardMustBeMember] 手札コストはメンバーカードのみ
  * @property {string[]} [characterNames]
  * @property {number} [handDiscardTotalCount] 手札の指定キャラ名カードを合計N枚控え室へ（任意コスト）
  * @property {string | null} [requiresBatonFromSeriesTag] 登場時：指定シリーズのメンバーからのバトンタッチ必須
@@ -438,6 +457,9 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  * @property {string} [requiredUnitOnStage] ステージがこのユニットのみのとき発動
  * @property {string} [excludeCharacterName] 対象から除外するキャラ名
  * @property {number} [energyUnderCount] メンバー下に置くエネルギー枚数
+ * @property {number} [bladeGainPerCostMilledMember] コストでミルした控え室メンバー1枚につきブレード
+ * @property {string} [costMilledSeriesTag] ミル付与カウント対象シリーズ
+ * @property {'left'|'center'|'right'} [requiresSelfInStageArea] 自身が当該エリアにいる場合のみ付与
  * @property {number[]} [heartPickSlots] ハート色選択で選べるスロット 1-6
  * @property {boolean} [heartPerSuccessLive] 成功ライブカード置き場のライブ1枚につきハート付与
  * @property {boolean} [grantToMovedMembersThisTurn] このターン中に移動したステージメンバーへ付与
@@ -466,6 +488,8 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  * @property {number} [minYellRevealedLiveCount] OR 条件: エール公開ライブカード枚数下限
  * @property {number} [minStageDistinctHeartSlots] OR 条件: ステージメンバー合算ハート色種類下限
  * @property {boolean} [scorePlusOrStageMoved] OR 条件: このターンにステージメンバーがエリア移動
+ * @property {boolean} [drawOrPreconditions] ライブ成功時ドローの OR 複合条件（PL!SP-pb2-004-R 等）
+ * @property {boolean} [requiresLiveAreaScoreAbovePrinted] OR: ライブ置き場に元々より高いスコアのライブがある
  * @property {number} [minMemberHeartTotal] series_stage_members_min_hearts 用のハート下限
  * @property {number} [liveScoreCapMax] ライブ合計スコア加算の上限
  * @property {number} [oppBladeGapMin] 相手ブレードが自メンバーより N 以上少ない条件
@@ -492,6 +516,7 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  * @property {string | null} [grantToNamedStageMember] 指名メンバーへ付与
  * @property {string[]} [grantToNamedStageMemberOptions] 指名メンバー候補（複数から1人）
  * @property {boolean} [grantToSameNameAsDiscardedMember] コストで捨てたメンバーと同名のステージメンバーへ付与
+ * @property {boolean} [grantToDiscardedCardGroupMember] コストで捨てたカードと同グループのステージメンバーへ付与
  * @property {boolean} [requiresInHandOnly] 手札にある場合のみ起動（起動）
  * @property {number} [grantHeartSlotCount] 付与ハートスロットの枚数（既定1）
  * @property {number} [grantHeartCountPerEnergy] エネルギー1枚あたりの付与ハート数
@@ -513,6 +538,8 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  * @property {number} [minPickedMemberBlade] 選択メンバーのブレード下限（スコア加算等）
  * @property {number} [minSurplusHeartsOrYellAllBh] 余剰ハート下限（エール公開全BHありと OR）
  * @property {number} [grantAllHeartCount] ライブ終了時まで付与する ALLハート枚数
+ * @property {Object.<string, number>} [grantHeartSlotMap] ライブ終了時まで付与する色別ハート（例: heart03×1, heart05×1）
+ * @property {boolean} [requiresNoBhMemberFromLiveFrameToWaitingThisTurn] このターン BHなしメンバーがライブ枠→控え室
  * @property {boolean} [grantToConditionalAreaMember] 条件を満たすエリア内メンバーへ付与
  * @property {string | null} [discardFollowupCharacterName] 手札捨て後の追加効果対象キャラ名
  * @property {number} [followupBladeGain] 条件付き追加ブレード
@@ -721,6 +748,17 @@ function classifyDeckTopPickToHandPatch(p, segRaw, extraPatch) {
   if (/手札をすべて公開/.test(p) && /公開した手札の中にライブカードがない/.test(p)) return null;
   var td = parseDeckTopCount(p);
   if (td == null) return null;
+  if (
+    /その中から1枚を手札に加え/.test(p) &&
+    /1枚をデッキの上に置/.test(p) &&
+    /1枚を控え室に置/.test(p)
+  ) {
+    return Object.assign({}, extraPatch || {}, {
+      template: "deck_top_pick_recover",
+      deckTopCount: td,
+      deckTopPickSplitHandDeckWaiting: true,
+    });
+  }
   if (/登場させるか、手札に加える/.test(p)) return null;
   if (!/手札に加/.test(p)) return null;
   if (!/残り.*控え室|控え室に置/.test(p)) return null;
@@ -757,10 +795,28 @@ function classifyDeckTopPickToHandPatch(p, segRaw, extraPatch) {
   }
 
   if (/公開/.test(p)) {
-    var pickFilters = parseAbilityPickFilters(p);
-    var heartAny = parseHeartSlotsAnyFromText(p, segRaw);
-    if (heartAny.length) pickFilters = Object.assign({}, pickFilters, { heartSlotsAny: heartAny });
-    patch.filters = pickFilters;
+    var memOrLiveHeartM = p.match(
+      /ハートに[^。]*を([０-９\d]+)個以上持つメンバーカードか、必要ハートに[^。]*を([０-９\d]+)以上含むライブカード/,
+    );
+    if (memOrLiveHeartM) {
+      var heartSlotsOr = parseHeartSlotsAnyFromText(p, segRaw);
+      var slotOr = heartSlotsOr.length ? heartSlotsOr[0] : null;
+      var memberHeartMin = Number(normalizeFwDigits(memOrLiveHeartM[1])) || 2;
+      var liveHeartMin = Number(normalizeFwDigits(memOrLiveHeartM[2])) || 2;
+      /** @type {AbilityPickFilters} */
+      var memberPickAlt = { pickType: T_MEMBER };
+      /** @type {AbilityPickFilters} */
+      var livePickAlt = { pickType: T_LIVE, minNeedHeartSlot: slotOr, minNeedHeartValue: liveHeartMin };
+      if (slotOr != null) memberPickAlt.minPrintedHeartBySlot = { [slotOr]: memberHeartMin };
+      patch.filters = { pickFilterAlternatives: [memberPickAlt, livePickAlt] };
+    } else {
+      var pickFilters = parseAbilityPickFilters(p);
+      var heartAny = parseHeartSlotsAnyFromText(p, segRaw);
+      if (heartAny.length) pickFilters = Object.assign({}, pickFilters, { heartSlotsAny: heartAny });
+      var heartMin = parseMinPrintedHeartBySlotFromText(p, segRaw);
+      if (heartMin) pickFilters = Object.assign({}, pickFilters, { minPrintedHeartBySlot: heartMin });
+      patch.filters = pickFilters;
+    }
   }
 
   return patch;
@@ -868,6 +924,8 @@ function buildOppWaitStageMeta(p) {
   }
   if (bladeExact == null && bladeMax != null) meta.oppWaitMaxPrintedBlade = bladeMax;
   if (areas.length) meta.oppWaitStageAreas = areas;
+  var exclUnitM = p.match(/『([^』]+)』以外/);
+  if (exclUnitM && /ウェイト/.test(p)) meta.excludedUnit = normalizeQuotedSeriesTag(exclUnitM[1]);
   if (/控え室から登場している場合/.test(p)) meta.requiresEnteredFromWaiting = true;
   return meta;
 }
@@ -971,14 +1029,15 @@ function mergeAbilityPickFilters(base, patch) {
 /**
  * 「〜場合、」の前段を追加条件として拾う（ライブ系の前置条件を取りこぼさないため）
  * @param {string} p
+ * @param {string} [segRaw]
  * @returns {AbilityPickFilters}
  */
-function parseConditionalPrefixFilters(p) {
+function parseConditionalPrefixFilters(p, segRaw) {
   var txt = String(p || "");
   var idx = txt.indexOf("場合");
-  if (idx <= 0) return parseAbilityPickFilters("");
+  if (idx <= 0) return parseAbilityPickFilters("", segRaw);
   var head = txt.slice(0, idx + 2);
-  return parseAbilityPickFilters(head);
+  return parseAbilityPickFilters(head, segRaw);
 }
 
 /**
@@ -997,6 +1056,39 @@ function parseNeedHeartMapFromSegmentRaw(segRaw) {
     out[key] = Math.max(0, Math.floor(Number(out[key]) || 0)) + 1;
   }
   return out;
+}
+
+/**
+ * ステージ全メンバー合算で指定ハート色がそろう条件（1人が全色持つ必要はない）。
+ * @param {string} p
+ * @param {string} [segRaw]
+ * @returns {number[] | null}
+ */
+function parseStageCollectiveHeartSlotsRequirement(p, segRaw) {
+  var blob = String(p || "") + String(segRaw || "");
+  if (!/ステージにいるメンバーが持つハートの中に/.test(blob)) return null;
+  if (!/がすべてある場合/.test(blob)) return null;
+  var parseSource = /\{\{heart_0?\d/.test(String(segRaw || "")) ? String(segRaw || "") : String(p || "");
+  var idx = parseSource.indexOf("ステージにいるメンバーが持つハートの中に");
+  if (idx < 0) return null;
+  var head = parseSource.slice(idx);
+  var endIdx = head.indexOf("がすべてある");
+  if (endIdx < 0) return null;
+  var heartChunk = head.slice(0, endIdx);
+  var map = parseNeedHeartMapFromSegmentRaw(heartChunk);
+  if (!Object.keys(map).length) {
+    [1, 2, 3, 4, 5, 6].forEach(function (s) {
+      var key = s === 1 ? "heart01" : "heart0" + s;
+      if (new RegExp(key, "i").test(heartChunk)) map[key] = 1;
+    });
+  }
+  /** @type {number[]} */
+  var slots = [];
+  [1, 2, 3, 4, 5, 6].forEach(function (s) {
+    var key = s === 1 ? "heart01" : "heart0" + s;
+    if ((map[key] || 0) > 0) slots.push(s);
+  });
+  return slots.length >= 2 ? slots : null;
 }
 
 /**
@@ -1139,6 +1231,34 @@ function classifyLiveScorePerUnit(p) {
     return base;
   }
   return null;
+}
+
+/**
+ * 『シリーズ』のメンバー1人につきエネルギーN枚アクティブ（Printemps 登場等）。
+ * @param {string} p
+ * @returns {Partial<ClassifiedAbility> | null}
+ */
+function classifyActivateEnergyPerSeriesMember(p) {
+  if (!/1人につき/.test(p) || !/エネルギーを.*アクティブ/.test(p)) return null;
+  var actEnM = p.match(/エネルギーを(\d+)枚アクティブにする/);
+  if (/名前の異なる『([^』]+)』のメンバー1人につき/.test(p)) {
+    var distinctM = p.match(/名前の異なる『([^』]+)』のメンバー1人につき/);
+    return {
+      template: "activate_energy",
+      energyActiveCount: actEnM ? Number(actEnM[1]) || 1 : 1,
+      energyActiveUnitKind: "distinct_name_series_stage_members",
+      energyActiveUnitSeries: distinctM ? distinctM[1] : null,
+      energyActiveWaitOnly: /ウェイト/.test(p),
+    };
+  }
+  var seriesM = p.match(/『([^』]+)』のメンバー1人につき/);
+  if (!seriesM) return null;
+  return {
+    template: "activate_energy",
+    energyActiveCount: actEnM ? Number(actEnM[1]) || 1 : 1,
+    energyActiveUnitKind: "series_stage_members",
+    energyActiveUnitSeries: seriesM[1],
+  };
 }
 
 /**
@@ -1321,6 +1441,39 @@ function parseNeedHeartChoiceMapsFromSegmentRaw(segRaw) {
  * @param {string} p
  * @param {string} segRaw
  */
+/**
+ * 成功ライブ／ライブ中の「必要ハートに含まれる heart0N がM」条件（PHOENIX 等）。
+ * @param {string} p
+ * @param {string} [segRaw]
+ * @returns {{ minNeedHeartSlot: number, minNeedHeartValue: number } | null}
+ */
+function parseSuccessOrLiveFrameNeedHeartExact(p, segRaw) {
+  var blob = normalizeFwDigits(String(segRaw || "") + "\n" + String(p || ""));
+  var m = blob.match(
+    /成功ライブカード置き場かライブ中のライブカード[\s\S]*?必要ハートに含まれる[\s\S]*?heart_?0?(\d)[^。]*?が([０-９\d]+)/i,
+  );
+  if (!m) return null;
+  var slot = Number(m[1]);
+  if (slot < 1 || slot > 6) return null;
+  return {
+    minNeedHeartSlot: slot,
+    minNeedHeartValue: Number(normalizeFwDigits(m[2])) || 0,
+  };
+}
+
+/**
+ * @param {Partial<ClassifiedAbility>} patch
+ * @param {string} p
+ * @param {string} [segRaw]
+ */
+function applySuccessOrLiveFrameNeedHeartExactMeta(patch, p, segRaw) {
+  var nh = parseSuccessOrLiveFrameNeedHeartExact(p, segRaw);
+  if (!nh) return patch;
+  patch.minNeedHeartSlot = nh.minNeedHeartSlot;
+  patch.minNeedHeartValue = nh.minNeedHeartValue;
+  return patch;
+}
+
 function parseLiveFrameNeedHeartCondition(p, segRaw) {
   var combined = String(segRaw || "") + "\n" + String(p || "");
   var blockM =
@@ -1439,6 +1592,9 @@ function parseGrantJoujiMeta(p, segRaw) {
     meta.grantToAllStageMembers = true;
   }
 
+  var collectiveHeartSlots = parseStageCollectiveHeartSlotsRequirement(p, segRaw);
+  if (collectiveHeartSlots) meta.requiresStageCollectiveHeartSlots = collectiveHeartSlots;
+
   if (/そのメンバーは/.test(p) && /ライブ終了時まで/.test(p)) {
     meta.grantToConditionalAreaMember = true;
   }
@@ -1518,6 +1674,24 @@ function enrichGrantJoujiPatch(p, segRaw, patch) {
     var grantClause = (String(segRaw || "") + String(p || "")).split(/ライブ終了時まで/)[1] || "";
     var allCount = (grantClause.match(/\{\{icon_all/g) || []).length;
     if (allCount > 0) patch.grantAllHeartCount = allCount;
+  }
+  if (!patch.grantHeartSlotCount && patch.requiredHeartSlot) {
+    var grantClauseHearts = (String(segRaw || "") + String(p || "")).split(/ライブ終了時まで/)[1] || "";
+    var slotForCount = Math.floor(Number(patch.requiredHeartSlot));
+    if (slotForCount > 0) {
+      var heartDupRe = new RegExp("\\{\\{heart_0?" + slotForCount + "[^}]*\\}\\}", "gi");
+      var heartDupMatches = grantClauseHearts.match(heartDupRe);
+      if (heartDupMatches && heartDupMatches.length > 1) {
+        patch.grantHeartSlotCount = heartDupMatches.length;
+      }
+    }
+  }
+  if (
+    !patch.requiresSelfInStageArea &&
+    parseStageAreaConstraint(segRaw) === "center" &&
+    (/\{\{toujyou/.test(String(segRaw)) || /登場/.test(String(segRaw)))
+  ) {
+    patch.requiresSelfInStageArea = "center";
   }
   return Object.assign(patch, parseGrantJoujiMeta(p, segRaw));
 }
@@ -1767,7 +1941,7 @@ function classifyConditionalGrantJoujiInteractive(p, segRaw, trigger) {
     /ライブ終了時まで/.test(p) &&
     /を持つ『虹ヶ咲』のメンバー1人は/.test(p)
   ) {
-    var stNeedM = normalizeFwDigits(String(segRaw || "") + p).match(/heart0?1.*?(\d+)/i);
+    var stNeed = parseSuccessOrLiveFrameNeedHeartExact(p, segRaw);
     var grantClauseSt = (String(segRaw || "") + String(p || "")).split(/ライブ終了時まで/)[1] || "";
     var grantOnlySt = grantClauseSt.split(/メンバー1人は/)[1] || grantClauseSt;
     var stGrantCount = (grantOnlySt.match(/\{\{heart_0?6/gi) || []).length;
@@ -1778,8 +1952,8 @@ function classifyConditionalGrantJoujiInteractive(p, segRaw, trigger) {
     return {
       template: "live_start_stellar_stream_grant",
       filters: { seriesTag: "虹ヶ咲" },
-      minNeedHeartSlot: 1,
-      minNeedHeartValue: stNeedM ? Number(stNeedM[1]) : 3,
+      minNeedHeartSlot: stNeed ? stNeed.minNeedHeartSlot : 1,
+      minNeedHeartValue: stNeed ? stNeed.minNeedHeartValue : 3,
       memberHeartSlot: 6,
       grantHeartSlotCount: stGrantCount,
       requiredHeartSlot: 6,
@@ -2081,7 +2255,7 @@ function classifyOptionalMemberWaitGrant(p, segRaw, base) {
   var grantBlade = bladeGainFromIcons(segRaw, p);
   if (grantBlade <= 0) grantBlade = base.bladeGain || 0;
   var grantScore = parseScorePlusFromText(p) || parseScorePlusFromText(segRaw.replace(/\{\{[^}]+\}\}/g, ""));
-  return {
+  return enrichGrantJoujiPatch(p, segRaw, {
     template: "grant_jouji_session",
     optional: true,
     hasOptionalCost: true,
@@ -2090,7 +2264,7 @@ function classifyOptionalMemberWaitGrant(p, segRaw, base) {
     liveScoreGrant: grantScore,
     requiresOnStage: true,
     filters: parseAbilityPickFilters(p),
-  };
+  });
 }
 
 function classifyPayEnergyPickOne(card, trigger) {
@@ -2154,6 +2328,13 @@ function parseBladeGainCount(p) {
 /** @param {string} segRaw */
 function countWikiEnergyIcons(segRaw) {
   return (String(segRaw || "").match(/\{\{icon_energy\.png\|E\}\}/g) || []).length;
+}
+
+/** 「：」より前（コスト部）の wiki E アイコン数 */
+function countWikiEnergyIconsInCostPart(segRaw) {
+  var colonIdx = String(segRaw || "").indexOf("：");
+  var costRaw = colonIdx >= 0 ? segRaw.slice(0, colonIdx) : segRaw;
+  return countWikiEnergyIcons(costRaw);
 }
 
 /** @param {string} segRaw */
@@ -2269,8 +2450,8 @@ function enrichPickFiltersFromSegRaw(f, segRaw) {
   return f;
 }
 
-/** @param {string} p @returns {AbilityPickFilters} */
-export function parseAbilityPickFilters(p) {
+/** @param {string} p @param {string} [segRaw] @returns {AbilityPickFilters} */
+export function parseAbilityPickFilters(p, segRaw) {
   /** @type {AbilityPickFilters} */
   var f = {
     pickType: null,
@@ -2326,11 +2507,24 @@ export function parseAbilityPickFilters(p) {
     if (minCostM) f.minCost = Number(minCostM[1]);
   }
   var seriesM = p.match(/『([^』]+)』/) || p.match(/『([^」]+)」/);
-  if (seriesM) f.seriesTag = normalizeQuotedSeriesTag(seriesM[1]);
+  var waitPickSeriesM = p.match(/控え室から『([^』]+)』の(?:ライブ|メンバー)/);
+  if (waitPickSeriesM) {
+    f.seriesTag = normalizeQuotedSeriesTag(waitPickSeriesM[1]);
+  } else if (seriesM) f.seriesTag = normalizeQuotedSeriesTag(seriesM[1]);
   if (/エールにより公開/.test(p) && /ブレードハートを持たない/.test(p) && /メンバーカード/.test(p)) {
     f.requiresYellRevealedNoBladeHeartMember = true;
   }
-  var liveSeriesPresenceM = p.match(/(?:自分の)?ライブカード置き場に『([^』]+)』のカードがある/);
+  if (
+    /エールにより公開された自分のカードの枚数が.*相手がエールによって公開したカードの枚数より少ない/.test(p)
+  ) {
+    f.requiresOwnYellRevealCountLessThanOpponent = true;
+  }
+  var succLiveSeriesPresenceM = p.match(/(?:自分の)?成功ライブカード置き場に『([^』]+)』(?:のカード)?がある/);
+  if (succLiveSeriesPresenceM) {
+    f.minSuccessLiveSeriesTag = normalizeQuotedSeriesTag(succLiveSeriesPresenceM[1]);
+    if (f.minSuccessLiveCount == null) f.minSuccessLiveCount = 1;
+  }
+  var liveSeriesPresenceM = p.match(/(?<!成功)(?:自分の)?ライブカード置き場に『([^』]+)』のカードがある/);
   if (liveSeriesPresenceM) {
     f.minLiveFrameCount = 1;
     f.minLiveFrameSeriesTag = normalizeQuotedSeriesTag(liveSeriesPresenceM[1]);
@@ -2383,6 +2577,11 @@ export function parseAbilityPickFilters(p) {
   if (!stageMinCostM) stageMinCostM = p.match(/コスト(\d+)以上のメンバーが.*ステージ/);
   if (!stageMinCostM) stageMinCostM = p.match(/コスト(\d+)以上のメンバーがいる場合/);
   if (stageMinCostM) f.minCostMemberOnStage = Number(stageMinCostM[1]);
+  var otherExactCostM = p.match(/このメンバー以外のコスト([０-９\d]+)のメンバー/);
+  if (otherExactCostM) {
+    f.minExactCostMemberOnStage = Number(normalizeFwDigits(otherExactCostM[1]));
+    f.excludeSelfFromStageCostCheck = true;
+  }
   var onlyStageSeriesM =
     p.match(/ステージにいるメンバーが『([^』]+)』のみの場合/) ||
     p.match(/ステージに(?:いる)?メンバーが『([^』]+)』のみで/);
@@ -2474,10 +2673,28 @@ export function parseAbilityPickFilters(p) {
     if (!liveMidM) liveMidM = p.match(/ライブ中の(?:『[^』]+』の)?カードが([０-９\d]+)枚以上/);
     if (liveMidM) f.minLiveFrameCount = Number(normalizeFwDigits(liveMidM[1])) || 0;
   }
-  var stageSeriesM = p.match(/ステージに(?:名前の異なる)?『([^』]+)』のメンバーが([０-９\d]+)人以上/);
-  if (stageSeriesM) {
-    f.minStageSeriesMembers = Number(normalizeFwDigits(stageSeriesM[2])) || 0;
-    f.minStageSeriesMembersTag = stageSeriesM[1];
+  var distinctSeriesStageM = p.match(
+    /(?:自分の)?ステージに名前の異なる『([^』]+)』のメンバーが([０-９\d]+)人以上/,
+  );
+  if (distinctSeriesStageM) {
+    f.minDistinctSeriesMemberNames = Number(normalizeFwDigits(distinctSeriesStageM[2])) || 0;
+    f.distinctSeriesMemberNamesTag = normalizeQuotedSeriesTag(distinctSeriesStageM[1]);
+  } else {
+    var stageSeriesM = p.match(/(?:自分の)?ステージに『([^』]+)』のメンバーが([０-９\d]+)人以上/);
+    if (stageSeriesM) {
+      f.minStageSeriesMembers = Number(normalizeFwDigits(stageSeriesM[2])) || 0;
+      f.minStageSeriesMembersTag = normalizeQuotedSeriesTag(stageSeriesM[1]);
+    }
+  }
+  var seriesHeartSumM = p.match(/『([^』]+)』のメンバーが持つハートに[^。]{0,120}合計([０-９\d]+)[つ個]以上/);
+  if (seriesHeartSumM) {
+    f.minStageSeriesHeartSlotTotal = Number(normalizeFwDigits(seriesHeartSumM[2])) || 0;
+    f.minStageSeriesHeartSlotTag = normalizeQuotedSeriesTag(seriesHeartSumM[1]);
+    var heartSlotsSeries = parseHeartSlotsAnyFromText(p, segRaw || "");
+    if (heartSlotsSeries.length) f.minStageSeriesHeartSlot = heartSlotsSeries[0];
+  }
+  if (/相手が余剰のハートを持たずにライブを成功させていた/.test(p)) {
+    f.requiresOpponentSucceededLiveZeroSurplusThisTurn = true;
   }
   var stageMembersM = p.match(/自分のステージにメンバーが([０-９\d]+)人以上/);
   if (stageMembersM) {
@@ -2505,6 +2722,11 @@ export function parseAbilityPickFilters(p) {
     f.minStageSeriesMembers = 1;
     f.minStageSeriesMembersTag = stageSeriesAnyM[1];
   }
+  var otherSeriesStageM = p.match(/ステージにほかの『([^』]+)』のメンバーがいる場合/);
+  if (otherSeriesStageM) {
+    f.minStageSeriesMembers = 2;
+    f.minStageSeriesMembersTag = otherSeriesStageM[1];
+  }
   if (
     /ステージにほかのメンバーが(いる|おり)/.test(p) ||
     /ステージに他のメンバーが(いる|おり)/.test(p)
@@ -2521,6 +2743,9 @@ export function parseAbilityPickFilters(p) {
     ];
     f.pickType = null;
     f.maxCost = null;
+  }
+  if (/自分のステージにエネルギーカードが下にあるメンバーがいる場合/.test(p)) {
+    f.requiresAnyStageMemberWithEnergyUnder = true;
   }
   if (/ステージのエリアすべてにメンバーが登場/.test(p) || /エリアすべてにメンバーが登場/.test(p)) {
     f.requiresAllStageAreasFilled = true;
@@ -2543,7 +2768,10 @@ export function parseAbilityPickFilters(p) {
     f.minWaitingSeriesMemberCount = Number(normalizeFwDigits(waitMemM[2])) || 0;
     f.waitingSeriesMemberTag = waitMemM[1];
   }
-  if (/自分の成功ライブカード置き場にカードがなく/.test(p)) {
+  if (
+    /自分の成功ライブカード置き場にカードがなく/.test(p) ||
+    /成功ライブカード置き場のカードが0枚/.test(p)
+  ) {
     f.maxOwnSuccessLiveCount = 0;
   }
   if (!eitherSlClause) {
@@ -2796,21 +3024,58 @@ export function catalogCardMatchesPickFilters(cat, filters) {
     for (var hi = 0; hi < slotsAny.length; hi++) {
       var slotN = Math.floor(Number(slotsAny[hi]));
       if (!(slotN >= 1 && slotN <= 6)) continue;
-      var hKey = slotN === 1 ? "heart01" : "heart0" + slotN;
-      var hAlt = "heart_" + String(slotN).padStart(2, "0");
-      var bh = cat.base_heart;
-      var blh = cat.blade_heart;
-      var need = cat.need_heart;
-      if (bh && (Number(bh[hKey]) > 0 || Number(bh[hAlt]) > 0)) hasHeart = true;
-      if (blh) {
-        var bKey = slotN === 1 ? "b_heart01" : "b_heart0" + slotN;
-        if (Number(blh[bKey]) > 0) hasHeart = true;
-      }
-      if (need && (Number(need[hKey]) > 0 || Number(need[hAlt]) > 0)) hasHeart = true;
+      if (catalogMemberPrintedHeartCountBySlot(cat, slotN) > 0) hasHeart = true;
     }
     if (!hasHeart) return false;
   }
+  if (filters.minPrintedHeartBySlot && typeof filters.minPrintedHeartBySlot === "object") {
+    if (cat.type !== T_MEMBER) return false;
+    for (var minSlotKey in filters.minPrintedHeartBySlot) {
+      if (!Object.prototype.hasOwnProperty.call(filters.minPrintedHeartBySlot, minSlotKey)) continue;
+      var minSlot = Math.floor(Number(minSlotKey));
+      var minCnt = Math.max(0, Math.floor(Number(filters.minPrintedHeartBySlot[minSlotKey]) || 0));
+      if (minCnt > 0 && catalogMemberPrintedHeartCountBySlot(cat, minSlot) < minCnt) return false;
+    }
+  }
   return true;
+}
+
+/** @param {*} cat @param {number} slotN */
+function catalogMemberPrintedHeartCountBySlot(cat, slotN) {
+  if (!cat || cat.type !== T_MEMBER) return 0;
+  var slot = Math.floor(Number(slotN));
+  if (!(slot >= 1 && slot <= 6)) return 0;
+  var hKey = slot === 1 ? "heart01" : "heart0" + slot;
+  var hAlt = "heart_" + String(slot).padStart(2, "0");
+  var total = 0;
+  var bh = cat.base_heart;
+  var blh = cat.blade_heart;
+  if (bh) {
+    total += Math.max(0, Math.floor(Number(bh[hKey]) || 0));
+    total += Math.max(0, Math.floor(Number(bh[hAlt]) || 0));
+  }
+  if (blh) {
+    var bKey = slot === 1 ? "b_heart01" : "b_heart0" + slot;
+    total += Math.max(0, Math.floor(Number(blh[bKey]) || 0));
+  }
+  return total;
+}
+
+/** @param {string} p @param {string} segRaw @returns {Object.<number, number> | null} */
+function parseMinPrintedHeartBySlotFromText(p, segRaw) {
+  var blob = String(p || "") + String(segRaw || "");
+  /** @type {Object.<number, number>} */
+  var out = {};
+  var re = /(?:ハートに)?(?:\{\{heart_0?(\d)[^}]*\}\}|heart_0?(\d))[^。；]*?を([０-９\d]+)[つ個]以上持つ/g;
+  var m;
+  while ((m = re.exec(blob)) !== null) {
+    var slot = Number(m[1] || m[2]);
+    var cnt = Number(normalizeFwDigits(m[3])) || 0;
+    if (slot >= 1 && slot <= 6 && cnt > 0) {
+      out[slot] = Math.max(out[slot] || 0, cnt);
+    }
+  }
+  return Object.keys(out).length ? out : null;
 }
 
 /** @param {string} p @param {string} segRaw @returns {number[]} */
@@ -2833,6 +3098,11 @@ function parseHeartSlotsAnyFromText(p, segRaw) {
 /** @param {string} p */
 function parseRequiresSeriesOnStage(p) {
   return /ステージに『[^』]+』[^：]*登場している場合/.test(String(p || ""));
+}
+
+/** @param {string} p */
+function parseRequiresSeriesEnteredThisTurn(p) {
+  return /このターン/.test(String(p || "")) && parseRequiresSeriesOnStage(p);
 }
 
 /** @param {string} p @returns {string[]} */
@@ -2987,9 +3257,9 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
     keys = abilityWikiKeys(card);
   }
   base.optional = /もよい/.test(segRaw);
-  base.filters = parseAbilityPickFilters(p);
+  base.filters = parseAbilityPickFilters(p, segRaw);
   if (trigger === "live_start" || trigger === "live_success") {
-    base.filters = mergeAbilityPickFilters(base.filters, parseConditionalPrefixFilters(p));
+    base.filters = mergeAbilityPickFilters(base.filters, parseConditionalPrefixFilters(p, segRaw));
   }
 
   var perTurn = parsePerTurnLimit(segRaw, keys);
@@ -3060,8 +3330,16 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
   var enterJidou = trigger === "jidou" || (!trigger && (keys.has("jidou") || p.includes("自動")));
 
   if (enterKidou) {
+    var kidouStageAreaMeta = (function () {
+      var areas = parseStageAreaConstraints(segRaw);
+      if (areas.length === 1) return { stageArea: areas[0] };
+      if (areas.length > 1) return { stageAreas: areas };
+      var loc = parseMemberLocationStageArea(String(segRaw || "") + String(p || ""));
+      if (loc) return { stageArea: loc };
+      return {};
+    })();
     function kidouT(obj) {
-      return withTrigger("kidou", Object.assign({ requiresOnStage: true }, obj));
+      return withTrigger("kidou", Object.assign({ requiresOnStage: true }, kidouStageAreaMeta, obj));
     }
 
     if (!segmentRawOverride && trigger === "kidou") {
@@ -3244,6 +3522,41 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
     var kidouGrantInteractive = classifyConditionalGrantJoujiInteractive(p, segRaw, "kidou");
     if (kidouGrantInteractive) return kidouT(kidouGrantInteractive);
 
+    if (
+      /エネルギー置き場/.test(p) &&
+      /このメンバーの下に置/.test(p) &&
+      /ライブ終了時まで/.test(p + segRaw) &&
+      /カードを(\d+)枚引/.test(p)
+    ) {
+      var drawUnderGrantKd = p.match(/カードを(\d+)枚引/);
+      var underGrantKd = p.match(/エネルギー(\d+)枚/);
+      return kidouT(
+        enrichGrantJoujiPatch(p, segRaw, {
+          template: "grant_jouji_session",
+          energyUnderCount: underGrantKd ? Number(underGrantKd[1]) : 1,
+          deckDrawCount: drawUnderGrantKd ? Number(drawUnderGrantKd[1]) : 1,
+          bladeGain: bladeGainFromIcons(segRaw, p),
+          liveScoreGrant:
+            parseScorePlusFromText(p) ||
+            parseScorePlusFromText(segRaw.replace(/\{\{[^}]+\}\}/g, "")),
+        }),
+      );
+    }
+
+    var deckMillBladeKd = p.match(/デッキの上からカードを(\d+)枚控え室に置/);
+    var milledSeriesBladeKd = p.match(/控え室に置いた『([^』]+)』のメンバーカード1枚につき/);
+    if (deckMillBladeKd && milledSeriesBladeKd && /ライブ終了時まで/.test(p + segRaw)) {
+      return kidouT(
+        enrichGrantJoujiPatch(p, segRaw, {
+          template: "grant_jouji_session",
+          deckTopCount: Number(deckMillBladeKd[1]) || 3,
+          bladeGainPerCostMilledMember: bladeGainFromIcons(segRaw, p) || 1,
+          costMilledSeriesTag: milledSeriesBladeKd[1],
+          bladeGain: 0,
+        }),
+      );
+    }
+
     if (/ライブ終了時まで/.test(p + segRaw)) {
       var grantBladeKd = bladeGainFromIcons(segRaw, p);
       var grantScoreKd = parseScorePlusFromText(p) || parseScorePlusFromText(segRaw.replace(/\{\{[^}]+\}\}/g, ""));
@@ -3285,11 +3598,22 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
 
     if (/ステージから控え室/.test(p) && /手札に加/.test(p)) {
       var actEnStgWait = p.match(/エネルギーを(\d+)枚アクティブにする/);
-      return kidouT({
+      /** @type {Partial<ClassifiedAbility>} */
+      var stgWaitPatch = {
         template: "kidou_stage_wait_pick_hand",
         filters: parseAbilityPickFilters(p),
         energyActiveCount: actEnStgWait ? Number(actEnStgWait[1]) || 1 : undefined,
-      });
+      };
+      var energyOnPickM = p.match(/それがスコア([０-９\d]+)以上の(?:『([^』]+)』の)?ライブカードの場合/);
+      if (energyOnPickM) {
+        stgWaitPatch.energyOnPickedLiveFilters = {
+          minScore: Number(normalizeFwDigits(energyOnPickM[1])) || 0,
+        };
+        if (energyOnPickM[2]) {
+          stgWaitPatch.energyOnPickedLiveFilters.seriesTag = normalizeQuotedSeriesTag(energyOnPickM[2]);
+        }
+      }
+      return kidouT(stgWaitPatch);
     }
 
     if (
@@ -3325,13 +3649,28 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
       });
     }
 
+    if (/手札.*控え室に置/.test(p) && /置いたメンバーカードより、コストの低い/.test(p)) {
+      return kidouT({
+        template: "kidou_hand_cost_wait_pick_hand",
+        handDiscardToWaiting: 1,
+        handDiscardMustBeMember: true,
+        pickMaxCostBelowHandDiscarded: true,
+        filters: Object.assign(parseAbilityPickFilters(p), { pickType: T_MEMBER }),
+      });
+    }
+
     if (/手札.*控え室に置/.test(p) && /控え室から/.test(p) && /手札に加/.test(p)) {
       var hd = p.match(/手札を(\d+)枚控え室に置/);
-      return kidouT({
+      /** @type {Partial<ClassifiedAbility>} */
+      var kidouHandWaitPatch = {
         template: "kidou_hand_cost_wait_pick_hand",
         handDiscardToWaiting: hd ? Number(hd[1]) : 1,
         filters: enrichPickFiltersFromSegRaw(parseAbilityPickFilters(p), segRaw),
-      });
+      };
+      if (/成功ライブカード置き場にあるカード1枚につき.*控え室に置く手札の数が1枚減る/.test(p)) {
+        kidouHandWaitPatch.handDiscardReducedPerSuccessLive = 1;
+      }
+      return kidouT(kidouHandWaitPatch);
     }
 
     if (/手札の/.test(p) && /控え室に置/.test(p) && (/能力.*発動/.test(p + segRaw) || /登場.*発動/.test(p + segRaw))) {
@@ -3388,7 +3727,8 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
         template: "activate_energy",
         energyActiveCount: Number(actEnKd[1]) || 1,
         filters: parseAbilityPickFilters(p),
-        requiresSeriesOnStage: parseRequiresSeriesOnStage(p),
+        requiresSeriesEnteredThisTurn: parseRequiresSeriesEnteredThisTurn(p),
+        requiresSeriesOnStage: parseRequiresSeriesOnStage(p) && !parseRequiresSeriesEnteredThisTurn(p),
       });
     }
 
@@ -3538,7 +3878,8 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
     }
 
     if (/相手のステージ.*ウェイト/.test(p) && /グループ名1種類につき/.test(p + segRaw)) {
-      var baseKidouE = countWikiEnergyIcons(segRaw) || base.costEnergyCount || 4;
+      var baseKidouE =
+        countWikiEnergyIconsInCostPart(segRaw) || base.costEnergyCount || 4;
       return kidouT({
         template: "kidou_opp_wait_group_discount_energy",
         costEnergy: true,
@@ -3561,6 +3902,20 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
     function twT(obj) {
       /** @type {Partial<ClassifiedAbility>} */
       var patch = Object.assign({}, stageAreaMeta, obj);
+      if (
+        patch.template === "grant_jouji_session" &&
+        patch.stageArea &&
+        !patch.requiresSelfInStageArea &&
+        !patch.grantToStageSeriesTag &&
+        !patch.grantToCenterMember &&
+        !patch.grantToCenterSeriesTag &&
+        !patch.grantPickStageMembersMax &&
+        !patch.grantToAllStageMembers &&
+        !patch.grantToNamedStageMember &&
+        !patch.grantToConditionalAreaMember
+      ) {
+        patch.requiresSelfInStageArea = patch.stageArea;
+      }
       if (/登場しているなら/.test(p) && !patch.stageArea && !(patch.stageAreas && patch.stageAreas.length)) {
         var selfEnterArea = parseMemberLocationStageArea(String(segRaw || "") + String(p || ""));
         if (selfEnterArea) patch.stageArea = selfEnterArea;
@@ -3694,10 +4049,13 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
         requiresOnStage: true,
       });
     }
-    if (/エネルギー置き場.*エネルギー2枚.*下に置/.test(p)) {
+    if (/エネルギー置き場.*下に置/.test(p) && /もよい/.test(p)) {
+      var underEuTjM = p.match(/エネルギー(\d+)枚/);
+      var drawEuTjM = p.match(/カードを(\d+)枚引/);
       return twT({
         template: "toujou_optional_energy_under",
-        energyUnderCount: 2,
+        energyUnderCount: underEuTjM ? Number(underEuTjM[1]) : 1,
+        deckDrawCount: drawEuTjM ? Number(drawEuTjM[1]) : null,
         optional: true,
         hasOptionalCost: true,
         requiresOnStage: true,
@@ -4070,6 +4428,21 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
       });
     }
 
+    var millBladeTjEarly = p.match(/デッキの上からカードを(\d+)枚控え室に置く/);
+    if (
+      millBladeTjEarly &&
+      /それらの中にライブカードがある場合/.test(p) &&
+      /ライブ終了時まで/.test(p + segRaw) &&
+      bladeGainFromIcons(segRaw, p) > 0
+    ) {
+      return twT({
+        template: "deck_mill_conditional_blade_grant",
+        deckTopCount: Number(millBladeTjEarly[1]) || 4,
+        bladeGain: bladeGainFromIcons(segRaw, p),
+        requiresOnStage: true,
+      });
+    }
+
     if (/ライブ終了時まで/.test(p + segRaw) && /を得る/.test(p)) {
       var grantScoreTj = parseScorePlusFromText(p) || parseScorePlusFromText(segRaw.replace(/\{\{[^}]+\}\}/g, ""));
       var grantBladeTj = bladeGainFromIcons(segRaw, p);
@@ -4093,6 +4466,12 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
           heartPerSuccessLive: textHasHeartPerSuccessLiveGrant(p),
           filters: parseAbilityPickFilters(p),
         }),
+      );
+    }
+    var actEnPerSeries = classifyActivateEnergyPerSeriesMember(p);
+    if (actEnPerSeries) {
+      return twT(
+        Object.assign({ requiresOnStage: true, filters: parseAbilityPickFilters(p) }, actEnPerSeries),
       );
     }
     var actEn = p.match(/エネルギーを(\d+)枚アクティブにする/);
@@ -4396,6 +4775,14 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
         requiresOnStage: true,
       });
     }
+    if (/自分と相手のステージ/.test(p) && /すべてのメンバー/.test(p) && /ウェイト/.test(p)) {
+      var bladeMaxBothWait = parseOppWaitPrintedBladeLimit(p);
+      return twT({
+        template: "toujou_both_sides_wait_all_printed_blade",
+        oppWaitMaxPrintedBlade: bladeMaxBothWait != null ? bladeMaxBothWait : 3,
+        requiresOnStage: true,
+      });
+    }
     if (/相手のステージ/.test(p) && /ウェイト/.test(p)) {
       return twT(
         Object.assign(buildOppWaitStageMeta(p), {
@@ -4672,6 +5059,20 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
     }
     if (
       lsDraw &&
+      /元々のスコアより高いスコアのライブカードがある/.test(p) &&
+      /エールにより公開/.test(p) &&
+      /ライブカードがある場合/.test(p)
+    ) {
+      return withTrigger("live_success", {
+        template: "draw_from_deck",
+        deckDrawCount: Number(lsDraw[1]) || 1,
+        drawOrPreconditions: true,
+        requiresLiveAreaScoreAbovePrinted: true,
+        requiresYellRevealedOwnLiveCard: true,
+      });
+    }
+    if (
+      lsDraw &&
       !pLsSuccess.includes("控え室から") &&
       !/相手は.*カードを/.test(pLsSuccess) &&
       !/このカードのスコア/.test(pLsSuccess)
@@ -4679,6 +5080,10 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
       return withTrigger("live_success", {
         template: "draw_from_deck",
         deckDrawCount: Number(lsDraw[1]) || 1,
+        filters: mergeAbilityPickFilters(
+          parseAbilityPickFilters(pLsSuccess),
+          parseConditionalPrefixFilters(pLsSuccess),
+        ),
       });
     }
     var ls = parseDeckTopCount(p);
@@ -4998,8 +5403,8 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
         optional: base.optional,
         hasOptionalCost: base.hasOptionalCost,
         filters: mergeAbilityPickFilters(
-          parseAbilityPickFilters(pLsScoreMain),
-          parseConditionalPrefixFilters(pLsScoreMain),
+          parseAbilityPickFilters(pLsScoreMain, segRaw),
+          parseConditionalPrefixFilters(pLsScoreMain, segRaw),
         ),
       };
       if (
@@ -5041,6 +5446,7 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
         lsScorePatch.scorePlusOrStageMoved = true;
         if (orHeartSlots.length) lsScorePatch.scoreHeartColorSlots = orHeartSlots;
       }
+      applySuccessOrLiveFrameNeedHeartExactMeta(lsScorePatch, pLsScoreMain, segRaw);
       return withTrigger("live_success", lsScorePatch);
     }
     var scoreSetM = normalizeFwDigits(p).match(/このカードのスコアは([0-9]+)になる/);
@@ -5242,6 +5648,28 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
     var perFrameBladeLs = classifyOptionalEnergyBladePerLiveFrame(segRaw, p, base);
     if (perFrameBladeLs) {
       return lsT(Object.assign({ requiresOnStage: true }, perFrameBladeLs));
+    }
+    if (
+      /エネルギー置き場.*このメンバーの下に置/.test(p) &&
+      /カードを(\d+)枚引/.test(p) &&
+      /ステージにいるメンバー/.test(p) &&
+      /ライブ終了時まで/.test(p + segRaw) &&
+      bladeGainFromIcons(segRaw, p) > 0
+    ) {
+      var drawEuLsM = p.match(/カードを(\d+)枚引/);
+      var underEuLsM = p.match(/エネルギー(\d+)枚/);
+      return lsT(
+        enrichGrantJoujiPatch(p, segRaw, {
+          template: "grant_jouji_session",
+          energyUnderCount: underEuLsM ? Number(underEuLsM[1]) : 1,
+          deckDrawCount: drawEuLsM ? Number(drawEuLsM[1]) : 1,
+          bladeGain: bladeGainFromIcons(segRaw, p),
+          grantToAllStageMembers: true,
+          optional: true,
+          hasOptionalCost: true,
+          requiresOnStage: true,
+        }),
+      );
     }
     var energyBladeLs = classifyOptionalEnergyBladeUntilLiveEnd(segRaw, p, base);
     if (energyBladeLs) {
@@ -5608,6 +6036,25 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
     }
 
     if (
+      /手札を(\d+)枚控え室に置いてもよい/.test(p) &&
+      /控え室に置いたカードと同じグループ名を持つメンバー1人/.test(p) &&
+      /ライブ終了時まで/.test(p + segRaw)
+    ) {
+      var handDiscGrpLsM = p.match(/手札を(\d+)枚控え室に置いてもよい/);
+      return lsT(
+        enrichGrantJoujiPatch(p, segRaw, {
+          template: "live_start_hand_discard_group_member_grant",
+          handDiscardExact: Number(handDiscGrpLsM[1]) || 1,
+          grantToDiscardedCardGroupMember: true,
+          grantPickStageMembersMax: 1,
+          optional: true,
+          hasOptionalCost: true,
+          requiresOnStage: true,
+        }),
+      );
+    }
+
+    if (
       /手札を(\d+)枚まで控え室/.test(p) &&
       /置いたカード1枚につき/.test(p) &&
       /ライブ終了時まで/.test(p + segRaw) &&
@@ -5663,6 +6110,23 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
         template: "live_start_deck_top_if_all_members_grant",
         deckTopCount: deckTopMemLs ? Number(deckTopMemLs[1]) : 3,
         bladeGain: bladeGainFromIcons(segRaw, p) || 2,
+        requiresOnStage: true,
+      });
+    }
+
+    if (
+      /このターン/.test(p) &&
+      /ブレードハートを持たないメンバー/.test(p) &&
+      /ライブカード置き場から控え室/.test(p) &&
+      /カードを1枚引/.test(p) &&
+      /ライブ終了時まで/.test(p + segRaw)
+    ) {
+      var grantClauseRina = (String(segRaw || "") + String(p || "")).split(/ライブ終了時まで/)[1] || "";
+      return lsT({
+        template: "grant_jouji_session",
+        deckDrawCount: 1,
+        requiresNoBhMemberFromLiveFrameToWaitingThisTurn: true,
+        grantHeartSlotMap: parseNeedHeartMapFromSegmentRaw(grantClauseRina),
         requiresOnStage: true,
       });
     }
@@ -6273,7 +6737,7 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
         grantPickStageMembersMax: 1,
         minPickedMemberBlade: Number(normalizeFwDigits(pickBladeScoreM[1])) || 6,
         requiresOnStage: true,
-        filters: mergeAbilityPickFilters(parseAbilityPickFilters(pLsMain), parseConditionalPrefixFilters(pLsMain)),
+        filters: mergeAbilityPickFilters(parseAbilityPickFilters(pLsMain, segRaw), parseConditionalPrefixFilters(pLsMain, segRaw)),
       });
     }
     if (
@@ -6289,7 +6753,7 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
         optional: base.optional,
         hasOptionalCost: base.hasOptionalCost,
         requiresOnStage: true,
-        filters: mergeAbilityPickFilters(parseAbilityPickFilters(pLsMain), parseConditionalPrefixFilters(pLsMain)),
+        filters: mergeAbilityPickFilters(parseAbilityPickFilters(pLsMain, segRaw), parseConditionalPrefixFilters(pLsMain, segRaw)),
       };
       if (
         /エールにより公開/.test(pLsMain) &&
@@ -6299,6 +6763,9 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
       ) {
         lsSuccessScorePatch.requiresYellRevealedOwnLiveCard = true;
       }
+      var collectiveHeartsLsStart = parseStageCollectiveHeartSlotsRequirement(pLsMain, segRaw);
+      if (collectiveHeartsLsStart) lsSuccessScorePatch.requiresStageCollectiveHeartSlots = collectiveHeartsLsStart;
+      applySuccessOrLiveFrameNeedHeartExactMeta(lsSuccessScorePatch, pLsMain, segRaw);
       return lsT(lsSuccessScorePatch);
     }
 
@@ -6401,6 +6868,7 @@ export function abilityEffectIsAutomated(template) {
     template === "toujou_success_live_pick_hand" ||
     template === "toujou_success_live_hand_reveal_swap" ||
     template === "deck_mill_conditional_draw" ||
+    template === "deck_mill_conditional_blade_grant" ||
     template === "draw_from_deck" ||
     template === "draw_then_hand_discard" ||
     template === "blade_gain_only" ||
@@ -6442,6 +6910,7 @@ export function abilityEffectIsAutomated(template) {
     template === "toujou_deck_top_wait_if_all_members" ||
     template === "toujou_deck_top_wait_if_all_heart" ||
     template === "toujou_both_wait_to_empty_stage" ||
+    template === "toujou_both_sides_wait_all_printed_blade" ||
     template === "toujou_both_wait_pick_live_hand" ||
     template === "toujou_opp_stage_member_match_grant" ||
     template === "toujou_opp_emma_punch_answer" ||
@@ -6599,6 +7068,7 @@ export function abilityEffectIsAutomated(template) {
     template === "live_start_hand_named_discard_grant_jouji" ||
     template === "live_start_hand_discard_same_unit_grant" ||
     template === "live_start_hand_discard_same_group_grant" ||
+    template === "live_start_hand_discard_group_member_grant" ||
     template === "live_start_hand_discard_optional_blade_per" ||
     template === "live_start_hand_discard_series_member_blade_grant" ||
     template === "live_start_hand_reveal_deck_place_blade" ||

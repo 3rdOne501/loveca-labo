@@ -30,6 +30,9 @@ const CASES = [
       const e = [];
       if ((cl.characterNames || []).length !== 3) e.push("characterNames!=3");
       if (cl.handDiscardTotalCount !== 3) e.push("handDiscardTotalCount!=3");
+      if (/live_start_hand_named_discard_grant_jouji[\s\S]*?minPick:\s*needHandN/.test(simSrc)) {
+        e.push("optional named discard must allow minPick 0");
+      }
       return e;
     },
   },

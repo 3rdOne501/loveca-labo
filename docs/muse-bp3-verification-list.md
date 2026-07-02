@@ -20,8 +20,8 @@
 | [x] | 004 | PL!-bp3-004-P | 園田海未 | draw_per_stage_member_discard / toujou_success_live_pick_hand | 登場: ステージ人数分ドロー→手札1枚捨て / ライブ開始: 自成功1枚+→手札捨て任意→μ'sライブ回収 |
 | [x] | 005 | PL!-bp3-005-P | 星空凛 | live_start_activate_all_stage_members | 登場: 全メンバーアクティブ |
 | [x] | 006 | PL!-bp3-006-P | 西木野真姫 | grant_jouji_session | ライブ開始 手札1枚捨て任意→自成功1枚につきブレード2 |
-| [x] | 007 | PL!-bp3-007-P | 東條希 | deck_top_pick_recover | ライブ開始 手札2枚捨て任意→3枚見て手札/山札上/控え室へ1枚ずつ |
-| [x] | 008 | PL!-bp3-008-P | 小泉花陽 | kidou_wait_pick_hand / grant_jouji_session | 起動 自ウェイト→μ'sライブ回収 / ライブ開始 μ's1人ウェイト任意→heart03×2 |
+| [x] | 007 | PL!-bp3-007-P | 東條希 | deck_top_pick_recover | ライブ開始 手札2枚捨て任意→3枚見て手札/山札上/控え室へ1枚ずつ **2026-06-30: 3分割振り分け** |
+| [x] | 008 | PL!-bp3-008-P | 小泉花陽 | kidou_wait_pick_hand / grant_jouji_session | 起動 自ウェイト→μ'sライブ回収 / ライブ開始 μ's1人ウェイト任意→heart03×2 **2026-06-30: ウェイト対象へ付与** |
 | [x] | 009 | PL!-bp3-009-P | 矢澤にこ | draw_from_deck / heart_color_pick_grant | 登場: コスト13+ on stage→1ドロー / 起動 自ウェイト→heart01/03/06から1色 |
 | [x] | 010 | PL!-bp3-010-N | 高坂穂乃果 | deck_top_pick_recover | 手札1枚捨て任意→5枚見てライブ1枚回収 |
 | [x] | 011 | PL!-bp3-011-N | 絢瀬絵里 | heart_color_pick_grant | ライブ開始 heart01/03/06選択→自成功1枚につきそのハート1 |
@@ -67,3 +67,16 @@
 ## 2026-06-28 検証（メンバー）
 
 能力あり22種（PL!-bp3）+ LLクロス1: **guided_manual=0**。
+
+## 2026-06-30 2回監修（メンバー）
+
+### 修正した
+
+| ID | 名前 | 内容 |
+|----|------|------|
+| PL!-bp3-007-P | 東條希 | 3枚見た後「手札1・山札上1・控え室1」の振り分けが手札+残り控えのみだった → `deckTopPickSplitHandDeckWaiting` + 3段ピック UI |
+| PL!-bp3-008-P | 小泉花陽 | ライブ開始の heart03×2 が能力源へ付与・枚数未認識 → `enrichGrantJoujiPatch` + `costPickMemberWait` 時はウェイト対象へ `grantHeartSlotCount:2` |
+
+### 問題なし（再確認）
+
+001 kidou、002 oppWaitCount:2、003–006、009–018、LL-bp3-001 クロス。ライブ 019–026 は 2026-06-28 修正済みの再確認のみ。

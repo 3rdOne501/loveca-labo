@@ -36,8 +36,35 @@ const CASES = [
     id: "PL!-bp3-007-P",
     trigger: "live_start",
     expectTemplate: "deck_top_pick_recover",
-    check: (cl) => (cl.deckTopCount === 3 ? [] : ["deckTopCount"]),
+    check: (cl) => {
+      const errs = [];
+      if (cl.deckTopCount !== 3) errs.push("deckTopCount");
+      if (!cl.deckTopPickSplitHandDeckWaiting) errs.push("deckTopPickSplitHandDeckWaiting");
+      if (cl.handDiscardToWaiting !== 2) errs.push("handDiscardToWaiting");
+      return errs;
+    },
   },
+  {
+    id: "PL!-bp3-008-P",
+    trigger: "live_start",
+    expectTemplate: "grant_jouji_session",
+    check: (cl) => {
+      const errs = [];
+      if (!cl.costPickMemberWait) errs.push("costPickMemberWait");
+      if (cl.requiredHeartSlot !== 3) errs.push("requiredHeartSlot");
+      if (cl.grantHeartSlotCount !== 2) errs.push("grantHeartSlotCount");
+      if (cl.filters?.seriesTag !== "μ's") errs.push("seriesTag");
+      return errs;
+    },
+  },
+  { id: "PL!-bp3-001-P", trigger: "kidou", expectTemplate: "draw_then_hand_discard" },
+  {
+    id: "PL!-bp3-002-P",
+    trigger: "toujyou",
+    expectTemplate: "optional_self_wait_opp_stage",
+    check: (cl) => (cl.oppWaitCount === 2 ? [] : ["oppWaitCount"]),
+  },
+  { id: "PL!-bp3-008-P", trigger: "kidou", expectTemplate: "kidou_wait_pick_hand" },
   { id: "PL!-bp3-009-P", trigger: "kidou", expectTemplate: "heart_color_pick_grant" },
   {
     id: "PL!-bp3-019-L",

@@ -9,12 +9,16 @@ import {
   classifyCardAbility,
   splitAbilityByTriggers,
 } from "../js/abilityEffects.js";
+import { classifyJoujiSegment } from "../js/joujiEffects.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const cards = JSON.parse(fs.readFileSync(path.join(ROOT, "data/cards.json"), "utf8"));
 
 /** @type {Array<{id:string, trigger:string, expectTemplate:string, check?:(cl:any)=>string[]}>} */
 const CASES = [
+  { id: "PL!HS-bp1-003-R＋", trigger: "jouji", expectTemplate: "stage_all_areas_grant_quoted" },
+  { id: "PL!HS-bp1-004-P", trigger: "kidou", expectTemplate: "kidou_wait_pick_hand" },
+  { id: "PL!HS-bp1-006-P", trigger: "toujyou", expectTemplate: "draw_then_hand_discard" },
   {
     id: "PL!HS-bp1-001-R",
     trigger: "toujyou",
@@ -101,10 +105,11 @@ for (const c of CASES) {
     failed++;
     continue;
   }
-  const cl = classifyCardAbility(card, c.trigger, seg.text);
+  const cl = c.trigger === "jouji" ? classifyJoujiSegment(seg.text) : classifyCardAbility(card, c.trigger, seg.text);
   const errs = [];
-  if (cl.template !== c.expectTemplate) errs.push(`template ${cl.template}`);
-  if (cl.template !== "ability_sequence" && !abilityEffectIsAutomated(cl.template)) errs.push("not automated");
+  const tmpl = c.trigger === "jouji" ? cl.kind : cl.template;
+  if (tmpl !== c.expectTemplate) errs.push(`template ${tmpl}`);
+  if (c.trigger !== "jouji" && cl.template !== "ability_sequence" && !abilityEffectIsAutomated(cl.template)) errs.push("not automated");
   if (c.check) errs.push(...c.check(cl));
   if (errs.length) {
     failed++;
@@ -118,4 +123,26 @@ if (failed) {
   console.error(`\n${failed} hasunosora-bp1 case(s) failed`);
   process.exit(1);
 }
-console.log(`\nAll ${CASES.length} hasunosora-bp1 cases passed`);
+
+for (const id of ["PL!HS-bp1-019-L", "PL!HS-bp1-020-L"]) {
+  const card = cards[id];
+  if (!card) {
+    console.error("MISSING", id);
+    failed++;
+    continue;
+  }
+  const triggered = splitAbilityByTriggers(cardAbilityRawText(card)).filter((s) => s.trigger);
+  if (triggered.length) {
+    failed++;
+    console.error("FAIL", id, "expected no triggered ability");
+  } else {
+    console.log("OK", id, "no triggered ability");
+  }
+}
+
+if (failed) {
+  console.error(`\n${failed} hasunosora-bp1 case(s) failed`);
+  process.exit(1);
+}
+const totalCases = CASES.length + 2;
+console.log(`\nAll ${totalCases} hasunosora-bp1 cases passed`);

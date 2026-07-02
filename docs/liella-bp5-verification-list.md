@@ -13,7 +13,7 @@
 | [x] | 002 | PL!SP-bp5-002-P | draw_then_hand_discard | 起動: 1ドロー→手札1捨 |
 | [x] | 003 | PL!SP-bp5-003-P | jouji + live_start_activate_liella_and_energy | 常時: Liella!手札C10↓コスト-2 / LS: Liella!アクティブ+E |
 | [x] | 004 | PL!SP-bp5-004-P | jidou_move_or_energy_draw_grant | 移動orE支払い→1ドロー+常時付与 |
-| [x] | 005 | PL!SP-bp5-005-P | grant_jouji_session + jidou_card_to_waiting_pick_hand | 起動: Liella!在席→ブレード2 / 自動: 手札→控え室回収 |
+| [x] | 005 | PL!SP-bp5-005-P | grant_jouji_session + jidou_card_to_waiting_pick_hand | 起動: 山札3ミル→Liella!メンバー枚数×ブレード / 自動: 手札→控え室回収 |
 | [x] | 006 | PL!SP-bp5-006-P | kidou live_start_position_change | 起動ポジチェン |
 | [x] | 007 | PL!SP-bp5-007-P | deck_top_pick_recover | 登場: 山札見→回収 |
 | [x] | 008 | PL!SP-bp5-008-P | deck_top_pick_recover | 自ウェイト必須+任意手札1捨→山札5見→Liella! C9+メンバー回収 |
@@ -49,3 +49,5 @@
 |----|------|
 | PL!SP-bp5-009-P | ミル後自ウェイトでもループ継続（FAQ Q222） |
 | PL!SP-bp5-023-L | エール公開スコアライブ前提（`icon_score` wiki 対応） |
+| PL!SP-bp5-005-P | 起動: 山札3ミル→『Liella!』メンバー枚数×ブレード（`bladeGainPerCostMilledMember`） |
+| PL!SP-bp5-015-N | 登場: センターのみブレード2（`requiresSelfInStageArea`、FAQ Q240） |

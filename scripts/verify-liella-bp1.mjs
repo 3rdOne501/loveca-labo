@@ -9,12 +9,14 @@ import {
   classifyCardAbility,
   splitAbilityByTriggers,
 } from "../js/abilityEffects.js";
+import { classifyJoujiSegment } from "../js/joujiEffects.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const cards = JSON.parse(fs.readFileSync(path.join(ROOT, "data/cards.json"), "utf8"));
 
 /** @type {Array<{id:string, trigger:string, expectTemplate:string, check?:(cl:any)=>string[]}>} */
 const CASES = [
+  { id: "PL!SP-bp1-001-R", trigger: "jouji", expectTemplate: "cannot_live_alone" },
   {
     id: "PL!SP-bp1-002-R＋",
     trigger: "toujyou",
@@ -41,6 +43,7 @@ const CASES = [
     check: (cl) => (cl.filters?.minEnergyCount === 11 && cl.filters?.pickType === "ライブ" ? [] : ["energy/live"]),
   },
   { id: "PL!SP-bp1-008-R", trigger: "toujyou", expectTemplate: "draw_then_conditional_extra_draw" },
+  { id: "PL!SP-bp1-009-R", trigger: "kidou", expectTemplate: "draw_then_hand_discard" },
   { id: "PL!SP-bp1-010-R", trigger: "kidou", expectTemplate: "deck_top_pick_recover" },
   { id: "PL!SP-bp1-012-N", trigger: "toujyou", expectTemplate: "deck_top_pick_recover" },
   {
@@ -106,10 +109,11 @@ for (const c of CASES) {
     failed++;
     continue;
   }
-  const cl = classifyCardAbility(card, c.trigger, seg.text);
+  const cl = c.trigger === "jouji" ? classifyJoujiSegment(seg.text) : classifyCardAbility(card, c.trigger, seg.text);
   const errs = [];
-  if (cl.template !== c.expectTemplate) errs.push(`template ${cl.template}`);
-  if (cl.template !== "ability_sequence" && !abilityEffectIsAutomated(cl.template)) errs.push("not automated");
+  const tmpl = c.trigger === "jouji" ? cl.kind : cl.template;
+  if (tmpl !== c.expectTemplate) errs.push(`template ${tmpl}`);
+  if (c.trigger !== "jouji" && cl.template !== "ability_sequence" && !abilityEffectIsAutomated(cl.template)) errs.push("not automated");
   if (c.check) errs.push(...c.check(cl));
   if (errs.length) {
     failed++;

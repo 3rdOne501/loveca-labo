@@ -8550,6 +8550,10 @@ body.play-mode .card-item.card-item--play-fx-kidou .card-art-wrap .card-img,
 body.play-mode .card-item.card-item--play-fx-live_success .card-art-wrap .card-img {
   animation-name: playFxAbilityPop;
 }
+body.play-mode .card-item.card-item--play-fx-jidou .card-art-wrap .card-img,
+body.play-mode .card-item.card-item--play-fx-jidou > .card-img {
+  animation-name: playFxEnterPop;
+}
 .play-fx-burst {
   position: absolute;
   inset: -28%;
@@ -8565,6 +8569,7 @@ body.play-mode .card-item.card-item--play-fx-live_success .card-art-wrap .card-i
     circle at 50% 58%,
     var(--play-fx-c-core, rgba(160, 255, 200, 0.95)) 0%,
     var(--play-fx-c-glow, rgba(80, 220, 140, 0.45)) 28%,
+    var(--play-fx-c-secondary, rgba(80, 220, 140, 0.22)) 42%,
     transparent 72%
   );
 }
@@ -8593,6 +8598,15 @@ body.play-mode .card-item.card-item--play-fx-live_success .card-art-wrap .card-i
 }
 .play-fx-burst--kidou {
   background: radial-gradient(circle at 50% 50%, rgba(100, 230, 255, 0.92) 0%, rgba(60, 160, 255, 0.48) 38%, transparent 72%);
+}
+.play-fx-burst--jidou {
+  background: radial-gradient(
+    circle at 50% 58%,
+    rgba(160, 255, 200, 0.95) 0%,
+    rgba(80, 220, 140, 0.48) 32%,
+    rgba(60, 200, 120, 0.22) 44%,
+    transparent 72%
+  );
 }
 .play-fx-burst--live_success {
   background: radial-gradient(circle at 50% 50%, rgba(255, 110, 130, 0.95) 0%, rgba(255, 40, 80, 0.5) 38%, transparent 72%);
@@ -8643,6 +8657,10 @@ body.play-mode .card-item.card-item--play-fx-live_success .card-art-wrap .card-i
   border-color: rgba(100, 220, 255, 0.95);
   box-shadow: 0 0 26px rgba(80, 200, 255, 0.88), 0 0 50px rgba(40, 160, 255, 0.42);
 }
+.play-fx-ring--jidou {
+  border-color: rgba(140, 255, 190, 0.95);
+  box-shadow: 0 0 26px rgba(100, 255, 180, 0.88), 0 0 50px rgba(60, 220, 120, 0.45), inset 0 0 20px rgba(160, 255, 200, 0.35);
+}
 .play-fx-ring--live_success {
   border-color: rgba(255, 100, 120, 0.95);
   box-shadow: 0 0 26px rgba(255, 70, 90, 0.9), 0 0 50px rgba(255, 30, 60, 0.45);
@@ -8672,6 +8690,11 @@ body.play-mode .card-item.card-item--play-fx-live_success .card-art-wrap .card-i
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4), 0 0 22px rgba(80, 255, 160, 0.55);
   color: #eafff3;
 }
+.play-fx-chip--jidou {
+  border-color: rgba(140, 255, 190, 0.85);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4), 0 0 22px rgba(80, 255, 160, 0.55);
+  color: #eafff3;
+}
 .play-fx-chip--baton {
   border-color: rgba(120, 230, 255, 0.85);
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4), 0 0 22px rgba(100, 210, 255, 0.55);
@@ -8686,9 +8709,75 @@ body.play-mode .card-item.card-item--play-fx-live_success .card-art-wrap .card-i
 }
 .play-fx-chip--toujyou,
 .play-fx-chip--kidou,
+.play-fx-chip--jidou,
 .play-fx-chip--live_success {
   font-size: 0.8rem;
 }
+
+/* —— 効果不発 —— */
+body.play-mode .card-item.card-item--play-fx-fizzle {
+  z-index: 26;
+}
+.play-fx-fizzle {
+  position: absolute;
+  left: 50%;
+  top: 38%;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.12rem;
+  pointer-events: none;
+  transform: translate(-50%, 0);
+  animation: playFxFizzleFloat var(--play-fx-fizzle-ms, 920ms) cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.play-fx-fizzle__mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 50%;
+  font-size: 1.45rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #fff;
+  background: radial-gradient(circle at 35% 30%, #ff6b7a 0%, #e82040 55%, #9a1028 100%);
+  border: 2px solid rgba(255, 220, 220, 0.95);
+  box-shadow:
+    0 0 16px rgba(255, 50, 70, 0.85),
+    0 0 32px rgba(220, 20, 50, 0.45),
+    inset 0 0 12px rgba(255, 180, 190, 0.35);
+  text-shadow: 0 1px 2px rgba(80, 0, 10, 0.45);
+}
+.play-fx-fizzle__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: rgba(255, 210, 215, 0.98);
+  text-shadow: 0 0 8px rgba(255, 60, 80, 0.75), 0 1px 3px rgba(0, 0, 0, 0.55);
+}
+@keyframes playFxFizzleFloat {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 18px) scale(0.55);
+    filter: blur(2px);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -4px) scale(1.08);
+    filter: blur(0);
+  }
+  42% {
+    opacity: 1;
+    transform: translate(-50%, -14px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -42px) scale(0.92);
+  }
+}
+
 .live-slot--fx-begin {
   animation: playFxLiveSlotPulse 1600ms ease-out both;
 }
@@ -8797,6 +8886,7 @@ body.play-mode .card-item.card-item--play-fx-live_success .card-art-wrap .card-i
   .play-fx-burst,
   .play-fx-ring,
   .play-fx-chip,
+  .play-fx-fizzle,
   .live-slot--fx-begin,
   .live-slot--fx-begin-premium,
   body.play-premium-fx-active,
@@ -8837,7 +8927,7 @@ body.play-mode .card-item.card-item--play-fx-ability {
 body.play-mode .card-item.card-item--play-fx-ability .card-art-wrap .card-img,
 body.play-mode .card-item.card-item--play-fx-ability > .card-img {
   animation-name: playFxAbilityPop !important;
-  animation-duration: var(--play-fx-ms, 1400ms) !important;
+  animation-duration: var(--play-fx-ms, 1150ms) !important;
 }
 body.play-mode .card-item.card-item--play-fx-ability.card-item--play-fx-toujyou .card-art-wrap .card-img,
 body.play-mode .card-item.card-item--play-fx-ability.card-item--play-fx-toujyou > .card-img {
@@ -8846,6 +8936,10 @@ body.play-mode .card-item.card-item--play-fx-ability.card-item--play-fx-toujyou 
 body.play-mode .card-item.card-item--play-fx-ability.card-item--play-fx-kidou .card-art-wrap .card-img,
 body.play-mode .card-item.card-item--play-fx-ability.card-item--play-fx-kidou > .card-img {
   animation-name: playFxAbilityKidouPop !important;
+}
+body.play-mode .card-item.card-item--play-fx-ability.card-item--play-fx-jidou .card-art-wrap .card-img,
+body.play-mode .card-item.card-item--play-fx-ability.card-item--play-fx-jidou > .card-img {
+  animation-name: playFxEnterPop !important;
 }
 body.play-mode .card-item.card-item--play-fx-ability.card-item--play-fx-live_start .card-art-wrap .card-img,
 body.play-mode .card-item.card-item--play-fx-ability.card-item--play-fx-live_start > .card-img {
@@ -8857,23 +8951,23 @@ body.play-mode .card-item.card-item--play-fx-ability.card-item--play-fx-live_suc
 }
 .play-fx-burst--ability {
   inset: -36%;
-  animation: playFxAbilityBurst var(--play-fx-ms, 1400ms) ease-out both;
+  animation: playFxAbilityBurst var(--play-fx-ms, 1150ms) ease-out both;
 }
 .play-fx-burst--inner {
   inset: -22%;
   opacity: 0.85;
-  animation: playFxAbilityBurstInner var(--play-fx-ms, 1400ms) ease-out 0.06s both;
+  animation: playFxAbilityBurstInner var(--play-fx-ms, 1150ms) ease-out 0.06s both;
 }
 .play-fx-ring--ability {
   inset: -24%;
   border-width: 3px;
-  animation: playFxAbilityRing var(--play-fx-ms, 1400ms) ease-out both;
+  animation: playFxAbilityRing var(--play-fx-ms, 1150ms) ease-out both;
 }
 .play-fx-ring--outer {
   inset: -42%;
   border-width: 2px;
   opacity: 0.9;
-  animation: playFxPremiumRingOuter var(--play-fx-ms, 1400ms) ease-out 0.08s both;
+  animation: playFxPremiumRingOuter var(--play-fx-ms, 1150ms) ease-out 0.08s both;
 }
 
 /* —— プレミアム演出（コスト13+・打点9+ライブ） —— */
@@ -8890,7 +8984,7 @@ body.play-mode .card-item.card-item--play-fx-premium > .card-img {
   position: absolute;
   left: 50%;
   bottom: 0;
-  z-index: 28;
+  z-index: 38;
   width: clamp(4.6rem, 58%, 8.5rem);
   height: clamp(4.6rem, 58%, 8.5rem);
   max-width: 72%;
@@ -8901,8 +8995,10 @@ body.play-mode .card-item.card-item--play-fx-premium > .card-img {
   transform: translateX(calc(-50% + var(--char-offset, 0px))) translateY(40px) scale(0.15);
   opacity: 0;
   filter:
-    drop-shadow(0 0 10px rgba(255, 210, 90, 0.9))
-    drop-shadow(0 0 18px rgba(255, 120, 40, 0.5));
+    drop-shadow(0 0 14px rgba(255, 255, 255, 1))
+    drop-shadow(0 0 28px rgba(255, 255, 255, 0.88))
+    drop-shadow(0 0 48px rgba(255, 255, 255, 0.62))
+    drop-shadow(0 0 72px rgba(255, 255, 255, 0.38));
   animation: playFxCharIconFloat var(--play-fx-ms, 1500ms) cubic-bezier(0.16, 1.1, 0.32, 1) calc(0.06s + var(--char-idx, 0) * 0.05s) both;
 }
 .play-fx-char-icon--ultra {
@@ -8910,51 +9006,122 @@ body.play-mode .card-item.card-item--play-fx-premium > .card-img {
   height: clamp(5.2rem, 64%, 9.5rem);
   max-width: 78%;
 }
+.play-fx-group-logo--multi {
+  --group-offset: calc((var(--group-logo-idx, 0) - (var(--group-logo-count, 1) - 1) * 0.5) * 72%);
+  left: calc(50% + var(--group-offset));
+  width: 58%;
+  min-width: 4.2rem;
+  max-width: 9.5rem;
+  animation-name: playFxGroupLogoFloatMultiAbove;
+}
+.play-fx-group-logo--tri {
+  left: 50%;
+  top: auto;
+  bottom: calc(100% + 10px);
+  width: 38%;
+  min-width: 2.6rem;
+  max-width: 5.4rem;
+  transform: translate(calc(-50% + var(--group-tri-x, 0px)), var(--group-tri-y, 0px)) scale(0.72);
+  animation-name: playFxGroupLogoFloatTriAbove;
+}
+.play-fx-group-logo--fusion {
+  width: min(220%, 14rem);
+  min-width: 8.5rem;
+  max-width: 16rem;
+  bottom: calc(100% + 10px);
+}
+.play-fx-char-icon--tri {
+  --char-offset: 0px;
+  top: 30%;
+  bottom: auto;
+  left: 50%;
+  width: clamp(3rem, 36%, 5.2rem);
+  height: clamp(3rem, 36%, 5.2rem);
+  max-width: 46%;
+  transform: translate(calc(-50% + var(--char-tri-x, 0px)), var(--char-tri-y, 0px)) scale(0.18);
+  animation-name: playFxCharIconFloatTri;
+}
+.play-fx-char-icon--ultra.play-fx-char-icon--tri {
+  width: clamp(3.4rem, 40%, 5.8rem);
+  height: clamp(3.4rem, 40%, 5.8rem);
+  max-width: 50%;
+}
+body.play-mode .card-item.card-item--play-fx-has-tri-logo .play-fx-group-logo--tri {
+  bottom: calc(100% + 8px);
+  width: 34%;
+  min-width: 2.4rem;
+  max-width: 5rem;
+}
+body.play-mode .card-item.card-item--play-fx-has-char-icons .play-fx-group-logo--multi {
+  bottom: calc(100% + 8px);
+  width: 52%;
+  min-width: 3.8rem;
+  max-width: 8rem;
+}
 .play-fx-group-logo {
   position: absolute;
   left: 50%;
-  top: 12%;
-  z-index: 32;
-  width: 168%;
-  min-width: 10.5rem;
-  max-width: 22rem;
+  top: auto;
+  bottom: calc(100% + 8px);
+  z-index: 28;
+  width: min(168%, 13rem);
+  min-width: 7.5rem;
+  max-width: 16rem;
   height: auto;
-  max-height: 168%;
+  max-height: 9rem;
   object-fit: contain;
-  object-position: center center;
+  object-position: center bottom;
   pointer-events: none;
-  transform: translate(-50%, -50%) scale(0.72);
+  transform: translate(-50%, 0) scale(0.85);
+  transform-origin: center bottom;
   opacity: 0;
   filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.28));
-  animation: playFxGroupLogoFloat var(--play-fx-ms, 1500ms) cubic-bezier(0.16, 1.08, 0.32, 1) 0.04s both;
+  animation: playFxGroupLogoFloatAbove var(--play-fx-ms, 1500ms) cubic-bezier(0.16, 1.08, 0.32, 1) 0.04s both;
 }
 .play-fx-group-logo--vector {
-  width: 180%;
-  min-width: 11.5rem;
+  width: min(190%, 14rem);
+  min-width: 8rem;
   filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.22));
 }
 .play-fx-group-logo--live {
   width: 175%;
   min-width: 11rem;
-  z-index: 33;
+  z-index: 29;
 }
 .play-fx-group-logo--ultra {
   width: 195%;
   min-width: 12rem;
 }
-body.play-mode .card-item.card-item--play-fx-has-char-icons .play-fx-group-logo {
-  top: 8%;
-  width: 148%;
-  min-width: 9.5rem;
-  max-width: 19rem;
+body.play-mode .card-item.card-item--play-fx-has-tri-char-icons .play-fx-char-icon--tri {
+  top: 34%;
+  z-index: 40;
 }
-body.play-mode .card-item.card-item--play-fx-has-char-icons .play-fx-group-logo--ultra {
-  top: 6%;
-  width: 158%;
+body.play-mode .card-item.card-item--play-fx-has-tri-char-icons.card-item--play-fx-has-logo-above .play-fx-char-icon--tri {
+  top: 38%;
 }
-body.play-mode .card-item.card-item--play-fx-has-char-icons .play-fx-char-icon {
+body.play-mode .card-item.card-item--play-fx-has-char-icons.card-item--play-fx-has-logo-above .play-fx-char-icon:not(.play-fx-char-icon--tri) {
+  top: 40%;
+  bottom: auto;
+  z-index: 40;
+}
+body.play-mode .card-item.card-item--play-fx-has-char-icons:not(.card-item--play-fx-has-logo-above) .play-fx-char-icon:not(.play-fx-char-icon--tri) {
   bottom: -2%;
-  z-index: 30;
+  top: auto;
+  z-index: 38;
+}
+body.play-mode .card-item.card-item--play-fx-has-logo-above {
+  overflow: visible;
+}
+body.play-mode .stage-slot.card-strip:has(.card-item--play-fx-has-logo-above),
+body.play-mode .live-slot:has(.card-item--play-fx-has-logo-above),
+body.play-mode .hand-strip:has(.card-item--play-fx-has-logo-above) {
+  overflow: visible;
+}
+body.play-mode .card-item.card-item--play-fx-has-char-icons .play-fx-group-logo:not(.play-fx-group-logo--tri) {
+  bottom: calc(100% + 8px);
+}
+body.play-mode .card-item.card-item--play-fx-has-char-icons .play-fx-group-logo--ultra:not(.play-fx-group-logo--tri) {
+  width: min(175%, 14rem);
 }
 body.play-mode .card-item.card-item--play-fx-has-logo {
   overflow: visible;
@@ -8973,25 +9140,100 @@ body.play-mode .card-item.card-item--play-fx-ultra.card-item--play-fx-has-logo {
 .play-fx-burst--premium {
   inset: -42%;
   background:
-    radial-gradient(circle at 50% 45%, rgba(255, 240, 160, 0.98) 0%, rgba(255, 170, 50, 0.65) 22%, rgba(200, 100, 255, 0.35) 45%, transparent 72%),
-    conic-gradient(from 0deg at 50% 50%, rgba(255, 220, 120, 0.5), rgba(255, 80, 120, 0.35), rgba(120, 200, 255, 0.35), rgba(255, 220, 120, 0.5));
+    radial-gradient(circle at 50% 45%, var(--play-fx-c-core, rgba(255, 240, 160, 0.98)) 0%, var(--play-fx-c-glow, rgba(255, 170, 50, 0.65)) 22%, var(--play-fx-c-secondary, rgba(200, 100, 255, 0.35)) 45%, transparent 72%),
+    conic-gradient(from 0deg at 50% 50%, var(--play-fx-c-glow, rgba(255, 220, 120, 0.5)), var(--play-fx-c-secondary, rgba(255, 80, 120, 0.35)), var(--play-fx-c-core, rgba(120, 200, 255, 0.35)), var(--play-fx-c-glow, rgba(255, 220, 120, 0.5)));
   animation: playFxPremiumBurst var(--play-fx-ms, 1500ms) ease-out both;
 }
 .play-fx-ring--premium {
   inset: -28%;
   border-width: 4px;
-  border-color: rgba(255, 220, 120, 0.98);
-  box-shadow:
+  border-color: var(--play-fx-c-ring, rgba(255, 220, 120, 0.98));
+  box-shadow: var(
+    --play-fx-c-ring-shadow,
     0 0 32px rgba(255, 180, 60, 0.95),
     0 0 64px rgba(255, 100, 40, 0.55),
     0 0 96px rgba(200, 80, 255, 0.28),
-    inset 0 0 28px rgba(255, 230, 160, 0.45);
+    inset 0 0 28px rgba(255, 230, 160, 0.45)
+  );
   animation: playFxPremiumRing var(--play-fx-ms, 1500ms) ease-out both;
 }
 .play-fx-ring--premium.play-fx-ring--outer {
   inset: -48%;
   border-width: 2px;
   border-color: rgba(255, 160, 220, 0.75);
+}
+
+/* —— ミッド演出（コスト10–12登場・控えめ） —— */
+body.play-mode .card-item.card-item--play-fx-mid {
+  z-index: 20;
+  filter: drop-shadow(0 0 10px rgba(255, 200, 120, 0.28));
+}
+body.play-mode .card-item.card-item--play-fx-mid .card-art-wrap .card-img,
+body.play-mode .card-item.card-item--play-fx-mid > .card-img {
+  animation-name: playFxMidPop !important;
+  animation-duration: var(--play-fx-ms, 1080ms) !important;
+}
+.play-fx-burst--mid {
+  inset: -24%;
+  background: radial-gradient(
+    circle at 50% 48%,
+    rgba(255, 235, 185, 0.72) 0%,
+    rgba(255, 190, 95, 0.32) 34%,
+    transparent 68%
+  );
+  animation: playFxMidBurst var(--play-fx-ms, 1080ms) ease-out both;
+}
+.play-fx-burst--inner.play-fx-burst--mid {
+  inset: -16%;
+  opacity: 0.55;
+  animation: playFxMidBurstInner var(--play-fx-ms, 1080ms) ease-out 0.05s both;
+}
+.play-fx-ring--mid {
+  inset: -16%;
+  border-width: 2px;
+  border-color: rgba(255, 215, 150, 0.72);
+  box-shadow:
+    0 0 14px rgba(255, 185, 90, 0.45),
+    inset 0 0 12px rgba(255, 230, 175, 0.22);
+  animation: playFxMidRing var(--play-fx-ms, 1080ms) ease-out both;
+}
+.play-fx-ring--outer.play-fx-ring--mid {
+  inset: -28%;
+  border-width: 1px;
+  border-color: rgba(255, 210, 160, 0.42);
+  animation: playFxPremiumRingOuter var(--play-fx-ms, 1080ms) ease-out 0.07s both;
+}
+.premium-board-fx--tier-mid .premium-board-fx__flash {
+  opacity: 0.32;
+  background: radial-gradient(circle at 50% 48%, rgba(255, 215, 140, 0.28) 0%, transparent 58%);
+}
+.premium-board-fx--tier-mid .premium-board-fx__rays {
+  opacity: 0.18;
+}
+.premium-board-fx--tier-mid .premium-board-fx__shockwave {
+  border-color: rgba(255, 200, 120, 0.38);
+  opacity: 0.65;
+}
+@keyframes playFxMidPop {
+  0% { transform: scale(0.88) translateY(8px); filter: brightness(1.12); }
+  32% { transform: scale(1.04) translateY(-2px); box-shadow: 0 0 14px rgba(255, 200, 110, 0.5); }
+  62% { transform: scale(1.02) translateY(0); box-shadow: 0 0 10px rgba(255, 200, 110, 0.28); }
+  100% { transform: scale(1) translateY(0); filter: none; box-shadow: none; }
+}
+@keyframes playFxMidBurst {
+  0% { opacity: 0; transform: scale(0.5); }
+  22% { opacity: 0.75; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.22); }
+}
+@keyframes playFxMidBurstInner {
+  0% { opacity: 0; transform: scale(0.6); }
+  28% { opacity: 0.55; transform: scale(0.95); }
+  100% { opacity: 0; transform: scale(1.12); }
+}
+@keyframes playFxMidRing {
+  0% { opacity: 0; transform: scale(0.65); }
+  24% { opacity: 0.85; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.18); }
 }
 
 /* —— ウルトラ演出（コスト15+） —— */
@@ -9085,6 +9327,14 @@ body.play-premium-fx-active {
   opacity: 0;
   animation: premiumFxFlash 0.85s ease-out both;
 }
+.premium-board-fx--themed .premium-board-fx__flash {
+  background: radial-gradient(
+    circle at 50% 42%,
+    var(--premium-fx-glow, rgba(255, 240, 180, 0.55)) 0%,
+    var(--premium-fx-core, rgba(255, 200, 120, 0.28)) 38%,
+    transparent 58%
+  );
+}
 .premium-board-fx__rays {
   position: absolute;
   width: 140vmax;
@@ -9102,6 +9352,18 @@ body.play-premium-fx-active {
   animation: premiumFxRaysSpin 2.4s linear both;
   opacity: 0.75;
 }
+.premium-board-fx--themed .premium-board-fx__rays {
+  background: conic-gradient(
+    from 0deg at 50% 50%,
+    transparent 0deg,
+    var(--premium-fx-glow, rgba(255, 200, 80, 0.16)) 12deg,
+    transparent 24deg,
+    var(--premium-fx-secondary, rgba(255, 120, 200, 0.12)) 36deg,
+    transparent 48deg,
+    var(--premium-fx-core, rgba(120, 220, 255, 0.12)) 60deg,
+    transparent 72deg
+  );
+}
 .premium-board-fx__shockwave {
   position: absolute;
   width: 18vmin;
@@ -9110,6 +9372,18 @@ body.play-premium-fx-active {
   border: 3px solid rgba(255, 220, 120, 0.85);
   box-shadow: 0 0 40px rgba(255, 160, 50, 0.65);
   animation: premiumFxShockwave 1.1s cubic-bezier(0.12, 0.8, 0.24, 1) both;
+}
+.premium-board-fx--themed .premium-board-fx__shockwave {
+  border-color: var(--premium-fx-ring, rgba(255, 220, 120, 0.9));
+  box-shadow: 0 0 40px var(--premium-fx-glow, rgba(255, 160, 50, 0.65)), 0 0 72px var(--premium-fx-secondary, rgba(255, 120, 200, 0.35));
+}
+.premium-board-fx--themed.premium-board-fx--tier-mid .premium-board-fx__flash {
+  background: radial-gradient(
+    circle at 50% 42%,
+    var(--premium-fx-glow, rgba(255, 230, 170, 0.48)) 0%,
+    var(--premium-fx-secondary, rgba(255, 180, 90, 0.22)) 42%,
+    transparent 60%
+  );
 }
 .premium-board-fx__title {
   position: relative;
@@ -9295,16 +9569,100 @@ body.play-premium-fx-active {
   100% { opacity: 0; transform: translateX(var(--char-offset, 0)) translateY(-42px) scale(0.92); filter: brightness(1); }
 }
 @keyframes playFxCharIconFloat {
-  0% { opacity: 0; transform: translateX(calc(-50% + var(--char-offset, 0px))) translateY(40px) scale(0.18); }
-  20% { opacity: 1; transform: translateX(calc(-50% + var(--char-offset, 0px))) translateY(-8px) scale(1.22); }
-  55% { opacity: 1; transform: translateX(calc(-50% + var(--char-offset, 0px))) translateY(-18px) scale(1.14); }
-  100% { opacity: 0; transform: translateX(calc(-50% + var(--char-offset, 0px))) translateY(-44px) scale(1); }
+  0% {
+    opacity: 0;
+    transform: translateX(calc(-50% + var(--char-offset, 0px))) translateY(40px) scale(0.18);
+    filter:
+      drop-shadow(0 0 8px rgba(255, 255, 255, 0.55))
+      drop-shadow(0 0 16px rgba(255, 255, 255, 0.35));
+  }
+  20% {
+    opacity: 1;
+    transform: translateX(calc(-50% + var(--char-offset, 0px))) translateY(-8px) scale(1.22);
+    filter:
+      drop-shadow(0 0 18px rgba(255, 255, 255, 1))
+      drop-shadow(0 0 36px rgba(255, 255, 255, 0.92))
+      drop-shadow(0 0 56px rgba(255, 255, 255, 0.72))
+      drop-shadow(0 0 80px rgba(255, 255, 255, 0.48));
+  }
+  55% {
+    opacity: 1;
+    transform: translateX(calc(-50% + var(--char-offset, 0px))) translateY(-18px) scale(1.14);
+    filter:
+      drop-shadow(0 0 16px rgba(255, 255, 255, 0.98))
+      drop-shadow(0 0 32px rgba(255, 255, 255, 0.82))
+      drop-shadow(0 0 52px rgba(255, 255, 255, 0.58));
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(calc(-50% + var(--char-offset, 0px))) translateY(-44px) scale(1);
+    filter:
+      drop-shadow(0 0 10px rgba(255, 255, 255, 0.45))
+      drop-shadow(0 0 20px rgba(255, 255, 255, 0.28));
+  }
 }
 @keyframes playFxGroupLogoFloat {
   0% { opacity: 0; transform: translate(-50%, -50%) scale(0.55); }
   22% { opacity: 1; transform: translate(-50%, -50%) scale(1.02); }
   58% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
   100% { opacity: 0; transform: translate(-50%, -50%) scale(0.92); }
+}
+@keyframes playFxGroupLogoFloatMulti {
+  0% { opacity: 0; transform: translate(calc(-50% + var(--group-offset, 0px)), -50%) scale(0.55); }
+  22% { opacity: 1; transform: translate(calc(-50% + var(--group-offset, 0px)), -50%) scale(1.02); }
+  58% { opacity: 1; transform: translate(calc(-50% + var(--group-offset, 0px)), -50%) scale(1); }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--group-offset, 0px)), -50%) scale(0.92); }
+}
+@keyframes playFxCharIconFloatTri {
+  0% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--char-tri-x, 0px)), calc(var(--char-tri-y, 0px) + 40px)) scale(0.18);
+    filter:
+      drop-shadow(0 0 8px rgba(255, 255, 255, 0.55))
+      drop-shadow(0 0 16px rgba(255, 255, 255, 0.35));
+  }
+  20% {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--char-tri-x, 0px)), calc(var(--char-tri-y, 0px) - 8px)) scale(1.12);
+    filter:
+      drop-shadow(0 0 18px rgba(255, 255, 255, 1))
+      drop-shadow(0 0 36px rgba(255, 255, 255, 0.92))
+      drop-shadow(0 0 56px rgba(255, 255, 255, 0.72))
+      drop-shadow(0 0 80px rgba(255, 255, 255, 0.48));
+  }
+  55% {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--char-tri-x, 0px)), calc(var(--char-tri-y, 0px) - 18px)) scale(1.06);
+    filter:
+      drop-shadow(0 0 16px rgba(255, 255, 255, 0.98))
+      drop-shadow(0 0 32px rgba(255, 255, 255, 0.82))
+      drop-shadow(0 0 52px rgba(255, 255, 255, 0.58));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--char-tri-x, 0px)), calc(var(--char-tri-y, 0px) - 44px)) scale(0.96);
+    filter:
+      drop-shadow(0 0 10px rgba(255, 255, 255, 0.45))
+      drop-shadow(0 0 20px rgba(255, 255, 255, 0.28));
+  }
+}
+@keyframes playFxGroupLogoFloatAbove {
+  0% { opacity: 0; transform: translate(-50%, 14px) scale(0.55); }
+  22% { opacity: 1; transform: translate(-50%, 0) scale(1.02); }
+  58% { opacity: 1; transform: translate(-50%, -4px) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -16px) scale(0.92); }
+}
+@keyframes playFxGroupLogoFloatMultiAbove {
+  0% { opacity: 0; transform: translate(calc(-50% + var(--group-offset, 0px)), 14px) scale(0.55); }
+  22% { opacity: 1; transform: translate(calc(-50% + var(--group-offset, 0px)), 0) scale(1.02); }
+  58% { opacity: 1; transform: translate(calc(-50% + var(--group-offset, 0px)), -4px) scale(1); }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--group-offset, 0px)), -16px) scale(0.92); }
+}
+@keyframes playFxGroupLogoFloatTriAbove {
+  0% { opacity: 0; transform: translate(calc(-50% + var(--group-tri-x, 0px)), calc(var(--group-tri-y, 0px) + 14px)) scale(0.55); }
+  22% { opacity: 1; transform: translate(calc(-50% + var(--group-tri-x, 0px)), var(--group-tri-y, 0px)) scale(1.02); }
+  58% { opacity: 1; transform: translate(calc(-50% + var(--group-tri-x, 0px)), calc(var(--group-tri-y, 0px) - 4px)) scale(1); }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--group-tri-x, 0px)), calc(var(--group-tri-y, 0px) - 16px)) scale(0.92); }
 }
 @keyframes premiumFxCoinFlip {
   0% { transform: perspective(400px) rotateY(0deg) scale(0.5); opacity: 0; }
@@ -9430,12 +9788,15 @@ body.play-mode .live-slot .card-effect-resolve-btn-row .card-effect-resolve-btn-
 }
 .effect-dialog-resume-chip {
   position: fixed;
-  right: max(12px, env(safe-area-inset-right));
-  bottom: max(12px, env(safe-area-inset-bottom));
-  z-index: 12050;
+  left: 0;
+  top: 0;
+  right: auto;
+  bottom: auto;
+  z-index: 12065;
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
   font-size: 1rem;
   padding: 0.55rem 1.1rem;
+  visibility: hidden;
 }
 body.play-mode .card-item--effect-peek-source {
   z-index: 14;

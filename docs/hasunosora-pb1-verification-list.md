@@ -17,7 +17,7 @@
 | [x] | 005 | PL!HS-pb1-005-R | 徒町小鈴 | live_start_number_reveal_grant_if | 数選択→公開→手札/ブレード |
 | [x] | 006 | PL!HS-pb1-006-R | 安養寺姫芽 | live_start_position_change | |
 | [x] | 007 | PL!HS-pb1-007-R | セラス柳田リリエンフェルト | toujou_wait_pick_hand | |
-| [x] | 008 | PL!HS-pb1-008-R | 桂城泉 | optional_self_wait_opp_stage | |
+| [x] | 008 | PL!HS-pb1-008-R | 桂城泉 | toujou_both_sides_wait_all_printed_blade | 自+相手ステージ・元々ブレード3以下を一括ウェイト |
 | [x] | 009 | PL!HS-pb1-009-R | 日野下花帆 | jidou_series_enter_grant / draw_then_hand_discard | |
 | [x] | 010 | PL!HS-pb1-010-R | 村野さやか | toujou_opp_wait_if_high_cost_on_stage | 相手高コスト→相手ウェイト |
 | [x] | 011 | PL!HS-pb1-011-R | 大沢瑠璃乃 | deck_top_pick_recover | **横展開修正済**（3枚見て1枚回収） |

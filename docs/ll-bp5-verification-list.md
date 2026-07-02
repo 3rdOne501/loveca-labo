@@ -19,6 +19,15 @@
 | LL-bp5-001-L | `live_card_score_plus`: OR 複合条件なしで常時+1になっていたのを修正（`scorePlusOrPreconditions` + 実行時 `checkScorePlusOrPreconditions`） |
 | LL-bp5-002-L | 分類・ハンドラ確認のみ（修正不要） |
 
+## 2026-06-30 2回監修
+
+| ID | 内容 |
+|----|------|
+| （全体） | 2枚再確認。新規コード修正なし |
+| LL-bp5-001-L | `scorePlusOrPreconditions`（エール2+ / ステージ5色 / ターン中移動）OR 条件を再確認 |
+| LL-bp5-002-L | FAQ Q225 複数名カード=1人分・異グループ3人+センター全ハート / 成功時異グループ回収を再確認 |
+| verify | 3ケース通過 |
+
 ## FAQ 参照
 
 - **Q224**（001）: ハート5色はステージ全メンバー合算。1人が全色持つ必要はない。

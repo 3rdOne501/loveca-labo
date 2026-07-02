@@ -132,10 +132,10 @@
     },
     {
       "id": "seira",
-      "label": "聖澤セイラ",
+      "label": "鹿角聖良",
       "series": "aqours",
-      "file": "seira.webp",
-      "sourceUrl": "アイコンよう/"
+      "file": "seira.png.webp",
+      "sourceUrl": "アイコンよう/Aqoursアイコン/"
     },
     {
       "id": "leah",

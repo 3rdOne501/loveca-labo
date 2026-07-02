@@ -26,3 +26,10 @@
 
 - 5択回答 UI（`openOpponentAnswerChoiceDialog`）
 - デュエル時は相手盤面の手札捨て・ドロー・ブレード付与を `mutateInactiveOpponentBoard` で処理
+
+## 2026-06-30 2回監修
+
+| ID | 内容 |
+|----|------|
+| LL-PR-004-PR | 5択回答・味3種/あなた/それ以外分岐・総合ルール1.3.2（自手札0でも相手捨て）を再確認 |
+| verify | 1ケース通過 |

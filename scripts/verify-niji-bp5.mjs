@@ -44,7 +44,8 @@ const CASES = [
     id: "PL!N-bp5-004-P",
     trigger: "toujyou",
     expectTemplate: "optional_self_wait_opp_stage",
-    check: (cl) => (cl.costSelfWait && cl.optional ? [] : ["self wait optional"]),
+    check: (cl) =>
+      cl.costSelfWait && cl.optional && cl.oppWaitExactPrintedBlade === 4 ? [] : ["self wait/exact blade"],
   },
   {
     id: "PL!N-bp5-004-P",
@@ -98,14 +99,43 @@ const CASES = [
     },
   },
   {
+    id: "PL!N-bp5-012-P",
+    trigger: "kidou",
+    expectTemplate: "grant_jouji_session",
+    check: (cl) => {
+      const errs = [];
+      if (cl.energyUnderCount !== 1) errs.push("energyUnderCount");
+      if (cl.deckDrawCount !== 1) errs.push("deckDrawCount");
+      if (cl.requiredHeartSlot !== 1) errs.push("requiredHeartSlot");
+      return errs;
+    },
+  },
+  {
     id: "PL!N-bp5-013-N",
     trigger: "live_start",
     expectTemplate: "grant_jouji_session",
+    check: (cl) =>
+      cl.filters?.requiresAnyStageMemberWithEnergyUnder && cl.requiredHeartSlot === 1
+        ? []
+        : ["energy under precondition"],
+  },
+  {
+    id: "PL!N-bp5-007-P",
+    trigger: "live_success",
+    expectTemplate: "draw_then_hand_discard",
+    check: (cl) =>
+      cl.deckDrawCount === 2 && cl.minSurplusHearts === 1 ? [] : ["draw2 surplus1"],
   },
   {
     id: "PL!N-bp5-015-N",
     trigger: "live_start",
     expectTemplate: "grant_jouji_session",
+    check: (cl) =>
+      cl.bladeGain === 2 &&
+      Array.isArray(cl.requiresStageCollectiveHeartSlots) &&
+      cl.requiresStageCollectiveHeartSlots.length === 6
+        ? []
+        : ["collective hearts/blade"],
   },
   {
     id: "PL!N-bp5-016-N",
@@ -122,12 +152,6 @@ const CASES = [
     trigger: "live_start",
     expectTemplate: "grant_jouji_session",
     check: (cl) => (cl.filters?.requiresSuccessLiveCountTieWithOpponent ? [] : ["sl tie"]),
-  },
-  {
-    id: "PL!N-bp5-007-P",
-    trigger: "live_success",
-    expectTemplate: "draw_then_hand_discard",
-    check: (cl) => (cl.deckDrawCount === 2 ? [] : ["draw2"]),
   },
   {
     id: "PL!N-bp5-010-P",
@@ -181,7 +205,12 @@ const CASES = [
     id: "PL!N-bp5-026-L",
     trigger: "live_start",
     expectTemplate: "live_card_score_plus",
-    check: (cl) => (cl.cardScoreGrant === 1 ? [] : ["score+1"]),
+    check: (cl) =>
+      cl.cardScoreGrant === 1 &&
+      Array.isArray(cl.requiresStageCollectiveHeartSlots) &&
+      cl.requiresStageCollectiveHeartSlots.length === 6
+        ? []
+        : ["collective hearts/score"],
   },
   {
     id: "PL!N-bp5-026-L",

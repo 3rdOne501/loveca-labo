@@ -27,7 +27,9 @@ const CASES = [
     expectTemplate: "toujou_wait_pick_hand",
     check: (cl) => (cl.filters?.seriesTag === "虹ヶ咲" ? [] : ["seriesTag"]),
   },
-  { id: "PL!N-bp1-004-R", trigger: "toujyou", expectTemplate: "activate_energy" },
+  { id: "PL!N-bp1-004-R", trigger: "toujyou", expectTemplate: "activate_energy",
+    check: (cl) => (cl.filters?.minStageSeriesMembers === 2 && cl.filters?.seriesTag === "虹ヶ咲" ? [] : ["other series"]),
+  },
   {
     id: "PL!N-bp1-005-R",
     trigger: "live_start",
@@ -39,10 +41,18 @@ const CASES = [
     trigger: "kidou",
     expectTemplate: "activate_energy",
     segmentIncludes: "エネルギーを2枚アクティブ",
-    check: (cl) => (cl.energyActiveCount === 2 ? [] : ["energyActiveCount"]),
+    check: (cl) => {
+      const errs = [];
+      if (cl.energyActiveCount !== 2) errs.push("energyActiveCount");
+      if (!cl.requiresSeriesEnteredThisTurn) errs.push("enteredThisTurn");
+      if (cl.requiresSeriesOnStage) errs.push("seriesOnStage");
+      return errs;
+    },
   },
   { id: "PL!N-bp1-007-R", trigger: "toujyou", expectTemplate: "deck_top_pick_recover", check: (cl) => (cl.deckTopPickMax === 1 ? [] : ["deckTopPickMax"]) },
-  { id: "PL!N-bp1-008-R", trigger: "kidou", expectTemplate: "kidou_hand_cost_wait_pick_hand" },
+  { id: "PL!N-bp1-008-R", trigger: "kidou", expectTemplate: "kidou_hand_cost_wait_pick_hand",
+    check: (cl) => (cl.pickMaxCostBelowHandDiscarded && cl.handDiscardMustBeMember ? [] : ["below discard cost"]),
+  },
   { id: "PL!N-bp1-009-R", trigger: "toujyou", expectTemplate: "ability_sequence", check: (cl) => {
     const steps = cl.steps || [];
     if (steps.length !== 2) return ["steps.length"];
@@ -51,6 +61,9 @@ const CASES = [
   }},
   { id: "PL!N-bp1-010-R", trigger: "toujyou", expectTemplate: "deck_top_pick_recover" },
   { id: "PL!N-bp1-011-R", trigger: "toujyou", expectTemplate: "deck_reveal_until_live" },
+  { id: "PL!N-bp1-012-R＋", trigger: "jouji", expectTemplate: "blade_conditional",
+    check: (cl) => (cl.minLiveCardsInFrames === 3 && cl.liveSeriesTag === "虹ヶ咲" && cl.bladeFlat === 2 ? [] : ["jouji live frame"]),
+  },
   { id: "PL!N-bp1-012-R＋", trigger: "kidou", expectTemplate: "kidou_wait_pick_hand" },
   {
     id: "PL!N-bp1-026-L",
@@ -120,7 +133,8 @@ for (const c of CASES) {
     cl = classifyCardAbility(card, c.trigger, seg.text);
   }
   const errs = [];
-  if (cl.template !== c.expectTemplate) errs.push(`template ${cl.template}`);
+  const tmpl = c.trigger === "jouji" ? cl.kind : cl.template;
+  if (tmpl !== c.expectTemplate) errs.push(`template ${tmpl}`);
   if (c.trigger !== "jouji" && cl.template !== "passive_track" && !abilityEffectIsAutomated(cl.template) && cl.template !== "ability_sequence") {
     errs.push("not automated");
   }
@@ -137,4 +151,26 @@ if (failed) {
   console.error(`\n${failed} niji-bp1 case(s) failed`);
   process.exit(1);
 }
-console.log(`\nAll ${CASES.length} niji-bp1 cases passed`);
+
+for (const id of ["PL!N-bp1-025-L"]) {
+  const card = cards[id];
+  if (!card) {
+    console.error("MISSING", id);
+    failed++;
+    continue;
+  }
+  const triggered = splitAbilityByTriggers(cardAbilityRawText(card)).filter((s) => s.trigger);
+  if (triggered.length) {
+    failed++;
+    console.error("FAIL", id, "expected no triggered ability");
+  } else {
+    console.log("OK", id, "no triggered ability");
+  }
+}
+
+if (failed) {
+  console.error(`\n${failed} niji-bp1 case(s) failed`);
+  process.exit(1);
+}
+const totalCases = CASES.length + 1;
+console.log(`\nAll ${totalCases} niji-bp1 cases passed`);

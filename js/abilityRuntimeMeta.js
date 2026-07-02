@@ -43,6 +43,7 @@ export const TEMPLATE_HANDLES_OWN_COST = [
   "live_start_hand_named_discard_grant_jouji",
   "live_start_hand_discard_same_unit_grant",
   "live_start_hand_discard_same_group_grant",
+  "live_start_hand_discard_group_member_grant",
   "live_start_hand_discard_optional_blade_per",
   "live_start_hand_discard_series_member_blade_grant",
   "heart_color_pick_grant",

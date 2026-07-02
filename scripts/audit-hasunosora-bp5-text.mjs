@@ -75,6 +75,12 @@ for (let n = 1; n <= 22; n++) {
       }
     }
 
+    if (/同じグループ名を持つメンバー1人/.test(plain) && /控え室に置いたカード/.test(plain)) {
+      if (cl.template !== "live_start_hand_discard_group_member_grant") {
+        errors.push(`${id} live_start: discard group member grant`);
+      }
+    }
+
     if (/ライブカード置き場にあるこのカード以外の『蓮ノ空』/.test(plain) && /heart04/.test(plain)) {
       if (cl.template !== "live_start_need_heart_reduce_per_unit") {
         errors.push(`${id} live_start: live area other series heart reduce`);

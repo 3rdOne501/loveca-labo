@@ -42,3 +42,15 @@
 | PL!HS-cl1-009-CL | `parseAbilityPickFilters`: 「コストN以上M以下」で maxCost が欠落 |
 | PL!HS-cl1-010-CL | `grant_jouji_session`: コスト条件入り「メンバー1人は」が付与先未設定→ライブカード自身に常時付与される不具合 |
 | PL!HS-cl1-011-CL | `executeAbilityChoiceText`: 2択目（控え室ライブ回収）が未実装 |
+
+## 2026-06-30 2回監修
+
+| ID | 内容 |
+|----|------|
+| （全体） | 12枚（能力付き）再確認。`guided_manual=0`。新規コード修正なし |
+| PL!HS-cl1-001-CL | 山札1枚見て任意控え室（peek）を再確認 |
+| PL!HS-cl1-004-CL | 3枚ミル or 相手C2以下ウェイト選択肢を再確認 |
+| PL!HS-cl1-010-CL | C10+蓮ノ空1人ブレード付与先を再確認 |
+| PL!HS-cl1-011-CL | 任意E / ライブ枠2+時の控え室ライブ回収を再確認 |
+| PL!HS-cl1-012-CL | 自/相ライブ同点→エールC9+メンバー回収を再確認 |
+| verify | 12ケース通過 |

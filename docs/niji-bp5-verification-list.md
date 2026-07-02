@@ -17,7 +17,9 @@
 | [x] | 006 | PL!N-bp5-006-P | jouji + live_success_self_wait_if_others | 常時: 自アクティブ不可 / LS: 他メンバーいれば自ウェイト |
 | [x] | 007 | PL!N-bp5-007-P | grant_jouji_session + draw_then_hand_discard | LS: 成功ライブ枚数同数→ブレード2 / LS成功2ドロー1捨 |
 | [x] | 008–012 | PL!N-bp5-008-P 他 | kidou / deck_top_pick / surplus_heart / ability_pick_one 等 | 008起動E / 009山札見回収 / 010余剰0スコア+1 / 011 2択 / 012起動+LS |
-| [x] | 013–016 | PL!N-bp5-013-N 他 | grant_jouji_session / kidou_hand_cost_wait_pick_hand 等 | Nレア追加分 |
+| [x] | 012 | PL!N-bp5-012-P | grant_jouji_session / live_score_higher_energy_wait | 起動 E下→1ドロー+heart01 / LS成功 スコア優位→Eウェイト **2026-06-30: 起動コスト+ドロー** |
+| [x] | 013 | PL!N-bp5-013-N | grant_jouji_session | LS: E下メンバー在席→heart01 **2026-06-30: 前提チェック** |
+| [x] | 015 | PL!N-bp5-015-N | grant_jouji_session | ステージ合算で全6色ハート→ブレード2 **2026-06-30: collective heart 前提** |
 | [x] | 017 / 018 / 020 / 024 | — | — | 能力なし |
 | [x] | 019 | PL!N-bp5-019-N | toujou_wait_pick_hand | 任意手札1捨→控え室ライブ回収 |
 | [x] | 021 | PL!N-bp5-021-N | ability_sequence | 山札2ミル→控え室ライブをデッキ上4枚目へ（任意） |
@@ -45,7 +47,14 @@
 
 | ID | 内容 |
 |----|------|
+| PL!N-bp5-012-P | kidou: E下コスト+1ドロー+heart01常時が未実装 → `energyUnderCount`+`deckDrawCount` on `grant_jouji_session` |
+| PL!N-bp5-013-N | live_start: ステージにE下メンバー前提が未チェック → `requiresAnyStageMemberWithEnergyUnder` |
 | PL!N-bp5-001-P | `jidou_yell_distinct_bh_tier_grant`（エール公開BH種類数ティア） |
 | PL!N-bp5-004-P | `oppWaitExactPrintedBlade`（ちょうど4ブレード） |
+| PL!N-bp5-015-N / 026-L | `requiresStageCollectiveHeartSlots` — ステージ合算で全6色ハート前提（FAQ Q216） |
 | PL!N-bp5-027-L | `minDistinctStageMemberNames`（異名3人） |
 | （横展開） | `audit-common-patterns.mjs` 手札回収ミルルールの誤検知修正（021 デッキ上配置は除外） |
+
+### 問題なし（再確認）
+
+002–011、014–016、019–024、017/018/020/025 能力なし。ライブ 026–030 は初回修正済みの再確認のみ。

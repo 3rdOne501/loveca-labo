@@ -30,11 +30,17 @@ const CASES = [
       const steps = cl.steps || [];
       if (steps.length !== 2) return ["steps.length"];
       if (steps[1].template !== "toujou_wait_pick_hand") return ["step2"];
-      if (cl.deckTopPickMax !== 1) return ["deckTopPickMax"];
+      if (steps[0].deckTopCount !== 3) return ["deckTopCount"];
       return [];
     },
   },
   { id: "PL!HS-pb1-005-R", trigger: "live_start", expectTemplate: "live_start_number_reveal_grant_if" },
+  {
+    id: "PL!HS-pb1-008-R",
+    trigger: "toujyou",
+    expectTemplate: "toujou_both_sides_wait_all_printed_blade",
+    check: (cl) => (cl.oppWaitMaxPrintedBlade === 3 ? [] : ["oppWaitMaxPrintedBlade"]),
+  },
   {
     id: "PL!HS-pb1-010-R",
     trigger: "toujyou",
@@ -51,9 +57,24 @@ const CASES = [
   { id: "PL!HS-pb1-014-R", trigger: "toujyou", expectTemplate: "toujou_opp_front_position_change" },
   {
     id: "PL!HS-pb1-025-L",
+    trigger: "live_start",
+    expectTemplate: "grant_jouji_session",
+    check: (cl) =>
+      cl.filters?.waitingSeriesMemberTag === "蓮ノ空" && cl.filters?.minWaitingSeriesMemberCount === 10
+        ? []
+        : ["grant_jouji filters"],
+  },
+  {
+    id: "PL!HS-pb1-025-L",
     trigger: "live_success",
     expectTemplate: "live_success_recover_from_waiting",
     check: (cl) => (cl.filters?.maxHandCount === 6 ? [] : ["maxHandCount"]),
+  },
+  { id: "PL!HS-pb1-026-L", trigger: "live_start", expectTemplate: "live_start_need_heart_reduce_fixed" },
+  {
+    id: "PL!HS-pb1-029-L",
+    trigger: "live_start",
+    expectTemplate: "live_start_overflow_heart_tiered_draw_reduce",
   },
   {
     id: "PL!HS-pb1-027-L",

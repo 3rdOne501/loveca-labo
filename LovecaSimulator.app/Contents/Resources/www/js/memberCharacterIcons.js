@@ -5,6 +5,7 @@
 
 import memberManifest from "../data/member-character-icons.json" with { type: "json" };
 import groupManifest from "../data/enter-fx-group-logos.json" with { type: "json" };
+import { catalogCardSeriesLines, seriesLineToSchoolLabel } from "./cardGroups.js";
 
 export const MEMBER_CHARACTER_ICON_ART_DIR = String(
   memberManifest.artDir || "assets/game-icons/member-icons/",
@@ -75,8 +76,9 @@ const NAME_ALIASES = /** @type {Record<string, string>} */ ({
   乙宗梢: "shao",
   夕霧綴理: "tsuzuri",
   藤島慈: "yoshino",
-  聖澤セイラ: "seira",
+  鹿角聖良: "seira",
   聖澤悠奈: "yuuna",
+  鹿角理亞: "leah",
   柊摩央: "mao",
   柊真緒: "mao",
   優木せつ菜: "setsuna",
@@ -164,19 +166,209 @@ function catalogSeriesKind(cat) {
   return null;
 }
 
-function resolveHasunosoraUnitLogoFile(cat) {
+function resolveHasunosoraUnitKind(cat) {
   var unit = String((cat && cat.unit) || "");
   var patterns = groupManifest.unitLogoPatterns || [];
   for (var i = 0; i < patterns.length; i++) {
     var p = patterns[i];
     if (!p || !p.match || !p.logo) continue;
-    if (new RegExp(p.match, "i").test(unit)) {
-      var key = String(p.logo);
-      var file = (groupManifest.hasunosoraUnitLogos || {})[key];
-      if (file) return file;
-    }
+    if (new RegExp(p.match, "i").test(unit)) return String(p.logo);
+  }
+  return "default";
+}
+
+function resolveHasunosoraUnitLogoFile(cat) {
+  var key = resolveHasunosoraUnitKind(cat);
+  if (key !== "default") {
+    var file = (groupManifest.hasunosoraUnitLogos || {})[key];
+    if (file) return file;
   }
   return (groupManifest.hasunosoraUnitLogos || {}).default || "hasu.webp";
+}
+
+function catalogCardUnitLines(cat) {
+  if (!cat || cat.unit == null) return [];
+  return String(cat.unit)
+    .split(/[\/／]/)
+    .map(function (line) {
+      return String(line || "").trim();
+    })
+    .filter(Boolean);
+}
+
+function catalogRivalUnitKindFromToken(token) {
+  var raw = String(token || "").trim();
+  if (!raw) return null;
+  var compact = raw.replace(/[\s\u3000]/g, "");
+  if (/^SaintSnow$/i.test(compact) || /セントスノー/.test(raw)) return "saint_snow";
+  if (/^SunnyPassion$/i.test(compact) || /サニーパッション|サニパ/i.test(raw)) return "sunny_passion";
+  if (/^A-RISE$/i.test(compact) || /A-RIZE|アライズ/i.test(raw)) return "arise";
+  return null;
+}
+
+function catalogRivalUnitKind(cat) {
+  if (!cat) return null;
+  var unit = String(cat.unit || "");
+  var fromUnit = catalogRivalUnitKindFromToken(unit);
+  if (fromUnit) return fromUnit;
+  var hay = unit + " " + String(cat.series || "") + " " + String(cat.name || "");
+  if (/SunnyPassion/i.test(unit.replace(/[\s\u3000]/g, "")) || /Sunny Passion|サニーパッション|サニパ/i.test(hay))
+    return "sunny_passion";
+  if (/SaintSnow/i.test(unit.replace(/[\s\u3000]/g, "")) || /Saint Snow|セントスノー/i.test(hay)) return "saint_snow";
+  if (/A-RISE|A-RIZE|アライズ/i.test(hay)) return "arise";
+  return null;
+}
+
+function catalogSeriesKindFromUnitToken(token) {
+  var t = String(token || "").trim();
+  if (!t) return null;
+  if (/Aqours|サンシャイン|浦の星/i.test(t)) return "aqours";
+  if (/μ|m's|mus/i.test(t)) return "muse";
+  if (/スーパースター|Liella|結ヶ丘|リエラ/i.test(t)) return "liella";
+  if (/虹ヶ咲|ニジガク/i.test(t)) return "nijigasaki";
+  if (/蓮ノ空|ハスノソラ/i.test(t)) return "hasunosora";
+  return null;
+}
+
+function rivalUnitLogoFromKind(kind, label) {
+  if (!kind) return null;
+  var file = (groupManifest.rivalUnitLogos || {})[kind];
+  if (!file) return null;
+  var labels = {
+    arise: "A-RISE",
+    saint_snow: "Saint Snow",
+    sunny_passion: "Sunny Passion",
+  };
+  return {
+    id: kind + "-rival",
+    label: label || labels[kind] || kind,
+    href: artifactImageSrc(groupLogoHref(file)),
+    variant: "rival",
+    vector: /\.svg$/i.test(file),
+  };
+}
+
+function logoFromUnitToken(token, cat, forLive) {
+  var rivalKind = catalogRivalUnitKindFromToken(token);
+  if (rivalKind) return rivalUnitLogoFromKind(rivalKind, token);
+  var seriesKind = catalogSeriesKindFromUnitToken(token);
+  if (!seriesKind) return null;
+  if (seriesKind === "hasunosora") {
+    var unitFile = resolveHasunosoraUnitLogoFile(Object.assign({}, cat, { unit: token }));
+    return {
+      id: "hasu-unit-" + token,
+      label: token,
+      href: artifactImageSrc(groupLogoHref(unitFile)),
+      variant: "unit",
+      vector: /\.svg$/i.test(unitFile),
+    };
+  }
+  return groupLogoFromSeriesKind(seriesKind, token);
+}
+
+function loveliveOcgFusionLogo() {
+  var file = groupManifest.fusionLogo || "lovelive_OCG.png";
+  return {
+    id: "lovelive-ocg",
+    label: "Love Live! OCG",
+    href: artifactImageSrc(groupLogoHref(file)),
+    variant: "fusion",
+    vector: /\.svg$/i.test(file),
+  };
+}
+
+/** 三体合体メンバー（名前3人 or series 3行以上） */
+export function isTripleFusionMemberCard(cat) {
+  if (!cat || cat.type !== "メンバー") return false;
+  var raw = String(cat.name || "").trim();
+  if (raw.indexOf("&") >= 0) {
+    var parts = raw.split("&").map(function (p) {
+      return String(p || "").trim();
+    });
+    if (parts.filter(Boolean).length >= 3) return true;
+  }
+  return catalogCardSeriesLines(cat).length >= 3;
+}
+
+function groupLogoFromSeriesKind(kind, label) {
+  if (!kind) return null;
+  if (kind === "hasunosora") {
+    var hasuFile = (groupManifest.hasunosoraUnitLogos || {}).default || "hasu.webp";
+    return {
+      id: "hasu-group",
+      label: label || "蓮ノ空",
+      href: artifactImageSrc(groupLogoHref(hasuFile)),
+      variant: "group",
+      vector: /\.svg$/i.test(hasuFile),
+    };
+  }
+  var seriesLogo = (groupManifest.seriesLogos || {})[kind];
+  if (!seriesLogo) return null;
+  var seriesLabels = {
+    muse: "μ's",
+    aqours: "Aqours",
+    liella: "Liella!",
+    nijigasaki: "虹ヶ咲",
+  };
+  return {
+    id: kind + "-group",
+    label: label || seriesLabels[kind] || kind,
+    href: artifactImageSrc(groupLogoHref(seriesLogo)),
+    variant: "group",
+    vector: /\.svg$/i.test(seriesLogo),
+  };
+}
+
+/**
+ * 登場カード上に重ねるグループ／ユニットロゴ（複数グループ対応）。
+ * @param {{ name?: string, type?: string, series?: string, product?: string, unit?: string } | null | undefined} cat
+ * @param {{ forLive?: boolean }} [opts] forLive=true ならライブカード表向き時（虹ヶ咲もグループロゴ）
+ * @returns {Array<{ id: string, label: string, href: string, variant: string, vector?: boolean }>}
+ */
+export function resolveEnterFxCardGroupLogos(cat, opts) {
+  opts = opts || {};
+  var forLive = opts.forLive === true;
+  if (!cat) return [];
+  if (!forLive && cat.type !== "メンバー") return [];
+  if (forLive && cat.type !== "メンバー" && cat.type !== "ライブ") return [];
+
+  if (!forLive && isTripleFusionMemberCard(cat)) {
+    return [loveliveOcgFusionLogo()];
+  }
+
+  var seriesLines = catalogCardSeriesLines(cat);
+  if (seriesLines.length > 1) {
+    /** @type {Array<{ id: string, label: string, href: string, variant: string, vector?: boolean }>} */
+    var multi = [];
+    /** @type {Record<string, boolean>} */
+    var seen = {};
+    seriesLines.forEach(function (line) {
+      var kind = catalogSeriesKind({ series: line, product: cat.product, type: cat.type });
+      if (!kind || seen[kind]) return;
+      seen[kind] = true;
+      var logo = groupLogoFromSeriesKind(kind, seriesLineToSchoolLabel(line));
+      if (logo) multi.push(logo);
+    });
+    return multi;
+  }
+
+  var unitLines = catalogCardUnitLines(cat);
+  if (unitLines.length > 1) {
+    /** @type {Array<{ id: string, label: string, href: string, variant: string, vector?: boolean }>} */
+    var unitMulti = [];
+    /** @type {Record<string, boolean>} */
+    var unitSeen = {};
+    unitLines.forEach(function (token) {
+      var logo = logoFromUnitToken(token, cat, forLive);
+      if (!logo || unitSeen[logo.id]) return;
+      unitSeen[logo.id] = true;
+      unitMulti.push(logo);
+    });
+    if (unitMulti.length) return unitMulti;
+  }
+
+  var one = resolveEnterFxCardGroupLogo(cat, opts);
+  return one ? [one] : [];
 }
 
 /**
@@ -192,10 +384,11 @@ export function resolveEnterFxCardGroupLogo(cat, opts) {
   if (!forLive && cat.type !== "メンバー") return null;
   if (forLive && cat.type !== "メンバー" && cat.type !== "ライブ") return null;
 
+  var rivalKind = catalogRivalUnitKind(cat);
+  if (rivalKind) return rivalUnitLogoFromKind(rivalKind, String(cat.unit || ""));
+
   var kind = catalogSeriesKind(cat);
   if (!kind) return null;
-
-  if (!forLive && kind === "nijigasaki") return null;
 
   if (kind === "hasunosora") {
     var unitFile = resolveHasunosoraUnitLogoFile(cat);
@@ -208,27 +401,12 @@ export function resolveEnterFxCardGroupLogo(cat, opts) {
     };
   }
 
-  var seriesLogo = (groupManifest.seriesLogos || {})[kind];
-  if (!seriesLogo) return null;
-  var seriesLabels = {
-    muse: "μ's",
-    aqours: "Aqours",
-    liella: "Liella!",
-    nijigasaki: "虹ヶ咲",
-  };
-  return {
-    id: kind + "-group",
-    label: seriesLabels[kind] || kind,
-    href: artifactImageSrc(groupLogoHref(seriesLogo)),
-    variant: "group",
-    vector: /\.svg$/i.test(seriesLogo),
-  };
+  return groupLogoFromSeriesKind(kind, null);
 }
 
-/** @deprecated 画面中央表示は廃止。resolveEnterFxCardGroupLogo を使用 */
+/** @deprecated 画面中央表示は廃止。resolveEnterFxCardGroupLogos を使用 */
 export function resolveEnterFxBoardCenterIcons(cat) {
-  var one = resolveEnterFxCardGroupLogo(cat);
-  return one ? [one] : [];
+  return resolveEnterFxCardGroupLogos(cat);
 }
 
 /** @type {Record<string, [number, number, number]>} */
@@ -241,6 +419,30 @@ const FX_COLOR_RGB = {
   sunny_passion: [201, 160, 0],
   arise: [21, 101, 192],
   saint_snow: [128, 222, 234],
+};
+
+/** 蓮ノ空ユニット別2色（FX用） */
+const HASUNOSORA_UNIT_FX_DUAL = {
+  cerise_bouquet: [
+    [76, 175, 80],
+    [255, 235, 59],
+  ],
+  dollchestra: [
+    [33, 150, 243],
+    [229, 57, 53],
+  ],
+  mirakurapark: [
+    [236, 64, 122],
+    [255, 255, 255],
+  ],
+  edelnote: [
+    [26, 26, 26],
+    [245, 245, 245],
+  ],
+  default: [
+    [229, 57, 53],
+    [255, 183, 77],
+  ],
 };
 
 /**
@@ -257,6 +459,7 @@ function paletteFromRgb(rgb) {
   return {
     core: "rgba(" + r + "," + g + "," + b + ",0.95)",
     glow: "rgba(" + gr + "," + gg + "," + gb + ",0.5)",
+    secondary: "rgba(" + gr + "," + gg + "," + gb + ",0.42)",
     ring: "rgba(" + r + "," + g + "," + b + ",0.95)",
     ringShadow:
       "0 0 24px rgba(" +
@@ -284,6 +487,59 @@ function paletteFromRgb(rgb) {
       "rgb(" + Math.min(255, r + 72) + "," + Math.min(255, g + 72) + "," + Math.min(255, b + 72) + ")",
     ],
   };
+}
+
+/**
+ * @param {[number, number, number]} rgbA
+ * @param {[number, number, number]} rgbB
+ */
+function paletteFromDualRgb(rgbA, rgbB) {
+  var a = paletteFromRgb(rgbA);
+  var b = paletteFromRgb(rgbB);
+  var br = rgbB[0];
+  var bg = rgbB[1];
+  var bb = rgbB[2];
+  var bgr = Math.min(255, br + 36);
+  var bgg = Math.min(255, bg + 36);
+  var bgb = Math.min(255, bb + 36);
+  return {
+    core: a.core,
+    glow: "rgba(" + bgr + "," + bgg + "," + bgb + ",0.58)",
+    secondary: b.core,
+    ring: a.ring,
+    ringShadow:
+      a.ringShadow +
+      ", 0 0 36px rgba(" +
+      br +
+      "," +
+      bg +
+      "," +
+      bb +
+      ",0.55), 0 0 56px rgba(" +
+      bgr +
+      "," +
+      bgg +
+      "," +
+      bgb +
+      ",0.35)",
+    particles: [
+      "rgb(" + rgbA[0] + "," + rgbA[1] + "," + rgbA[2] + ")",
+      "rgb(" + rgbB[0] + "," + rgbB[1] + "," + rgbB[2] + ")",
+      "rgb(" +
+        Math.round((rgbA[0] + rgbB[0]) / 2) +
+        "," +
+        Math.round((rgbA[1] + rgbB[1]) / 2) +
+        "," +
+        Math.round((rgbA[2] + rgbB[2]) / 2) +
+        ")",
+    ],
+  };
+}
+
+function resolveHasunosoraFxPalette(cat) {
+  var unitKey = resolveHasunosoraUnitKind(cat);
+  var dual = HASUNOSORA_UNIT_FX_DUAL[unitKey] || HASUNOSORA_UNIT_FX_DUAL.default;
+  return paletteFromDualRgb(dual[0], dual[1]);
 }
 
 /**
@@ -315,9 +571,10 @@ function catalogFxColorKind(cat) {
     String(cat.product || "") +
     " " +
     String(cat.name || "");
-  if (/Sunny Passion|サニーパッション|サニパ/i.test(hay)) return "sunny_passion";
+  var unitCompact = unit.replace(/[\s\u3000]/g, "");
+  if (/SunnyPassion/i.test(unitCompact) || /Sunny Passion|サニーパッション|サニパ/i.test(hay)) return "sunny_passion";
   if (/A-RISE|A-RIZE|アライズ/i.test(hay)) return "arise";
-  if (/Saint Snow|セントスノー/i.test(hay)) return "saint_snow";
+  if (/SaintSnow/i.test(unitCompact) || /Saint Snow|セントスノー/i.test(hay)) return "saint_snow";
   return catalogSeriesKind(cat);
 }
 
@@ -331,13 +588,42 @@ function rosterSeriesForMemberPart(partName) {
   return null;
 }
 
+function pushFxRgbForKind(blend, kind, cat) {
+  if (kind === "hasunosora") {
+    var dual = HASUNOSORA_UNIT_FX_DUAL[resolveHasunosoraUnitKind(cat)] || HASUNOSORA_UNIT_FX_DUAL.default;
+    blend.push(dual[0], dual[1]);
+    return;
+  }
+  if (kind && FX_COLOR_RGB[kind]) blend.push(FX_COLOR_RGB[kind]);
+}
+
 /**
  * 登場・バトン・ライブ開始時エフェクトのグループ色（3人合体は RGB 平均で混合）。
  * @param {{ name?: string, type?: string, series?: string, product?: string, unit?: string } | null | undefined} cat
- * @returns {{ core: string, glow: string, ring: string, ringShadow: string, particles: string[] } | null}
+ * @returns {{ core: string, glow: string, ring: string, ringShadow: string, particles: string[], secondary?: string } | null}
  */
 export function resolveEnterFxPalette(cat) {
   if (!cat) return null;
+  var seriesLines = catalogCardSeriesLines(cat);
+  if (seriesLines.length > 1) {
+    /** @type {Array<[number, number, number]>} */
+    var seriesBlend = [];
+    seriesLines.forEach(function (line) {
+      var kind = catalogSeriesKind({ series: line, product: cat.product, type: cat.type });
+      pushFxRgbForKind(seriesBlend, kind, cat);
+    });
+    if (seriesBlend.length) return blendFxRgbList(seriesBlend);
+  }
+  var unitLines = catalogCardUnitLines(cat);
+  if (unitLines.length > 1) {
+    /** @type {Array<[number, number, number]>} */
+    var unitBlend = [];
+    unitLines.forEach(function (token) {
+      var kind = catalogRivalUnitKindFromToken(token) || catalogSeriesKindFromUnitToken(token);
+      pushFxRgbForKind(unitBlend, kind, cat);
+    });
+    if (unitBlend.length) return blendFxRgbList(unitBlend);
+  }
   var raw = String(cat.name || "").trim();
   if (raw.indexOf("&") >= 0) {
     /** @type {Array<[number, number, number]>} */
@@ -345,11 +631,12 @@ export function resolveEnterFxPalette(cat) {
     raw.split("&").forEach(function (part) {
       var series = rosterSeriesForMemberPart(part.trim());
       var kind = series || catalogFxColorKind(Object.assign({}, cat, { name: part.trim() }));
-      if (kind && FX_COLOR_RGB[kind]) blend.push(FX_COLOR_RGB[kind]);
+      pushFxRgbForKind(blend, kind, cat);
     });
     if (blend.length) return blendFxRgbList(blend);
   }
   var kind = catalogFxColorKind(cat);
+  if (kind === "hasunosora") return resolveHasunosoraFxPalette(cat);
   if (!kind || !FX_COLOR_RGB[kind]) return null;
   return paletteFromRgb(FX_COLOR_RGB[kind]);
 }

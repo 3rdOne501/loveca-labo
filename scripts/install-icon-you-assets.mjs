@@ -99,7 +99,7 @@ const ROSTER_META = [
   { id: "hanamaru", label: "国木田花丸", series: "aqours" },
   { id: "mari", label: "小原鞠莉", series: "aqours" },
   { id: "ruby", label: "黒澤ルビィ", series: "aqours" },
-  { id: "seira", label: "聖澤セイラ", series: "aqours" },
+  { id: "seira", label: "鹿角聖良", series: "aqours" },
   { id: "leah", label: "レイ", series: "aqours" },
   { id: "yu", label: "高咲 侑", series: "nijigasaki" },
   { id: "ayumu", label: "上原歩夢", series: "nijigasaki" },
@@ -197,8 +197,10 @@ if (fs.existsSync(MEMBER_OUT)) {
 
 function installMemberSource(srcPath, memberId) {
   if (HASU_MEMBER_IDS.has(memberId)) return;
+  const base = path.basename(srcPath);
   const ext = extOf(srcPath);
-  const destName = memberId + ext;
+  const destName =
+    memberId === "seira" && /\.png\.webp$/i.test(base) ? "seira.png.webp" : memberId + ext;
   copyFile(srcPath, path.join(MEMBER_OUT, destName));
   installedMemberFiles.set(memberId, destName);
 }
@@ -258,6 +260,7 @@ const groupManifest = {
       groupFileByKey["sunny_pussion.png"] ||
       "sanny_passion.webp",
   },
+  fusionLogo: groupFileByKey["lovelive_OCG.png"] || "lovelive_OCG.png",
   hasunosoraUnitLogos: {
     default: groupFileByKey["hasu.webp"] || "hasu.webp",
     cerise_bouquet: groupFileByKey["suri-zu_bouquet.webp"] || "suri-zu_bouquet.webp",

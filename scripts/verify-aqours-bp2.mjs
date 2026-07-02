@@ -14,8 +14,23 @@ import { classifyJoujiSegment } from "../js/joujiEffects.js";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const cards = JSON.parse(fs.readFileSync(path.join(ROOT, "data/cards.json"), "utf8"));
 
-/** @type {Array<{id:string, trigger:string, expectTemplate:string, check?:(cl:any)=>string[]}>} */
+/** @type {Array<{id:string, trigger:string, expectTemplate:string, jouji?:boolean, check?:(cl:any, seg?:any)=>string[]}>} */
 const CASES = [
+  {
+    id: "PL!S-bp2-001-P",
+    trigger: "jouji",
+    jouji: true,
+    expectTemplate: "blade_conditional",
+    check: (_cl, seg) => {
+      const rule = classifyJoujiSegment(seg.text);
+      const errs = [];
+      if (rule?.kind !== "blade_conditional") errs.push("blade_conditional");
+      if (rule?.bladeFlat !== 3) errs.push("blade 3");
+      if (rule?.maxOwnSuccessLive !== 0) errs.push("own SL 0");
+      if (rule?.minOpponentSuccessLive !== 1) errs.push("opp SL 1+");
+      return errs;
+    },
+  },
   {
     id: "PL!S-bp2-002-P",
     trigger: "jidou",
@@ -37,7 +52,23 @@ const CASES = [
       return errs;
     },
   },
-  { id: "PL!S-bp2-006-P", trigger: "toujyou", expectTemplate: "toujou_wait_enter_cost_sum" },
+  { id: "PL!S-bp2-006-P", trigger: "toujyou", expectTemplate: "toujou_wait_enter_cost_sum",
+    check: (cl) => {
+      const errs = [];
+      if (!cl.optional || !cl.hasOptionalCost) errs.push("optional energy");
+      if (cl.waitEnterMaxCount !== 2) errs.push("enterPickMax 2");
+      if (cl.waitEnterMaxCostSum !== 4) errs.push("cost sum 4");
+      return errs;
+    },
+  },
+  { id: "PL!S-bp2-007-P", trigger: "jidou", expectTemplate: "jidou_yell_draw",
+    check: (cl) => {
+      const errs = [];
+      if (cl.deckDrawCount !== 1) errs.push("draw 1");
+      if (!cl.filters?.maxHandCount || cl.filters.maxHandCount !== 7) errs.push("hand max 7");
+      return errs;
+    },
+  },
   {
     id: "PL!S-bp2-007-P",
     trigger: "live_start",
@@ -45,7 +76,33 @@ const CASES = [
     check: (cl) => (cl.deckTopCount === 2 ? [] : ["deckTopCount"]),
   },
   { id: "PL!S-bp2-008-P", trigger: "toujyou", expectTemplate: "waiting_to_deck_bottom" },
-  { id: "PL!S-bp2-021-L", trigger: "live_success", expectTemplate: "yell_resolution_pick_deck_bottom" },
+  {
+    id: "PL!S-bp2-009-P",
+    trigger: "kidou",
+    expectTemplate: "kidou_stage_wait_pick_hand",
+    check: (cl) => (cl.filters?.pickType === "ライブ" ? [] : ["pick live"]),
+  },
+  {
+    id: "PL!S-bp2-010-N",
+    trigger: "toujyou",
+    expectTemplate: "draw_then_hand_discard",
+    check: (cl) =>
+      cl.deckDrawCount === 2 && cl.effectDiscardCount === 2 ? [] : ["draw2 discard2"],
+  },
+  {
+    id: "PL!S-bp2-016-N",
+    trigger: "kidou",
+    expectTemplate: "kidou_stage_wait_pick_hand",
+    check: (cl) => (cl.filters?.pickType === "メンバー" ? [] : ["pick member"]),
+  },
+  { id: "PL!S-bp2-021-L", trigger: "live_success", expectTemplate: "yell_resolution_pick_deck_bottom",
+    check: (cl) => {
+      const errs = [];
+      if (cl.deckPickMax !== 1) errs.push("deckPickMax 1");
+      if (cl.filters?.pickType !== "ライブ") errs.push("pick live");
+      return errs;
+    },
+  },
   {
     id: "PL!S-bp2-022-L",
     trigger: "live_success",
@@ -88,6 +145,7 @@ const CASES = [
       if (cl.bladeGain !== 2) errs.push("blade 2");
       if (cl.filters?.minSuccessLiveCount !== 2) errs.push("sl 2+");
       if (cl.grantToAllStageMembers) errs.push("must not grant all");
+      if (!cl.requiresOnStage) errs.push("requiresOnStage");
       return errs;
     },
   },
@@ -107,11 +165,17 @@ for (const c of CASES) {
     failed++;
     continue;
   }
-  const cl = classifyCardAbility(card, c.trigger, seg.text);
+  const cl = c.jouji
+    ? classifyJoujiSegment(seg.text)
+    : classifyCardAbility(card, c.trigger, seg.text);
   const errs = [];
-  if (cl.template !== c.expectTemplate) errs.push(`template ${cl.template}`);
-  if (!abilityEffectIsAutomated(cl.template)) errs.push("not automated");
-  if (c.check) errs.push(...c.check(cl));
+  if (c.jouji) {
+    if (c.expectTemplate !== cl.kind) errs.push(`kind ${cl.kind}`);
+  } else {
+    if (cl.template !== c.expectTemplate) errs.push(`template ${cl.template}`);
+    if (!abilityEffectIsAutomated(cl.template)) errs.push("not automated");
+  }
+  if (c.check) errs.push(...c.check(cl, seg));
   if (errs.length) {
     failed++;
     console.error("FAIL", c.id, c.trigger, errs.join("; "));
@@ -133,6 +197,32 @@ for (const id of ["PL!S-bp2-019-L", "PL!S-bp2-020-L", "PL!S-bp2-026-L"]) {
     console.error("FAIL", id, "expected no ability");
   } else {
     console.log("OK", id, "no ability");
+  }
+}
+
+{
+  const id = "PL!S-bp2-008-P";
+  const card = cards[id];
+  const raw = cardAbilityRawText(card);
+  const seg = splitAbilityByTriggers(raw).find((s) => s.trigger === "jouji");
+  if (!seg) {
+    failed++;
+    console.error("MISSING SEG", id, "jouji");
+  } else {
+    const rule = classifyJoujiSegment(seg.text);
+    const grantM = String(seg.text).match(/「([\s\S]+?)」を得る/);
+    const grantRule = grantM ? classifyJoujiSegment(grantM[1]) : null;
+    const errs = [];
+    if (rule?.kind !== "stage_all_areas_grant_quoted") errs.push("grant quoted kind");
+    if (rule?.seriesTag !== "Aqours") errs.push("series Aqours");
+    if (grantRule?.kind !== "yell_reveal_live_score_tiered") errs.push("grant yell tier");
+    if (grantRule?.liveScorePlus !== 1 || grantRule?.liveScorePlusHigh !== 2) errs.push("tier +1/+2");
+    if (errs.length) {
+      failed++;
+      console.error("FAIL", id, "jouji", errs.join("; "));
+    } else {
+      console.log("OK", id, "jouji");
+    }
   }
 }
 
@@ -159,5 +249,5 @@ if (failed) {
   console.error(`\n${failed} aqours-bp2 case(s) failed`);
   process.exit(1);
 }
-const totalCases = CASES.length + 4;
+const totalCases = CASES.length + 5;
 console.log(`\nAll ${totalCases} aqours-bp2 cases passed`);

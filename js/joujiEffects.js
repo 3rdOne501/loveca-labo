@@ -303,6 +303,21 @@ export function classifyJoujiSegment(segRaw) {
     }
   }
 
+  if (/エールにより公開/.test(p) && /ライブカードが1枚以上/.test(p) && /ライブの合計スコア/.test(p)) {
+    var lowYell = parseScorePlus(p) || 1;
+    var highYell = lowYell;
+    var highYellM = p.match(/代わりに合計スコアを[＋+](\d+)/);
+    if (highYellM) highYell = Number(normalizeFwDigits(highYellM[1])) || lowYell;
+    return Object.assign({}, base, {
+      kind:
+        highYell > lowYell && /ライブカードが3枚以上/.test(p)
+          ? "yell_reveal_live_score_tiered"
+          : "yell_reveal_live_score_min",
+      liveScorePlus: lowYell,
+      liveScorePlusHigh: highYell,
+    });
+  }
+
   if (/2人のメンバーとバトンタッチしてもよい/.test(p)) {
     return Object.assign({}, base, { kind: "two_member_baton" });
   }
@@ -564,7 +579,7 @@ export function classifyJoujiSegment(segRaw) {
     });
     var ownSlSc = p.match(/自分の成功ライブカード置き場にあるカードのスコアの合計が(\d+)以上/);
     if (ownSlSc) stageCostRule.minSuccessLiveScoreSum = Number(ownSlSc[1]);
-    var enKagi = p.match(/自分のエネルギーが(\d+)枚以上あるかぎり/);
+    var enKagi = p.match(/自分のエネルギーが(\d+)枚以上ある(?:かぎり|場合)/);
     if (enKagi) stageCostRule.minEnergy = Number(enKagi[1]);
     var perSl = p.match(/成功ライブカード置き場にあるカード1枚につき/);
     if (perSl) {
@@ -991,6 +1006,9 @@ function evaluateJoujiRule(rule, inst, card, ctx) {
     });
     return out;
   }
+  if (rule.kind === "yell_reveal_live_score_tiered" || rule.kind === "yell_reveal_live_score_min") {
+    return out;
+  }
   if (rule.kind === "live_score_plus" || rule.kind === "live_score_if_energy_below") {
     out.liveScoreBonus = rule.liveScorePlus || 0;
     return out;
@@ -1146,7 +1164,9 @@ function conditionMet(rule, inst, card, ctx) {
     }
   }
   if (
-    (rule.kind === "stage_all_areas_series_distinct" || rule.kind === "stage_all_areas_series_distinct_score") &&
+    (rule.kind === "stage_all_areas_series_distinct" ||
+      rule.kind === "stage_all_areas_series_distinct_score" ||
+      rule.kind === "stage_all_areas_grant_quoted") &&
     rule.seriesTag
   ) {
     if (!ctx.stageHasAllAreasDistinctSeriesMembers(rule.seriesTag)) return false;

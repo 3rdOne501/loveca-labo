@@ -44,3 +44,13 @@
 - **007-P**: `メンバーカードを1枚公開` の pickType 解析。
 - **025-L**: `namedStageMemberList` + `minDistinctNamedStageMembersFromList: 2` 前置条件。
 - 自動回帰: `verify-liella-bp2.mjs` 15ケース。
+
+## 2026-06-30 2回監修
+
+| ID | 内容 |
+|----|------|
+| （全体） | 全67枚再確認。`guided_manual=0`・`audit-common-patterns` OK。新規コード修正なし |
+| PL!SP-bp2-001-P | 任意ライブ開始時能力無効→控え室回収を再確認 |
+| PL!SP-bp2-011-P | 相手選択ライブ提示（FAQ Q118）を再確認 |
+| PL!SP-bp2-025-L | 指名メンバー異名2人+エール手札を再確認 |
+| verify | 14ケースすべて通過 |

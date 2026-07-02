@@ -1,14 +1,20 @@
 /** ソロ／対戦プレイ中のワンショット演出（軽量モード・reduce-motion では無効） */
 
 export const PLAY_FX_MS = 1000;
-/** コスト13+の場で使う効果（登場時・起動・ライブ開始時・成功時） */
-export const PLAY_FX_ABILITY_HIGH_MS = 1400;
+/** 効果不発 */
+export const PLAY_FX_FIZZLE_MS = 920;
+/** コスト10–12登場（控えめ） */
+export const PLAY_FX_MID_MS = 1080;
+/** 能力解決（標準） */
+export const PLAY_FX_ABILITY_MS = 850;
+/** コスト13+の能力解決 */
+export const PLAY_FX_ABILITY_HIGH_MS = 1150;
 /** コスト13+登場・打点9+ライブ開始 */
 export const PLAY_FX_PREMIUM_MS = 1500;
 /** コスト15+登場 */
 export const PLAY_FX_ULTRA_MS = 1800;
 
-const FIELD_ABILITY_KINDS = { toujyou: true, kidou: true, live_start: true, live_success: true };
+const FIELD_ABILITY_KINDS = { toujyou: true, kidou: true, jidou: true, live_start: true, live_success: true };
 const ENTER_FX_KINDS = { enter: true, baton: true, live_start: true, live_card: true };
 
 /**
@@ -17,10 +23,11 @@ const ENTER_FX_KINDS = { enter: true, baton: true, live_start: true, live_card: 
  */
 function playFxEnterMetaFromCard(c) {
   var tier = Math.max(0, Math.min(2, Math.floor(Number(c._playFxEnterPremiumTier) || 0)));
-  if (c._playFxEnterPremium === true && tier < 1) tier = 1;
+  if (c._playFxEnterPremium === true && tier < 1 && c._playFxEnterPremiumMid !== true) tier = 1;
   return {
-    premium: tier > 0,
+    premium: tier > 0 || c._playFxEnterPremiumMid === true,
     tier: tier,
+    mid: c._playFxEnterPremiumMid === true,
     ability: false,
     abilityHigh: false,
   };
@@ -37,11 +44,17 @@ export function markPlayFxEnter(c, kind, opts) {
   if (!c || typeof c !== "object" || !kind) return;
   c._playFxEnterAt = Date.now();
   c._playFxEnterKind = String(kind);
-  if (opts.premium) {
+  if (opts.mid) {
     c._playFxEnterPremium = true;
+    c._playFxEnterPremiumMid = true;
+    c._playFxEnterPremiumTier = 0;
+  } else if (opts.premium) {
+    c._playFxEnterPremium = true;
+    delete c._playFxEnterPremiumMid;
     c._playFxEnterPremiumTier = opts.tier >= 2 ? 2 : 1;
   } else {
     delete c._playFxEnterPremium;
+    delete c._playFxEnterPremiumMid;
     delete c._playFxEnterPremiumTier;
   }
 }
@@ -64,6 +77,7 @@ export function playFxEnterInfo(c, nowMs, lightweight) {
     delete c._playFxEnterAt;
     delete c._playFxEnterKind;
     delete c._playFxEnterPremium;
+    delete c._playFxEnterPremiumMid;
     delete c._playFxEnterPremiumTier;
     return null;
   }
@@ -72,6 +86,7 @@ export function playFxEnterInfo(c, nowMs, lightweight) {
     durationMs: dur,
     premium: meta.premium,
     tier: meta.tier,
+    mid: meta.mid === true,
     ability: false,
     abilityHigh: false,
   };
@@ -166,9 +181,42 @@ export function playFxDurationMs(_kind, opts) {
   if (opts === true) opts = { premium: true };
   opts = opts || {};
   if (opts.tier >= 2) return PLAY_FX_ULTRA_MS;
+  if (opts.premium && opts.mid) return PLAY_FX_MID_MS;
   if (opts.premium || opts.tier >= 1) return PLAY_FX_PREMIUM_MS;
   if (opts.abilityHigh) return PLAY_FX_ABILITY_HIGH_MS;
+  if (FIELD_ABILITY_KINDS[_kind]) return PLAY_FX_ABILITY_MS;
   return PLAY_FX_MS;
+}
+
+/** @param {*} c */
+export function markPlayFxFizzle(c) {
+  if (!c || typeof c !== "object") return;
+  c._playFxFizzleAt = Date.now();
+}
+
+/**
+ * @param {*} c
+ * @param {number} [nowMs]
+ * @param {boolean} [lightweight]
+ */
+export function playFxFizzleInfo(c, nowMs, lightweight) {
+  if (lightweight || !c || !c._playFxFizzleAt) return null;
+  var now = nowMs != null ? nowMs : Date.now();
+  var elapsed = now - Number(c._playFxFizzleAt);
+  if (elapsed > PLAY_FX_FIZZLE_MS + 160) {
+    delete c._playFxFizzleAt;
+    return null;
+  }
+  return { durationMs: PLAY_FX_FIZZLE_MS };
+}
+
+/** 登場コストから enter FX ティアを決定 */
+export function enterFxOptsFromMemberCost(cost) {
+  var c = Math.floor(Number(cost) || 0);
+  if (c >= 15) return { premium: true, tier: 2 };
+  if (c >= 13) return { premium: true, tier: 1 };
+  if (c >= 10) return { mid: true };
+  return {};
 }
 
 /**
@@ -212,14 +260,14 @@ export function playFxChipLabel(kind) {
   if (kind === "live_card") return "ライブ";
   if (kind === "toujyou") return "登場時";
   if (kind === "kidou") return "起動";
+  if (kind === "jidou") return "自動";
   if (kind === "live_success") return "成功時";
   return "効果";
 }
 
-/** 能力系・プレミアム演出ではチップを出さない */
+/** 能力系・プレミアム演出ではチップを出さない（登場時・起動・自動等は表示） */
 export function playFxShowsChip(pfx) {
   if (!pfx) return false;
   if (pfx.premium || pfx.tier > 0 || pfx.ability || pfx.abilityHigh) return false;
-  if (FIELD_ABILITY_KINDS[pfx.kind]) return false;
   return true;
 }

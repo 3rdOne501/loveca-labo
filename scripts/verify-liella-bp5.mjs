@@ -66,7 +66,12 @@ const CASES = [
     id: "PL!SP-bp5-005-P",
     trigger: "kidou",
     expectTemplate: "grant_jouji_session",
-    check: (cl) => (cl.filters?.seriesTag === "Liella!" && cl.perTurnLimit === 1 ? [] : ["liella kidou"]),
+    check: (cl) => {
+      const errs = [];
+      if (cl.deckTopCount !== 3 || cl.costMilledSeriesTag !== "Liella!") errs.push("mill3 liella");
+      if (!cl.bladeGainPerCostMilledMember || cl.bladeGain !== 0) errs.push("per-member blade");
+      return errs;
+    },
   },
   {
     id: "PL!SP-bp5-005-P",
@@ -141,6 +146,8 @@ const CASES = [
     id: "PL!SP-bp5-015-N",
     trigger: "toujyou",
     expectTemplate: "grant_jouji_session",
+    check: (cl) =>
+      cl.bladeGain === 2 && cl.requiresSelfInStageArea === "center" ? [] : ["center blade2"],
   },
   {
     id: "PL!SP-bp5-016-N",

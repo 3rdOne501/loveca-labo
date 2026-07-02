@@ -177,14 +177,68 @@ export function catalogCardGroupKey(cat) {
   return cat.name != null ? String(cat.name).trim() : "";
 }
 
+/**
+ * cards.json の series を行分割（LL-bp 合体メンバー等は改行区切りで複数グループ）。
+ * @param {*} cat
+ * @returns {string[]}
+ */
+export function catalogCardSeriesLines(cat) {
+  if (!cat || cat.series == null) return [];
+  return String(cat.series)
+    .split(/\r?\n/)
+    .map(function (line) {
+      return String(line || "").trim();
+    })
+    .filter(Boolean);
+}
+
+/**
+ * @param {string} line
+ * @returns {string}
+ */
+export function seriesLineToSchoolLabel(line) {
+  var s = String(line || "").trim();
+  if (!s) return "";
+  if (/虹ヶ咲|ニジガク/.test(s)) return "虹ヶ咲";
+  if (/スーパースター|Liella|リエラ/.test(s)) return "Liella!";
+  if (/サンシャイン|Aqours|aqours/i.test(s)) return "Aqours";
+  if (/蓮ノ空|ハスノソラ/.test(s)) return "蓮ノ空";
+  if (/^ラブライブ！?$/.test(s) || (s.includes("ラブライブ") && !/サンシャイン|スーパースター|虹ヶ咲|ニジガク|蓮ノ空/.test(s)))
+    return "μ's";
+  return s;
+}
+
+/**
+ * 画面上の所属グループ名（複数行 series はすべて返す）。
+ * @param {*} cat
+ * @returns {string[]}
+ */
+export function catalogCardSchoolLabels(cat) {
+  if (!cat) return [];
+  var lines = catalogCardSeriesLines(cat);
+  if (lines.length > 1) {
+    return lines.map(seriesLineToSchoolLabel).filter(Boolean);
+  }
+  var one = catalogCardSchoolLabelSingle(cat);
+  return one ? [one] : [];
+}
+
 export function catalogCardSchoolLabel(cat) {
+  var labels = catalogCardSchoolLabels(cat);
+  if (labels.length) return labels.join(" / ");
+  return catalogCardSchoolLabelSingle(cat);
+}
+
+function catalogCardSchoolLabelSingle(cat) {
   if (!cat) return "";
+  var lines = catalogCardSeriesLines(cat);
+  if (lines.length === 1) return seriesLineToSchoolLabel(lines[0]);
   var series = cat.series != null ? String(cat.series) : "";
   var product = cat.product != null ? String(cat.product) : "";
   var hay = series + " " + product;
   if (/虹ヶ咲|ニジガク/.test(hay)) return "虹ヶ咲";
   if (/スーパースター|Liella|リエラ/.test(hay)) return "Liella!";
-  if (/サンシャイン|Aqours|aqours/i.test(hay)) return "サンシャイン!!";
+  if (/サンシャイン|Aqours|aqours/i.test(hay)) return "Aqours";
   if (/蓮ノ空|ハスノソラ/.test(hay)) return "蓮ノ空";
   if (/μ|m's|mus/i.test(hay) && !/スーパースター|虹ヶ咲|ニジガク|蓮ノ空|サンシャイン/.test(hay)) return "μ's";
   if (/ラブライブ！?$/.test(series) || (series.includes("ラブライブ") && series.length < 12)) return "μ's";

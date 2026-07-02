@@ -10,6 +10,7 @@ import {
   abilityEffectIsAutomated,
 } from "../js/abilityEffects.js";
 import { classifyJoujiSegment } from "../js/joujiEffects.js";
+import { auditCommonAbilityPatterns } from "./audit-common-patterns.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const cards = JSON.parse(fs.readFileSync(path.join(ROOT, "data/cards.json"), "utf8"));
@@ -108,6 +109,8 @@ for (const [id, card] of Object.entries(cards).sort(
         errors.push(`${id} ${seg.trigger}: grant_jouji hand cost unhandled pattern`);
       }
     }
+
+    errors.push(...auditCommonAbilityPatterns({ id, trigger: seg.trigger, plain, cl }));
   }
 }
 

@@ -15,7 +15,13 @@ const cards = JSON.parse(fs.readFileSync(path.join(ROOT, "data/cards.json"), "ut
 
 /** @type {Array<{id:string, trigger:string, expectTemplate:string, check?:(cl:any)=>string[]}>} */
 const CASES = [
-  { id: "PL!S-bp3-001-P", trigger: "kidou", expectTemplate: "kidou_wait_member_grant_jouji" },
+  {
+    id: "PL!S-bp3-001-P",
+    trigger: "kidou",
+    expectTemplate: "kidou_wait_member_grant_jouji",
+    check: (cl) =>
+      cl.stageArea === "center" && cl.perTurnLimit === 1 && cl.costPickMemberWait ? [] : ["center/limit/wait"],
+  },
   {
     id: "PL!S-bp3-002-P",
     trigger: "live_success",
@@ -23,10 +29,42 @@ const CASES = [
     check: (cl) => (cl.filters?.requiresLiveScoreHigherThanOpponent ? [] : ["scoreHigherThanOpp"]),
   },
   {
+    id: "PL!S-bp3-003-P",
+    trigger: "toujyou",
+    expectTemplate: "draw_from_deck",
+    check: (cl) => (cl.deckDrawCount === 3 && cl.optional ? [] : ["draw3 optional"]),
+  },
+  {
+    id: "PL!S-bp3-003-P",
+    trigger: "live_start",
+    expectTemplate: "live_start_hand_discard_optional_blade_per",
+    check: (cl) => (cl.bladeGainPerDiscarded === 2 && cl.handDiscardMax === 2 ? [] : ["blade per discard"]),
+  },
+  {
+    id: "PL!S-bp3-004-P",
+    trigger: "toujyou",
+    expectTemplate: "deck_top_pick_recover",
+    check: (cl) => (cl.deckTopCount === 4 && cl.filters?.pickType === "メンバー" ? [] : ["peek4 member"]),
+  },
+  {
+    id: "PL!S-bp3-005-P",
+    trigger: "live_success",
+    expectTemplate: "draw_from_deck",
+    check: (cl) =>
+      cl.deckDrawCount === 1 && cl.filters?.requiresOwnYellRevealCountLessThanOpponent
+        ? []
+        : ["draw1 yell count filter"],
+  },
+  {
     id: "PL!S-bp3-006-P",
     trigger: "kidou",
     expectTemplate: "kidou_self_wait_stage_member_swap_recover",
-    check: (cl) => (cl.filters?.seriesTag === "Aqours" && cl.costSelfWait ? [] : ["series/cost"]),
+    check: (cl) => {
+      const errs = [];
+      if (cl.filters?.seriesTag !== "Aqours" || !cl.costSelfWait) errs.push("series/cost");
+      if (cl.stageArea !== "center") errs.push("center only");
+      return errs;
+    },
   },
   {
     id: "PL!S-bp3-007-P",
@@ -35,7 +73,53 @@ const CASES = [
     check: (cl) =>
       cl.deckDrawCount === 1 && cl.costEnergy && cl.perTurnLimit === 1 ? [] : ["draw/cost/limit"],
   },
+  {
+    id: "PL!S-bp3-008-P",
+    trigger: "kidou",
+    expectTemplate: "kidou_stage_wait_pick_hand",
+    check: (cl) => {
+      const errs = [];
+      if (cl.filters?.pickType !== "ライブ") errs.push("pick live");
+      if (cl.energyActiveCount !== 4) errs.push("energy 4");
+      if (cl.energyOnPickedLiveFilters?.minScore !== 6) errs.push("picked minScore 6");
+      if (cl.energyOnPickedLiveFilters?.seriesTag !== "Aqours") errs.push("picked Aqours");
+      if (cl.filters?.minScore != null) errs.push("must not gate pick by score");
+      return errs;
+    },
+  },
+  {
+    id: "PL!S-bp3-009-P",
+    trigger: "toujyou",
+    expectTemplate: "deck_top_pick_recover",
+    check: (cl) =>
+      cl.deckTopCount === 6 && cl.filters?.seriesTag === "Aqours" && cl.filters?.pickType === "メンバー"
+        ? []
+        : ["peek6 Aqours member"],
+  },
+  {
+    id: "PL!S-bp3-010-N",
+    trigger: "toujyou",
+    expectTemplate: "activate_stage_members_up_to",
+    check: (cl) => (cl.activateMax === 1 ? [] : ["activate 1"]),
+  },
+  {
+    id: "PL!S-bp3-011-N",
+    trigger: "toujyou",
+    expectTemplate: "activate_stage_members_up_to",
+    check: (cl) => (cl.activateMax === 1 ? [] : ["activate 1"]),
+  },
   { id: "PL!S-bp3-012-N", trigger: "toujyou", expectTemplate: "optional_self_wait_opp_stage" },
+  {
+    id: "PL!S-bp3-016-N",
+    trigger: "jouji",
+    expectTemplate: "passive_track",
+    skipAutomatedCheck: true,
+  },
+  {
+    id: "PL!S-bp3-017-N",
+    trigger: "toujyou",
+    expectTemplate: "optional_self_wait_opp_stage",
+  },
   {
     id: "PL!S-bp3-019-L",
     trigger: "live_success",
@@ -102,7 +186,7 @@ for (const c of CASES) {
   const cl = classifyCardAbility(card, c.trigger, seg.text);
   const errs = [];
   if (cl.template !== c.expectTemplate) errs.push(`template ${cl.template}`);
-  if (!abilityEffectIsAutomated(cl.template)) errs.push("not automated");
+  if (!c.skipAutomatedCheck && !abilityEffectIsAutomated(cl.template)) errs.push("not automated");
   if (c.check) errs.push(...c.check(cl));
   if (errs.length) {
     failed++;

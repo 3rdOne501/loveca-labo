@@ -42,3 +42,16 @@
 | LL-bp1-001-R＋ | `parseQuotedCharacterNames` が付与文「スコア+3」を名前に誤収録 → コスト部分（`：ライブ終了` 前）のみ解析 |
 | LL-bp6-001-R＋ | `grantUnionHeartColorsFromDiscardedUntilLiveEnd` — FAQ Q246 通り色の和集合・`playBonusHeartSlotsAlways`（ライブ終了まで） |
 | kidou_wait_shuffle_deck_bottom_activate | 控え室名前照合を `memberNameMatchesCharacter` に（LL-bp3 横展開） |
+
+## 2026-06-30 2回監修
+
+| ID | 内容 |
+|----|------|
+| （全体） | 5枚再確認。`guided_manual=0`・`audit-common-patterns` OK |
+| LL-bp1-001-R＋ | **任意コスト**: UI が `minPick:3` で0枚スキップ不可 → `minPick:0`/`maxPick:3`（0枚 or ちょうど3枚） |
+| LL-bp2-001-R＋ | 自カード捨て可・手札コスト減算 jouji を再確認 |
+| LL-bp3-001-R＋ | FAQ Q165（各名1枚以上不要）・E6任意ブレード3を再確認 |
+| LL-bp4-001-R＋ | 公開コスト連動の相手一括ウェイト（登場/LS 共通文）を再確認 |
+| LL-bp6-001-R＋ | FAQ Q246 ハート色和集合・ライブ終了までを再確認 |
+| 横展開 | `live_start_hand_discard_same_unit_grant` / `_same_group_grant` も同型 minPick 修正 |
+| verify | 9ケース通過 |

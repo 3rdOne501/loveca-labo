@@ -12,7 +12,7 @@
 | [x] | 001 | PL!-bp5-001-P | deck_top_count_live_score_plus | LS: 任意手札1捨→山札見る枚数=合計スコア+2→1枚回収 |
 | [x] | 002 | PL!-bp5-002-P | deck_top_pick_recover | 自ウェイト+任意手札1捨→山札5見→µ's C9+メンバー回収 |
 | [x] | 003 | PL!-bp5-003-P | jouji + kidou_hand_discard_series_branch | 異名3人以上→heart03 / 起動E2手札1捨→µ's分岐 |
-| [x] | 004 | PL!-bp5-004-P | kidou_opp_wait_group_discount_energy + jidou_yell_grant_jouji_nobh_members | 相手C10↓ウェイト（E割引）/ エール無BH3枚+→icon_all heart |
+| [x] | 004 | PL!-bp5-004-P | kidou_opp_wait_group_discount_energy + jidou_yell_grant_jouji_nobh_members | 相手C10↓ウェイト（E4・グループ割引）/ エール無BH3枚+→icon_all heart **2026-06-30: E5誤認識修正** |
 | [x] | 005 | PL!-bp5-005-P | energy_deck_to_active | 成功ライブ合計スコア6+→エネルギー1枚アクティブ |
 | [x] | 006 | PL!-bp5-006-P | draw_from_deck | ライブ枠2枚以上→1ドロー |
 | [x] | 007 | PL!-bp5-007-P | toujou_baton_both_trim_hand_draw | 低コストバトン登場→両者手札3枚調整→各3ドロー |
@@ -43,8 +43,13 @@
 
 | ID | 内容 |
 |----|------|
+| PL!-bp5-004-P | kidou: 起動コスト E4 が割引説明の E アイコン込みで E5 になっていた → `countWikiEnergyIconsInCostPart` |
 | PL!-bp5-111-P＋ | jouji: A-RISE 他メンバー数×heart05（`evaluateJoujiRule`） |
 | PL!-bp5-002-P / 222-P＋ | `costHandDiscardOptional`: 必須ウェイト＋任意手札1枚 |
+
+### 問題なし（再確認）
+
+001/003/005–015、012/016/017/018 能力なし、333 jouji。ライブ 019–024 は初回修正済みの再確認のみ。
 
 ## 2026-06-30 初回修正
 

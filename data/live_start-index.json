@@ -6,7 +6,7 @@
     "heart_color_pick_grant": 31,
     "grant_jouji_session": 64,
     "optional_self_wait_opp_stage": 11,
-    "optional_energy_blade_until_live_end": 34,
+    "optional_energy_blade_until_live_end": 30,
     "live_start_pay_or_hand_discard": 3,
     "ability_sequence": 5,
     "live_start_opp_wait_if_stage_hearts": 1,
@@ -42,6 +42,7 @@
     "ability_pick_one": 4,
     "live_start_activate_liella_and_energy": 4,
     "live_start_mill_loop_blade_grant": 3,
+    "live_start_hand_discard_group_member_grant": 4,
     "live_start_dollcostra_cost_set_grant_if": 3,
     "live_start_hand_discard_same_group_grant": 3,
     "live_start_deck_top_if_all_members_grant": 1,
@@ -1033,7 +1034,7 @@
     {
       "card_no": "PL!N-bp3-001-R＋",
       "name": "上原歩夢",
-      "template": "optional_energy_blade_until_live_end",
+      "template": "grant_jouji_session",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -1042,7 +1043,7 @@
     {
       "card_no": "PL!N-bp3-001-P",
       "name": "上原歩夢",
-      "template": "optional_energy_blade_until_live_end",
+      "template": "grant_jouji_session",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -1051,7 +1052,7 @@
     {
       "card_no": "PL!N-bp3-001-P＋",
       "name": "上原歩夢",
-      "template": "optional_energy_blade_until_live_end",
+      "template": "grant_jouji_session",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -1060,7 +1061,7 @@
     {
       "card_no": "PL!N-bp3-001-SEC",
       "name": "上原歩夢",
-      "template": "optional_energy_blade_until_live_end",
+      "template": "grant_jouji_session",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -2072,7 +2073,7 @@
     {
       "card_no": "PL!HS-bp5-003-R＋",
       "name": "大沢瑠璃乃",
-      "template": "grant_jouji_session",
+      "template": "live_start_hand_discard_group_member_grant",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -2081,7 +2082,7 @@
     {
       "card_no": "PL!HS-bp5-003-P",
       "name": "大沢瑠璃乃",
-      "template": "grant_jouji_session",
+      "template": "live_start_hand_discard_group_member_grant",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -2090,7 +2091,7 @@
     {
       "card_no": "PL!HS-bp5-003-AR",
       "name": "大沢瑠璃乃",
-      "template": "grant_jouji_session",
+      "template": "live_start_hand_discard_group_member_grant",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -2099,7 +2100,7 @@
     {
       "card_no": "PL!HS-bp5-003-SEC",
       "name": "大沢瑠璃乃",
-      "template": "grant_jouji_session",
+      "template": "live_start_hand_discard_group_member_grant",
       "automated": true,
       "optional": true,
       "perTurn": 0,

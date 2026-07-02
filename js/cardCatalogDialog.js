@@ -3,7 +3,7 @@
  */
 
 import { T_LIVE, T_MEMBER } from "./config.js";
-import { catalogCardSchoolLabel } from "./cardGroups.js";
+import { catalogCardSchoolLabel, catalogCardSchoolLabels } from "./cardGroups.js";
 import { getCard, cardIsNoteLiveCatalog, cardIsDrawYellLiveCatalog } from "./cards.js";
 import {
   cardHasBladeHeart,
@@ -358,8 +358,9 @@ export function renderCardCatalogContentInto(c, targets, options) {
   var bladeN = mc.blade != null ? mc.blade : c.blade;
   if (!isLive) rows += row("ブレード", esc(plainOrNone(bladeN)));
 
-  var schoolLabel = catalogCardSchoolLabel(mc);
-  rows += row("ユニット", esc(plainOrNone(schoolLabel)));
+  var schoolLabels = catalogCardSchoolLabels(mc);
+  var groupRowLabel = schoolLabels.length > 1 ? "グループ" : "ユニット";
+  rows += row(groupRowLabel, esc(plainOrNone(schoolLabels.length ? schoolLabels.join(" / ") : catalogCardSchoolLabel(mc))));
   rows += row("サブユニット", esc(plainOrNone(mc.unit || c.unit)));
   rows += row("シリーズ", esc(plainOrNone(mc.series)));
   rows += row("商品", esc(plainOrNone(mc.product)));
