@@ -2,6 +2,7 @@
   "name": "loveca-labo",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "Loveca Labo — 非公式デッキ構築・ソロツール（Windows / Mac / Linux のモダンブラウザ向け）",
   "scripts": {
     "start": "npx --yes serve . -l 8080"
