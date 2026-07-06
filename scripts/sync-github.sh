@@ -83,15 +83,15 @@ else
 fi
 
 echo
-echo "リモートの最新を取り込みます (git fetch && git pull --rebase) ..."
-if ! git fetch "$REMOTE" 2>/dev/null; then
+echo "リモートの最新を取り込みます (git fetch && git rebase) ..."
+if ! git fetch "$REMOTE"; then
   echo "エラー: git fetch に失敗しました。ネットワークと認証を確認してください。"
   print_local_ahead_hint
   exit 1
 fi
-if ! git pull --rebase "$REMOTE" "$BRANCH"; then
+if ! git rebase "${REMOTE}/${BRANCH}"; then
   echo
-  echo "エラー: git pull --rebase に失敗しました（コンフリクトの可能性）。"
+  echo "エラー: git rebase に失敗しました（コンフリクトの可能性）。"
   echo "  手元で解決する例: 該当ファイルを直す → git add ... → git rebase --continue"
   echo "  取りやめる例: git rebase --abort"
   print_local_ahead_hint
