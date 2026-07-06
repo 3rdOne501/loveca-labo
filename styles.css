@@ -1536,6 +1536,10 @@ body.play-versus-mode #view-game.view-game--versus {
 .versus-phase-announce-overlay.versus-phase-announce-overlay--out {
   opacity: 0;
 }
+/* display:flex が [hidden] を上書きしてしまうので明示的に隠す */
+.versus-phase-announce-overlay[hidden] {
+  display: none !important;
+}
 .versus-phase-announce-overlay__main {
   margin: 0;
   font-family: var(--font-display);
@@ -1675,6 +1679,8 @@ body.play-mode.play-hand-docked-bottom #hand-stick-fold.hand-stick-fold {
   max-height: 42vh;
   max-height: 42svh;
   overflow-y: auto;
+  /* 中央ドックの左右はみ出しを防止（内容がはみ出しても左右エリアへ流れ出さない） */
+  overflow-x: hidden;
   overscroll-behavior: contain;
   z-index: 60;
   margin: 0;
@@ -1692,9 +1698,17 @@ body.play-mode.play-hand-docked-bottom #hand-stick-fold.hand-stick-fold {
 body.play-mode.play-hand-docked-bottom #hand-stick-fold.hand-stick-fold .hand-stick-fold__body,
 body.play-mode.play-hand-docked-bottom #hand-row {
   box-sizing: border-box;
+  width: 100%;
   max-width: 100%;
+  overflow-x: hidden;
 }
 body.play-mode.play-hand-docked-bottom #zone-hand.hand-zone {
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+/* ヘッダー行・アクションボタン群も折り返して横に溢れさせない */
+body.play-mode.play-hand-docked-bottom #hand-stick-fold.hand-stick-fold .zone-head--hand,
+body.play-mode.play-hand-docked-bottom #hand-stick-fold.hand-stick-fold .hand-zone-actions {
   flex-wrap: wrap;
   max-width: 100%;
 }
@@ -1706,25 +1720,17 @@ body.play-hand-docked-bottom .btn-hand-dock-turn {
   display: inline-flex;
 }
 
-/* 対戦チェイン帯の残りエール表示 */
-.versus-remaining-yell {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.3rem;
-  padding: 0.15rem 0.55rem;
-  border-radius: 999px;
-  background: rgba(255, 190, 90, 0.14);
-  border: 1px solid rgba(255, 200, 110, 0.5);
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: #ffe0a8;
-  white-space: nowrap;
+/* 対戦モードのライブ成功確率パネルは「残りエール数」行だけ残す
+   （ソロと同じ場所・同じ仕様で残りエールを表示。確率計算・操作系は隠す） */
+.zone-block-deck-live-sim.deck-live-sim--versus-yell-only .deck-live-sim-heading-compact,
+.zone-block-deck-live-sim.deck-live-sim--versus-yell-only .play-undo-redo-cluster--under-prob,
+.zone-block-deck-live-sim.deck-live-sim--versus-yell-only .deck-live-sim-controls,
+.zone-block-deck-live-sim.deck-live-sim--versus-yell-only #deck-flip-blade-note,
+.zone-block-deck-live-sim.deck-live-sim--versus-yell-only #deck-live-sim-block {
+  display: none !important;
 }
-.versus-remaining-yell__val {
-  font-family: var(--font-display);
-  font-size: 1.05rem;
-  font-weight: 900;
-  color: #ffd98a;
+.zone-block-deck-live-sim.deck-live-sim--versus-yell-only .deck-live-sim-toolbar {
+  justify-content: flex-start;
 }
 /* 固定手札に隠れないよう各列の下部に余白 */
 body.play-mode.play-hand-docked-bottom .game-board .col {

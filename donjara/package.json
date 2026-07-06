@@ -1,0 +1,6 @@
+{
+  "name": "ll-donjara",
+  "private": true,
+  "type": "module",
+  "description": "ラブライブ！ドンジャラ（麻雀準拠）— 牌生成・設定・役・対戦"
+}

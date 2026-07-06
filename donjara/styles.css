@@ -1,0 +1,310 @@
+:root {
+  --dz-bg: #0f1020;
+  --dz-panel: #1a1c33;
+  --dz-panel2: #23264a;
+  --dz-line: #34386b;
+  --dz-text: #eef0ff;
+  --dz-sub: #a9adde;
+  --dz-accent: #ff5fa2;
+  --dz-accent2: #5fd0ff;
+  --dz-green: #37d67a;
+  --dz-danger: #ff6b6b;
+  --dz-radius: 12px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Hiragino Sans", "Yu Gothic", "Noto Sans JP", system-ui, sans-serif;
+  background: radial-gradient(1200px 600px at 20% -10%, #26264d 0%, var(--dz-bg) 60%);
+  color: var(--dz-text);
+  min-height: 100vh;
+}
+
+/* ---------- ヘッダ / タブ ---------- */
+.dz-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: rgba(15, 16, 32, 0.9);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--dz-line);
+  padding: 12px 18px 0;
+}
+.dz-header__title {
+  margin: 0 0 8px;
+  font-size: 20px;
+  letter-spacing: 0.5px;
+  background: linear-gradient(90deg, var(--dz-accent), var(--dz-accent2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.dz-tabs { display: flex; gap: 6px; }
+.dz-tab {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--dz-sub);
+  padding: 10px 18px;
+  font-size: 15px;
+  border-radius: 10px 10px 0 0;
+  cursor: pointer;
+}
+.dz-tab.is-active {
+  color: var(--dz-text);
+  background: var(--dz-panel);
+  box-shadow: inset 0 -3px 0 var(--dz-accent);
+}
+
+.dz-main { padding: 18px; max-width: 1100px; margin: 0 auto; }
+
+/* ---------- カード / バナー ---------- */
+.dz-card {
+  background: var(--dz-panel);
+  border: 1px solid var(--dz-line);
+  border-radius: var(--dz-radius);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+.dz-card__title { margin: 0 0 10px; font-size: 16px; }
+.dz-card__head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.dz-card__logo { height: 26px; width: auto; object-fit: contain; }
+.dz-card__count { margin-left: auto; color: var(--dz-sub); font-size: 13px; }
+.dz-subtitle { margin: 14px 0 6px; font-size: 14px; color: var(--dz-sub); }
+.dz-note { color: var(--dz-sub); font-size: 13px; margin: 6px 0; }
+
+.dz-banner {
+  background: linear-gradient(90deg, rgba(255,95,162,.16), rgba(95,208,255,.12));
+  border: 1px solid var(--dz-line);
+  border-radius: var(--dz-radius);
+  padding: 12px 16px;
+  margin-bottom: 14px;
+  font-size: 15px;
+}
+.dz-banner__sub { color: var(--dz-sub); font-size: 13px; }
+.dz-banner__warn { color: #ffd479; font-size: 13px; }
+
+.dz-tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-left: auto;
+}
+.dz-tag--reserve { background: #3a2a12; color: #ffcf8a; border: 1px solid #6b4d1f; }
+
+/* ---------- フォーム部品 ---------- */
+.dz-opt-grid { display: flex; gap: 18px; flex-wrap: wrap; }
+.dz-field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--dz-sub); }
+.dz-input, .dz-select {
+  background: var(--dz-panel2);
+  border: 1px solid var(--dz-line);
+  color: var(--dz-text);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 14px;
+}
+.dz-input--num { width: 76px; }
+.dz-check { width: 18px; height: 18px; accent-color: var(--dz-accent); cursor: pointer; }
+
+.dz-btn {
+  appearance: none;
+  border: 1px solid var(--dz-line);
+  background: var(--dz-panel2);
+  color: var(--dz-text);
+  padding: 9px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: transform .05s ease, filter .15s ease;
+}
+.dz-btn:hover { filter: brightness(1.12); }
+.dz-btn:active { transform: translateY(1px); }
+.dz-btn--primary { background: linear-gradient(90deg, var(--dz-accent), #ff7db6); border-color: transparent; color: #1a0713; font-weight: 700; }
+.dz-btn--sm { padding: 5px 10px; font-size: 12px; }
+.dz-btn--lg { padding: 14px 26px; font-size: 17px; }
+.dz-btn--danger { color: var(--dz-danger); }
+.dz-bulk { display: flex; gap: 8px; margin-bottom: 10px; }
+
+/* ---------- キャラグリッド ---------- */
+.dz-char-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+}
+.dz-char-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--dz-panel2);
+  border: 1px solid var(--dz-line);
+  border-radius: 10px;
+  padding: 6px 8px;
+}
+.dz-char-row.is-off { opacity: 0.42; }
+.dz-char-row .dz-input--num { width: 54px; margin-left: auto; }
+
+/* ---------- 牌 ---------- */
+.dz-tile {
+  position: relative;
+  width: 62px;
+  height: 84px;
+  background: linear-gradient(180deg, #fffef8, #efe9dc);
+  color: #222;
+  border-radius: 9px;
+  border: 1px solid #cbc3b0;
+  box-shadow: 0 2px 0 #b9b09a, 0 4px 8px rgba(0,0,0,.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  user-select: none;
+  flex: 0 0 auto;
+}
+.dz-tile--sm { width: 38px; height: 52px; border-radius: 6px; }
+.dz-tile--md { width: 54px; height: 74px; }
+.dz-tile--lg { width: 66px; height: 90px; }
+.dz-tile.is-clickable { cursor: pointer; }
+.dz-tile.is-clickable:hover { transform: translateY(-6px); box-shadow: 0 8px 14px rgba(0,0,0,.4); }
+.dz-tile.is-selected { outline: 3px solid var(--dz-accent); }
+.dz-tile.is-tenpai-keep { box-shadow: 0 0 0 3px var(--dz-green), 0 4px 8px rgba(0,0,0,.35); }
+.dz-tile--drawn { margin-left: 14px; }
+.dz-tile.is-back { background: linear-gradient(135deg, #3a3f7a, #262a55); border-color: #1c1f40; }
+
+.dz-tile__icon { width: 100%; height: 62%; object-fit: cover; object-position: top center; }
+.dz-tile--sm .dz-tile__icon { height: 58%; }
+.dz-tile__idx {
+  position: absolute; top: 2px; left: 4px;
+  font-size: 11px; font-weight: 700; color: var(--dz-accent);
+}
+.dz-tile--sm .dz-tile__idx { font-size: 8px; }
+.dz-tile__label {
+  font-size: 10px;
+  line-height: 1.05;
+  text-align: center;
+  padding: 2px 2px 3px;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dz-tile--sm .dz-tile__label { font-size: 7px; }
+.dz-tile__label--big { font-size: 12px; white-space: normal; }
+.dz-tile--honor .dz-tile__glyph { font-size: 30px; line-height: 1; }
+.dz-tile--sm.dz-tile--honor .dz-tile__glyph { font-size: 18px; }
+.dz-tile--honor .dz-tile__label { font-size: 12px; font-weight: 700; }
+.dz-tile--blank { background: linear-gradient(180deg, #ffffff, #f4f4f4); }
+
+/* コンテンツ別の色帯 */
+.dz-tile--member[data-content="muse"] { border-bottom: 4px solid #ff8bc4; }
+.dz-tile--member[data-content="aqours"] { border-bottom: 4px solid #4bb7ff; }
+.dz-tile--member[data-content="nijigasaki"] { border-bottom: 4px solid #b07bff; }
+.dz-tile--member[data-content="liella"] { border-bottom: 4px solid #ffd23f; }
+.dz-tile--member[data-content="hasunosora"] { border-bottom: 4px solid #6be3b8; }
+
+/* ---------- 役設定 ---------- */
+.dz-yaku-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; }
+.dz-yaku-row { display: flex; align-items: center; gap: 8px; padding: 4px 6px; }
+.dz-yaku-row__name { font-size: 14px; }
+.dz-yaku-row__han { margin-left: auto; color: var(--dz-sub); font-size: 12px; }
+.dz-custom-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.dz-custom-row { display: flex; align-items: center; gap: 10px; background: var(--dz-panel2); border: 1px solid var(--dz-line); border-radius: 8px; padding: 6px 10px; font-size: 14px; }
+.dz-custom-row .dz-btn { margin-left: auto; }
+.dz-custom-form { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+
+/* ---------- 牌一覧 ---------- */
+.dz-tile-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.dz-tile-cell { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.dz-tile-cell__n { font-size: 11px; color: var(--dz-sub); }
+
+/* ---------- 対戦 ---------- */
+.dz-start { text-align: center; padding: 40px 10px; }
+.dz-start .dz-btn { margin: 14px 0; }
+
+.dz-board { display: flex; flex-direction: column; gap: 14px; }
+.dz-opponents { display: flex; gap: 12px; flex-wrap: wrap; }
+.dz-opp {
+  flex: 1 1 160px;
+  background: var(--dz-panel);
+  border: 1px solid var(--dz-line);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+.dz-opp.is-turn { border-color: var(--dz-accent); box-shadow: 0 0 0 2px rgba(255,95,162,.35); }
+.dz-opp__name { font-weight: 700; font-size: 14px; }
+.dz-opp__hand { color: var(--dz-sub); font-size: 12px; margin: 3px 0 6px; }
+.dz-opp__discards { display: flex; flex-wrap: wrap; gap: 3px; }
+
+.dz-center {
+  display: flex; align-items: center; gap: 16px;
+  background: var(--dz-panel2); border: 1px solid var(--dz-line);
+  border-radius: 10px; padding: 10px 14px;
+}
+.dz-center__wall { font-weight: 700; }
+.dz-center__turn { color: var(--dz-accent2); }
+.dz-center .dz-btn { margin-left: auto; }
+
+.dz-my-discards { background: var(--dz-panel); border: 1px solid var(--dz-line); border-radius: 10px; padding: 8px 10px; }
+.dz-label { display: block; font-size: 12px; color: var(--dz-sub); margin-bottom: 6px; }
+.dz-discard-wrap { display: flex; flex-wrap: wrap; gap: 4px; min-height: 52px; }
+
+.dz-hand { display: flex; flex-wrap: wrap; gap: 5px; padding: 10px; background: rgba(0,0,0,.2); border-radius: 12px; }
+.dz-actions { display: flex; align-items: center; gap: 10px; min-height: 44px; flex-wrap: wrap; }
+.dz-hint { color: var(--dz-sub); font-size: 13px; }
+.dz-tile.is-locked { opacity: 0.4; cursor: not-allowed; }
+
+/* 副露面子 */
+.dz-melds { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0; }
+.dz-meld { display: flex; gap: 1px; background: rgba(255,255,255,.06); padding: 2px; border-radius: 6px; }
+.dz-my-melds { background: var(--dz-panel); border: 1px solid var(--dz-line); border-radius: 10px; padding: 8px 10px; }
+
+/* オンライン */
+.dz-subtitle { margin: 22px 0 6px; font-size: 15px; color: var(--dz-accent); }
+.dz-online-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.dz-center__code { color: var(--dz-sub); font-size: 12px; }
+.dz-lobby { display: flex; flex-direction: column; gap: 14px; max-width: 640px; }
+.dz-lobby__code { font-size: 22px; letter-spacing: 2px; }
+.dz-seats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.dz-seat { background: var(--dz-panel); border: 1px solid var(--dz-line); border-radius: 10px; padding: 12px; }
+.dz-seat.is-me { border-color: var(--dz-accent); box-shadow: 0 0 0 1px var(--dz-accent) inset; }
+.dz-seat__no { font-size: 12px; color: var(--dz-sub); }
+.dz-seat__name { font-size: 16px; margin-top: 4px; }
+
+/* 鳴きバー */
+.dz-callbar {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: linear-gradient(90deg, rgba(255,95,162,.18), rgba(95,208,255,.12));
+  border: 1px solid var(--dz-accent);
+  border-radius: 12px; padding: 10px 14px;
+}
+
+/* ---------- 結果 / モーダル ---------- */
+.dz-modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.6);
+  display: flex; align-items: center; justify-content: center; z-index: 50;
+}
+.dz-modal {
+  background: var(--dz-panel); border: 1px solid var(--dz-line);
+  border-radius: 16px; padding: 20px; max-width: 560px; width: calc(100% - 40px);
+  max-height: 86vh; overflow: auto;
+}
+.dz-modal__title { margin: 0 0 12px; font-size: 20px; }
+.dz-modal__foot { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+.dz-yaku-result { margin: 12px 0; padding-left: 18px; }
+.dz-yaku-result li { margin: 3px 0; }
+.dz-result__total { font-size: 18px; font-weight: 700; color: var(--dz-accent); }
+
+/* ---------- トースト ---------- */
+#dz-toast {
+  position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(20px);
+  background: #000d; color: #fff; padding: 10px 18px; border-radius: 999px;
+  font-size: 14px; opacity: 0; pointer-events: none; transition: all .2s ease; z-index: 60;
+}
+#dz-toast.is-show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@media (max-width: 640px) {
+  .dz-tile { width: 52px; height: 70px; }
+  .dz-tile--lg { width: 54px; height: 74px; }
+}

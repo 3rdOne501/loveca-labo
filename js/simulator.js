@@ -8297,33 +8297,30 @@ export function mountSimulator(
     ban.textContent = "";
   }
 
-  /** 対戦モードの残りエール（ブレード計 − 解決済み）を上部チェイン帯に表示 */
-  function syncVersusRemainingYellReadout() {
-    var host = document.getElementById("versus-remaining-yell");
-    var val = document.getElementById("versus-remaining-yell-val");
-    if (!host || !val) return;
-    if (!isFullVersusPlayUi()) {
-      host.hidden = true;
-      return;
-    }
-    var bladeK = Math.max(0, Math.floor(boardBladeForYellReveal()));
-    var resR = Array.isArray(state.resolutionArea) ? state.resolutionArea.length : 0;
-    var kRem = Math.max(0, bladeK - resR);
-    val.textContent = String(kRem);
-    host.hidden = false;
-  }
-
   function syncDeckLiveSimPanel() {
     if (isFullVersusPlayUi()) {
+      /* 対戦モードでも「残りエール数」はソロと同じ場所（ライブ成功確率パネルの
+         残りエール行）に同じ仕様で表示する。確率計算・操作系は隠して残りエール行だけ残す。 */
       cancelDeckLiveSimDeferred();
       clearDeckLiveSimDesktopToolbarMirror();
-      var liveSimWrapSkip = root.querySelector(".zone-block-deck-live-sim-under-preview");
-      if (liveSimWrapSkip) liveSimWrapSkip.hidden = true;
-      syncVersusRemainingYellReadout();
+      var liveSimWrapV = root.querySelector(".zone-block-deck-live-sim-under-preview");
+      if (liveSimWrapV) {
+        liveSimWrapV.hidden = false;
+        liveSimWrapV.classList.add("deck-live-sim--versus-yell-only");
+      }
+      var dispV = $("deck-flip-k-display");
+      if (dispV) {
+        var bladeKV = Math.max(0, Math.floor(boardBladeForYellReveal()));
+        var resRV = Array.isArray(state.resolutionArea) ? state.resolutionArea.length : 0;
+        dispV.textContent = String(Math.max(0, bladeKV - resRV));
+      }
       return;
     }
     var liveSimWrap = root.querySelector(".zone-block-deck-live-sim-under-preview");
-    if (liveSimWrap) liveSimWrap.hidden = false;
+    if (liveSimWrap) {
+      liveSimWrap.hidden = false;
+      liveSimWrap.classList.remove("deck-live-sim--versus-yell-only");
+    }
     var versusLiveProbForce =
       versusMatchPhaseActive() &&
       versusSession.remoteMatch &&
@@ -34786,6 +34783,9 @@ export function mountSimulator(
 
   function applyVersusPlayModeDefaults() {
     if (!isFullVersusPlayUi()) return;
+    /* 新規マウント時に演出ミラーのベースラインを取り直す */
+    versusOppPlayFxBaselineDone = false;
+    versusLastOppPlayFxId = "";
     state.deckPileFacesDown = true;
     versusMatchLogSinkEnabled = true;
     showVersusMatchLogPanel(true);
@@ -35609,10 +35609,10 @@ export function mountSimulator(
       el.classList.add("versus-phase-announce-overlay--out");
       versusPhaseAnnounceHideTimer = window.setTimeout(function () {
         versusPhaseAnnounceHideTimer = 0;
-        if (el) {
-          el.hidden = true;
-          el.classList.remove("versus-phase-announce-overlay--out");
-        }
+        /* --out（opacity:0）を保持したまま hidden にする。ここで --out を外すと
+           opacity トランジションが 0→1 に逆再生して即再表示に見えるため外さない。
+           次回表示時に showVersusPhaseAnnounce の先頭で --out を除去する。 */
+        if (el) el.hidden = true;
       }, 600);
     }, 2500);
   }
@@ -35681,17 +35681,23 @@ export function mountSimulator(
 
   /** 相手が起こした一過性演出イベント（登場/効果使用）を自画面の相手盤面でミラー再生 */
   var versusLastOppPlayFxId = "";
+  var versusOppPlayFxBaselineDone = false;
 
   function maybeFlashOpponentPlayFxFromRemote(remoteMatch) {
     if (!versusOnlineActive() || !remoteMatch || !versusSession.myRole) return;
     var oppField = versusSession.myRole === "host" ? "guestPlayFxEvent" : "hostPlayFxEvent";
     var ev = remoteMatch[oppField];
-    if (!ev || !ev.id) return;
-    if (String(ev.id) === versusLastOppPlayFxId) return;
-    var firstSeen = versusLastOppPlayFxId === "";
-    versusLastOppPlayFxId = String(ev.id);
-    /* マウント直後（初回同期）に過去イベントを再生しない */
-    if (firstSeen) return;
+    var evId = ev && ev.id ? String(ev.id) : "";
+    /* 初回同期で「今ドキュメントに載っている過去イベント」を既読としてベースライン化する。
+       ここで基準を取らないと、マウント時に fx イベントが無い（＝空）場合に相手の
+       “最初の”登場イベントを stale と誤判定してスキップしてしまう不具合になる。 */
+    if (!versusOppPlayFxBaselineDone) {
+      versusOppPlayFxBaselineDone = true;
+      versusLastOppPlayFxId = evId;
+      return;
+    }
+    if (!evId || evId === versusLastOppPlayFxId) return;
+    versusLastOppPlayFxId = evId;
     if (isLightweightPlayMode()) return;
     flashVersusOpponentPlayFx(ev);
   }
