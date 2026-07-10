@@ -1,0 +1,299 @@
+{
+  "v": 1,
+  "source": "lovelive-sif2.bushimo.jp",
+  "illustrations": {
+    "muse-honoka": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2022/12/img_honoka_juFObRkbrzEx.png",
+      "file": "assets/sif2/illust/muse/honoka.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/us/honoka/"
+    },
+    "muse-eli": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2022/12/img_eli_uCTqnSIn31Ja.png",
+      "file": "assets/sif2/illust/muse/eli.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/us/honoka/"
+    },
+    "muse-kotori": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2022/12/img_kotori_ap8wAYYJHHrQ-1.png",
+      "file": "assets/sif2/illust/muse/kotori.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/us/honoka/"
+    },
+    "muse-umi": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2022/12/img_umi_Oc6bsynFVt0J.png",
+      "file": "assets/sif2/illust/muse/umi.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/us/honoka/"
+    },
+    "muse-rin": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2022/12/img_rin_gqIrFZRT7XOu.png",
+      "file": "assets/sif2/illust/muse/rin.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/us/honoka/"
+    },
+    "muse-maki": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2022/12/img_maki_wcfETihoIezf.png",
+      "file": "assets/sif2/illust/muse/maki.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/us/honoka/"
+    },
+    "muse-nozomi": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2022/12/img_nozomi_zjQLp5rZJViM.png",
+      "file": "assets/sif2/illust/muse/nozomi.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/us/honoka/"
+    },
+    "muse-hanayo": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2022/12/img_hanayo_guoBmIMuVhHL.png",
+      "file": "assets/sif2/illust/muse/hanayo.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/us/honoka/"
+    },
+    "muse-nico": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2022/12/img_nico_mrtAyVNvCvac.png",
+      "file": "assets/sif2/illust/muse/nico.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/us/honoka/"
+    },
+    "aqours-chika": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2022/12/img_chika_3SK8MeQ013Sj.png",
+      "file": "assets/sif2/illust/aqours/chika.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/aqours/chika/"
+    },
+    "aqours-riko": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2022/12/img_riko_iJnwxUFgrm5r.png",
+      "file": "assets/sif2/illust/aqours/riko.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/aqours/chika/"
+    },
+    "aqours-kanan": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2022/12/img_kanan_ph5rJGGLqfsv.png",
+      "file": "assets/sif2/illust/aqours/kanan.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/aqours/chika/"
+    },
+    "aqours-dia": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2022/12/img_dia_Jc67vg9h2TY1.png",
+      "file": "assets/sif2/illust/aqours/dia.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/aqours/chika/"
+    },
+    "aqours-you": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2022/12/img_you_0eg7NHw0rNjs.png",
+      "file": "assets/sif2/illust/aqours/you.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/aqours/chika/"
+    },
+    "aqours-yoshiko": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2022/12/img_yoshiko_5k5kTLsfaN4t.png",
+      "file": "assets/sif2/illust/aqours/yoshiko.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/aqours/chika/"
+    },
+    "aqours-hanamaru": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2022/12/img_hanamaru_X7k8UYs0R3N9.png",
+      "file": "assets/sif2/illust/aqours/hanamaru.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/aqours/chika/"
+    },
+    "aqours-mari": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2022/12/img_mari_S5eKdjJabxFn.png",
+      "file": "assets/sif2/illust/aqours/mari.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/aqours/chika/"
+    },
+    "aqours-ruby": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2022/12/img_ruby_JxDJ5ziaMRBh.png",
+      "file": "assets/sif2/illust/aqours/ruby.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/aqours/chika/"
+    },
+    "nijigasaki-yu": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2022/12/img_yu_q1IgTqqICyK2.png",
+      "file": "assets/sif2/illust/nijigasaki/yu.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/nijigasaki/ayumu/"
+    },
+    "nijigasaki-ayumu": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2022/12/img_ayumu_04MnUfO9bfTy.png",
+      "file": "assets/sif2/illust/nijigasaki/ayumu.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/nijigasaki/ayumu/"
+    },
+    "nijigasaki-kasumi": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2023/01/img_kasumi_2MeuijzlpD8G.png",
+      "file": "assets/sif2/illust/nijigasaki/kasumi.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/nijigasaki/ayumu/"
+    },
+    "nijigasaki-shizuku": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2023/01/img_shizuku_gZN1a2ir22yx.png",
+      "file": "assets/sif2/illust/nijigasaki/shizuku.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/nijigasaki/ayumu/"
+    },
+    "nijigasaki-karin": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2023/01/img_karin_3Dk3h0dlJ7lK.png",
+      "file": "assets/sif2/illust/nijigasaki/karin.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/nijigasaki/ayumu/"
+    },
+    "nijigasaki-ai": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2023/01/img_ai_R8c7yj6nhQec.png",
+      "file": "assets/sif2/illust/nijigasaki/ai.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/nijigasaki/ayumu/"
+    },
+    "nijigasaki-kanata": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2023/01/img_kanata_phs01IWI389r.png",
+      "file": "assets/sif2/illust/nijigasaki/kanata.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/nijigasaki/ayumu/"
+    },
+    "nijigasaki-setsuna": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2023/01/img_setsuna_Jsx1p9qaOlFl.png",
+      "file": "assets/sif2/illust/nijigasaki/setsuna.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/nijigasaki/ayumu/"
+    },
+    "nijigasaki-emma": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2023/01/img_verde_uICgSFrm8rhd.png",
+      "file": "assets/sif2/illust/nijigasaki/emma.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/nijigasaki/ayumu/"
+    },
+    "nijigasaki-rina": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2023/01/img_rina_7WwGtTUvfJpr.png",
+      "file": "assets/sif2/illust/nijigasaki/rina.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/nijigasaki/ayumu/"
+    },
+    "nijigasaki-shioriko": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2023/01/img_shioriko_y11wVsyI55VA.png",
+      "file": "assets/sif2/illust/nijigasaki/shioriko.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/nijigasaki/ayumu/"
+    },
+    "nijigasaki-mia": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2023/01/img_mia_61PnfKgf91sX.png",
+      "file": "assets/sif2/illust/nijigasaki/mia.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/nijigasaki/ayumu/"
+    },
+    "nijigasaki-lanzhu": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2023/01/img_lanzhu_v4XqN7d1p5qt.png",
+      "file": "assets/sif2/illust/nijigasaki/lanzhu.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/nijigasaki/ayumu/"
+    },
+    "liella-kanon": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2023/01/img_kanon_oT6OV28cRmrb.png",
+      "file": "assets/sif2/illust/liella/kanon.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/liella/kanon/"
+    },
+    "liella-keke": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2023/01/img_keke_2ToFJNCNFCjg.png",
+      "file": "assets/sif2/illust/liella/keke.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/liella/kanon/"
+    },
+    "liella-chisato": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2023/01/img_chisato_dtOxqBtdyYMt.png",
+      "file": "assets/sif2/illust/liella/chisato.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/liella/kanon/"
+    },
+    "liella-sumire": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2023/01/img_sumire_w13Z20yIcSg2.png",
+      "file": "assets/sif2/illust/liella/sumire.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/liella/kanon/"
+    },
+    "liella-ren": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2023/01/img_ren_a1qGiH76nZzu.png",
+      "file": "assets/sif2/illust/liella/ren.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/liella/kanon/"
+    },
+    "liella-kinako": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2023/01/img_kinako_qljwNVBorIbM.png",
+      "file": "assets/sif2/illust/liella/kinako.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/liella/kanon/"
+    },
+    "liella-mei": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2023/01/img_mei_xHBIMp6c4NoV.png",
+      "file": "assets/sif2/illust/liella/mei.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/liella/kanon/"
+    },
+    "liella-shiki": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2023/01/img_shiki_yeRaHe9xgM7M.png",
+      "file": "assets/sif2/illust/liella/shiki.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/liella/kanon/"
+    },
+    "liella-natsumi": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2023/01/img_natsumi_6x8bxy7jKRXl.png",
+      "file": "assets/sif2/illust/liella/natsumi.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/liella/kanon/"
+    },
+    "liella-margarete": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2024/01/img_margarete.png",
+      "file": "assets/sif2/illust/liella/margarete.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/liella/kanon/"
+    },
+    "liella-tomari": {
+      "url": "https://lovelive-sif2.bushimo.jp/wp-content/uploads/2024/01/img_tomari.png",
+      "file": "assets/sif2/illust/liella/tomari.png",
+      "sourceUrl": "https://lovelive-sif2.bushimo.jp/member/liella/kanon/"
+    }
+  },
+  "units": {
+    "muse": {
+      "Printemps": {
+        "name": "Printemps",
+        "logo": "assets/sif2/units/muse/logo_printemps.png",
+        "logoUrl": "https://lovelive-sif2.bushimo.jp/wp-content/themes/sif2_v1.3/assets/images/common/member/logo_printemps.png",
+        "banner": "assets/sif2/units/muse/img_printemps_KyQZPqa1HTCz.png",
+        "bannerUrl": "https://lovelive-sif2.bushimo.jp/wp-content/themes/sif2_v1.3/assets/images/pc/member/img_printemps_KyQZPqa1HTCz.png"
+      },
+      "lily white": {
+        "name": "lily white",
+        "banner": "assets/sif2/units/muse/img_lily-white_8HlW8kTZtv8X.png",
+        "bannerUrl": "https://lovelive-sif2.bushimo.jp/wp-content/themes/sif2_v1.3/assets/images/pc/member/img_lily-white_8HlW8kTZtv8X.png"
+      },
+      "BiBi": {
+        "name": "BiBi",
+        "banner": "assets/sif2/units/muse/img_bibi_jvHv76A7XD9I.png",
+        "bannerUrl": "https://lovelive-sif2.bushimo.jp/wp-content/themes/sif2_v1.3/assets/images/pc/member/img_bibi_jvHv76A7XD9I.png"
+      }
+    },
+    "aqours": {
+      "CYaRon！": {
+        "name": "CYaRon！",
+        "logo": "assets/sif2/units/aqours/logo_cyaron.png",
+        "logoUrl": "https://lovelive-sif2.bushimo.jp/wp-content/themes/sif2_v1.3/assets/images/common/member/logo_cyaron.png",
+        "banner": "assets/sif2/units/aqours/img_cyaron_Dn7nCeX2YT9c.png",
+        "bannerUrl": "https://lovelive-sif2.bushimo.jp/wp-content/themes/sif2_v1.3/assets/images/pc/member/img_cyaron_Dn7nCeX2YT9c.png"
+      },
+      "AZALEA": {
+        "name": "AZALEA",
+        "banner": "assets/sif2/units/aqours/img_azalea_N4IRDQByQMq4.png",
+        "bannerUrl": "https://lovelive-sif2.bushimo.jp/wp-content/themes/sif2_v1.3/assets/images/pc/member/img_azalea_N4IRDQByQMq4.png"
+      },
+      "Guilty Kiss": {
+        "name": "Guilty Kiss",
+        "banner": "assets/sif2/units/aqours/img_guilty-kiss_eVrQrwHUgN63.png",
+        "bannerUrl": "https://lovelive-sif2.bushimo.jp/wp-content/themes/sif2_v1.3/assets/images/pc/member/img_guilty-kiss_eVrQrwHUgN63.png"
+      }
+    },
+    "nijigasaki": {
+      "A・ZU・NA": {
+        "name": "A・ZU・NA",
+        "logo": "assets/sif2/units/nijigasaki/logo_a-zu-na.png",
+        "logoUrl": "https://lovelive-sif2.bushimo.jp/wp-content/themes/sif2_v1.3/assets/images/common/member/logo_a-zu-na.png",
+        "banner": "assets/sif2/units/nijigasaki/img_a-zu-na_9Ctlk3nKKwh5.png",
+        "bannerUrl": "https://lovelive-sif2.bushimo.jp/wp-content/themes/sif2_v1.3/assets/images/pc/member/img_a-zu-na_9Ctlk3nKKwh5.png"
+      },
+      "QU4RTZ": {
+        "name": "QU4RTZ",
+        "banner": "assets/sif2/units/nijigasaki/img_qu4rtz_kGhQd30SIem6.png",
+        "bannerUrl": "https://lovelive-sif2.bushimo.jp/wp-content/themes/sif2_v1.3/assets/images/pc/member/img_qu4rtz_kGhQd30SIem6.png"
+      },
+      "DiverDiva": {
+        "name": "DiverDiva",
+        "banner": "assets/sif2/units/nijigasaki/img_diverdiva_eQv297zTDGjD.png",
+        "bannerUrl": "https://lovelive-sif2.bushimo.jp/wp-content/themes/sif2_v1.3/assets/images/pc/member/img_diverdiva_eQv297zTDGjD.png"
+      },
+      "R3BIRTH": {
+        "name": "R3BIRTH",
+        "banner": "assets/sif2/units/nijigasaki/img_r3birth_ea2N9Mo0GIfV.png",
+        "bannerUrl": "https://lovelive-sif2.bushimo.jp/wp-content/themes/sif2_v1.3/assets/images/pc/member/img_r3birth_ea2N9Mo0GIfV.png"
+      }
+    },
+    "liella": {
+      "CatChu!": {
+        "name": "CatChu!",
+        "logo": "assets/sif2/units/liella/logo_catchu.png",
+        "logoUrl": "https://lovelive-sif2.bushimo.jp/wp-content/themes/sif2_v1.3/assets/images/common/member/logo_catchu.png",
+        "banner": "assets/sif2/units/liella/img_catchu.png",
+        "bannerUrl": "https://lovelive-sif2.bushimo.jp/wp-content/themes/sif2_v1.3/assets/images/pc/member/img_catchu.png"
+      },
+      "KALEIDOSCORE": {
+        "name": "KALEIDOSCORE",
+        "banner": "assets/sif2/units/liella/img_kaleidoscore.png",
+        "bannerUrl": "https://lovelive-sif2.bushimo.jp/wp-content/themes/sif2_v1.3/assets/images/pc/member/img_kaleidoscore.png"
+      },
+      "5yncri5e!": {
+        "name": "5yncri5e!",
+        "banner": "assets/sif2/units/liella/img_5yncri5e.png",
+        "bannerUrl": "https://lovelive-sif2.bushimo.jp/wp-content/themes/sif2_v1.3/assets/images/pc/member/img_5yncri5e.png"
+      }
+    }
+  }
+}

@@ -18,9 +18,12 @@
  */
 
 import { CONTENTS, HONOR_TILES, HONOR_SUIT } from "./contents.js";
+import { memberMeta } from "./memberData.js";
 
-const ROSTER_URL = "../data/member-character-icons.json";
-const ICON_DIR = "../assets/game-icons/member-icons/";
+// ドンジャラ専用ロスター（公式メンバー紹介アイコン）。共有ロスターは書き換えない。
+const ROSTER_URL = "data/member-character-icons.json";
+const ICON_DIR = "assets/member-icons/";
+const HONOR_ICON_DIR = "assets/honor-tiles/";
 
 /** ロスターの file 名から実在しそうな画像 URL を作る（.webp / .png 揺れを吸収）。 */
 function iconUrlFor(entry) {
@@ -56,6 +59,7 @@ export function loadTileCatalog() {
       const members = roster.filter((r) => r.series === content.series);
       const list = [];
       members.forEach((m, i) => {
+        const meta = memberMeta(content.id, m.id);
         const t = {
           key: `${content.id}-${m.id}`,
           suit: content.id,
@@ -65,8 +69,13 @@ export function loadTileCatalog() {
           charId: m.id,
           label: m.label || m.id,
           iconUrl: iconUrlFor(m),
+          logoUrl: content.logo || null, // グループロゴ（牌の下に表示）
           glyph: null,
           blank: false,
+          // 内部データ（後々の役用）
+          grade: meta ? meta.grade : null, // 1|2|3|null
+          unit: meta ? meta.unit : null, // 所属ユニット名
+          work: meta ? meta.work : null, // 作品名
         };
         types.push(t);
         list.push(t);
@@ -84,7 +93,7 @@ export function loadTileCatalog() {
         contentId: null,
         honorId: h.id,
         label: h.label,
-        iconUrl: null,
+        iconUrl: h.icon ? HONOR_ICON_DIR + h.icon : null,
         glyph: h.glyph || "",
         blank: !!h.blank,
       };

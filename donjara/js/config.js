@@ -28,6 +28,7 @@ export function defaultConfig(catalog) {
 
   return {
     version: 1,
+    showTileNumbers: false,
     defaultCopies: DEFAULT_COPIES,
     copies: {}, // tileKey -> 枚数（個別上書き）
     contents,
@@ -52,6 +53,7 @@ export function loadConfig(catalog) {
 
   // 浅めのマージ（既定を土台に保存値で上書き）
   const merged = { ...base, ...saved };
+  merged.showTileNumbers = saved.showTileNumbers === true;
   merged.defaultCopies = Number(saved.defaultCopies) || base.defaultCopies;
   merged.copies = { ...(saved.copies || {}) };
   merged.players = Number(saved.players) || base.players;
@@ -132,3 +134,6 @@ export function enabledYaku(config, catalog) {
   }
   return list;
 }
+
+/** 面子ルール（数字表示設定に連動）。 */
+export { meldOptionsFromConfig } from "./meldRules.js";

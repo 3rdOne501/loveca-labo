@@ -1,10 +1,25 @@
 #!/usr/bin/env bash
 # 変更があれば git add -A → 時刻付きコミット → pull --rebase → push（ワンショットで GitHub へ）
+#
+# 使い方:
+#   bash scripts/sync-github.sh          … 通常（cards.json + ability index も更新）
+#   bash scripts/sync-github.sh --fast   … クイック（git のみ。donjara 等の UI 変更向け）
+#   LL_OCG_SKIP_LOVECA=1 bash scripts/sync-github.sh
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "$ROOT"
+
+FAST=0
+for arg in "$@"; do
+  case "$arg" in
+    --fast|-f) FAST=1 ;;
+  esac
+done
+if [[ "${LL_OCG_SKIP_LOVECA:-0}" == "1" ]]; then
+  FAST=1
+fi
 
 REMOTE="${LL_OCG_GIT_REMOTE:-origin}"
 COMMIT_CREATED=0
@@ -33,8 +48,14 @@ fi
 
 echo "リポジトリ: $ROOT"
 echo "ブランチ: $BRANCH  →  $REMOTE/$BRANCH"
+if [[ "$FAST" -eq 1 ]]; then
+  echo "モード: クイック（git push のみ）"
+else
+  echo "モード: 通常（cards.json + ability index 更新あり）"
+fi
 echo
 
+if [[ "$FAST" -eq 0 ]]; then
 SYNC_CARDS="${ROOT}/scripts/sync-cards-json.sh"
 if [[ -x "$SYNC_CARDS" ]] && command -v curl >/dev/null 2>&1 && command -v python3 >/dev/null 2>&1; then
   echo "カード DB（llocg_db）を確認しています..."
@@ -51,6 +72,7 @@ if [[ -f "$INDEX_BUILD" ]] && command -v node >/dev/null 2>&1; then
   echo "能力 index を再生成しています..."
   node "$INDEX_BUILD" || echo "警告: build-ability-index に失敗しました" >&2
   echo
+fi
 fi
 
 if [[ -f .git/index.lock ]]; then

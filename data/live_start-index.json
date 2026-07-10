@@ -1,11 +1,12 @@
 {
-  "generated": "2026-07-06",
+  "generated": "2026-07-10",
   "trigger": "live_start",
-  "total": 307,
+  "total": 309,
   "byTemplate": {
     "heart_color_pick_grant": 31,
     "grant_jouji_session": 64,
     "optional_self_wait_opp_stage": 11,
+    "guided_manual": 2,
     "optional_energy_blade_until_live_end": 30,
     "live_start_pay_or_hand_discard": 3,
     "ability_sequence": 5,
@@ -111,6 +112,15 @@
       "effect": "このメンバーをウェイトにしてもよい：相手のステージにいるコスト4以下のメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
     },
     {
+      "card_no": "PL!-PR-020-PR",
+      "name": "高坂穂乃果",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のライブカード置き場にあるライブカードのスコアの合計が８以上の場合、「ライブの合計スコアを＋１する。」を得る。"
+    },
+    {
       "card_no": "PL!S-PR-013-PR",
       "name": "高海千歌",
       "template": "optional_energy_blade_until_live_end",
@@ -184,6 +194,15 @@
       "optional": false,
       "perTurn": 0,
       "effect": "自分のステージにいるメンバーが持つハートが合計5つ以上ある場合、相手のステージにいるコスト2以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "card_no": "PL!SP-PR-026-PR",
+      "name": "鬼塚夏美",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のライブカード置き場にあるライブカードのスコアの合計が８以上の場合、「ライブの合計スコアを＋１する。」を得る。"
     },
     {
       "card_no": "PL!HS-PR-001-PR",

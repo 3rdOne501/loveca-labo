@@ -8,10 +8,11 @@
  * 空のままだとオンライン対戦は無効表示になり、ローカル（CPU）対戦のみ動作します。
  */
 export const firebaseConfig = {
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: "",
+  apiKey: "AIzaSyAx2VcpIsXTA3bIXK86ASgRqhJG86YJhqw",
+  authDomain: "lldonjara-neo.firebaseapp.com",
+  projectId: "lldonjara-neo",
+  storageBucket: "lldonjara-neo.firebasestorage.app",
+  messagingSenderId: "940731788431",
+  appId: "1:940731788431:web:c836041d9046d1a06a94fa",
+  measurementId: "G-CPYG3KD86K"
 };

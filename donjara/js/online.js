@@ -92,6 +92,7 @@ export async function createRoom(configLite, playerName) {
     status: "lobby",
     seatUids,
     seatNames,
+    seatAvatars: new Array(nPlayers).fill(null),
     configLite,
     state: null,
     updatedAt: fns.serverTimestamp(),
@@ -192,4 +193,17 @@ export async function clearAction(code, actionId) {
 
 export function myUid() {
   return _fb ? _fb.uid : null;
+}
+
+/** ロビー中: 自分の席に対戦キャラを登録。 */
+export async function setSeatAvatar(code, seat, avatar) {
+  const fb = await ensureFirebase();
+  const { db, fns } = fb;
+  const ref = roomRef(db, fns, code);
+  const snap = await fns.getDoc(ref);
+  if (!snap.exists()) return;
+  const seatAvatars = (snap.data().seatAvatars || []).slice();
+  while (seatAvatars.length <= seat) seatAvatars.push(null);
+  seatAvatars[seat] = avatar ? { series: avatar.series, charId: avatar.charId } : null;
+  await fns.updateDoc(ref, { seatAvatars, updatedAt: fns.serverTimestamp() });
 }

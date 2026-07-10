@@ -262,7 +262,9 @@ function structuresFromAnalysis(analysis, openMelds) {
     const tiles = openTiles.slice();
     for (const m of p.melds) tiles.push(...m.tileKeys);
     tiles.push(...p.pair.tileKeys);
-    list.push({ kind: "standard", melds: opens.concat(p.melds), pair: p.pair, tiles });
+    // concealed（手牌内で成立した面子）は open:false, kan:false（符計算用）
+    const concealed = p.melds.map((m) => ({ ...m, open: false, kan: false }));
+    list.push({ kind: "standard", melds: opens.concat(concealed), pair: p.pair, tiles });
   }
   // 七対子は門前（副露なし）かつ concealed 14 枚のときのみ
   if (analysis.chiitoitsu && opens.length === 0) {

@@ -17,7 +17,7 @@ export const CONTENTS = [
     id: "muse",
     series: "muse",
     label: "μ's",
-    logo: "../assets/game-icons/group-logos/Μ's_logo.png",
+    logo: "../assets/game-icons/group-logos/muse_logo.svg",
     live: true,
   },
   {
@@ -67,17 +67,17 @@ export const CONTENTS = [
 ];
 
 /**
- * 字牌 7 種。`glyph` は画像がない場合の表示グリフ。`blank:true` は無地（白）。
- * @typedef {{ id:string, label:string, glyph:string, blank?:boolean }} HonorTile
+ * 字牌 7 種。`icon` は字牌風 SVG。`blank:true` は無地（白）。
+ * @typedef {{ id:string, label:string, icon?:string, glyph:string, blank?:boolean }} HonorTile
  * @type {HonorTile[]}
  */
 export const HONOR_TILES = [
-  { id: "soap", label: "石鹸", glyph: "🧼" },
-  { id: "water", label: "水", glyph: "💧" },
-  { id: "rainbow", label: "虹", glyph: "🌈" },
-  { id: "star", label: "星", glyph: "⭐" },
-  { id: "lotus", label: "蓮", glyph: "🪷" },
-  { id: "bird", label: "鳥", glyph: "🐦" },
+  { id: "soap", label: "石鹸", icon: "soap.svg", glyph: "石" },
+  { id: "water", label: "水", icon: "water.svg", glyph: "水" },
+  { id: "rainbow", label: "虹", icon: "rainbow.svg", glyph: "虹" },
+  { id: "star", label: "星", icon: "star.svg", glyph: "星" },
+  { id: "lotus", label: "蓮", icon: "lotus.svg", glyph: "蓮" },
+  { id: "bird", label: "鳥", icon: "bird.svg", glyph: "鳥" },
   { id: "blank", label: "白", glyph: "", blank: true },
 ];
 

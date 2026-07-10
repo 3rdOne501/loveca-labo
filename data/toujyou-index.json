@@ -1,7 +1,7 @@
 {
-  "generated": "2026-07-06",
+  "generated": "2026-07-10",
   "trigger": "toujyou",
-  "total": 544,
+  "total": 548,
   "byTemplate": {
     "toujou_wait_pick_hand": 61,
     "deck_top_pick_recover": 107,
@@ -14,7 +14,8 @@
     "toujou_hand_stage_enter": 11,
     "grant_jouji_session": 9,
     "live_start_pick_player_waiting_deck_bottom": 1,
-    "draw_then_hand_discard": 45,
+    "toujou_optional_wait_to_deck_top": 4,
+    "draw_then_hand_discard": 46,
     "toujou_opp_emma_punch_answer": 1,
     "toujou_wait_to_member_under": 1,
     "draw_until_hand_size": 2,
@@ -59,7 +60,6 @@
     "toujou_opp_active_wait": 2,
     "toujou_both_wait_pick_live_hand": 4,
     "success_live_waiting_swap": 4,
-    "toujou_optional_wait_to_deck_top": 1,
     "toujou_deck_top_liella_live_pick": 2,
     "toujou_liella_double_baton_center": 4,
     "live_start_position_change": 5,
@@ -353,6 +353,24 @@
       "effect": "自分か相手を選ぶ。自分は、そのプレイヤーの控え室にあるライブカードを1枚、そのプレイヤーのデッキの一番下に置く。そうした場合、自分はカードを1枚引く。"
     },
     {
+      "card_no": "PL!S-PR-044-PR",
+      "name": "高海千歌",
+      "template": "toujou_optional_wait_to_deck_top",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分の控え室にあるカードの枚数が8枚未満の場合、その差に等しい枚数分自分のデッキの上からカードを控え室に置く。その後、これにより控え室に置いたカードの中から、ライブカード1枚をデッキの一番上に置いてもよい。"
+    },
+    {
+      "card_no": "PL!S-PR-045-PR",
+      "name": "津島善子",
+      "template": "draw_then_hand_discard",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "コスト7のメンバーからバトンタッチして登場した場合、カードを2枚引き、手札を1枚控え室に置く。"
+    },
+    {
       "card_no": "PL!N-bp1-014-PRproteinbar",
       "name": "中須かすみ",
       "template": "draw_then_hand_discard",
@@ -468,6 +486,15 @@
       "optional": true,
       "perTurn": 0,
       "effect": "手札を2枚控え室に置いてもよい：自分の手札が5枚になるまでカードを引く。"
+    },
+    {
+      "card_no": "PL!N-PR-032-PR",
+      "name": "優木せつ菜",
+      "template": "toujou_optional_wait_to_deck_top",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分の控え室にあるカードの枚数が8枚未満の場合、自分のデッキの上からカードをその差に等しい枚数控え室に置く。その後、これにより控え室に置いたカードの中から、ライブカード1枚をデッキの一番上に置いてもよい。"
     },
     {
       "card_no": "PL!N-sd1-013-PRproteinbar",
@@ -666,6 +693,15 @@
       "optional": true,
       "perTurn": 0,
       "effect": "相手の控え室にあるメンバーカードを3枚選び、相手のデッキの下に好きな順番で置いてもよい。そうした場合、相手のステージにいる元々持つの数が3つ以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "card_no": "PL!HS-PR-036-PR",
+      "name": "大沢瑠璃乃",
+      "template": "toujou_optional_wait_to_deck_top",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分の控え室にあるカードの枚数が8枚未満の場合、自分のデッキの上からカードをその差に等しい枚数控え室に置く。その後、これにより控え室に置いたカードの中から、ライブカード1枚をデッキの一番上に置いてもよい。"
     },
     {
       "card_no": "LL-bp1-001-R＋",

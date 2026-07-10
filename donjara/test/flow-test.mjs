@@ -36,6 +36,7 @@ function buildCatalog() {
 
 const cat = buildCatalog();
 const cfg = defaultConfig(cat);
+cfg.showTileNumbers = true; // フロー検証は数字順子/チー前提
 let pass=0, fail=0;
 const check=(n,c)=>{ if(c){pass++;console.log("  ok  -",n);} else {fail++;console.log("  FAIL-",n);} };
 
@@ -100,7 +101,7 @@ function freshGame() {
   const ok = applyAnkan(g, "muse-c5");
   check("暗槓: 実行成功", ok === true);
   check("暗槓: ankan 面子", g.players[0].melds.length === 1 && g.players[0].melds[0].kind === "ankan");
-  check("暗槓: 嶺上ツモで手牌補充", g.wall.length === before - 1);
+  check("暗槓: 嶺上ツモで手牌補充", g.players[0].drawn != null && g.wall.length < before);
   check("暗槓: 門前を維持", isMenzen(g.players[0]) === true);
 }
 

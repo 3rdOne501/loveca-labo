@@ -5,6 +5,8 @@
   "type": "module",
   "description": "Loveca Labo — 非公式デッキ構築・ソロツール（Windows / Mac / Linux のモダンブラウザ向け）",
   "scripts": {
-    "start": "npx --yes serve . -l 8080"
+    "start": "npx --yes serve . -l 8080",
+    "github:sync": "bash scripts/sync-github.sh --fast",
+    "github:sync:full": "bash scripts/sync-github.sh"
   }
 }

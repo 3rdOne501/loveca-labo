@@ -2,7 +2,7 @@
  * 副露（鳴き）判定ロジック。
  *  - ポン: 手牌に同一牌 2 枚
  *  - 大明槓: 手牌に同一牌 3 枚
- *  - チー: 上家（直前の打牌者）の捨て牌のみ。同一コンテンツで連続 orderIndex を作る 2 枚
+ *  - チー: 上家の捨て牌。数字ON=orderIndex順子 / 常時=ユニット順子（複合可）
  *  - 暗槓: 自分の手番で手牌に 4 枚
  *  - 加槓: 既存のポンに同一牌を 1 枚足す
  *
@@ -10,6 +10,9 @@
  *   { kind:"pon"|"chi"|"kan"|"ankan"|"shouminkan", tiles:[key...], from:number|null, calledTile:string|null }
  * 役判定用の structure meld へは meldToStructure() で変換。
  */
+
+import { chiOptionsMeta } from "./metaMelds.js";
+import { MELOD_META_ONLY } from "./meldRules.js";
 
 function countKey(hand, key) {
   let n = 0;
@@ -37,7 +40,21 @@ export function canKan(hand, discardKey) {
  * チー候補（上家の打牌に対して）。
  * @returns {Array<{tiles:[string,string]}>} 手牌から使う 2 枚の組
  */
-export function chiOptions(hand, discardKey, catalog) {
+export function chiOptions(hand, discardKey, catalog, meldOpts = MELOD_META_ONLY) {
+  const seen = new Set();
+  const out = [];
+  const add = (opt) => {
+    const sig = opt.tiles.slice().sort().join("|");
+    if (seen.has(sig)) return;
+    seen.add(sig);
+    out.push(opt);
+  };
+  if (meldOpts.meta) for (const o of chiOptionsMeta(hand, discardKey, catalog)) add(o);
+  if (meldOpts.numeric) for (const o of chiOptionsNumeric(hand, discardKey, catalog)) add(o);
+  return out;
+}
+
+function chiOptionsNumeric(hand, discardKey, catalog) {
   const t = catalog.byKey.get(discardKey);
   if (!t || t.suit === "honor") return [];
   const suit = t.suit;
@@ -82,12 +99,24 @@ export function shouminkanOptions(hand, melds) {
   return out;
 }
 
-/** 副露 meld → 役判定用 structure meld（kan は triplet 3 枚として扱う） */
+/**
+ * 副露 meld → 役判定用 structure meld（kan は triplet 3 枚として扱う）。
+ * 符計算のため open（鳴きでさらした）/ kan（槓子）フラグを付与する。
+ * 暗槓は open:false（門前扱いの槓）。
+ */
 export function meldToStructure(meld, catalog) {
   const t = catalog.byKey.get(meld.tiles[0]);
   const suit = t ? t.suit : null;
   if (meld.kind === "chi") {
-    return { type: "sequence", suit, tileKeys: meld.tiles.slice(0, 3) };
+    return { type: "sequence", suit, tileKeys: meld.tiles.slice(0, 3), open: true, kan: false };
   }
-  return { type: "triplet", suit, tileKeys: [meld.tiles[0], meld.tiles[0], meld.tiles[0]] };
+  const kan = meld.kind === "kan" || meld.kind === "ankan" || meld.kind === "shouminkan";
+  const open = meld.kind !== "ankan"; // 暗槓のみ closed
+  return {
+    type: "triplet",
+    suit,
+    tileKeys: [meld.tiles[0], meld.tiles[0], meld.tiles[0]],
+    open,
+    kan,
+  };
 }

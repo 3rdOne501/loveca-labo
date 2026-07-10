@@ -1,8 +1,12 @@
+import { metaMeldPatterns } from "./metaMelds.js";
+import { MELOD_META_ONLY } from "./meldRules.js";
+
 /**
  * 麻雀準拠の和了（アガリ）判定エンジン。
  *
  * ルール適用（このゲーム固有）:
- *  - 各コンテンツ = 1 スート。メンバー順の orderIndex が連続する 3 枚で「順子」。
+ *  - showTileNumbers OFF: ユニット順子・学年刻子・同牌刻子（数字順子/刻子なし）
+ *  - showTileNumbers ON : 上記 + orderIndex 順子/刻子（複合）
  *  - 字牌（suit === "honor"）は順子を作らない（刻子/対子のみ）。本家麻雀と同じ。
  *  - 標準形: 4 面子 + 1 雀頭（14 枚）。
  *  - 七対子（7 種の対子）も和了として扱う。
@@ -45,6 +49,90 @@ export function countByKey(tileKeys) {
  * 面子（順子/刻子）へ完全分解する全パターンを返す。
  * @returns {Array<Array<{type:string,suit:string,tileKeys:string[]}>>} 面子リストの配列（空配列=分解不能）
  */
+function sumCounts(m) {
+  let s = 0;
+  for (const c of m.values()) s += c;
+  return s;
+}
+
+function firstKeyWithCount(counts) {
+  for (const [k, c] of [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+    if (c > 0) return k;
+  }
+  return null;
+}
+
+/**
+ * メンバースート内の tileKey カウントを面子分解（数字/メタ複合）。
+ */
+function decomposeMemberSuitKeys(suit, keyCounts, catalog, meldOpts, order2key) {
+  const patterns = meldOpts.meta ? metaMeldPatterns(suit, catalog) : { unitSeqs: [], gradeTrips: [] };
+  const working = new Map(keyCounts);
+  const results = [];
+
+  const canTake = (keys) => keys.every((k) => (working.get(k) || 0) >= 1);
+  const take = (keys) => {
+    for (const k of keys) working.set(k, working.get(k) - 1);
+  };
+  const give = (keys) => {
+    for (const k of keys) working.set(k, (working.get(k) || 0) + 1);
+  };
+
+  function recurse(melds) {
+    if (sumCounts(working) === 0) {
+      results.push(melds.slice());
+      return;
+    }
+    const startKey = firstKeyWithCount(working);
+    if (!startKey) return;
+    const t = catalog.byKey.get(startKey);
+    const o = t?.orderIndex;
+
+    if ((working.get(startKey) || 0) >= 3) {
+      take([startKey, startKey, startKey]);
+      melds.push({ type: "triplet", suit, tileKeys: [startKey, startKey, startKey] });
+      recurse(melds);
+      melds.pop();
+      give([startKey, startKey, startKey]);
+    }
+
+    if (meldOpts.numeric && o != null) {
+      const k2 = order2key.get(o + 1);
+      const k3 = order2key.get(o + 2);
+      if (k2 && k3 && canTake([startKey, k2, k3])) {
+        take([startKey, k2, k3]);
+        melds.push({ type: "sequence", suit, tileKeys: [startKey, k2, k3] });
+        recurse(melds);
+        melds.pop();
+        give([startKey, k2, k3]);
+      }
+    }
+
+    if (meldOpts.meta) {
+      for (const m of patterns.unitSeqs) {
+        if (!m.tileKeys.includes(startKey) || !canTake(m.tileKeys)) continue;
+        take(m.tileKeys);
+        melds.push({ type: "sequence", suit, tileKeys: m.tileKeys.slice() });
+        recurse(melds);
+        melds.pop();
+        give(m.tileKeys);
+      }
+      for (const m of patterns.gradeTrips) {
+        if (!m.tileKeys.includes(startKey) || !canTake(m.tileKeys)) continue;
+        take(m.tileKeys);
+        melds.push({ type: "triplet", suit, tileKeys: m.tileKeys.slice() });
+        recurse(melds);
+        melds.pop();
+        give(m.tileKeys);
+      }
+    }
+  }
+
+  recurse([]);
+  return results;
+}
+
+/** @deprecated 数字のみ分解（テスト互換） */
 function decomposeMemberSuit(suit, counts, order2key) {
   // orderIndex 昇順の作業用配列
   const indices = [...counts.keys()].sort((a, b) => a - b);
@@ -120,7 +208,7 @@ function decomposeHonors(counts) {
  * 手牌（tileKeys, 通常 14 枚）を解析。
  * @returns {{ isAgari:boolean, standardParses:Array<{melds:any[],pair:any}>, chiitoitsu:boolean, tileKeys:string[] }}
  */
-export function analyzeHand(tileKeys, catalog) {
+export function analyzeHand(tileKeys, catalog, meldOpts = MELOD_META_ONLY) {
   const { suitOrderToKey, honorKeys } = buildIndex(catalog);
   const total = tileKeys.length;
   const counts = countByKey(tileKeys);
@@ -152,7 +240,7 @@ export function analyzeHand(tileKeys, catalog) {
       working.set(pairKey, pc - 2);
 
       // スートごとに counts を分ける
-      const perSuit = new Map(); // suit -> Map(orderIndex,count) for members
+      const perSuitKeys = new Map(); // suit -> Map<tileKey,count>
       const honorCounts = new Map();
       let feasible = true;
       for (const [key, c] of working) {
@@ -165,17 +253,16 @@ export function analyzeHand(tileKeys, catalog) {
         if (t.suit === "honor") {
           honorCounts.set(key, c);
         } else {
-          if (!perSuit.has(t.suit)) perSuit.set(t.suit, new Map());
-          perSuit.get(t.suit).set(t.orderIndex, c);
+          if (!perSuitKeys.has(t.suit)) perSuitKeys.set(t.suit, new Map());
+          perSuitKeys.get(t.suit).set(key, c);
         }
       }
       if (!feasible) continue;
 
-      // 各メンバースートの分解パターン（複数）
-      const suitOptionLists = []; // Array<Array<meldList>>
+      const suitOptionLists = [];
       let suitFail = false;
-      for (const [suit, sc] of perSuit) {
-        const opts = decomposeMemberSuit(suit, sc, suitOrderToKey.get(suit));
+      for (const [suit, kc] of perSuitKeys) {
+        const opts = decomposeMemberSuitKeys(suit, kc, catalog, meldOpts, suitOrderToKey.get(suit));
         if (!opts.length) {
           suitFail = true;
           break;
@@ -252,16 +339,16 @@ function dedupeParses(parses) {
  * @param {object} catalog
  * @returns {string[]} 和了牌 key の配列
  */
-export function winningTiles(tileKeys13, catalog) {
+export function winningTiles(tileKeys13, catalog, meldOpts = MELOD_META_ONLY) {
   const waits = [];
   for (const t of catalog.types) {
     const test = tileKeys13.concat([t.key]);
-    if (analyzeHand(test, catalog).isAgari) waits.push(t.key);
+    if (analyzeHand(test, catalog, meldOpts).isAgari) waits.push(t.key);
   }
   return waits;
 }
 
 /** 13 枚がテンパイ（何か 1 枚で和了）か */
-export function isTenpai(tileKeys13, catalog) {
-  return winningTiles(tileKeys13, catalog).length > 0;
+export function isTenpai(tileKeys13, catalog, meldOpts = MELOD_META_ONLY) {
+  return winningTiles(tileKeys13, catalog, meldOpts).length > 0;
 }

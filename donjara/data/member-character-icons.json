@@ -1,0 +1,407 @@
+{
+  "v": 2,
+  "kind": "official-member-hub-thumbnail",
+  "source": "https://www.lovelive-anime.jp/members/",
+  "artDir": "donjara/assets/member-icons/",
+  "roster": [
+    {
+      "id": "honoka",
+      "label": "高坂穂乃果",
+      "series": "muse",
+      "file": "honoka.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/o01.webp"
+    },
+    {
+      "id": "eli",
+      "label": "絢瀬絵里",
+      "series": "muse",
+      "file": "eli.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/o02.webp"
+    },
+    {
+      "id": "kotori",
+      "label": "南ことり",
+      "series": "muse",
+      "file": "kotori.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/o03.webp"
+    },
+    {
+      "id": "umi",
+      "label": "園田海未",
+      "series": "muse",
+      "file": "umi.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/o04.webp"
+    },
+    {
+      "id": "rin",
+      "label": "星空 凛",
+      "series": "muse",
+      "file": "rin.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/o05.webp"
+    },
+    {
+      "id": "maki",
+      "label": "西木野真姫",
+      "series": "muse",
+      "file": "maki.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/o06.webp"
+    },
+    {
+      "id": "nozomi",
+      "label": "東條 希",
+      "series": "muse",
+      "file": "nozomi.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/o07.webp"
+    },
+    {
+      "id": "hanayo",
+      "label": "小泉花陽",
+      "series": "muse",
+      "file": "hanayo.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/o08.webp"
+    },
+    {
+      "id": "nico",
+      "label": "矢澤にこ",
+      "series": "muse",
+      "file": "nico.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/o09.webp"
+    },
+    {
+      "id": "chika",
+      "label": "高海千歌",
+      "series": "aqours",
+      "file": "chika.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/u01.webp"
+    },
+    {
+      "id": "riko",
+      "label": "桜内梨子",
+      "series": "aqours",
+      "file": "riko.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/u02.webp"
+    },
+    {
+      "id": "kanan",
+      "label": "松浦果南",
+      "series": "aqours",
+      "file": "kanan.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/u03.webp"
+    },
+    {
+      "id": "dia",
+      "label": "黒澤ダイヤ",
+      "series": "aqours",
+      "file": "dia.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/u04.webp"
+    },
+    {
+      "id": "you",
+      "label": "渡辺 曜",
+      "series": "aqours",
+      "file": "you.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/u05.webp"
+    },
+    {
+      "id": "yoshiko",
+      "label": "津島善子",
+      "series": "aqours",
+      "file": "yoshiko.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/u06.webp"
+    },
+    {
+      "id": "hanamaru",
+      "label": "国木田花丸",
+      "series": "aqours",
+      "file": "hanamaru.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/u07.webp"
+    },
+    {
+      "id": "mari",
+      "label": "小原鞠莉",
+      "series": "aqours",
+      "file": "mari.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/u08.webp"
+    },
+    {
+      "id": "ruby",
+      "label": "黒澤ルビィ",
+      "series": "aqours",
+      "file": "ruby.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/u09.webp"
+    },
+    {
+      "id": "seira",
+      "label": "鹿角聖良",
+      "series": "aqours",
+      "file": "seira.png.webp",
+      "sourceUrl": "fallback:seira.png.webp"
+    },
+    {
+      "id": "leah",
+      "label": "レイ",
+      "series": "aqours",
+      "file": "leah.webp",
+      "sourceUrl": "fallback:leah.webp"
+    },
+    {
+      "id": "yu",
+      "label": "高咲 侑",
+      "series": "nijigasaki",
+      "file": "yu.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/n01.webp"
+    },
+    {
+      "id": "ayumu",
+      "label": "上原歩夢",
+      "series": "nijigasaki",
+      "file": "ayumu.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/n02.webp"
+    },
+    {
+      "id": "kasumi",
+      "label": "中須かすみ",
+      "series": "nijigasaki",
+      "file": "kasumi.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/n03.webp"
+    },
+    {
+      "id": "shizuku",
+      "label": "桜坂しずく",
+      "series": "nijigasaki",
+      "file": "shizuku.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/n04.webp"
+    },
+    {
+      "id": "karin",
+      "label": "朝香果林",
+      "series": "nijigasaki",
+      "file": "karin.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/n05.webp"
+    },
+    {
+      "id": "ai",
+      "label": "宮下 愛",
+      "series": "nijigasaki",
+      "file": "ai.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/n06.webp"
+    },
+    {
+      "id": "kanata",
+      "label": "近江彼方",
+      "series": "nijigasaki",
+      "file": "kanata.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/n07.webp"
+    },
+    {
+      "id": "setsuna",
+      "label": "優木せつ菜",
+      "series": "nijigasaki",
+      "file": "setsuna.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/n08.webp"
+    },
+    {
+      "id": "emma",
+      "label": "エマ・ヴェルデ",
+      "series": "nijigasaki",
+      "file": "emma.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/n09.webp"
+    },
+    {
+      "id": "rina",
+      "label": "天王寺璃奈",
+      "series": "nijigasaki",
+      "file": "rina.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/n10.webp"
+    },
+    {
+      "id": "shioriko",
+      "label": "三船栞子",
+      "series": "nijigasaki",
+      "file": "shioriko.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/n11.webp"
+    },
+    {
+      "id": "mia",
+      "label": "ミア・テイラー",
+      "series": "nijigasaki",
+      "file": "mia.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/n12.webp"
+    },
+    {
+      "id": "lanzhu",
+      "label": "鐘 嵐珠",
+      "series": "nijigasaki",
+      "file": "lanzhu.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/n13.webp"
+    },
+    {
+      "id": "kanon",
+      "label": "澁谷かのん",
+      "series": "liella",
+      "file": "kanon.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/y01.webp"
+    },
+    {
+      "id": "keke",
+      "label": "唐 可可",
+      "series": "liella",
+      "file": "keke.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/y02.webp"
+    },
+    {
+      "id": "chisato",
+      "label": "嵐 千砂都",
+      "series": "liella",
+      "file": "chisato.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/y03.webp"
+    },
+    {
+      "id": "sumire",
+      "label": "平安名すみれ",
+      "series": "liella",
+      "file": "sumire.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/y04.webp"
+    },
+    {
+      "id": "ren",
+      "label": "葉月 恋",
+      "series": "liella",
+      "file": "ren.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/y05.webp"
+    },
+    {
+      "id": "kinako",
+      "label": "桜小路きな子",
+      "series": "liella",
+      "file": "kinako.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/y06.webp"
+    },
+    {
+      "id": "mei",
+      "label": "米女メイ",
+      "series": "liella",
+      "file": "mei.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/y07.webp"
+    },
+    {
+      "id": "shiki",
+      "label": "若菜四季",
+      "series": "liella",
+      "file": "shiki.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/y08.webp"
+    },
+    {
+      "id": "natsumi",
+      "label": "鬼塚夏美",
+      "series": "liella",
+      "file": "natsumi.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/y09.webp"
+    },
+    {
+      "id": "margarete",
+      "label": "ウィーン・マルガレーテ",
+      "series": "liella",
+      "file": "margarete.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/y10.webp"
+    },
+    {
+      "id": "tomari",
+      "label": "鬼塚冬鞠",
+      "series": "liella",
+      "file": "tomari.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/y11.webp"
+    },
+    {
+      "id": "yuuna",
+      "label": "聖澤悠奈",
+      "series": "liella",
+      "file": "yuuna.png",
+      "sourceUrl": "fallback:yuuna.png"
+    },
+    {
+      "id": "mao",
+      "label": "柊 摩央",
+      "series": "liella",
+      "file": "mao.png",
+      "sourceUrl": "fallback:mao.png"
+    },
+    {
+      "id": "kaho",
+      "label": "日野下花帆",
+      "series": "hasunosora",
+      "file": "kaho.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/h01.webp"
+    },
+    {
+      "id": "sayaka",
+      "label": "村野さやか",
+      "series": "hasunosora",
+      "file": "sayaka.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/h02.webp"
+    },
+    {
+      "id": "shao",
+      "label": "乙宗 梢",
+      "series": "hasunosora",
+      "file": "shao.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/h03.webp"
+    },
+    {
+      "id": "tsuzuri",
+      "label": "夕霧綴理",
+      "series": "hasunosora",
+      "file": "tsuzuri.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/h04.webp"
+    },
+    {
+      "id": "rurino",
+      "label": "大沢瑠璃乃",
+      "series": "hasunosora",
+      "file": "rurino.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/h05.webp"
+    },
+    {
+      "id": "yoshino",
+      "label": "藤島 慈",
+      "series": "hasunosora",
+      "file": "yoshino.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/h06.webp"
+    },
+    {
+      "id": "ginko",
+      "label": "百生 吟子",
+      "series": "hasunosora",
+      "file": "ginko.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/h07.webp"
+    },
+    {
+      "id": "kosuzu",
+      "label": "徒町 小鈴",
+      "series": "hasunosora",
+      "file": "kosuzu.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/h08.webp"
+    },
+    {
+      "id": "hime",
+      "label": "安養寺 姫芽",
+      "series": "hasunosora",
+      "file": "hime.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/h09.webp"
+    },
+    {
+      "id": "ceras",
+      "label": "セラス 柳田 リリエンフェルト",
+      "series": "hasunosora",
+      "file": "ceras.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/h10.webp"
+    },
+    {
+      "id": "izumi",
+      "label": "桂城 泉",
+      "series": "hasunosora",
+      "file": "izumi.webp",
+      "sourceUrl": "https://www.lovelive-anime.jp/images/members/h11.webp"
+    }
+  ]
+}

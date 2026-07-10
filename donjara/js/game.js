@@ -8,7 +8,7 @@
 
 import { analyzeHand, isTenpai } from "./mahjong.js";
 import { evaluateHand } from "./yaku.js";
-import { buildWall, enabledYaku } from "./config.js";
+import { buildWall, enabledYaku, meldOptionsFromConfig } from "./config.js";
 import {
   canPon,
   canKan,
@@ -24,6 +24,83 @@ function shuffle(arr, rng = Math.random) {
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr;
+}
+
+/**
+ * ドラ表示牌 → ドラ牌のキーを返す。
+ *  - メンバー牌: 同一コンテンツ内で orderIndex を +1（最大なら 1 へループ）
+ *  - 字牌: catalog.honors の並び順で次の字牌（末尾なら先頭へループ）
+ */
+export function nextDoraKey(indicatorKey, catalog) {
+  const t = catalog.byKey.get(indicatorKey);
+  if (!t) return null;
+  if (t.suit === "honor") {
+    const list = catalog.honors || [];
+    const idx = list.findIndex((h) => h.key === indicatorKey);
+    if (idx < 0 || !list.length) return null;
+    return list[(idx + 1) % list.length].key;
+  }
+  const list = catalog.byContent.get(t.suit) || [];
+  if (!list.length) return null;
+  const max = list.reduce((m, x) => Math.max(m, x.orderIndex || 0), 0);
+  const nextOrder = (t.orderIndex || 0) >= max ? 1 : (t.orderIndex || 0) + 1;
+  const hit = list.find((x) => x.orderIndex === nextOrder);
+  return hit ? hit.key : null;
+}
+
+/** 表示牌配列から、有効なドラ牌キーの Set を返す（表ドラ+裏ドラ）。 */
+export function doraKeySet(game) {
+  const set = new Set();
+  const add = (inds) => {
+    for (const ind of inds || []) {
+      const k = nextDoraKey(ind, game.catalog);
+      if (k) set.add(k);
+    }
+  };
+  add(game.doraIndicators);
+  add(game.uradoraIndicators);
+  return set;
+}
+
+/** カン成立時に王牌からドラ/裏ドラ表示を追加。 */
+function addDoraPair(game) {
+  if (!game.wall.length) return;
+  game.doraIndicators = game.doraIndicators || [];
+  game.uradoraIndicators = game.uradoraIndicators || [];
+  game.doraIndicators.push(game.wall.shift());
+  if (game.wall.length) game.uradoraIndicators.push(game.wall.shift());
+  game.log.push({ t: "doraAdd" });
+}
+
+/** ev（役あり確定）にドラ/裏ドラ翻を加算。 */
+function applyDora(game, ev) {
+  if (!ev || !ev.structure) return ev;
+  const dSet = new Set();
+  const uSet = new Set();
+  for (const ind of game.doraIndicators || []) {
+    const k = nextDoraKey(ind, game.catalog);
+    if (k) dSet.add(k);
+  }
+  for (const ind of game.uradoraIndicators || []) {
+    const k = nextDoraKey(ind, game.catalog);
+    if (k) uSet.add(k);
+  }
+  if (!dSet.size && !uSet.size) return ev;
+  let dn = 0;
+  let un = 0;
+  for (const k of ev.structure.tiles) {
+    if (dSet.has(k)) dn++;
+    if (uSet.has(k)) un++;
+  }
+  if (dn > 0) {
+    ev.yaku = ev.yaku.concat([{ name: "ドラ", han: dn }]);
+    ev.totalHan += dn;
+  }
+  if (un > 0) {
+    ev.yaku = ev.yaku.concat([{ name: "裏ドラ", han: un }]);
+    ev.totalHan += un;
+  }
+  return ev;
 }
 
 export function createGame(config, catalog) {
@@ -54,6 +131,10 @@ export function createGame(config, catalog) {
   // 席のコントローラ: "human" | "cpu"。既定は席0のみ人間（オフライン）。
   const controllers = players.map((_, i) => (i === 0 ? "human" : "cpu"));
 
+  // ドラ/裏ドラ表示牌（王牌相当。山の先頭から 2 枚めくる）。
+  const doraIndicators = wall.length ? [wall.shift()] : [];
+  const uradoraIndicators = wall.length ? [wall.shift()] : [];
+
   return {
     config,
     catalog,
@@ -62,6 +143,8 @@ export function createGame(config, catalog) {
     nPlayers,
     handSize,
     controllers,
+    doraIndicators,
+    uradoraIndicators,
     turn: 0,
     phase: "draw", // "draw" | "discard" | "callWait" | "over"
     pendingDiscard: null, // { tile, from }
@@ -95,6 +178,8 @@ export function serializeGame(game) {
     nPlayers: game.nPlayers,
     handSize: game.handSize,
     controllers: game.controllers.slice(),
+    doraIndicators: (game.doraIndicators || []).slice(),
+    uradoraIndicators: (game.uradoraIndicators || []).slice(),
     turn: game.turn,
     phase: game.phase,
     pendingDiscard: game.pendingDiscard,
@@ -125,6 +210,8 @@ export function deserializeGame(data, config, catalog) {
     nPlayers: data.nPlayers,
     handSize: data.handSize,
     controllers: (data.controllers || []).slice(),
+    doraIndicators: (data.doraIndicators || []).slice(),
+    uradoraIndicators: (data.uradoraIndicators || []).slice(),
     turn: data.turn,
     phase: data.phase,
     pendingDiscard: data.pendingDiscard || null,
@@ -158,12 +245,18 @@ export function sortHand(hand, catalog) {
 
 /* ---------------- ツモ / ドロー ---------------- */
 
+/** drawn が手牌に無い場合はクリア（表示・打牌の不整合防止）。 */
+export function normalizePlayerHand(pl) {
+  if (pl.drawn != null && !pl.hand.includes(pl.drawn)) pl.drawn = null;
+}
+
 export function drawTile(game, rinshan = false) {
   if (game.wall.length === 0) {
     endDrawGame(game);
     return;
   }
   const pl = game.players[game.turn];
+  normalizePlayerHand(pl);
   const tile = game.wall.pop();
   pl.drawn = tile;
   pl.hand.push(tile);
@@ -172,8 +265,12 @@ export function drawTile(game, rinshan = false) {
   game.log.push({ t: rinshan ? "rinshan" : "draw", p: game.turn, tile });
 }
 
+function meldOpts(game) {
+  return meldOptionsFromConfig(game.config);
+}
+
 function winEval(game, pl, tsumo) {
-  const analysis = analyzeHand(pl.hand, game.catalog);
+  const analysis = analyzeHand(pl.hand, game.catalog, meldOpts(game));
   if (!analysis.isAgari) return null;
   const ev = evaluateHand(
     analysis,
@@ -182,7 +279,7 @@ function winEval(game, pl, tsumo) {
     game.yakuList
   );
   if (!ev || ev.totalHan <= 0) return null;
-  return ev;
+  return applyDora(game, ev);
 }
 
 export function checkTsumo(game) {
@@ -200,6 +297,7 @@ export function declareTsumo(game) {
     from: game.turn,
     hand: game.players[game.turn].hand.slice(),
     melds: game.players[game.turn].melds.slice(),
+    menzen: isMenzen(game.players[game.turn]),
     eval: ev,
   };
   game.log.push({ t: "tsumo", p: game.turn, han: ev.totalHan });
@@ -223,22 +321,36 @@ export function tenpaiKeepDiscards(game, hand) {
   for (const k of [...new Set(hand)]) {
     const rest = hand.slice();
     rest.splice(rest.indexOf(k), 1);
-    if (isTenpai(rest, game.catalog)) keep.add(k);
+    if (isTenpai(rest, game.catalog, meldOpts(game))) keep.add(k);
   }
   return keep;
 }
 
 /* ---------------- 打牌 → 鳴き解決（席非依存） ---------------- */
 
-export function discardTile(game, tileKey) {
-  if (game.phase !== "discard") return;
+export function discardTile(game, tileKey, handIndex = null) {
+  if (game.phase !== "discard") return false;
   const pl = game.players[game.turn];
-  const idx = pl.hand.lastIndexOf(tileKey);
-  if (idx < 0) return;
+  normalizePlayerHand(pl);
+
+  let idx = -1;
+  if (
+    handIndex != null &&
+    handIndex >= 0 &&
+    handIndex < pl.hand.length &&
+    pl.hand[handIndex] === tileKey
+  ) {
+    idx = handIndex;
+  } else if (pl.drawn === tileKey && pl.hand.includes(tileKey)) {
+    idx = pl.hand.lastIndexOf(tileKey);
+  } else {
+    idx = pl.hand.indexOf(tileKey);
+  }
+  if (idx < 0) return false;
 
   // 立直宣言中はテンパイ維持牌のみ打牌可
   if (game.riichiPending) {
-    if (!tenpaiKeepDiscards(game, pl.hand).has(tileKey)) return;
+    if (!tenpaiKeepDiscards(game, pl.hand).has(tileKey)) return false;
     pl.riichi = true;
     game.riichiPending = false;
     game.log.push({ t: "riichi", p: game.turn });
@@ -248,10 +360,12 @@ export function discardTile(game, tileKey) {
   pl.drawn = null;
   pl.discards.push(tileKey);
   sortHand(pl.hand, game.catalog);
+  normalizePlayerHand(pl);
   game.log.push({ t: "discard", p: game.turn, tile: tileKey });
 
   game.pendingDiscard = { tile: tileKey, from: game.turn };
   resolveCalls(game);
+  return true;
 }
 
 /** 打牌者以外の各席について鳴き選択肢を計算。 */
@@ -267,7 +381,7 @@ export function callOptionsFor(game, p) {
     ron: !!ronEval(game, p, pd.tile),
     pon: canPon(pl.hand, pd.tile),
     kan: canKan(pl.hand, pd.tile),
-    chi: isKamicha ? chiOptions(pl.hand, pd.tile, game.catalog) : [],
+    chi: isKamicha ? chiOptions(pl.hand, pd.tile, game.catalog, meldOpts(game)) : [],
   };
   if (!opts.ron && !opts.pon && !opts.kan && !opts.chi.length) return null;
   return opts;
@@ -364,7 +478,7 @@ function finalizeCalls(game) {
 
 function ronEval(game, p, tile) {
   const pl = game.players[p];
-  const analysis = analyzeHand(pl.hand.concat([tile]), game.catalog);
+  const analysis = analyzeHand(pl.hand.concat([tile]), game.catalog, meldOpts(game));
   if (!analysis.isAgari) return null;
   const ev = evaluateHand(
     analysis,
@@ -373,7 +487,7 @@ function ronEval(game, p, tile) {
     game.yakuList
   );
   if (!ev || ev.totalHan <= 0) return null;
-  return ev;
+  return applyDora(game, ev);
 }
 
 function declareRonBy(game, p, tile, from) {
@@ -387,6 +501,7 @@ function declareRonBy(game, p, tile, from) {
     tile,
     hand: pl.hand.concat([tile]),
     melds: pl.melds.slice(),
+    menzen: isMenzen(pl),
     eval: ev,
   };
   game.log.push({ t: "ron", p, from, han: ev.totalHan });
@@ -430,6 +545,7 @@ export function applyPon(game, p, tile, from) {
   game.phase = "discard";
   pl.drawn = null;
   sortHand(pl.hand, game.catalog);
+  normalizePlayerHand(pl);
   game.log.push({ t: "pon", p, from });
 }
 
@@ -450,6 +566,7 @@ export function applyKan(game, p, tile, from) {
     sortHand(pl.hand, game.catalog);
   }
   game.log.push({ t: "kan", p, from });
+  addDoraPair(game);
 }
 
 export function applyChi(game, p, tile, handTiles, from) {
@@ -468,6 +585,7 @@ export function applyChi(game, p, tile, handTiles, from) {
   game.phase = "discard";
   pl.drawn = null;
   sortHand(pl.hand, game.catalog);
+  normalizePlayerHand(pl);
   game.log.push({ t: "chi", p, from });
 }
 
@@ -485,6 +603,7 @@ export function applyAnkan(game, tileKey) {
     sortHand(pl.hand, game.catalog);
   }
   game.log.push({ t: "ankan", p: game.turn });
+  addDoraPair(game);
   return true;
 }
 
@@ -505,6 +624,7 @@ export function applyShouminkan(game, tileKey) {
     sortHand(pl.hand, game.catalog);
   }
   game.log.push({ t: "shouminkan", p: game.turn });
+  addDoraPair(game);
   return true;
 }
 
@@ -552,7 +672,7 @@ function cpuWantsMeld(game, p, tile, kind, handTiles) {
   for (const k of [...new Set(hand)]) {
     const rest = hand.slice();
     rest.splice(rest.indexOf(k), 1);
-    if (isTenpai(rest, game.catalog)) return true;
+    if (isTenpai(rest, game.catalog, meldOpts(game))) return true;
   }
   return false;
 }
@@ -565,7 +685,7 @@ export function cpuChooseDiscard(game) {
   for (const k of uniq) {
     const rest = hand.slice();
     rest.splice(rest.indexOf(k), 1);
-    if (isTenpai(rest, game.catalog)) tenpaiDiscards.push(k);
+    if (isTenpai(rest, game.catalog, meldOpts(game))) tenpaiDiscards.push(k);
   }
   if (tenpaiDiscards.length) {
     tenpaiDiscards.sort((a, b) => waitCount(game, hand, b) - waitCount(game, hand, a));
@@ -581,7 +701,7 @@ function waitCount(game, hand, discardKey) {
   rest.splice(rest.indexOf(discardKey), 1);
   let n = 0;
   for (const t of game.catalog.types) {
-    if (analyzeHand(rest.concat([t.key]), game.catalog).isAgari) n++;
+    if (analyzeHand(rest.concat([t.key]), game.catalog, meldOpts(game)).isAgari) n++;
   }
   return n;
 }
