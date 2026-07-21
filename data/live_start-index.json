@@ -1,9 +1,9 @@
 {
-  "generated": "2026-07-10",
+  "generated": "2026-07-15",
   "trigger": "live_start",
   "total": 309,
   "byTemplate": {
-    "heart_color_pick_grant": 31,
+    "heart_color_pick_grant": 26,
     "grant_jouji_session": 64,
     "optional_self_wait_opp_stage": 11,
     "guided_manual": 2,
@@ -30,6 +30,7 @@
     "live_start_hand_discard_activate_wait_grant": 4,
     "live_start_waiting_deck_bottom_tiered": 4,
     "live_start_pick_player_waiting_deck_bottom": 2,
+    "heart_color_pick_replace": 5,
     "toujou_bibi_wait_opp_active_wait": 2,
     "draw_from_deck": 6,
     "live_start_position_change": 14,
@@ -1233,7 +1234,7 @@
     {
       "card_no": "PL!N-bp3-014-N",
       "name": "中須かすみ",
-      "template": "heart_color_pick_grant",
+      "template": "heart_color_pick_replace",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -1242,7 +1243,7 @@
     {
       "card_no": "PL!N-bp3-015-N",
       "name": "桜坂しずく",
-      "template": "heart_color_pick_grant",
+      "template": "heart_color_pick_replace",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -1737,7 +1738,7 @@
     {
       "card_no": "PL!N-pb1-034-N",
       "name": "三船栞子",
-      "template": "heart_color_pick_grant",
+      "template": "heart_color_pick_replace",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -1746,7 +1747,7 @@
     {
       "card_no": "PL!N-pb1-036-N",
       "name": "鐘 嵐珠",
-      "template": "heart_color_pick_grant",
+      "template": "heart_color_pick_replace",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -2852,7 +2853,7 @@
     {
       "card_no": "PL!SP-pb2-030-N",
       "name": "若菜四季",
-      "template": "heart_color_pick_grant",
+      "template": "heart_color_pick_replace",
       "automated": true,
       "optional": false,
       "perTurn": 0,

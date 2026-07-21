@@ -71,9 +71,9 @@ const CASES = [
   { id: "PL!N-pb1-023-R", trigger: "toujyou", expectTemplate: "toujou_hand_stage_enter" },
   { id: "PL!N-pb1-024-R", trigger: "toujyou", expectTemplate: "deck_top_pick_recover" },
   { id: "PL!N-pb1-028-N", trigger: "toujyou", expectTemplate: "deck_top_pick_recover" },
-  { id: "PL!N-pb1-034-N", trigger: "live_start", expectTemplate: "heart_color_pick_grant" },
+  { id: "PL!N-pb1-034-N", trigger: "live_start", expectTemplate: "heart_color_pick_replace" },
   { id: "PL!N-pb1-035-N", trigger: "toujyou", expectTemplate: "deck_top_pick_recover" },
-  { id: "PL!N-pb1-036-N", trigger: "live_start", expectTemplate: "heart_color_pick_grant" },
+  { id: "PL!N-pb1-036-N", trigger: "live_start", expectTemplate: "heart_color_pick_replace" },
   { id: "PL!N-pb1-037-L", trigger: "live_start", expectTemplate: "live_start_series_activation_score" },
   {
     id: "PL!N-pb1-038-L",

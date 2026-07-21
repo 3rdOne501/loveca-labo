@@ -149,7 +149,12 @@ export function classifyJidouAutoSegment(segRaw) {
   }
 
   if (/登場か、エリアを移動するたび/.test(p) && /ライブ終了時まで/.test(p)) {
-    return { template: "jidou_area_move_grant_jouji", eventKind: "area_move", perTurnLimit: perTurn };
+    return {
+      template: "jidou_area_move_grant_jouji",
+      eventKind: "area_move",
+      altEventKind: "enter_or_baton",
+      perTurnLimit: perTurn,
+    };
   }
   if (/センターエリアにいるメンバーがエリアを移動したとき/.test(p) && /以下から1つを選ぶ/.test(p)) {
     var centerChoices = parseAbilityBulletChoices(segRaw);

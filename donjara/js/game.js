@@ -17,6 +17,14 @@ import {
   shouminkanOptions,
   meldToStructure,
 } from "./calls.js";
+import {
+  createMatchState,
+  applyWinResult,
+  applyDrawResult,
+  onRiichiDeclared,
+  serializeMatch,
+  deserializeMatch,
+} from "./match.js";
 
 function shuffle(arr, rng = Math.random) {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -103,20 +111,21 @@ function applyDora(game, ev) {
   return ev;
 }
 
-export function createGame(config, catalog) {
+export function createGame(config, catalog, existingMatch = null) {
   const { wall } = buildWall(config, catalog);
   shuffle(wall);
 
   const nPlayers = Math.min(Math.max(config.players || 4, 2), 4);
   const handSize = config.handSize || 13;
+  const match = existingMatch || createMatchState(config, nPlayers);
 
   const players = [];
   for (let p = 0; p < nPlayers; p++) {
     players.push({
       id: p,
       isHuman: p === 0,
-      hand: [], // 手牌（concealed）
-      melds: [], // 副露面子
+      hand: [],
+      melds: [],
       discards: [],
       riichi: false,
       drawn: null,
@@ -128,10 +137,8 @@ export function createGame(config, catalog) {
   }
   players.forEach((pl) => sortHand(pl.hand, catalog));
 
-  // 席のコントローラ: "human" | "cpu"。既定は席0のみ人間（オフライン）。
   const controllers = players.map((_, i) => (i === 0 ? "human" : "cpu"));
 
-  // ドラ/裏ドラ表示牌（王牌相当。山の先頭から 2 枚めくる）。
   const doraIndicators = wall.length ? [wall.shift()] : [];
   const uradoraIndicators = wall.length ? [wall.shift()] : [];
 
@@ -145,16 +152,34 @@ export function createGame(config, catalog) {
     controllers,
     doraIndicators,
     uradoraIndicators,
-    turn: 0,
-    phase: "draw", // "draw" | "discard" | "callWait" | "over"
-    pendingDiscard: null, // { tile, from }
-    callOptionsBySeat: {}, // 人間席の鳴き選択肢 { seat: {ron,pon,kan,chi} }
-    callResponses: {}, // seat -> {type,...} | null(=pending)
-    riichiPending: false, // 人間が立直宣言後、テンパイ維持の打牌待ち
+    match,
+    turn: match.dealer,
+    phase: "draw",
+    pendingDiscard: null,
+    callOptionsBySeat: {},
+    callResponses: {},
+    riichiPending: false,
     result: null,
     yakuList: enabledYaku(config, catalog),
     log: [],
   };
+}
+
+/** 同一マッチの次局を開始（持ち点・親・局数を引き継ぐ）。 */
+export function startNextHand(game) {
+  const { config, catalog, match, controllers } = game;
+  const next = createGame(config, catalog, match);
+  next.controllers = controllers.slice();
+  return next;
+}
+
+function finalizeHand(game) {
+  if (!game.result || !game.match) return;
+  if (game.result.type === "draw") {
+    game.result = applyDrawResult(game);
+  } else {
+    game.result = applyWinResult(game, game.result);
+  }
 }
 
 export function isMenzen(pl) {
@@ -187,6 +212,7 @@ export function serializeGame(game) {
     callResponses: game.callResponses,
     riichiPending: game.riichiPending,
     result: game.result,
+    match: serializeMatch(game.match),
     log: game.log.slice(-60),
   };
 }
@@ -219,6 +245,7 @@ export function deserializeGame(data, config, catalog) {
     callResponses: data.callResponses || {},
     riichiPending: !!data.riichiPending,
     result: data.result || null,
+    match: deserializeMatch(data.match, data.nPlayers) || createMatchState(config, data.nPlayers),
     log: (data.log || []).slice(),
   };
 }
@@ -301,6 +328,7 @@ export function declareTsumo(game) {
     eval: ev,
   };
   game.log.push({ t: "tsumo", p: game.turn, han: ev.totalHan });
+  finalizeHand(game);
   return true;
 }
 
@@ -353,6 +381,7 @@ export function discardTile(game, tileKey, handIndex = null) {
     if (!tenpaiKeepDiscards(game, pl.hand).has(tileKey)) return false;
     pl.riichi = true;
     game.riichiPending = false;
+    onRiichiDeclared(game.match, game.turn);
     game.log.push({ t: "riichi", p: game.turn });
   }
 
@@ -505,6 +534,7 @@ function declareRonBy(game, p, tile, from) {
     eval: ev,
   };
   game.log.push({ t: "ron", p, from, han: ev.totalHan });
+  finalizeHand(game);
 }
 
 /** CPU の鳴き意思決定。 */
@@ -639,6 +669,7 @@ function endDrawGame(game) {
   game.phase = "over";
   game.result = { type: "draw" };
   game.log.push({ t: "ryuukyoku" });
+  finalizeHand(game);
 }
 
 /* ---------------- 人間の鳴きアクション（オフライン: 席0／UI から呼ぶ） ---------------- */

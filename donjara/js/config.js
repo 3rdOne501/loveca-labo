@@ -5,6 +5,7 @@
 
 import { CONTENTS, HONOR_TILES } from "./contents.js";
 import { BASE_YAKU, createCustomYaku } from "./yaku.js";
+import { MATCH_MODES } from "./match.js";
 
 const STORAGE_KEY = "donjara_config_v1";
 export const DEFAULT_COPIES = 4;
@@ -36,6 +37,7 @@ export function defaultConfig(catalog) {
     yaku: { enabled: yakuEnabled, custom: [] },
     players: 4,
     handSize: 13,
+    matchMode: "tonpu", // single | tonpu | hanchan
   };
 }
 
@@ -58,6 +60,7 @@ export function loadConfig(catalog) {
   merged.copies = { ...(saved.copies || {}) };
   merged.players = Number(saved.players) || base.players;
   merged.handSize = Number(saved.handSize) || base.handSize;
+  merged.matchMode = MATCH_MODES[saved.matchMode] ? saved.matchMode : base.matchMode;
 
   merged.contents = {};
   for (const c of CONTENTS) {

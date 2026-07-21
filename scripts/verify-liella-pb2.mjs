@@ -130,7 +130,7 @@ const CASES = [
     expectTemplate: "optional_self_wait_opp_stage",
     check: (cl) => (cl.oppWaitMaxCost === 2 ? [] : ["oppWaitMaxCost"]),
   },
-  { id: "PL!SP-pb2-030-N", trigger: "live_start", expectTemplate: "heart_color_pick_grant" },
+  { id: "PL!SP-pb2-030-N", trigger: "live_start", expectTemplate: "heart_color_pick_replace" },
   { id: "PL!SP-pb2-036-N", trigger: "toujyou", expectTemplate: "draw_then_hand_discard" },
   {
     id: "PL!SP-pb2-040-N",

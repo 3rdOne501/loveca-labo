@@ -996,6 +996,14 @@ function textHasHeartColorPickGrant(p) {
   );
 }
 
+/**
+ * 「元々持つハートは選んだハートになる」型（付与ではなく元々ハートの色を差し替え）。
+ * @param {string} p @returns {boolean}
+ */
+function textHasHeartColorPickReplace(p) {
+  return /元々持つハートは選んだハート/.test(String(p || ""));
+}
+
 /** @param {string} p @param {string} segRaw @param {Partial<ClassifiedAbility>} basePatch */
 function enrichHeartColorPickGrantPatch(p, segRaw, basePatch) {
   /** @type {Partial<ClassifiedAbility>} */
@@ -3560,7 +3568,7 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
 
     if (textHasHeartColorPickGrant(p)) {
       return kidouT({
-        template: "heart_color_pick_grant",
+        template: textHasHeartColorPickReplace(p) ? "heart_color_pick_replace" : "heart_color_pick_grant",
         costSelfWait: base.costSelfWait,
         heartPickSlots: parseHeartColorPickSlots(p, segRaw),
         heartPerSuccessLive: textHasHeartPerSuccessLiveGrant(p),
@@ -4553,7 +4561,7 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
     if (textHasHeartColorPickGrant(p)) {
       return twT(
         enrichHeartColorPickGrantPatch(p, segRaw, {
-          template: "heart_color_pick_grant",
+          template: textHasHeartColorPickReplace(p) ? "heart_color_pick_replace" : "heart_color_pick_grant",
           requiresOnStage: true,
           heartPickSlots: parseHeartColorPickSlots(p, segRaw),
           heartPerSuccessLive: textHasHeartPerSuccessLiveGrant(p),
@@ -5087,7 +5095,7 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
     }
     if (textHasHeartColorPickGrant(p)) {
       return withTrigger("live_success", {
-        template: "heart_color_pick_grant",
+        template: textHasHeartColorPickReplace(p) ? "heart_color_pick_replace" : "heart_color_pick_grant",
         heartPickSlots: parseHeartColorPickSlots(p, segRaw),
         heartPerSuccessLive: textHasHeartPerSuccessLiveGrant(p),
       });
@@ -5836,7 +5844,11 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
       var enteredExclM = p.match(/『([^』]+)』以外のすべてのメンバー/);
       return lsT(
         enrichHeartColorPickGrantPatch(p, segRaw, {
-          template: movedGrant ? "live_start_moved_members_pick_heart_grant" : "heart_color_pick_grant",
+          template: movedGrant
+            ? "live_start_moved_members_pick_heart_grant"
+            : textHasHeartColorPickReplace(p)
+              ? "heart_color_pick_replace"
+              : "heart_color_pick_grant",
           requiresOnStage: true,
           optional: base.optional,
           heartPickSlots: parseHeartColorPickSlots(p, segRaw),
@@ -7045,6 +7057,7 @@ export function abilityEffectIsAutomated(template) {
     template === "live_start_distinct_series_need_heart_shift_score" ||
     template === "live_success_characters_draw" ||
     template === "heart_color_pick_grant" ||
+    template === "heart_color_pick_replace" ||
     template === "kidou_reveal_hand_cost_threshold" ||
     template === "kidou_reveal_all_hand_deck_top_live" ||
     template === "deck_top_count_stage_plus" ||

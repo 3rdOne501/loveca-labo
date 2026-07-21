@@ -464,9 +464,9 @@ body.dz-body--play .dz-tab {
   overflow: hidden;
   z-index: 1;
   background:
-    radial-gradient(ellipse 88% 68% at 50% 38%, rgba(255, 255, 255, 0.11) 0%, transparent 52%),
-    radial-gradient(130% 120% at 50% 38%, #1f8f62 0%, #0e5a3e 42%, #043222 100%);
-  border: 3px solid #2f7658;
+    radial-gradient(ellipse 88% 68% at 50% 38%, rgba(255, 255, 255, 0.14) 0%, transparent 52%),
+    radial-gradient(130% 120% at 50% 38%, #2db872 0%, #1a8f55 40%, #0d5c38 100%);
+  border: 3px solid #3cb87a;
   box-shadow:
     inset 0 0 90px rgba(0, 0, 0, 0.48),
     inset 0 3px 0 rgba(255, 255, 255, 0.08),
@@ -477,7 +477,7 @@ body.dz-body--play .dz-tab {
   position: absolute;
   inset: -8px;
   border-radius: 26px;
-  background: linear-gradient(165deg, #9a6535 0%, #6b4220 38%, #3f2512 100%);
+  background: linear-gradient(165deg, #3aad72 0%, #228a55 38%, #12603a 100%);
   transform: none;
   box-shadow:
     0 20px 44px rgba(0, 0, 0, 0.5),
@@ -530,11 +530,17 @@ body.dz-body--play .dz-tab {
   border-radius: 0 0 18px 18px;
   background: linear-gradient(
     180deg,
-    rgba(31, 143, 98, 0.05) 0%,
-    rgba(31, 143, 98, 0.55) 22%,
-    rgba(14, 90, 62, 0.92) 100%
+    rgba(120, 200, 255, 0.1) 0%,
+    rgba(55, 130, 210, 0.62) 24%,
+    rgba(28, 72, 140, 0.94) 100%
   );
-  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.06);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 0 1px rgba(140, 200, 255, 0.22);
+}
+.dz-ms-anchor--bottom.is-call-wait {
+  height: auto;
+  min-height: clamp(108px, 18vh, 148px);
 }
 .dz-ms-anchor--bottom .dz-dock {
   position: absolute;
@@ -674,8 +680,9 @@ body.dz-body--play .dz-tab {
     clamp(80px, 11vh, 104px)
     clamp(52px, 7vw, 80px)
     clamp(104px, 14vh, 136px);
-  --dz-hub-w: 188px;
-  --dz-hub-h: 136px;
+  --dz-hub-size: 148px;
+  --dz-hub-w: var(--dz-hub-size);
+  --dz-hub-h: var(--dz-hub-size);
   --dz-riv-gap: 10px;
 }
 
@@ -684,8 +691,9 @@ body.dz-body--play .dz-tab {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: var(--dz-hub-w);
-  height: var(--dz-hub-h);
+  width: var(--dz-hub-size);
+  height: var(--dz-hub-size);
+  aspect-ratio: 1;
   transform: translate(-50%, -50%);
   border-radius: 14px;
   background: linear-gradient(180deg, rgba(14,26,38,.94), rgba(6,12,20,.88));
@@ -748,6 +756,11 @@ body.dz-body--play .dz-tab {
   text-overflow: ellipsis;
   text-align: center;
   padding: 0 2px;
+}
+.dz-ms-hub__sticks {
+  font-size: clamp(9px, 1.1vw, 11px);
+  color: #ffb0d0;
+  font-weight: 700;
 }
 
 /* 風・点数 — ハブ内グリッドの上下左右セル（本文と重ならない） */
@@ -841,8 +854,26 @@ body.dz-body--play .dz-tab {
   padding: 0;
   transform: none;
 }
-.dz-ms-kawa--top .dz-river .dz-tile {
+
+/* 河の牌向き — 捨てたプレイヤー側を向く（平面・上から見下ろし） */
+.dz-ms-kawa--bottom .dz-river .dz-tile,
+.dz-river--self .dz-tile {
+  transform: none;
+}
+.dz-ms-kawa--top .dz-river .dz-tile,
+.dz-river--top .dz-tile {
   transform: rotate(180deg);
+}
+.dz-ms-kawa--left .dz-river .dz-tile,
+.dz-river--left .dz-tile {
+  transform: rotate(90deg);
+}
+.dz-ms-kawa--right .dz-river .dz-tile,
+.dz-river--right .dz-tile {
+  transform: rotate(-90deg);
+}
+.dz-ms-kawa .dz-river .dz-tile {
+  transform-origin: center center;
 }
 
 /* 河セル — 固定枠（平面牌） */
@@ -852,9 +883,9 @@ body.dz-body--play .dz-tab {
   width: 34px;
   height: 46px;
   overflow: visible;
-}
-.dz-ms-kawa .dz-river .dz-tile {
-  transform: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .dz-ms-kawa .dz-river .dz-tile.is-last {
   z-index: 2;
@@ -863,7 +894,7 @@ body.dz-body--play .dz-tab {
   z-index: 4;
 }
 
-/* 左右の河 — 縦6枚で折り返し */
+/* 左右の河 — 縦6枚で折り返し（回転後の見た目に合わせたセル寸法） */
 .dz-ms-kawa--left .dz-river,
 .dz-ms-kawa--right .dz-river {
   display: flex;
@@ -873,15 +904,15 @@ body.dz-body--play .dz-tab {
   gap: 3px;
   width: max-content;
   max-width: none;
-  max-height: calc(46px * 6 + 3px * 5);
+  max-height: calc(34px * 6 + 3px * 5);
   padding: 0;
   transform: none;
 }
 .dz-ms-kawa--left .dz-river-cell,
 .dz-ms-kawa--right .dz-river-cell {
-  flex: 0 0 46px;
-  width: 34px;
-  height: 46px;
+  flex: 0 0 34px;
+  width: 46px;
+  height: 34px;
 }
 .dz-ms-kawa--left .dz-river {
   direction: rtl;
@@ -1648,8 +1679,8 @@ body.dz-body--play .dz-main.is-play {
 
 /* 旧レイアウト互換（pos-* 卓） */
 .pos-top .dz-river { transform: rotate(180deg); }
-.pos-right .dz-river { transform: rotate(90deg); }
-.pos-left .dz-river { transform: rotate(-90deg); }
+.pos-right .dz-river { transform: rotate(-90deg); }
+.pos-left .dz-river { transform: rotate(90deg); }
 
 /* 中央ハブ */
 .dz-center-hub {
@@ -1788,18 +1819,28 @@ body.dz-body--play .dz-main.is-play {
 .dz-tile--drawn { animation: dz-drawin .28s cubic-bezier(.2,.9,.3,1.2) both; }
 
 @keyframes dz-riverpop {
-  0% { opacity: 0; }
-  100% { opacity: 1; }
+  0% { transform: scale(0.88); opacity: 0.85; }
+  100% { transform: scale(1); opacity: 1; }
 }
 /* table3d wrapper は transform（傾き・厚み）を animation で上書きしない */
 .dz-river .dz-tile--table3d.is-last .dz-tile__face {
-  animation: dz-riverpop-face .26s ease-out both;
+  animation: dz-riverpop-face .22s ease-out both;
 }
 @keyframes dz-riverpop-face {
-  0% { opacity: 0; }
-  100% { opacity: 1; }
+  0% { transform: scale(0.88); opacity: 0.85; }
+  100% { transform: scale(1); opacity: 1; }
 }
-.dz-river .dz-tile.is-last:not(.dz-tile--table3d) { animation: dz-riverpop .26s ease-out both; }
+.dz-river .dz-tile.is-last:not(.dz-tile--table3d) {
+  animation: dz-riverpop .22s ease-out both;
+}
+.dz-ms-kawa--left .dz-river .dz-tile.is-last,
+.dz-ms-kawa--right .dz-river .dz-tile.is-last {
+  animation: dz-riverpop-bright .22s ease-out both;
+}
+@keyframes dz-riverpop-bright {
+  0% { filter: brightness(1.25); }
+  100% { filter: brightness(1); }
+}
 
 @keyframes dz-dockin {
   0% { transform: scale(.4) translateY(10px); opacity: 0; }
@@ -1887,7 +1928,17 @@ body.dz-body--play .dz-main.is-play {
 .dz-seat__no { font-size: 12px; color: var(--dz-sub); }
 .dz-seat__name { font-size: 16px; margin-top: 4px; }
 
-/* 鳴きバー（対局中） */
+/* 鳴きバー（対局中）— 手牌エリア外のオーバーレイ */
+.dz-ms-call-overlay {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: clamp(112px, 16vh, 148px);
+  z-index: 22;
+  width: min(960px, 96%);
+  margin: 0;
+}
+
 .dz-callbar--play {
   position: relative;
   z-index: 25;
@@ -2023,6 +2074,12 @@ body.dz-body--play .dz-main.is-play {
   background: linear-gradient(180deg, #ffd86b, #f5a623);
   padding: 2px 10px; border-radius: 999px;
 }
+.dz-result__note { font-size: 13px; color: var(--dz-sub); margin: 8px 0 0; }
+.dz-result__subtitle { margin: 14px 0 6px; font-size: 15px; color: var(--dz-accent2); }
+.dz-result__scores { margin: 10px 0 0; padding-left: 18px; font-size: 14px; }
+.dz-result__scores li { margin: 2px 0; }
+.dz-result__ranking { margin: 6px 0 0; padding-left: 22px; font-size: 15px; font-weight: 700; }
+.dz-result__ranking li { margin: 4px 0; }
 
 /* 和了手（面子ごとに整列） */
 .dz-winhand { display: flex; flex-wrap: wrap; gap: 14px; margin: 10px 0; }
@@ -2064,7 +2121,7 @@ body.dz-body--play .dz-main.is-play {
   .dz-ms-wrap { min-height: calc(100dvh - 80px); }
   .dz-ms-table { min-height: calc(100dvh - 76px); }
   .dz-ms-mid { min-height: min(66vh, 720px); }
-  .dz-ms-center { --dz-hub-w: 200px; --dz-hub-h: 150px; }
+  .dz-ms-center { --dz-hub-size: 175px; }
   .dz-tile--lg { width: clamp(78px, 5.8vw, 96px); height: clamp(106px, 7.8vw, 130px); }
   .dz-ms-avatar__frame { width: 80px; height: 80px; }
   .dz-ms-avatar--self .dz-ms-avatar__frame { width: 96px; height: 96px; }
@@ -2078,7 +2135,7 @@ body.dz-body--play .dz-main.is-play {
   .dz-ms-mid {
     min-height: min(58vh, 560px);
   }
-  .dz-ms-center { --dz-hub-w: 160px; --dz-hub-h: 118px; }
+  .dz-ms-center { --dz-hub-size: 140px; }
   .dz-ms-avatar__frame { width: 56px; height: 56px; }
   .dz-ms-avatar--self .dz-ms-avatar__frame { width: 72px; height: 72px; }
   .dz-ms-dora-panel { transform: scale(0.92); transform-origin: top left; }
@@ -2140,8 +2197,7 @@ body.dz-body--play .dz-main.is-play {
     min-height: 0;
   }
   body.dz-body--portrait .dz-ms-center {
-    --dz-hub-w: 124px;
-    --dz-hub-h: 104px;
+    --dz-hub-size: 118px;
     --dz-riv-gap: 6px;
     padding:
       clamp(56px, 8vh, 72px)
@@ -2162,19 +2218,19 @@ body.dz-body--play .dz-main.is-play {
   body.dz-body--portrait .dz-ms-kawa--right .dz-river {
     flex-direction: column;
     flex-wrap: wrap;
-    max-height: calc(28px * 6 + 3px * 5);
+    max-height: calc(30px * 6 + 3px * 5);
     max-width: none;
     transform: none;
   }
   body.dz-body--portrait .dz-ms-kawa--left .dz-river-cell,
   body.dz-body--portrait .dz-ms-kawa--right .dz-river-cell {
-    flex: 0 0 40px;
-    width: 30px;
-    height: 40px;
+    flex: 0 0 30px;
+    width: 40px;
+    height: 30px;
   }
   body.dz-body--portrait .dz-ms-kawa--left .dz-river,
   body.dz-body--portrait .dz-ms-kawa--right .dz-river {
-    max-height: calc(40px * 6 + 3px * 5);
+    max-height: calc(30px * 6 + 3px * 5);
   }
   body.dz-body--portrait .dz-river .dz-tile--xs {
     width: 30px !important;
@@ -2184,10 +2240,11 @@ body.dz-body--play .dz-main.is-play {
     min-height: 40px !important;
     max-height: 40px !important;
   }
-  body.dz-body--portrait .dz-river-cell {
+  body.dz-body--portrait .dz-ms-kawa--top .dz-river-cell,
+  body.dz-body--portrait .dz-ms-kawa--bottom .dz-river-cell {
     width: 30px;
     height: 40px;
-    flex: 0 0 34px;
+    flex: 0 0 40px;
   }
   body.dz-body--portrait .dz-ms-seat--left {
     left: 0;
@@ -2202,13 +2259,62 @@ body.dz-body--play .dz-main.is-play {
   body.dz-body--portrait .dz-ms-anchor--bottom {
     bottom: 0;
     width: 100%;
+    height: clamp(108px, 20vh, 152px);
     padding: 0 2px calc(4px + env(safe-area-inset-bottom, 0px));
     border-radius: 0 0 14px 14px;
     background: linear-gradient(
       180deg,
-      rgba(31, 143, 98, 0.12) 0%,
-      rgba(14, 90, 62, 0.94) 100%
+      rgba(120, 200, 255, 0.14) 0%,
+      rgba(40, 100, 185, 0.88) 100%
     );
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      inset 0 0 0 1px rgba(140, 200, 255, 0.25);
+  }
+  body.dz-body--portrait .dz-ms-anchor--bottom.is-call-wait {
+    height: clamp(96px, 17vh, 132px);
+    min-height: 0;
+    padding-top: 0;
+  }
+  body.dz-body--portrait .dz-ms-call-overlay {
+    position: fixed;
+    left: 4px;
+    right: 4px;
+    top: calc(50px + env(safe-area-inset-top, 0px));
+    bottom: auto;
+    transform: none;
+    width: auto;
+    max-height: min(36vh, 240px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    z-index: 50;
+    padding: 10px 10px 12px;
+    margin: 0;
+  }
+  body.dz-body--portrait .dz-ms-call-overlay .dz-callbar__head {
+    margin-bottom: 4px;
+  }
+  body.dz-body--portrait .dz-ms-call-overlay .dz-callbar__actions {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    justify-content: flex-start;
+    gap: 10px;
+    padding-bottom: 4px;
+  }
+  body.dz-body--portrait .dz-ms-call-overlay .dz-callbtn {
+    flex: 0 0 auto;
+    min-width: 92px;
+    min-height: 76px;
+    padding: 10px 14px 12px;
+    touch-action: manipulation;
+  }
+  body.dz-body--portrait .dz-ms-call-overlay .dz-callbtn__label {
+    font-size: 17px;
+  }
+  body.dz-body--portrait .dz-ms-call-overlay .dz-callbtn--skip {
+    min-width: 72px;
+    min-height: 64px;
   }
   body.dz-body--portrait .dz-ms-self .dz-ms-avatar--self { display: none; }
   body.dz-body--portrait .dz-ms-handrow {
@@ -2217,15 +2323,17 @@ body.dz-body--play .dz-main.is-play {
     gap: 5px;
     padding: 0 2px;
     justify-content: flex-start;
-    max-width: 100vw;
+    max-width: 100%;
+    width: 100%;
   }
   body.dz-body--portrait .dz-hand2 {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     flex-wrap: nowrap;
     justify-content: flex-start;
-    padding: 6px 8px;
+    padding: 4px 6px;
     max-width: 100%;
+    width: 100%;
   }
   body.dz-body--portrait .dz-tile--lg {
     width: clamp(38px, 10.5vw, 52px);
@@ -2236,16 +2344,54 @@ body.dz-body--play .dz-main.is-play {
     height: clamp(46px, 12vw, 64px);
   }
   body.dz-body--portrait .dz-hand2 .dz-tile--drawn { margin-left: 6px; }
-  body.dz-body--portrait .dz-selfhint { display: none; }
+  body.dz-body--portrait .dz-selfhint {
+    display: block;
+    font-size: 10px;
+    line-height: 1.25;
+    padding: 0 6px 2px;
+    text-align: center;
+    color: rgba(200, 230, 255, 0.95);
+  }
   body.dz-body--portrait .dz-ms-anchor--bottom .dz-dock {
     position: fixed;
-    right: 8px;
-    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    left: 0;
+    right: 0;
+    bottom: calc(4px + env(safe-area-inset-bottom, 0px));
     z-index: 45;
-  }
-  body.dz-body--portrait .dz-callbar--play {
-    margin-bottom: 2px;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
     padding: 8px 10px;
+    background: linear-gradient(180deg, rgba(10, 18, 36, 0.55) 0%, rgba(10, 18, 36, 0.92) 100%);
+    pointer-events: none;
+  }
+  body.dz-body--portrait .dz-ms-anchor--bottom .dz-dock .dz-act {
+    pointer-events: auto;
+  }
+  body.dz-body--portrait .dz-act {
+    width: 76px;
+    height: 76px;
+    font-size: 17px;
+    touch-action: manipulation;
+  }
+  body.dz-body--portrait .dz-act--skip {
+    width: 64px;
+    height: 64px;
+    font-size: 13px;
+  }
+  body.dz-body--portrait .dz-ms-center {
+    padding-bottom: clamp(108px, 19vh, 140px);
+  }
+  body.dz-body--portrait .dz-ms-mid:has(.dz-ms-call-overlay) .dz-ms-center {
+    padding-top: clamp(120px, 22vh, 180px);
+  }
+  body.dz-body--portrait .dz-ms-anchor--bottom:not(.is-call-wait) {
+    padding-bottom: 86px;
+    min-height: clamp(108px, 20vh, 152px);
+    height: auto;
   }
   body.dz-body--portrait .dz-ms-dora-panel {
     transform: scale(0.82);

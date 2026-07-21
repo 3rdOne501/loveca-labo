@@ -1,12 +1,6 @@
 /**
  * 符・点数計算（麻雀準拠・簡略版）。
- *
- * このゲームには親（荘家）概念がないため、点数は「子（非荘家）の和了」相当で表示する。
- *  - ロン: base × 4
- *  - ツモ: base × 4（合計。内訳は表示のみ簡略）
- *
- * 待ちの種類（両面/嵌張/辺張/単騎）は未追跡のため待ち符は加算しない（近似）。
- * メンバー牌に么九（1/9）概念はないため、字牌のみを「役牌相当（+符）」として扱う。
+ * 親子・ツモ/ロン配分に対応。
  */
 
 function isHonor(key, catalog) {
@@ -17,35 +11,35 @@ function isHonor(key, catalog) {
 /** 標準形の符を計算（20 符起点、10 符単位切り上げ）。 */
 function computeStandardFu(structure, ctx, catalog) {
   let fu = 20;
-  if (ctx.tsumo) fu += 2; // ツモ符
-  if (ctx.menzen && !ctx.tsumo) fu += 10; // 門前ロン
+  if (ctx.tsumo) fu += 2;
+  if (ctx.menzen && !ctx.tsumo) fu += 10;
 
-  // 雀頭が字牌（役牌相当）なら +2
   if (structure.pair && isHonor(structure.pair.tileKeys[0], catalog)) fu += 2;
 
   for (const m of structure.melds || []) {
-    if (m.type !== "triplet") continue; // 順子は 0 符
+    if (m.type !== "triplet") continue;
     const honor = isHonor(m.tileKeys[0], catalog);
     let base;
     if (m.kan) {
-      base = honor ? 32 : 16; // 暗槓
-      if (m.open) base = honor ? 16 : 8; // 明槓
+      base = honor ? 32 : 16;
+      if (m.open) base = honor ? 16 : 8;
     } else {
-      base = honor ? 8 : 4; // 暗刻
-      if (m.open) base = honor ? 4 : 2; // 明刻
+      base = honor ? 8 : 4;
+      if (m.open) base = honor ? 4 : 2;
     }
     fu += base;
   }
   return Math.ceil(fu / 10) * 10;
 }
 
+export function roundPoints(n) {
+  return Math.ceil(n / 100) * 100;
+}
+
 /**
- * @param {object} structure ev.structure（kind, melds, pair, tiles）
- * @param {object} ctx { han, tsumo, menzen, hasPinfu, hasChiitoi }
- * @param {object} catalog
- * @returns {{ fu:number, han:number, points:number, limit:string }}
+ * @returns {{ fu:number, han:number, base:number, points:number, limit:string }}
  */
-export function computeScore(structure, ctx, catalog) {
+export function computeBaseScore(structure, ctx, catalog) {
   const han = ctx.han;
   let fu;
   if (ctx.hasChiitoi) fu = 25;
@@ -71,6 +65,91 @@ export function computeScore(structure, ctx, catalog) {
     limit = "満貫";
   }
 
-  const points = Math.ceil((base * 4) / 100) * 100; // 子の和了合計相当
-  return { fu, han, points, limit };
+  const points = roundPoints(base * 4);
+  return { fu, han, base, points, limit };
+}
+
+/** @deprecated 互換: 子の和了合計点のみ */
+export function computeScore(structure, ctx, catalog) {
+  return computeBaseScore(structure, ctx, catalog);
+}
+
+/**
+ * 和了時の点数移動。
+ * @returns {{ deltas:number[], payments:Array<{from:number,to:number,amount:number,label:string}> }}
+ */
+export function computeWinPayments(opts) {
+  const {
+    base,
+    winner,
+    dealer,
+    from,
+    isTsumo,
+    nPlayers,
+    honba = 0,
+    riichiSticks = 0,
+  } = opts;
+
+  const deltas = new Array(nPlayers).fill(0);
+  const payments = [];
+  const honbaPay = honba * 300;
+  const isDealerWin = winner === dealer;
+
+  const addPay = (payer, amount, label) => {
+    if (amount <= 0 || payer === winner) return;
+    deltas[payer] -= amount;
+    deltas[winner] += amount;
+    payments.push({ from: payer, to: winner, amount, label });
+  };
+
+  if (isTsumo) {
+    if (isDealerWin) {
+      for (let p = 0; p < nPlayers; p++) {
+        if (p === winner) continue;
+        addPay(p, roundPoints(base * 2) + honbaPay, "親ツモ");
+      }
+    } else {
+      for (let p = 0; p < nPlayers; p++) {
+        if (p === winner) continue;
+        const core = p === dealer ? roundPoints(base * 2) : roundPoints(base);
+        addPay(p, core + honbaPay, p === dealer ? "子ツモ(親)" : "子ツモ(子)");
+      }
+    }
+  } else {
+    const core = roundPoints(isDealerWin ? base * 6 : base * 4);
+    addPay(from, core + honbaPay, isDealerWin ? "親ロン" : "子ロン");
+  }
+
+  if (riichiSticks > 0) {
+    const riichiTotal = riichiSticks * 1000;
+    deltas[winner] += riichiTotal;
+    payments.push({ from: -1, to: winner, amount: riichiTotal, label: `立直棒×${riichiSticks}` });
+  }
+
+  return { deltas, payments };
+}
+
+/** 流局時テンパイ精算（3000点ノーテン罰） */
+export function computeDrawPayments(tenpai, noten, nPlayers) {
+  const deltas = new Array(nPlayers).fill(0);
+  const payments = [];
+  if (!tenpai.length || !noten.length) return { deltas, payments };
+
+  const payPerNoten = roundPoints(3000 / noten.length);
+  const receivePerTenpai = roundPoints(3000 / tenpai.length);
+
+  for (const p of noten) {
+    deltas[p] -= payPerNoten;
+  }
+  for (const p of tenpai) {
+    deltas[p] += receivePerTenpai;
+  }
+  payments.push({
+    from: -1,
+    to: -1,
+    amount: payPerNoten * noten.length,
+    label: `テンパイ ${tenpai.length} / ノーテン ${noten.length}`,
+  });
+
+  return { deltas, payments };
 }

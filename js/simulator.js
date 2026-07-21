@@ -3742,6 +3742,48 @@ export function mountSimulator(
     return "{{jyouji.png|常時}}" + m[1].trim();
   }
 
+  /**
+   * 「ライブ終了時まで、{{heart_0N}}／{{icon_blade}}を得る」型（常時引用なし）の
+   * 単純なハート／ブレード付与を対象メンバーへ適用する。
+   * @param {*} memberInst
+   * @param {string} segRaw
+   * @returns {boolean} 何か付与したら true
+   */
+  function applyJidouPlainLiveEndHeartBladeGrant(memberInst, segRaw) {
+    var s = String(segRaw || "");
+    if (!isPlainLiveEndHeartBladeGrantSegment(s)) return false;
+    var idx = s.indexOf("ライブ終了時まで");
+    var clause = idx >= 0 ? s.slice(idx) : s;
+    var applied = false;
+    var heartRe = /heart_0([1-6])/gi;
+    var hm;
+    while ((hm = heartRe.exec(clause)) !== null) {
+      var slot = Number(hm[1]);
+      if (slot >= 1 && slot <= 6) {
+        grantHeartSlotUntilLiveEnd(memberInst, slot, 1);
+        applied = true;
+      }
+    }
+    var bladeIconCount = (clause.match(/\{\{icon_blade/gi) || []).length;
+    if (!bladeIconCount) {
+      var bm = clause.match(/([０-９\d]+)\s*ブレード/);
+      if (bm) {
+        var bn = parseInt(
+          String(bm[1]).replace(/[０-９]/g, function (d) {
+            return String("０１２３４５６７８９".indexOf(d));
+          }),
+          10,
+        );
+        if (Number.isFinite(bn) && bn > 0) bladeIconCount = bn;
+      }
+    }
+    if (bladeIconCount > 0) {
+      addLiveSessionBladeBonus(memberInst, bladeIconCount);
+      applied = true;
+    }
+    return applied;
+  }
+
   function extractStageMemberGrantJouji(segRaw) {
     var s = String(segRaw || "");
     if (isPlainLiveEndHeartBladeGrantSegment(s)) return null;
@@ -4211,6 +4253,15 @@ export function mountSimulator(
     }
     if (cl.template === "jidou_area_move_grant_jouji") {
       pushHistoryBefore("jidou-area-grant-jouji");
+      if (applyJidouPlainLiveEndHeartBladeGrant(memberInst, segRaw)) {
+        try {
+          syncJoujiPassiveEffectsAll();
+        } catch (_) {}
+        jidouPerTurnMark(memberInst, segIndex);
+        showToast("自動: ライブ終了時までのハート／ブレードを得ました");
+        render();
+        return;
+      }
       var grants = extractGrantedJoujiTextsFromSegment(segRaw);
       if (!memberInst._grantedJoujiSegmentRaws) memberInst._grantedJoujiSegmentRaws = [];
       grants.forEach(function (g) {
@@ -4345,6 +4396,15 @@ export function mountSimulator(
         if (maxSameGroupMemberCountInResolutionArea() < needGrp) return;
       }
       pushHistoryBefore("jidou-yell-grant-jouji");
+      if (applyJidouPlainLiveEndHeartBladeGrant(memberInst, segRaw)) {
+        try {
+          syncJoujiPassiveEffectsAll();
+        } catch (_) {}
+        jidouPerTurnMark(memberInst, segIndex);
+        showToast("自動: エール条件を満たしライブ終了時までのハート／ブレードを得ました");
+        render();
+        return;
+      }
       if (!memberInst._grantedJoujiSegmentRaws) memberInst._grantedJoujiSegmentRaws = [];
       var grantsY = extractGrantedJoujiTextsFromSegment(segRaw);
       var inlineGrantY = extractInlineLiveEndGrantJouji(segRaw);
@@ -16527,6 +16587,13 @@ export function mountSimulator(
             console.warn(jErr2);
           }
         }
+        if (b.fromCol === "center") {
+          try {
+            fireJidouOnCenterMemberAreaMove(b.member);
+          } catch (jErr3) {
+            console.warn(jErr3);
+          }
+        }
       }
     });
     return true;
@@ -21498,6 +21565,42 @@ export function mountSimulator(
       return;
     }
 
+    if (cl.template === "heart_color_pick_replace") {
+      if (kind === "toujyou" && !checkAbilityToujouPreconditions(cl)) {
+        showToast("登場時効果の条件を満たしていません");
+        finishResolved();
+        return;
+      }
+      if (kind === "live_start" && !checkAbilityLiveStartPreconditions(cl)) {
+        showToast("ライブ開始時効果の条件を満たしていません");
+        finishResolved();
+        return;
+      }
+      pushHistoryBefore("heart-color-pick-replace");
+      openHeartColorPickDialog(
+        inst,
+        function (slot) {
+          if (slot == null) {
+            showToast("ハートを選ばなかったためスキップしました");
+            finishResolved();
+            return;
+          }
+          inst._printedHeartsRemapSlotUntilLiveEnd = Math.max(1, Math.min(6, Math.floor(Number(slot))));
+          try {
+            syncJoujiPassiveEffectsAll();
+          } catch (_) {}
+          showToast(
+            (mergedCatalogCard(inst).name || "メンバー") +
+              " の元々持つハートをライブ終了時まで heart0" +
+              inst._printedHeartsRemapSlotUntilLiveEnd +
+              " にしました",
+          );
+          finishResolved();
+        },
+        cl.heartPickSlots,
+      );
+      return;
+    }
     if (cl.template === "heart_color_pick_grant") {
       if (kind === "toujyou" && !checkAbilityToujouPreconditions(cl)) {
         showToast("登場時効果の条件を満たしていません");

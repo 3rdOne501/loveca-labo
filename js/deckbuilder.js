@@ -84,6 +84,16 @@ import {
   isBladeHeartDrawMarkerKey,
   parseBladeHeartSlotFromKey,
 } from "./bladeHeart.js";
+import {
+  listPublicDecks,
+  publishPublicDeck,
+  deletePublicDeck,
+  validateDeckMapForPublicPost,
+  isGoogleUserForPublicDecks,
+  ensureGoogleUserForPublicDecks,
+  effectivePublicDeckThumbnailCardNo,
+} from "./publicDecks.js";
+import { getCurrentCloudUser, onCloudUserChange } from "./cloudAuth.js";
 
 let deckBuilderStorageFlushHooked = false;
 
@@ -527,6 +537,12 @@ export function initDeckBuilder(root, { onStartGame }) {
   let samplePanelOpen = false;
   /** 登録デッキ（保存済みプリセット）一覧パネルを表示するか */
   let deckRegistrationPanelOpen = false;
+  /** 投稿デッキ（コミュニティ公開）一覧パネルを表示するか（サンプルと排他） */
+  let publicDecksPanelOpen = false;
+  /** @type {import('./publicDecks.js').PublicDeckEntry[]} */
+  let publicDecksCache = [];
+  /** @type {Promise<void>|null} */
+  let publicDecksLoadPromise = null;
   /** 左右分割: 右パネルに常時表示（旧トグル廃止・互換用に状態は残す） */
   let currentDeckPanelOpen = true;
   /** 「再読込」復元時にスクロールを戻すための一次バッファ */
@@ -570,6 +586,7 @@ export function initDeckBuilder(root, { onStartGame }) {
       v: 2,
       samplePanelOpen: !!samplePanelOpen,
       deckRegistrationPanelOpen: !!deckRegistrationPanelOpen,
+      publicDecksPanelOpen: !!publicDecksPanelOpen,
       currentDeckPanelOpen: !!currentDeckPanelOpen,
       deckListOpen: !!deckListOpen,
       cardGridScrollTop: cg ? cg.scrollTop : 0,
@@ -609,6 +626,9 @@ export function initDeckBuilder(root, { onStartGame }) {
     if (!o || (o.v !== 1 && o.v !== 2)) return;
     if (typeof o.samplePanelOpen === "boolean") samplePanelOpen = o.samplePanelOpen;
     if (typeof o.deckRegistrationPanelOpen === "boolean") deckRegistrationPanelOpen = o.deckRegistrationPanelOpen;
+    if (typeof o.publicDecksPanelOpen === "boolean") publicDecksPanelOpen = o.publicDecksPanelOpen;
+    /* サンプルと投稿は排他表示 */
+    if (samplePanelOpen && publicDecksPanelOpen) publicDecksPanelOpen = false;
     if (typeof o.currentDeckPanelOpen === "boolean") currentDeckPanelOpen = true;
     if (typeof o.deckListOpen === "boolean") deckListOpen = o.deckListOpen;
     if (o.v >= 2) {
@@ -2795,11 +2815,14 @@ export function initDeckBuilder(root, { onStartGame }) {
 
     root.classList.toggle("view-deck--sample-panel-open", samplePanelOpen);
     root.classList.toggle("view-deck--deck-registration-open", deckRegistrationPanelOpen);
+    root.classList.toggle("view-deck--public-decks-open", publicDecksPanelOpen);
 
     if (sampleScroll) sampleScroll.hidden = !samplePanelOpen;
     if (cardScroll) cardScroll.hidden = false;
     const libraryScroll = el("deck-library-scroll");
     if (libraryScroll) libraryScroll.hidden = !deckRegistrationPanelOpen;
+    const publicScroll = el("public-decks-scroll");
+    if (publicScroll) publicScroll.hidden = !publicDecksPanelOpen;
 
     if (heading) {
       heading.textContent = "カード一覧";
@@ -2813,12 +2836,21 @@ export function initDeckBuilder(root, { onStartGame }) {
       renderDeckLibraryTiles();
     }
 
+    if (publicDecksPanelOpen) {
+      renderPublicDecksTiles();
+      if (!publicDecksCache.length && !publicDecksLoadPromise) {
+        loadPublicDecksList({ force: false });
+      }
+    }
+
     /** @type {typeof cards} */
     const filtered = computeFilteredCardListForGrid();
     const layoutSig =
       (deckRegistrationPanelOpen ? "reg1" : "reg0") +
       "|" +
-      (samplePanelOpen ? "sam1" : "sam0");
+      (samplePanelOpen ? "sam1" : "sam0") +
+      "|" +
+      (publicDecksPanelOpen ? "pub1" : "pub0");
     updateCardHitCountFromFiltered(filtered);
     const scrollEl = el("card-grid-scroll");
     const topSp = el("card-grid-top-spacer");
@@ -3132,8 +3164,11 @@ export function initDeckBuilder(root, { onStartGame }) {
       const nh = measureVirtualRowHeightFromGrid(grid, cols);
       if (nh > 0 && Math.abs(nh - cardGridVirtual.rowH) > 8 && cardGridVirtualMeasureGuard < 5) {
         cardGridVirtualMeasureGuard++;
+        const oldRowH = cardGridVirtual.rowH;
+        const anchorRow = oldRowH > 0 ? Math.floor(scroll.scrollTop / oldRowH) : 0;
         cardGridVirtual.rowH = nh;
         cardGridVirtual.w0 = -1;
+        scroll.scrollTop = anchorRow * nh;
         syncVirtualCardGridWindow(true);
       }
     });
@@ -4094,6 +4129,330 @@ export function initDeckBuilder(root, { onStartGame }) {
     });
   }
 
+  function setPublicDecksStatus(msg) {
+    var statusEl = el("public-decks-status");
+    if (!statusEl) return;
+    var text = msg == null ? "" : String(msg);
+    if (!text) {
+      statusEl.hidden = true;
+      statusEl.textContent = "";
+      return;
+    }
+    statusEl.hidden = false;
+    statusEl.textContent = text;
+  }
+
+  function loadPublicDecksList(opts) {
+    opts = opts || {};
+    if (publicDecksLoadPromise) return publicDecksLoadPromise;
+    if (!opts.force && publicDecksCache.length) {
+      renderPublicDecksTiles();
+      return Promise.resolve();
+    }
+    setPublicDecksStatus("投稿デッキを読み込み中…");
+    var empty = el("public-decks-empty");
+    if (empty) empty.hidden = true;
+    publicDecksLoadPromise = listPublicDecks()
+      .then(function (list) {
+        publicDecksCache = Array.isArray(list) ? list : [];
+        setPublicDecksStatus("");
+        renderPublicDecksTiles();
+      })
+      .catch(function (err) {
+        var msg = err && err.message ? String(err.message) : "投稿デッキの読み込みに失敗しました。";
+        setPublicDecksStatus(msg);
+        renderPublicDecksTiles();
+      })
+      .then(function () {
+        publicDecksLoadPromise = null;
+      });
+    return publicDecksLoadPromise;
+  }
+
+  function findPublicDeckById(id) {
+    var pid = String(id || "");
+    for (var i = 0; i < publicDecksCache.length; i++) {
+      if (publicDecksCache[i].id === pid) return publicDecksCache[i];
+    }
+    return null;
+  }
+
+  function renderPublicDecksTiles() {
+    var host = el("public-decks-grid");
+    if (!host) return;
+    var empty = el("public-decks-empty");
+    var me = getCurrentCloudUser();
+    var meUid = me && me.uid ? me.uid : "";
+    var list = publicDecksCache || [];
+    if (!list.length) {
+      host.innerHTML = "";
+      var statusEl = el("public-decks-status");
+      var statusShown = !!(statusEl && !statusEl.hidden);
+      if (empty) empty.hidden = statusShown || !!publicDecksLoadPromise;
+      return;
+    }
+    if (empty) empty.hidden = true;
+    var parts = [];
+    for (var i = 0; i < list.length; i++) {
+      var entry = list[i];
+      var thumbNo = effectivePublicDeckThumbnailCardNo(entry.thumbnailCardNo, entry.deck);
+      var thumbCard = thumbNo ? getCard(thumbNo) : null;
+      var thumbInner = thumbCard
+        ? builderCatalogThumbImgHtml(thumbCard.img, "sample-recipe-thumb-img deck-builder-card-thumb", {
+            eager: i < 8,
+            hiQuality: true,
+          })
+        : '<div class="sample-recipe-thumb-fallback" aria-hidden="true">?</div>';
+      var t = totalsFromDeckMapForSample(entry.deck);
+      var owner = entry.ownerName ? String(entry.ownerName) : "名無しさん";
+      var noteSnippet = entry.note ? String(entry.note).replace(/\s+/g, " ").trim().slice(0, 80) : "";
+      var isMine = !!meUid && entry.ownerUid === meUid;
+      var delBtn = isMine
+        ? '<button type="button" class="btn sm danger" data-public-act="delete">削除</button>'
+        : "";
+      var noteHtml = noteSnippet
+        ? '<p class="sample-recipe-counts muted public-deck-note">' + escapeHtml(noteSnippet) + "</p>"
+        : "";
+      parts.push(
+        '<article class="sample-recipe-tile public-deck-tile" role="listitem" data-public-id="' +
+          escapeAttr(entry.id) +
+          '">' +
+          '<button type="button" class="sample-recipe-thumb-btn" data-public-act="peek" title="クリックでデッキ確認" aria-label="' +
+          escapeAttr(entry.name + "の詳細を開く") +
+          '">' +
+          thumbInner +
+          "</button>" +
+          '<div class="sample-recipe-meta">' +
+          '<div class="sample-recipe-name" title="' +
+          escapeAttr(entry.name) +
+          '">' +
+          escapeHtml(entry.name) +
+          "</div>" +
+          '<p class="public-deck-owner muted">投稿者: ' +
+          escapeHtml(owner) +
+          "</p>" +
+          '<p class="sample-recipe-counts muted">メンバー ' +
+          t.m +
+          " · ライブ " +
+          t.l +
+          " · 計 " +
+          t.total +
+          " 枚</p>" +
+          noteHtml +
+          '<div class="sample-recipe-actions">' +
+          '<button type="button" class="btn sm primary" data-public-act="play">ソロプレイ</button>' +
+          '<button type="button" class="btn sm secondary" data-public-act="copy">コピーして編集</button>' +
+          '<button type="button" class="btn sm" data-public-act="peek-btn">デッキ確認</button>' +
+          delBtn +
+          "</div></div></article>",
+      );
+    }
+    host.innerHTML = parts.join("");
+  }
+
+  function applyPublicDeckToMainDeck(entry) {
+    deckMap = cloneDeckMap(entry.deck);
+    keyCardNos.clear();
+    keyCard2Nos.clear();
+    keyCard3Nos.clear();
+    middleCardNos.clear();
+    sanitizeCardNoList(entry.keyCardNos).forEach(function (x) { keyCardNos.add(x); });
+    sanitizeCardNoList(entry.keyCard2Nos).forEach(function (x) { keyCard2Nos.add(x); });
+    sanitizeCardNoList(entry.keyCard3Nos).forEach(function (x) { keyCard3Nos.add(x); });
+    sanitizeCardNoList(entry.middleCardNos).forEach(function (x) { middleCardNos.add(x); });
+    persistDeckState();
+    try {
+      localStorage.removeItem(STORAGE_ACTIVE_PRESET_ID);
+    } catch (_) {
+      /* noop */
+    }
+    renderPresetSelect();
+    renderCounts();
+    scheduleRenderDeckList();
+    scheduleRenderCardGrid();
+  }
+
+  function wirePublicDecksGridOnce() {
+    var host = el("public-decks-grid");
+    if (!host || host.dataset.publicWired === "1") return;
+    host.dataset.publicWired = "1";
+    host.addEventListener("click", function (ev) {
+      var actEl = ev.target && ev.target.closest ? ev.target.closest("[data-public-act]") : null;
+      if (!actEl) return;
+      var tile = actEl.closest(".public-deck-tile");
+      var id = tile && tile.getAttribute("data-public-id");
+      var entry = findPublicDeckById(id);
+      if (!entry) return;
+      var act = actEl.getAttribute("data-public-act");
+      if (act === "peek" || act === "peek-btn") {
+        renderSavedDeckPeek(
+          {
+            name: entry.name,
+            deck: entry.deck,
+            keyCardNos: entry.keyCardNos,
+            keyCard2Nos: entry.keyCard2Nos,
+            keyCard3Nos: entry.keyCard3Nos,
+            middleCardNos: entry.middleCardNos,
+            updatedAt: "",
+          },
+          {
+            peekTitle: "投稿デッキ: " + entry.name,
+            roleEditMode: "off",
+            noteLines: entry.note ? String(entry.note).split("\n").filter(Boolean) : [],
+          },
+        );
+        return;
+      }
+      if (act === "play") {
+        startSoloPlayWithBundle(deckBundleFromSource(entry));
+        return;
+      }
+      if (act === "copy") {
+        applyPublicDeckToMainDeck(entry);
+        pruneOrphanRoleLabels();
+        publicDecksPanelOpen = false;
+        deckRegistrationPanelOpen = true;
+        syncCardPanelToggleButtons();
+        scheduleRenderCardGrid();
+        showToast("「" + entry.name + "」を編集中デッキに読み込みました（保存デッキ一覧には追加していません）");
+        return;
+      }
+      if (act === "delete") {
+        var meNow = getCurrentCloudUser();
+        if (!meNow || !meNow.uid || entry.ownerUid !== meNow.uid) {
+          showToast("自分の投稿のみ削除できます");
+          return;
+        }
+        if (!window.confirm("投稿「" + (entry.name || "デッキ") + "」を削除しますか？")) return;
+        deletePublicDeck(entry.id)
+          .then(function () {
+            showToast("投稿を削除しました");
+            loadPublicDecksList({ force: true });
+          })
+          .catch(function (err) {
+            showToast(err && err.message ? String(err.message) : "削除に失敗しました");
+          });
+        return;
+      }
+    });
+  }
+
+  function openPublicDeckPostDialog() {
+    var check = validateDeckMapForPublicPost(deckMap);
+    if (!check.ok) {
+      showToast(check.message || "デッキが不正です");
+      return;
+    }
+    var dlg = el("dlg-public-deck-post");
+    if (!dlg) return;
+
+    function fillAndShow() {
+      var nameInput = el("dlg-public-deck-post-name");
+      var noteInput = el("dlg-public-deck-post-note");
+      var thumbSel = el("dlg-public-deck-post-thumb");
+      var defName = "投稿デッキ";
+      try {
+        var activeId = localStorage.getItem(STORAGE_ACTIVE_PRESET_ID) || "";
+        if (activeId && library && Array.isArray(library.slots)) {
+          var slot = library.slots.find(function (s) { return s.id === activeId; });
+          if (slot && slot.name) defName = String(slot.name);
+        }
+      } catch (_) {
+        /* noop */
+      }
+      if (nameInput) nameInput.value = defName;
+      if (noteInput) noteInput.value = "";
+      if (thumbSel) {
+        var cardsList = [];
+        for (const no of Object.keys(deckMap)) {
+          if (!((deckMap[no] || 0) > 0)) continue;
+          var c = getCard(no);
+          if (c) cardsList.push(c);
+        }
+        var sorted = sortRegisteredDeckCards(cardsList);
+        thumbSel.innerHTML = "";
+        var oAuto = document.createElement("option");
+        oAuto.value = "";
+        oAuto.textContent = "自動（先頭カード）";
+        thumbSel.appendChild(oAuto);
+        for (var ci = 0; ci < sorted.length; ci++) {
+          var cc = sorted[ci];
+          var opt = document.createElement("option");
+          var cno = String(cc.card_no);
+          opt.value = cno;
+          opt.textContent = (cc.name || cno) + " ×" + (deckMap[cno] || 0);
+          thumbSel.appendChild(opt);
+        }
+        var pre = "";
+        var k1 = Array.from(keyCardNos);
+        if (k1.length && (deckMap[k1[0]] || 0) > 0) pre = k1[0];
+        thumbSel.value = pre;
+      }
+      if (typeof dlg.showModal === "function") dlg.showModal();
+      else dlg.setAttribute("open", "");
+    }
+
+    if (isGoogleUserForPublicDecks()) {
+      fillAndShow();
+      return;
+    }
+    showToast("投稿には Google ログインが必要です…");
+    ensureGoogleUserForPublicDecks()
+      .then(function () {
+        fillAndShow();
+      })
+      .catch(function (err) {
+        showToast(err && err.message ? String(err.message) : "Google ログインに失敗しました");
+      });
+  }
+
+  function submitPublicDeckPost() {
+    var nameInput = el("dlg-public-deck-post-name");
+    var noteInput = el("dlg-public-deck-post-note");
+    var thumbSel = el("dlg-public-deck-post-thumb");
+    var okBtn = el("dlg-public-deck-post-ok");
+    var name = nameInput ? String(nameInput.value || "").trim() : "";
+    var note = noteInput ? String(noteInput.value || "") : "";
+    var thumb = thumbSel ? String(thumbSel.value || "").trim() : "";
+    var check = validateDeckMapForPublicPost(deckMap);
+    if (!check.ok) {
+      showToast(check.message || "デッキが不正です");
+      return;
+    }
+    if (!name) {
+      showToast("デッキ名を入力してください");
+      return;
+    }
+    if (okBtn) okBtn.disabled = true;
+    publishPublicDeck({
+      name: name,
+      note: note,
+      deck: deckMap,
+      keyCardNos: Array.from(keyCardNos),
+      keyCard2Nos: Array.from(keyCard2Nos),
+      keyCard3Nos: Array.from(keyCard3Nos),
+      middleCardNos: Array.from(middleCardNos),
+      thumbnailCardNo: thumb || null,
+    })
+      .then(function () {
+        var dlg = el("dlg-public-deck-post");
+        if (dlg && typeof dlg.close === "function" && dlg.open) dlg.close();
+        showToast("投稿しました");
+        publicDecksPanelOpen = true;
+        samplePanelOpen = false;
+        syncCardPanelToggleButtons();
+        wirePublicDecksGridOnce();
+        loadPublicDecksList({ force: true });
+        scheduleRenderCardGrid();
+      })
+      .catch(function (err) {
+        showToast(err && err.message ? String(err.message) : "投稿に失敗しました");
+      })
+      .then(function () {
+        if (okBtn) okBtn.disabled = false;
+      });
+  }
+
   function applySampleRecipeToMainDeck(recipe) {
     deckMap = cloneDeckMap(recipe.deck);
     keyCardNos.clear();
@@ -4276,7 +4635,8 @@ export function initDeckBuilder(root, { onStartGame }) {
     const bc = el("btn-card-panel-catalog");
     const bd = el("btn-card-panel-deck");
     const bs = el("btn-card-panel-samples");
-    const baseline = !samplePanelOpen && !deckRegistrationPanelOpen;
+    const bp = el("btn-card-panel-public");
+    const baseline = !samplePanelOpen && !deckRegistrationPanelOpen && !publicDecksPanelOpen;
     if (bc) {
       bc.setAttribute("aria-pressed", baseline ? "true" : "false");
       bc.classList.toggle("primary", baseline);
@@ -4293,12 +4653,33 @@ export function initDeckBuilder(root, { onStartGame }) {
       bs.classList.toggle("primary", samplePanelOpen);
       bs.classList.toggle("secondary", !samplePanelOpen);
     }
+    if (bp) {
+      bp.setAttribute("aria-pressed", publicDecksPanelOpen ? "true" : "false");
+      bp.classList.toggle("primary", publicDecksPanelOpen);
+      bp.classList.toggle("secondary", !publicDecksPanelOpen);
+    }
     schedulePersistDeckBuilderUiState();
   }
 
   function toggleSamplePanel() {
     samplePanelOpen = !samplePanelOpen;
+    /* サンプルと投稿は排他表示 */
+    if (samplePanelOpen) publicDecksPanelOpen = false;
     syncCardPanelToggleButtons();
+    scheduleRenderCardGrid();
+  }
+
+  function togglePublicDecksPanel() {
+    publicDecksPanelOpen = !publicDecksPanelOpen;
+    /* サンプルと投稿は排他表示 */
+    if (publicDecksPanelOpen) samplePanelOpen = false;
+    syncCardPanelToggleButtons();
+    if (publicDecksPanelOpen) {
+      wirePublicDecksGridOnce();
+      if (!publicDecksCache.length && !publicDecksLoadPromise) {
+        loadPublicDecksList({ force: false });
+      }
+    }
     scheduleRenderCardGrid();
   }
 
@@ -4404,6 +4785,7 @@ export function initDeckBuilder(root, { onStartGame }) {
     el("btn-card-panel-catalog")?.addEventListener("click", function () {
       samplePanelOpen = false;
       deckRegistrationPanelOpen = false;
+      publicDecksPanelOpen = false;
       syncCardPanelToggleButtons();
       scheduleRenderCardGrid();
     });
@@ -4416,6 +4798,12 @@ export function initDeckBuilder(root, { onStartGame }) {
       wireDeckLibraryGridOnce();
       wireRestoreBuiltInButtonOnce();
       scheduleRenderCardGrid();
+    });
+    el("btn-card-panel-public")?.addEventListener("click", function () {
+      togglePublicDecksPanel();
+    });
+    el("btn-public-decks-refresh")?.addEventListener("click", function () {
+      loadPublicDecksList({ force: true });
     });
     el("btn-clear-current-deck")?.addEventListener("click", function () {
       if (
@@ -4587,6 +4975,22 @@ export function initDeckBuilder(root, { onStartGame }) {
   consumeBuilderUiRestoreFlag();
   wireSampleRecipesGridOnce();
   wireSampleRecipesDnDOnce();
+  wirePublicDecksGridOnce();
+  el("btn-public-deck-post")?.addEventListener("click", function () {
+    openPublicDeckPostDialog();
+  });
+  el("dlg-public-deck-post-cancel")?.addEventListener("click", function () {
+    var dlg = el("dlg-public-deck-post");
+    if (dlg && typeof dlg.close === "function" && dlg.open) dlg.close();
+  });
+  el("dlg-public-deck-post-ok")?.addEventListener("click", function () {
+    submitPublicDeckPost();
+  });
+  onCloudUserChange(function () {
+    if (publicDecksPanelOpen) {
+      try { renderPublicDecksTiles(); } catch (_) { /* noop */ }
+    }
+  });
   wirePeekListRoleEditorOnce();
   wireDeckPeekInlineStatusCloseOnce();
   /* 特殊ハートのユーザー上書きが変わったらカードグリッドとデッキ集計を再描画 */

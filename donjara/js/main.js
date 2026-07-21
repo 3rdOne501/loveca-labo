@@ -18,6 +18,7 @@ import {
 import { BASE_YAKU } from "./yaku.js";
 import {
   createGame,
+  startNextHand,
   drawTile,
   discardTile,
   checkTsumo,
@@ -43,6 +44,7 @@ import {
 } from "./game.js";
 import { ankanOptions, shouminkanOptions } from "./calls.js";
 import { computeScore } from "./score.js";
+import { roundLabel, seatWindLabel, MATCH_MODES } from "./match.js";
 import { sfx } from "./sound.js";
 import { tileEl, showToast, showModal, el } from "./ui.js";
 import * as online from "./online.js";
@@ -214,6 +216,23 @@ function renderConfigView() {
     app.config.handSize = v;
     persist();
   }));
+  const matchRow = el("div", "dz-opt-row");
+  matchRow.appendChild(el("span", "dz-opt-label", "対戦形式"));
+  const matchSel = document.createElement("select");
+  matchSel.className = "dz-input";
+  for (const m of Object.values(MATCH_MODES)) {
+    const opt = document.createElement("option");
+    opt.value = m.id;
+    opt.textContent = m.label;
+    if (app.config.matchMode === m.id) opt.selected = true;
+    matchSel.appendChild(opt);
+  }
+  matchSel.addEventListener("change", () => {
+    app.config.matchMode = matchSel.value;
+    persist();
+  });
+  matchRow.appendChild(matchSel);
+  g.appendChild(matchRow);
   const numRow = el("div", "dz-opt-row");
   numRow.appendChild(el("span", "dz-opt-label", "牌の数字（順子用）"));
   numRow.appendChild(
@@ -620,7 +639,7 @@ function renderPlayView() {
   if (!app.game) {
     const start = el("div", "dz-start");
     const { total } = buildWall(app.config, app.catalog);
-    start.appendChild(el("p", "dz-note", `現在の設定で山は ${total} 枚。`));
+    start.appendChild(el("p", "dz-note", `現在の設定で山は ${total} 枚。対戦形式: ${MATCH_MODES[app.config.matchMode]?.label || "東風戦"}`));
     if (total < app.config.handSize * app.config.players + 14) {
       start.appendChild(el("p", "dz-banner__warn", "山が少なすぎます。設定で枚数・キャラを増やしてください。"));
     }
@@ -892,7 +911,7 @@ function riverEl(pl, extraClass, game = null) {
     game?.phase === "callWait" && pd && pd.from === pl.id;
   pl.discards.forEach((k, i) => {
     const cell = el("div", "dz-river-cell");
-    const t = tileEl(app.catalog.byKey.get(k), tileOpts({ size: "xs" }));
+    const t = tileEl(app.catalog.byKey.get(k), tileOpts({ size: "xs", eagerImage: true }));
     if (i === pl.discards.length - 1) {
       t.classList.add("is-last");
       if (highlightCall) t.classList.add("is-call-target");
@@ -1075,7 +1094,6 @@ function tableTopBar(game) {
 /** 中央: 河（4方向）＋ HUD スクエア。 */
 function centerBlock(game, my) {
   const center = el("div", "dz-ms-center");
-  const winds = ["東", "南", "西", "北"];
 
   for (let p = 0; p < game.nPlayers; p++) {
     const role = seatRole(game, p, my);
@@ -1096,25 +1114,30 @@ function centerBlock(game, my) {
     center.appendChild(kawa);
   }
 
+  const match = game.match;
   const hub = el("div", "dz-ms-hub");
 
   const core = el("div", "dz-ms-hub__core");
-  core.appendChild(el("div", "dz-ms-hub__round", "東1局"));
+  core.appendChild(el("div", "dz-ms-hub__round", match ? roundLabel(match) : "東1局"));
   const wallBlock = el("div", "dz-ms-hub__wallblock");
   wallBlock.appendChild(el("div", "dz-ms-hub__wall", String(game.wall.length)));
   wallBlock.appendChild(el("div", "dz-ms-hub__walllabel", "残り"));
   core.appendChild(wallBlock);
+  if (match?.riichiSticks) {
+    core.appendChild(el("div", "dz-ms-hub__sticks", `供託 ${match.riichiSticks}本`));
+  }
   let turnLabel = game.turn === my ? "あなたの番" : `${seatName(game.turn)}の番`;
   if (game.phase === "callWait") turnLabel = "鳴き待ち";
+  if (match && game.turn === match.dealer) turnLabel += "（親）";
   core.appendChild(el("div", "dz-ms-hub__turn", turnLabel));
   hub.appendChild(core);
 
-  // 風・点数はハブ内グリッドの上下左右セルへ（本文と重ならない）
   const offWind = ["bottom", "right", "top", "left"];
-  for (let i = 0; i < 4; i++) {
-    const corner = el("div", "dz-ms-corner dz-ms-corner--" + offWind[i]);
-    corner.appendChild(el("span", "dz-ms-corner__wind", winds[i]));
-    corner.appendChild(el("span", "dz-ms-corner__score", "25000"));
+  for (let p = 0; p < game.nPlayers; p++) {
+    const role = seatRole(game, p, my);
+    const corner = el("div", "dz-ms-corner dz-ms-corner--" + role);
+    corner.appendChild(el("span", "dz-ms-corner__wind", match ? seatWindLabel(match, p, game.nPlayers) : offWind[p] || `${p}`));
+    corner.appendChild(el("span", "dz-ms-corner__score", String(match?.scores[p] ?? 25000)));
     hub.appendChild(corner);
   }
 
@@ -1354,7 +1377,10 @@ function selfArea(game, seat) {
   if (isMyDiscard && tenpaiKeep.size && !getRiichiPending()) {
     wrap.appendChild(el("div", "dz-selfhint", "緑の牌を切るとテンパイ維持／ダブルクリック or ドラッグで打牌・長押しで情報"));
   } else if (isMyDiscard) {
-    wrap.appendChild(el("div", "dz-selfhint", "1回タップで選択・ダブルクリック or ドラッグで打牌・長押しで牌情報"));
+    const hint = document.body.classList.contains("dz-body--portrait")
+      ? "タップで選択 → 同じ牌をもう1回タップで打牌（長押しで牌情報）"
+      : "1回タップで選択・ダブルクリック or ドラッグで打牌・長押しで牌情報";
+    wrap.appendChild(el("div", "dz-selfhint", hint));
   }
 
   return wrap;
@@ -1563,9 +1589,15 @@ function renderBoard() {
 
   const selfAnchor = el("div", "dz-ms-anchor dz-ms-anchor--bottom");
   const callBar = callActionBar(game, seat);
+  const portraitMobile = document.body.classList.contains("dz-body--portrait");
   if (callBar) {
     selfAnchor.classList.add("is-call-wait");
-    selfAnchor.appendChild(callBar);
+    if (portraitMobile) {
+      callBar.classList.add("dz-ms-call-overlay");
+      mid.appendChild(callBar);
+    } else {
+      selfAnchor.appendChild(callBar);
+    }
   }
   selfAnchor.appendChild(selfArea(game, seat));
   selfAnchor.appendChild(actionDock(game, seat));
@@ -1731,14 +1763,81 @@ function winningHandGroups(r) {
   return wrap;
 }
 
+function appendScoreChanges(body, r, seat) {
+  if (r.deltas) {
+    const dl = el("ul", "dz-result__scores");
+    for (let p = 0; p < r.deltas.length; p++) {
+      const d = r.deltas[p];
+      if (!d) continue;
+      const name = p === seat ? "あなた" : seatName(p);
+      const snap = r.matchSnapshot?.scores?.[p];
+      const li = el("li", null, `${name}: ${d > 0 ? "+" : ""}${d}${snap != null ? ` → ${snap}` : ""}`);
+      dl.appendChild(li);
+    }
+    body.appendChild(dl);
+  }
+}
+
+function appendMatchRankings(body, match) {
+  if (!match?.rankings) return;
+  body.appendChild(el("h4", "dz-result__subtitle", "最終順位"));
+  const rl = el("ol", "dz-result__ranking");
+  for (const row of match.rankings) {
+    const name = row.seat === mySeat() ? "あなた" : seatName(row.seat);
+    rl.appendChild(el("li", null, `${row.rank}位 ${name} — ${row.score}点`));
+  }
+  body.appendChild(rl);
+}
+
+function continueAfterHand() {
+  const game = app.game;
+  const r = game?.result;
+  if (r?.hasNextHand && !r?.matchOver) {
+    app.game = startNextHand(game);
+    app.announceIdx = 0;
+    advanceTurn();
+    return;
+  }
+  app.game = createGame(app.config, app.catalog);
+  app.game.controllers = game.controllers.slice();
+  app.announceIdx = 0;
+  advanceTurn();
+}
+
+async function continueAfterHandOnline() {
+  const game = app.game;
+  const r = game?.result;
+  const room = app.online.room;
+  let game2;
+  if (r?.hasNextHand && !r?.matchOver) {
+    game2 = startNextHand(game);
+  } else {
+    const cfg = configFromLite(room.configLite);
+    game2 = createGame(cfg, app.catalog);
+    game2.controllers = game2.players.map((_, i) => ((room.seatUids || [])[i] ? "human" : "cpu"));
+  }
+  app.game = game2;
+  app.online.resultShown = false;
+  app.announceIdx = 0;
+  await online.startRoom(app.online.code, serializeGame(game2), game2.controllers, room.seatUids);
+  hostAdvance();
+}
+
 function showResult() {
   const game = app.game;
   const r = game.result;
   const seat = mySeat();
+  const match = r.matchSnapshot || game.match;
   const body = el("div", "dz-result");
   let title = "流局";
+
   if (r.type === "draw") {
     body.appendChild(el("p", null, "山が尽きました（流局）。"));
+    if (r.tenpai?.length) {
+      body.appendChild(el("p", "dz-result__note", `テンパイ: ${r.tenpai.map((p) => (p === seat ? "あなた" : seatName(p))).join("、")}`));
+    }
+    if (r.renchan) body.appendChild(el("p", "dz-result__note", "親の連荘"));
+    appendScoreChanges(body, r, seat);
   } else {
     const who = r.winner === seat ? "あなた" : seatName(r.winner);
     title = r.type === "tsumo" ? `${who} のツモ和了！` : `${who} のロン和了！`;
@@ -1750,51 +1849,45 @@ function showResult() {
     for (const y of r.eval.yaku) yl.appendChild(el("li", null, `${y.name} ${y.han}翻`));
     body.appendChild(yl);
 
-    // 符・点数
-    const st = r.eval.structure;
-    const score = computeScore(st, {
+    const score = r.score || computeScore(r.eval.structure, {
       han: r.eval.totalHan,
       tsumo: r.type === "tsumo",
       menzen: !!r.menzen,
       hasPinfu: r.eval.yaku.some((y) => y.name === "平和"),
-      hasChiitoi: st && st.kind === "chiitoitsu",
+      hasChiitoi: r.eval.structure && r.eval.structure.kind === "chiitoitsu",
     }, app.catalog);
     const scoreLine = el("p", "dz-result__total");
     scoreLine.appendChild(el("span", "dz-result__han", `${score.han}翻 ${score.fu}符`));
     scoreLine.appendChild(el("span", "dz-result__pts", `${score.points}点`));
     if (score.limit) scoreLine.appendChild(el("span", "dz-result__limit", score.limit));
     body.appendChild(scoreLine);
+    appendScoreChanges(body, r, seat);
   }
+
+  if (r.matchOver) appendMatchRankings(body, match);
+  else if (match && r.hasNextHand) {
+    body.appendChild(el("p", "dz-result__note", `次: ${roundLabel(match)}`));
+  }
+
+  const nextLabel = r.matchOver ? "新しい対戦" : r.hasNextHand ? "次の局" : "もう一局";
 
   let actions;
   if (isOnline()) {
     actions = [];
     if (app.online.isHost) {
       actions.push({
-        label: "もう一局",
+        label: nextLabel,
         primary: true,
-        onClick: async () => {
-          const room = app.online.room;
-          const cfg = configFromLite(room.configLite);
-          const game2 = createGame(cfg, app.catalog);
-          game2.controllers = game2.players.map((_, i) => ((room.seatUids || [])[i] ? "human" : "cpu"));
-          app.game = game2;
-          app.online.resultShown = false;
-          await online.startRoom(app.online.code, serializeGame(game2), game2.controllers, room.seatUids);
-          hostAdvance();
-        },
+        onClick: () => continueAfterHandOnline(),
       });
     }
     actions.push({ label: "退出", onClick: leaveOnline });
   } else {
     actions = [
       {
-        label: "もう一局",
+        label: nextLabel,
         primary: true,
-        onClick: () => {
-          app.game = createGame(app.config, app.catalog);
-          advanceTurn();
-        },
+        onClick: () => continueAfterHand(),
       },
       {
         label: "設定へ",
@@ -1813,7 +1906,6 @@ function showResult() {
     present();
     return;
   }
-  // 和了バナー → 役満なら全画面スプラッシュ → 結果モーダル
   const han = r.eval ? r.eval.totalHan : 0;
   announce(r.type === "tsumo" ? "ツモ！" : "ロン！", r.type === "tsumo" ? "dz-announce--tsumo" : "dz-announce--ron");
   if (han >= 13) {

@@ -669,6 +669,24 @@ export function isGuestCloudUser() {
   }
 }
 
+/**
+ * Google プロバイダでログイン中か（ゲスト・未ログインは false）。
+ * デッキ投稿など Google 限定操作のクライアント側ゲート用。
+ */
+export function isGoogleCloudUser() {
+  try {
+    if (!_auth || !_auth.currentUser || _auth.currentUser.isAnonymous) return false;
+    const providers = _auth.currentUser.providerData || [];
+    for (let i = 0; i < providers.length; i++) {
+      if (providers[i] && providers[i].providerId === "google.com") return true;
+    }
+    /* providerData が空でも非匿名なら Google 想定（キャッシュ復元直後など） */
+    return !!currentUser && !isGuestCloudUser();
+  } catch (_) {
+    return false;
+  }
+}
+
 export async function signOutCloud() {
   if (!cloudSyncEnabled || !_auth || !_authApi) return;
   setPreferGoogleAutoLogin(false);

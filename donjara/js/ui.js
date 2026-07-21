@@ -61,7 +61,7 @@ export function tileEl(tile, opts = {}) {
       img.className = "dz-tile__honor-art";
       img.src = tile.iconUrl;
       img.alt = tile.label;
-      img.loading = "lazy";
+      img.loading = opts.eagerImage ? "eager" : "lazy";
       img.draggable = false;
       img.onerror = () => {
         img.remove();
@@ -85,7 +85,7 @@ export function tileEl(tile, opts = {}) {
       img.className = "dz-tile__icon";
       img.src = tile.iconUrl;
       img.alt = tile.label;
-      img.loading = "lazy";
+      img.loading = opts.eagerImage ? "eager" : "lazy";
       img.draggable = false;
       img.onerror = () => {
         img.remove();
@@ -110,7 +110,7 @@ export function tileEl(tile, opts = {}) {
       logo.className = "dz-tile__logo";
       logo.src = tile.logoUrl;
       logo.alt = "";
-      logo.loading = "lazy";
+      logo.loading = opts.eagerImage ? "eager" : "lazy";
       logo.draggable = false;
       logo.onerror = () => logo.remove();
       el.appendChild(logo);
@@ -140,6 +140,13 @@ export function bindHandTile(el, tile, h) {
   let clickTimer = null;
   let didLong = false;
   let drag = null;
+
+  const isMobileHand = () =>
+    document.body.classList.contains("dz-body--portrait") ||
+    window.matchMedia("(pointer: coarse)").matches;
+
+  const handIndex = () =>
+    el.dataset.handIndex != null ? Number(el.dataset.handIndex) : null;
 
   const clearPress = () => {
     if (pressTimer) {
@@ -234,10 +241,14 @@ export function bindHandTile(el, tile, h) {
       return;
     }
     clearClick();
+    if (isMobileHand() && el.classList.contains("is-selected")) {
+      h.onDiscard(tile.key, handIndex());
+      return;
+    }
     clickTimer = setTimeout(() => {
       h.onSelect(tile.key);
       clickTimer = null;
-    }, 280);
+    }, isMobileHand() ? 180 : 280);
   });
 }
 

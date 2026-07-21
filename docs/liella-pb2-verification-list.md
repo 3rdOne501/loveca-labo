@@ -41,7 +41,7 @@
 | [x] | 027 | PL!SP-pb2-027-N | 葉月恋 | energy_tier_hearts | E6+/8+でheart03 |
 | [x] | 028 | PL!SP-pb2-028-N | 桜小路きな子 | jidou_area_move_activate_energy | 移動時E2枚復帰 |
 | [x] | 029 | PL!SP-pb2-029-N | 米女メイ | optional_self_wait_opp_stage / live_start_opp_wait_max_cost | 登場/開始で相手C2ウェイト |
-| [x] | 030 | PL!SP-pb2-030-N | 若菜四季 | heart_color_pick_grant | ハート色1つ選択 |
+| [x] | 030 | PL!SP-pb2-030-N | 若菜四季 | heart_color_pick_replace | ハート色1つ選択、元々ハートを選色に差し替え |
 | [x] | 031 | PL!SP-pb2-031-N | 鬼塚夏美 | kidou_stage_wait_pick_hand | 控え室メンバー回収 |
 | [x] | 032 | PL!SP-pb2-032-N | ウィーン | energy_tier_hearts | E6+/8+でheart06 |
 | [x] | 033 | PL!SP-pb2-033-N | 鬼塚冬毬 | kidou_stage_wait_pick_hand | 031同型 |

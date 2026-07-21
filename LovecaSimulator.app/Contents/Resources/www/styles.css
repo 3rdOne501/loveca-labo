@@ -2411,6 +2411,94 @@ body.play-versus-mode .game-tools-row #btn-versus-lobby:not([hidden]) {
   min-width: 0;
 }
 
+/* 投稿デッキ（コミュニティ公開）一覧 — サンプルパネルと同じ縦スタック内。サンプルとは排他表示 */
+#view-deck .public-decks-scroll {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  align-self: stretch;
+  min-height: 0;
+  max-height: min(calc(100vh - 8.5rem), 78vh, 980px);
+  max-height: min(calc(100svh - 8.5rem), 78svh, 980px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: auto;
+  -webkit-overflow-scrolling: touch;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+  padding: 0.45rem 0.45rem 0.55rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 190, 120, 0.22);
+  background: rgba(18, 12, 6, 0.4);
+}
+
+#view-deck:not(.view-deck--public-decks-open) .public-decks-scroll[hidden] {
+  display: none !important;
+  flex: 0 0 0 !important;
+  min-height: 0 !important;
+  max-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  overflow: hidden !important;
+}
+
+#view-deck .card-panel-body-stack .public-decks-scroll {
+  margin-top: 0;
+}
+
+/* 投稿一覧を開いたとき: 上＝カード一覧、下＝投稿で縦分割（サンプルと同じ配分） */
+#view-deck.view-deck--public-decks-open .card-panel-body-stack .card-grid-scroll {
+  flex: 1 1 56%;
+  min-height: min(240px, 48vh);
+  min-height: min(240px, 48dvh);
+  max-height: min(calc(100vh - 13rem), 56vh, 640px);
+  max-height: min(calc(100svh - 13rem), 56svh, 640px);
+}
+
+#view-deck.view-deck--public-decks-open .card-panel-body-stack .public-decks-scroll {
+  flex: 1 1 44%;
+  min-height: min(200px, 36vh);
+  min-height: min(200px, 36dvh);
+  max-height: min(calc(100vh - 13rem), 42vh, 520px);
+  max-height: min(calc(100svh - 13rem), 42svh, 520px);
+}
+
+/* 登録デッキ統計と併用したとき（投稿は登録と独立して開ける） */
+#view-deck.view-deck--deck-registration-open.view-deck--public-decks-open .card-panel-body-stack .card-grid-scroll {
+  flex: 1 1 38%;
+  min-height: min(200px, 38vh);
+  min-height: min(200px, 38dvh);
+  max-height: min(calc(100vh - 16rem), 48vh, 520px);
+  max-height: min(calc(100svh - 16rem), 48svh, 520px);
+}
+
+#view-deck.view-deck--deck-registration-open.view-deck--public-decks-open .card-panel-body-stack .public-decks-scroll {
+  flex: 1 1 36%;
+  min-height: min(180px, 32vh);
+  min-height: min(180px, 32dvh);
+  max-height: min(calc(100vh - 16rem), 40vh, 480px);
+  max-height: min(calc(100svh - 16rem), 40svh, 480px);
+}
+
+/* 投稿タイルはサンプルタイル（.sample-recipe-tile）を流用しつつ枠色だけ変える */
+.public-deck-tile {
+  border-color: rgba(255, 190, 120, 0.22);
+}
+.public-deck-owner {
+  margin: 0;
+  font-size: 0.66rem;
+  line-height: 1.35;
+}
+.public-deck-note {
+  opacity: 0.85;
+}
+.public-decks-status {
+  margin: 0;
+  padding: 0.3rem 0.15rem;
+  font-size: 0.72rem;
+}
+
 /* 登録デッキタイル一覧（カード一覧の下に並ぶサンプルと同じ縦スタック内） */
 #view-deck .deck-library-scroll {
   display: flex;
@@ -2682,7 +2770,8 @@ body.play-versus-mode .game-tools-row #btn-versus-lobby:not([hidden]) {
 
 @media (max-width: 1100px) {
   #view-deck .card-grid-scroll,
-  #view-deck .sample-recipes-scroll {
+  #view-deck .sample-recipes-scroll,
+  #view-deck .public-decks-scroll {
     max-height: min(calc(100vh - 7.5rem), 86vh, 960px);
     max-height: min(calc(100svh - 7.5rem), 86svh, 960px);
   }

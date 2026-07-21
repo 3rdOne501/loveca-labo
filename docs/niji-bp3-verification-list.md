@@ -23,8 +23,8 @@
 | [x] | 011 | PL!N-bp3-011-P | ミア・テイラー | toujou_opp_stage_member_match_grant | 相手ステージ1人選択→ハート同色ならブレード（コスト/元BL同も可）**ソロは相手代行** |
 | [x] | 012 | PL!N-bp3-012-P | 鐘嵐珠 | deck_top_pick_recover | 手札1枚捨て任意→4枚見て虹ヶ咲1枚回収 |
 | [x] | 013 | PL!N-bp3-013-N | 上原歩夢 | toujou_optional_energy_under | 任意E下→2ドロー **2026-06-30 2回監修** |
-| [x] | 014 | PL!N-bp3-014-N | 中須かすみ | live_start:heart_color_pick_grant | heart01/03/04から1色→元ハートがその色に変化 |
-| [x] | 015 | PL!N-bp3-015-N | 桜坂しずく | live_start:heart_color_pick_grant | heart02/05/06から1色→元ハートがその色に変化 |
+| [x] | 014 | PL!N-bp3-014-N | 中須かすみ | live_start:heart_color_pick_replace | heart01/03/04から1色→元ハートがその色に変化 |
+| [x] | 015 | PL!N-bp3-015-N | 桜坂しずく | live_start:heart_color_pick_replace | heart02/05/06から1色→元ハートがその色に変化 |
 | [x] | 017 | PL!N-bp3-017-N | 宮下愛 | optional_self_wait_opp_stage | 登場/ライブ開始: 自ウェイト任意→相手コスト4以下1人ウェイト |
 | [x] | 022 | PL!N-bp3-022-N | 三船栞子 | deck_top_look_reorder | 自ウェイト任意→2枚見て並べ替え |
 | [x] | 023 | PL!N-bp3-023-N | ミア・テイラー | optional_self_wait_opp_stage | 017愛と同型 |
