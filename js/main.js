@@ -24,6 +24,9 @@ import {
 import { normalizeDeckMapCounts } from "./deckLibrary.js";
 import { initDeckBuilder, loadDeckBundleFromStorage } from "./deckbuilder.js";
 import { initPublishedSampleRecipes } from "./sampleDeckRecipes.js";
+import { initDeckBrowsePage } from "./deckBrowsePage.js";
+import { initBingoDerby } from "./bingoDerby.js";
+import { showAppView, showDeckBuilderView, showBingoView } from "./viewNav.js";
 import { prefetchGameStatusArtBundledEarly } from "./gameStatusIcons.js";
 import { showToast } from "./ui.js";
 
@@ -182,7 +185,7 @@ function resetPlayFromVersusLeave() {
   teardownActivePlayMountFromMain();
   teardownDeckPileLayoutWatchers();
   if (viewGameRef) viewGameRef.hidden = true;
-  if (viewDeckRef) viewDeckRef.hidden = false;
+  showDeckBuilderView();
   document.body.classList.remove(
     "play-mode",
     "play-versus-mode",
@@ -388,8 +391,7 @@ function tryResumePlaySession(viewDeck, viewGame) {
     const deckMap = normalizeDeckMapCounts(pr.board.deckMeta.activePlayDeckMap);
     const dm = pr.board.deckMeta;
     const resumeSeq = soloPlayStartSeq;
-    viewDeck.hidden = true;
-    viewGame.hidden = false;
+    showAppView("game");
     document.body.classList.add("play-mode");
     requestAnimationFrame(function () {
       setTimeout(function () {
@@ -401,8 +403,7 @@ function tryResumePlaySession(viewDeck, viewGame) {
                 teardownDeckPileLayoutWatchers();
                 teardownActivePlayMountFromMain();
                 clearPlayResumeStorage();
-                viewGame.hidden = true;
-                viewDeck.hidden = false;
+                showDeckBuilderView();
                 document.body.classList.remove("play-mode");
                 document.body.classList.remove("live-turn-pick-mode");
                 document.body.classList.remove("zone-hints-visible");
@@ -428,8 +429,7 @@ function tryResumePlaySession(viewDeck, viewGame) {
             teardownDeckPileLayoutWatchers();
             clearPlayResumeStorage();
             document.body.classList.remove("play-mode");
-            viewGame.hidden = true;
-            viewDeck.hidden = false;
+            showDeckBuilderView();
             showToast("前回の盤面の復元に失敗しました。デッキ画面からやり直してください。");
           });
       }, 0);
@@ -520,8 +520,7 @@ function enterVersusPlay(viewDeck, viewGame, payload) {
       /* noop */
     }
   }
-  viewDeck.hidden = true;
-  viewGame.hidden = false;
+  showAppView("game");
   document.body.classList.add("play-mode");
   requestAnimationFrame(function () {
     setTimeout(function () {
@@ -587,9 +586,8 @@ function enterVersusPlay(viewDeck, viewGame, payload) {
               }
               activeVersusRoomMounted = null;
               delete window.__llocgVersusPlayMounted;
-              viewGame.hidden = true;
-              viewDeck.hidden = false;
-              document.body.classList.remove("play-mode");
+            showDeckBuilderView();
+            document.body.classList.remove("play-mode");
               document.body.classList.remove("play-versus-mode");
               document.body.classList.remove("live-turn-pick-mode");
               document.body.classList.remove("zone-hints-visible");
@@ -623,8 +621,7 @@ function enterVersusPlay(viewDeck, viewGame, payload) {
           teardownDeckPileLayoutWatchers();
           document.body.classList.remove("play-mode");
           document.body.classList.remove("play-versus-mode");
-          viewGame.hidden = true;
-          viewDeck.hidden = false;
+          showDeckBuilderView();
           var errMsg = err && err.message ? String(err.message) : String(err || "");
           showToast(
             errMsg
@@ -685,8 +682,7 @@ function startApp(viewDeck, viewGame, statusEl) {
         clearPlayResumeStorage();
         clearSoloPlaySessionPrefs();
         activeVersusRoomMounted = null;
-        viewDeck.hidden = true;
-        viewGame.hidden = false;
+        showAppView("game");
         document.body.classList.add("play-mode");
         document.body.classList.remove("play-versus-mode");
         requestAnimationFrame(function () {
@@ -703,8 +699,7 @@ function startApp(viewDeck, viewGame, statusEl) {
                     teardownDeckPileLayoutWatchers();
                     teardownActivePlayMountFromMain();
                     clearPlayResumeStorage();
-                    viewGame.hidden = true;
-                    viewDeck.hidden = false;
+                    showDeckBuilderView();
                     document.body.classList.remove("play-mode");
                     document.body.classList.remove("live-turn-pick-mode");
                     document.body.classList.remove("zone-hints-visible");
@@ -731,13 +726,18 @@ function startApp(viewDeck, viewGame, statusEl) {
                 document.body.classList.remove("play-mode");
                 document.body.classList.remove("live-turn-pick-mode");
                 document.body.classList.remove("zone-hints-visible");
-                viewGame.hidden = true;
-                viewDeck.hidden = false;
+                showDeckBuilderView();
                 showToast("プレイ画面の初期化に失敗しました。ページを再読み込みしてお試しください。");
               });
           }, 0);
         });
       },
+    });
+    initDeckBrowsePage();
+    initBingoDerby();
+    showDeckBuilderView();
+    document.getElementById("btn-bingo-derby")?.addEventListener("click", function () {
+      showBingoView();
     });
     resumeSessionsAfterBoot(viewDeck, viewGame);
   } else {

@@ -92,18 +92,26 @@ body::before {
 }
 
 #view-deck.view,
-#view-game.view {
+#view-game.view,
+#view-deck-browse.view,
+#view-bingo.view {
   position: relative;
   z-index: 1;
 }
 
-/*
- * 「hidden 属性」を付けるとブラウザは display:none にするが、
- * ID+クラスの display:flex がより詳細度で勝ち、画面上にデッキが残ることがある（ソロ開始しても換わらずに見える）。
- */
 #view-deck.view[hidden],
-#view-game.view[hidden] {
+#view-game.view[hidden],
+#view-deck-browse.view[hidden],
+#view-bingo.view[hidden] {
   display: none !important;
+}
+
+#view-deck-browse.view:not([hidden]),
+#view-bingo.view:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100svh;
 }
 
 /* デッキ編集ビュー: 一覧はパネル内スクロール、ページ縦スクロールを抑える */
@@ -12195,4 +12203,157 @@ body.play-mode .card-item--energy-wait-flip .card-img {
   .badge--deck-remain.badge--deck-critical {
     animation: none;
   }
+}
+
+/* --- デッキ一覧フルページ --- */
+.deck-browse-bar,
+.bingo-bar {
+  flex-shrink: 0;
+  padding: 0.75rem 1rem 0.5rem;
+  border-bottom: 1px solid rgba(255, 140, 190, 0.18);
+  background: rgba(8, 4, 14, 0.55);
+}
+.deck-browse-bar__row,
+.bingo-bar__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.75rem;
+}
+.deck-browse-bar__title,
+.bingo-bar__title {
+  margin: 0;
+  font-size: 1.15rem;
+  flex: 1 1 auto;
+  min-width: 8rem;
+}
+.deck-browse-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.deck-browse-body,
+.bingo-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 0.75rem 1rem 1.5rem;
+}
+.deck-browse-hint,
+.bingo-hint {
+  margin: 0 0 0.75rem;
+}
+.deck-browse-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+  gap: 0.65rem;
+}
+.deck-browse-status {
+  margin: 0 0 0.5rem;
+}
+
+/* --- 禁止制限ダービー ビンゴ --- */
+.bingo-title-field {
+  max-width: 28rem;
+  margin-bottom: 0.5rem;
+}
+.bingo-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.35rem;
+  max-width: min(720px, 100%);
+  margin: 0 auto 1rem;
+}
+.bingo-cell {
+  aspect-ratio: 5 / 7;
+  border: 1px solid rgba(255, 140, 190, 0.35);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.15rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.bingo-cell--free {
+  cursor: default;
+  background: rgba(255, 200, 80, 0.18);
+  border-color: rgba(255, 200, 80, 0.55);
+}
+.bingo-cell--filled {
+  padding: 0;
+}
+.bingo-cell-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: calc(var(--radius-sm) - 2px);
+}
+.bingo-cell-free-label {
+  font-weight: 700;
+  font-size: clamp(0.85rem, 2.5vw, 1.1rem);
+  color: #ffd080;
+}
+.bingo-cell-placeholder {
+  font-size: 1.4rem;
+  color: rgba(255, 200, 230, 0.45);
+}
+.bingo-cell-missing {
+  font-size: 0.65rem;
+  word-break: break-all;
+  padding: 0.2rem;
+}
+.bingo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  max-width: min(720px, 100%);
+  margin: 0 auto;
+}
+.bingo-card-pick-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.bingo-card-pick-dialog {
+  width: min(920px, 100%);
+  max-height: min(88vh, 900px);
+  overflow: auto;
+  background: #1a1018;
+  border: 1px solid rgba(255, 140, 190, 0.25);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+}
+.bingo-card-pick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 0.4rem;
+  margin: 0.75rem 0;
+  max-height: 52vh;
+  overflow: auto;
+}
+.bingo-card-pick-card {
+  border: 1px solid rgba(255, 140, 190, 0.2);
+  border-radius: var(--radius-sm);
+  padding: 0.15rem;
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+}
+.bingo-card-pick-card:hover {
+  border-color: rgba(255, 180, 220, 0.55);
+}
+.bingo-card-pick-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+.bingo-card-pick-search {
+  width: 100%;
 }
