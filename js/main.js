@@ -634,6 +634,24 @@ function enterVersusPlay(viewDeck, viewGame, payload) {
   });
 }
 
+function wireBingoDerbyButton() {
+  var btn = document.getElementById("btn-bingo-derby");
+  if (!btn || btn.dataset.wired === "1") return;
+  btn.dataset.wired = "1";
+  btn.addEventListener("click", function () {
+    try {
+      if (!document.getElementById("view-bingo")) {
+        showToast("ビンゴ機能を読み込めません。ページを再読込（Cmd+Shift+R）してください。");
+        return;
+      }
+      showBingoView();
+    } catch (err) {
+      console.warn("[bingo] open failed:", err);
+      showToast("ビンゴ画面を開けませんでした");
+    }
+  });
+}
+
 function startApp(viewDeck, viewGame, statusEl) {
   viewDeckRef = viewDeck;
   viewGameRef = viewGame;
@@ -648,6 +666,12 @@ function startApp(viewDeck, viewGame, statusEl) {
       /* noop */
     }
     initDeckBuilder(viewDeck, {
+      onNavigateDeckBrowse: function (mode) {
+        showDeckBrowseView(mode);
+      },
+      onNavigateDeckBuilder: function () {
+        showDeckBuilderView();
+      },
       onStartGame: (deckMap, deckRoleLabels) => {
         markVersusSessionLobbyOnly();
         var map = normalizeDeckMapCounts(deckMap || {});
@@ -733,12 +757,24 @@ function startApp(viewDeck, viewGame, statusEl) {
         });
       },
     });
-    initDeckBrowsePage();
-    initBingoDerby();
-    showDeckBuilderView();
-    document.getElementById("btn-bingo-derby")?.addEventListener("click", function () {
-      showBingoView();
-    });
+    try {
+      initDeckBrowsePage();
+    } catch (err) {
+      console.warn("[deckBrowse] init failed:", err);
+    }
+    try {
+      initBingoDerby();
+    } catch (err) {
+      console.warn("[bingo] init failed:", err);
+    }
+    try {
+      showDeckBuilderView();
+    } catch (err) {
+      console.warn("[viewNav] init failed:", err);
+      if (viewDeck) viewDeck.hidden = false;
+      if (viewGame) viewGame.hidden = true;
+    }
+    wireBingoDerbyButton();
     resumeSessionsAfterBoot(viewDeck, viewGame);
   } else {
     location.reload();
@@ -1110,10 +1146,12 @@ if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", function () {
     wireCloudAuthBar();
     wireAppDialogBackdropClicks();
+    wireBingoDerbyButton();
   });
 } else {
   wireCloudAuthBar();
   wireAppDialogBackdropClicks();
+  wireBingoDerbyButton();
 }
 
 initVersusModeEarly();

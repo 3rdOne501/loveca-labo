@@ -12257,12 +12257,118 @@ body.play-mode .card-item--energy-wait-flip .card-img {
   max-width: 28rem;
   margin-bottom: 0.5rem;
 }
-.bingo-grid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0.35rem;
+.cloud-auth-bingo-btn {
+  display: block;
+  width: 100%;
+  margin: 0.35rem 0 0.5rem;
+}
+.cloud-auth-bar--search-top + .cloud-auth-bingo-btn {
+  margin-top: 0.25rem;
+}
+
+.bingo-size-toggle {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0 0 0.65rem;
+  max-width: min(720px, 100%);
+}
+.bingo-board-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
   max-width: min(720px, 100%);
   margin: 0 auto 1rem;
+}
+.bingo-oana-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  width: min(200px, 55vw);
+}
+.bingo-oana-label {
+  font-weight: 700;
+  color: #ffd080;
+  font-size: 1rem;
+}
+.bingo-oana-hint {
+  margin: 0;
+  text-align: center;
+  font-size: 0.82rem;
+}
+.bingo-oana-slot {
+  aspect-ratio: 5 / 7;
+  width: 100%;
+  border: 2px dashed rgba(255, 200, 80, 0.55);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 200, 80, 0.12);
+  padding: 0.15rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  touch-action: none;
+}
+.bingo-oana-slot--filled {
+  padding: 0;
+  border-style: solid;
+}
+.bingo-oana-slot--dragging {
+  opacity: 0.55;
+  transform: scale(0.96);
+}
+.bingo-oana-slot--drop-target {
+  box-shadow: 0 0 0 3px rgba(255, 200, 80, 0.75);
+}
+.bingo-cell-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.bingo-points-badge {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  padding: 0 0.2rem;
+  border-radius: 999px;
+  background: #ff6eb4;
+  color: #1a0810;
+  font-weight: 800;
+  font-size: 0.72rem;
+  line-height: 1.35rem;
+  text-align: center;
+  z-index: 2;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+.bingo-cell--dragging {
+  opacity: 0.55;
+  transform: scale(0.96);
+}
+.bingo-cell--drop-target {
+  box-shadow: 0 0 0 3px rgba(255, 180, 220, 0.85);
+  border-color: rgba(255, 180, 220, 0.9);
+}
+.bingo-grid {
+  display: grid;
+  gap: 0.35rem;
+  width: 100%;
+  margin: 0;
+}
+.bingo-cell-placeholder {
+  font-size: 1.4rem;
+  color: rgba(255, 200, 230, 0.45);
+}
+.bingo-cell-missing {
+  font-size: 0.65rem;
+  word-break: break-all;
+  padding: 0.2rem;
 }
 .bingo-cell {
   aspect-ratio: 5 / 7;
@@ -12275,11 +12381,8 @@ body.play-mode .card-item--energy-wait-flip .card-img {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-}
-.bingo-cell--free {
-  cursor: default;
-  background: rgba(255, 200, 80, 0.18);
-  border-color: rgba(255, 200, 80, 0.55);
+  position: relative;
+  touch-action: none;
 }
 .bingo-cell--filled {
   padding: 0;
@@ -12289,20 +12392,50 @@ body.play-mode .card-item--energy-wait-flip .card-img {
   height: 100%;
   object-fit: cover;
   border-radius: calc(var(--radius-sm) - 2px);
+  pointer-events: none;
 }
-.bingo-cell-free-label {
-  font-weight: 700;
-  font-size: clamp(0.85rem, 2.5vw, 1.1rem);
-  color: #ffd080;
+.bingo-grid--size-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  max-width: min(420px, 100%);
 }
-.bingo-cell-placeholder {
-  font-size: 1.4rem;
-  color: rgba(255, 200, 230, 0.45);
+.bingo-grid--size-5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
-.bingo-cell-missing {
-  font-size: 0.65rem;
-  word-break: break-all;
-  padding: 0.2rem;
+.bingo-pick-points-label {
+  margin: 0.5rem 0 0.25rem;
+  font-size: 0.9rem;
+}
+.bingo-pick-points-row,
+.bingo-points-pick-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.65rem;
+}
+.bingo-points-pick-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 12001;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.bingo-points-pick-dialog {
+  background: #1a1018;
+  border: 1px solid rgba(255, 140, 190, 0.25);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  min-width: min(320px, 90vw);
+}
+.bingo-points-pick-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+.bingo-points-pick-btn {
+  min-width: 2.2rem;
 }
 .bingo-actions {
   display: flex;

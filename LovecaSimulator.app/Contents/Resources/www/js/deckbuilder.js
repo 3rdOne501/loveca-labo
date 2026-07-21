@@ -94,7 +94,6 @@ import {
   effectivePublicDeckThumbnailCardNo,
 } from "./publicDecks.js";
 import { getCurrentCloudUser, onCloudUserChange } from "./cloudAuth.js";
-import { showDeckBrowseView, showDeckBuilderView } from "./viewNav.js";
 
 let deckBuilderStorageFlushHooked = false;
 
@@ -435,7 +434,7 @@ function thumbExtraHtml(card) {
   return "";
 }
 
-export function initDeckBuilder(root, { onStartGame }) {
+export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNavigateDeckBuilder }) {
   if (!localStorage.getItem(STORAGE_DECK)) {
     saveDeckBundleToStorage({
       map: cloneDeckMap(DEFAULT_STARTER_DECK_MAP),
@@ -4685,15 +4684,25 @@ export function initDeckBuilder(root, { onStartGame }) {
     }
   }
 
+  function navigateToDeckBuilder() {
+    if (typeof onNavigateDeckBuilder === "function") onNavigateDeckBuilder();
+  }
+
   function openDeckBrowsePage(mode, opts) {
     opts = opts || {};
     mode = mode || "samples";
+    if (!document.getElementById("view-deck-browse")) {
+      showToast("デッキ一覧ページを読み込めません。ページを再読込（Cmd+Shift+R）してください。");
+      return;
+    }
     samplePanelOpen = false;
     deckRegistrationPanelOpen = false;
     publicDecksPanelOpen = false;
     syncCardPanelToggleButtons();
     scheduleRenderCardGrid();
-    if (!opts.skipNav) showDeckBrowseView(mode);
+    if (!opts.skipNav && typeof onNavigateDeckBrowse === "function") {
+      onNavigateDeckBrowse(mode);
+    }
     wireDeckBrowseGridOnce();
     renderDeckBrowsePage(mode);
   }
@@ -4735,7 +4744,7 @@ export function initDeckBuilder(root, { onStartGame }) {
         if (act === "copy") {
           applySampleRecipeToMainDeck(recipe);
           pruneOrphanRoleLabels();
-          showDeckBuilderView();
+          navigateToDeckBuilder();
           showToast("「" + recipe.name + "」を編集中デッキに読み込みました");
           return;
         }
@@ -4752,7 +4761,7 @@ export function initDeckBuilder(root, { onStartGame }) {
         var libAct = libActEl.getAttribute("data-deck-lib-act");
         if (libAct === "load") {
           applyLibrarySlotToMainDeck(slot);
-          showDeckBuilderView();
+          navigateToDeckBuilder();
           showToast("「" + (slot.name || "デッキ") + "」を読み込みました");
           return;
         }
@@ -4830,7 +4839,7 @@ export function initDeckBuilder(root, { onStartGame }) {
       if (pubAct === "copy") {
         applyPublicDeckToMainDeck(entry);
         pruneOrphanRoleLabels();
-        showDeckBuilderView();
+        navigateToDeckBuilder();
         showToast("「" + entry.name + "」を編集中デッキに読み込みました");
         return;
       }
