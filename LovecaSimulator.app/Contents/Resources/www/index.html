@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Loveca Labo" />
-    <meta name="loveca-build" content="2026052040" />
+    <meta name="loveca-build" content="2026052041" />
     <title>Loveca Labo</title>
     <!-- 万一以前のバージョンの Service Worker が登録された端末で取り残しが起きた場合に備え、
          先頭で SW 登録を一括解除する。SW 自体は本サイトでは使っていない。 -->
@@ -51,7 +51,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,700;1,9..40,500&family=M+PLUS+Rounded+1c:wght@500;700&family=Noto+Sans+JP:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=2026052040" />
+    <link rel="stylesheet" href="styles.css?v=2026052041" />
     <link rel="stylesheet" href="styles-perf.css?v=2026051910" />
   </head>
   <body>
@@ -126,7 +126,15 @@ python3 -m http.server 8080</pre>
     </script>
     <script>
       (function () {
+        function isDevModeForVersus() {
+          try {
+            return sessionStorage.getItem("llocg_sample_dev_mode_v1") === "1";
+          } catch (e) {
+            return false;
+          }
+        }
         function openVersusLobby() {
+          if (!isDevModeForVersus()) return;
           var dlg = document.getElementById("dlg-versus-lobby");
           if (!dlg) {
             window.alert("対戦画面の準備ができていません。ページを再読込してください。");
@@ -235,8 +243,7 @@ python3 -m http.server 8080</pre>
             type="button"
             class="btn sm secondary cloud-auth-bingo-btn"
             id="btn-bingo-derby"
-            title="禁止制限ダービー用のビンゴカードを作成（開発者モード）"
-            hidden
+            title="禁止制限ダービー用のビンゴカードを作成"
           >
             禁止制限ビンゴ
           </button>
@@ -441,7 +448,8 @@ python3 -m http.server 8080</pre>
                 type="button"
                 class="btn secondary btn-start-versus-sticky btn-start-versus--glow"
                 id="btn-start-versus"
-                title="一人二役・オンライン対戦（オンラインはゲスト/Google ログイン）"
+                title="一人二役・オンライン対戦（開発者モードのみ）"
+                hidden
               >
                 対戦モード
               </button>
@@ -655,7 +663,7 @@ python3 -m http.server 8080</pre>
             type="button"
             class="btn sm secondary"
             id="btn-bingo-derby-play"
-            title="禁止制限ダービー用のビンゴカードを作成（対戦モード）"
+            title="禁止制限ダービー用のビンゴカードを作成"
             hidden
           >
             禁止制限ビンゴ
@@ -2173,37 +2181,37 @@ python3 -m http.server 8080</pre>
       {
         "scopes": {
           "/js/": {
-            "./abilityEffects.js": "./abilityEffects.js?v=2026052040",
-            "./bladeHeart.js": "./bladeHeart.js?v=2026052040",
-            "./cardCatalogDialog.js": "./cardCatalogDialog.js?v=2026052040",
-            "./cardGroups.js": "./cardGroups.js?v=2026052040",
-            "./cards.js": "./cards.js?v=2026052040",
-            "./cloudAuth.js": "./cloudAuth.js?v=2026052040",
-            "./config.js": "./config.js?v=2026052040",
-            "./deckLibrary.js": "./deckLibrary.js?v=2026052040",
-            "./deckbuilder.js": "./deckbuilder.js?v=2026052040",
-            "./decklogImport.js": "./decklogImport.js?v=2026052040",
-            "./firebaseConfig.js": "./firebaseConfig.js?v=2026052040",
-            "./gameStatusIcons.js": "./gameStatusIcons.js?v=2026052040",
-            "./joujiEffects.js": "./joujiEffects.js?v=2026052040",
-            "./jidouAutoEffects.js": "./jidouAutoEffects.js?v=2026052040",
-            "./liveSpecialBhOverride.js": "./liveSpecialBhOverride.js?v=2026052040",
-            "./main.js": "./main.js?v=2026052040",
-            "./bingoDerby.js": "./bingoDerby.js?v=2026052040",
-            "./deckBrowsePage.js": "./deckBrowsePage.js?v=2026052040",
-            "./viewNav.js": "./viewNav.js?v=2026052040",
-            "./publicDecks.js": "./publicDecks.js?v=2026052040",
-            "./sampleDeckRecipes.js": "./sampleDeckRecipes.js?v=2026052040",
-            "./simulator.js": "./simulator.js?v=2026052040",
-            "./testCardLog.js": "./testCardLog.js?v=2026052040",
-            "./ui.js": "./ui.js?v=2026052040",
-            "./versusBoardSync.js": "./versusBoardSync.js?v=2026052040",
-            "./versusMatch.js": "./versusMatch.js?v=2026052040",
-            "./versusMode.js": "./versusMode.js?v=2026052040"
+            "./abilityEffects.js": "./abilityEffects.js?v=2026052041",
+            "./bladeHeart.js": "./bladeHeart.js?v=2026052041",
+            "./cardCatalogDialog.js": "./cardCatalogDialog.js?v=2026052041",
+            "./cardGroups.js": "./cardGroups.js?v=2026052041",
+            "./cards.js": "./cards.js?v=2026052041",
+            "./cloudAuth.js": "./cloudAuth.js?v=2026052041",
+            "./config.js": "./config.js?v=2026052041",
+            "./deckLibrary.js": "./deckLibrary.js?v=2026052041",
+            "./deckbuilder.js": "./deckbuilder.js?v=2026052041",
+            "./decklogImport.js": "./decklogImport.js?v=2026052041",
+            "./firebaseConfig.js": "./firebaseConfig.js?v=2026052041",
+            "./gameStatusIcons.js": "./gameStatusIcons.js?v=2026052041",
+            "./joujiEffects.js": "./joujiEffects.js?v=2026052041",
+            "./jidouAutoEffects.js": "./jidouAutoEffects.js?v=2026052041",
+            "./liveSpecialBhOverride.js": "./liveSpecialBhOverride.js?v=2026052041",
+            "./main.js": "./main.js?v=2026052041",
+            "./bingoDerby.js": "./bingoDerby.js?v=2026052041",
+            "./deckBrowsePage.js": "./deckBrowsePage.js?v=2026052041",
+            "./viewNav.js": "./viewNav.js?v=2026052041",
+            "./publicDecks.js": "./publicDecks.js?v=2026052041",
+            "./sampleDeckRecipes.js": "./sampleDeckRecipes.js?v=2026052041",
+            "./simulator.js": "./simulator.js?v=2026052041",
+            "./testCardLog.js": "./testCardLog.js?v=2026052041",
+            "./ui.js": "./ui.js?v=2026052041",
+            "./versusBoardSync.js": "./versusBoardSync.js?v=2026052041",
+            "./versusMatch.js": "./versusMatch.js?v=2026052041",
+            "./versusMode.js": "./versusMode.js?v=2026052041"
           }
         }
       }
     </script>
-    <script type="module" src="js/main.js?v=2026052040"></script>
+    <script type="module" src="js/main.js?v=2026052041"></script>
   </body>
 </html>

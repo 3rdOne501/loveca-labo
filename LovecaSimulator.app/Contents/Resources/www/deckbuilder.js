@@ -789,6 +789,9 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
       if (typeof window.__llocgSyncBingoDerbyButtonVisibility === "function") {
         window.__llocgSyncBingoDerbyButtonVisibility();
       }
+      if (typeof window.__llocgSyncVersusModeButtonVisibility === "function") {
+        window.__llocgSyncVersusModeButtonVisibility();
+      }
     } catch (_) {
       /* noop */
     }

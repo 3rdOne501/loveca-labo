@@ -34,7 +34,7 @@ import {
   loadDeckLibrary,
   normalizeDeckMapCounts,
 } from "./deckLibrary.js";
-import { getSampleDeckRecipes } from "./sampleDeckRecipes.js";
+import { getSampleDeckRecipes, isSampleDevMode } from "./sampleDeckRecipes.js";
 import { ensureGoogleSession } from "./cloudAuth.js";
 
 /** @typedef {(payload: object) => void} VersusPlayStartFn */
@@ -239,7 +239,14 @@ export function forgetVersusRoomPersistence() {
   updateVersusLobbyButtons(null, null);
 }
 
+function requireDevModeForVersus() {
+  if (isSampleDevMode()) return true;
+  showToast("対戦モードは開発者モードでのみ利用できます");
+  return false;
+}
+
 function openVersusLobbyDialog() {
+  if (!requireDevModeForVersus()) return false;
   var dlg = /** @type {HTMLDialogElement|null} */ (el("dlg-versus-lobby"));
   if (!dlg) {
     showToast("対戦ダイアログが見つかりません。ページを再読込してください。");
@@ -607,6 +614,7 @@ export function refreshVersusSoloModePick() {
 }
 
 function startSoloDualVersus() {
+  if (!requireDevModeForVersus()) return;
   var deck = getCurrentDeckMap && getCurrentDeckMap();
   if (!deckHasCards(deck)) {
     showToast("メインデッキにカードを入れてください");

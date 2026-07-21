@@ -204,7 +204,7 @@ function resetPlayFromVersusLeave() {
   } catch (_) {
     /* noop */
   }
-  syncBingoDerbyButtonVisibility();
+  syncDevGatedUiVisibility();
 }
 
 window.__llocgResetPlayFromVersusLeave = resetPlayFromVersusLeave;
@@ -592,7 +592,7 @@ function enterVersusPlay(viewDeck, viewGame, payload) {
               document.body.classList.remove("play-versus-mode");
               document.body.classList.remove("live-turn-pick-mode");
               document.body.classList.remove("zone-hints-visible");
-              syncBingoDerbyButtonVisibility();
+              syncDevGatedUiVisibility();
               try {
                 if (typeof window.__llocgRestoreDeckBuilderUi === "function") {
                   window.__llocgRestoreDeckBuilderUi({ reopenCatalog: true });
@@ -609,7 +609,7 @@ function enterVersusPlay(viewDeck, viewGame, payload) {
             },
           });
           window.__llocgVersusPlayMounted = sessionKey;
-          syncBingoDerbyButtonVisibility();
+          syncDevGatedUiVisibility();
           showToast(
             payload.mode === "localPractice"
               ? "対戦練習: 上部の「〇〇に切替」で盤面をいつでも入れ替えられます"
@@ -624,7 +624,7 @@ function enterVersusPlay(viewDeck, viewGame, payload) {
           teardownDeckPileLayoutWatchers();
           document.body.classList.remove("play-mode");
           document.body.classList.remove("play-versus-mode");
-          syncBingoDerbyButtonVisibility();
+          syncDevGatedUiVisibility();
           showDeckBuilderView();
           var errMsg = err && err.message ? String(err.message) : String(err || "");
           showToast(
@@ -638,27 +638,22 @@ function enterVersusPlay(viewDeck, viewGame, payload) {
   });
 }
 
-function canOpenBingoDerby() {
-  return isSampleDevMode() || document.body.classList.contains("play-versus-mode");
-}
-
-function syncBingoDerbyButtonVisibility() {
-  var deckBtn = document.getElementById("btn-bingo-derby");
-  var playBtn = document.getElementById("btn-bingo-derby-play");
+function syncDevGatedUiVisibility() {
+  var deckBingoBtn = document.getElementById("btn-bingo-derby");
+  var playBingoBtn = document.getElementById("btn-bingo-derby-play");
+  var versusBtn = document.getElementById("btn-start-versus");
   var admin = isSampleDevMode();
-  var versus = document.body.classList.contains("play-versus-mode");
-  if (deckBtn) deckBtn.hidden = !admin;
-  if (playBtn) playBtn.hidden = !versus;
+  var inPlay = document.body.classList.contains("play-mode");
+  if (deckBingoBtn) deckBingoBtn.hidden = false;
+  if (playBingoBtn) playBingoBtn.hidden = !inPlay;
+  if (versusBtn) versusBtn.hidden = !admin;
 }
 
-window.__llocgSyncBingoDerbyButtonVisibility = syncBingoDerbyButtonVisibility;
+window.__llocgSyncBingoDerbyButtonVisibility = syncDevGatedUiVisibility;
+window.__llocgSyncVersusModeButtonVisibility = syncDevGatedUiVisibility;
 
 function wireBingoDerbyButton() {
   function openBingoDerby() {
-    if (!canOpenBingoDerby()) {
-      showToast("禁止制限ビンゴは対戦モードまたは開発者モードでのみ利用できます");
-      return;
-    }
     try {
       if (!document.getElementById("view-bingo")) {
         showToast("ビンゴ機能を読み込めません。ページを再読込（Cmd+Shift+R）してください。");
@@ -676,10 +671,10 @@ function wireBingoDerbyButton() {
     btn.dataset.wired = "1";
     btn.addEventListener("click", openBingoDerby);
   });
-  syncBingoDerbyButtonVisibility();
+  syncDevGatedUiVisibility();
   if (!window.__llocgBingoDerbyViewSyncWired) {
     window.__llocgBingoDerbyViewSyncWired = true;
-    window.addEventListener("llocg:viewchange", syncBingoDerbyButtonVisibility);
+    window.addEventListener("llocg:viewchange", syncDevGatedUiVisibility);
   }
 }
 
@@ -758,7 +753,7 @@ function startApp(viewDeck, viewGame, statusEl) {
                     document.body.classList.remove("play-mode");
                     document.body.classList.remove("live-turn-pick-mode");
                     document.body.classList.remove("zone-hints-visible");
-                    syncBingoDerbyButtonVisibility();
+                    syncDevGatedUiVisibility();
                     try {
                       if (typeof window.__llocgRestoreDeckBuilderUi === "function") {
                         window.__llocgRestoreDeckBuilderUi({ reopenCatalog: true });
@@ -774,7 +769,7 @@ function startApp(viewDeck, viewGame, statusEl) {
                     middleCardNos: bundle.middleCardNos,
                   },
                 });
-                syncBingoDerbyButtonVisibility();
+                syncDevGatedUiVisibility();
               })
               .catch(function (err) {
                 if (startSeq !== soloPlayStartSeq) return;
