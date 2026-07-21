@@ -18,6 +18,18 @@ import { cloneDeckMap } from "./deckLibrary.js";
 /** 開発者モード用（UI プロンプトと照合） */
 export const SAMPLE_DEVELOPER_PASSCODE = "nira1102";
 
+/** @type {string} sessionStorage — 開発者（サンプル編集）モード */
+export const SESSION_SAMPLE_DEV_KEY = "llocg_sample_dev_mode_v1";
+
+/** 開発者モード（管理者）が有効か */
+export function isSampleDevMode() {
+  try {
+    return sessionStorage.getItem(SESSION_SAMPLE_DEV_KEY) === "1";
+  } catch (_) {
+    return false;
+  }
+}
+
 const IDB_NAME = "llocg-sample-deploy";
 const IDB_STORE = "kv";
 const IDB_KEY_DEPLOY_DIR = "deploy-directory-handle";

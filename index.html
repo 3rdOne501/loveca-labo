@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Loveca Labo" />
-    <meta name="loveca-build" content="2026052038" />
+    <meta name="loveca-build" content="2026052040" />
     <title>Loveca Labo</title>
     <!-- 万一以前のバージョンの Service Worker が登録された端末で取り残しが起きた場合に備え、
          先頭で SW 登録を一括解除する。SW 自体は本サイトでは使っていない。 -->
@@ -51,7 +51,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,700;1,9..40,500&family=M+PLUS+Rounded+1c:wght@500;700&family=Noto+Sans+JP:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=2026052038" />
+    <link rel="stylesheet" href="styles.css?v=2026052040" />
     <link rel="stylesheet" href="styles-perf.css?v=2026051910" />
   </head>
   <body>
@@ -235,7 +235,8 @@ python3 -m http.server 8080</pre>
             type="button"
             class="btn sm secondary cloud-auth-bingo-btn"
             id="btn-bingo-derby"
-            title="禁止制限ダービー用のビンゴカードを作成"
+            title="禁止制限ダービー用のビンゴカードを作成（開発者モード）"
+            hidden
           >
             禁止制限ビンゴ
           </button>
@@ -630,7 +631,7 @@ python3 -m http.server 8080</pre>
           <button type="button" class="btn sm primary" id="btn-bingo-size-3" data-bingo-size="3" aria-pressed="true">3×3</button>
           <button type="button" class="btn sm secondary" id="btn-bingo-size-5" data-bingo-size="5" aria-pressed="false">5×5</button>
         </div>
-        <p class="hint bingo-hint">空きマスをタップでカード配置。配置済みカードは<strong>ドラッグ</strong>で移動・入れ替え。ピンク数字は制限ポイント（1〜9・タップで変更）。</p>
+        <p class="hint bingo-hint">空きマスをタップでカード配置。配置済みマスは<strong>タップ</strong>で削除・制限変更、<strong>ドラッグ</strong>で移動・入れ替え。ピンク数字は制限ポイント（1〜9・タップで変更）。</p>
         <div class="bingo-board-layout">
           <div id="bingo-grid" class="bingo-grid" role="grid" aria-label="ビンゴマス"></div>
           <div class="bingo-oana-panel">
@@ -650,6 +651,15 @@ python3 -m http.server 8080</pre>
       <header class="game-bar">
         <div class="game-bar-row game-bar-actions">
           <button type="button" class="btn primary" id="btn-back-builder">デッキ編集に戻る</button>
+          <button
+            type="button"
+            class="btn sm secondary"
+            id="btn-bingo-derby-play"
+            title="禁止制限ダービー用のビンゴカードを作成（対戦モード）"
+            hidden
+          >
+            禁止制限ビンゴ
+          </button>
           <button type="button" class="btn secondary" id="btn-help" title="? キー">ヘルプ</button>
           <button type="button" class="btn sm secondary" id="btn-tutorial-game" title="チュートリアル・画面別ガイド">ガイド</button>
           <button
@@ -2163,37 +2173,37 @@ python3 -m http.server 8080</pre>
       {
         "scopes": {
           "/js/": {
-            "./abilityEffects.js": "./abilityEffects.js?v=2026052038",
-            "./bladeHeart.js": "./bladeHeart.js?v=2026052038",
-            "./cardCatalogDialog.js": "./cardCatalogDialog.js?v=2026052038",
-            "./cardGroups.js": "./cardGroups.js?v=2026052038",
-            "./cards.js": "./cards.js?v=2026052038",
-            "./cloudAuth.js": "./cloudAuth.js?v=2026052038",
-            "./config.js": "./config.js?v=2026052038",
-            "./deckLibrary.js": "./deckLibrary.js?v=2026052038",
-            "./deckbuilder.js": "./deckbuilder.js?v=2026052038",
-            "./decklogImport.js": "./decklogImport.js?v=2026052038",
-            "./firebaseConfig.js": "./firebaseConfig.js?v=2026052038",
-            "./gameStatusIcons.js": "./gameStatusIcons.js?v=2026052038",
-            "./joujiEffects.js": "./joujiEffects.js?v=2026052038",
-            "./jidouAutoEffects.js": "./jidouAutoEffects.js?v=2026052038",
-            "./liveSpecialBhOverride.js": "./liveSpecialBhOverride.js?v=2026052038",
-            "./main.js": "./main.js?v=2026052038",
-            "./bingoDerby.js": "./bingoDerby.js?v=2026052038",
-            "./deckBrowsePage.js": "./deckBrowsePage.js?v=2026052038",
-            "./viewNav.js": "./viewNav.js?v=2026052038",
-            "./publicDecks.js": "./publicDecks.js?v=2026052038",
-            "./sampleDeckRecipes.js": "./sampleDeckRecipes.js?v=2026052038",
-            "./simulator.js": "./simulator.js?v=2026052038",
-            "./testCardLog.js": "./testCardLog.js?v=2026052038",
-            "./ui.js": "./ui.js?v=2026052038",
-            "./versusBoardSync.js": "./versusBoardSync.js?v=2026052038",
-            "./versusMatch.js": "./versusMatch.js?v=2026052038",
-            "./versusMode.js": "./versusMode.js?v=2026052038"
+            "./abilityEffects.js": "./abilityEffects.js?v=2026052040",
+            "./bladeHeart.js": "./bladeHeart.js?v=2026052040",
+            "./cardCatalogDialog.js": "./cardCatalogDialog.js?v=2026052040",
+            "./cardGroups.js": "./cardGroups.js?v=2026052040",
+            "./cards.js": "./cards.js?v=2026052040",
+            "./cloudAuth.js": "./cloudAuth.js?v=2026052040",
+            "./config.js": "./config.js?v=2026052040",
+            "./deckLibrary.js": "./deckLibrary.js?v=2026052040",
+            "./deckbuilder.js": "./deckbuilder.js?v=2026052040",
+            "./decklogImport.js": "./decklogImport.js?v=2026052040",
+            "./firebaseConfig.js": "./firebaseConfig.js?v=2026052040",
+            "./gameStatusIcons.js": "./gameStatusIcons.js?v=2026052040",
+            "./joujiEffects.js": "./joujiEffects.js?v=2026052040",
+            "./jidouAutoEffects.js": "./jidouAutoEffects.js?v=2026052040",
+            "./liveSpecialBhOverride.js": "./liveSpecialBhOverride.js?v=2026052040",
+            "./main.js": "./main.js?v=2026052040",
+            "./bingoDerby.js": "./bingoDerby.js?v=2026052040",
+            "./deckBrowsePage.js": "./deckBrowsePage.js?v=2026052040",
+            "./viewNav.js": "./viewNav.js?v=2026052040",
+            "./publicDecks.js": "./publicDecks.js?v=2026052040",
+            "./sampleDeckRecipes.js": "./sampleDeckRecipes.js?v=2026052040",
+            "./simulator.js": "./simulator.js?v=2026052040",
+            "./testCardLog.js": "./testCardLog.js?v=2026052040",
+            "./ui.js": "./ui.js?v=2026052040",
+            "./versusBoardSync.js": "./versusBoardSync.js?v=2026052040",
+            "./versusMatch.js": "./versusMatch.js?v=2026052040",
+            "./versusMode.js": "./versusMode.js?v=2026052040"
           }
         }
       }
     </script>
-    <script type="module" src="js/main.js?v=2026052038"></script>
+    <script type="module" src="js/main.js?v=2026052040"></script>
   </body>
 </html>

@@ -785,6 +785,13 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
       toggleBtn.classList.toggle("secondary", !dev);
     }
     if (panel) panel.hidden = !dev;
+    try {
+      if (typeof window.__llocgSyncBingoDerbyButtonVisibility === "function") {
+        window.__llocgSyncBingoDerbyButtonVisibility();
+      }
+    } catch (_) {
+      /* noop */
+    }
   }
 
   function devPublishSampleRecipeList(nextRaw, opts) {

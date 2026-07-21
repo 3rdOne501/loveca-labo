@@ -12456,7 +12456,7 @@ body.play-mode .card-item--energy-wait-flip .card-img {
   padding: 1rem;
 }
 .bingo-card-pick-dialog {
-  width: min(920px, 100%);
+  width: min(980px, 100%);
   max-height: min(88vh, 900px);
   overflow: auto;
   background: #1a1018;
@@ -12466,8 +12466,8 @@ body.play-mode .card-item--energy-wait-flip .card-img {
 }
 .bingo-card-pick-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
-  gap: 0.4rem;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 0.35rem;
   margin: 0.75rem 0;
   max-height: 52vh;
   overflow: auto;
@@ -12475,12 +12475,34 @@ body.play-mode .card-item--energy-wait-flip .card-img {
 .bingo-card-pick-card {
   border: 1px solid rgba(255, 140, 190, 0.2);
   border-radius: var(--radius-sm);
-  padding: 0.15rem;
+  padding: 0.12rem;
   background: rgba(255, 255, 255, 0.03);
   cursor: pointer;
+  min-width: 0;
+}
+.bingo-card-pick-card .deck-builder-card-thumb,
+.bingo-card-pick-card img {
+  width: 100%;
+  height: auto;
+  display: block;
+  aspect-ratio: 88 / 126;
+  object-fit: cover;
 }
 .bingo-card-pick-card:hover {
   border-color: rgba(255, 180, 220, 0.55);
+}
+.bingo-slot-action-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.bingo-slot-action-remove {
+  border-color: rgba(255, 120, 120, 0.45);
+  color: #ffb8b8;
+}
+.bingo-slot-action-remove:hover {
+  border-color: rgba(255, 140, 140, 0.75);
+  background: rgba(255, 80, 80, 0.12);
 }
 .bingo-card-pick-actions {
   display: flex;

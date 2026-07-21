@@ -5,7 +5,7 @@
 import { getAllCards, getCard, catalogListThumbnailUrl } from "./cards.js";
 import { STORAGE_BINGO_DERBY } from "./config.js";
 import { showToast } from "./ui.js";
-import { showDeckBuilderView } from "./viewNav.js";
+import { showAppView, showDeckBuilderView } from "./viewNav.js";
 
 /** @typedef {{ type: 'empty' } | { type: 'card', cardNo: string, points: number }} BingoSlot */
 
@@ -155,6 +155,14 @@ function slotLabel(slot) {
   return "空きマス — タップで配置 · ドラッグで移動";
 }
 
+function filledSlotLabel(slot) {
+  if (slot.type === "card" && slot.cardNo) {
+    const c = getCard(slot.cardNo);
+    return (c && c.name ? c.name : slot.cardNo) + " — タップで変更・削除";
+  }
+  return slotLabel(slot);
+}
+
 /**
  * @param {HTMLElement} root
  * @param {number} gridSize
@@ -174,7 +182,7 @@ function renderGrid(root, gridSize, cells) {
         '" data-bingo-idx="' +
         i +
         '" title="' +
-        escapeAttr(slotLabel(slot)) +
+        escapeAttr(filled ? filledSlotLabel(slot) : slotLabel(slot)) +
         '">' +
         slotInnerHtml(slot) +
         "</button>",
@@ -189,7 +197,65 @@ function renderOanaSlot(el, oana) {
   const filled = oana.type === "card";
   el.classList.toggle("bingo-oana-slot--filled", filled);
   el.innerHTML = slotInnerHtml(oana);
-  el.title = filled ? "大穴: " + slotLabel(oana) : "大穴 — タップでカード配置 · ドラッグで移動";
+  return filled ? "大穴: " + slotLabel(oana) + " — タップで変更・削除" : "大穴 — タップでカード配置 · ドラッグで移動";
+}
+
+function openSlotActionPicker(titleText, onChangePoints, onRemove) {
+  var existing = document.getElementById("bingo-slot-action-root");
+  if (existing) existing.remove();
+
+  var backdrop = document.createElement("div");
+  backdrop.id = "bingo-slot-action-root";
+  backdrop.className = "bingo-points-pick-backdrop";
+  backdrop.setAttribute("role", "dialog");
+  backdrop.setAttribute("aria-modal", "true");
+
+  var dialog = document.createElement("div");
+  dialog.className = "bingo-points-pick-dialog";
+
+  var title = document.createElement("h3");
+  title.textContent = titleText || "配置済みカード";
+
+  var actions = document.createElement("div");
+  actions.className = "bingo-slot-action-list";
+
+  var btnPoints = document.createElement("button");
+  btnPoints.type = "button";
+  btnPoints.className = "btn secondary";
+  btnPoints.textContent = "制限ポイントを変更";
+  btnPoints.addEventListener("click", function () {
+    backdrop.remove();
+    onChangePoints();
+  });
+
+  var btnRemove = document.createElement("button");
+  btnRemove.type = "button";
+  btnRemove.className = "btn secondary bingo-slot-action-remove";
+  btnRemove.textContent = "カードを削除";
+  btnRemove.addEventListener("click", function () {
+    backdrop.remove();
+    onRemove();
+  });
+
+  var btnClose = document.createElement("button");
+  btnClose.type = "button";
+  btnClose.className = "btn secondary";
+  btnClose.textContent = "キャンセル";
+  btnClose.addEventListener("click", function () {
+    backdrop.remove();
+  });
+
+  actions.appendChild(btnPoints);
+  actions.appendChild(btnRemove);
+  actions.appendChild(btnClose);
+
+  backdrop.addEventListener("click", function (ev) {
+    if (ev.target === backdrop) backdrop.remove();
+  });
+  dialog.appendChild(title);
+  dialog.appendChild(actions);
+  backdrop.appendChild(dialog);
+  document.body.appendChild(backdrop);
 }
 
 function openPointsPicker(current, onPick) {
@@ -655,7 +721,23 @@ export function initBingoDerby() {
           return;
         }
         var cur = cells[idx];
-        if (cur.type === "card") return;
+        if (cur.type === "card") {
+          openSlotActionPicker(
+            slotLabel(cur),
+            function () {
+              openPointsPicker(cur.points, function (pt) {
+                cells[idx] = { type: "card", cardNo: cur.cardNo, points: pt };
+                persistAndRender();
+              });
+            },
+            function () {
+              cells[idx] = emptySlot();
+              persistAndRender();
+              showToast("カードを削除しました");
+            },
+          );
+          return;
+        }
         openCardPickOverlay(function (cardNo, points) {
           cells[idx] = { type: "card", cardNo: cardNo, points: points };
           persistAndRender();
@@ -732,7 +814,24 @@ export function initBingoDerby() {
         });
         return;
       }
-      if (oana.type === "card") return;
+      if (oana.type === "card") {
+        var oanaCard = oana;
+        openSlotActionPicker(
+          slotLabel(oanaCard),
+          function () {
+            openPointsPicker(oanaCard.points, function (pt) {
+              oana = { type: "card", cardNo: oanaCard.cardNo, points: pt };
+              persistAndRender();
+            });
+          },
+          function () {
+            oana = emptySlot();
+            persistAndRender();
+            showToast("大穴のカードを削除しました");
+          },
+        );
+        return;
+      }
       openCardPickOverlay(function (cardNo, points) {
         oana = { type: "card", cardNo: cardNo, points: points };
         persistAndRender();
@@ -803,7 +902,11 @@ export function initBingoDerby() {
   }
 
   document.getElementById("btn-bingo-back")?.addEventListener("click", function () {
-    showDeckBuilderView();
+    if (document.body.classList.contains("play-versus-mode")) {
+      showAppView("game");
+    } else {
+      showDeckBuilderView();
+    }
   });
 
   document.getElementById("btn-bingo-size-3")?.addEventListener("click", function () {
