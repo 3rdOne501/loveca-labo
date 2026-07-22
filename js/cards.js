@@ -39,23 +39,39 @@ export function getEffectiveCardsJsonUrl() {
   return CARDS_JSON_URL;
 }
 
-/** @returns {string[]} 取得を試す URL（上書き → CDN → 同梱 data） */
+/** @returns {string[]} 取得を試す URL（上書き → 同梱 data → CDN） */
 export function getCardsJsonLoadUrls() {
   /** @type {string[]} */
   const urls = [];
   const o = localStorage.getItem(STORAGE_CARDS_JSON_OVERRIDE);
   if (o != null && String(o).trim() !== "") urls.push(String(o).trim());
-  for (const remote of CARDS_JSON_REMOTE_URLS) {
-    if (remote && urls.indexOf(remote) < 0) urls.push(remote);
-  }
+
+  /** @type {string|null} */
+  let bundled = null;
   try {
     if (typeof document !== "undefined" && document.baseURI) {
-      const bundled = new URL(CARDS_JSON_BUNDLED_PATH, document.baseURI).href;
-      if (urls.indexOf(bundled) < 0) urls.push(bundled);
+      bundled = new URL(CARDS_JSON_BUNDLED_PATH, document.baseURI).href;
     }
   } catch (_) {
     /* noop */
   }
+
+  const isLocalHost =
+    typeof location !== "undefined" &&
+    (location.hostname === "localhost" ||
+      location.hostname === "127.0.0.1" ||
+      location.hostname === "[::1]");
+
+  // ローカルサーバ / .app では同梱 JSON を最優先（CDN 待ちで起動不能になるのを防ぐ）
+  if (bundled && isLocalHost && urls.indexOf(bundled) < 0) {
+    urls.push(bundled);
+  }
+
+  for (const remote of CARDS_JSON_REMOTE_URLS) {
+    if (remote && urls.indexOf(remote) < 0) urls.push(remote);
+  }
+
+  if (bundled && urls.indexOf(bundled) < 0) urls.push(bundled);
   return urls;
 }
 
@@ -287,11 +303,29 @@ export async function loadCardDatabase(statusEl) {
   const urls = getCardsJsonLoadUrls();
   /** @type {Error | null} */
   let lastErr = null;
+  const FETCH_TIMEOUT_MS = 8000;
+
+  async function fetchJson(url, cachePolicy) {
+    const controller = new AbortController();
+    const timer = setTimeout(function () {
+      controller.abort();
+    }, FETCH_TIMEOUT_MS);
+    try {
+      const res = await fetch(url, { cache: cachePolicy, signal: controller.signal });
+      if (!res.ok) throw new Error("カードデータの取得に失敗しました: " + res.status + " (" + url + ")");
+      return await res.json();
+    } catch (err) {
+      if (err && err.name === "AbortError") {
+        throw new Error("カードデータの取得がタイムアウトしました（" + FETCH_TIMEOUT_MS / 1000 + "秒）: " + url);
+      }
+      throw err;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
 
   async function loadOnce(url, cachePolicy) {
-    const res = await fetch(url, { cache: cachePolicy });
-    if (!res.ok) throw new Error("カードデータの取得に失敗しました: " + res.status + " (" + url + ")");
-    const json = await res.json();
+    const json = await fetchJson(url, cachePolicy);
     if (!json || typeof json !== "object") throw new Error("カードデータの形式が不正です: " + url);
     const cardCount = countCatalogCardKeys(json);
     if (cardCount < MIN_CATALOG_CARD_COUNT) {

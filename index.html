@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Loveca Labo" />
-    <meta name="loveca-build" content="2026052041" />
+    <meta name="loveca-build" content="2026052042" />
     <title>Loveca Labo</title>
     <!-- 万一以前のバージョンの Service Worker が登録された端末で取り残しが起きた場合に備え、
          先頭で SW 登録を一括解除する。SW 自体は本サイトでは使っていない。 -->
@@ -51,7 +51,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,700;1,9..40,500&family=M+PLUS+Rounded+1c:wght@500;700&family=Noto+Sans+JP:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=2026052041" />
+    <link rel="stylesheet" href="styles.css?v=2026052042" />
     <link rel="stylesheet" href="styles-perf.css?v=2026051910" />
   </head>
   <body>
@@ -181,6 +181,39 @@ python3 -m http.server 8080</pre>
           },
           true,
         );
+      })();
+    </script>
+    <script>
+      (function () {
+        function showBootModuleError(detail) {
+          var ov = document.getElementById("app-boot-overlay");
+          var msgEl = document.getElementById("app-boot-message");
+          var detEl = document.getElementById("app-boot-detail");
+          if (msgEl) msgEl.textContent = "アプリの読み込みに失敗しました";
+          if (detEl) detEl.textContent = detail || "";
+          if (ov) {
+            ov.hidden = false;
+            ov.removeAttribute("aria-busy");
+          }
+          document.body.classList.remove("app-boot-loading");
+          var tb = document.getElementById("boot-toolbar");
+          if (tb) {
+            tb.hidden = false;
+            var lead = tb.querySelector(".boot-toolbar-lead");
+            if (lead) {
+              lead.textContent =
+                "JavaScript の読み込みに失敗しました。Cmd+Shift+R（強制再読込）を試してください。解決しない場合は ?recover=1 を付けて開いてください。";
+            }
+          }
+        }
+        window.__llocgShowBootModuleError = showBootModuleError;
+        document.getElementById("boot-retry")?.addEventListener("click", function () {
+          try {
+            location.reload();
+          } catch (_) {
+            /* noop */
+          }
+        });
       })();
     </script>
     <div id="toast-stack" class="toast-stack" aria-live="polite"></div>
@@ -2177,41 +2210,71 @@ python3 -m http.server 8080</pre>
     </dialog>
 
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
-    <script type="importmap">
-      {
-        "scopes": {
-          "/js/": {
-            "./abilityEffects.js": "./abilityEffects.js?v=2026052041",
-            "./bladeHeart.js": "./bladeHeart.js?v=2026052041",
-            "./cardCatalogDialog.js": "./cardCatalogDialog.js?v=2026052041",
-            "./cardGroups.js": "./cardGroups.js?v=2026052041",
-            "./cards.js": "./cards.js?v=2026052041",
-            "./cloudAuth.js": "./cloudAuth.js?v=2026052041",
-            "./config.js": "./config.js?v=2026052041",
-            "./deckLibrary.js": "./deckLibrary.js?v=2026052041",
-            "./deckbuilder.js": "./deckbuilder.js?v=2026052041",
-            "./decklogImport.js": "./decklogImport.js?v=2026052041",
-            "./firebaseConfig.js": "./firebaseConfig.js?v=2026052041",
-            "./gameStatusIcons.js": "./gameStatusIcons.js?v=2026052041",
-            "./joujiEffects.js": "./joujiEffects.js?v=2026052041",
-            "./jidouAutoEffects.js": "./jidouAutoEffects.js?v=2026052041",
-            "./liveSpecialBhOverride.js": "./liveSpecialBhOverride.js?v=2026052041",
-            "./main.js": "./main.js?v=2026052041",
-            "./bingoDerby.js": "./bingoDerby.js?v=2026052041",
-            "./deckBrowsePage.js": "./deckBrowsePage.js?v=2026052041",
-            "./viewNav.js": "./viewNav.js?v=2026052041",
-            "./publicDecks.js": "./publicDecks.js?v=2026052041",
-            "./sampleDeckRecipes.js": "./sampleDeckRecipes.js?v=2026052041",
-            "./simulator.js": "./simulator.js?v=2026052041",
-            "./testCardLog.js": "./testCardLog.js?v=2026052041",
-            "./ui.js": "./ui.js?v=2026052041",
-            "./versusBoardSync.js": "./versusBoardSync.js?v=2026052041",
-            "./versusMatch.js": "./versusMatch.js?v=2026052041",
-            "./versusMode.js": "./versusMode.js?v=2026052041"
-          }
+    <script>
+      (function () {
+        var buildMeta = document.querySelector('meta[name="loveca-build"]');
+        var build = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "2026052042";
+        var moduleNames = [
+          "abilityEffects.js",
+          "bladeHeart.js",
+          "cardCatalogDialog.js",
+          "cardGroups.js",
+          "cards.js",
+          "cloudAuth.js",
+          "config.js",
+          "deckLibrary.js",
+          "deckbuilder.js",
+          "decklogImport.js",
+          "firebaseConfig.js",
+          "gameStatusIcons.js",
+          "joujiEffects.js",
+          "jidouAutoEffects.js",
+          "liveSpecialBhOverride.js",
+          "main.js",
+          "bingoDerby.js",
+          "deckBrowsePage.js",
+          "viewNav.js",
+          "publicDecks.js",
+          "sampleDeckRecipes.js",
+          "simulator.js",
+          "testCardLog.js",
+          "ui.js",
+          "versusBoardSync.js",
+          "versusMatch.js",
+          "versusMode.js",
+        ];
+        var mods = {};
+        moduleNames.forEach(function (name) {
+          mods["./" + name] = "./" + name + "?v=" + build;
+        });
+        var scopes = { "/js/": mods };
+        if ((location.pathname || "").indexOf("/loveca-labo") >= 0) {
+          scopes["/loveca-labo/js/"] = mods;
+        }
+        var im = document.createElement("script");
+        im.type = "importmap";
+        im.id = "llocg-importmap";
+        im.textContent = JSON.stringify({ scopes: scopes });
+        document.currentScript.after(im);
+      })();
+    </script>
+    <script type="module">
+      var buildMeta = document.querySelector('meta[name="loveca-build"]');
+      var build = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "2026052042";
+      try {
+        await import("./js/main.js?v=" + build);
+      } catch (err) {
+        console.error("[Loveca Labo] main module failed:", err);
+        var msg =
+          err && err.message
+            ? String(err.message)
+            : err
+              ? String(err)
+              : "不明なエラー";
+        if (typeof window.__llocgShowBootModuleError === "function") {
+          window.__llocgShowBootModuleError(msg);
         }
       }
     </script>
-    <script type="module" src="js/main.js?v=2026052041"></script>
   </body>
 </html>

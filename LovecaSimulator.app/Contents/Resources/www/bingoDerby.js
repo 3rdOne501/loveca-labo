@@ -461,6 +461,31 @@ function loadImageForCanvas(url) {
   });
 }
 
+/** @param {CanvasRenderingContext2D} ctx @param {CanvasImageSource} img @param {number} x @param {number} y @param {number} w @param {number} h */
+function drawImageContain(ctx, img, x, y, w, h) {
+  const iw = "naturalWidth" in img && img.naturalWidth ? img.naturalWidth : img.width;
+  const ih = "naturalHeight" in img && img.naturalHeight ? img.naturalHeight : img.height;
+  if (!iw || !ih) return;
+  const imgRatio = iw / ih;
+  const boxRatio = w / h;
+  let drawW;
+  let drawH;
+  let drawX;
+  let drawY;
+  if (imgRatio > boxRatio) {
+    drawW = w;
+    drawH = w / imgRatio;
+    drawX = x;
+    drawY = y + (h - drawH) / 2;
+  } else {
+    drawH = h;
+    drawW = h * imgRatio;
+    drawX = x + (w - drawW) / 2;
+    drawY = y;
+  }
+  ctx.drawImage(img, drawX, drawY, drawW, drawH);
+}
+
 /** @param {CanvasRenderingContext2D} ctx @param {number} x @param {number} y @param {number} pt */
 function drawPointsBadge(ctx, x, y, pt) {
   ctx.fillStyle = "#ff6eb4";
@@ -487,9 +512,11 @@ async function exportBingoPng(gridSize, cells, oana, titleText) {
   const gridTop = pad + titleH;
   const gridW = W - pad * 2;
   const cellW = gridW / gridSize;
-  const cellH = cellW * 1.38;
+  const CARD_H_OVER_W = 7 / 5;
+  const cellH = cellW * CARD_H_OVER_W;
   const gridH = cellH * gridSize;
-  const oanaH = cellH * 0.85;
+  const oanaW = cellW * 1.2;
+  const oanaH = oanaW * CARD_H_OVER_W;
   const oanaGap = 28;
   const canvasH = gridTop + gridH + oanaGap + oanaH + pad + 24;
   const n = cellCount(gridSize);
@@ -530,7 +557,7 @@ async function exportBingoPng(gridSize, cells, oana, titleText) {
       const img = c && c.img ? await loadImageForCanvas(c.img) : null;
       if (img) {
         const margin = 6;
-        ctx.drawImage(img, x + margin, y + margin, cellW - margin * 2, cellH - margin * 2 - 18);
+        drawImageContain(ctx, img, x + margin, y + margin, cellW - margin * 2, cellH - margin * 2);
         drawPointsBadge(ctx, x + cellW - 14, y + 16, clampPoints(slot.points));
       } else {
         ctx.fillStyle = "#ccc";
@@ -543,7 +570,6 @@ async function exportBingoPng(gridSize, cells, oana, titleText) {
   }
 
   const oanaY = gridTop + gridH + oanaGap;
-  const oanaW = cellW * 1.2;
   const oanaX = (W - oanaW) / 2;
   ctx.fillStyle = "rgba(255, 200, 80, 0.15)";
   ctx.strokeStyle = "rgba(255, 200, 80, 0.55)";
@@ -559,7 +585,7 @@ async function exportBingoPng(gridSize, cells, oana, titleText) {
     const oimg = oc && oc.img ? await loadImageForCanvas(oc.img) : null;
     if (oimg) {
       const m = 8;
-      ctx.drawImage(oimg, oanaX + m, oanaY + m, oanaW - m * 2, oanaH - m * 2 - 12);
+      drawImageContain(ctx, oimg, oanaX + m, oanaY + m, oanaW - m * 2, oanaH - m * 2);
       drawPointsBadge(ctx, oanaX + oanaW - 14, oanaY + 16, clampPoints(oana.points));
     }
   }

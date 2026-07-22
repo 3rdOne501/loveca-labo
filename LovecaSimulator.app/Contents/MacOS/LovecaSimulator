@@ -82,7 +82,6 @@ server_ok() {
   if [[ -n "${LOVECA_EXPECTED_BUILD}" ]]; then
     case "$body" in
       *"name=\"loveca-build\" content=\"${LOVECA_EXPECTED_BUILD}\""*) return 0 ;;
-      *"dlg-card-catalog-hand-stage-actions"*) return 0 ;;
     esac
     return 1
   fi
