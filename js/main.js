@@ -26,7 +26,7 @@ import { initDeckBuilder, loadDeckBundleFromStorage } from "./deckbuilder.js";
 import { initPublishedSampleRecipes, isSampleDevMode } from "./sampleDeckRecipes.js";
 import { initDeckBrowsePage } from "./deckBrowsePage.js";
 import { initBingoDerby } from "./bingoDerby.js";
-import { showAppView, showDeckBuilderView, showBingoView } from "./viewNav.js";
+import { showAppView, showDeckBuilderView, showDeckBrowseView, showBingoView } from "./viewNav.js";
 import { prefetchGameStatusArtBundledEarly } from "./gameStatusIcons.js";
 import { showToast } from "./ui.js";
 

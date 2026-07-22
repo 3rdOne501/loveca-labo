@@ -9,6 +9,7 @@ import {
   isGoogleCloudUser,
   isGuestCloudUser,
   isCloudSyncAvailable,
+  initCloudAuthIfConfigured,
   signInWithGoogle,
 } from "./cloudAuth.js";
 import { getPlayerDisplayName } from "./playerProfile.js";
@@ -49,6 +50,21 @@ function fs() {
   const h = getCloudFirestore();
   if (!h) throw new Error("Firebase が未初期化です。ネットワークと firebaseConfig を確認してください。");
   return h;
+}
+
+/**
+ * Firebase 初期化がまだ／一度失敗している場合に、その場で初期化を試みる。
+ * 起動直後にボタンを押したケースや CDN 一時失敗からの復帰用。
+ * @returns {Promise<boolean>} 利用可能になったか
+ */
+async function ensureCloudReadyForPublicDecks() {
+  if (isCloudSyncAvailable()) return true;
+  try {
+    await initCloudAuthIfConfigured();
+  } catch (err) {
+    console.warn("[publicDecks] initCloudAuthIfConfigured failed:", err);
+  }
+  return isCloudSyncAvailable();
 }
 
 function sanitizeCardNoList(list) {
@@ -117,7 +133,12 @@ export function isGoogleUserForPublicDecks() {
  */
 export async function ensureGoogleUserForPublicDecks() {
   if (!isCloudSyncAvailable()) {
-    throw new Error("クラウド機能が無効です。Firebase 設定を確認してください。");
+    const ok = await ensureCloudReadyForPublicDecks();
+    if (!ok) {
+      throw new Error(
+        "Firebase を初期化できませんでした。ネットワーク接続・広告ブロック・firebaseConfig.js を確認し、http://localhost で開き直してください。",
+      );
+    }
   }
   if (isGoogleUserForPublicDecks()) return getCurrentCloudUser();
   if (isGuestCloudUser()) {
@@ -176,6 +197,7 @@ function normalizePublicDeckDoc(raw, id) {
  * @returns {Promise<PublicDeckEntry[]>}
  */
 export async function listPublicDecks(limitCount) {
+  await ensureCloudReadyForPublicDecks();
   const { db, api } = fs();
   const lim = Math.min(
     Math.max(1, Number(limitCount) || PUBLIC_DECK_LIST_LIMIT),

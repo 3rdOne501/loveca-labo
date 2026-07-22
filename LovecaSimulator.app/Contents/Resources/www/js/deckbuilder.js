@@ -4190,6 +4190,20 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
     return null;
   }
 
+  /** 投稿日 ISO 文字列を「2026年7月22日」形式に整形（不正なら空文字） */
+  function formatPublicDeckPostedDate(iso) {
+    if (!iso || typeof iso !== "string" || Number.isNaN(Date.parse(iso))) return "";
+    try {
+      return new Date(iso).toLocaleDateString("ja-JP", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    } catch (_) {
+      return "";
+    }
+  }
+
   function renderPublicDecksTiles(hostOpt, emptyOpt, statusOpt) {
     var host = hostOpt || el("public-decks-grid");
     if (!host) return;
@@ -4223,6 +4237,10 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
       var delBtn = isMine
         ? '<button type="button" class="btn sm danger" data-public-act="delete">削除</button>'
         : "";
+      var postedDate = formatPublicDeckPostedDate(entry.createdAt);
+      var postedHtml = postedDate
+        ? '<p class="public-deck-posted muted">' + escapeHtml(postedDate) + " 投稿</p>"
+        : "";
       var noteHtml = noteSnippet
         ? '<p class="sample-recipe-counts muted public-deck-note">' + escapeHtml(noteSnippet) + "</p>"
         : "";
@@ -4244,6 +4262,7 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
           '<p class="public-deck-owner muted">投稿者: ' +
           escapeHtml(owner) +
           "</p>" +
+          postedHtml +
           '<p class="sample-recipe-counts muted">メンバー ' +
           t.m +
           " · ライブ " +

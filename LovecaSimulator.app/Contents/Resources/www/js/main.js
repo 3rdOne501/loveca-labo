@@ -26,7 +26,7 @@ import { initDeckBuilder, loadDeckBundleFromStorage } from "./deckbuilder.js";
 import { initPublishedSampleRecipes, isSampleDevMode } from "./sampleDeckRecipes.js";
 import { initDeckBrowsePage } from "./deckBrowsePage.js";
 import { initBingoDerby } from "./bingoDerby.js";
-import { showAppView, showDeckBuilderView, showBingoView } from "./viewNav.js";
+import { showAppView, showDeckBuilderView, showDeckBrowseView, showBingoView } from "./viewNav.js";
 import { prefetchGameStatusArtBundledEarly } from "./gameStatusIcons.js";
 import { showToast } from "./ui.js";
 
@@ -93,6 +93,8 @@ import {
   getEffectiveCloudUser,
   ensureGoogleSession,
   isCloudAuthEnvironmentSupported,
+  isGuestCloudUser,
+  isGoogleCloudUser,
   signInWithGoogle,
   signOutCloud,
 } from "./cloudAuth.js";
@@ -1070,7 +1072,10 @@ function wireCloudAuthBar() {
 
   function paintAuthBar(user) {
     const effective = user || getEffectiveCloudUser();
-    if (!isCloudSyncAvailable() && !effective) {
+    const cloudReady = isCloudSyncAvailable();
+    const guestLive = cloudReady && isGuestCloudUser();
+    const googleLive = cloudReady && isGoogleCloudUser();
+    if (!cloudReady && !effective) {
       if (statusEl) statusEl.textContent = "未ログイン";
       signInBtn.hidden = false;
       signOutBtn.hidden = true;
@@ -1089,11 +1094,19 @@ function wireCloudAuthBar() {
         if (savedName) playerNameInput.value = savedName;
       }
       if (statusEl) {
-        var label = effective.displayName || effective.email || "ログイン中";
-        statusEl.textContent = user ? label : label + "（復元中）";
+        var baseLabel = effective.displayName || effective.email || "ログイン中";
+        if (guestLive || effective.isAnonymous) {
+          statusEl.textContent = "ゲスト（投稿には Google ログインが必要）";
+        } else if (!cloudReady) {
+          statusEl.textContent = baseLabel + "（接続中…）";
+        } else if (googleLive || effective.isGoogle) {
+          statusEl.textContent = baseLabel + "（Google）";
+        } else {
+          statusEl.textContent = baseLabel;
+        }
       }
       if (avatarEl) {
-        if (effective.photoURL) {
+        if (effective.photoURL && !guestLive && !effective.isAnonymous) {
           avatarEl.src = effective.photoURL;
           avatarEl.hidden = false;
         } else {
@@ -1101,8 +1114,16 @@ function wireCloudAuthBar() {
           avatarEl.hidden = true;
         }
       }
-      signInBtn.hidden = true;
-      signOutBtn.hidden = false;
+      /* ゲストは「Google でログイン」を残して切替できるようにする */
+      if (guestLive || effective.isAnonymous) {
+        signInBtn.hidden = false;
+        signInBtn.textContent = "Google でログイン";
+        signInBtn.title = "投稿・デッキ同期には Google ログインが必要です";
+        signOutBtn.hidden = false;
+      } else {
+        signInBtn.hidden = true;
+        signOutBtn.hidden = false;
+      }
     } else {
       if (playerNameWrap) playerNameWrap.hidden = true;
       if (statusEl) statusEl.textContent = "未ログイン";
@@ -1111,6 +1132,7 @@ function wireCloudAuthBar() {
         avatarEl.hidden = true;
       }
       signInBtn.hidden = false;
+      signInBtn.textContent = "Google でログイン";
       signOutBtn.hidden = true;
     }
   }

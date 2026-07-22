@@ -1,6 +1,6 @@
 /**
  * 禁止制限ダービー用ビンゴ（3×3 / 5×5）。
- * 大穴は枠外。各カードに制限ポイント 1〜9。ドラッグで移動・入れ替え。
+ * 大穴は枠外。各カードに制限ポイント 1〜5。ドラッグで移動・入れ替え。
  */
 import { getAllCards, getCard, catalogListThumbnailUrl } from "./cards.js";
 import { STORAGE_BINGO_DERBY } from "./config.js";
@@ -25,11 +25,27 @@ function defaultCells(gridSize) {
   return cells;
 }
 
+const BINGO_POINTS_MAX = 5;
+
 function clampPoints(n) {
   const v = Math.round(Number(n));
   if (!Number.isFinite(v) || v < 1) return 1;
-  if (v > 9) return 9;
+  if (v > BINGO_POINTS_MAX) return BINGO_POINTS_MAX;
   return v;
+}
+
+/** @param {number} pt @returns {{ fill: string, glow: string, stroke: string, text: string, tier: number }} */
+function pointsBadgePalette(pt) {
+  const tier = clampPoints(pt);
+  /** @type {Record<number, { fill: string, glow: string, stroke: string, text: string }>} */
+  const palettes = {
+    1: { fill: "#8ed8ff", glow: "rgba(90, 210, 255, 0.95)", stroke: "#f0fbff", text: "#062030" },
+    2: { fill: "#6ef0c0", glow: "rgba(50, 255, 175, 0.95)", stroke: "#edfff8", text: "#042818" },
+    3: { fill: "#ffe24d", glow: "rgba(255, 205, 35, 1)", stroke: "#fffceb", text: "#2a2200" },
+    4: { fill: "#ff9a38", glow: "rgba(255, 125, 15, 1)", stroke: "#fff3e8", text: "#2a1200" },
+    5: { fill: "#ff2858", glow: "rgba(255, 25, 65, 1)", stroke: "#ffffff", text: "#ffffff" },
+  };
+  return Object.assign({ tier: tier }, palettes[tier]);
 }
 
 /** @param {unknown} raw @returns {BingoSlot} */
@@ -135,11 +151,16 @@ function slotInnerHtml(slot) {
       c && c.img
         ? thumbImgHtml(c.img, "bingo-cell-card-img")
         : '<span class="bingo-cell-missing">' + escapeHtml(slot.cardNo) + "</span>";
+    const pt = clampPoints(slot.points);
     return (
       '<span class="bingo-cell-inner">' +
       img +
-      '<span class="bingo-points-badge" title="制限ポイント（タップで変更）">' +
-      clampPoints(slot.points) +
+      '<span class="bingo-points-badge bingo-points-badge--p' +
+      pt +
+      '" title="制限ポイント ' +
+      pt +
+      '（タップで変更）">' +
+      pt +
       "</span></span>"
     );
   }
@@ -271,15 +292,18 @@ function openPointsPicker(current, onPick) {
   var dialog = document.createElement("div");
   dialog.className = "bingo-points-pick-dialog";
   var title = document.createElement("h3");
-  title.textContent = "制限ポイント（1〜9）";
+  title.textContent = "制限ポイント（1〜5）";
 
   var grid = document.createElement("div");
   grid.className = "bingo-points-pick-grid";
-  for (var p = 1; p <= 9; p++) {
+  for (var p = 1; p <= BINGO_POINTS_MAX; p++) {
     (function (pt) {
       var btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "btn sm bingo-points-pick-btn" + (pt === clampPoints(current) ? " primary" : " secondary");
+      btn.className =
+        "btn sm bingo-points-pick-btn bingo-points-pick-btn--p" +
+        pt +
+        (pt === clampPoints(current) ? " primary" : " secondary");
       btn.textContent = String(pt);
       btn.addEventListener("click", function () {
         onPick(pt);
@@ -340,11 +364,14 @@ function openCardPickOverlay(onPicked, defaultPoints) {
   var pointsRow = document.createElement("div");
   pointsRow.className = "bingo-pick-points-row";
   var pointBtns = [];
-  for (var pi = 1; pi <= 9; pi++) {
+  for (var pi = 1; pi <= BINGO_POINTS_MAX; pi++) {
     (function (pt) {
       var pb = document.createElement("button");
       pb.type = "button";
-      pb.className = "btn sm bingo-pick-point-btn" + (pt === selectedPoints ? " primary" : " secondary");
+      pb.className =
+        "btn sm bingo-pick-point-btn bingo-pick-point-btn--p" +
+        pt +
+        (pt === selectedPoints ? " primary" : " secondary");
       pb.textContent = String(pt);
       pb.addEventListener("click", function () {
         selectedPoints = pt;
@@ -486,17 +513,54 @@ function drawImageContain(ctx, img, x, y, w, h) {
   ctx.drawImage(img, drawX, drawY, drawW, drawH);
 }
 
-/** @param {CanvasRenderingContext2D} ctx @param {number} x @param {number} y @param {number} pt */
-function drawPointsBadge(ctx, x, y, pt) {
-  ctx.fillStyle = "#ff6eb4";
+/** @param {number} refSize セル幅など（バッジサイズの基準） */
+function bingoBadgeRadius(refSize) {
+  return Math.max(30, Math.min(44, refSize * 0.17));
+}
+
+/** @param {CanvasRenderingContext2D} ctx @param {number} x @param {number} y @param {number} pt @param {number} [refSize] */
+function drawPointsBadge(ctx, x, y, pt, refSize) {
+  const palette = pointsBadgePalette(pt);
+  const tier = palette.tier;
+  const baseR = refSize ? bingoBadgeRadius(refSize) : 36;
+  const r = baseR * (1 + (tier - 1) * 0.045);
+  const fontSize = Math.round(r * 0.92);
+  ctx.save();
+
+  for (let ring = 4; ring >= 1; ring--) {
+    ctx.globalAlpha = 0.12 + ring * 0.1;
+    ctx.fillStyle = palette.glow;
+    ctx.shadowColor = palette.glow;
+    ctx.shadowBlur = r * (0.55 + ring * 0.45);
+    ctx.beginPath();
+    ctx.arc(x, y, r + ring * 5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.globalAlpha = 1;
+  ctx.shadowColor = palette.glow;
+  ctx.shadowBlur = r * (0.9 + tier * 0.22);
+  ctx.fillStyle = palette.fill;
   ctx.beginPath();
-  ctx.arc(x, y, 16, 0, Math.PI * 2);
+  ctx.arc(x, y, r, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = "#1a0810";
-  ctx.font = "bold 16px system-ui, sans-serif";
+
+  ctx.shadowBlur = r * 0.35;
+  ctx.strokeStyle = palette.stroke;
+  ctx.lineWidth = Math.max(3, r * (0.1 + tier * 0.015));
+  ctx.stroke();
+
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = palette.text;
+  ctx.font = "bold " + fontSize + "px system-ui, sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(String(pt), x, y);
+  if (tier >= 4) {
+    ctx.shadowColor = palette.glow;
+    ctx.shadowBlur = Math.max(4, r * 0.15);
+  }
+  ctx.fillText(String(tier), x, y);
+  ctx.restore();
 }
 
 /**
@@ -558,7 +622,8 @@ async function exportBingoPng(gridSize, cells, oana, titleText) {
       if (img) {
         const margin = 6;
         drawImageContain(ctx, img, x + margin, y + margin, cellW - margin * 2, cellH - margin * 2);
-        drawPointsBadge(ctx, x + cellW - 14, y + 16, clampPoints(slot.points));
+        var badgeR = bingoBadgeRadius(cellW);
+        drawPointsBadge(ctx, x + cellW - badgeR - 8, y + badgeR + 8, clampPoints(slot.points), cellW);
       } else {
         ctx.fillStyle = "#ccc";
         ctx.font = "14px system-ui, sans-serif";
@@ -586,7 +651,8 @@ async function exportBingoPng(gridSize, cells, oana, titleText) {
     if (oimg) {
       const m = 8;
       drawImageContain(ctx, oimg, oanaX + m, oanaY + m, oanaW - m * 2, oanaH - m * 2);
-      drawPointsBadge(ctx, oanaX + oanaW - 14, oanaY + 16, clampPoints(oana.points));
+      var oanaBadgeR = bingoBadgeRadius(oanaW);
+      drawPointsBadge(ctx, oanaX + oanaW - oanaBadgeR - 8, oanaY + oanaBadgeR + 8, clampPoints(oana.points), oanaW);
     }
   }
 

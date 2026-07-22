@@ -2498,6 +2498,12 @@ body.play-versus-mode .game-tools-row #btn-versus-lobby:not([hidden]) {
   font-size: 0.66rem;
   line-height: 1.35;
 }
+.public-deck-posted {
+  margin: 0;
+  font-size: 0.66rem;
+  line-height: 1.35;
+  opacity: 0.85;
+}
 .public-deck-note {
   opacity: 0.85;
 }
@@ -12333,19 +12339,93 @@ body.play-mode .card-item--energy-wait-flip .card-img {
   position: absolute;
   top: 3px;
   right: 3px;
-  min-width: 1.35rem;
-  height: 1.35rem;
-  padding: 0 0.2rem;
+  min-width: 1.55rem;
+  height: 1.55rem;
+  padding: 0 0.22rem;
   border-radius: 999px;
-  background: #ff6eb4;
-  color: #1a0810;
   font-weight: 800;
-  font-size: 0.72rem;
-  line-height: 1.35rem;
+  font-size: 0.82rem;
+  line-height: 1.55rem;
   text-align: center;
   z-index: 2;
   cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  border: 2px solid rgba(255, 255, 255, 0.85);
+}
+.bingo-points-badge--p1 {
+  background: #8ed8ff;
+  color: #062030;
+  box-shadow:
+    0 0 6px rgba(100, 210, 255, 0.85),
+    0 0 14px rgba(100, 210, 255, 0.45);
+}
+.bingo-points-badge--p2 {
+  background: #6ef0c0;
+  color: #042818;
+  box-shadow:
+    0 0 7px rgba(50, 255, 175, 0.85),
+    0 0 16px rgba(50, 255, 175, 0.5);
+}
+.bingo-points-badge--p3 {
+  background: #ffe24d;
+  color: #2a2200;
+  box-shadow:
+    0 0 8px rgba(255, 205, 35, 0.95),
+    0 0 18px rgba(255, 205, 35, 0.55);
+}
+.bingo-points-badge--p4 {
+  background: #ff9a38;
+  color: #2a1200;
+  box-shadow:
+    0 0 9px rgba(255, 125, 15, 0.95),
+    0 0 20px rgba(255, 125, 15, 0.6),
+    0 0 32px rgba(255, 100, 0, 0.25);
+}
+.bingo-points-badge--p5 {
+  background: linear-gradient(145deg, #ff5c8a 0%, #ff2858 55%, #e01040 100%);
+  color: #fff;
+  border-color: #fff;
+  box-shadow:
+    0 0 10px rgba(255, 40, 88, 1),
+    0 0 22px rgba(255, 30, 70, 0.75),
+    0 0 38px rgba(255, 15, 55, 0.45);
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.65);
+  transform: scale(1.06);
+  transform-origin: top right;
+}
+.bingo-pick-point-btn--p1.primary,
+.bingo-points-pick-btn--p1.primary {
+  background: #8ed8ff;
+  border-color: #8ed8ff;
+  color: #062030;
+  box-shadow: 0 0 10px rgba(100, 210, 255, 0.7);
+}
+.bingo-pick-point-btn--p2.primary,
+.bingo-points-pick-btn--p2.primary {
+  background: #6ef0c0;
+  border-color: #6ef0c0;
+  color: #042818;
+  box-shadow: 0 0 10px rgba(50, 255, 175, 0.7);
+}
+.bingo-pick-point-btn--p3.primary,
+.bingo-points-pick-btn--p3.primary {
+  background: #ffe24d;
+  border-color: #ffe24d;
+  color: #2a2200;
+  box-shadow: 0 0 10px rgba(255, 205, 35, 0.8);
+}
+.bingo-pick-point-btn--p4.primary,
+.bingo-points-pick-btn--p4.primary {
+  background: #ff9a38;
+  border-color: #ff9a38;
+  color: #2a1200;
+  box-shadow: 0 0 12px rgba(255, 125, 15, 0.85);
+}
+.bingo-pick-point-btn--p5.primary,
+.bingo-points-pick-btn--p5.primary {
+  background: linear-gradient(145deg, #ff5c8a, #ff2858);
+  border-color: #ff2858;
+  color: #fff;
+  box-shadow: 0 0 14px rgba(255, 30, 70, 0.95), 0 0 24px rgba(255, 20, 60, 0.5);
 }
 .bingo-cell--dragging {
   opacity: 0.55;

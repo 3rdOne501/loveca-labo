@@ -93,7 +93,7 @@ import {
   ensureGoogleUserForPublicDecks,
   effectivePublicDeckThumbnailCardNo,
 } from "./publicDecks.js";
-import { getCurrentCloudUser, onCloudUserChange } from "./cloudAuth.js";
+import { getCurrentCloudUser, onCloudUserChange, isGuestCloudUser } from "./cloudAuth.js";
 
 let deckBuilderStorageFlushHooked = false;
 
@@ -4409,7 +4409,10 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
       fillAndShow();
       return;
     }
-    showToast("投稿には Google ログインが必要です…");
+    var guestHint = isGuestCloudUser()
+      ? "ゲストログイン中です。Google アカウントに切り替えます…"
+      : "投稿には Google ログインが必要です…";
+    showToast(guestHint);
     ensureGoogleUserForPublicDecks()
       .then(function () {
         fillAndShow();
@@ -4668,12 +4671,15 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
       if (mode === "library") {
         hintEl.textContent = "保存したデッキ一覧。タイルから読み込み・確認・ソロプレイができます。";
       } else if (mode === "public") {
-        hintEl.textContent = "みんなの公開デッキ。閲覧は誰でも、投稿は Google ログイン限定。";
+        hintEl.textContent =
+          "みんなの公開デッキ。閲覧は誰でも、投稿は Google ログイン限定（ゲストログイン中は Google へ切替）。編集中デッキ 60 枚で「デッキを投稿…」から公開できます。";
       } else {
         hintEl.textContent = "公式サンプル・大会例などのプリセットデッキ一覧です。";
       }
     }
     if (refreshBtn) refreshBtn.hidden = mode !== "public";
+    var postPublicBtn = document.getElementById("btn-deck-browse-post-public");
+    if (postPublicBtn) postPublicBtn.hidden = mode !== "public";
     if (restoreBtn) restoreBtn.hidden = mode !== "library";
     syncDeckBrowseTabs(mode);
     gridHost.dataset.deckBrowseMode = mode;
@@ -5208,6 +5214,9 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
   el("btn-public-deck-post")?.addEventListener("click", function () {
     openPublicDeckPostDialog();
   });
+  el("btn-deck-browse-post-public")?.addEventListener("click", function () {
+    openPublicDeckPostDialog();
+  });
   el("dlg-public-deck-post-cancel")?.addEventListener("click", function () {
     var dlg = el("dlg-public-deck-post");
     if (dlg && typeof dlg.close === "function" && dlg.open) dlg.close();
@@ -5225,6 +5234,7 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
 
   window.__llocgDeckBrowse = {
     open: openDeckBrowsePage,
+    postPublic: openPublicDeckPostDialog,
     refreshPublic: function () {
       loadPublicDecksList({ force: true }).then(function () {
         renderDeckBrowsePage("public");
