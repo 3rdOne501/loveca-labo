@@ -1,6 +1,6 @@
 /**
  * 禁止制限ダービー用ビンゴ（3×3 / 5×5）。
- * 大穴は枠外。各カードに制限ポイント 1〜5。ドラッグで移動・入れ替え。
+ * 大穴は枠外。各カードに制限ポイント 0〜5。ドラッグで移動・入れ替え。
  */
 import { getAllCards, getCard, catalogListThumbnailUrl } from "./cards.js";
 import { STORAGE_BINGO_DERBY, T_ENERGY } from "./config.js";
@@ -31,11 +31,12 @@ function defaultCells(gridSize) {
   return cells;
 }
 
+const BINGO_POINTS_MIN = 0;
 const BINGO_POINTS_MAX = 5;
 
 function clampPoints(n) {
   const v = Math.round(Number(n));
-  if (!Number.isFinite(v) || v < 1) return 1;
+  if (!Number.isFinite(v) || v < BINGO_POINTS_MIN) return BINGO_POINTS_MIN;
   if (v > BINGO_POINTS_MAX) return BINGO_POINTS_MAX;
   return v;
 }
@@ -45,6 +46,7 @@ function pointsBadgePalette(pt) {
   const tier = clampPoints(pt);
   /** @type {Record<number, { fill: string, glow: string, stroke: string, text: string }>} */
   const palettes = {
+    0: { fill: "#c8c4d0", glow: "rgba(180, 175, 195, 0.55)", stroke: "#f4f2f8", text: "#2a2830" },
     1: { fill: "#8ed8ff", glow: "rgba(90, 210, 255, 0.95)", stroke: "#f0fbff", text: "#062030" },
     2: { fill: "#6ef0c0", glow: "rgba(50, 255, 175, 0.95)", stroke: "#edfff8", text: "#042818" },
     3: { fill: "#ffe24d", glow: "rgba(255, 205, 35, 1)", stroke: "#fffceb", text: "#2a2200" },
@@ -298,11 +300,11 @@ function openPointsPicker(current, onPick) {
   var dialog = document.createElement("div");
   dialog.className = "bingo-points-pick-dialog";
   var title = document.createElement("h3");
-  title.textContent = "制限ポイント（1〜5）";
+  title.textContent = "制限ポイント（0〜5）";
 
   var grid = document.createElement("div");
   grid.className = "bingo-points-pick-grid";
-  for (var p = 1; p <= BINGO_POINTS_MAX; p++) {
+  for (var p = BINGO_POINTS_MIN; p <= BINGO_POINTS_MAX; p++) {
     (function (pt) {
       var btn = document.createElement("button");
       btn.type = "button";
@@ -349,7 +351,7 @@ function openCardPickOverlay(onPicked, defaultPoints) {
   if (existing) existing.remove();
 
   var cards = bingoPickableCards();
-  var selectedPoints = clampPoints(defaultPoints || 1);
+  var selectedPoints = clampPoints(defaultPoints != null ? defaultPoints : 1);
 
   var backdrop = document.createElement("div");
   backdrop.id = "bingo-card-pick-root";
@@ -370,7 +372,7 @@ function openCardPickOverlay(onPicked, defaultPoints) {
   var pointsRow = document.createElement("div");
   pointsRow.className = "bingo-pick-points-row";
   var pointBtns = [];
-  for (var pi = 1; pi <= BINGO_POINTS_MAX; pi++) {
+  for (var pi = BINGO_POINTS_MIN; pi <= BINGO_POINTS_MAX; pi++) {
     (function (pt) {
       var pb = document.createElement("button");
       pb.type = "button";

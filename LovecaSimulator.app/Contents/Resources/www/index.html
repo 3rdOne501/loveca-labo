@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Loveca Labo" />
-    <meta name="loveca-build" content="2026052046" />
+    <meta name="loveca-build" content="2026052047" />
     <title>Loveca Labo</title>
     <!-- 万一以前のバージョンの Service Worker が登録された端末で取り残しが起きた場合に備え、
          先頭で SW 登録を一括解除する。SW 自体は本サイトでは使っていない。 -->
@@ -51,7 +51,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,700;1,9..40,500&family=M+PLUS+Rounded+1c:wght@500;700&family=Noto+Sans+JP:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=2026052046" />
+    <link rel="stylesheet" href="styles.css?v=2026052047" />
     <link rel="stylesheet" href="styles-perf.css?v=2026051910" />
   </head>
   <body>
@@ -672,7 +672,7 @@ python3 -m http.server 8080</pre>
           <button type="button" class="btn sm primary" id="btn-bingo-size-3" data-bingo-size="3" aria-pressed="true">3×3</button>
           <button type="button" class="btn sm secondary" id="btn-bingo-size-5" data-bingo-size="5" aria-pressed="false">5×5</button>
         </div>
-        <p class="hint bingo-hint">空きマスをタップでカード配置。配置済みマスは<strong>タップ</strong>で削除・制限変更、<strong>ドラッグ</strong>で移動・入れ替え。数字は制限ポイント（1〜5・高いほど強制限色）。</p>
+        <p class="hint bingo-hint">空きマスをタップでカード配置。配置済みマスは<strong>タップ</strong>で削除・制限変更、<strong>ドラッグ</strong>で移動・入れ替え。数字は制限ポイント（0〜5・高いほど強制限色）。</p>
         <div class="bingo-board-layout">
           <div id="bingo-grid" class="bingo-grid" role="grid" aria-label="ビンゴマス"></div>
           <div class="bingo-oana-panel">
@@ -2213,7 +2213,7 @@ python3 -m http.server 8080</pre>
     <script>
       (function () {
         var buildMeta = document.querySelector('meta[name="loveca-build"]');
-        var build = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "2026052046";
+        var build = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "2026052047";
         var moduleNames = [
           "abilityEffects.js",
           "bladeHeart.js",
@@ -2260,7 +2260,7 @@ python3 -m http.server 8080</pre>
     </script>
     <script type="module">
       var buildMeta = document.querySelector('meta[name="loveca-build"]');
-      var build = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "2026052046";
+      var build = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "2026052047";
       try {
         await import("./js/main.js?v=" + build);
       } catch (err) {

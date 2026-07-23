@@ -12351,6 +12351,13 @@ body.play-mode .card-item--energy-wait-flip .card-img {
   cursor: pointer;
   border: 2px solid rgba(255, 255, 255, 0.85);
 }
+.bingo-points-badge--p0 {
+  background: #c8c4d0;
+  color: #2a2830;
+  box-shadow:
+    0 0 4px rgba(180, 175, 195, 0.45),
+    0 0 10px rgba(180, 175, 195, 0.25);
+}
 .bingo-points-badge--p1 {
   background: #8ed8ff;
   color: #062030;
@@ -12391,6 +12398,13 @@ body.play-mode .card-item--energy-wait-flip .card-img {
   text-shadow: 0 0 8px rgba(255, 255, 255, 0.65);
   transform: scale(1.06);
   transform-origin: top right;
+}
+.bingo-pick-point-btn--p0.primary,
+.bingo-points-pick-btn--p0.primary {
+  background: #c8c4d0;
+  border-color: #c8c4d0;
+  color: #2a2830;
+  box-shadow: 0 0 8px rgba(180, 175, 195, 0.55);
 }
 .bingo-pick-point-btn--p1.primary,
 .bingo-points-pick-btn--p1.primary {
