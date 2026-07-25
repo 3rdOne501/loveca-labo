@@ -72,6 +72,8 @@
 | PL!SP-pb1-023-L | （ライブ） | E復帰なし live_card_score_plus のみ | `live_start_activate_energy_all_active_score` | コード |
 
 | PL!SP-bp4-024-L | ノンフィクション!! | 左サイド heart02×3+ 付与条件が分類から脱落 | `parseMemberLocationStageArea` | コード |
+| PL!SP-bp4-024-L 他 | ノンフィクション!! 等 | 複数 `live_start` の `ability_sequence` が外側 filters で AND 化され後段（赤ハート条件→ブレード2）が発動不能 | 外側 filters 空＋段ごと前提判定（横展開13枚: bp4-023/024・果林004・夏色えがお・ジョーショーキリュー・百生吟子 等） | コード |
+| PL!SP-bp4-006-P 他 | 桜小路きな子 / Poppin' Up! / Bubble Rise 等 | 成功判定後にエール回収すると UI が失敗に戻る | 仕様: 判定ロックを render bundle に反映（8.3.15/8.4.4）。`yell_resolution_*` 全体 | コード |
 
 ---
 
@@ -598,10 +600,30 @@ verify-ability-coverage OK / versus-online-sim 22 / static 32 / smoke 87。app �
 
 ---
 
+## 37. 2人バトンタッチ / ドラッグでのエリア移動自動効果（2026-07-25）
+
+ユーザー報告 3 件（自動効果が唐突に始まる / 2人バトンが効かない / ドラッグ移動で自動が出ない）。
+
+| 対応 | 内容 |
+|------|------|
+| 自動効果の演出時間 | `playFxDurationMs` の `jidou` を `PLAY_FX_FIELD_MS`(700ms) → 新設 `PLAY_FX_JIDOU_MS`(1100ms)。ボタン操作を挟まない自動効果を認識できるようにする（`js/playFx.js`） |
+| PL!SP-bp4-004（平安名すみれ 4種） | 登場時解決中に2人バトンを選び直した場合、`_soloBatonMemberIds` を設定するだけでステージから退場させていなかった（根因）。新ヘルパー `applySoloBatonIdsToWaitingRoom(inst)` を追加し、選択メンバーを控え室へ送ってから `runToujouLiellaDoubleBatonCenter` を実行。`countLiellaBatonSourcesOnInst` も控え室を明示的に探索し、メンバー種別＋『Liella!』で判定するよう修正 |
+| PL!SP-pb2-000（DUO 2種） | `toujou_baton_discarded_series_per_card` がブレードを**控え室のバトン元メンバー**に付与していた（根因）。カード文は「BHを持たない『Liella!』1枚につき（登場した）このカードがブレード2を得る」→ 対象を `inst` に変更し、該当枚数×2 をまとめて付与 |
+| 重複関数の整理 | 同一スコープに `removeStageMemberToWaiting` が2定義（`~6128` / `~31854`）。後者を削除し、`placeHandMemberOnStageSideCore` の2人バトン経路も新ヘルパー経由に統一。監査/検証5スクリプトが後者を `executeAbilityBody` の終端マーカーに使っていたため、マーカーを `kidouRecoverCandidatesFromWaiting` に更新 |
+| PL!SP-pb2-011 / PL!SP-pb1-006 ほか | Sortable のステージ D&D（`onEnd`）が列移動で自動効果を一切発火していなかった（根因）。`fireJidouAfterStageAreaMovesFromSnap(snap)` を追加し、ドロップ前スナップとの列差分から `area_move` / `center_member_area_move` / `member_to_center` を発火（`markMemberMovedThisTurn` 含む）。対象は `area_move` 25枚 + `center_member_area_move` 2枚 + `member_to_center` 2枚 |
+| ポジションチェンジの押し出され側 | `swapStageMemberPositionChange` が入れ替え相手（`toMem`）の移動で自動効果を発火していなかった。`toMem` にも `area_move`＋センター出入りの発火を追加（PL!SP-pb2-011 がセンターから押し出される場合に未発火だった） |
+
+verify-ability-coverage OK / verify-ability-handlers OK / verify-ability-runtime OK / verify-deck-pick-hand-patterns OK。app 同期済み（simulator.js / playFx.js）。
+
+---
+
 ## 更新履歴
 
 | 日付 | 内容 |
 |------|------|
+| 2026-07-25 | 仕様: ライブ成功判定ロックを UI/成功時効果に徹底（8.3.15/8.4.4）。成功時効果でエール回収しても失敗表示に戻さない。代表 PL!SP-bp4-006-P / PL!N-bp1-026-L / PL!SP-bp2-025-SRL。`overlayLockedLiveVerdictOnBundle` + live_success 解決前 `ensureLiveVerdictSnapshotLocked`。yell_resolution_* 全体に適用 |
+| 2026-07-25 | 複数 live_start/live_success → ability_sequence: 外側 filters の AND 化で後段が死ぬ問題を修正（代表: PL!SP-bp4-024-L ノンフィクション!!）。段ごと前提スキップ＋collectPending は any-step OK。横展開13枚 |
+| 2026-07-25 | 2人バトン＋D&D自動効果: ①jidou 演出 1100ms ②PL!SP-bp4-004 効果内バトン選択が控え室に行かない（`applySoloBatonIdsToWaitingRoom` 追加）③PL!SP-pb2-000 ブレード付与先を登場カードへ ④ステージD&D列移動で `area_move`/`center_member_area_move`/`member_to_center` 未発火（29枚に影響）⑤`removeStageMemberToWaiting` 重複定義削除＋検証スクリプトのマーカー更新 |
 | 2026-07-15 | 自動効果バグ5件: ①`jidou_yell_grant_jouji_no_bh`/`jidou_area_move_grant_jouji` に `applyJidouPlainLiveEndHeartBladeGrant` 追加（PL!SP-bp2-015/020/021-N の heart06 誤スコア+1 修正）②`登場か、エリアを移動するたび` に altEventKind `enter_or_baton`（PL!SP-pb1-006-R 登場時未発火）③`applyStageFormationAssignment` センター離脱時 `fireJidouOnCenterMemberAreaMove`（PL!SP-pb2-011）④新template `heart_color_pick_replace`（元々ハート差し替え、横展開5枚: PL!N-bp3-014/015-N, PL!N-pb1-034/036-N, PL!SP-pb2-030-N）⑤デッキビルダー仮想スクロール rowH 再計測時のスクロールアンカー保持 |
 | 2026-07-03 | 対戦 Phase 6b（自動検証）: patchKind コアを js/versusEffectPatch.js へ抽出、cloudAuth に __setTestCloudFirestore、verify-versus-online-sim.mjs 新設（2クライアント 22チェック）を coverage 連鎖 |
 | 2026-07-03 | 対戦 Phase 6（コード）: verify-versus-online-static 新設 + coverage 連鎖、known-gaps.md、2 template を stage_wait_members へ移行、待ちバナー/ロビー文言/ダイアログ重複の UX、user-guide 新設 |

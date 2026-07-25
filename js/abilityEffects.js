@@ -4985,18 +4985,21 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
       if (lssSegRawsMulti.length > 1) {
         var lssSteps = lssSegRawsMulti
           .map(function (raw) {
-            return _classifyCardAbilityCore(card, "live_success", raw);
+            var st = _classifyCardAbilityCore(card, "live_success", raw);
+            if (st) st._segRaw = raw;
+            return st;
           })
           .filter(function (st) {
             return st && st.template && st.template !== "none" && st.template !== "guided_manual";
           });
         if (lssSteps.length > 1) {
+          // 外側 filters に各段の発動条件を載せない（AND 化して後段が死ぬのを防ぐ）
           return withTrigger("live_success", {
             template: "ability_sequence",
             steps: lssSteps,
             optional: false,
             hasOptionalCost: false,
-            filters: base.filters,
+            filters: parseAbilityPickFilters(""),
             requiresOnStage: lssSteps.some(function (st) {
               return st.requiresOnStage === true;
             }),
@@ -5594,18 +5597,22 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
       if (lsSegRawsMulti.length > 1) {
         var lsSteps = lsSegRawsMulti
           .map(function (raw) {
-            return _classifyCardAbilityCore(card, "live_start", raw);
+            var st = _classifyCardAbilityCore(card, "live_start", raw);
+            if (st) st._segRaw = raw;
+            return st;
           })
           .filter(function (st) {
             return st && st.template && st.template !== "none" && st.template !== "guided_manual";
           });
         if (lsSteps.length > 1) {
+          // 外側 filters に各段の発動条件を載せない（AND 化して後段が死ぬのを防ぐ）
+          // 例: ノンフィクション!! は①センターコスト比較 ②左サイド赤ハート×3 が独立
           return withTrigger("live_start", {
             template: "ability_sequence",
             steps: lsSteps,
             optional: false,
             hasOptionalCost: false,
-            filters: base.filters,
+            filters: parseAbilityPickFilters(""),
             requiresOnStage: lsSteps.some(function (st) {
               return st.requiresOnStage === true;
             }),

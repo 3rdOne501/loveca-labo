@@ -1,5 +1,5 @@
 {
-  "generated": "2026-06-28T14:52:42.420Z",
+  "generated": "2026-07-25T11:08:42.257Z",
   "sample_size": 50,
   "cards": [
     {
@@ -55,8 +55,8 @@
             "minCost": null,
             "seriesTag": null,
             "minSuccessLiveCount": null,
-            "minNeedHeartSlot": null,
-            "minNeedHeartValue": null,
+            "minNeedHeartSlot": 3,
+            "minNeedHeartValue": 3,
             "minTotalNeedHeart": null
           }
         }
@@ -109,7 +109,7 @@
       "entries": [
         {
           "trigger": "kidou",
-          "template": "deck_top_pick_recover",
+          "template": "kidou_reveal_all_hand_deck_top_live",
           "filters": {
             "pickType": "ライブ",
             "maxCost": null,
@@ -118,7 +118,8 @@
             "minSuccessLiveCount": null,
             "minNeedHeartSlot": null,
             "minNeedHeartValue": null,
-            "minTotalNeedHeart": null
+            "minTotalNeedHeart": null,
+            "minStageMembers": 2
           }
         }
       ]
@@ -219,7 +220,7 @@
           "trigger": "kidou",
           "template": "kidou_reveal_hand_cost_threshold",
           "filters": {
-            "pickType": "メンバー",
+            "pickType": null,
             "maxCost": null,
             "minCost": null,
             "seriesTag": null,
@@ -243,6 +244,26 @@
             "maxCost": null,
             "minCost": null,
             "seriesTag": null,
+            "minSuccessLiveCount": null,
+            "minNeedHeartSlot": null,
+            "minNeedHeartValue": null,
+            "minTotalNeedHeart": null
+          }
+        }
+      ]
+    },
+    {
+      "card_no": "PL!SP-bp1-010-R",
+      "name": "ウィーン・マルガレーテ",
+      "entries": [
+        {
+          "trigger": "kidou",
+          "template": "deck_top_pick_recover",
+          "filters": {
+            "pickType": null,
+            "maxCost": null,
+            "minCost": null,
+            "seriesTag": "Liella!",
             "minSuccessLiveCount": null,
             "minNeedHeartSlot": null,
             "minNeedHeartValue": null,
@@ -441,6 +462,19 @@
       ]
     },
     {
+      "card_no": "PL!S-bp3-007-R",
+      "name": "国木田花丸",
+      "entries": [
+        {
+          "trigger": "kidou",
+          "template": "live_start_pick_player_waiting_deck_bottom",
+          "filters": {
+            "pickType": "ライブ"
+          }
+        }
+      ]
+    },
+    {
       "card_no": "LL-bp3-001-R＋",
       "name": "園田海未&津島善子&天王寺璃奈",
       "entries": [
@@ -482,7 +516,7 @@
           "trigger": "kidou",
           "template": "deck_reveal_until_pick",
           "filters": {
-            "pickType": "メンバー",
+            "pickType": null,
             "maxCost": null,
             "minCost": 10,
             "seriesTag": null,
@@ -502,7 +536,7 @@
           "trigger": "kidou",
           "template": "kidou_hand_reveal_grant_if_live",
           "filters": {
-            "pickType": "ライブ",
+            "pickType": null,
             "maxCost": null,
             "minCost": null,
             "seriesTag": null,
@@ -712,6 +746,53 @@
       ]
     },
     {
+      "card_no": "PL!SP-bp5-006-R",
+      "name": "桜小路きな子",
+      "entries": [
+        {
+          "trigger": "kidou",
+          "template": "kidou_deck_top_wait_position_change",
+          "filters": {
+            "pickType": null,
+            "maxCost": null,
+            "minCost": null,
+            "seriesTag": null,
+            "minSuccessLiveCount": null,
+            "minNeedHeartSlot": null,
+            "minNeedHeartValue": null,
+            "minTotalNeedHeart": null
+          }
+        }
+      ]
+    },
+    {
+      "card_no": "PL!HS-bp5-001-R＋",
+      "name": "日野下花帆",
+      "entries": [
+        {
+          "trigger": "toujyou",
+          "template": "deck_mill_conditional_blade_grant",
+          "filters": {
+            "pickType": null,
+            "maxCost": null,
+            "minCost": null,
+            "seriesTag": null,
+            "minSuccessLiveCount": null,
+            "minNeedHeartSlot": null,
+            "minNeedHeartValue": null,
+            "minTotalNeedHeart": null
+          }
+        },
+        {
+          "trigger": "kidou",
+          "template": "kidou_reveal_live_wait_pick_name_contains",
+          "filters": {
+            "pickType": "ライブ"
+          }
+        }
+      ]
+    },
+    {
       "card_no": "PL!HS-bp5-002-R＋",
       "name": "村野さやか",
       "entries": [
@@ -794,10 +875,30 @@
           "trigger": "live_start",
           "template": "grant_jouji_session",
           "filters": {
-            "pickType": "メンバー",
+            "pickType": null,
             "maxCost": null,
             "minCost": null,
             "seriesTag": null,
+            "minSuccessLiveCount": null,
+            "minNeedHeartSlot": null,
+            "minNeedHeartValue": null,
+            "minTotalNeedHeart": null
+          }
+        }
+      ]
+    },
+    {
+      "card_no": "PL!-bp6-006-R＋",
+      "name": "西木野真姫",
+      "entries": [
+        {
+          "trigger": "kidou",
+          "template": "kidou_heart_color_deck_reveal_pick",
+          "filters": {
+            "pickType": null,
+            "maxCost": null,
+            "minCost": null,
+            "seriesTag": "μ's",
             "minSuccessLiveCount": null,
             "minNeedHeartSlot": null,
             "minNeedHeartValue": null,
@@ -854,7 +955,7 @@
           "trigger": "kidou",
           "template": "ability_sequence",
           "filters": {
-            "pickType": "メンバー",
+            "pickType": null,
             "maxCost": null,
             "minCost": null,
             "seriesTag": "Liella!",
@@ -872,47 +973,13 @@
       "entries": [
         {
           "trigger": "toujyou",
-          "template": "toujou_success_live_pick_hand",
+          "template": "toujou_wait_pick_hand",
           "filters": {
-            "pickType": null,
+            "pickType": "ライブ",
             "maxCost": null,
             "minCost": null,
             "seriesTag": null,
             "minSuccessLiveCount": 2,
-            "minNeedHeartSlot": null,
-            "minNeedHeartValue": null,
-            "minTotalNeedHeart": null
-          }
-        }
-      ]
-    },
-    {
-      "card_no": "PL!-sd1-003-SD",
-      "name": "南 ことり",
-      "entries": [
-        {
-          "trigger": "toujyou",
-          "template": "toujou_wait_pick_hand",
-          "filters": {
-            "pickType": "メンバー",
-            "maxCost": 4,
-            "minCost": null,
-            "seriesTag": "μ's",
-            "minSuccessLiveCount": null,
-            "minNeedHeartSlot": null,
-            "minNeedHeartValue": null,
-            "minTotalNeedHeart": null
-          }
-        },
-        {
-          "trigger": "live_start",
-          "template": "heart_color_pick_grant",
-          "filters": {
-            "pickType": null,
-            "maxCost": null,
-            "minCost": null,
-            "seriesTag": null,
-            "minSuccessLiveCount": null,
             "minNeedHeartSlot": null,
             "minNeedHeartValue": null,
             "minTotalNeedHeart": null
@@ -941,12 +1008,12 @@
       ]
     },
     {
-      "card_no": "PL!-sd1-007-SD",
-      "name": "東條 希",
+      "card_no": "PL!-sd1-006-SD",
+      "name": "西木野 真姫",
       "entries": [
         {
           "trigger": "toujyou",
-          "template": "draw_from_deck",
+          "template": "toujou_success_live_hand_reveal_swap",
           "filters": {
             "pickType": "ライブ",
             "maxCost": null,
@@ -961,12 +1028,12 @@
       ]
     },
     {
-      "card_no": "PL!-sd1-011-SD",
-      "name": "絢瀬 絵里",
+      "card_no": "PL!-sd1-007-SD",
+      "name": "東條 希",
       "entries": [
         {
           "trigger": "toujyou",
-          "template": "deck_top_to_waiting",
+          "template": "deck_mill_conditional_draw",
           "filters": {
             "pickType": null,
             "maxCost": null,
@@ -1061,86 +1128,6 @@
         {
           "trigger": "toujyou",
           "template": "toujou_opp_hand_reveal_no_live_draw",
-          "filters": {
-            "pickType": "ライブ",
-            "maxCost": null,
-            "minCost": null,
-            "seriesTag": null,
-            "minSuccessLiveCount": null,
-            "minNeedHeartSlot": null,
-            "minNeedHeartValue": null,
-            "minTotalNeedHeart": null
-          }
-        }
-      ]
-    },
-    {
-      "card_no": "PL!-PR-015-PR",
-      "name": "西木野真姫",
-      "entries": [
-        {
-          "trigger": "toujyou",
-          "template": "toujou_hand_stage_enter",
-          "filters": {
-            "pickType": "メンバー",
-            "maxCost": 4,
-            "minCost": null,
-            "seriesTag": null,
-            "minSuccessLiveCount": null,
-            "minNeedHeartSlot": null,
-            "minNeedHeartValue": null,
-            "minTotalNeedHeart": null
-          }
-        }
-      ]
-    },
-    {
-      "card_no": "PL!S-PR-016-PR",
-      "name": "黒澤ダイヤ",
-      "entries": [
-        {
-          "trigger": "toujyou",
-          "template": "grant_jouji_session",
-          "filters": {
-            "pickType": null,
-            "maxCost": null,
-            "minCost": null,
-            "seriesTag": null,
-            "minSuccessLiveCount": null,
-            "minNeedHeartSlot": null,
-            "minNeedHeartValue": null,
-            "minTotalNeedHeart": null
-          }
-        }
-      ]
-    },
-    {
-      "card_no": "PL!N-bp1-014-PRproteinbar",
-      "name": "中須かすみ",
-      "entries": [
-        {
-          "trigger": "toujyou",
-          "template": "draw_then_hand_discard",
-          "filters": {
-            "pickType": null,
-            "maxCost": null,
-            "minCost": null,
-            "seriesTag": null,
-            "minSuccessLiveCount": null,
-            "minNeedHeartSlot": null,
-            "minNeedHeartValue": null,
-            "minTotalNeedHeart": null
-          }
-        }
-      ]
-    },
-    {
-      "card_no": "PL!N-PR-022-PR",
-      "name": "エマ・ヴェルデ",
-      "entries": [
-        {
-          "trigger": "toujyou",
-          "template": "toujou_opp_emma_punch_answer",
           "filters": {
             "pickType": null,
             "maxCost": null,

@@ -1,24 +1,24 @@
 {
-  "generatedAt": "2026-07-02T15:22:11.916Z",
+  "generatedAt": "2026-07-25T11:08:47.012Z",
   "purpose": "対戦モード（localDual / オンライン）本格実装時の実装・テスト計画用。ソロ代行入力で動くカードも含む。",
-  "totalEntries": 264,
-  "uniqueCards": 215,
+  "totalEntries": 265,
+  "uniqueCards": 216,
   "kindCounts": {
     "mutate_opponent_live": 20,
-    "mutate_opponent_stage": 148,
+    "mutate_opponent_stage": 149,
     "opponent_choice": 41,
     "read_compare": 88,
     "mutate_opponent_hand": 5,
     "passive_opponent": 50,
     "both_players": 15,
-    "mutate_opponent_deck": 32,
-    "mutate_opponent_waiting": 8,
+    "mutate_opponent_deck": 33,
+    "mutate_opponent_waiting": 9,
     "mutate_opponent_success_live": 21,
     "mutate_opponent_energy": 9,
     "pick_self_or_opponent": 2
   },
   "dualStatusCounts": {
-    "dual_ok": 214,
+    "dual_ok": 215,
     "passive_track": 50
   },
   "rows": [
@@ -802,6 +802,21 @@
       ],
       "dualStatus": "dual_ok",
       "text": "相手のステージにウェイト状態のメンバーがいる場合、このカードを成功させるための必要ハートを減らす。"
+    },
+    {
+      "id": "PL!HS-PR-035-PR",
+      "name": "百生吟子",
+      "set": "PL!HS-PR",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_deck",
+        "mutate_opponent_stage",
+        "mutate_opponent_waiting"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手の控え室にあるメンバーカードを3枚選び、相手のデッキの下に好きな順番で置いてもよい。そうした場合、相手のステージにいる元々持つの数が3つ以下のメンバー1人をウェイトにする。"
     },
     {
       "id": "PL!HS-bp1-023-L",

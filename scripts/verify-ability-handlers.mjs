@@ -91,7 +91,7 @@ function main() {
   const executeBodyChunk = sectionBetween(
     simSrc,
     "function executeAbilityBody(inst, cl, kind, finishResolved, finishGuided)",
-    "\n  function removeStageMemberToWaiting(memberInst)",
+    "\n  function kidouRecoverCandidatesFromWaiting(recoverType, excludeInstId)",
   );
   const executeBodyTemplates = templatesFromChunk(executeBodyChunk);
 

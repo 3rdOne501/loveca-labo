@@ -1,8 +1,10 @@
 /** ソロ／対戦プレイ中のワンショット演出（軽量モード・reduce-motion では無効） */
 
 export const PLAY_FX_MS = 1000;
-/** 起動／登場時／ライブ開始時・成功時・自動の解決ボタン押下 */
+/** 起動／登場時／ライブ開始時・成功時の解決ボタン押下 */
 export const PLAY_FX_FIELD_MS = 700;
+/** 自動効果はボタン操作を挟まず発動するため、気づけるよう長めに見せる */
+export const PLAY_FX_JIDOU_MS = 1100;
 /** 効果不発 */
 export const PLAY_FX_FIZZLE_MS = 920;
 /** コスト10登場（旧11–12相当） */
@@ -185,7 +187,8 @@ export function playFxDurationMs(kind, opts) {
   if (opts.premium || opts.tier >= 1) return PLAY_FX_PREMIUM_MS;
   if (opts.abilityHigh) return PLAY_FX_ABILITY_HIGH_MS;
   var k = kind || "";
-  if (FIELD_ABILITY_KINDS[k] || k === "jidou") return PLAY_FX_FIELD_MS;
+  if (k === "jidou") return PLAY_FX_JIDOU_MS;
+  if (FIELD_ABILITY_KINDS[k]) return PLAY_FX_FIELD_MS;
   return PLAY_FX_MS;
 }
 

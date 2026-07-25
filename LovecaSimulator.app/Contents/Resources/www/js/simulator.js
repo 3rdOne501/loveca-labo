@@ -2110,6 +2110,7 @@ export function mountSimulator(
       String(state.resolutionArea.length),
       String(state.waitingRoom.length),
       String(Math.floor(sumBoardMemberBlades())),
+      state.liveSuccessVerdictLockedOk ? String(state.liveSuccessVerdictLockedFp || "L") : "0",
     ];
     ["left", "center", "right"].forEach(function (k) {
       (state.stage[k] || []).forEach(function (c) {
@@ -2130,7 +2131,7 @@ export function mountSimulator(
     if (renderPassLiveBundle && renderPassLiveBundleFp === fp) return;
     renderPassLiveBundleFp = fp;
     try {
-      renderPassLiveBundle = evaluateLiveMechanicalFulfillmentBundle();
+      renderPassLiveBundle = overlayLockedLiveVerdictOnBundle(evaluateLiveMechanicalFulfillmentBundle());
     } catch (_) {
       renderPassLiveBundle = null;
     }
@@ -2139,10 +2140,26 @@ export function mountSimulator(
   function getRenderPassLiveBundle() {
     if (renderPassLiveBundle) return renderPassLiveBundle;
     try {
-      return evaluateLiveMechanicalFulfillmentBundle();
+      return overlayLockedLiveVerdictOnBundle(evaluateLiveMechanicalFulfillmentBundle());
     } catch (_) {
       return null;
     }
+  }
+
+  /**
+   * 総合ルール 8.3.15 / 8.4.4: 必要ハート判定は一度確定したら固定。
+   * 成功時効果（8.4.5）でエール公開カードを回収しても、再判定で失敗に戻さない。
+   */
+  function overlayLockedLiveVerdictOnBundle(b) {
+    if (!b) return b;
+    b._liveOkBeforeVerdictLock = !!(b.evaluateResult && b.evaluateResult.ok);
+    if (state.liveSuccessVerdictLockedOk !== true || !state.liveSuccessVerdictLockedSim) return b;
+    var lockedOk = state.liveSuccessVerdictLockedSim.ok === true;
+    b.evaluateResult = Object.assign({}, b.evaluateResult || {}, {
+      ok: lockedOk,
+      lockedFromSnapshot: true,
+    });
+    return b;
   }
 
   function clearRenderPassLiveBundle() {
@@ -3591,6 +3608,42 @@ export function mountSimulator(
         fireJidouAutoForMember(m, "center_member_area_move", { movedInst: movedInst });
       } catch (jErr) {
         console.warn(jErr);
+      }
+    });
+  }
+
+  /** ドラッグ＆ドロップでの列移動も「エリアを移動した」扱いで自動効果を発火させる */
+  function fireJidouAfterStageAreaMovesFromSnap(snapBefore) {
+    if (isPlayManualMode() || !snapBefore || !snapBefore.stage) return;
+    /** @type {Array<{inst:*, from:string, to:string}>} */
+    var moves = [];
+    eachStageColumnMemberInsts().forEach(function (m) {
+      if (!m || m._soloOpponentProxy === true) return;
+      var prevCol = stageColumnKeyFromSnap(snapBefore, m.id);
+      var nowCol = stageColumnKeyHostingMember(m.id);
+      if (!prevCol || !nowCol || prevCol === nowCol) return;
+      moves.push({ inst: m, from: prevCol, to: nowCol });
+    });
+    moves.forEach(function (mv) {
+      markMemberMovedThisTurn(mv.inst);
+      try {
+        fireJidouAutoForMember(mv.inst, "area_move");
+      } catch (jErr) {
+        console.warn(jErr);
+      }
+      if (mv.from === "center") {
+        try {
+          fireJidouOnCenterMemberAreaMove(mv.inst);
+        } catch (jErrC) {
+          console.warn(jErrC);
+        }
+      }
+      if (mv.to === "center") {
+        try {
+          fireJidouOnMemberMovedToCenter(mv.inst);
+        } catch (jErrT) {
+          console.warn(jErrT);
+        }
       }
     });
   }
@@ -6140,6 +6193,20 @@ export function mountSimulator(
     return true;
   }
 
+  /** 2人バトンで選ばれたメンバーのうち、まだステージに残っている者を控え室へ送る */
+  function applySoloBatonIdsToWaitingRoom(inst) {
+    var ids = inst && Array.isArray(inst._soloBatonMemberIds) ? inst._soloBatonMemberIds : [];
+    var moved = 0;
+    ids.forEach(function (bid) {
+      if (bid == null) return;
+      if (!stageColumnKeyHostingMember(bid)) return;
+      var b = findCardInstById(bid);
+      if (!b) return;
+      if (removeStageMemberToWaiting(b)) moved++;
+    });
+    return moved;
+  }
+
   /** メンバーが載っている列（ステージ優先、無ければライブ枠） */
   function boardColumnKeyHostingCard(cardId) {
     return stageColumnKeyHostingCard(cardId) || liveSlotColumnKeyHostingCard(cardId);
@@ -8503,6 +8570,14 @@ export function mountSimulator(
   function shouldPromptMoveSuccessfulLiveOnTurnStart(bundle) {
     if (state.liveWinMoveCommitted === true) return false;
     if (!liveCardsAwaitingSuccessfulBenchPlacement().length) return false;
+    if (liveVerdictLockedMechanicalSuccess()) {
+      if (state.pendingSuccessLiveBench === true) return true;
+      var bLock = bundle || null;
+      var liveCt = bLock && bLock.liveCt != null ? bLock.liveCt : liveCardCountOnBoard();
+      var needSum =
+        bLock && bLock.needSum != null ? bLock.needSum : sumSlotAccumValues(aggregateNeedHeartSlotsFromLiveArea());
+      return !!(state.liveStatsAfterBegin && liveCt && needSum > 0);
+    }
     var b = bundle || evaluateLiveMechanicalFulfillmentBundle();
     if (!b.evaluateResult || !b.evaluateResult.ok) return false;
     if (state.pendingSuccessLiveBench === true) return true;
@@ -8512,8 +8587,10 @@ export function mountSimulator(
   function maybeMarkPendingSuccessLiveBench() {
     if (state.liveWinMoveCommitted === true) return;
     if (!playLiveSuccessVerdictReady()) return;
-    var b = evaluateLiveMechanicalFulfillmentBundle();
-    if (!b.evaluateResult || !b.evaluateResult.ok) return;
+    if (!liveVerdictLockedMechanicalSuccess()) {
+      var b = evaluateLiveMechanicalFulfillmentBundle();
+      if (!b.evaluateResult || !b.evaluateResult.ok) return;
+    }
     if (liveCardsAwaitingSuccessfulBenchPlacement().length > 0) {
       state.pendingSuccessLiveBench = true;
     }
@@ -9139,13 +9216,13 @@ export function mountSimulator(
     var needSum = b.needSum;
     var rsBh = accumulateResolutionBladeHeartStats();
 
-    var overviewEl = $("live-stats-overview");
+      var overviewEl = $("live-stats-overview");
     if (overviewEl) {
       overviewEl.textContent = buildLiveStatsOverviewText(b, rsBh);
       overviewEl.classList.remove("is-ok", "is-fail", "is-muted");
       var ev0 = b.evaluateResult;
       if (!b.liveCt || !(needSum > 0)) overviewEl.classList.add("is-muted");
-      else if (ev0 && ev0.ok) overviewEl.classList.add("is-ok");
+      else if (liveVerdictLockedMechanicalSuccess() || (ev0 && ev0.ok)) overviewEl.classList.add("is-ok");
       else overviewEl.classList.add("is-fail");
     }
 
@@ -9236,12 +9313,17 @@ export function mountSimulator(
         verdict.classList.add("live-verdict--muted");
       } else {
         var ev = b.evaluateResult;
-        if (!ev.ok) {
-          verdict.textContent = "ライブ失敗 — " + (ev.reason || "要件") + " が不足" + ptsSuf;
-          verdict.classList.add("live-verdict--fail");
-        } else {
-          verdict.textContent = "ライブ成功" + ptsSuf;
+        // 8.3.15/8.4.4 判定確定後は成功を維持（成功時効果のエール回収でハートが減っても失敗表示にしない）
+        if (liveVerdictLockedMechanicalSuccess() || (ev && ev.ok)) {
+          var lockNote =
+            liveVerdictLockedMechanicalSuccess() && b._liveOkBeforeVerdictLock === false
+              ? "（判定確定）"
+              : "";
+          verdict.textContent = "ライブ成功" + ptsSuf + lockNote;
           verdict.classList.add("live-verdict--success");
+        } else {
+          verdict.textContent = "ライブ失敗 — " + ((ev && ev.reason) || "要件") + " が不足" + ptsSuf;
+          verdict.classList.add("live-verdict--fail");
         }
       }
     }
@@ -12109,10 +12191,7 @@ export function mountSimulator(
       batonIds.length &&
       !(side === "center" && cardIsSpBp4004Sumire(mcEnter.card_no));
     if (duoMultiBaton) {
-      batonIds.forEach(function (bid) {
-        var batonMem = findCardInstById(bid);
-        if (batonMem) removeStageMemberToWaiting(batonMem);
-      });
+      applySoloBatonIdsToWaitingRoom(inst);
       var lowestBatonId = null;
       var lowestBatonCost = Infinity;
       batonIds.forEach(function (bid) {
@@ -12147,8 +12226,8 @@ export function mountSimulator(
         var b = findCardInstById(bid);
         if (!b) return;
         batonSum += memberFlooredPrintedCost(b);
-        removeStageMemberToWaiting(b);
       });
+      applySoloBatonIdsToWaitingRoom(inst);
       inst._appearEnergyOverride = Math.max(
         0,
         memberFlooredPrintedCost(inst, { handSnap: snap }) - batonSum,
@@ -13352,7 +13431,10 @@ export function mountSimulator(
 
   function applyGrantJoujiSessionEffect(inst, cl, kind, finishResolved, targetOverride) {
     var mc = mergedCatalogCard(inst);
-    var segLs = abilityRawSegmentForTrigger(mc, kind) || cardAbilityRawText(mc);
+    var segLs =
+      (cl && cl._segRaw) ||
+      abilityRawSegmentForTrigger(mc, kind) ||
+      cardAbilityRawText(mc);
     var plainHbGrant = isPlainLiveEndHeartBladeGrantSegment(segLs);
     var grants = extractGrantedJoujiTextsFromSegment(segLs);
     var inlineJouji = plainHbGrant ? null : extractInlineLiveEndGrantJouji(segLs);
@@ -15304,6 +15386,10 @@ export function mountSimulator(
       if (onComplete) onComplete();
       return;
     }
+    // 総合ルール 8.3.15/8.4.4: 成功時効果解決前に判定を固定（エール回収で再失敗しない）
+    if (kind === "live_success" || String(resolveKind || "").indexOf("live_success") === 0) {
+      ensureLiveVerdictSnapshotLocked();
+    }
     if (kind === "live_success" && inst && inst._liveSuccessAbilityDisabledByLiveStart === true) {
       showToast("ライブ開始時効果により、このカードのライブ成功時能力は無効です");
       markEffectFizzleVisual(inst);
@@ -16280,8 +16366,14 @@ export function mountSimulator(
     if (!Array.isArray(ids) || ids.length < 2) return 0;
     var n = 0;
     ids.forEach(function (id) {
+      if (id == null) return;
       var c = findCardInstById(id);
-      if (c && catalogCardMatchesGroupTag(mergedCatalogCard(c), "Liella!")) n++;
+      if (!c) {
+        c = (state.waitingRoom || []).find(function (w) {
+          return w && String(w.id) === String(id);
+        });
+      }
+      if (c && c.type === T_MEMBER && catalogCardMatchesGroupTag(mergedCatalogCard(c), "Liella!")) n++;
     });
     return n;
   }
@@ -16495,6 +16587,29 @@ export function mountSimulator(
         fireJidouOnMemberMovedToCenter(movingMem);
       } catch (jErr2) {
         console.warn(jErr2);
+      }
+    }
+    /* 入れ替えで押し出された側もエリアを移動している */
+    if (toMem) {
+      markMemberMovedThisTurn(toMem);
+      try {
+        fireJidouAutoForMember(toMem, "area_move");
+      } catch (jErrS) {
+        console.warn(jErrS);
+      }
+      if (targetCol === "center") {
+        try {
+          fireJidouOnCenterMemberAreaMove(toMem);
+        } catch (jErrSC) {
+          console.warn(jErrSC);
+        }
+      }
+      if (fromCol === "center") {
+        try {
+          fireJidouOnMemberMovedToCenter(toMem);
+        } catch (jErrST) {
+          console.warn(jErrST);
+        }
       }
     }
     if (!isLightweightPlayMode()) {
@@ -19787,6 +19902,14 @@ export function mountSimulator(
       finishResolved();
       return;
     }
+    function stepPassesTriggerPreconditions(stepCl) {
+      if (!stepCl) return false;
+      if (kind === "toujyou") return checkAbilityToujouPreconditions(stepCl);
+      if (kind === "kidou") return checkAbilityKidouPreconditions(stepCl);
+      if (kind === "live_start") return checkAbilityLiveStartPreconditions(stepCl);
+      if (kind === "live_success") return checkAbilityLiveSuccessPreconditions(stepCl);
+      return true;
+    }
     function runSteps() {
       function runStep(i) {
         if (i >= steps.length) {
@@ -19794,6 +19917,11 @@ export function mountSimulator(
           return;
         }
         var stepCl = steps[i];
+        // 独立な複数セグメント（複数ライブ開始時など）は条件未達の段を黙って飛ばす
+        if (!stepPassesTriggerPreconditions(stepCl)) {
+          runStep(i + 1);
+          return;
+        }
         executeAbilityBody(inst, stepCl, kind, function () {
           runStep(i + 1);
         }, finishGuided);
@@ -19842,6 +19970,12 @@ export function mountSimulator(
       finishResolved();
     }
 
+    // ability_sequence は各ステップ側で前提を評価する（外側 filters の AND 化を避ける）
+    if (cl.template === "ability_sequence") {
+      executeAbilitySequence(inst, cl, kind, finishResolved, finishGuided);
+      return;
+    }
+
     // 登場時は全テンプレートで共通前提を先に評価する。
     // 個別 handler 側の重複チェックは許容し、未チェック template の取りこぼしを防ぐ。
     if (kind === "toujyou" && !checkAbilityToujouPreconditions(cl)) {
@@ -19858,11 +19992,6 @@ export function mountSimulator(
     }
     if (kind === "live_success" && !checkAbilityLiveSuccessPreconditions(cl)) {
       abortResolved("ライブ成功時効果の条件を満たしていません");
-      return;
-    }
-
-    if (cl.template === "ability_sequence") {
-      executeAbilitySequence(inst, cl, kind, finishResolved, finishGuided);
       return;
     }
 
@@ -22260,6 +22389,8 @@ export function mountSimulator(
     }
 
     if (cl.template === "yell_resolution_pick_hand") {
+      // 成功判定を先に固定（回収で解決 BH が減っても 8.3.15 の結果を維持）
+      ensureLiveVerdictSnapshotLocked();
       var yellPre = cl.preconditionFilters || {};
       function runYellResolutionPickHandBody() {
         var resPool = yellResolutionRevealPool(cl.filters || {});
@@ -22826,10 +22957,11 @@ export function mountSimulator(
       }
       if (totalDraw) showToast("カードを " + totalDraw + " 枚引きました");
       var bladePer = Math.max(1, Math.floor(Number(cl.bladeGain) || 2));
-      qualifying.forEach(function (m) {
-        if (cl.requiresNoBladeHeartOnDiscarded && cardHasBladeHeart(mergedCatalogCard(m))) return;
-        gainBladesUntilEnd(m, bladePer);
+      /* ブレードを得るのは控え室のメンバーではなく、登場したこのカード */
+      var bladeSources = qualifying.filter(function (m) {
+        return !(cl.requiresNoBladeHeartOnDiscarded && cardHasBladeHeart(mergedCatalogCard(m)));
       });
+      if (bladeSources.length) gainBladesUntilEnd(inst, bladeSources.length * bladePer);
       try {
         syncJoujiPassiveEffectsAll();
       } catch (_) {}
@@ -28079,13 +28211,22 @@ export function mountSimulator(
         abortResolved("ステージにいるカードでのみ登場時効果を解決できます");
         return;
       }
+      if (stageColumnKeyHostingMember(inst.id) !== "center") {
+        showToast("センターエリアに登場している場合のみ発動する効果です");
+        finishResolved();
+        return;
+      }
       if (countLiellaBatonSourcesOnInst(inst) < 2) {
         openTwoMemberBatonPickDialog(inst, function (proceed, batonIds) {
           if (!proceed) {
             finishResolved();
             return;
           }
-          if (batonIds && batonIds.length) inst._soloBatonMemberIds = batonIds.slice(0, 2);
+          if (batonIds && batonIds.length) {
+            inst._soloBatonMemberIds = batonIds.slice(0, 2);
+            pushHistoryBefore("toujou-liella-baton-pick");
+            if (applySoloBatonIdsToWaitingRoom(inst) > 0) render();
+          }
           runToujouLiellaDoubleBatonCenter(inst, cl, finishResolved);
         });
         return;
@@ -31851,23 +31992,6 @@ export function mountSimulator(
     finishGuided();
   }
 
-  function removeStageMemberToWaiting(memberInst) {
-    if (!memberInst || !memberInst.id) return false;
-    var col = stageColumnKeyHostingMember(memberInst.id);
-    if (!col) return false;
-    var slot = state.stage[col] || [];
-    for (var i = 0; i < slot.length; i++) {
-      var x = slot[i];
-      if (x && x.type === T_MEMBER && String(x.id) === String(memberInst.id)) {
-        slot.splice(i, 1);
-        clearToujouEffectStateOnLeaveStage(memberInst);
-        state.waitingRoom.push(memberInst);
-        return true;
-      }
-    }
-    return false;
-  }
-
   /**
    * @param {typeof T_MEMBER | typeof T_LIVE} recoverType
    * @param {string | null} excludeInstId 起動で控え室へ送ったメンバー自身は候補から外す
@@ -32651,7 +32775,23 @@ export function mountSimulator(
         if (cardHasTrigger(mc, k)) {
           if (!isPlayEffectResolved(c, k)) {
             var clK = classifyCardAbility(mc, k);
-            if (k === "live_start" && !checkAbilityLiveStartPreconditionsForInst(c, clK)) return;
+            if (k === "live_start") {
+              if (clK.template === "ability_sequence" && clK.steps && clK.steps.length) {
+                var anyLsStepOk = clK.steps.some(function (st) {
+                  return checkAbilityLiveStartPreconditionsForInst(c, st);
+                });
+                if (!anyLsStepOk) return;
+              } else if (!checkAbilityLiveStartPreconditionsForInst(c, clK)) {
+                return;
+              }
+            } else if (k === "live_success") {
+              if (clK.template === "ability_sequence" && clK.steps && clK.steps.length) {
+                var anyLssStepOk = clK.steps.some(function (st) {
+                  return checkAbilityLiveSuccessPreconditions(st);
+                });
+                if (!anyLssStepOk) return;
+              }
+            }
             var mandatory = !clK.optional && !clK.hasOptionalCost;
             result.push({
               inst: c,
@@ -34153,6 +34293,7 @@ export function mountSimulator(
           maybeFireJidouAfterWaitingRoomChanges(dragUndoSnap);
           maybeFireJidouAfterWaitingToHand(dragUndoSnap);
           maybeFireJidouAfterLiveAreaChanges(dragUndoSnap);
+          fireJidouAfterStageAreaMovesFromSnap(dragUndoSnap);
         } catch (jErr) {
           console.warn(jErr);
         }
@@ -37637,7 +37778,9 @@ export function mountSimulator(
     var ltp = state.liveTurnPickMode === true;
     var lsb = state.liveStatsAfterBegin === true;
     var bundle = getRenderPassLiveBundle();
-    var evalOk = !!(bundle && bundle.evaluateResult && bundle.evaluateResult.ok);
+    var evalOk =
+      !!(bundle && bundle.evaluateResult && bundle.evaluateResult.ok) ||
+      liveVerdictLockedMechanicalSuccess();
     function liveSlotsHaveCard() {
       return ["left", "center", "right"].some(function (k) {
         var arr = state.liveArea[k];

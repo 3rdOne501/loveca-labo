@@ -1,13 +1,71 @@
 {
-  "generatedAt": "2026-07-02T15:40:35.484Z",
-  "totalCards": 2280,
-  "segmentsScanned": 1726,
-  "findingCount": 0,
-  "uniqueCardsWithFindings": 0,
-  "countByIssueType": {},
-  "countBySeverity": {},
+  "generatedAt": "2026-07-25T11:08:42.867Z",
+  "totalCards": 2292,
+  "segmentsScanned": 1736,
+  "findingCount": 2,
+  "uniqueCardsWithFindings": 2,
+  "countByIssueType": {
+    "unautomated": 2
+  },
+  "countBySeverity": {
+    "acceptable_manual": 2
+  },
   "versusOnlineSkipTemplates": [],
   "windowConfirmTemplates": [],
-  "findings": [],
-  "topCards": []
+  "findings": [
+    {
+      "dedupeKey": "PL!-PR-020-PR::unautomated",
+      "id": "PL!-PR-020-PR",
+      "name": "高坂穂乃果",
+      "trigger": "live_start",
+      "template": "guided_manual",
+      "issueType": "unautomated",
+      "severity": "acceptable_manual",
+      "detail": "template=guided_manual",
+      "textPreview": "自分のライブカード置き場にあるライブカードのスコアの合計が８以上の場合、「ライブの合計スコアを＋１する。」を得る。"
+    },
+    {
+      "dedupeKey": "PL!SP-PR-026-PR::unautomated",
+      "id": "PL!SP-PR-026-PR",
+      "name": "鬼塚夏美",
+      "trigger": "live_start",
+      "template": "guided_manual",
+      "issueType": "unautomated",
+      "severity": "acceptable_manual",
+      "detail": "template=guided_manual",
+      "textPreview": "自分のライブカード置き場にあるライブカードのスコアの合計が８以上の場合、「ライブの合計スコアを＋１する。」を得る。"
+    }
+  ],
+  "topCards": [
+    {
+      "id": "PL!-PR-020-PR",
+      "name": "高坂穂乃果",
+      "maxSeverity": "acceptable_manual",
+      "issueCount": 1,
+      "issues": [
+        {
+          "issueType": "unautomated",
+          "severity": "acceptable_manual",
+          "trigger": "live_start",
+          "template": "guided_manual",
+          "detail": "template=guided_manual"
+        }
+      ]
+    },
+    {
+      "id": "PL!SP-PR-026-PR",
+      "name": "鬼塚夏美",
+      "maxSeverity": "acceptable_manual",
+      "issueCount": 1,
+      "issues": [
+        {
+          "issueType": "unautomated",
+          "severity": "acceptable_manual",
+          "trigger": "live_start",
+          "template": "guided_manual",
+          "detail": "template=guided_manual"
+        }
+      ]
+    }
+  ]
 }

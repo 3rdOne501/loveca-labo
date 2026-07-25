@@ -7,7 +7,7 @@
 - **デュアル未対応の疑い（高リスクのみ）**: [dual-mode-gap-audit.json](./dual-mode-gap-audit.json)（`node scripts/audit-dual-mode-gaps.mjs`）
 - **手動プレイ確認**: [play-verification-list.md](./play-verification-list.md)
 
-生成: 2026-07-02 — **264** 能力セグメント / **215** 枚
+生成: 2026-07-25 — **265** 能力セグメント / **216** 枚
 
 ## dualStatus（実装状況の目安）
 
@@ -26,10 +26,10 @@
 
 - `read_compare` (88): 相手状態の参照・比較（前提条件）
 - `pick_self_or_opponent` (2): 自分か相手の盤面を選んで解決
-- `mutate_opponent_stage` (148): 相手ステージ（ウェイト・アクティブ・退場等）
+- `mutate_opponent_stage` (149): 相手ステージ（ウェイト・アクティブ・退場等）
 - `mutate_opponent_hand` (5): 相手手札（捨て・公開・加える等）
-- `mutate_opponent_waiting` (8): 相手控え室
-- `mutate_opponent_deck` (32): 相手山札
+- `mutate_opponent_waiting` (9): 相手控え室
+- `mutate_opponent_deck` (33): 相手山札
 - `mutate_opponent_live` (20): 相手ライブ置き場
 - `mutate_opponent_energy` (9): 相手エネルギー
 - `mutate_opponent_success_live` (21): 相手成功ライブ置き場
@@ -40,7 +40,7 @@
 
 ## dualStatus 集計
 
-- `dual_ok`: 214
+- `dual_ok`: 215
 - `passive_track`: 50
 
 ## セット別一覧
@@ -304,6 +304,12 @@
 | PL!HS-pb1-014-P＋ | 安養寺姫芽 | jouji | `passive_track` | passive_opponent, read_compare | `passive_track` |
 | PL!HS-pb1-014-R | 安養寺姫芽 | toujyou | `toujou_opp_front_position_change` | mutate_opponent_stage | `dual_ok` |
 | PL!HS-pb1-014-R | 安養寺姫芽 | jouji | `passive_track` | passive_opponent, read_compare | `passive_track` |
+
+### PL!HS-PR (1)
+
+| ID | 名前 | タイミング | template | kinds | dualStatus |
+|----|------|------------|----------|-------|------------|
+| PL!HS-PR-035-PR | 百生吟子 | toujyou | `optional_self_wait_opp_stage` | mutate_opponent_deck, mutate_opponent_stage, mutate_opponent_waiting | `dual_ok` |
 
 ### PL!N-bp1 (1)
 

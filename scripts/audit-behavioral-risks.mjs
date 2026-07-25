@@ -160,7 +160,7 @@ function loadHandlerSets(simSrc) {
   const executeBody = sectionBetween(
     simSrc,
     "function executeAbilityBody(inst, cl, kind, finishResolved, finishGuided)",
-    "\n  function removeStageMemberToWaiting(memberInst)",
+    "\n  function kidouRecoverCandidatesFromWaiting(recoverType, excludeInstId)",
   );
   const runJidou = sectionBetween(
     simSrc,
