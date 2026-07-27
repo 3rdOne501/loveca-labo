@@ -132,7 +132,7 @@ const CASES = [
     id: "PL!SP-bp5-012-N",
     trigger: "jouji",
     jouji: true,
-    expectTemplate: "blade_if_liella_live_need_sum",
+    expectTemplate: "blade_if_live_need_sum",
     check: (cl) =>
       cl.minTotalNeedHeart === 8 && cl.liveSeriesTag === "Liella!" && cl.heartFlat?.[3] === 1
         ? []
@@ -244,7 +244,12 @@ const CASES = [
     id: "PL!SP-bp5-026-L",
     trigger: "live_start",
     expectTemplate: "live_card_score_plus",
-    check: (cl) => (cl.filters?.seriesTag === "Liella!" ? [] : ["liella"]),
+    check: (cl) =>
+      cl.filters?.seriesTag === "Liella!" &&
+      cl.filters?.minStageSeriesHeartTotal === 11 &&
+      cl.filters?.minStageSeriesHeartTotalTag === "Liella!"
+        ? []
+        : ["liella heart total"],
   },
   {
     id: "PL!SP-bp5-027-L",

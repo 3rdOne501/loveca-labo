@@ -607,7 +607,7 @@ verify-ability-coverage OK / versus-online-sim 22 / static 32 / smoke 87。app �
 | 対応 | 内容 |
 |------|------|
 | 自動効果の演出時間 | `playFxDurationMs` の `jidou` を `PLAY_FX_FIELD_MS`(700ms) → 新設 `PLAY_FX_JIDOU_MS`(1100ms)。ボタン操作を挟まない自動効果を認識できるようにする（`js/playFx.js`） |
-| PL!SP-bp4-004（平安名すみれ 4種） | 登場時解決中に2人バトンを選び直した場合、`_soloBatonMemberIds` を設定するだけでステージから退場させていなかった（根因）。新ヘルパー `applySoloBatonIdsToWaitingRoom(inst)` を追加し、選択メンバーを控え室へ送ってから `runToujouLiellaDoubleBatonCenter` を実行。`countLiellaBatonSourcesOnInst` も控え室を明示的に探索し、メンバー種別＋『Liella!』で判定するよう修正 |
+| PL!SP-bp4-004（平安名すみれ 4種） | 登場時解決中に2人バトンを選び直した場合、`_soloBatonMemberIds` を設定するだけでステージから退場させていなかった（根因）。新ヘルパー `applySoloBatonIdsToWaitingRoom(inst)` を追加し、選択メンバーを控え室へ送ってから `runToujouLiellaDoubleBatonCenter` を実行。`countLiellaBatonSourcesOnInst` も控え室を明示的に探索し、メンバー種別＋『Liella!』で判定するよう修正。**再発修正(2026-07-25)**: 手札DnD→センター時 `applyBoard(structuredClone)` 後の古い手札参照へバトンIDを付けていたためサイドが控え室に行かない → `state.hand` 再解決＋`opts.soloBatonMemberIds` |
 | PL!SP-pb2-000（DUO 2種） | `toujou_baton_discarded_series_per_card` がブレードを**控え室のバトン元メンバー**に付与していた（根因）。カード文は「BHを持たない『Liella!』1枚につき（登場した）このカードがブレード2を得る」→ 対象を `inst` に変更し、該当枚数×2 をまとめて付与 |
 | 重複関数の整理 | 同一スコープに `removeStageMemberToWaiting` が2定義（`~6128` / `~31854`）。後者を削除し、`placeHandMemberOnStageSideCore` の2人バトン経路も新ヘルパー経由に統一。監査/検証5スクリプトが後者を `executeAbilityBody` の終端マーカーに使っていたため、マーカーを `kidouRecoverCandidatesFromWaiting` に更新 |
 | PL!SP-pb2-011 / PL!SP-pb1-006 ほか | Sortable のステージ D&D（`onEnd`）が列移動で自動効果を一切発火していなかった（根因）。`fireJidouAfterStageAreaMovesFromSnap(snap)` を追加し、ドロップ前スナップとの列差分から `area_move` / `center_member_area_move` / `member_to_center` を発火（`markMemberMovedThisTurn` 含む）。対象は `area_move` 25枚 + `center_member_area_move` 2枚 + `member_to_center` 2枚 |
@@ -617,10 +617,42 @@ verify-ability-coverage OK / verify-ability-handlers OK / verify-ability-runtime
 
 ---
 
+## 38. 条件未評価の常時／ライブ開始時ゲート（2026-07-25）
+
+ユーザー報告 3 件。いずれも「条件文は分類されているが実行時に評価されず、常に効果が乗る」型。
+
+| 代表ID | 名前 | 問題 | 修正 | 横展開 |
+|--------|------|------|------|--------|
+| PL!SP-bp5-026-L | Let's be ONE | `『Liella!』のメンバーが持つハートの総数が11以上` を `parseConditionalPrefixFilters` が解析せず、`live_card_score_plus` が無条件に +1 | 新フィルタ `minStageSeriesHeartTotal` / `minStageSeriesHeartTotalTag`（色不問のハート総数）を追加し、`checkAbilityBoardPickFilters` にヘルパー `sumStageSeriesHeldHeartTotal(seriesTag)` で判定を追加 | 同型テキスト 1 枚（本カードのみ）。フィルタは全 `live_start` / `live_success` / `toujyou` 系の前提チェック経路で共通に効く |
+| PL!SP-bp5-012-N | 澁谷かのん | jouji `blade_if_liella_live_need_sum` が `conditionMet` で評価されず heart03 が常時付与 | 分類器を Liella!/8 ハードコードから正規表現 `ライブカード置き場に必要ハートの合計がN以上の『…』` へ一般化し kind を `blade_if_live_need_sum` に改称（旧 kind もエイリアス受理）。ctx に `liveAreaHasSeriesLiveMinNeedHeart(tag, min)` を追加して判定 | 同型テキスト 1 枚。正規表現化により今後の同型カードは分類器のみで対応可 |
+| PL!N-pb1-007-R | 優木せつ菜 | jouji `blade_if_live_need_all_colors` も同様に未評価で ALL ハートが常時付与 | ctx に `liveAreaNeedHeartCoversAllColors()` を追加（FAQ Q205 に従いライブ中の複数枚を合算）し `conditionMet` で判定 | `PL!N-pb1-007-P＋` を含む 2 枚 |
+| PL!-pb1-018-R | 矢澤にこ | 相手側の蘇生処理まで対話で進めていた（ユーザー要望により削除） | `toujou_both_wait_to_empty_stage` を自分側 1 パスのみに変更。空きエリア判定・このターンの登場ブロックは自分側で維持 | template 変更のため `PL!-pb1-018-P＋` も同時に反映（card_no 分岐なし） |
+
+検証: `verify-ability-coverage`（全 verify/audit 連鎖）OK、`verify-ability-handlers` OK、`verify-ability-runtime` OK、`verify-deck-pick-hand-patterns` OK、`build-ability-index` guided_manual/jidou_manual = 0。`audit-opponent-board-effects` 再生成済み。app 同期済み（abilityEffects.js / simulator.js / joujiEffects.js）。
+
+---
+
+## 39. 効果による「メンバーのいないエリアに登場」と下に置いたカードの扱い（2026-07-27）
+
+ユーザー報告 2 枚。根因は 3 系統。
+
+| 代表ID | 名前 | 問題 | 修正 | 横展開 |
+|--------|------|------|------|--------|
+| PL!-bp6-003-P | 南ことり | ライブ成功時に「このメンバーの下」から空きエリアへ登場させると、`finalizeWaitingMemberStageEntry` が新規ステージメンバーとみなして登場コスト分の側面エネをウェイトにしていた。向きも未設定でウェイト表示のまま。下候補が複数でも先頭固定 | 共通ヘルパー `placeEffectMemberOnEmptyStageColumn(memberInst, col, {waitState, blockEntry, fromWaiting})` を新設。`_appearEnergyOverride = 0`（効果登場は E を支払わない／総合ルール 5.9.1 は能力コスト側）、カード文に「ウェイト状態で登場」がなければアクティブ、下候補が 2 枚以上なら選択ダイアログを先に開く | `PL!-bp6-003-R＋/P＋/SEC` を含む 4 枚。ヘルパーは効果登場の全経路（`placeWaitingMemberToStage(Column)` 経由の各 template、`deck_top_pick_enter_or_hand`、控え室合計コスト登場）にも適用し、効果登場での誤エネ消費を一掃 |
+| PL!-bp6-003-P | 南ことり | 「下に置いたカード」が列配列でホストより前に挿入されるため、`stageColumnIncumbentMember` が**下のカード**を面メンバーとして返し、バトンタッチ相手・所持ハート集計に混入していた | 列の末尾側から探す `stageColumnTopMember(col)` を新設し、`stageColumnIncumbentMember` / `boardHeldHeartSlotAccum` / `stageHeldHeartSlotAccum` を一番上のメンバーのみに限定（FAQ Q247 のハート二重取り防止と同趣旨） | 下置きを行う全カード（`live_start_hand_reveal_under_heart_grant`、`runJidouWaitUnderFromWaiting` 経由）に共通で効く |
+| PL!HS-bp5-022-L | Retrofuture | ①`parseAbilityPickFilters` が「ステージにコスト9以上の『EdelNote』のメンバーがいる」の 9 を発動条件 `minCostMemberOnStage` と選択対象 `minCost` の両方に入れていた ②選択肢の控え室登場が常にウェイト＋当ターン登場不可を強制（カード文に記載なし） | ①ステージ存在節の検出を汎用 minCost パーサより前に移し、その節を除いた文から `コストN以上` を拾う。あわせて『…』から `minCostMemberOnStageSeriesTag` を設定 ②`executeAbilityChoiceText` の控え室登場分岐を `effectEntryTextRules(text)`（「ウェイト状態で登場」「このターン…登場できない」の有無）でテキスト駆動化 | ①minCost 汚染は 12 枚（`PL!S-bp3-024-L` / `PL!HS-pb1-010-R,P＋` / `PL!-bp3-009` 4種 / `PL!S-PR-029〜031` / `PL!SP-sd2-008-SD2`）。`verify-aqours-bp3` / `verify-hasunosora-bp5` の期待値も汚染前提から修正 ②`kidou_waiting_to_empty_stage` も同じテキスト駆動に統一。`PL!HS-bp5-002`（4種）・`PL!HS-bp6-016-R` はウェイト記載なしのためアクティブ登場へ、`PL!S-sd1-006-SD` はウェイトなし＋当ターン登場不可のみ |
+
+検証: `verify-ability-coverage`（全 verify/audit 連鎖）OK、`verify-ability-handlers` OK、`verify-ability-runtime` OK、`verify-deck-pick-hand-patterns` OK、`verify-play-checklist` 37/37、`verify-p2-ability-smoke` OK、`verify-dual-mode-smoke` OK、`build-ability-index` jidou_manual = 0。app 同期済み（abilityEffects.js / simulator.js）。
+
+---
+
 ## 更新履歴
 
 | 日付 | 内容 |
 |------|------|
+| 2026-07-27 | 効果登場まわり3系統: ①効果による空きエリア登場で登場コストEを消費していた問題を共通ヘルパー `placeEffectMemberOnEmptyStageColumn`＋`_appearEnergyOverride=0` で解消（ウェイト／当ターン登場不可はカード文駆動）②`stageColumnTopMember` 新設で「下に置いたカード」を面メンバー・所持ハートから除外（PL!-bp6-003 南ことり）③`parseAbilityPickFilters` のステージ存在節→選択対象 minCost 汚染を除去し `minCostMemberOnStageSeriesTag` を追加（PL!HS-bp5-022-L Retrofuture ほか12枚） |
+| 2026-07-25 | PL!SP-bp4-004 手札DnD→2人バトン: `applyBoard(structuredClone)` 後に古い手札インスタンスへ `_soloBatonMemberIds` を付けていたためサイド退場がスキップ。`state.hand` 再解決＋`opts.soloBatonMemberIds` で core に渡す。DUO 等 `cardAllowsTwoMemberBaton` 全体に効く |
+| 2026-07-25 | 条件未評価ゲート3件+要望1件: ①PL!SP-bp5-026-L `minStageSeriesHeartTotal`（『Liella!』ハート総数11以上）新設 ②PL!SP-bp5-012-N jouji `blade_if_live_need_sum` へ一般化＋`liveAreaHasSeriesLiveMinNeedHeart` で実判定 ③PL!N-pb1-007-R `blade_if_live_need_all_colors` を `liveAreaNeedHeartCoversAllColors`（FAQ Q205 合算）で実判定 ④PL!-pb1-018-R/P＋ 相手側の蘇生処理を削除し自分side のみに |
 | 2026-07-25 | 仕様: ライブ成功判定ロックを UI/成功時効果に徹底（8.3.15/8.4.4）。成功時効果でエール回収しても失敗表示に戻さない。代表 PL!SP-bp4-006-P / PL!N-bp1-026-L / PL!SP-bp2-025-SRL。`overlayLockedLiveVerdictOnBundle` + live_success 解決前 `ensureLiveVerdictSnapshotLocked`。yell_resolution_* 全体に適用 |
 | 2026-07-25 | 複数 live_start/live_success → ability_sequence: 外側 filters の AND 化で後段が死ぬ問題を修正（代表: PL!SP-bp4-024-L ノンフィクション!!）。段ごと前提スキップ＋collectPending は any-step OK。横展開13枚 |
 | 2026-07-25 | 2人バトン＋D&D自動効果: ①jidou 演出 1100ms ②PL!SP-bp4-004 効果内バトン選択が控え室に行かない（`applySoloBatonIdsToWaitingRoom` 追加）③PL!SP-pb2-000 ブレード付与先を登場カードへ ④ステージD&D列移動で `area_move`/`center_member_area_move`/`member_to_center` 未発火（29枚に影響）⑤`removeStageMemberToWaiting` 重複定義削除＋検証スクリプトのマーカー更新 |

@@ -3406,6 +3406,8 @@ export function mountSimulator(
       eachOpponentStageColumnMembers: eachOpponentStageColumnMemberInsts,
       stageHasAllAreasDistinctSeriesMembers: stageHasAllAreasDistinctSeriesMembers,
       liveFramesHave3PlusWithSeries: bp1012LanzhuSynergyBoardConditionMet,
+      liveAreaHasSeriesLiveMinNeedHeart: liveAreaHasSeriesLiveMinNeedHeart,
+      liveAreaNeedHeartCoversAllColors: liveAreaNeedHeartCoversAllColors,
       energyCountBelowMember: countEnergyCardsBelowMemberOnStage,
       memberCountBelowSeries: function (inst, tag) {
         if (!inst || !tag) return 0;
@@ -6194,8 +6196,13 @@ export function mountSimulator(
   }
 
   /** 2人バトンで選ばれたメンバーのうち、まだステージに残っている者を控え室へ送る */
-  function applySoloBatonIdsToWaitingRoom(inst) {
-    var ids = inst && Array.isArray(inst._soloBatonMemberIds) ? inst._soloBatonMemberIds : [];
+  function applySoloBatonIdsToWaitingRoom(inst, batonIdsOverride) {
+    var ids =
+      Array.isArray(batonIdsOverride) && batonIdsOverride.length
+        ? batonIdsOverride
+        : inst && Array.isArray(inst._soloBatonMemberIds)
+          ? inst._soloBatonMemberIds
+          : [];
     var moved = 0;
     ids.forEach(function (bid) {
       if (bid == null) return;
@@ -6429,6 +6436,46 @@ export function mountSimulator(
     return false;
   }
 
+  /** ライブカード置き場のライブカード（左/センター/右） */
+  function liveAreaLiveInsts() {
+    /** @type {*[]} */
+    var out = [];
+    ["left", "center", "right"].forEach(function (k) {
+      ((state.liveArea && state.liveArea[k]) || []).forEach(function (c) {
+        if (c && c.type === T_LIVE) out.push(c);
+      });
+    });
+    return out;
+  }
+
+  /** ライブカード置き場に『series』かつ必要ハート合計が min 以上のライブカードが1枚以上あるか */
+  function liveAreaHasSeriesLiveMinNeedHeart(seriesTag, minNeedSum) {
+    var need = Math.max(0, Math.floor(Number(minNeedSum) || 0));
+    return liveAreaLiveInsts().some(function (c) {
+      var mc = mergedCatalogCard(c);
+      if (seriesTag && !catalogCardMatchesGroupTag(mc, seriesTag)) return false;
+      return sumNeedHeartOnCard(mc) >= need;
+    });
+  }
+
+  /** ライブ中のライブカードの必要ハートに heart01〜heart06 がそれぞれ1以上含まれるか（総合ルール FAQ Q205: 複数枚合算） */
+  function liveAreaNeedHeartCoversAllColors() {
+    var lives = liveAreaLiveInsts();
+    if (!lives.length) return false;
+    /** @type {Record<number, boolean>} */
+    var present = {};
+    lives.forEach(function (c) {
+      var need = (mergedCatalogCard(c) || {}).need_heart || {};
+      for (var s = 1; s <= 6; s++) {
+        if (Number(need["heart0" + s]) > 0) present[s] = true;
+      }
+    });
+    for (var i = 1; i <= 6; i++) {
+      if (!present[i]) return false;
+    }
+    return true;
+  }
+
   /** このターンステージへ載せたばかりか（同日バトン注意に利用） */
   function memberIsStageFreshThisTurn(memberInstOrNull) {
     return !!(
@@ -6627,13 +6674,22 @@ export function mountSimulator(
     return true;
   }
 
-  function stageColumnIncumbentMember(col) {
+  /**
+   * 列で一番上（面）にいるメンバー。
+   * 「このメンバーの下に置く」カードは列配列のホストより前に挿入されるため、末尾側から探す。
+   * 下に置かれたカードはメンバーとして場にいないので、バトンタッチ相手にも所持ハートにも数えない。
+   */
+  function stageColumnTopMember(col) {
     if (!col) return null;
     var slot = state.stage[col] || [];
-    for (var si = 0; si < slot.length; si++) {
+    for (var si = slot.length - 1; si >= 0; si--) {
       if (slot[si] && slot[si].type === T_MEMBER) return slot[si];
     }
     return null;
+  }
+
+  function stageColumnIncumbentMember(col) {
+    return stageColumnTopMember(col);
   }
 
   /** 当ターンに載せたメンバーへのバトンタッチ不可・列登場不可（pb1-018 等）を含む */
@@ -6747,13 +6803,14 @@ export function mountSimulator(
   function boardHeldHeartSlotAccum() {
     var acc = {};
     ["left", "center", "right"].forEach(function (k) {
-      state.stage[k].forEach(function (inst) {
-        if (inst.type !== T_MEMBER) return;
-        ensureCardBoardFields(inst);
-        if (inst._baseHeartsWildcardUntilLiveEnd === true) return;
-        addMemberPrintedBaseHeartToSlotAccum(inst, acc);
-        addMemberPlayBonusSolidHearts(inst, acc);
-      });
+      var topStage = stageColumnTopMember(k);
+      if (topStage) {
+        ensureCardBoardFields(topStage);
+        if (topStage._baseHeartsWildcardUntilLiveEnd !== true) {
+          addMemberPrintedBaseHeartToSlotAccum(topStage, acc);
+          addMemberPlayBonusSolidHearts(topStage, acc);
+        }
+      }
       state.liveArea[k].forEach(function (inst) {
         if (inst.type !== T_MEMBER) return;
         ensureCardBoardFields(inst);
@@ -6769,12 +6826,11 @@ export function mountSimulator(
   function stageHeldHeartSlotAccum() {
     var acc = {};
     ["left", "center", "right"].forEach(function (k) {
-      state.stage[k].forEach(function (inst) {
-        if (inst.type !== T_MEMBER) return;
-        ensureCardBoardFields(inst);
-        addMemberPrintedBaseHeartToSlotAccum(inst, acc);
-        addMemberPlayBonusSolidHearts(inst, acc);
-      });
+      var top = stageColumnTopMember(k);
+      if (!top) return;
+      ensureCardBoardFields(top);
+      addMemberPrintedBaseHeartToSlotAccum(top, acc);
+      addMemberPlayBonusSolidHearts(top, acc);
     });
     return acc;
   }
@@ -12185,13 +12241,19 @@ export function mountSimulator(
     delete inst._enteredFromWaitingRoom;
     if (!state.stage[side]) state.stage[side] = [];
     var mcEnter = mergedCatalogCard(inst);
-    var batonIds = Array.isArray(inst._soloBatonMemberIds) ? inst._soloBatonMemberIds.slice() : [];
+    var batonIds = Array.isArray(opts.soloBatonMemberIds)
+      ? opts.soloBatonMemberIds.slice(0, 2)
+      : Array.isArray(inst._soloBatonMemberIds)
+        ? inst._soloBatonMemberIds.slice()
+        : [];
+    if (batonIds.length) inst._soloBatonMemberIds = batonIds.slice(0, 2);
+    else delete inst._soloBatonMemberIds;
     var duoMultiBaton =
       cardAllowsTwoMemberBaton(mcEnter) &&
       batonIds.length &&
       !(side === "center" && cardIsSpBp4004Sumire(mcEnter.card_no));
     if (duoMultiBaton) {
-      applySoloBatonIdsToWaitingRoom(inst);
+      applySoloBatonIdsToWaitingRoom(inst, batonIds);
       var lowestBatonId = null;
       var lowestBatonCost = Infinity;
       batonIds.forEach(function (bid) {
@@ -12227,7 +12289,7 @@ export function mountSimulator(
         if (!b) return;
         batonSum += memberFlooredPrintedCost(b);
       });
-      applySoloBatonIdsToWaitingRoom(inst);
+      applySoloBatonIdsToWaitingRoom(inst, batonIds);
       inst._appearEnergyOverride = Math.max(
         0,
         memberFlooredPrintedCost(inst, { handSnap: snap }) - batonSum,
@@ -12309,9 +12371,16 @@ export function mountSimulator(
       };
       openBatonPick(function (proceed, batonIds) {
         if (!proceed) return;
-        if (batonIds && batonIds.length) memberInst._soloBatonMemberIds = batonIds.slice(0, 2);
-        else delete memberInst._soloBatonMemberIds;
-        placeHandMemberOnStageSideCore(memberInst, side, opts);
+        // DnD 後 applyBoard(structuredClone) で手札インスタンスが差し替わるため、
+        // 必ず state.hand 上の実体へバトン ID を付け、opts でも core に渡す
+        var liveHand =
+          state.hand.find(function (h) {
+            return h && String(h.id) === String(memberInst.id);
+          }) || memberInst;
+        var ids = batonIds && batonIds.length ? batonIds.slice(0, 2) : [];
+        if (ids.length) liveHand._soloBatonMemberIds = ids;
+        else delete liveHand._soloBatonMemberIds;
+        placeHandMemberOnStageSideCore(liveHand, side, Object.assign({}, opts, { soloBatonMemberIds: ids }));
       });
       return true;
     }
@@ -12935,6 +13004,10 @@ export function mountSimulator(
       if (sumStageSeriesHeartSlotCount(heartSumTag, heartSumSlot) < Number(filters.minStageSeriesHeartSlotTotal)) {
         return false;
       }
+    }
+    if (filters.minStageSeriesHeartTotal != null) {
+      var heartTotalTag = filters.minStageSeriesHeartTotalTag || filters.seriesTag;
+      if (sumStageSeriesHeldHeartTotal(heartTotalTag) < Number(filters.minStageSeriesHeartTotal)) return false;
     }
     if (filters.requiresOpponentSucceededLiveZeroSurplusThisTurn && !opponentSucceededLiveZeroSurplusThisTurn()) {
       return false;
@@ -13929,6 +14002,17 @@ export function mountSimulator(
       if (!m || m._soloOpponentProxy === true) return;
       if (seriesTag && !catalogCardMatchesGroupTag(mergedCatalogCard(m), seriesTag)) return;
       sum += memberHeldHeartCountBySlot(m, slot);
+    });
+    return sum;
+  }
+
+  /** ステージの『series』メンバーが持つハート総数（色不問）。series 未指定なら全メンバー */
+  function sumStageSeriesHeldHeartTotal(seriesTag) {
+    var sum = 0;
+    eachStageColumnMemberInsts().forEach(function (m) {
+      if (!m || m._soloOpponentProxy === true) return;
+      if (seriesTag && !catalogCardMatchesGroupTag(mergedCatalogCard(m), seriesTag)) return;
+      for (var s = 1; s <= 6; s++) sum += memberHeldHeartCountBySlot(m, s);
     });
     return sum;
   }
@@ -15367,6 +15451,7 @@ export function mountSimulator(
       return c && c.type === T_ENERGY;
     });
     var snap = snapshotBoard();
+    mem._appearEnergyOverride = 0;
     state.stage[target] = energies.concat([mem]);
     finalizeWaitingMemberStageEntry(snap);
     return true;
@@ -17907,6 +17992,55 @@ export function mountSimulator(
     } catch (_) {}
   }
 
+  /**
+   * 効果によるメンバーの「メンバーのいないエリアに登場」共通処理。
+   * 登場コストのEは支払わない（総合ルール 5.9.1 の支払いは能力コスト側で済んでいる）ため
+   * _appearEnergyOverride=0 を立てる。ウェイト状態・当ターン登場不可はカード文が明示したときだけ。
+   * memberInst は fromWaiting でない場合、呼び出し側で元の領域から取り除いておくこと。
+   * @param {*} memberInst
+   * @param {string} col
+   * @param {{waitState?: boolean, blockEntry?: boolean, fromWaiting?: boolean}} [opts]
+   * @returns {boolean}
+   */
+  function placeEffectMemberOnEmptyStageColumn(memberInst, col, opts) {
+    if (!memberInst || memberInst.type !== T_MEMBER || !col) return false;
+    var o = opts || {};
+    var slot = state.stage[col] || [];
+    var occupied = slot.some(function (c) {
+      return c && c.type === T_MEMBER;
+    });
+    if (occupied) return false;
+    if (o.fromWaiting) {
+      var wi = state.waitingRoom.findIndex(function (c) {
+        return c && String(c.id) === String(memberInst.id);
+      });
+      if (wi >= 0) state.waitingRoom.splice(wi, 1);
+      memberInst._enteredFromWaitingRoom = true;
+    }
+    var snapBefore = snapshotBoard();
+    memberInst.lcWait = o.waitState === true;
+    memberInst.isRotated = o.waitState === true;
+    memberInst.lcActive = o.waitState !== true;
+    memberInst._appearEnergyOverride = 0;
+    state.stage[col] = slot
+      .filter(function (c) {
+        return c && c.type === T_ENERGY;
+      })
+      .concat([memberInst]);
+    finalizeWaitingMemberStageEntry(snapBefore);
+    if (o.blockEntry) blockStageColumnEntryThisTurn(col);
+    return true;
+  }
+
+  /** カード文が「ウェイト状態で登場」「このターン…登場できない」を明示しているか */
+  function effectEntryTextRules(text) {
+    var s = String(text || "");
+    return {
+      waitState: /ウェイト状態で登場/.test(s),
+      blockEntry: /このターン[^。]*登場できない/.test(s),
+    };
+  }
+
   function placeWaitingMemberToStageColumn(memberInst, col) {
     var wi = -1;
     for (var j = 0; j < state.waitingRoom.length; j++) {
@@ -17925,6 +18059,7 @@ export function mountSimulator(
     var snap = snapshotBoard();
     var mem = state.waitingRoom.splice(wi, 1)[0];
     mem._enteredFromWaitingRoom = true;
+    mem._appearEnergyOverride = 0;
     var energies = slot.filter(function (c) {
       return c && c.type === T_ENERGY;
     });
@@ -18524,19 +18659,18 @@ export function mountSimulator(
           return;
         }
         var entCard = state.waitingRoom.splice(wiEnter, 1)[0];
+        var entRules = effectEntryTextRules(t);
         function placeEnterToEmptyColumn(tgtCol) {
-          var snapBeforeEnter = snapshotBoard();
-          entCard.lcWait = true;
-          entCard.isRotated = true;
-          entCard.lcActive = false;
           entCard._enteredFromWaitingRoom = true;
-          if (!state.stage[tgtCol]) state.stage[tgtCol] = [];
-          state.stage[tgtCol].push(entCard);
-          finalizeWaitingMemberStageEntry(snapBeforeEnter);
-          blockStageColumnEntryThisTurn(tgtCol);
+          placeEffectMemberOnEmptyStageColumn(entCard, tgtCol, {
+            waitState: entRules.waitState,
+            blockEntry: entRules.blockEntry,
+          });
           showToast(
             (mergedCatalogCard(entCard).name || "メンバー") +
-              " を空きエリアに登場させました",
+              " を空きエリアに" +
+              (entRules.waitState ? "ウェイト登場させました" : "登場させました") +
+              (entRules.blockEntry ? "（このターン同エリアへの登場不可）" : ""),
           );
           render();
           onDone();
@@ -20919,10 +21053,8 @@ export function mountSimulator(
       var maxPb = (cl.filters && cl.filters.maxCost != null ? cl.filters.maxCost : 2) || 2;
       pushHistoryBefore("toujou-pb1018-both");
       runPb1018WaitEnterFlow(false, maxPb, function () {
-        runPb1018WaitEnterFlow(true, maxPb, function () {
-          showToast("自分と相手の控え室からの登場が完了しました");
-          finishResolved();
-        });
+        showToast("控え室からウェイト登場させました");
+        finishResolved();
       });
       return;
     }
@@ -22177,6 +22309,7 @@ export function mountSimulator(
     }
 
     if (cl.template === "kidou_waiting_to_empty_stage") {
+      var wtesRules = effectEntryTextRules(abilityRawSegmentForTrigger(mc, kind) || cardAbilityRawText(mc));
       var maxC = (cl.filters && cl.filters.maxCost != null ? cl.filters.maxCost : 2) || 2;
       var wMem = (state.waitingRoom || []).filter(function (c) {
         return (
@@ -22192,7 +22325,10 @@ export function mountSimulator(
         return;
       }
       pushHistoryBefore("wait-to-empty-stage");
-      openPickFromWaitingDialog(wMem, "控え室からメンバーのいないエリアへウェイト登場。", function (pickId) {
+      var wtesLead = wtesRules.waitState
+        ? "控え室からメンバーのいないエリアへウェイト登場。"
+        : "控え室からメンバーのいないエリアへ登場させます。";
+      openPickFromWaitingDialog(wMem, wtesLead, function (pickId) {
         if (!pickId) {
           finishResolved();
           return;
@@ -22214,19 +22350,18 @@ export function mountSimulator(
         }
         var ent = state.waitingRoom.splice(wi3, 1)[0];
         function placeWaitToEmptyColumn(tgtCol) {
-          var snapBeforeEnter = snapshotBoard();
-          ent.lcWait = true;
-          ent.isRotated = true;
-          ent.lcActive = false;
-          if (!state.stage[tgtCol]) state.stage[tgtCol] = [];
-          state.stage[tgtCol].push(ent);
-          finalizeWaitingMemberStageEntry(snapBeforeEnter);
-          blockStageColumnEntryThisTurn(tgtCol);
+          ent._enteredFromWaitingRoom = true;
+          placeEffectMemberOnEmptyStageColumn(ent, tgtCol, {
+            waitState: wtesRules.waitState,
+            blockEntry: wtesRules.blockEntry,
+          });
           showToast(
             (mergedCatalogCard(ent).name || "メンバー") +
               " を " +
               (tgtCol === "left" ? "左サイド" : tgtCol === "right" ? "右サイド" : "センター") +
-              " にウェイト登場させました（このターン同エリアへの登場不可）",
+              " に" +
+              (wtesRules.waitState ? "ウェイト登場させました" : "登場させました") +
+              (wtesRules.blockEntry ? "（このターン同エリアへの登場不可）" : ""),
           );
           finishResolved();
         }
@@ -22241,7 +22376,7 @@ export function mountSimulator(
           colPickLabels,
           1,
           1,
-          "ウェイト登場させる空きエリアを選んでください。",
+          (wtesRules.waitState ? "ウェイト登場させる" : "登場させる") + "空きエリアを選んでください。",
           function (cols) {
             if (!cols || !cols.length) {
               state.waitingRoom.push(ent);
@@ -25336,25 +25471,32 @@ export function mountSimulator(
     }
 
     if (cl.template === "live_success_enter_under_member") {
-      var runEnterUnderMember = function () {
-      var underPool = getStackMembersBelowHost(inst).filter(function (m) {
-        return catalogCardMatchesPickFilters(mergedCatalogCard(m), cl.filters || {});
-      });
-      if (!underPool.length) {
-        showToast("このメンバーの下に条件のメンバーがありません");
+      var underEnterRules = effectEntryTextRules(
+        abilityRawSegmentForTrigger(mc, kind) || cardAbilityRawText(mc),
+      );
+      var enterUnderMemberAt = function (underM, targetCol) {
+        var ucol = stageColumnKeyHostingMember(underM.id);
+        if (ucol) {
+          var slot = state.stage[ucol] || [];
+          var ui = slot.findIndex(function (c) {
+            return c && String(c.id) === String(underM.id);
+          });
+          if (ui >= 0) slot.splice(ui, 1);
+        }
+        placeEffectMemberOnEmptyStageColumn(underM, targetCol, {
+          waitState: underEnterRules.waitState,
+          blockEntry: underEnterRules.blockEntry,
+        });
+        showToast(
+          (mergedCatalogCard(underM).name || "メンバー") + " を空きエリアに登場させました",
+        );
         finishResolved();
-        return;
-      }
-      var emptyCols = emptyStageColumns();
-      if (!emptyCols.length) {
-        showToast("空きエリアがありません");
-        finishResolved();
-        return;
-      }
-      pushHistoryBefore("ls-enter-under-member");
-      var underM = underPool[0];
-      var targetCol = emptyCols[0];
-      if (emptyCols.length > 1) {
+      };
+      var chooseColumnThenEnterUnder = function (underM, emptyCols) {
+        if (emptyCols.length === 1) {
+          enterUnderMemberAt(underM, emptyCols[0]);
+          return;
+        }
         var labelsUnder = { left: "⬅ 左サイド", center: "⬆ センター", right: "➡ 右サイド" };
         var choicesUnder = emptyCols.map(function (c) {
           return labelsUnder[c] || c;
@@ -25365,37 +25507,51 @@ export function mountSimulator(
           1,
           "登場させる移動先エリアを選んでください。",
           function (pickedUnder) {
+            var targetCol = emptyCols[0];
             if (pickedUnder && pickedUnder.length) {
               var ci = choicesUnder.indexOf(pickedUnder[0]);
               if (ci >= 0 && ci < emptyCols.length) targetCol = emptyCols[ci];
             }
-            continueEnterUnderMember();
+            enterUnderMemberAt(underM, targetCol);
           },
           inst,
         );
-        return;
-      }
-      continueEnterUnderMember();
-      return;
-
-      function continueEnterUnderMember() {
-      var ucol = stageColumnKeyHostingMember(underM.id);
-      if (ucol) {
-        var slot = state.stage[ucol] || [];
-        var ui = slot.findIndex(function (c) {
-          return c && String(c.id) === String(underM.id);
+      };
+      var runEnterUnderMember = function () {
+        var underPool = getStackMembersBelowHost(inst).filter(function (m) {
+          return catalogCardMatchesPickFilters(mergedCatalogCard(m), cl.filters || {});
         });
-        if (ui >= 0) slot.splice(ui, 1);
-      }
-      var snapU = snapshotBoard();
-      var enU = (state.stage[targetCol] || []).filter(function (c) {
-        return c && c.type === T_ENERGY;
-      });
-      state.stage[targetCol] = enU.concat([underM]);
-      finalizeWaitingMemberStageEntry(snapU);
-      finishResolved();
-      return;
-      }
+        if (!underPool.length) {
+          showToast("このメンバーの下に条件のメンバーがありません");
+          finishResolved();
+          return;
+        }
+        var emptyCols = emptyStageColumns();
+        if (!emptyCols.length) {
+          showToast("空きエリアがありません");
+          finishResolved();
+          return;
+        }
+        pushHistoryBefore("ls-enter-under-member");
+        if (underPool.length === 1) {
+          chooseColumnThenEnterUnder(underPool[0], emptyCols);
+          return;
+        }
+        openPickFromWaitingDialog(
+          underPool,
+          "このメンバーの下から空きエリアへ登場させるメンバーを選びます。",
+          function (pickedId) {
+            var picked = underPool.find(function (m) {
+              return m && String(m.id) === String(pickedId);
+            });
+            if (!picked) {
+              finishResolved();
+              return;
+            }
+            chooseColumnThenEnterUnder(picked, emptyCols);
+          },
+          { sourceInst: inst, dialogTitle: "ライブ成功: 下から登場", okLabel: "登場させる" },
+        );
       };
       if (cl.optional || cl.hasOptionalCost) {
         openAbilityConfirmDialog(
@@ -28225,7 +28381,7 @@ export function mountSimulator(
           if (batonIds && batonIds.length) {
             inst._soloBatonMemberIds = batonIds.slice(0, 2);
             pushHistoryBefore("toujou-liella-baton-pick");
-            if (applySoloBatonIdsToWaitingRoom(inst) > 0) render();
+            if (applySoloBatonIdsToWaitingRoom(inst, batonIds) > 0) render();
           }
           runToujouLiellaDoubleBatonCenter(inst, cl, finishResolved);
         });
@@ -29303,13 +29459,7 @@ export function mountSimulator(
               }
               placePickedMemberEh();
               function placePickedMemberEh() {
-                var snapBeforeEnter = snapshotBoard();
-                if (!state.stage[targetColEh]) state.stage[targetColEh] = [];
-                pickedEh.lcWait = false;
-                pickedEh.isRotated = false;
-                pickedEh.lcActive = true;
-                state.stage[targetColEh].push(pickedEh);
-                finalizeWaitingMemberStageEntry(snapBeforeEnter);
+                placeEffectMemberOnEmptyStageColumn(pickedEh, targetColEh, {});
                 showToast("空きエリアに登場させました");
                 finishRestToWait();
               }
@@ -31091,13 +31241,8 @@ export function mountSimulator(
                 finishResolved();
                 return;
               }
-              var snapBeforeEnter = snapshotBoard();
-              ent.lcWait = false;
-              ent.isRotated = false;
-              ent.lcActive = true;
-              if (!state.stage[emptyCols[0]]) state.stage[emptyCols[0]] = [];
-              state.stage[emptyCols[0]].push(ent);
-              finalizeWaitingMemberStageEntry(snapBeforeEnter);
+              ent._enteredFromWaitingRoom = true;
+              placeEffectMemberOnEmptyStageColumn(ent, emptyCols[0], {});
               pickedEnter.push(ent);
               stepEnter();
             },
@@ -34195,7 +34340,12 @@ export function mountSimulator(
           if (dragInstCenter && dragMcCenter && cardAllowsTwoMemberBaton(dragMcCenter)) {
             applyBoard(dragUndoSnap);
             render();
-            placeHandMemberOnStageSide(dragInstCenter, toStageCol, {});
+            // applyBoard 後は clone 済みインスタンスになるため、手札から再解決する
+            var liveAfterRestore =
+              (state.hand || []).find(function (h) {
+                return h && String(h.id) === String(dragIdEnd);
+              }) || findCardInstById(dragIdEnd);
+            if (liveAfterRestore) placeHandMemberOnStageSide(liveAfterRestore, toStageCol, {});
             restoreCardFaceAfterDragging(evt.item);
             clearEnergyDropHints();
             return;

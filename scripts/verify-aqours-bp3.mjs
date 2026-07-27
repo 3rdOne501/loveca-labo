@@ -154,8 +154,13 @@ const CASES = [
     id: "PL!S-bp3-024-L",
     trigger: "live_start",
     expectTemplate: "ability_pick_one",
+    // コスト9以上はステージ側の発動条件。選ぶ対象の minCost には混入させない
     check: (cl) =>
-      cl.filters?.seriesTag === "Aqours" && cl.filters?.minCost === 9 && cl.filters?.maxCost === 4
+      cl.filters?.seriesTag === "Aqours" &&
+      cl.filters?.minCostMemberOnStage === 9 &&
+      cl.filters?.minCostMemberOnStageSeriesTag === "Aqours" &&
+      cl.filters?.minCost == null &&
+      cl.filters?.maxCost === 4
         ? []
         : ["filters"],
   },

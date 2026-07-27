@@ -1,5 +1,5 @@
 {
-  "generated": "2026-07-25T11:08:42.257Z",
+  "generated": "2026-07-27T14:53:01.377Z",
   "sample_size": 50,
   "cards": [
     {
@@ -396,7 +396,7 @@
           "filters": {
             "pickType": null,
             "maxCost": null,
-            "minCost": 13,
+            "minCost": null,
             "seriesTag": null,
             "minSuccessLiveCount": null,
             "minNeedHeartSlot": null,

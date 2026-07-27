@@ -197,7 +197,11 @@ const CASES = [
       const errs = [];
       if (!cl.optional || cl.costEnergyCount !== 2) errs.push("optional E2");
       if (cl.filters?.seriesTag !== "EdelNote") errs.push("edelnote");
-      if (cl.filters?.minCostMemberOnStage !== 9 && cl.filters?.minCost !== 9) errs.push("stage c9+");
+      // コスト9以上はステージ側の発動条件、コスト4以下が控え室から選ぶ側
+      if (cl.filters?.minCostMemberOnStage !== 9) errs.push("stage c9+");
+      if (cl.filters?.minCostMemberOnStageSeriesTag !== "EdelNote") errs.push("stage c9+ EdelNote");
+      if (cl.filters?.minCost != null) errs.push("minCost pollution");
+      if (cl.filters?.maxCost !== 4) errs.push("pick c4-");
       if (!cl.abilityChoices || cl.abilityChoices.length !== 2) errs.push("choices");
       return errs;
     },

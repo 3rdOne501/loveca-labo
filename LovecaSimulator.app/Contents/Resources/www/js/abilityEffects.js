@@ -283,6 +283,7 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  * @property {number | null} [minSuccessLiveScoreSum]
  * @property {number | null} [minEnergyCount]
  * @property {number | null} [minCostMemberOnStage]
+ * @property {string | null} [minCostMemberOnStageSeriesTag] 上記チェックを指定タグのメンバーに限定
  * @property {number | null} [minExactCostMemberOnStage] ステージにコストちょうどNのメンバー（以上ではない）
  * @property {boolean} [excludeSelfFromStageCostCheck] 上記チェックから能力発動元メンバーを除外
  * @property {string | null} [characterNameOnStage]
@@ -302,6 +303,8 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  * @property {number | null} [minStageSeriesHeartSlotTotal] ステージの『tag』メンバーが持つ指定色ハートの合計下限
  * @property {number | null} [minStageSeriesHeartSlot] 上記のハート色スロット 1-6
  * @property {string | null} [minStageSeriesHeartSlotTag] 上記カウント対象のシリーズ
+ * @property {number | null} [minStageSeriesHeartTotal] ステージの『tag』メンバーが持つハート総数（色不問）の下限
+ * @property {string | null} [minStageSeriesHeartTotalTag] 上記カウント対象のシリーズ
  * @property {boolean} [requiresOpponentSucceededLiveZeroSurplusThisTurn] 相手が余剰ハート0でライブ成功済み
  * @property {number | null} [minStageMembers] ステージにメンバーがN人以上
  * @property {number | null} [maxHandCount] 自分の手札がN枚以下
@@ -2468,6 +2471,21 @@ function enrichPickFiltersFromSegRaw(f, segRaw) {
   return f;
 }
 
+/**
+ * 「ステージに…コストN以上の…メンバーがいる」（発動条件節）を検出する。
+ * @param {string} p
+ * @returns {RegExpMatchArray | null}
+ */
+function matchStageMinCostPresenceClause(p) {
+  var s = String(p || "");
+  return (
+    s.match(/ステージ.*コスト(\d+)以上のメンバーがいる/) ||
+    s.match(/ステージ.*コスト(\d+)以上の(?:『[^』]+』の)?メンバーがいる/) ||
+    s.match(/コスト(\d+)以上のメンバーが.*ステージ/) ||
+    s.match(/コスト(\d+)以上のメンバーがいる場合/)
+  );
+}
+
 /** @param {string} p @param {string} [segRaw] @returns {AbilityPickFilters} */
 export function parseAbilityPickFilters(p, segRaw) {
   /** @type {AbilityPickFilters} */
@@ -2520,8 +2538,16 @@ export function parseAbilityPickFilters(p, segRaw) {
     if (!costM) costM = p.match(/([０-９\d]+)コスト以下/);
     if (costM) f.maxCost = Number(normalizeFwDigits(costM[1]));
   }
+  var stageMinCostM = matchStageMinCostPresenceClause(p);
+  if (stageMinCostM) {
+    f.minCostMemberOnStage = Number(normalizeFwDigits(stageMinCostM[1]));
+    var stageMinSeriesM = String(stageMinCostM[0]).match(/コスト[０-９\d]+以上の『([^』]+)』のメンバー/);
+    if (stageMinSeriesM) f.minCostMemberOnStageSeriesTag = normalizeQuotedSeriesTag(stageMinSeriesM[1]);
+  }
   if (f.minCost == null) {
-    var minCostM = p.match(/コスト(\d+)以上/);
+    // 「ステージに…コストN以上のメンバーがいる」は発動条件節であり、選ぶ対象のコスト下限ではない
+    var pForMinCost = stageMinCostM ? p.replace(stageMinCostM[0], "") : p;
+    var minCostM = pForMinCost.match(/コスト(\d+)以上/);
     if (minCostM) f.minCost = Number(minCostM[1]);
   }
   var seriesM = p.match(/『([^』]+)』/) || p.match(/『([^」]+)」/);
@@ -2593,11 +2619,6 @@ export function parseAbilityPickFilters(p, segRaw) {
   }
   var enM = p.match(/自分のエネルギーが(\d+)枚以上/);
   if (enM) f.minEnergyCount = Number(enM[1]);
-  var stageMinCostM = p.match(/ステージ.*コスト(\d+)以上のメンバーがいる/);
-  if (!stageMinCostM) stageMinCostM = p.match(/ステージ.*コスト(\d+)以上の(?:『[^』]+』の)?メンバーがいる/);
-  if (!stageMinCostM) stageMinCostM = p.match(/コスト(\d+)以上のメンバーが.*ステージ/);
-  if (!stageMinCostM) stageMinCostM = p.match(/コスト(\d+)以上のメンバーがいる場合/);
-  if (stageMinCostM) f.minCostMemberOnStage = Number(stageMinCostM[1]);
   var otherExactCostM = p.match(/このメンバー以外のコスト([０-９\d]+)のメンバー/);
   if (otherExactCostM) {
     f.minExactCostMemberOnStage = Number(normalizeFwDigits(otherExactCostM[1]));
@@ -2713,6 +2734,12 @@ export function parseAbilityPickFilters(p, segRaw) {
     f.minStageSeriesHeartSlotTag = normalizeQuotedSeriesTag(seriesHeartSumM[1]);
     var heartSlotsSeries = parseHeartSlotsAnyFromText(p, segRaw || "");
     if (heartSlotsSeries.length) f.minStageSeriesHeartSlot = heartSlotsSeries[0];
+  }
+  var seriesHeartTotalM = p.match(/『([^』]+)』のメンバーが持つハートの総数が([０-９\d]+)以上/);
+  if (seriesHeartTotalM) {
+    f.minStageSeriesHeartTotal = Number(normalizeFwDigits(seriesHeartTotalM[2])) || 0;
+    f.minStageSeriesHeartTotalTag = normalizeQuotedSeriesTag(seriesHeartTotalM[1]);
+    if (!f.seriesTag) f.seriesTag = f.minStageSeriesHeartTotalTag;
   }
   if (/相手が余剰のハートを持たずにライブを成功させていた/.test(p)) {
     f.requiresOpponentSucceededLiveZeroSurplusThisTurn = true;

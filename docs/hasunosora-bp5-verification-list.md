@@ -32,7 +32,7 @@
 | [x] | 019 | PL!HS-bp5-019-L | ハナムスビ | live_start_need_heart_reduce_per_unit | 他シリーズライブ1枚につきheart04-2 |
 | [x] | 020 | PL!HS-bp5-020-L | バアドケージ | live_card_score_plus | LS: スコア+1 |
 | [x] | 021 | PL!HS-bp5-021-L | ジョーショーキリュー | live_start_pick_stage_member_printed_hearts_remap + live_card_score_plus | メンバー選択→印刷ハート→heart01 / みらくら3人→スコア+1 |
-| [x] | 022 | PL!HS-bp5-022-L | Retrofuture | ability_pick_one | 任意E2: EdelNote C9+メンバー2択 |
+| [x] | 022 | PL!HS-bp5-022-L | Retrofuture | ability_pick_one | 任意E2: ステージにC9以上『EdelNote』がいる場合、控え室のC4以下『EdelNote』を空きエリアに登場 or 必要ハートheart06減 **2026-07-27: 選択側minCost汚染除去・登場はアクティブ/E不要** |
 
 ## 2026-06-30 初回監修
 

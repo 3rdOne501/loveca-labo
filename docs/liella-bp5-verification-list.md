@@ -20,7 +20,7 @@
 | [x] | 009 | PL!SP-bp5-009-P | live_start_mill_loop_blade_grant | 任意: 山札1枚ミル×4回まで→ライブミル時自ウェイト+ブレード1 |
 | [x] | 010 | PL!SP-bp5-010-P | toujou_both_center_position_change | 登場: 両者センター入替ポジチェン |
 | [x] | 011 | PL!SP-bp5-011-P | jouji (blade_conditional ×3) | 左/センター/右エリア別ハート付与 |
-| [x] | 012 | PL!SP-bp5-012-N | jouji blade_if_liella_live_need_sum | Liella!ライブ必要ハート合計8+→heart03 |
+| [x] | 012 | PL!SP-bp5-012-N | jouji blade_if_live_need_sum | 常時: ライブカード置き場に必要ハート合計8以上の『Liella!』のライブカードがあるかぎり heart03 **2026-07-25修正** |
 | [x] | 013–017 | PL!SP-bp5-013-N 他 | deck_top_pick_recover / draw / grant_jouji 等 | 013 OR回収 / 014 他メンバー移動条件 / 017 Liella!移動時手札-2 **2026-06-30修正** |
 | [x] | 018 / 019 / 022 | — | — | 能力なし |
 | [x] | 020 | PL!SP-bp5-020-N | draw_from_deck ×2 | 起動/LS成功: 1ドロー |
@@ -33,7 +33,7 @@
 | [x] | 023 | PL!SP-bp5-023-L | Shooting Voice!! | live_card_score_plus | LS成功: 成功ライブ2+かつエール公開スコアライブ→スコア+2 |
 | [x] | 024 | PL!SP-bp5-024-L | MIRACLE NEW STORY | live_start_moved_members_pick_heart_grant | 今ターン移動メンバー1人→ハート色選択付与 |
 | [x] | 025 | PL!SP-bp5-025-L | 常夏☆サンシャイン | optional_energy_card_score_plus_per_unit | 任意E支払い4つにつきスコア+1 **2026-06-30: 分類修正** |
-| [x] | 026 | PL!SP-bp5-026-L | Let's be ONE | live_card_score_plus | Liella!在席→スコア+1 |
+| [x] | 026 | PL!SP-bp5-026-L | Let's be ONE | live_card_score_plus | ライブ開始時: ステージの『Liella!』が持つハートの総数11以上→スコア+1 **2026-07-25修正** |
 | [x] | 027 | PL!SP-bp5-027-L | HOT PASSION!! | live_success_optional_energy_wait_opp_draw | 任意E1→相手ウェイト+1ドロー |
 
 ## 2026-06-30 初回監修

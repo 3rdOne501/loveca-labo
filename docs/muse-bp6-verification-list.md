@@ -12,7 +12,7 @@
 |------|------|------------|----------------|------|
 | [x] | 001 | PL!-bp6-001-P | grant_jouji_session + draw_then_hand_discard | センター・ライブ枠µ's→**全ステージμ's**にブレード1 / LS: エール無BHμ's→1ドロー1捨て **2026-06-28(2): grantToStageSeriesTag** |
 | [x] | 002 | PL!-bp6-002-P | deck_top_pick_no_ability_or_jouji | 山札2見→能力なし or 常時μ's 1枚回収（任意） **2026-06-28(2): 見る処理は必須** |
-| [x] | 003 | PL!-bp6-003-P | live_start_hand_reveal_under_heart_grant / live_success_enter_under_member | 手札C2以下公開→下置き+ハート / 下からC2以下を空きエリア登場（任意） **2026-06-28(2): LS任意確認** |
+| [x] | 003 | PL!-bp6-003-P | live_start_hand_reveal_under_heart_grant / live_success_enter_under_member | 手札C2以下公開→下置き+ハート / 下からC2以下を空きエリア登場（任意） **2026-06-28(2): LS任意確認** **2026-07-27: 下から登場はE不要・アクティブ、下のカードは面メンバー扱いしない、複数時に選択** |
 | [x] | 004 | PL!-bp6-004-P | deck_top_pick_recover | 任意コスト手札1捨→山札5見→μ'sメンバー回収 |
 | [x] | 005 | PL!-bp6-005-P | toujou_hand_discard_wait_heart_dual_pick | 手札2捨任意→heart03メンバー+heart03ライブ回収 |
 | [x] | 006 | PL!-bp6-006-P | kidou_heart_color_deck_reveal_pick | 手札1捨→色指定→山札5公開→μ's一致5枚→ブレード3 |

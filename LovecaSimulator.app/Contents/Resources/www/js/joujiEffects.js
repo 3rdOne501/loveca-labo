@@ -48,6 +48,7 @@ import { T_MEMBER } from "./config.js";
  * @property {number} [minCombinedEnergy]
  * @property {number} [minLiveCardsInFrames]
  * @property {string} [liveSeriesTag]
+ * @property {number} [minTotalNeedHeart] ライブカード置き場の対象ライブ1枚あたりの必要ハート合計の下限
  * @property {number} [minOpponentWaitOnStage]
  * @property {Record<number, number>} [heartPerSlot]
  * @property {string} [grantedSegmentRaw]
@@ -112,6 +113,8 @@ import { T_MEMBER } from "./config.js";
  * @property {() => StageCol[]} eachOpponentStageColumnMembers
  * @property {(tag: string) => boolean} stageHasAllAreasDistinctSeriesMembers
  * @property {() => boolean} liveFramesHave3PlusWithSeries
+ * @property {(tag: string|null, min: number) => boolean} liveAreaHasSeriesLiveMinNeedHeart
+ * @property {() => boolean} liveAreaNeedHeartCoversAllColors
  * @property {(inst: *) => number} energyCountBelowMember
  * @property {(name: string) => boolean} stageHasCharacterName
  * @property {(names: string[]) => boolean} stageHasAnyCharacterName
@@ -825,10 +828,11 @@ export function classifyJoujiSegment(segRaw) {
       bladeRule.kind = "blade_if_live_need_all_colors";
     }
 
-    if (/ライブカード置き場に必要ハートの合計が8以上の『Liella!』/.test(p)) {
-      bladeRule.kind = "blade_if_liella_live_need_sum";
-      bladeRule.minTotalNeedHeart = 8;
-      bladeRule.liveSeriesTag = "Liella!";
+    var liveNeedSumM = p.match(/ライブカード置き場に必要ハートの合計が([０-９\d]+)以上の『([^』]+)』/);
+    if (liveNeedSumM) {
+      bladeRule.kind = "blade_if_live_need_sum";
+      bladeRule.minTotalNeedHeart = Number(normalizeFwDigits(liveNeedSumM[1])) || 0;
+      bladeRule.liveSeriesTag = normalizeQuotedSeriesTag(liveNeedSumM[2]);
     }
 
     if (/このカードが自分の成功ライブカード置き場にあるかぎり/.test(p)) {
@@ -1166,6 +1170,22 @@ function conditionMet(rule, inst, card, ctx) {
   if (rule.minLiveCardsInFrames != null) {
     if (rule.liveSeriesTag === "虹ヶ咲") {
       if (!ctx.liveFramesHave3PlusWithSeries()) return false;
+    }
+  }
+  if (rule.kind === "blade_if_live_need_sum" || rule.kind === "blade_if_liella_live_need_sum") {
+    if (
+      typeof ctx.liveAreaHasSeriesLiveMinNeedHeart !== "function" ||
+      !ctx.liveAreaHasSeriesLiveMinNeedHeart(rule.liveSeriesTag || null, Number(rule.minTotalNeedHeart) || 0)
+    ) {
+      return false;
+    }
+  }
+  if (rule.kind === "blade_if_live_need_all_colors") {
+    if (
+      typeof ctx.liveAreaNeedHeartCoversAllColors !== "function" ||
+      !ctx.liveAreaNeedHeartCoversAllColors()
+    ) {
+      return false;
     }
   }
   if (
