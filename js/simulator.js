@@ -74,6 +74,11 @@ import {
 } from "./abilityEffects.js";
 import { lastCostDiscardedIncludesLive } from "./abilityComposition.js";
 import {
+  deckOddsCellTierClass,
+  formatPctFromRate,
+  probAtLeastOneInNextK,
+} from "./deckOddsMath.js";
+import {
   evaluateMemberJouji,
   joujiHeartSlotRead,
   computeStageGrantHandCostReduceNoAbility,
@@ -949,13 +954,6 @@ export function mountSimulator(
     return counts;
   }
 
-  function formatPctFromRate(rate100) {
-    if (!Number.isFinite(rate100)) return "0";
-    var s = rate100.toFixed(1);
-    if (s.indexOf(".0") === s.length - 2) s = s.slice(0, -2);
-    return s;
-  }
-
   function escapeHtmlPlain(s) {
     return String(s == null ? "" : s)
       .replace(/&/g, "&amp;")
@@ -1151,30 +1149,12 @@ export function mountSimulator(
     el.classList.add("has-prob-color");
   }
 
-  /** 確率（％）→ グリッドセル用クラス（10％ごとに色相／75％以上は発光） */
-  function deckOddsCellTierClass(rate) {
-    if (!Number.isFinite(rate)) return "";
-    var b = Math.max(0, Math.min(9, Math.floor(rate / 10)));
-    var cls = "deck-odds-cell--b" + b;
-    if (rate >= 75) cls += " deck-odds-cell--hot-glow";
-    return cls;
-  }
+  /** 確率（％）→ グリッドセル用クラスは deckOddsMath.deckOddsCellTierClass */
 
   /**
    * 山札 n 枚のうち対象が fc 枚あるとき、ランダムな並びで上から続けて k 枚に
-   * 対象が1枚以上含まれる確率（％・非復元抽出）
+   * 対象が1枚以上含まれる確率（％・非復元抽出）は deckOddsMath.probAtLeastOneInNextK
    */
-  function probAtLeastOneInNextK(n, k, favorableInDeck) {
-    if (n <= 0 || k <= 0 || favorableInDeck <= 0) return 0;
-    if (k > n) k = n;
-    var fc = Math.min(favorableInDeck, n);
-    if (k > n - fc) return 100;
-    var pNone = 1;
-    for (var i = 0; i < k; i++) {
-      pNone *= (n - fc - i) / (n - i);
-    }
-    return 100 * (1 - pNone);
-  }
 
   /** ライブターンで手札チェックした枚数（0 可）。ライブターン外は 0。 */
   function liveTurnHandCheckCount() {

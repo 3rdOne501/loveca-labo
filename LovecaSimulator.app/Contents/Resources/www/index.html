@@ -493,6 +493,16 @@ python3 -m http.server 8080</pre>
               · ライブ <strong id="deck-count-live">0</strong>
               · 合計 <strong id="deck-count-total">0</strong>
             </p>
+            <details class="deck-panel-section deck-mulligan-odds-section" id="deck-section-mulligan-odds">
+              <summary class="deck-panel-summary">マリガン確率（参考）</summary>
+              <div class="deck-panel-section-body">
+                <p class="hint search-hint-muted deck-mulligan-odds-lead">
+                  <strong>開幕で該当があれば残す</strong>前提。無ければ最大6枚戻して引き直し（＝山札上から12枚に1枚以上と同値）。
+                  その後ライブ配置 MAX3（各1ドロー）＋ターン開始ドロー1。マリガン終了 k=12、1T開始=13、以降ターン開始ごとに+4（=15→17、21…）。
+                </p>
+                <div id="deck-mulligan-odds-grid" class="deck-mulligan-odds-grid" aria-live="polite"></div>
+              </div>
+            </details>
             <div class="deck-panel-head-actions">
               <button
                 type="button"
@@ -2223,6 +2233,7 @@ python3 -m http.server 8080</pre>
           "cloudAuth.js",
           "config.js",
           "deckLibrary.js",
+          "deckOddsMath.js",
           "deckbuilder.js",
           "decklogImport.js",
           "firebaseConfig.js",

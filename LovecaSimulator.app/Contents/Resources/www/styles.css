@@ -668,6 +668,35 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
 #view-deck .deck-panel-sticky-head .deck-count-line {
   margin-bottom: 0;
 }
+#view-deck .deck-mulligan-odds-section {
+  margin: 0.45rem 0 0.15rem;
+}
+#view-deck .deck-mulligan-odds-section > .deck-panel-summary {
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+#view-deck .deck-mulligan-odds-lead {
+  font-size: 0.72rem;
+  line-height: 1.35;
+  margin: 0 0 0.4rem;
+}
+#view-deck .deck-mulligan-odds-meta {
+  font-size: 0.72rem;
+  margin: 0 0 0.35rem;
+}
+#view-deck .deck-mulligan-odds-grid .deck-odds-grid-scroll {
+  max-height: 11rem;
+  overflow: auto;
+}
+#view-deck .deck-mulligan-odds-table {
+  font-size: 0.72rem;
+}
+#view-deck .deck-mulligan-odds-table thead th .deck-odds-grid-row-k {
+  display: block;
+  font-weight: 600;
+  opacity: 0.75;
+  font-size: 0.65rem;
+}
 #view-deck .deck-panel-head-actions {
   display: flex;
   flex-wrap: wrap;

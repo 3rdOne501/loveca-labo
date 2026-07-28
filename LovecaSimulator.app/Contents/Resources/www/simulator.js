@@ -74,6 +74,11 @@ import {
 } from "./abilityEffects.js";
 import { lastCostDiscardedIncludesLive } from "./abilityComposition.js";
 import {
+  deckOddsCellTierClass,
+  formatPctFromRate,
+  probAtLeastOneInNextK,
+} from "./deckOddsMath.js";
+import {
   evaluateMemberJouji,
   joujiHeartSlotRead,
   computeStageGrantHandCostReduceNoAbility,
@@ -949,13 +954,6 @@ export function mountSimulator(
     return counts;
   }
 
-  function formatPctFromRate(rate100) {
-    if (!Number.isFinite(rate100)) return "0";
-    var s = rate100.toFixed(1);
-    if (s.indexOf(".0") === s.length - 2) s = s.slice(0, -2);
-    return s;
-  }
-
   function escapeHtmlPlain(s) {
     return String(s == null ? "" : s)
       .replace(/&/g, "&amp;")
@@ -1151,30 +1149,12 @@ export function mountSimulator(
     el.classList.add("has-prob-color");
   }
 
-  /** 確率（％）→ グリッドセル用クラス（10％ごとに色相／75％以上は発光） */
-  function deckOddsCellTierClass(rate) {
-    if (!Number.isFinite(rate)) return "";
-    var b = Math.max(0, Math.min(9, Math.floor(rate / 10)));
-    var cls = "deck-odds-cell--b" + b;
-    if (rate >= 75) cls += " deck-odds-cell--hot-glow";
-    return cls;
-  }
+  /** 確率（％）→ グリッドセル用クラスは deckOddsMath.deckOddsCellTierClass */
 
   /**
    * 山札 n 枚のうち対象が fc 枚あるとき、ランダムな並びで上から続けて k 枚に
-   * 対象が1枚以上含まれる確率（％・非復元抽出）
+   * 対象が1枚以上含まれる確率（％・非復元抽出）は deckOddsMath.probAtLeastOneInNextK
    */
-  function probAtLeastOneInNextK(n, k, favorableInDeck) {
-    if (n <= 0 || k <= 0 || favorableInDeck <= 0) return 0;
-    if (k > n) k = n;
-    var fc = Math.min(favorableInDeck, n);
-    if (k > n - fc) return 100;
-    var pNone = 1;
-    for (var i = 0; i < k; i++) {
-      pNone *= (n - fc - i) / (n - i);
-    }
-    return 100 * (1 - pNone);
-  }
 
   /** ライブターンで手札チェックした枚数（0 可）。ライブターン外は 0。 */
   function liveTurnHandCheckCount() {
@@ -2110,6 +2090,7 @@ export function mountSimulator(
       String(state.resolutionArea.length),
       String(state.waitingRoom.length),
       String(Math.floor(sumBoardMemberBlades())),
+      state.liveSuccessVerdictLockedOk ? String(state.liveSuccessVerdictLockedFp || "L") : "0",
     ];
     ["left", "center", "right"].forEach(function (k) {
       (state.stage[k] || []).forEach(function (c) {
@@ -2130,7 +2111,7 @@ export function mountSimulator(
     if (renderPassLiveBundle && renderPassLiveBundleFp === fp) return;
     renderPassLiveBundleFp = fp;
     try {
-      renderPassLiveBundle = evaluateLiveMechanicalFulfillmentBundle();
+      renderPassLiveBundle = overlayLockedLiveVerdictOnBundle(evaluateLiveMechanicalFulfillmentBundle());
     } catch (_) {
       renderPassLiveBundle = null;
     }
@@ -2139,10 +2120,26 @@ export function mountSimulator(
   function getRenderPassLiveBundle() {
     if (renderPassLiveBundle) return renderPassLiveBundle;
     try {
-      return evaluateLiveMechanicalFulfillmentBundle();
+      return overlayLockedLiveVerdictOnBundle(evaluateLiveMechanicalFulfillmentBundle());
     } catch (_) {
       return null;
     }
+  }
+
+  /**
+   * 総合ルール 8.3.15 / 8.4.4: 必要ハート判定は一度確定したら固定。
+   * 成功時効果（8.4.5）でエール公開カードを回収しても、再判定で失敗に戻さない。
+   */
+  function overlayLockedLiveVerdictOnBundle(b) {
+    if (!b) return b;
+    b._liveOkBeforeVerdictLock = !!(b.evaluateResult && b.evaluateResult.ok);
+    if (state.liveSuccessVerdictLockedOk !== true || !state.liveSuccessVerdictLockedSim) return b;
+    var lockedOk = state.liveSuccessVerdictLockedSim.ok === true;
+    b.evaluateResult = Object.assign({}, b.evaluateResult || {}, {
+      ok: lockedOk,
+      lockedFromSnapshot: true,
+    });
+    return b;
   }
 
   function clearRenderPassLiveBundle() {
@@ -3389,6 +3386,8 @@ export function mountSimulator(
       eachOpponentStageColumnMembers: eachOpponentStageColumnMemberInsts,
       stageHasAllAreasDistinctSeriesMembers: stageHasAllAreasDistinctSeriesMembers,
       liveFramesHave3PlusWithSeries: bp1012LanzhuSynergyBoardConditionMet,
+      liveAreaHasSeriesLiveMinNeedHeart: liveAreaHasSeriesLiveMinNeedHeart,
+      liveAreaNeedHeartCoversAllColors: liveAreaNeedHeartCoversAllColors,
       energyCountBelowMember: countEnergyCardsBelowMemberOnStage,
       memberCountBelowSeries: function (inst, tag) {
         if (!inst || !tag) return 0;
@@ -3595,6 +3594,42 @@ export function mountSimulator(
     });
   }
 
+  /** ドラッグ＆ドロップでの列移動も「エリアを移動した」扱いで自動効果を発火させる */
+  function fireJidouAfterStageAreaMovesFromSnap(snapBefore) {
+    if (isPlayManualMode() || !snapBefore || !snapBefore.stage) return;
+    /** @type {Array<{inst:*, from:string, to:string}>} */
+    var moves = [];
+    eachStageColumnMemberInsts().forEach(function (m) {
+      if (!m || m._soloOpponentProxy === true) return;
+      var prevCol = stageColumnKeyFromSnap(snapBefore, m.id);
+      var nowCol = stageColumnKeyHostingMember(m.id);
+      if (!prevCol || !nowCol || prevCol === nowCol) return;
+      moves.push({ inst: m, from: prevCol, to: nowCol });
+    });
+    moves.forEach(function (mv) {
+      markMemberMovedThisTurn(mv.inst);
+      try {
+        fireJidouAutoForMember(mv.inst, "area_move");
+      } catch (jErr) {
+        console.warn(jErr);
+      }
+      if (mv.from === "center") {
+        try {
+          fireJidouOnCenterMemberAreaMove(mv.inst);
+        } catch (jErrC) {
+          console.warn(jErrC);
+        }
+      }
+      if (mv.to === "center") {
+        try {
+          fireJidouOnMemberMovedToCenter(mv.inst);
+        } catch (jErrT) {
+          console.warn(jErrT);
+        }
+      }
+    });
+  }
+
   function fireJidouAfterOwnLiveSuccess() {
     if (isPlayManualMode() || state.liveSuccessVerdictLockedOk !== true) return;
     eachStageColumnMemberInsts().forEach(function (m) {
@@ -3740,6 +3775,48 @@ export function mountSimulator(
     var m = s.match(/ライブ終了時まで、([^。]+を得る)/);
     if (!m) return null;
     return "{{jyouji.png|常時}}" + m[1].trim();
+  }
+
+  /**
+   * 「ライブ終了時まで、{{heart_0N}}／{{icon_blade}}を得る」型（常時引用なし）の
+   * 単純なハート／ブレード付与を対象メンバーへ適用する。
+   * @param {*} memberInst
+   * @param {string} segRaw
+   * @returns {boolean} 何か付与したら true
+   */
+  function applyJidouPlainLiveEndHeartBladeGrant(memberInst, segRaw) {
+    var s = String(segRaw || "");
+    if (!isPlainLiveEndHeartBladeGrantSegment(s)) return false;
+    var idx = s.indexOf("ライブ終了時まで");
+    var clause = idx >= 0 ? s.slice(idx) : s;
+    var applied = false;
+    var heartRe = /heart_0([1-6])/gi;
+    var hm;
+    while ((hm = heartRe.exec(clause)) !== null) {
+      var slot = Number(hm[1]);
+      if (slot >= 1 && slot <= 6) {
+        grantHeartSlotUntilLiveEnd(memberInst, slot, 1);
+        applied = true;
+      }
+    }
+    var bladeIconCount = (clause.match(/\{\{icon_blade/gi) || []).length;
+    if (!bladeIconCount) {
+      var bm = clause.match(/([０-９\d]+)\s*ブレード/);
+      if (bm) {
+        var bn = parseInt(
+          String(bm[1]).replace(/[０-９]/g, function (d) {
+            return String("０１２３４５６７８９".indexOf(d));
+          }),
+          10,
+        );
+        if (Number.isFinite(bn) && bn > 0) bladeIconCount = bn;
+      }
+    }
+    if (bladeIconCount > 0) {
+      addLiveSessionBladeBonus(memberInst, bladeIconCount);
+      applied = true;
+    }
+    return applied;
   }
 
   function extractStageMemberGrantJouji(segRaw) {
@@ -4211,6 +4288,15 @@ export function mountSimulator(
     }
     if (cl.template === "jidou_area_move_grant_jouji") {
       pushHistoryBefore("jidou-area-grant-jouji");
+      if (applyJidouPlainLiveEndHeartBladeGrant(memberInst, segRaw)) {
+        try {
+          syncJoujiPassiveEffectsAll();
+        } catch (_) {}
+        jidouPerTurnMark(memberInst, segIndex);
+        showToast("自動: ライブ終了時までのハート／ブレードを得ました");
+        render();
+        return;
+      }
       var grants = extractGrantedJoujiTextsFromSegment(segRaw);
       if (!memberInst._grantedJoujiSegmentRaws) memberInst._grantedJoujiSegmentRaws = [];
       grants.forEach(function (g) {
@@ -4345,6 +4431,15 @@ export function mountSimulator(
         if (maxSameGroupMemberCountInResolutionArea() < needGrp) return;
       }
       pushHistoryBefore("jidou-yell-grant-jouji");
+      if (applyJidouPlainLiveEndHeartBladeGrant(memberInst, segRaw)) {
+        try {
+          syncJoujiPassiveEffectsAll();
+        } catch (_) {}
+        jidouPerTurnMark(memberInst, segIndex);
+        showToast("自動: エール条件を満たしライブ終了時までのハート／ブレードを得ました");
+        render();
+        return;
+      }
       if (!memberInst._grantedJoujiSegmentRaws) memberInst._grantedJoujiSegmentRaws = [];
       var grantsY = extractGrantedJoujiTextsFromSegment(segRaw);
       var inlineGrantY = extractInlineLiveEndGrantJouji(segRaw);
@@ -6080,6 +6175,25 @@ export function mountSimulator(
     return true;
   }
 
+  /** 2人バトンで選ばれたメンバーのうち、まだステージに残っている者を控え室へ送る */
+  function applySoloBatonIdsToWaitingRoom(inst, batonIdsOverride) {
+    var ids =
+      Array.isArray(batonIdsOverride) && batonIdsOverride.length
+        ? batonIdsOverride
+        : inst && Array.isArray(inst._soloBatonMemberIds)
+          ? inst._soloBatonMemberIds
+          : [];
+    var moved = 0;
+    ids.forEach(function (bid) {
+      if (bid == null) return;
+      if (!stageColumnKeyHostingMember(bid)) return;
+      var b = findCardInstById(bid);
+      if (!b) return;
+      if (removeStageMemberToWaiting(b)) moved++;
+    });
+    return moved;
+  }
+
   /** メンバーが載っている列（ステージ優先、無ければライブ枠） */
   function boardColumnKeyHostingCard(cardId) {
     return stageColumnKeyHostingCard(cardId) || liveSlotColumnKeyHostingCard(cardId);
@@ -6302,6 +6416,46 @@ export function mountSimulator(
     return false;
   }
 
+  /** ライブカード置き場のライブカード（左/センター/右） */
+  function liveAreaLiveInsts() {
+    /** @type {*[]} */
+    var out = [];
+    ["left", "center", "right"].forEach(function (k) {
+      ((state.liveArea && state.liveArea[k]) || []).forEach(function (c) {
+        if (c && c.type === T_LIVE) out.push(c);
+      });
+    });
+    return out;
+  }
+
+  /** ライブカード置き場に『series』かつ必要ハート合計が min 以上のライブカードが1枚以上あるか */
+  function liveAreaHasSeriesLiveMinNeedHeart(seriesTag, minNeedSum) {
+    var need = Math.max(0, Math.floor(Number(minNeedSum) || 0));
+    return liveAreaLiveInsts().some(function (c) {
+      var mc = mergedCatalogCard(c);
+      if (seriesTag && !catalogCardMatchesGroupTag(mc, seriesTag)) return false;
+      return sumNeedHeartOnCard(mc) >= need;
+    });
+  }
+
+  /** ライブ中のライブカードの必要ハートに heart01〜heart06 がそれぞれ1以上含まれるか（総合ルール FAQ Q205: 複数枚合算） */
+  function liveAreaNeedHeartCoversAllColors() {
+    var lives = liveAreaLiveInsts();
+    if (!lives.length) return false;
+    /** @type {Record<number, boolean>} */
+    var present = {};
+    lives.forEach(function (c) {
+      var need = (mergedCatalogCard(c) || {}).need_heart || {};
+      for (var s = 1; s <= 6; s++) {
+        if (Number(need["heart0" + s]) > 0) present[s] = true;
+      }
+    });
+    for (var i = 1; i <= 6; i++) {
+      if (!present[i]) return false;
+    }
+    return true;
+  }
+
   /** このターンステージへ載せたばかりか（同日バトン注意に利用） */
   function memberIsStageFreshThisTurn(memberInstOrNull) {
     return !!(
@@ -6500,13 +6654,22 @@ export function mountSimulator(
     return true;
   }
 
-  function stageColumnIncumbentMember(col) {
+  /**
+   * 列で一番上（面）にいるメンバー。
+   * 「このメンバーの下に置く」カードは列配列のホストより前に挿入されるため、末尾側から探す。
+   * 下に置かれたカードはメンバーとして場にいないので、バトンタッチ相手にも所持ハートにも数えない。
+   */
+  function stageColumnTopMember(col) {
     if (!col) return null;
     var slot = state.stage[col] || [];
-    for (var si = 0; si < slot.length; si++) {
+    for (var si = slot.length - 1; si >= 0; si--) {
       if (slot[si] && slot[si].type === T_MEMBER) return slot[si];
     }
     return null;
+  }
+
+  function stageColumnIncumbentMember(col) {
+    return stageColumnTopMember(col);
   }
 
   /** 当ターンに載せたメンバーへのバトンタッチ不可・列登場不可（pb1-018 等）を含む */
@@ -6620,13 +6783,14 @@ export function mountSimulator(
   function boardHeldHeartSlotAccum() {
     var acc = {};
     ["left", "center", "right"].forEach(function (k) {
-      state.stage[k].forEach(function (inst) {
-        if (inst.type !== T_MEMBER) return;
-        ensureCardBoardFields(inst);
-        if (inst._baseHeartsWildcardUntilLiveEnd === true) return;
-        addMemberPrintedBaseHeartToSlotAccum(inst, acc);
-        addMemberPlayBonusSolidHearts(inst, acc);
-      });
+      var topStage = stageColumnTopMember(k);
+      if (topStage) {
+        ensureCardBoardFields(topStage);
+        if (topStage._baseHeartsWildcardUntilLiveEnd !== true) {
+          addMemberPrintedBaseHeartToSlotAccum(topStage, acc);
+          addMemberPlayBonusSolidHearts(topStage, acc);
+        }
+      }
       state.liveArea[k].forEach(function (inst) {
         if (inst.type !== T_MEMBER) return;
         ensureCardBoardFields(inst);
@@ -6642,12 +6806,11 @@ export function mountSimulator(
   function stageHeldHeartSlotAccum() {
     var acc = {};
     ["left", "center", "right"].forEach(function (k) {
-      state.stage[k].forEach(function (inst) {
-        if (inst.type !== T_MEMBER) return;
-        ensureCardBoardFields(inst);
-        addMemberPrintedBaseHeartToSlotAccum(inst, acc);
-        addMemberPlayBonusSolidHearts(inst, acc);
-      });
+      var top = stageColumnTopMember(k);
+      if (!top) return;
+      ensureCardBoardFields(top);
+      addMemberPrintedBaseHeartToSlotAccum(top, acc);
+      addMemberPlayBonusSolidHearts(top, acc);
     });
     return acc;
   }
@@ -8297,33 +8460,30 @@ export function mountSimulator(
     ban.textContent = "";
   }
 
-  /** 対戦モードの残りエール（ブレード計 − 解決済み）を上部チェイン帯に表示 */
-  function syncVersusRemainingYellReadout() {
-    var host = document.getElementById("versus-remaining-yell");
-    var val = document.getElementById("versus-remaining-yell-val");
-    if (!host || !val) return;
-    if (!isFullVersusPlayUi()) {
-      host.hidden = true;
-      return;
-    }
-    var bladeK = Math.max(0, Math.floor(boardBladeForYellReveal()));
-    var resR = Array.isArray(state.resolutionArea) ? state.resolutionArea.length : 0;
-    var kRem = Math.max(0, bladeK - resR);
-    val.textContent = String(kRem);
-    host.hidden = false;
-  }
-
   function syncDeckLiveSimPanel() {
     if (isFullVersusPlayUi()) {
+      /* 対戦モードでも「残りエール数」はソロと同じ場所（ライブ成功確率パネルの
+         残りエール行）に同じ仕様で表示する。確率計算・操作系は隠して残りエール行だけ残す。 */
       cancelDeckLiveSimDeferred();
       clearDeckLiveSimDesktopToolbarMirror();
-      var liveSimWrapSkip = root.querySelector(".zone-block-deck-live-sim-under-preview");
-      if (liveSimWrapSkip) liveSimWrapSkip.hidden = true;
-      syncVersusRemainingYellReadout();
+      var liveSimWrapV = root.querySelector(".zone-block-deck-live-sim-under-preview");
+      if (liveSimWrapV) {
+        liveSimWrapV.hidden = false;
+        liveSimWrapV.classList.add("deck-live-sim--versus-yell-only");
+      }
+      var dispV = $("deck-flip-k-display");
+      if (dispV) {
+        var bladeKV = Math.max(0, Math.floor(boardBladeForYellReveal()));
+        var resRV = Array.isArray(state.resolutionArea) ? state.resolutionArea.length : 0;
+        dispV.textContent = String(Math.max(0, bladeKV - resRV));
+      }
       return;
     }
     var liveSimWrap = root.querySelector(".zone-block-deck-live-sim-under-preview");
-    if (liveSimWrap) liveSimWrap.hidden = false;
+    if (liveSimWrap) {
+      liveSimWrap.hidden = false;
+      liveSimWrap.classList.remove("deck-live-sim--versus-yell-only");
+    }
     var versusLiveProbForce =
       versusMatchPhaseActive() &&
       versusSession.remoteMatch &&
@@ -8446,6 +8606,14 @@ export function mountSimulator(
   function shouldPromptMoveSuccessfulLiveOnTurnStart(bundle) {
     if (state.liveWinMoveCommitted === true) return false;
     if (!liveCardsAwaitingSuccessfulBenchPlacement().length) return false;
+    if (liveVerdictLockedMechanicalSuccess()) {
+      if (state.pendingSuccessLiveBench === true) return true;
+      var bLock = bundle || null;
+      var liveCt = bLock && bLock.liveCt != null ? bLock.liveCt : liveCardCountOnBoard();
+      var needSum =
+        bLock && bLock.needSum != null ? bLock.needSum : sumSlotAccumValues(aggregateNeedHeartSlotsFromLiveArea());
+      return !!(state.liveStatsAfterBegin && liveCt && needSum > 0);
+    }
     var b = bundle || evaluateLiveMechanicalFulfillmentBundle();
     if (!b.evaluateResult || !b.evaluateResult.ok) return false;
     if (state.pendingSuccessLiveBench === true) return true;
@@ -8455,8 +8623,10 @@ export function mountSimulator(
   function maybeMarkPendingSuccessLiveBench() {
     if (state.liveWinMoveCommitted === true) return;
     if (!playLiveSuccessVerdictReady()) return;
-    var b = evaluateLiveMechanicalFulfillmentBundle();
-    if (!b.evaluateResult || !b.evaluateResult.ok) return;
+    if (!liveVerdictLockedMechanicalSuccess()) {
+      var b = evaluateLiveMechanicalFulfillmentBundle();
+      if (!b.evaluateResult || !b.evaluateResult.ok) return;
+    }
     if (liveCardsAwaitingSuccessfulBenchPlacement().length > 0) {
       state.pendingSuccessLiveBench = true;
     }
@@ -9082,13 +9252,13 @@ export function mountSimulator(
     var needSum = b.needSum;
     var rsBh = accumulateResolutionBladeHeartStats();
 
-    var overviewEl = $("live-stats-overview");
+      var overviewEl = $("live-stats-overview");
     if (overviewEl) {
       overviewEl.textContent = buildLiveStatsOverviewText(b, rsBh);
       overviewEl.classList.remove("is-ok", "is-fail", "is-muted");
       var ev0 = b.evaluateResult;
       if (!b.liveCt || !(needSum > 0)) overviewEl.classList.add("is-muted");
-      else if (ev0 && ev0.ok) overviewEl.classList.add("is-ok");
+      else if (liveVerdictLockedMechanicalSuccess() || (ev0 && ev0.ok)) overviewEl.classList.add("is-ok");
       else overviewEl.classList.add("is-fail");
     }
 
@@ -9179,12 +9349,17 @@ export function mountSimulator(
         verdict.classList.add("live-verdict--muted");
       } else {
         var ev = b.evaluateResult;
-        if (!ev.ok) {
-          verdict.textContent = "ライブ失敗 — " + (ev.reason || "要件") + " が不足" + ptsSuf;
-          verdict.classList.add("live-verdict--fail");
-        } else {
-          verdict.textContent = "ライブ成功" + ptsSuf;
+        // 8.3.15/8.4.4 判定確定後は成功を維持（成功時効果のエール回収でハートが減っても失敗表示にしない）
+        if (liveVerdictLockedMechanicalSuccess() || (ev && ev.ok)) {
+          var lockNote =
+            liveVerdictLockedMechanicalSuccess() && b._liveOkBeforeVerdictLock === false
+              ? "（判定確定）"
+              : "";
+          verdict.textContent = "ライブ成功" + ptsSuf + lockNote;
           verdict.classList.add("live-verdict--success");
+        } else {
+          verdict.textContent = "ライブ失敗 — " + ((ev && ev.reason) || "要件") + " が不足" + ptsSuf;
+          verdict.classList.add("live-verdict--fail");
         }
       }
     }
@@ -12046,16 +12221,19 @@ export function mountSimulator(
     delete inst._enteredFromWaitingRoom;
     if (!state.stage[side]) state.stage[side] = [];
     var mcEnter = mergedCatalogCard(inst);
-    var batonIds = Array.isArray(inst._soloBatonMemberIds) ? inst._soloBatonMemberIds.slice() : [];
+    var batonIds = Array.isArray(opts.soloBatonMemberIds)
+      ? opts.soloBatonMemberIds.slice(0, 2)
+      : Array.isArray(inst._soloBatonMemberIds)
+        ? inst._soloBatonMemberIds.slice()
+        : [];
+    if (batonIds.length) inst._soloBatonMemberIds = batonIds.slice(0, 2);
+    else delete inst._soloBatonMemberIds;
     var duoMultiBaton =
       cardAllowsTwoMemberBaton(mcEnter) &&
       batonIds.length &&
       !(side === "center" && cardIsSpBp4004Sumire(mcEnter.card_no));
     if (duoMultiBaton) {
-      batonIds.forEach(function (bid) {
-        var batonMem = findCardInstById(bid);
-        if (batonMem) removeStageMemberToWaiting(batonMem);
-      });
+      applySoloBatonIdsToWaitingRoom(inst, batonIds);
       var lowestBatonId = null;
       var lowestBatonCost = Infinity;
       batonIds.forEach(function (bid) {
@@ -12090,8 +12268,8 @@ export function mountSimulator(
         var b = findCardInstById(bid);
         if (!b) return;
         batonSum += memberFlooredPrintedCost(b);
-        removeStageMemberToWaiting(b);
       });
+      applySoloBatonIdsToWaitingRoom(inst, batonIds);
       inst._appearEnergyOverride = Math.max(
         0,
         memberFlooredPrintedCost(inst, { handSnap: snap }) - batonSum,
@@ -12173,9 +12351,16 @@ export function mountSimulator(
       };
       openBatonPick(function (proceed, batonIds) {
         if (!proceed) return;
-        if (batonIds && batonIds.length) memberInst._soloBatonMemberIds = batonIds.slice(0, 2);
-        else delete memberInst._soloBatonMemberIds;
-        placeHandMemberOnStageSideCore(memberInst, side, opts);
+        // DnD 後 applyBoard(structuredClone) で手札インスタンスが差し替わるため、
+        // 必ず state.hand 上の実体へバトン ID を付け、opts でも core に渡す
+        var liveHand =
+          state.hand.find(function (h) {
+            return h && String(h.id) === String(memberInst.id);
+          }) || memberInst;
+        var ids = batonIds && batonIds.length ? batonIds.slice(0, 2) : [];
+        if (ids.length) liveHand._soloBatonMemberIds = ids;
+        else delete liveHand._soloBatonMemberIds;
+        placeHandMemberOnStageSideCore(liveHand, side, Object.assign({}, opts, { soloBatonMemberIds: ids }));
       });
       return true;
     }
@@ -12800,6 +12985,10 @@ export function mountSimulator(
         return false;
       }
     }
+    if (filters.minStageSeriesHeartTotal != null) {
+      var heartTotalTag = filters.minStageSeriesHeartTotalTag || filters.seriesTag;
+      if (sumStageSeriesHeldHeartTotal(heartTotalTag) < Number(filters.minStageSeriesHeartTotal)) return false;
+    }
     if (filters.requiresOpponentSucceededLiveZeroSurplusThisTurn && !opponentSucceededLiveZeroSurplusThisTurn()) {
       return false;
     }
@@ -13295,7 +13484,10 @@ export function mountSimulator(
 
   function applyGrantJoujiSessionEffect(inst, cl, kind, finishResolved, targetOverride) {
     var mc = mergedCatalogCard(inst);
-    var segLs = abilityRawSegmentForTrigger(mc, kind) || cardAbilityRawText(mc);
+    var segLs =
+      (cl && cl._segRaw) ||
+      abilityRawSegmentForTrigger(mc, kind) ||
+      cardAbilityRawText(mc);
     var plainHbGrant = isPlainLiveEndHeartBladeGrantSegment(segLs);
     var grants = extractGrantedJoujiTextsFromSegment(segLs);
     var inlineJouji = plainHbGrant ? null : extractInlineLiveEndGrantJouji(segLs);
@@ -13790,6 +13982,17 @@ export function mountSimulator(
       if (!m || m._soloOpponentProxy === true) return;
       if (seriesTag && !catalogCardMatchesGroupTag(mergedCatalogCard(m), seriesTag)) return;
       sum += memberHeldHeartCountBySlot(m, slot);
+    });
+    return sum;
+  }
+
+  /** ステージの『series』メンバーが持つハート総数（色不問）。series 未指定なら全メンバー */
+  function sumStageSeriesHeldHeartTotal(seriesTag) {
+    var sum = 0;
+    eachStageColumnMemberInsts().forEach(function (m) {
+      if (!m || m._soloOpponentProxy === true) return;
+      if (seriesTag && !catalogCardMatchesGroupTag(mergedCatalogCard(m), seriesTag)) return;
+      for (var s = 1; s <= 6; s++) sum += memberHeldHeartCountBySlot(m, s);
     });
     return sum;
   }
@@ -15228,6 +15431,7 @@ export function mountSimulator(
       return c && c.type === T_ENERGY;
     });
     var snap = snapshotBoard();
+    mem._appearEnergyOverride = 0;
     state.stage[target] = energies.concat([mem]);
     finalizeWaitingMemberStageEntry(snap);
     return true;
@@ -15246,6 +15450,10 @@ export function mountSimulator(
     if (!opts.allowRepeatResolve && (!inst || isPlayEffectResolved(inst, resolveKind))) {
       if (onComplete) onComplete();
       return;
+    }
+    // 総合ルール 8.3.15/8.4.4: 成功時効果解決前に判定を固定（エール回収で再失敗しない）
+    if (kind === "live_success" || String(resolveKind || "").indexOf("live_success") === 0) {
+      ensureLiveVerdictSnapshotLocked();
     }
     if (kind === "live_success" && inst && inst._liveSuccessAbilityDisabledByLiveStart === true) {
       showToast("ライブ開始時効果により、このカードのライブ成功時能力は無効です");
@@ -16223,8 +16431,14 @@ export function mountSimulator(
     if (!Array.isArray(ids) || ids.length < 2) return 0;
     var n = 0;
     ids.forEach(function (id) {
+      if (id == null) return;
       var c = findCardInstById(id);
-      if (c && catalogCardMatchesGroupTag(mergedCatalogCard(c), "Liella!")) n++;
+      if (!c) {
+        c = (state.waitingRoom || []).find(function (w) {
+          return w && String(w.id) === String(id);
+        });
+      }
+      if (c && c.type === T_MEMBER && catalogCardMatchesGroupTag(mergedCatalogCard(c), "Liella!")) n++;
     });
     return n;
   }
@@ -16440,6 +16654,29 @@ export function mountSimulator(
         console.warn(jErr2);
       }
     }
+    /* 入れ替えで押し出された側もエリアを移動している */
+    if (toMem) {
+      markMemberMovedThisTurn(toMem);
+      try {
+        fireJidouAutoForMember(toMem, "area_move");
+      } catch (jErrS) {
+        console.warn(jErrS);
+      }
+      if (targetCol === "center") {
+        try {
+          fireJidouOnCenterMemberAreaMove(toMem);
+        } catch (jErrSC) {
+          console.warn(jErrSC);
+        }
+      }
+      if (fromCol === "center") {
+        try {
+          fireJidouOnMemberMovedToCenter(toMem);
+        } catch (jErrST) {
+          console.warn(jErrST);
+        }
+      }
+    }
     if (!isLightweightPlayMode()) {
       markPlayFx(movingMem, "position");
       if (toMem) markPlayFx(toMem, "position");
@@ -16528,6 +16765,13 @@ export function mountSimulator(
             fireJidouOnMemberMovedToCenter(b.member);
           } catch (jErr2) {
             console.warn(jErr2);
+          }
+        }
+        if (b.fromCol === "center") {
+          try {
+            fireJidouOnCenterMemberAreaMove(b.member);
+          } catch (jErr3) {
+            console.warn(jErr3);
           }
         }
       }
@@ -17728,6 +17972,55 @@ export function mountSimulator(
     } catch (_) {}
   }
 
+  /**
+   * 効果によるメンバーの「メンバーのいないエリアに登場」共通処理。
+   * 登場コストのEは支払わない（総合ルール 5.9.1 の支払いは能力コスト側で済んでいる）ため
+   * _appearEnergyOverride=0 を立てる。ウェイト状態・当ターン登場不可はカード文が明示したときだけ。
+   * memberInst は fromWaiting でない場合、呼び出し側で元の領域から取り除いておくこと。
+   * @param {*} memberInst
+   * @param {string} col
+   * @param {{waitState?: boolean, blockEntry?: boolean, fromWaiting?: boolean}} [opts]
+   * @returns {boolean}
+   */
+  function placeEffectMemberOnEmptyStageColumn(memberInst, col, opts) {
+    if (!memberInst || memberInst.type !== T_MEMBER || !col) return false;
+    var o = opts || {};
+    var slot = state.stage[col] || [];
+    var occupied = slot.some(function (c) {
+      return c && c.type === T_MEMBER;
+    });
+    if (occupied) return false;
+    if (o.fromWaiting) {
+      var wi = state.waitingRoom.findIndex(function (c) {
+        return c && String(c.id) === String(memberInst.id);
+      });
+      if (wi >= 0) state.waitingRoom.splice(wi, 1);
+      memberInst._enteredFromWaitingRoom = true;
+    }
+    var snapBefore = snapshotBoard();
+    memberInst.lcWait = o.waitState === true;
+    memberInst.isRotated = o.waitState === true;
+    memberInst.lcActive = o.waitState !== true;
+    memberInst._appearEnergyOverride = 0;
+    state.stage[col] = slot
+      .filter(function (c) {
+        return c && c.type === T_ENERGY;
+      })
+      .concat([memberInst]);
+    finalizeWaitingMemberStageEntry(snapBefore);
+    if (o.blockEntry) blockStageColumnEntryThisTurn(col);
+    return true;
+  }
+
+  /** カード文が「ウェイト状態で登場」「このターン…登場できない」を明示しているか */
+  function effectEntryTextRules(text) {
+    var s = String(text || "");
+    return {
+      waitState: /ウェイト状態で登場/.test(s),
+      blockEntry: /このターン[^。]*登場できない/.test(s),
+    };
+  }
+
   function placeWaitingMemberToStageColumn(memberInst, col) {
     var wi = -1;
     for (var j = 0; j < state.waitingRoom.length; j++) {
@@ -17746,6 +18039,7 @@ export function mountSimulator(
     var snap = snapshotBoard();
     var mem = state.waitingRoom.splice(wi, 1)[0];
     mem._enteredFromWaitingRoom = true;
+    mem._appearEnergyOverride = 0;
     var energies = slot.filter(function (c) {
       return c && c.type === T_ENERGY;
     });
@@ -18345,19 +18639,18 @@ export function mountSimulator(
           return;
         }
         var entCard = state.waitingRoom.splice(wiEnter, 1)[0];
+        var entRules = effectEntryTextRules(t);
         function placeEnterToEmptyColumn(tgtCol) {
-          var snapBeforeEnter = snapshotBoard();
-          entCard.lcWait = true;
-          entCard.isRotated = true;
-          entCard.lcActive = false;
           entCard._enteredFromWaitingRoom = true;
-          if (!state.stage[tgtCol]) state.stage[tgtCol] = [];
-          state.stage[tgtCol].push(entCard);
-          finalizeWaitingMemberStageEntry(snapBeforeEnter);
-          blockStageColumnEntryThisTurn(tgtCol);
+          placeEffectMemberOnEmptyStageColumn(entCard, tgtCol, {
+            waitState: entRules.waitState,
+            blockEntry: entRules.blockEntry,
+          });
           showToast(
             (mergedCatalogCard(entCard).name || "メンバー") +
-              " を空きエリアに登場させました",
+              " を空きエリアに" +
+              (entRules.waitState ? "ウェイト登場させました" : "登場させました") +
+              (entRules.blockEntry ? "（このターン同エリアへの登場不可）" : ""),
           );
           render();
           onDone();
@@ -19723,6 +20016,14 @@ export function mountSimulator(
       finishResolved();
       return;
     }
+    function stepPassesTriggerPreconditions(stepCl) {
+      if (!stepCl) return false;
+      if (kind === "toujyou") return checkAbilityToujouPreconditions(stepCl);
+      if (kind === "kidou") return checkAbilityKidouPreconditions(stepCl);
+      if (kind === "live_start") return checkAbilityLiveStartPreconditions(stepCl);
+      if (kind === "live_success") return checkAbilityLiveSuccessPreconditions(stepCl);
+      return true;
+    }
     function runSteps() {
       function runStep(i) {
         if (i >= steps.length) {
@@ -19730,6 +20031,11 @@ export function mountSimulator(
           return;
         }
         var stepCl = steps[i];
+        // 独立な複数セグメント（複数ライブ開始時など）は条件未達の段を黙って飛ばす
+        if (!stepPassesTriggerPreconditions(stepCl)) {
+          runStep(i + 1);
+          return;
+        }
         executeAbilityBody(inst, stepCl, kind, function () {
           runStep(i + 1);
         }, finishGuided);
@@ -19778,6 +20084,12 @@ export function mountSimulator(
       finishResolved();
     }
 
+    // ability_sequence は各ステップ側で前提を評価する（外側 filters の AND 化を避ける）
+    if (cl.template === "ability_sequence") {
+      executeAbilitySequence(inst, cl, kind, finishResolved, finishGuided);
+      return;
+    }
+
     // 登場時は全テンプレートで共通前提を先に評価する。
     // 個別 handler 側の重複チェックは許容し、未チェック template の取りこぼしを防ぐ。
     if (kind === "toujyou" && !checkAbilityToujouPreconditions(cl)) {
@@ -19794,11 +20106,6 @@ export function mountSimulator(
     }
     if (kind === "live_success" && !checkAbilityLiveSuccessPreconditions(cl)) {
       abortResolved("ライブ成功時効果の条件を満たしていません");
-      return;
-    }
-
-    if (cl.template === "ability_sequence") {
-      executeAbilitySequence(inst, cl, kind, finishResolved, finishGuided);
       return;
     }
 
@@ -20726,10 +21033,8 @@ export function mountSimulator(
       var maxPb = (cl.filters && cl.filters.maxCost != null ? cl.filters.maxCost : 2) || 2;
       pushHistoryBefore("toujou-pb1018-both");
       runPb1018WaitEnterFlow(false, maxPb, function () {
-        runPb1018WaitEnterFlow(true, maxPb, function () {
-          showToast("自分と相手の控え室からの登場が完了しました");
-          finishResolved();
-        });
+        showToast("控え室からウェイト登場させました");
+        finishResolved();
       });
       return;
     }
@@ -21501,6 +21806,42 @@ export function mountSimulator(
       return;
     }
 
+    if (cl.template === "heart_color_pick_replace") {
+      if (kind === "toujyou" && !checkAbilityToujouPreconditions(cl)) {
+        showToast("登場時効果の条件を満たしていません");
+        finishResolved();
+        return;
+      }
+      if (kind === "live_start" && !checkAbilityLiveStartPreconditions(cl)) {
+        showToast("ライブ開始時効果の条件を満たしていません");
+        finishResolved();
+        return;
+      }
+      pushHistoryBefore("heart-color-pick-replace");
+      openHeartColorPickDialog(
+        inst,
+        function (slot) {
+          if (slot == null) {
+            showToast("ハートを選ばなかったためスキップしました");
+            finishResolved();
+            return;
+          }
+          inst._printedHeartsRemapSlotUntilLiveEnd = Math.max(1, Math.min(6, Math.floor(Number(slot))));
+          try {
+            syncJoujiPassiveEffectsAll();
+          } catch (_) {}
+          showToast(
+            (mergedCatalogCard(inst).name || "メンバー") +
+              " の元々持つハートをライブ終了時まで heart0" +
+              inst._printedHeartsRemapSlotUntilLiveEnd +
+              " にしました",
+          );
+          finishResolved();
+        },
+        cl.heartPickSlots,
+      );
+      return;
+    }
     if (cl.template === "heart_color_pick_grant") {
       if (kind === "toujyou" && !checkAbilityToujouPreconditions(cl)) {
         showToast("登場時効果の条件を満たしていません");
@@ -21948,6 +22289,7 @@ export function mountSimulator(
     }
 
     if (cl.template === "kidou_waiting_to_empty_stage") {
+      var wtesRules = effectEntryTextRules(abilityRawSegmentForTrigger(mc, kind) || cardAbilityRawText(mc));
       var maxC = (cl.filters && cl.filters.maxCost != null ? cl.filters.maxCost : 2) || 2;
       var wMem = (state.waitingRoom || []).filter(function (c) {
         return (
@@ -21963,7 +22305,10 @@ export function mountSimulator(
         return;
       }
       pushHistoryBefore("wait-to-empty-stage");
-      openPickFromWaitingDialog(wMem, "控え室からメンバーのいないエリアへウェイト登場。", function (pickId) {
+      var wtesLead = wtesRules.waitState
+        ? "控え室からメンバーのいないエリアへウェイト登場。"
+        : "控え室からメンバーのいないエリアへ登場させます。";
+      openPickFromWaitingDialog(wMem, wtesLead, function (pickId) {
         if (!pickId) {
           finishResolved();
           return;
@@ -21985,19 +22330,18 @@ export function mountSimulator(
         }
         var ent = state.waitingRoom.splice(wi3, 1)[0];
         function placeWaitToEmptyColumn(tgtCol) {
-          var snapBeforeEnter = snapshotBoard();
-          ent.lcWait = true;
-          ent.isRotated = true;
-          ent.lcActive = false;
-          if (!state.stage[tgtCol]) state.stage[tgtCol] = [];
-          state.stage[tgtCol].push(ent);
-          finalizeWaitingMemberStageEntry(snapBeforeEnter);
-          blockStageColumnEntryThisTurn(tgtCol);
+          ent._enteredFromWaitingRoom = true;
+          placeEffectMemberOnEmptyStageColumn(ent, tgtCol, {
+            waitState: wtesRules.waitState,
+            blockEntry: wtesRules.blockEntry,
+          });
           showToast(
             (mergedCatalogCard(ent).name || "メンバー") +
               " を " +
               (tgtCol === "left" ? "左サイド" : tgtCol === "right" ? "右サイド" : "センター") +
-              " にウェイト登場させました（このターン同エリアへの登場不可）",
+              " に" +
+              (wtesRules.waitState ? "ウェイト登場させました" : "登場させました") +
+              (wtesRules.blockEntry ? "（このターン同エリアへの登場不可）" : ""),
           );
           finishResolved();
         }
@@ -22012,7 +22356,7 @@ export function mountSimulator(
           colPickLabels,
           1,
           1,
-          "ウェイト登場させる空きエリアを選んでください。",
+          (wtesRules.waitState ? "ウェイト登場させる" : "登場させる") + "空きエリアを選んでください。",
           function (cols) {
             if (!cols || !cols.length) {
               state.waitingRoom.push(ent);
@@ -22160,6 +22504,8 @@ export function mountSimulator(
     }
 
     if (cl.template === "yell_resolution_pick_hand") {
+      // 成功判定を先に固定（回収で解決 BH が減っても 8.3.15 の結果を維持）
+      ensureLiveVerdictSnapshotLocked();
       var yellPre = cl.preconditionFilters || {};
       function runYellResolutionPickHandBody() {
         var resPool = yellResolutionRevealPool(cl.filters || {});
@@ -22726,10 +23072,11 @@ export function mountSimulator(
       }
       if (totalDraw) showToast("カードを " + totalDraw + " 枚引きました");
       var bladePer = Math.max(1, Math.floor(Number(cl.bladeGain) || 2));
-      qualifying.forEach(function (m) {
-        if (cl.requiresNoBladeHeartOnDiscarded && cardHasBladeHeart(mergedCatalogCard(m))) return;
-        gainBladesUntilEnd(m, bladePer);
+      /* ブレードを得るのは控え室のメンバーではなく、登場したこのカード */
+      var bladeSources = qualifying.filter(function (m) {
+        return !(cl.requiresNoBladeHeartOnDiscarded && cardHasBladeHeart(mergedCatalogCard(m)));
       });
+      if (bladeSources.length) gainBladesUntilEnd(inst, bladeSources.length * bladePer);
       try {
         syncJoujiPassiveEffectsAll();
       } catch (_) {}
@@ -25104,25 +25451,32 @@ export function mountSimulator(
     }
 
     if (cl.template === "live_success_enter_under_member") {
-      var runEnterUnderMember = function () {
-      var underPool = getStackMembersBelowHost(inst).filter(function (m) {
-        return catalogCardMatchesPickFilters(mergedCatalogCard(m), cl.filters || {});
-      });
-      if (!underPool.length) {
-        showToast("このメンバーの下に条件のメンバーがありません");
+      var underEnterRules = effectEntryTextRules(
+        abilityRawSegmentForTrigger(mc, kind) || cardAbilityRawText(mc),
+      );
+      var enterUnderMemberAt = function (underM, targetCol) {
+        var ucol = stageColumnKeyHostingMember(underM.id);
+        if (ucol) {
+          var slot = state.stage[ucol] || [];
+          var ui = slot.findIndex(function (c) {
+            return c && String(c.id) === String(underM.id);
+          });
+          if (ui >= 0) slot.splice(ui, 1);
+        }
+        placeEffectMemberOnEmptyStageColumn(underM, targetCol, {
+          waitState: underEnterRules.waitState,
+          blockEntry: underEnterRules.blockEntry,
+        });
+        showToast(
+          (mergedCatalogCard(underM).name || "メンバー") + " を空きエリアに登場させました",
+        );
         finishResolved();
-        return;
-      }
-      var emptyCols = emptyStageColumns();
-      if (!emptyCols.length) {
-        showToast("空きエリアがありません");
-        finishResolved();
-        return;
-      }
-      pushHistoryBefore("ls-enter-under-member");
-      var underM = underPool[0];
-      var targetCol = emptyCols[0];
-      if (emptyCols.length > 1) {
+      };
+      var chooseColumnThenEnterUnder = function (underM, emptyCols) {
+        if (emptyCols.length === 1) {
+          enterUnderMemberAt(underM, emptyCols[0]);
+          return;
+        }
         var labelsUnder = { left: "⬅ 左サイド", center: "⬆ センター", right: "➡ 右サイド" };
         var choicesUnder = emptyCols.map(function (c) {
           return labelsUnder[c] || c;
@@ -25133,37 +25487,51 @@ export function mountSimulator(
           1,
           "登場させる移動先エリアを選んでください。",
           function (pickedUnder) {
+            var targetCol = emptyCols[0];
             if (pickedUnder && pickedUnder.length) {
               var ci = choicesUnder.indexOf(pickedUnder[0]);
               if (ci >= 0 && ci < emptyCols.length) targetCol = emptyCols[ci];
             }
-            continueEnterUnderMember();
+            enterUnderMemberAt(underM, targetCol);
           },
           inst,
         );
-        return;
-      }
-      continueEnterUnderMember();
-      return;
-
-      function continueEnterUnderMember() {
-      var ucol = stageColumnKeyHostingMember(underM.id);
-      if (ucol) {
-        var slot = state.stage[ucol] || [];
-        var ui = slot.findIndex(function (c) {
-          return c && String(c.id) === String(underM.id);
+      };
+      var runEnterUnderMember = function () {
+        var underPool = getStackMembersBelowHost(inst).filter(function (m) {
+          return catalogCardMatchesPickFilters(mergedCatalogCard(m), cl.filters || {});
         });
-        if (ui >= 0) slot.splice(ui, 1);
-      }
-      var snapU = snapshotBoard();
-      var enU = (state.stage[targetCol] || []).filter(function (c) {
-        return c && c.type === T_ENERGY;
-      });
-      state.stage[targetCol] = enU.concat([underM]);
-      finalizeWaitingMemberStageEntry(snapU);
-      finishResolved();
-      return;
-      }
+        if (!underPool.length) {
+          showToast("このメンバーの下に条件のメンバーがありません");
+          finishResolved();
+          return;
+        }
+        var emptyCols = emptyStageColumns();
+        if (!emptyCols.length) {
+          showToast("空きエリアがありません");
+          finishResolved();
+          return;
+        }
+        pushHistoryBefore("ls-enter-under-member");
+        if (underPool.length === 1) {
+          chooseColumnThenEnterUnder(underPool[0], emptyCols);
+          return;
+        }
+        openPickFromWaitingDialog(
+          underPool,
+          "このメンバーの下から空きエリアへ登場させるメンバーを選びます。",
+          function (pickedId) {
+            var picked = underPool.find(function (m) {
+              return m && String(m.id) === String(pickedId);
+            });
+            if (!picked) {
+              finishResolved();
+              return;
+            }
+            chooseColumnThenEnterUnder(picked, emptyCols);
+          },
+          { sourceInst: inst, dialogTitle: "ライブ成功: 下から登場", okLabel: "登場させる" },
+        );
       };
       if (cl.optional || cl.hasOptionalCost) {
         openAbilityConfirmDialog(
@@ -27979,13 +28347,22 @@ export function mountSimulator(
         abortResolved("ステージにいるカードでのみ登場時効果を解決できます");
         return;
       }
+      if (stageColumnKeyHostingMember(inst.id) !== "center") {
+        showToast("センターエリアに登場している場合のみ発動する効果です");
+        finishResolved();
+        return;
+      }
       if (countLiellaBatonSourcesOnInst(inst) < 2) {
         openTwoMemberBatonPickDialog(inst, function (proceed, batonIds) {
           if (!proceed) {
             finishResolved();
             return;
           }
-          if (batonIds && batonIds.length) inst._soloBatonMemberIds = batonIds.slice(0, 2);
+          if (batonIds && batonIds.length) {
+            inst._soloBatonMemberIds = batonIds.slice(0, 2);
+            pushHistoryBefore("toujou-liella-baton-pick");
+            if (applySoloBatonIdsToWaitingRoom(inst, batonIds) > 0) render();
+          }
           runToujouLiellaDoubleBatonCenter(inst, cl, finishResolved);
         });
         return;
@@ -29062,13 +29439,7 @@ export function mountSimulator(
               }
               placePickedMemberEh();
               function placePickedMemberEh() {
-                var snapBeforeEnter = snapshotBoard();
-                if (!state.stage[targetColEh]) state.stage[targetColEh] = [];
-                pickedEh.lcWait = false;
-                pickedEh.isRotated = false;
-                pickedEh.lcActive = true;
-                state.stage[targetColEh].push(pickedEh);
-                finalizeWaitingMemberStageEntry(snapBeforeEnter);
+                placeEffectMemberOnEmptyStageColumn(pickedEh, targetColEh, {});
                 showToast("空きエリアに登場させました");
                 finishRestToWait();
               }
@@ -30850,13 +31221,8 @@ export function mountSimulator(
                 finishResolved();
                 return;
               }
-              var snapBeforeEnter = snapshotBoard();
-              ent.lcWait = false;
-              ent.isRotated = false;
-              ent.lcActive = true;
-              if (!state.stage[emptyCols[0]]) state.stage[emptyCols[0]] = [];
-              state.stage[emptyCols[0]].push(ent);
-              finalizeWaitingMemberStageEntry(snapBeforeEnter);
+              ent._enteredFromWaitingRoom = true;
+              placeEffectMemberOnEmptyStageColumn(ent, emptyCols[0], {});
               pickedEnter.push(ent);
               stepEnter();
             },
@@ -31751,23 +32117,6 @@ export function mountSimulator(
     finishGuided();
   }
 
-  function removeStageMemberToWaiting(memberInst) {
-    if (!memberInst || !memberInst.id) return false;
-    var col = stageColumnKeyHostingMember(memberInst.id);
-    if (!col) return false;
-    var slot = state.stage[col] || [];
-    for (var i = 0; i < slot.length; i++) {
-      var x = slot[i];
-      if (x && x.type === T_MEMBER && String(x.id) === String(memberInst.id)) {
-        slot.splice(i, 1);
-        clearToujouEffectStateOnLeaveStage(memberInst);
-        state.waitingRoom.push(memberInst);
-        return true;
-      }
-    }
-    return false;
-  }
-
   /**
    * @param {typeof T_MEMBER | typeof T_LIVE} recoverType
    * @param {string | null} excludeInstId 起動で控え室へ送ったメンバー自身は候補から外す
@@ -32551,7 +32900,23 @@ export function mountSimulator(
         if (cardHasTrigger(mc, k)) {
           if (!isPlayEffectResolved(c, k)) {
             var clK = classifyCardAbility(mc, k);
-            if (k === "live_start" && !checkAbilityLiveStartPreconditionsForInst(c, clK)) return;
+            if (k === "live_start") {
+              if (clK.template === "ability_sequence" && clK.steps && clK.steps.length) {
+                var anyLsStepOk = clK.steps.some(function (st) {
+                  return checkAbilityLiveStartPreconditionsForInst(c, st);
+                });
+                if (!anyLsStepOk) return;
+              } else if (!checkAbilityLiveStartPreconditionsForInst(c, clK)) {
+                return;
+              }
+            } else if (k === "live_success") {
+              if (clK.template === "ability_sequence" && clK.steps && clK.steps.length) {
+                var anyLssStepOk = clK.steps.some(function (st) {
+                  return checkAbilityLiveSuccessPreconditions(st);
+                });
+                if (!anyLssStepOk) return;
+              }
+            }
             var mandatory = !clK.optional && !clK.hasOptionalCost;
             result.push({
               inst: c,
@@ -33955,7 +34320,12 @@ export function mountSimulator(
           if (dragInstCenter && dragMcCenter && cardAllowsTwoMemberBaton(dragMcCenter)) {
             applyBoard(dragUndoSnap);
             render();
-            placeHandMemberOnStageSide(dragInstCenter, toStageCol, {});
+            // applyBoard 後は clone 済みインスタンスになるため、手札から再解決する
+            var liveAfterRestore =
+              (state.hand || []).find(function (h) {
+                return h && String(h.id) === String(dragIdEnd);
+              }) || findCardInstById(dragIdEnd);
+            if (liveAfterRestore) placeHandMemberOnStageSide(liveAfterRestore, toStageCol, {});
             restoreCardFaceAfterDragging(evt.item);
             clearEnergyDropHints();
             return;
@@ -34053,6 +34423,7 @@ export function mountSimulator(
           maybeFireJidouAfterWaitingRoomChanges(dragUndoSnap);
           maybeFireJidouAfterWaitingToHand(dragUndoSnap);
           maybeFireJidouAfterLiveAreaChanges(dragUndoSnap);
+          fireJidouAfterStageAreaMovesFromSnap(dragUndoSnap);
         } catch (jErr) {
           console.warn(jErr);
         }
@@ -34786,6 +35157,9 @@ export function mountSimulator(
 
   function applyVersusPlayModeDefaults() {
     if (!isFullVersusPlayUi()) return;
+    /* 新規マウント時に演出ミラーのベースラインを取り直す */
+    versusOppPlayFxBaselineDone = false;
+    versusLastOppPlayFxId = "";
     state.deckPileFacesDown = true;
     versusMatchLogSinkEnabled = true;
     showVersusMatchLogPanel(true);
@@ -35609,10 +35983,10 @@ export function mountSimulator(
       el.classList.add("versus-phase-announce-overlay--out");
       versusPhaseAnnounceHideTimer = window.setTimeout(function () {
         versusPhaseAnnounceHideTimer = 0;
-        if (el) {
-          el.hidden = true;
-          el.classList.remove("versus-phase-announce-overlay--out");
-        }
+        /* --out（opacity:0）を保持したまま hidden にする。ここで --out を外すと
+           opacity トランジションが 0→1 に逆再生して即再表示に見えるため外さない。
+           次回表示時に showVersusPhaseAnnounce の先頭で --out を除去する。 */
+        if (el) el.hidden = true;
       }, 600);
     }, 2500);
   }
@@ -35681,17 +36055,23 @@ export function mountSimulator(
 
   /** 相手が起こした一過性演出イベント（登場/効果使用）を自画面の相手盤面でミラー再生 */
   var versusLastOppPlayFxId = "";
+  var versusOppPlayFxBaselineDone = false;
 
   function maybeFlashOpponentPlayFxFromRemote(remoteMatch) {
     if (!versusOnlineActive() || !remoteMatch || !versusSession.myRole) return;
     var oppField = versusSession.myRole === "host" ? "guestPlayFxEvent" : "hostPlayFxEvent";
     var ev = remoteMatch[oppField];
-    if (!ev || !ev.id) return;
-    if (String(ev.id) === versusLastOppPlayFxId) return;
-    var firstSeen = versusLastOppPlayFxId === "";
-    versusLastOppPlayFxId = String(ev.id);
-    /* マウント直後（初回同期）に過去イベントを再生しない */
-    if (firstSeen) return;
+    var evId = ev && ev.id ? String(ev.id) : "";
+    /* 初回同期で「今ドキュメントに載っている過去イベント」を既読としてベースライン化する。
+       ここで基準を取らないと、マウント時に fx イベントが無い（＝空）場合に相手の
+       “最初の”登場イベントを stale と誤判定してスキップしてしまう不具合になる。 */
+    if (!versusOppPlayFxBaselineDone) {
+      versusOppPlayFxBaselineDone = true;
+      versusLastOppPlayFxId = evId;
+      return;
+    }
+    if (!evId || evId === versusLastOppPlayFxId) return;
+    versusLastOppPlayFxId = evId;
     if (isLightweightPlayMode()) return;
     flashVersusOpponentPlayFx(ev);
   }
@@ -37528,7 +37908,9 @@ export function mountSimulator(
     var ltp = state.liveTurnPickMode === true;
     var lsb = state.liveStatsAfterBegin === true;
     var bundle = getRenderPassLiveBundle();
-    var evalOk = !!(bundle && bundle.evaluateResult && bundle.evaluateResult.ok);
+    var evalOk =
+      !!(bundle && bundle.evaluateResult && bundle.evaluateResult.ok) ||
+      liveVerdictLockedMechanicalSuccess();
     function liveSlotsHaveCard() {
       return ["left", "center", "right"].some(function (k) {
         var arr = state.liveArea[k];

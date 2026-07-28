@@ -75,6 +75,12 @@ import {
 } from "./testCardLog.js";
 import { showToast } from "./ui.js";
 import {
+  deckOddsCellTierClass,
+  formatPctFromRate,
+  mulliganOddsCumulativeKs,
+  probAtLeastOneInNextK,
+} from "./deckOddsMath.js";
+import {
   bladeHeartAggregatePillHtml,
   bladeHeartRowIconsHtml,
   bladeHeartDisplaySlotLabel,
@@ -1799,6 +1805,108 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
     /* 60 枚未満でも遊べるように緩和: メインに 1 枚以上あれば開始可（テスト用途） */
     if (btn) btn.disabled = total <= 0;
     renderValidationBanner();
+    renderMulliganOddsPanel();
+  }
+
+  /** デッキ編集: マリガンで該当があれば残す前提の累積見える枚数でキー等の1枚以上確率 */
+  function renderMulliganOddsPanel() {
+    const host = el("deck-mulligan-odds-grid");
+    if (!host) return;
+    const { total } = countMain(deckMap);
+    const n = total;
+    const ks = mulliganOddsCumulativeKs({ mulliganMax: 6, livePlayMax: 3, turnDraw: 1 });
+    const colDefs = [
+      { id: "mull", label: "マリガン終了", k: ks.mulliganEnd },
+      { id: "t1", label: "1T開始", k: ks.t1Start },
+      { id: "t2", label: "2T開始", k: ks.t2Start },
+      { id: "t3", label: "3T開始", k: ks.t3Start },
+    ];
+
+    function countNosInDeck(nosSet) {
+      let sum = 0;
+      nosSet.forEach(function (no) {
+        sum += Number(deckMap[no]) || 0;
+      });
+      return sum;
+    }
+
+    let liveCount = 0;
+    for (const [no, cnt] of Object.entries(deckMap)) {
+      if (!(cnt > 0)) continue;
+      const c = getCard(no);
+      if (c && c.type === T_LIVE) liveCount += cnt;
+    }
+
+    /** @type {Array<{ id: string, label: string, count: number }>} */
+    const rows = [];
+    const keyN = countNosInDeck(keyCardNos);
+    const key2N = countNosInDeck(keyCard2Nos);
+    const key3N = countNosInDeck(keyCard3Nos);
+    const midN = countNosInDeck(middleCardNos);
+    if (keyCardNos.size > 0) rows.push({ id: "key", label: "キー", count: keyN });
+    if (keyCard2Nos.size > 0) rows.push({ id: "key2", label: "キ②", count: key2N });
+    if (keyCard3Nos.size > 0) rows.push({ id: "key3", label: "キ③", count: key3N });
+    if (middleCardNos.size > 0) rows.push({ id: "mid", label: "中間", count: midN });
+    rows.push({ id: "live", label: "ライブ", count: liveCount });
+
+    if (n <= 0) {
+      host.innerHTML = '<p class="deck-odds-grid-empty muted">デッキにカードがありません。</p>';
+      return;
+    }
+
+    let html =
+      '<p class="deck-odds-grid-meta deck-mulligan-odds-meta">山札 <strong>' +
+      n +
+      "</strong> 枚 · k= " +
+      colDefs
+        .map(function (c) {
+          return c.label.replace("開始", "") + c.k;
+        })
+        .join(" / ") +
+      "</p>";
+    html += '<div class="deck-odds-grid-scroll"><table class="deck-odds-grid deck-mulligan-odds-table">';
+    html += "<thead><tr><th class=\"deck-odds-grid-row-head\" scope=\"col\">対象</th>";
+    colDefs.forEach(function (c) {
+      html +=
+        '<th scope="col" title="見える枚数 k=' +
+        c.k +
+        '">' +
+        escapeHtml(c.label) +
+        '<span class="deck-odds-grid-row-k"> k=' +
+        c.k +
+        "</span></th>";
+    });
+    html += "</tr></thead><tbody>";
+
+    rows.forEach(function (row) {
+      html += "<tr>";
+      html +=
+        '<th class="deck-odds-grid-row-head" scope="row"><span class="deck-odds-grid-cat-label">' +
+        escapeHtml(row.label) +
+        '</span> <span class="deck-odds-grid-cat-count">' +
+        row.count +
+        "/" +
+        n +
+        "</span></th>";
+      colDefs.forEach(function (c) {
+        const kUse = Math.min(c.k, n);
+        const rate = probAtLeastOneInNextK(n, kUse, row.count);
+        const tier = deckOddsCellTierClass(rate);
+        const txt =
+          row.count <= 0 || kUse <= 0 ? "—" : formatPctFromRate(rate) + "%";
+        html +=
+          '<td class="deck-odds-cell' +
+          (tier ? " " + tier : "") +
+          '" title="' +
+          escapeAttr(row.label + " · k=" + kUse + " · " + txt) +
+          '">' +
+          escapeHtml(txt) +
+          "</td>";
+      });
+      html += "</tr>";
+    });
+    html += "</tbody></table></div>";
+    host.innerHTML = html;
   }
 
   function renderValidationBanner() {
