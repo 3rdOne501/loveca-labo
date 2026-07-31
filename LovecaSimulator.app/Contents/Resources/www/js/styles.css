@@ -92,18 +92,29 @@ body::before {
 }
 
 #view-deck.view,
-#view-game.view {
+#view-game.view,
+#view-deck-browse.view,
+#view-bingo.view,
+#view-weakest.view {
   position: relative;
   z-index: 1;
 }
 
-/*
- * 「hidden 属性」を付けるとブラウザは display:none にするが、
- * ID+クラスの display:flex がより詳細度で勝ち、画面上にデッキが残ることがある（ソロ開始しても換わらずに見える）。
- */
 #view-deck.view[hidden],
-#view-game.view[hidden] {
+#view-game.view[hidden],
+#view-deck-browse.view[hidden],
+#view-bingo.view[hidden],
+#view-weakest.view[hidden] {
   display: none !important;
+}
+
+#view-deck-browse.view:not([hidden]),
+#view-bingo.view:not([hidden]),
+#view-weakest.view:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100svh;
 }
 
 /* デッキ編集ビュー: 一覧はパネル内スクロール、ページ縦スクロールを抑える */
@@ -660,6 +671,35 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
 #view-deck .deck-panel-sticky-head .deck-count-line {
   margin-bottom: 0;
 }
+#view-deck .deck-mulligan-odds-section {
+  margin: 0.45rem 0 0.15rem;
+}
+#view-deck .deck-mulligan-odds-section > .deck-panel-summary {
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+#view-deck .deck-mulligan-odds-lead {
+  font-size: 0.72rem;
+  line-height: 1.35;
+  margin: 0 0 0.4rem;
+}
+#view-deck .deck-mulligan-odds-meta {
+  font-size: 0.72rem;
+  margin: 0 0 0.35rem;
+}
+#view-deck .deck-mulligan-odds-grid .deck-odds-grid-scroll {
+  max-height: 11rem;
+  overflow: auto;
+}
+#view-deck .deck-mulligan-odds-table {
+  font-size: 0.72rem;
+}
+#view-deck .deck-mulligan-odds-table thead th .deck-odds-grid-row-k {
+  display: block;
+  font-weight: 600;
+  opacity: 0.75;
+  font-size: 0.65rem;
+}
 #view-deck .deck-panel-head-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1001,6 +1041,43 @@ body.play-versus-mode .versus-opponent-board .slot-label {
   font-size: 0.58rem;
   margin-bottom: 0.06rem;
   opacity: 0.8;
+}
+
+/* 相手盤面の視認性向上（総合ルールのゾーンを枠で明確化・見出し強調） */
+body.play-versus-mode .versus-opp-rail-zone {
+  border: 1px solid rgba(140, 170, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.025);
+  padding: 0.16rem 0.26rem;
+}
+body.play-versus-mode .versus-opponent-board__cell--center {
+  border-right: 1px solid rgba(140, 170, 255, 0.14);
+  border-left: 1px solid rgba(140, 170, 255, 0.14);
+  padding: 0 0.28rem;
+}
+/* 勝利条件（総合ルール 1.2.1）の成功ライブを強調して追いやすく */
+body.play-versus-mode .versus-opponent-board__cell--sl {
+  border-color: rgba(255, 200, 110, 0.55);
+  background: rgba(255, 190, 90, 0.07);
+}
+body.play-versus-mode .versus-opponent-board__cell--sl .versus-opp-zone-heading {
+  color: #ffd98a;
+}
+body.play-versus-mode .versus-opp-zone-heading,
+body.play-versus-mode .versus-opponent-board .stage-title-bar__h {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: rgba(228, 238, 255, 0.96);
+}
+body.play-versus-mode .versus-opponent-board .versus-opp-zone-heading .badge,
+body.play-versus-mode .versus-opponent-board .energy-fold__counts .badge {
+  font-weight: 800;
+  font-size: 0.72rem;
+}
+/* ステージ（メンバーエリア）＝相手の主戦場を少し目立たせる */
+body.play-versus-mode .versus-opponent-board__center-stage .stage-title-bar__h {
+  color: #bfe0ff;
 }
 body.play-versus-mode .versus-opponent-board .card-strip {
   min-height: calc(var(--versus-opp-card-h) + 4px);
@@ -1473,6 +1550,257 @@ body.play-versus-mode #view-game.view-game--versus {
     0 0 56px rgba(140, 180, 255, 0.45);
   white-space: nowrap;
 }
+/* フェーズ変更アナウンス（優先権/フェーズ変化で両画面へ大きく表示） */
+.versus-phase-announce-overlay {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, -50%);
+  z-index: 224;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.9rem 2.2rem;
+  border-radius: 16px;
+  background: rgba(10, 16, 30, 0.86);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  box-shadow:
+    0 0 56px rgba(255, 255, 255, 0.28),
+    0 10px 40px rgba(0, 0, 0, 0.55);
+  animation: versus-phase-announce-in 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  opacity: 1;
+  transition: opacity 0.55s ease;
+}
+.versus-phase-announce-overlay.versus-phase-announce-overlay--out {
+  opacity: 0;
+}
+/* display:flex が [hidden] を上書きしてしまうので明示的に隠す */
+.versus-phase-announce-overlay[hidden] {
+  display: none !important;
+}
+.versus-phase-announce-overlay__main {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.9rem, 7vw, 3.2rem);
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  color: #ffffff;
+  white-space: nowrap;
+  text-shadow:
+    0 0 20px rgba(255, 255, 255, 0.95),
+    0 0 40px rgba(200, 220, 255, 0.6);
+}
+.versus-phase-announce-overlay__sub {
+  margin: 0;
+  font-size: clamp(0.85rem, 3vw, 1.15rem);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: rgba(226, 236, 255, 0.92);
+  white-space: nowrap;
+}
+.versus-phase-announce-overlay--mine {
+  border-color: rgba(120, 235, 190, 0.75);
+  box-shadow:
+    0 0 56px rgba(70, 220, 160, 0.4),
+    0 10px 40px rgba(0, 0, 0, 0.55);
+}
+.versus-phase-announce-overlay--mine .versus-phase-announce-overlay__main {
+  color: #d8fff0;
+  text-shadow:
+    0 0 20px rgba(90, 240, 180, 0.95),
+    0 0 42px rgba(40, 200, 150, 0.6);
+}
+.versus-phase-announce-overlay--opp {
+  border-color: rgba(255, 150, 190, 0.75);
+  box-shadow:
+    0 0 56px rgba(255, 90, 150, 0.4),
+    0 10px 40px rgba(0, 0, 0, 0.55);
+}
+.versus-phase-announce-overlay--opp .versus-phase-announce-overlay__main {
+  color: #ffe0ee;
+  text-shadow:
+    0 0 20px rgba(255, 110, 170, 0.95),
+    0 0 42px rgba(230, 60, 130, 0.6);
+}
+@keyframes versus-phase-announce-in {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.82);
+  }
+  60% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.04);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* 相手盤面での一過性演出（登場/効果使用ミラー） */
+.versus-opp-card--fx-pulse {
+  position: relative;
+  animation: versus-opp-fx-pulse 1.2s ease-out;
+  z-index: 3;
+}
+@keyframes versus-opp-fx-pulse {
+  0% {
+    box-shadow: 0 0 0 rgba(255, 240, 160, 0);
+    filter: brightness(1);
+  }
+  25% {
+    box-shadow:
+      0 0 14px rgba(255, 235, 150, 0.95),
+      0 0 26px rgba(255, 200, 120, 0.7);
+    filter: brightness(1.25);
+  }
+  100% {
+    box-shadow: 0 0 0 rgba(255, 240, 160, 0);
+    filter: brightness(1);
+  }
+}
+.versus-opp-fx-chip {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  color: #2a1c00;
+  background: linear-gradient(135deg, #ffe9a8, #ffce6b);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  animation: versus-opp-fx-chip-in 1.3s ease-out forwards;
+}
+.versus-opp-fx-chip--float {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+@keyframes versus-opp-fx-chip-in {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(6px) scale(0.85);
+  }
+  18% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1.05);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px) scale(1);
+  }
+}
+
+/* ------------------------------------------------------------------
+ * 手札を中央下に固定（スマホ風ドック・ユーザートグル）
+ * ソロ・対戦とも body.play-hand-docked-bottom で有効。全レイアウト共通。
+ * ------------------------------------------------------------------ */
+body.play-mode.play-hand-docked-bottom #hand-stick-fold.hand-stick-fold {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  box-sizing: border-box;
+  width: min(100%, 1040px);
+  max-width: calc(100vw - 12px);
+  max-height: 42vh;
+  max-height: 42svh;
+  overflow-y: auto;
+  /* 中央ドックの左右はみ出しを防止（内容がはみ出しても左右エリアへ流れ出さない） */
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  z-index: 60;
+  margin: 0;
+  padding: 0.3rem 0.6rem max(0.4rem, env(safe-area-inset-bottom, 0px));
+  /* 後ろの盤面が透けて見えるよう背景を薄く（要望） */
+  background: linear-gradient(180deg, rgba(12, 16, 30, 0.2), rgba(9, 12, 22, 0.52));
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border: 1px solid rgba(150, 180, 255, 0.22);
+  border-bottom: none;
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.4);
+}
+/* 内側の構造ラッパーが横幅を超えないように */
+body.play-mode.play-hand-docked-bottom #hand-stick-fold.hand-stick-fold .hand-stick-fold__body,
+body.play-mode.play-hand-docked-bottom #hand-row {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+body.play-mode.play-hand-docked-bottom #zone-hand.hand-zone {
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+/* ヘッダー行・アクションボタン群も折り返して横に溢れさせない */
+body.play-mode.play-hand-docked-bottom #hand-stick-fold.hand-stick-fold .zone-head--hand,
+body.play-mode.play-hand-docked-bottom #hand-stick-fold.hand-stick-fold .hand-zone-actions {
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+/* 「次のターンへ」ボタンは下部固定時のみ表示 */
+.btn-hand-dock-turn {
+  display: none;
+}
+body.play-hand-docked-bottom .btn-hand-dock-turn {
+  display: inline-flex;
+}
+
+/* 対戦モードのライブ成功確率パネルは「残りエール数」行だけ残す
+   （ソロと同じ場所・同じ仕様で残りエールを表示。確率計算・操作系は隠す） */
+.zone-block-deck-live-sim.deck-live-sim--versus-yell-only .deck-live-sim-heading-compact,
+.zone-block-deck-live-sim.deck-live-sim--versus-yell-only .play-undo-redo-cluster--under-prob,
+.zone-block-deck-live-sim.deck-live-sim--versus-yell-only .deck-live-sim-controls,
+.zone-block-deck-live-sim.deck-live-sim--versus-yell-only #deck-flip-blade-note,
+.zone-block-deck-live-sim.deck-live-sim--versus-yell-only #deck-live-sim-block {
+  display: none !important;
+}
+.zone-block-deck-live-sim.deck-live-sim--versus-yell-only .deck-live-sim-toolbar {
+  justify-content: flex-start;
+}
+/* 固定手札に隠れないよう各列の下部に余白 */
+body.play-mode.play-hand-docked-bottom .game-board .col {
+  padding-bottom: 42vh;
+  padding-bottom: 42svh;
+}
+/* ドック内は手札を中央寄せ */
+body.play-mode.play-hand-docked-bottom #hand-row {
+  display: flex;
+  justify-content: center;
+}
+body.play-mode.play-hand-docked-bottom #zone-hand.hand-zone {
+  justify-content: center;
+}
+/* ドック時は開閉サマリーを表示（デスクトップでも操作できるように） */
+body.play-mode.play-hand-docked-bottom #hand-stick-fold.hand-stick-fold > summary.hand-stick-fold__summary {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  padding: 0.1rem 0.2rem 0.25rem;
+}
+/* 折りたたみ時は最小の高さに */
+body.play-mode.play-hand-docked-bottom #hand-stick-fold.hand-stick-fold:not([open]) {
+  max-height: none;
+}
+body.play-mode.play-hand-docked-bottom #hand-stick-fold.hand-stick-fold:not([open]) .hand-stick-fold__body {
+  display: none;
+}
+
 .versus-live-score-overlay {
   position: absolute;
   left: 50%;
@@ -1632,6 +1960,39 @@ body.play-versus-mode .versus-opponent-board__surface .versus-opp-card--facing .
 }
 body.play-versus-mode .versus-opponent-board {
   position: relative;
+}
+.versus-effect-wait-banner {
+  position: fixed;
+  left: 50%;
+  bottom: 4.2rem;
+  transform: translateX(-50%);
+  z-index: 60;
+  padding: 0.45rem 1.1rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #e8f4ff;
+  background: rgba(16, 40, 64, 0.92);
+  border: 1px solid rgba(120, 200, 255, 0.5);
+  box-shadow: 0 0 16px rgba(80, 170, 255, 0.3);
+  animation: versus-opp-effect-label-pulse 1.2s ease-in-out infinite;
+  text-align: center;
+}
+.versus-effect-wait-banner__main {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.versus-effect-wait-banner__sub {
+  margin-top: 0.15rem;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: rgba(200, 226, 250, 0.85);
+}
+.dlg-versus-remote-choice-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0.6rem 0;
 }
 @keyframes versus-opp-effect-label-pulse {
   0%,
@@ -2090,6 +2451,100 @@ body.play-versus-mode .game-tools-row #btn-versus-lobby:not([hidden]) {
   min-width: 0;
 }
 
+/* 投稿デッキ（コミュニティ公開）一覧 — サンプルパネルと同じ縦スタック内。サンプルとは排他表示 */
+#view-deck .public-decks-scroll {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  align-self: stretch;
+  min-height: 0;
+  max-height: min(calc(100vh - 8.5rem), 78vh, 980px);
+  max-height: min(calc(100svh - 8.5rem), 78svh, 980px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: auto;
+  -webkit-overflow-scrolling: touch;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+  padding: 0.45rem 0.45rem 0.55rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 190, 120, 0.22);
+  background: rgba(18, 12, 6, 0.4);
+}
+
+#view-deck:not(.view-deck--public-decks-open) .public-decks-scroll[hidden] {
+  display: none !important;
+  flex: 0 0 0 !important;
+  min-height: 0 !important;
+  max-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  overflow: hidden !important;
+}
+
+#view-deck .card-panel-body-stack .public-decks-scroll {
+  margin-top: 0;
+}
+
+/* 投稿一覧を開いたとき: 上＝カード一覧、下＝投稿で縦分割（サンプルと同じ配分） */
+#view-deck.view-deck--public-decks-open .card-panel-body-stack .card-grid-scroll {
+  flex: 1 1 56%;
+  min-height: min(240px, 48vh);
+  min-height: min(240px, 48dvh);
+  max-height: min(calc(100vh - 13rem), 56vh, 640px);
+  max-height: min(calc(100svh - 13rem), 56svh, 640px);
+}
+
+#view-deck.view-deck--public-decks-open .card-panel-body-stack .public-decks-scroll {
+  flex: 1 1 44%;
+  min-height: min(200px, 36vh);
+  min-height: min(200px, 36dvh);
+  max-height: min(calc(100vh - 13rem), 42vh, 520px);
+  max-height: min(calc(100svh - 13rem), 42svh, 520px);
+}
+
+/* 登録デッキ統計と併用したとき（投稿は登録と独立して開ける） */
+#view-deck.view-deck--deck-registration-open.view-deck--public-decks-open .card-panel-body-stack .card-grid-scroll {
+  flex: 1 1 38%;
+  min-height: min(200px, 38vh);
+  min-height: min(200px, 38dvh);
+  max-height: min(calc(100vh - 16rem), 48vh, 520px);
+  max-height: min(calc(100svh - 16rem), 48svh, 520px);
+}
+
+#view-deck.view-deck--deck-registration-open.view-deck--public-decks-open .card-panel-body-stack .public-decks-scroll {
+  flex: 1 1 36%;
+  min-height: min(180px, 32vh);
+  min-height: min(180px, 32dvh);
+  max-height: min(calc(100vh - 16rem), 40vh, 480px);
+  max-height: min(calc(100svh - 16rem), 40svh, 480px);
+}
+
+/* 投稿タイルはサンプルタイル（.sample-recipe-tile）を流用しつつ枠色だけ変える */
+.public-deck-tile {
+  border-color: rgba(255, 190, 120, 0.22);
+}
+.public-deck-owner {
+  margin: 0;
+  font-size: 0.66rem;
+  line-height: 1.35;
+}
+.public-deck-posted {
+  margin: 0;
+  font-size: 0.66rem;
+  line-height: 1.35;
+  opacity: 0.85;
+}
+.public-deck-note {
+  opacity: 0.85;
+}
+.public-decks-status {
+  margin: 0;
+  padding: 0.3rem 0.15rem;
+  font-size: 0.72rem;
+}
+
 /* 登録デッキタイル一覧（カード一覧の下に並ぶサンプルと同じ縦スタック内） */
 #view-deck .deck-library-scroll {
   display: flex;
@@ -2361,7 +2816,8 @@ body.play-versus-mode .game-tools-row #btn-versus-lobby:not([hidden]) {
 
 @media (max-width: 1100px) {
   #view-deck .card-grid-scroll,
-  #view-deck .sample-recipes-scroll {
+  #view-deck .sample-recipes-scroll,
+  #view-deck .public-decks-scroll {
     max-height: min(calc(100vh - 7.5rem), 86vh, 960px);
     max-height: min(calc(100svh - 7.5rem), 86svh, 960px);
   }
@@ -9062,13 +9518,20 @@ body.play-mode .card-item.card-item--play-fx-has-char-icons .play-fx-group-logo-
   transform: translate(-50%, 0) scale(0.85);
   transform-origin: center bottom;
   opacity: 0;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.28));
+  filter:
+    drop-shadow(0 0 14px rgba(255, 255, 255, 1))
+    drop-shadow(0 0 28px rgba(255, 255, 255, 0.88))
+    drop-shadow(0 0 48px rgba(255, 255, 255, 0.62))
+    drop-shadow(0 0 72px rgba(255, 255, 255, 0.38));
   animation: playFxGroupLogoFloatAbove var(--play-fx-ms, 1500ms) cubic-bezier(0.16, 1.08, 0.32, 1) 0.04s both;
 }
 .play-fx-group-logo--vector {
   width: min(190%, 14rem);
   min-width: 8rem;
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.22));
+  filter:
+    drop-shadow(0 0 12px rgba(255, 255, 255, 0.95))
+    drop-shadow(0 0 24px rgba(255, 255, 255, 0.78))
+    drop-shadow(0 0 40px rgba(255, 255, 255, 0.52));
 }
 .play-fx-group-logo--live {
   width: 175%;
@@ -9150,7 +9613,7 @@ body.play-mode .card-item.card-item--play-fx-ultra.card-item--play-fx-has-logo {
   border-color: rgba(255, 160, 220, 0.75);
 }
 
-/* —— ミッド演出（コスト11–12登場） —— */
+/* —— ミッド演出（コスト10登場） —— */
 body.play-mode .card-item.card-item--play-fx-mid {
   z-index: 20;
   filter: drop-shadow(0 0 16px rgba(255, 190, 100, 0.42)) drop-shadow(0 0 28px rgba(200, 140, 255, 0.22));
@@ -9631,22 +10094,103 @@ body.play-premium-fx-active {
   }
 }
 @keyframes playFxGroupLogoFloatAbove {
-  0% { opacity: 0; transform: translate(-50%, 14px) scale(0.55); }
-  22% { opacity: 1; transform: translate(-50%, 0) scale(1.02); }
-  58% { opacity: 1; transform: translate(-50%, -4px) scale(1); }
-  100% { opacity: 0; transform: translate(-50%, -16px) scale(0.92); }
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 14px) scale(0.55);
+    filter:
+      drop-shadow(0 0 8px rgba(255, 255, 255, 0.55))
+      drop-shadow(0 0 16px rgba(255, 255, 255, 0.35));
+  }
+  22% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1.02);
+    filter:
+      drop-shadow(0 0 18px rgba(255, 255, 255, 1))
+      drop-shadow(0 0 36px rgba(255, 255, 255, 0.92))
+      drop-shadow(0 0 56px rgba(255, 255, 255, 0.72))
+      drop-shadow(0 0 80px rgba(255, 255, 255, 0.48));
+  }
+  58% {
+    opacity: 1;
+    transform: translate(-50%, -4px) scale(1);
+    filter:
+      drop-shadow(0 0 16px rgba(255, 255, 255, 0.98))
+      drop-shadow(0 0 32px rgba(255, 255, 255, 0.82))
+      drop-shadow(0 0 52px rgba(255, 255, 255, 0.58));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -16px) scale(0.92);
+    filter:
+      drop-shadow(0 0 10px rgba(255, 255, 255, 0.45))
+      drop-shadow(0 0 20px rgba(255, 255, 255, 0.28));
+  }
 }
 @keyframes playFxGroupLogoFloatMultiAbove {
-  0% { opacity: 0; transform: translate(calc(-50% + var(--group-offset, 0px)), 14px) scale(0.55); }
-  22% { opacity: 1; transform: translate(calc(-50% + var(--group-offset, 0px)), 0) scale(1.02); }
-  58% { opacity: 1; transform: translate(calc(-50% + var(--group-offset, 0px)), -4px) scale(1); }
-  100% { opacity: 0; transform: translate(calc(-50% + var(--group-offset, 0px)), -16px) scale(0.92); }
+  0% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--group-offset, 0px)), 14px) scale(0.55);
+    filter:
+      drop-shadow(0 0 8px rgba(255, 255, 255, 0.55))
+      drop-shadow(0 0 16px rgba(255, 255, 255, 0.35));
+  }
+  22% {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--group-offset, 0px)), 0) scale(1.02);
+    filter:
+      drop-shadow(0 0 18px rgba(255, 255, 255, 1))
+      drop-shadow(0 0 36px rgba(255, 255, 255, 0.92))
+      drop-shadow(0 0 56px rgba(255, 255, 255, 0.72))
+      drop-shadow(0 0 80px rgba(255, 255, 255, 0.48));
+  }
+  58% {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--group-offset, 0px)), -4px) scale(1);
+    filter:
+      drop-shadow(0 0 16px rgba(255, 255, 255, 0.98))
+      drop-shadow(0 0 32px rgba(255, 255, 255, 0.82))
+      drop-shadow(0 0 52px rgba(255, 255, 255, 0.58));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--group-offset, 0px)), -16px) scale(0.92);
+    filter:
+      drop-shadow(0 0 10px rgba(255, 255, 255, 0.45))
+      drop-shadow(0 0 20px rgba(255, 255, 255, 0.28));
+  }
 }
 @keyframes playFxGroupLogoFloatTriAbove {
-  0% { opacity: 0; transform: translate(calc(-50% + var(--group-tri-x, 0px)), calc(var(--group-tri-y, 0px) + 14px)) scale(0.55); }
-  22% { opacity: 1; transform: translate(calc(-50% + var(--group-tri-x, 0px)), var(--group-tri-y, 0px)) scale(1.02); }
-  58% { opacity: 1; transform: translate(calc(-50% + var(--group-tri-x, 0px)), calc(var(--group-tri-y, 0px) - 4px)) scale(1); }
-  100% { opacity: 0; transform: translate(calc(-50% + var(--group-tri-x, 0px)), calc(var(--group-tri-y, 0px) - 16px)) scale(0.92); }
+  0% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--group-tri-x, 0px)), calc(var(--group-tri-y, 0px) + 14px)) scale(0.55);
+    filter:
+      drop-shadow(0 0 8px rgba(255, 255, 255, 0.55))
+      drop-shadow(0 0 16px rgba(255, 255, 255, 0.35));
+  }
+  22% {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--group-tri-x, 0px)), var(--group-tri-y, 0px)) scale(1.02);
+    filter:
+      drop-shadow(0 0 18px rgba(255, 255, 255, 1))
+      drop-shadow(0 0 36px rgba(255, 255, 255, 0.92))
+      drop-shadow(0 0 56px rgba(255, 255, 255, 0.72))
+      drop-shadow(0 0 80px rgba(255, 255, 255, 0.48));
+  }
+  58% {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--group-tri-x, 0px)), calc(var(--group-tri-y, 0px) - 4px)) scale(1);
+    filter:
+      drop-shadow(0 0 16px rgba(255, 255, 255, 0.98))
+      drop-shadow(0 0 32px rgba(255, 255, 255, 0.82))
+      drop-shadow(0 0 52px rgba(255, 255, 255, 0.58));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--group-tri-x, 0px)), calc(var(--group-tri-y, 0px) - 16px)) scale(0.92);
+    filter:
+      drop-shadow(0 0 10px rgba(255, 255, 255, 0.45))
+      drop-shadow(0 0 20px rgba(255, 255, 255, 0.28));
+  }
 }
 @keyframes premiumFxCoinFlip {
   0% { transform: perspective(400px) rotateY(0deg) scale(0.5); opacity: 0; }
@@ -11696,5 +12240,836 @@ body.play-mode .card-item--energy-wait-flip .card-img {
   body.play-mode .zone-drop-ripple,
   .badge--deck-remain.badge--deck-critical {
     animation: none;
+  }
+}
+
+/* --- デッキ一覧フルページ --- */
+.deck-browse-bar,
+.bingo-bar {
+  flex-shrink: 0;
+  padding: 0.75rem 1rem 0.5rem;
+  border-bottom: 1px solid rgba(255, 140, 190, 0.18);
+  background: rgba(8, 4, 14, 0.55);
+}
+.deck-browse-bar__row,
+.bingo-bar__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.75rem;
+}
+.deck-browse-bar__title,
+.bingo-bar__title {
+  margin: 0;
+  font-size: 1.15rem;
+  flex: 1 1 auto;
+  min-width: 8rem;
+}
+.deck-browse-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.deck-browse-body,
+.bingo-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 0.75rem 1rem 1.5rem;
+}
+.deck-browse-hint,
+.bingo-hint {
+  margin: 0 0 0.75rem;
+}
+.deck-browse-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+  gap: 0.65rem;
+}
+.deck-browse-status {
+  margin: 0 0 0.5rem;
+}
+
+/* --- 禁止制限ダービー ビンゴ --- */
+.bingo-title-field {
+  max-width: 28rem;
+  margin-bottom: 0.5rem;
+}
+.cloud-auth-bingo-btn {
+  display: block;
+  width: 100%;
+  margin: 0.35rem 0 0.5rem;
+}
+.cloud-auth-bar--search-top + .cloud-auth-bingo-btn {
+  margin-top: 0.25rem;
+}
+
+.bingo-size-toggle {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0 0 0.65rem;
+  max-width: min(720px, 100%);
+}
+.bingo-board-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  max-width: min(720px, 100%);
+  margin: 0 auto 1rem;
+}
+.bingo-oana-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  width: min(200px, 55vw);
+}
+.bingo-oana-label {
+  font-weight: 700;
+  color: #ffd080;
+  font-size: 1rem;
+}
+.bingo-oana-hint {
+  margin: 0;
+  text-align: center;
+  font-size: 0.82rem;
+}
+.bingo-oana-slot {
+  aspect-ratio: 5 / 7;
+  width: 100%;
+  border: 2px dashed rgba(255, 200, 80, 0.55);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 200, 80, 0.12);
+  padding: 0.15rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  touch-action: none;
+}
+.bingo-oana-slot--filled {
+  padding: 0;
+  border-style: solid;
+}
+.bingo-oana-slot--dragging {
+  opacity: 0.55;
+  transform: scale(0.96);
+}
+.bingo-oana-slot--drop-target {
+  box-shadow: 0 0 0 3px rgba(255, 200, 80, 0.75);
+}
+.bingo-cell-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.bingo-points-badge {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  min-width: 1.55rem;
+  height: 1.55rem;
+  padding: 0 0.22rem;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 0.82rem;
+  line-height: 1.55rem;
+  text-align: center;
+  z-index: 2;
+  cursor: pointer;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+}
+.bingo-points-badge--p0 {
+  background: #c8c4d0;
+  color: #2a2830;
+  box-shadow:
+    0 0 4px rgba(180, 175, 195, 0.45),
+    0 0 10px rgba(180, 175, 195, 0.25);
+}
+.bingo-points-badge--p1 {
+  background: #8ed8ff;
+  color: #062030;
+  box-shadow:
+    0 0 6px rgba(100, 210, 255, 0.85),
+    0 0 14px rgba(100, 210, 255, 0.45);
+}
+.bingo-points-badge--p2 {
+  background: #6ef0c0;
+  color: #042818;
+  box-shadow:
+    0 0 7px rgba(50, 255, 175, 0.85),
+    0 0 16px rgba(50, 255, 175, 0.5);
+}
+.bingo-points-badge--p3 {
+  background: #ffe24d;
+  color: #2a2200;
+  box-shadow:
+    0 0 8px rgba(255, 205, 35, 0.95),
+    0 0 18px rgba(255, 205, 35, 0.55);
+}
+.bingo-points-badge--p4 {
+  background: #ff9a38;
+  color: #2a1200;
+  box-shadow:
+    0 0 9px rgba(255, 125, 15, 0.95),
+    0 0 20px rgba(255, 125, 15, 0.6),
+    0 0 32px rgba(255, 100, 0, 0.25);
+}
+.bingo-points-badge--p5 {
+  background: linear-gradient(145deg, #ff5c8a 0%, #ff2858 55%, #e01040 100%);
+  color: #fff;
+  border-color: #fff;
+  box-shadow:
+    0 0 10px rgba(255, 40, 88, 1),
+    0 0 22px rgba(255, 30, 70, 0.75),
+    0 0 38px rgba(255, 15, 55, 0.45);
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.65);
+  transform: scale(1.06);
+  transform-origin: top right;
+}
+.bingo-pick-point-btn--p0.primary,
+.bingo-points-pick-btn--p0.primary {
+  background: #c8c4d0;
+  border-color: #c8c4d0;
+  color: #2a2830;
+  box-shadow: 0 0 8px rgba(180, 175, 195, 0.55);
+}
+.bingo-pick-point-btn--p1.primary,
+.bingo-points-pick-btn--p1.primary {
+  background: #8ed8ff;
+  border-color: #8ed8ff;
+  color: #062030;
+  box-shadow: 0 0 10px rgba(100, 210, 255, 0.7);
+}
+.bingo-pick-point-btn--p2.primary,
+.bingo-points-pick-btn--p2.primary {
+  background: #6ef0c0;
+  border-color: #6ef0c0;
+  color: #042818;
+  box-shadow: 0 0 10px rgba(50, 255, 175, 0.7);
+}
+.bingo-pick-point-btn--p3.primary,
+.bingo-points-pick-btn--p3.primary {
+  background: #ffe24d;
+  border-color: #ffe24d;
+  color: #2a2200;
+  box-shadow: 0 0 10px rgba(255, 205, 35, 0.8);
+}
+.bingo-pick-point-btn--p4.primary,
+.bingo-points-pick-btn--p4.primary {
+  background: #ff9a38;
+  border-color: #ff9a38;
+  color: #2a1200;
+  box-shadow: 0 0 12px rgba(255, 125, 15, 0.85);
+}
+.bingo-pick-point-btn--p5.primary,
+.bingo-points-pick-btn--p5.primary {
+  background: linear-gradient(145deg, #ff5c8a, #ff2858);
+  border-color: #ff2858;
+  color: #fff;
+  box-shadow: 0 0 14px rgba(255, 30, 70, 0.95), 0 0 24px rgba(255, 20, 60, 0.5);
+}
+.bingo-cell--dragging {
+  opacity: 0.55;
+  transform: scale(0.96);
+}
+.bingo-cell--drop-target {
+  box-shadow: 0 0 0 3px rgba(255, 180, 220, 0.85);
+  border-color: rgba(255, 180, 220, 0.9);
+}
+.bingo-grid {
+  display: grid;
+  gap: 0.35rem;
+  width: 100%;
+  margin: 0;
+}
+.bingo-cell-placeholder {
+  font-size: 1.4rem;
+  color: rgba(255, 200, 230, 0.45);
+}
+.bingo-cell-missing {
+  font-size: 0.65rem;
+  word-break: break-all;
+  padding: 0.2rem;
+}
+.bingo-cell {
+  aspect-ratio: 5 / 7;
+  border: 1px solid rgba(255, 140, 190, 0.35);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.15rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  touch-action: none;
+}
+.bingo-cell--filled {
+  padding: 0;
+}
+.bingo-cell-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: calc(var(--radius-sm) - 2px);
+  pointer-events: none;
+}
+.bingo-grid--size-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  max-width: min(420px, 100%);
+}
+.bingo-grid--size-5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.bingo-pick-points-label {
+  margin: 0.5rem 0 0.25rem;
+  font-size: 0.9rem;
+}
+.bingo-pick-points-row,
+.bingo-points-pick-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.65rem;
+}
+.bingo-points-pick-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 12001;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.bingo-points-pick-dialog {
+  background: #1a1018;
+  border: 1px solid rgba(255, 140, 190, 0.25);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  min-width: min(320px, 90vw);
+}
+.bingo-points-pick-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+.bingo-points-pick-btn {
+  min-width: 2.2rem;
+}
+.bingo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  max-width: min(720px, 100%);
+  margin: 0 auto;
+}
+.bingo-card-pick-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.bingo-card-pick-dialog {
+  width: min(980px, 100%);
+  max-height: min(88vh, 900px);
+  overflow: auto;
+  background: #1a1018;
+  border: 1px solid rgba(255, 140, 190, 0.25);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+}
+.bingo-card-pick-grid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 0.35rem;
+  margin: 0.75rem 0;
+  max-height: 52vh;
+  overflow: auto;
+}
+.bingo-card-pick-card {
+  border: 1px solid rgba(255, 140, 190, 0.2);
+  border-radius: var(--radius-sm);
+  padding: 0.12rem;
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  min-width: 0;
+}
+.bingo-card-pick-card .deck-builder-card-thumb,
+.bingo-card-pick-card img {
+  width: 100%;
+  height: auto;
+  display: block;
+  aspect-ratio: 88 / 126;
+  object-fit: cover;
+}
+.bingo-card-pick-card:hover {
+  border-color: rgba(255, 180, 220, 0.55);
+}
+.bingo-slot-action-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.bingo-slot-action-remove {
+  border-color: rgba(255, 120, 120, 0.45);
+  color: #ffb8b8;
+}
+.bingo-slot-action-remove:hover {
+  border-color: rgba(255, 140, 140, 0.75);
+  background: rgba(255, 80, 80, 0.12);
+}
+.bingo-card-pick-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+.bingo-card-pick-search {
+  width: 100%;
+}
+
+/* --- ラブカ最弱カード会議 --- */
+/* 下で display を指定する要素は hidden 属性で隠す運用なので、UA の既定を上書きし返す */
+.weakest-bar__room[hidden],
+.weakest-members[hidden],
+.weakest-signin-notice[hidden],
+.weakest-lobby-panels[hidden],
+.weakest-lobby-panel[hidden],
+.weakest-ranking[hidden],
+.weakest-tabs[hidden],
+.weakest-room-toolbar[hidden],
+.weakest-recent-list[hidden] {
+  display: none !important;
+}
+.weakest-bar {
+  flex-shrink: 0;
+  padding: 0.75rem 1rem 0.5rem;
+  border-bottom: 1px solid rgba(255, 140, 190, 0.18);
+  background: rgba(8, 4, 14, 0.55);
+}
+.weakest-bar__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.75rem;
+}
+.weakest-bar__title {
+  margin: 0;
+  font-size: 1.15rem;
+  min-width: 8rem;
+}
+.weakest-bar__spacer {
+  flex: 1 1 auto;
+}
+.weakest-bar__room {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.weakest-room-title {
+  font-weight: 700;
+  color: var(--accent);
+}
+.weakest-room-code-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.weakest-room-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1.05rem;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+}
+.weakest-room-code-hint {
+  font-size: 0.72rem;
+  opacity: 0.7;
+}
+.weakest-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 0.75rem 1rem 1.5rem;
+}
+.weakest-lead {
+  margin: 0 0 0.9rem;
+}
+.weakest-signin-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 1rem;
+  border: 1px solid rgba(255, 140, 190, 0.22);
+  border-radius: var(--radius);
+  background: var(--panel);
+  max-width: 32rem;
+}
+.weakest-signin-notice p {
+  margin: 0;
+}
+.weakest-lobby-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 0.85rem;
+  align-items: start;
+}
+.weakest-lobby-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1rem;
+}
+.weakest-lobby-panel .hint {
+  margin: 0;
+}
+.weakest-recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.weakest-recent-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 0.6rem;
+  text-align: left;
+}
+.weakest-recent-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+}
+.weakest-recent-title {
+  opacity: 0.75;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 参加者アバター */
+.weakest-members {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+.weakest-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(255, 180, 220, 0.5);
+  background: rgba(255, 255, 255, 0.08);
+}
+.weakest-avatar--text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.weakest-avatar--sm {
+  width: 20px;
+  height: 20px;
+  font-size: 0.65rem;
+}
+.weakest-avatar--stale {
+  opacity: 0.35;
+  filter: grayscale(1);
+}
+
+/* 部門タブ */
+.weakest-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+.weakest-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid rgba(255, 140, 190, 0.25);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+.weakest-tab:hover {
+  border-color: rgba(255, 180, 220, 0.55);
+}
+.weakest-tab.is-active {
+  background: linear-gradient(135deg, rgba(255, 90, 154, 0.28), rgba(167, 139, 250, 0.22));
+  border-color: var(--accent);
+}
+.weakest-tab__name {
+  font-weight: 700;
+}
+.weakest-tab__filter {
+  font-size: 0.7rem;
+  opacity: 0.7;
+}
+.weakest-tab-empty {
+  margin: 0;
+  align-self: center;
+}
+.weakest-room-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+.weakest-summary {
+  margin: 0;
+}
+.weakest-empty {
+  margin: 1.5rem 0;
+  text-align: center;
+}
+
+/* ランキング */
+.weakest-ranking {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.weakest-entry {
+  display: grid;
+  grid-template-columns: 2.2rem 74px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid rgba(255, 140, 190, 0.18);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+.weakest-entry--top {
+  border-color: rgba(255, 200, 80, 0.55);
+  box-shadow: 0 0 18px rgba(255, 200, 80, 0.12);
+}
+.weakest-entry__rank {
+  font-size: 1.3rem;
+  font-weight: 800;
+  text-align: center;
+  color: var(--accent);
+}
+.weakest-entry--top .weakest-entry__rank {
+  color: #ffd080;
+}
+.weakest-entry__thumb {
+  padding: 0;
+  border: 1px solid rgba(255, 140, 190, 0.25);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  overflow: hidden;
+  line-height: 0;
+}
+.weakest-entry__thumb img {
+  width: 74px;
+  height: auto;
+  aspect-ratio: 88 / 126;
+  object-fit: cover;
+  display: block;
+}
+.weakest-thumb-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 74px;
+  aspect-ratio: 88 / 126;
+  color: var(--muted);
+}
+.weakest-entry__main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.weakest-entry__name {
+  font-weight: 700;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.weakest-entry__no {
+  font-size: 0.72rem;
+  font-weight: 400;
+  opacity: 0.6;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.weakest-entry__meta {
+  font-size: 0.75rem;
+}
+.weakest-entry__comment {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--love-lilac);
+}
+.weakest-entry__bar {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.weakest-entry__bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), var(--love-lilac));
+  transition: width 0.25s ease;
+}
+.weakest-entry__voters {
+  display: flex;
+  gap: 0.15rem;
+  flex-wrap: wrap;
+}
+.weakest-entry__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  align-items: stretch;
+}
+.weakest-vote-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+.weakest-vote-count {
+  min-width: 1.4rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  font-size: 0.85rem;
+}
+
+/* オーバーレイ（部門作成 / カード選択 / 推薦） */
+.weakest-overlay-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.weakest-overlay-dialog {
+  width: min(560px, 100%);
+  max-height: min(88vh, 900px);
+  overflow: auto;
+  background: #1a1018;
+  border: 1px solid rgba(255, 140, 190, 0.25);
+  border-radius: var(--radius);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.weakest-overlay-dialog h3 {
+  margin: 0;
+}
+.weakest-overlay-dialog .hint {
+  margin: 0;
+}
+.weakest-overlay-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+.weakest-check-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.8rem;
+}
+.weakest-pick-dialog {
+  width: min(980px, 100%);
+}
+.weakest-pick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 0.35rem;
+  max-height: 52vh;
+  overflow: auto;
+}
+.weakest-pick-card {
+  position: relative;
+  border: 1px solid rgba(255, 140, 190, 0.2);
+  border-radius: var(--radius-sm);
+  padding: 0.12rem;
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  min-width: 0;
+}
+.weakest-pick-card img {
+  width: 100%;
+  height: auto;
+  display: block;
+  aspect-ratio: 88 / 126;
+  object-fit: cover;
+}
+.weakest-pick-card:hover {
+  border-color: rgba(255, 180, 220, 0.55);
+}
+.weakest-pick-card.is-already {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.weakest-pick-badge {
+  position: absolute;
+  inset: auto 0 0 0;
+  font-size: 0.6rem;
+  padding: 0.1rem;
+  background: rgba(0, 0, 0, 0.7);
+}
+.weakest-nominate-card {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+.weakest-nominate-card img {
+  width: 96px;
+  height: auto;
+  aspect-ratio: 88 / 126;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+.weakest-nominate-card__name {
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .weakest-entry {
+    grid-template-columns: 1.8rem 56px minmax(0, 1fr);
+  }
+  .weakest-entry__thumb img,
+  .weakest-thumb-fallback {
+    width: 56px;
+  }
+  .weakest-entry__actions {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    justify-content: flex-end;
   }
 }

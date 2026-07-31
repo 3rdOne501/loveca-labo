@@ -7,7 +7,7 @@
 - **デュアル未対応の疑い（高リスクのみ）**: [dual-mode-gap-audit.json](./dual-mode-gap-audit.json)（`node scripts/audit-dual-mode-gaps.mjs`）
 - **手動プレイ確認**: [play-verification-list.md](./play-verification-list.md)
 
-生成: 2026-07-25 — **265** 能力セグメント / **216** 枚
+生成: 2026-07-29 — **265** 能力セグメント / **216** 枚
 
 ## dualStatus（実装状況の目安）
 

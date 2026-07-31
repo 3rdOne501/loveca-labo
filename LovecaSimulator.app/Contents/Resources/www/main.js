@@ -26,7 +26,8 @@ import { initDeckBuilder, loadDeckBundleFromStorage } from "./deckbuilder.js";
 import { initPublishedSampleRecipes, isSampleDevMode } from "./sampleDeckRecipes.js";
 import { initDeckBrowsePage } from "./deckBrowsePage.js";
 import { initBingoDerby } from "./bingoDerby.js";
-import { showAppView, showDeckBuilderView, showBingoView } from "./viewNav.js";
+import { initWeakestConference, openWeakestConference } from "./weakestConference.js";
+import { showAppView, showDeckBuilderView, showDeckBrowseView, showBingoView } from "./viewNav.js";
 import { prefetchGameStatusArtBundledEarly } from "./gameStatusIcons.js";
 import { showToast } from "./ui.js";
 
@@ -678,6 +679,24 @@ function wireBingoDerbyButton() {
   }
 }
 
+function wireWeakestConferenceButton() {
+  var btn = document.getElementById("btn-weakest-conference");
+  if (!btn || btn.dataset.wired === "1") return;
+  btn.dataset.wired = "1";
+  btn.addEventListener("click", function () {
+    try {
+      if (!document.getElementById("view-weakest")) {
+        showToast("最弱カード会議を読み込めません。ページを再読込（Cmd+Shift+R）してください。");
+        return;
+      }
+      openWeakestConference();
+    } catch (err) {
+      console.warn("[weakest] open failed:", err);
+      showToast("最弱カード会議を開けませんでした");
+    }
+  });
+}
+
 function startApp(viewDeck, viewGame, statusEl) {
   viewDeckRef = viewDeck;
   viewGameRef = viewGame;
@@ -803,6 +822,13 @@ function startApp(viewDeck, viewGame, statusEl) {
       if (viewGame) viewGame.hidden = true;
     }
     wireBingoDerbyButton();
+    wireWeakestConferenceButton();
+    /* 招待リンク（#weakest=CODE）で来たときに会議画面を出せるよう、初期ビュー確定後に呼ぶ */
+    try {
+      initWeakestConference();
+    } catch (err) {
+      console.warn("[weakest] init failed:", err);
+    }
     resumeSessionsAfterBoot(viewDeck, viewGame);
   } else {
     location.reload();

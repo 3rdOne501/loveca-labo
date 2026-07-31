@@ -65,6 +65,46 @@ service cloud.firestore {
         && resource.data.hostUid == request.auth.uid;
     }
 
+    /* ラブカ最弱カード会議: ルームコードを知っている Google ログインユーザーが参加できる */
+    function isWeakestRoomHost(roomId) {
+      return isSignedIn()
+        && get(/databases/$(database)/documents/weakestRooms/$(roomId)).data.hostUid == request.auth.uid;
+    }
+
+    match /weakestRooms/{roomId} {
+      /* コード自体が合言葉なので、ログイン済みなら読める */
+      allow read: if isGoogleSignedIn();
+
+      allow create: if isGoogleSignedIn()
+        && request.resource.data.hostUid == request.auth.uid
+        && request.resource.data.code == roomId;
+
+      /* 参加・在席更新・部門編集。ホストの乗っ取りとコード書き換えだけは禁止 */
+      allow update: if isGoogleSignedIn()
+        && request.resource.data.hostUid == resource.data.hostUid
+        && request.resource.data.code == resource.data.code;
+
+      allow delete: if isGoogleSignedIn()
+        && resource.data.hostUid == request.auth.uid;
+
+      /* 推薦されたカード。投票は votes マップの自分のキーのみを書く */
+      match /entries/{entryId} {
+        allow read: if isGoogleSignedIn();
+
+        allow create: if isGoogleSignedIn()
+          && request.resource.data.byUid == request.auth.uid;
+
+        /* 投票トグル用。カード・部門・推薦者は変更させない */
+        allow update: if isGoogleSignedIn()
+          && request.resource.data.cardNo == resource.data.cardNo
+          && request.resource.data.categoryId == resource.data.categoryId
+          && request.resource.data.byUid == resource.data.byUid;
+
+        allow delete: if isGoogleSignedIn()
+          && (resource.data.byUid == request.auth.uid || isWeakestRoomHost(roomId));
+      }
+    }
+
     /* コミュニティ投稿デッキ: 閲覧は誰でも、投稿/削除は Google ログインの本人のみ */
     match /publicDecks/{deckId} {
       allow read: if true;

@@ -1,14 +1,15 @@
 /**
- * 全画面ビュー切り替え（デッキ編集 / プレイ / デッキ一覧 / ビンゴ）。
+ * 全画面ビュー切り替え（デッキ編集 / プレイ / デッキ一覧 / ビンゴ / 最弱カード会議）。
  */
 
-/** @typedef {'deck'|'game'|'deck-browse'|'bingo'} AppViewId */
+/** @typedef {'deck'|'game'|'deck-browse'|'bingo'|'weakest'} AppViewId */
 
 const VIEW_IDS = {
   deck: "view-deck",
   game: "view-game",
   "deck-browse": "view-deck-browse",
   bingo: "view-bingo",
+  weakest: "view-weakest",
 };
 
 /** @type {AppViewId|null} */
@@ -44,6 +45,7 @@ export function showAppView(viewId, opts) {
   document.body.classList.toggle("play-mode", viewId === "game");
   document.body.classList.toggle("deck-browse-mode", viewId === "deck-browse");
   document.body.classList.toggle("bingo-mode", viewId === "bingo");
+  document.body.classList.toggle("weakest-mode", viewId === "weakest");
   if (viewId === "deck-browse" && opts.deckBrowseMode) {
     document.body.dataset.deckBrowseMode = String(opts.deckBrowseMode);
   } else {
@@ -71,4 +73,8 @@ export function showDeckBrowseView(mode) {
 
 export function showBingoView() {
   showAppView("bingo");
+}
+
+export function showWeakestView() {
+  showAppView("weakest");
 }

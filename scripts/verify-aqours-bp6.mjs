@@ -45,7 +45,16 @@ const CASES = [
     id: "PL!S-bp6-003-P",
     trigger: "kidou",
     expectTemplate: "kidou_self_wait_stage_member_swap_recover",
-    check: (cl) => (cl.filters?.seriesTag === "Aqours" ? [] : ["series"]),
+    check: (cl) => {
+      const errs = [];
+      if (cl.filters?.seriesTag !== "Aqours") errs.push("series");
+      /* 果南は EE + 手札1枚。自ウェイトもエリア制限もない */
+      if (cl.costSelfWait) errs.push("no self wait cost");
+      if (!cl.costEnergy || cl.costEnergyCount !== 2) errs.push("EE cost");
+      if (cl.handDiscardToWaiting !== 1) errs.push("hand discard 1");
+      if (cl.stageArea || cl.stageAreas) errs.push("no area limit");
+      return errs;
+    },
   },
   {
     id: "PL!S-bp6-004-P",
@@ -107,9 +116,12 @@ const CASES = [
     trigger: "toujyou",
     expectTemplate: "toujou_draw_discard_if_from_waiting",
     check: (cl) =>
-      cl.deckDrawCount === 2 && cl.handDiscardToWaiting === 1 && cl.requiresEnteredFromWaiting
+      cl.deckDrawCount === 2 &&
+      cl.effectDiscardCount === 1 &&
+      !cl.handDiscardToWaiting &&
+      cl.requiresEnteredFromWaiting
         ? []
-        : ["draw2 discard1 waiting"],
+        : ["draw2 effectDiscard1 waiting"],
   },
   {
     id: "PL!S-bp6-013-N",

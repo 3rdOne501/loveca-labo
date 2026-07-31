@@ -646,10 +646,27 @@ verify-ability-coverage OK / verify-ability-handlers OK / verify-ability-runtime
 
 ---
 
+## 40. コスト／効果の取り違えと二重適用 4 件（2026-07-29）
+
+ユーザー報告 4 枚。根因は「コスト部と効果本文の取り違え」「常時セグメント再生成による二重適用」「効果側ドローの全払い要求」の 3 系統。
+
+| 代表ID | 名前 | 問題 | 修正 | 横展開 |
+|--------|------|------|------|--------|
+| PL!S-bp3-006-SEC | 津島善子 | 起動コストの「このメンバーをウェイトにする」は `payAbilityCost` が既に処理しているのに、`kidou_self_wait_stage_member_swap_recover` ハンドラが追加で `moveStageMemberInstToWaiting(inst)` を呼び、自分が**控え室**へ落ちていた（ウェイト≠控え室／総合ルール 5.9.1・9.4） | ハンドラから自分の控え室送りを削除。エリア判定を center 固定から共通 `abilityInstMatchesStageArea(col, cl)` に変更し、対象候補をカード文どおり「このメンバー以外の『Aqours』のメンバー」に限定して提示。控え室回収の候補から自分を除外 | 同型テキスト・同テンプレート 6 枚（`PL!S-bp3-006-R＋/P/P＋/SEC` 4 枚 + `PL!S-bp6-003-R/P` 2 枚） |
+| PL!S-bp6-003-R | 松浦果南 | 同テンプレートの分類器が `costSelfWait: true` を**カード文と無関係に固定**していたため、EE＋手札1枚が支払いコストの果南にも「自分をウェイト」が要求されていた（センター限定も不要） | 分類器の当該分岐から `costSelfWait` / `handDiscardToWaiting` のハードコードを削除し、コスト部の解析結果（base）をそのまま使うよう変更。センター条件は既存の `{{center}}` アイコン解析（`stageArea`）に一本化 | 上記 6 枚が同分岐を共有。`verify-aqours-bp6` に「自ウェイトなし・EE2・エリア制限なし」の回帰を追加 |
+| PL!S-bp6-011-N | 桜内梨子 | 「カードを2枚引き、手札を1枚控え室に置く」の後半を分類器が `handDiscardToWaiting`（=コスト）に入れていたため、コスト支払いで1枚捨て→2枚ドロー→本文でもう1枚捨て、と**捨てが二重**になっていた | `toujou_draw_discard_if_from_waiting` を `effectDiscardCount` に変更（`handDiscardToWaiting` は null 固定）。ハンドラは共通の `scheduleHandDiscardAfterAbilityDraw` に統一。`draw_then_hand_discard` 等と同じ null 化リストにも追加。あわせて「控え室から登場している場合」をコスト支払い前の共通ゲートに昇格（`requiresEnteredFromWaiting`） | 当該テンプレートは本カードのみ。共通ゲート化は `requiresEnteredFromWaiting` を持つ全テンプレートに効く。`verify-aqours-bp6` の期待値も更新 |
+| PL!N-bp4-029-L | Rise Up High! | `extractInlineLiveEndGrantJouji` が「ライブ終了時まで、…{{icon_blade}}を得る」から常時セグメントを**作り直す**ため、`addLiveSessionBladeBonus`（`cl.bladeGain`）と合わせてブレードが 2 個付いていた | `extractStageMemberGrantJouji`（3827 行）と同じハート／ブレードアイコンのガードを追加。アイコン付与は `cl.bladeGain` / `requiredHeartSlot` / `grantHeartSlotCount` 側で適用されるため、常時セグメント化しない | 同型の二重適用は 16 セグメント／10 枚: `PL!SP-bp4-024-L/-SRL/-SECL`（ブレード2→4）、`PL!SP-bp4-023-L/-SRL`（Dazzling Game）、`PL!N-pb1-039-L`（Stellar Stream heart06 4→8）、`PL!S-bp5-013-N`、`PL!S-bp5-017-N`、`PL!S-bp6-010-N`。inline を唯一の付与元にしている template（`jidou_hand_to_waiting_grant` 等）は該当カードなしを全数走査で確認 |
+| PL!SP-bp4-004-P | 平安名すみれ | `runToujouLiellaDoubleBatonCenter` が `state.deck.length < drawN` でドローも控え室登場も両方中止していた（総合ルール 1.3.2「可能な限り実行する」違反） | 中止をやめ `Math.min(drawN, state.deck.length)` の部分ドローにし、控え室からの登場処理へそのまま進む。山札不足はトーストで告知 | 共通ハンドラ経由で `PL!SP-bp4-004-R＋/P/P＋/SEC` 4 枚。コスト側のデッキミル（全額支払い必須）は従来どおり厳格のまま |
+
+検証: `verify-ability-coverage`（全 verify/audit 連鎖）OK、`verify-ability-handlers` OK、`verify-ability-runtime` OK、`verify-deck-pick-hand-patterns` OK、`build-ability-index` guided_manual/jidou_manual 増減なし。`verify-aqours-bp3` 22 / `verify-aqours-bp6` 20 / `verify-niji-bp4` 39 / `verify-liella-bp4` 33 / `verify-niji-pb1` 46 / `verify-muse-bp5` 26 / `verify-aqours-bp5` 29 OK。`audit-opponent-board-effects` 再生成済み。app 同期済み（abilityEffects.js / simulator.js）。
+
+---
+
 ## 更新履歴
 
 | 日付 | 内容 |
 |------|------|
+| 2026-07-29 | コスト／効果の取り違えと二重適用4件: ①`kidou_self_wait_stage_member_swap_recover` の自分控え室送りを削除＋コストフラグのハードコードをカード文駆動に（PL!S-bp3-006 善子 / PL!S-bp6-003 果南、計6枚）②`toujou_draw_discard_if_from_waiting` の手札捨てを `effectDiscardCount` へ移し二重捨てを解消（PL!S-bp6-011 梨子）。`requiresEnteredFromWaiting` をコスト前の共通ゲートに ③`extractInlineLiveEndGrantJouji` にハート／ブレードアイコンのガードを追加し常時セグメント再生成による二重付与を解消（PL!N-bp4-029-L ほか10枚）④`runToujouLiellaDoubleBatonCenter` の山札不足時中止を部分ドローに（総合ルール1.3.2、PL!SP-bp4-004 4枚） |
 | 2026-07-27 | 効果登場まわり3系統: ①効果による空きエリア登場で登場コストEを消費していた問題を共通ヘルパー `placeEffectMemberOnEmptyStageColumn`＋`_appearEnergyOverride=0` で解消（ウェイト／当ターン登場不可はカード文駆動）②`stageColumnTopMember` 新設で「下に置いたカード」を面メンバー・所持ハートから除外（PL!-bp6-003 南ことり）③`parseAbilityPickFilters` のステージ存在節→選択対象 minCost 汚染を除去し `minCostMemberOnStageSeriesTag` を追加（PL!HS-bp5-022-L Retrofuture ほか12枚） |
 | 2026-07-25 | PL!SP-bp4-004 手札DnD→2人バトン: `applyBoard(structuredClone)` 後に古い手札インスタンスへ `_soloBatonMemberIds` を付けていたためサイド退場がスキップ。`state.hand` 再解決＋`opts.soloBatonMemberIds` で core に渡す。DUO 等 `cardAllowsTwoMemberBaton` 全体に効く |
 | 2026-07-25 | 条件未評価ゲート3件+要望1件: ①PL!SP-bp5-026-L `minStageSeriesHeartTotal`（『Liella!』ハート総数11以上）新設 ②PL!SP-bp5-012-N jouji `blade_if_live_need_sum` へ一般化＋`liveAreaHasSeriesLiveMinNeedHeart` で実判定 ③PL!N-pb1-007-R `blade_if_live_need_all_colors` を `liveAreaNeedHeartCoversAllColors`（FAQ Q205 合算）で実判定 ④PL!-pb1-018-R/P＋ 相手側の蘇生処理を削除し自分side のみに |

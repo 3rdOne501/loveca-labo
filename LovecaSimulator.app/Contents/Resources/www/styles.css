@@ -94,7 +94,8 @@ body::before {
 #view-deck.view,
 #view-game.view,
 #view-deck-browse.view,
-#view-bingo.view {
+#view-bingo.view,
+#view-weakest.view {
   position: relative;
   z-index: 1;
 }
@@ -102,12 +103,14 @@ body::before {
 #view-deck.view[hidden],
 #view-game.view[hidden],
 #view-deck-browse.view[hidden],
-#view-bingo.view[hidden] {
+#view-bingo.view[hidden],
+#view-weakest.view[hidden] {
   display: none !important;
 }
 
 #view-deck-browse.view:not([hidden]),
-#view-bingo.view:not([hidden]) {
+#view-bingo.view:not([hidden]),
+#view-weakest.view:not([hidden]) {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -12634,4 +12637,439 @@ body.play-mode .card-item--energy-wait-flip .card-img {
 }
 .bingo-card-pick-search {
   width: 100%;
+}
+
+/* --- ラブカ最弱カード会議 --- */
+/* 下で display を指定する要素は hidden 属性で隠す運用なので、UA の既定を上書きし返す */
+.weakest-bar__room[hidden],
+.weakest-members[hidden],
+.weakest-signin-notice[hidden],
+.weakest-lobby-panels[hidden],
+.weakest-lobby-panel[hidden],
+.weakest-ranking[hidden],
+.weakest-tabs[hidden],
+.weakest-room-toolbar[hidden],
+.weakest-recent-list[hidden] {
+  display: none !important;
+}
+.weakest-bar {
+  flex-shrink: 0;
+  padding: 0.75rem 1rem 0.5rem;
+  border-bottom: 1px solid rgba(255, 140, 190, 0.18);
+  background: rgba(8, 4, 14, 0.55);
+}
+.weakest-bar__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.75rem;
+}
+.weakest-bar__title {
+  margin: 0;
+  font-size: 1.15rem;
+  min-width: 8rem;
+}
+.weakest-bar__spacer {
+  flex: 1 1 auto;
+}
+.weakest-bar__room {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.weakest-room-title {
+  font-weight: 700;
+  color: var(--accent);
+}
+.weakest-room-code-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.weakest-room-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1.05rem;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+}
+.weakest-room-code-hint {
+  font-size: 0.72rem;
+  opacity: 0.7;
+}
+.weakest-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 0.75rem 1rem 1.5rem;
+}
+.weakest-lead {
+  margin: 0 0 0.9rem;
+}
+.weakest-signin-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 1rem;
+  border: 1px solid rgba(255, 140, 190, 0.22);
+  border-radius: var(--radius);
+  background: var(--panel);
+  max-width: 32rem;
+}
+.weakest-signin-notice p {
+  margin: 0;
+}
+.weakest-lobby-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 0.85rem;
+  align-items: start;
+}
+.weakest-lobby-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1rem;
+}
+.weakest-lobby-panel .hint {
+  margin: 0;
+}
+.weakest-recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.weakest-recent-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 0.6rem;
+  text-align: left;
+}
+.weakest-recent-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+}
+.weakest-recent-title {
+  opacity: 0.75;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 参加者アバター */
+.weakest-members {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+.weakest-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(255, 180, 220, 0.5);
+  background: rgba(255, 255, 255, 0.08);
+}
+.weakest-avatar--text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.weakest-avatar--sm {
+  width: 20px;
+  height: 20px;
+  font-size: 0.65rem;
+}
+.weakest-avatar--stale {
+  opacity: 0.35;
+  filter: grayscale(1);
+}
+
+/* 部門タブ */
+.weakest-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+.weakest-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid rgba(255, 140, 190, 0.25);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+.weakest-tab:hover {
+  border-color: rgba(255, 180, 220, 0.55);
+}
+.weakest-tab.is-active {
+  background: linear-gradient(135deg, rgba(255, 90, 154, 0.28), rgba(167, 139, 250, 0.22));
+  border-color: var(--accent);
+}
+.weakest-tab__name {
+  font-weight: 700;
+}
+.weakest-tab__filter {
+  font-size: 0.7rem;
+  opacity: 0.7;
+}
+.weakest-tab-empty {
+  margin: 0;
+  align-self: center;
+}
+.weakest-room-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+.weakest-summary {
+  margin: 0;
+}
+.weakest-empty {
+  margin: 1.5rem 0;
+  text-align: center;
+}
+
+/* ランキング */
+.weakest-ranking {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.weakest-entry {
+  display: grid;
+  grid-template-columns: 2.2rem 74px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid rgba(255, 140, 190, 0.18);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+.weakest-entry--top {
+  border-color: rgba(255, 200, 80, 0.55);
+  box-shadow: 0 0 18px rgba(255, 200, 80, 0.12);
+}
+.weakest-entry__rank {
+  font-size: 1.3rem;
+  font-weight: 800;
+  text-align: center;
+  color: var(--accent);
+}
+.weakest-entry--top .weakest-entry__rank {
+  color: #ffd080;
+}
+.weakest-entry__thumb {
+  padding: 0;
+  border: 1px solid rgba(255, 140, 190, 0.25);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  overflow: hidden;
+  line-height: 0;
+}
+.weakest-entry__thumb img {
+  width: 74px;
+  height: auto;
+  aspect-ratio: 88 / 126;
+  object-fit: cover;
+  display: block;
+}
+.weakest-thumb-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 74px;
+  aspect-ratio: 88 / 126;
+  color: var(--muted);
+}
+.weakest-entry__main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.weakest-entry__name {
+  font-weight: 700;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.weakest-entry__no {
+  font-size: 0.72rem;
+  font-weight: 400;
+  opacity: 0.6;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.weakest-entry__meta {
+  font-size: 0.75rem;
+}
+.weakest-entry__comment {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--love-lilac);
+}
+.weakest-entry__bar {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.weakest-entry__bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), var(--love-lilac));
+  transition: width 0.25s ease;
+}
+.weakest-entry__voters {
+  display: flex;
+  gap: 0.15rem;
+  flex-wrap: wrap;
+}
+.weakest-entry__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  align-items: stretch;
+}
+.weakest-vote-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+.weakest-vote-count {
+  min-width: 1.4rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  font-size: 0.85rem;
+}
+
+/* オーバーレイ（部門作成 / カード選択 / 推薦） */
+.weakest-overlay-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.weakest-overlay-dialog {
+  width: min(560px, 100%);
+  max-height: min(88vh, 900px);
+  overflow: auto;
+  background: #1a1018;
+  border: 1px solid rgba(255, 140, 190, 0.25);
+  border-radius: var(--radius);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.weakest-overlay-dialog h3 {
+  margin: 0;
+}
+.weakest-overlay-dialog .hint {
+  margin: 0;
+}
+.weakest-overlay-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+.weakest-check-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.8rem;
+}
+.weakest-pick-dialog {
+  width: min(980px, 100%);
+}
+.weakest-pick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 0.35rem;
+  max-height: 52vh;
+  overflow: auto;
+}
+.weakest-pick-card {
+  position: relative;
+  border: 1px solid rgba(255, 140, 190, 0.2);
+  border-radius: var(--radius-sm);
+  padding: 0.12rem;
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  min-width: 0;
+}
+.weakest-pick-card img {
+  width: 100%;
+  height: auto;
+  display: block;
+  aspect-ratio: 88 / 126;
+  object-fit: cover;
+}
+.weakest-pick-card:hover {
+  border-color: rgba(255, 180, 220, 0.55);
+}
+.weakest-pick-card.is-already {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.weakest-pick-badge {
+  position: absolute;
+  inset: auto 0 0 0;
+  font-size: 0.6rem;
+  padding: 0.1rem;
+  background: rgba(0, 0, 0, 0.7);
+}
+.weakest-nominate-card {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+.weakest-nominate-card img {
+  width: 96px;
+  height: auto;
+  aspect-ratio: 88 / 126;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+.weakest-nominate-card__name {
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .weakest-entry {
+    grid-template-columns: 1.8rem 56px minmax(0, 1fr);
+  }
+  .weakest-entry__thumb img,
+  .weakest-thumb-fallback {
+    width: 56px;
+  }
+  .weakest-entry__actions {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    justify-content: flex-end;
+  }
 }

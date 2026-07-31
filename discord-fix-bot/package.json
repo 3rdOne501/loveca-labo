@@ -1,0 +1,20 @@
+{
+  "name": "discord-fix-bot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Discord チャンネルのバグ報告テンプレ → Cursor Agent でカード修正（PoC）",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node src/parseBugReport.test.js",
+    "dry": "DRY_RUN=true node src/index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@cursor/sdk": "^1.0.0",
+    "discord.js": "^14.16.0",
+    "dotenv": "^16.4.0"
+  }
+}

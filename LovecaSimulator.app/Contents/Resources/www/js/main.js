@@ -26,6 +26,7 @@ import { initDeckBuilder, loadDeckBundleFromStorage } from "./deckbuilder.js";
 import { initPublishedSampleRecipes, isSampleDevMode } from "./sampleDeckRecipes.js";
 import { initDeckBrowsePage } from "./deckBrowsePage.js";
 import { initBingoDerby } from "./bingoDerby.js";
+import { initWeakestConference, openWeakestConference } from "./weakestConference.js";
 import { showAppView, showDeckBuilderView, showDeckBrowseView, showBingoView } from "./viewNav.js";
 import { prefetchGameStatusArtBundledEarly } from "./gameStatusIcons.js";
 import { showToast } from "./ui.js";
@@ -93,8 +94,6 @@ import {
   getEffectiveCloudUser,
   ensureGoogleSession,
   isCloudAuthEnvironmentSupported,
-  isGuestCloudUser,
-  isGoogleCloudUser,
   signInWithGoogle,
   signOutCloud,
 } from "./cloudAuth.js";
@@ -680,6 +679,24 @@ function wireBingoDerbyButton() {
   }
 }
 
+function wireWeakestConferenceButton() {
+  var btn = document.getElementById("btn-weakest-conference");
+  if (!btn || btn.dataset.wired === "1") return;
+  btn.dataset.wired = "1";
+  btn.addEventListener("click", function () {
+    try {
+      if (!document.getElementById("view-weakest")) {
+        showToast("最弱カード会議を読み込めません。ページを再読込（Cmd+Shift+R）してください。");
+        return;
+      }
+      openWeakestConference();
+    } catch (err) {
+      console.warn("[weakest] open failed:", err);
+      showToast("最弱カード会議を開けませんでした");
+    }
+  });
+}
+
 function startApp(viewDeck, viewGame, statusEl) {
   viewDeckRef = viewDeck;
   viewGameRef = viewGame;
@@ -805,6 +822,13 @@ function startApp(viewDeck, viewGame, statusEl) {
       if (viewGame) viewGame.hidden = true;
     }
     wireBingoDerbyButton();
+    wireWeakestConferenceButton();
+    /* 招待リンク（#weakest=CODE）で来たときに会議画面を出せるよう、初期ビュー確定後に呼ぶ */
+    try {
+      initWeakestConference();
+    } catch (err) {
+      console.warn("[weakest] init failed:", err);
+    }
     resumeSessionsAfterBoot(viewDeck, viewGame);
   } else {
     location.reload();
@@ -1072,10 +1096,7 @@ function wireCloudAuthBar() {
 
   function paintAuthBar(user) {
     const effective = user || getEffectiveCloudUser();
-    const cloudReady = isCloudSyncAvailable();
-    const guestLive = cloudReady && isGuestCloudUser();
-    const googleLive = cloudReady && isGoogleCloudUser();
-    if (!cloudReady && !effective) {
+    if (!isCloudSyncAvailable() && !effective) {
       if (statusEl) statusEl.textContent = "未ログイン";
       signInBtn.hidden = false;
       signOutBtn.hidden = true;
@@ -1094,19 +1115,11 @@ function wireCloudAuthBar() {
         if (savedName) playerNameInput.value = savedName;
       }
       if (statusEl) {
-        var baseLabel = effective.displayName || effective.email || "ログイン中";
-        if (guestLive || effective.isAnonymous) {
-          statusEl.textContent = "ゲスト（投稿には Google ログインが必要）";
-        } else if (!cloudReady) {
-          statusEl.textContent = baseLabel + "（接続中…）";
-        } else if (googleLive || effective.isGoogle) {
-          statusEl.textContent = baseLabel + "（Google）";
-        } else {
-          statusEl.textContent = baseLabel;
-        }
+        var label = effective.displayName || effective.email || "ログイン中";
+        statusEl.textContent = user ? label : label + "（復元中）";
       }
       if (avatarEl) {
-        if (effective.photoURL && !guestLive && !effective.isAnonymous) {
+        if (effective.photoURL) {
           avatarEl.src = effective.photoURL;
           avatarEl.hidden = false;
         } else {
@@ -1114,16 +1127,8 @@ function wireCloudAuthBar() {
           avatarEl.hidden = true;
         }
       }
-      /* ゲストは「Google でログイン」を残して切替できるようにする */
-      if (guestLive || effective.isAnonymous) {
-        signInBtn.hidden = false;
-        signInBtn.textContent = "Google でログイン";
-        signInBtn.title = "投稿・デッキ同期には Google ログインが必要です";
-        signOutBtn.hidden = false;
-      } else {
-        signInBtn.hidden = true;
-        signOutBtn.hidden = false;
-      }
+      signInBtn.hidden = true;
+      signOutBtn.hidden = false;
     } else {
       if (playerNameWrap) playerNameWrap.hidden = true;
       if (statusEl) statusEl.textContent = "未ログイン";
@@ -1132,7 +1137,6 @@ function wireCloudAuthBar() {
         avatarEl.hidden = true;
       }
       signInBtn.hidden = false;
-      signInBtn.textContent = "Google でログイン";
       signOutBtn.hidden = true;
     }
   }

@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Loveca Labo" />
-    <meta name="loveca-build" content="2026052047" />
+    <meta name="loveca-build" content="2026080101" />
     <title>Loveca Labo</title>
     <!-- 万一以前のバージョンの Service Worker が登録された端末で取り残しが起きた場合に備え、
          先頭で SW 登録を一括解除する。SW 自体は本サイトでは使っていない。 -->
@@ -51,7 +51,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,700;1,9..40,500&family=M+PLUS+Rounded+1c:wght@500;700&family=Noto+Sans+JP:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=2026052047" />
+    <link rel="stylesheet" href="styles.css?v=2026080101" />
     <link rel="stylesheet" href="styles-perf.css?v=2026051910" />
   </head>
   <body>
@@ -279,6 +279,14 @@ python3 -m http.server 8080</pre>
             title="禁止制限ダービー用のビンゴカードを作成"
           >
             禁止制限ビンゴ
+          </button>
+          <button
+            type="button"
+            class="btn sm secondary cloud-auth-bingo-btn"
+            id="btn-weakest-conference"
+            title="みんなで最弱カードを挙げて投票する会議室"
+          >
+            最弱カード会議
           </button>
           <div class="search-panel-tools">
             <h2 class="panel-h2-plain">検索・絞り込み</h2>
@@ -695,6 +703,79 @@ python3 -m http.server 8080</pre>
           <button type="button" class="btn secondary" id="btn-bingo-clear">配置をクリア</button>
           <button type="button" class="btn primary" id="btn-bingo-save-image">画像として保存（PNG）</button>
         </div>
+      </div>
+    </div>
+
+    <div id="view-weakest" class="view" hidden>
+      <header class="weakest-bar">
+        <div class="weakest-bar__row">
+          <button type="button" class="btn primary" id="btn-weakest-back">デッキ編集に戻る</button>
+          <h1 class="weakest-bar__title">ラブカ最弱カード会議</h1>
+          <div class="weakest-bar__room" id="weakest-room-meta" hidden>
+            <span class="weakest-room-title" id="weakest-room-title"></span>
+            <button type="button" class="btn sm secondary weakest-room-code-btn" id="btn-weakest-copy-link" title="招待リンクをコピー">
+              <span class="weakest-room-code" id="weakest-room-code"></span>
+              <span class="weakest-room-code-hint">リンクをコピー</span>
+            </button>
+          </div>
+          <div class="weakest-bar__spacer"></div>
+          <div class="weakest-members" id="weakest-members" hidden aria-label="参加者"></div>
+          <button type="button" class="btn sm secondary" id="btn-weakest-leave" hidden>退室</button>
+          <button type="button" class="btn sm danger" id="btn-weakest-close" hidden>会議を終了</button>
+        </div>
+      </header>
+      <div class="weakest-body">
+        <section class="weakest-lobby" id="weakest-lobby">
+          <p class="hint weakest-lead">
+            みんなで部門を作って、カードリストから「最弱」候補を挙げて投票する会議室です。票はリアルタイムで集計されます。
+          </p>
+          <div class="weakest-signin-notice" id="weakest-signin-notice" hidden>
+            <p class="muted">会議への参加には Google ログインが必要です。</p>
+            <button type="button" class="btn primary" id="btn-weakest-signin">Google でログイン</button>
+          </div>
+          <div class="weakest-lobby-panels" id="weakest-lobby-panels">
+            <section class="panel weakest-lobby-panel">
+              <h2 class="panel-h2-plain">会議を作る</h2>
+              <label class="field">
+                <span>会議のタイトル</span>
+                <input type="text" id="weakest-create-title" maxlength="40" placeholder="ラブカ最弱カード会議" />
+              </label>
+              <button type="button" class="btn primary" id="btn-weakest-create">会議を作る</button>
+              <p class="hint muted">作成後に表示されるルームコードを共有すると、みんなが同じ会議に入れます。</p>
+            </section>
+            <section class="panel weakest-lobby-panel">
+              <h2 class="panel-h2-plain">コードで参加</h2>
+              <label class="field">
+                <span>ルームコード（英数字5文字）</span>
+                <input
+                  type="text"
+                  id="weakest-join-code"
+                  maxlength="5"
+                  autocapitalize="characters"
+                  autocomplete="off"
+                  spellcheck="false"
+                  placeholder="ABCDE"
+                />
+              </label>
+              <button type="button" class="btn primary" id="btn-weakest-join">参加する</button>
+            </section>
+            <section class="panel weakest-lobby-panel" id="weakest-recent-panel" hidden>
+              <h2 class="panel-h2-plain">最近の会議</h2>
+              <div class="weakest-recent-list" id="weakest-recent-list"></div>
+            </section>
+          </div>
+        </section>
+        <section class="weakest-room" id="weakest-room" hidden>
+          <div class="weakest-tabs" id="weakest-tabs" role="tablist" aria-label="部門"></div>
+          <div class="weakest-room-toolbar">
+            <button type="button" class="btn primary" id="btn-weakest-add-card">カードを追加</button>
+            <span class="hint muted weakest-summary" id="weakest-summary"></span>
+          </div>
+          <div class="weakest-ranking" id="weakest-ranking"></div>
+          <p class="muted weakest-empty" id="weakest-empty" hidden>
+            まだカードが挙がっていません。「カードを追加」から最弱候補を挙げてください。
+          </p>
+        </section>
       </div>
     </div>
 
@@ -2223,7 +2304,7 @@ python3 -m http.server 8080</pre>
     <script>
       (function () {
         var buildMeta = document.querySelector('meta[name="loveca-build"]');
-        var build = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "2026052047";
+        var build = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "2026080101";
         var moduleNames = [
           "abilityEffects.js",
           "bladeHeart.js",
@@ -2253,6 +2334,8 @@ python3 -m http.server 8080</pre>
           "versusBoardSync.js",
           "versusMatch.js",
           "versusMode.js",
+          "weakestConference.js",
+          "weakestRoomSync.js",
         ];
         var mods = {};
         moduleNames.forEach(function (name) {
@@ -2271,7 +2354,7 @@ python3 -m http.server 8080</pre>
     </script>
     <script type="module">
       var buildMeta = document.querySelector('meta[name="loveca-build"]');
-      var build = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "2026052047";
+      var build = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "2026080101";
       try {
         await import("./js/main.js?v=" + build);
       } catch (err) {

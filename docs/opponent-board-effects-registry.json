@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-25T12:41:48.715Z",
+  "generatedAt": "2026-07-29T00:15:36.564Z",
   "purpose": "対戦モード（localDual / オンライン）本格実装時の実装・テスト計画用。ソロ代行入力で動くカードも含む。",
   "totalEntries": 265,
   "uniqueCards": 216,

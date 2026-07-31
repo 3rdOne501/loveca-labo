@@ -3531,12 +3531,16 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
       /コストに2を足した/.test(p) &&
       /登場させる/.test(p)
     ) {
+      /*
+       * 同一の効果本文を持つが支払いコストはカードごとに異なる。
+       * PL!S-bp3-006（善子）= 自ウェイト + 手札1枚 / センター限定
+       * PL!S-bp6-003（果南）= EE + 手札1枚（自ウェイトなし・エリア制限なし）
+       * コスト系フラグは base（コスト部の解析結果）をそのまま使う。
+       */
       return kidouT({
         template: "kidou_self_wait_stage_member_swap_recover",
         filters: parseAbilityPickFilters(p),
         requiresSeriesOnStage: false,
-        costSelfWait: true,
-        handDiscardToWaiting: 1,
       });
     }
     if (/ステージから控え室に置/.test(p) && /控え室から/.test(p) && /登場させる/.test(p)) {
@@ -4398,10 +4402,12 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
     ) {
       var drawDd = p.match(/カードを(\d+)枚引/);
       var discDd = p.match(/手札を(\d+)枚控え室に置/);
+      /* 「引き、手札をN枚控え室に置く」は本文の効果。コスト（handDiscardToWaiting）ではない */
       return twT({
         template: "toujou_draw_discard_if_from_waiting",
         deckDrawCount: drawDd ? Number(drawDd[1]) : 2,
-        handDiscardToWaiting: discDd ? Number(discDd[1]) : 1,
+        effectDiscardCount: discDd ? Number(discDd[1]) : 1,
+        handDiscardToWaiting: null,
         requiresEnteredFromWaiting: true,
         requiresOnStage: true,
       });
