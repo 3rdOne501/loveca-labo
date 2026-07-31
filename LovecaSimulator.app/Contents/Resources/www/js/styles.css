@@ -49,6 +49,18 @@ body.ll-page-auto-scaled {
   }
 }
 
+/* zoom 配下でも svh/vh は実画面基準のまま解決されるため、倍率で割って打ち消す。
+   縮小時に画面下へ余白（切れ目）が出るのを防ぐ。倍率 1 のときは素の 1svh と等価。 */
+:root {
+  --ll-svh: calc(1vh / var(--ll-page-scale, 1));
+  --ll-px: calc(1px / var(--ll-page-scale, 1));
+}
+@supports (height: 1svh) {
+  :root {
+    --ll-svh: calc(1svh / var(--ll-page-scale, 1));
+  }
+}
+
 /* サイト内表示倍率コントロール（全ビュー共通） */
 .page-zoom-control {
   position: fixed;
@@ -102,7 +114,7 @@ body {
   /* Android Chrome は dvh が URL バー連動でガクガク動くため、svh を主に使う。
      svh 未対応端末向けに vh を先に置いてフォールバック。 */
   min-height: 100vh;
-  min-height: 100svh;
+  min-height: calc(100 * var(--ll-svh));
   font-family: var(--font);
   background-color: var(--bg-deep);
   background-image:
@@ -154,7 +166,7 @@ body::before {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  min-height: 100svh;
+  min-height: calc(100 * var(--ll-svh));
 }
 
 /* デッキ編集ビュー: 一覧はパネル内スクロール、ページ縦スクロールを抑える */
@@ -162,7 +174,7 @@ body::before {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  min-height: 100svh;
+  min-height: calc(100 * var(--ll-svh));
 }
 #view-deck .app-header {
   flex-shrink: 0;
@@ -380,6 +392,8 @@ a:hover { color: #ccefff; text-decoration-thickness: 2px; }
 }
 
 .load-status { text-align: center; padding: 1rem; color: var(--muted); }
+/* メッセージが無いときに padding 分だけ場所を取り、プレイ画面の下端が切れるのを防ぐ */
+.load-status:empty { display: none; }
 
 /* 起動時: カードDB 取得まで */
 .app-boot-overlay {
@@ -2214,7 +2228,7 @@ body.play-versus-mode .game-tools-row #btn-versus-lobby:not([hidden]) {
   align-self: stretch;
   min-height: 280px;
   max-height: min(calc(100vh - 8.5rem), 78vh, 980px);
-  max-height: min(calc(100svh - 8.5rem), 78svh, 980px);
+  max-height: min(calc(100 * var(--ll-svh) - 8.5rem), calc(78 * var(--ll-svh)), calc(980 * var(--ll-px)));
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior-y: auto;
@@ -2234,7 +2248,7 @@ body.play-versus-mode .game-tools-row #btn-versus-lobby:not([hidden]) {
   align-self: stretch;
   min-height: 0;
   max-height: min(calc(100vh - 8.5rem), 78vh, 980px);
-  max-height: min(calc(100svh - 8.5rem), 78svh, 980px);
+  max-height: min(calc(100 * var(--ll-svh) - 8.5rem), calc(78 * var(--ll-svh)), calc(980 * var(--ll-px)));
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior-y: auto;
@@ -2270,7 +2284,7 @@ body.play-versus-mode .game-tools-row #btn-versus-lobby:not([hidden]) {
   min-height: min(240px, 48vh);
   min-height: min(240px, 48dvh);
   max-height: min(calc(100vh - 13rem), 56vh, 640px);
-  max-height: min(calc(100svh - 13rem), 56svh, 640px);
+  max-height: min(calc(100 * var(--ll-svh) - 13rem), calc(56 * var(--ll-svh)), calc(640 * var(--ll-px)));
 }
 
 #view-deck.view-deck--sample-panel-open .card-panel-body-stack .sample-recipes-scroll {
@@ -2278,7 +2292,7 @@ body.play-versus-mode .game-tools-row #btn-versus-lobby:not([hidden]) {
   min-height: min(200px, 36vh);
   min-height: min(200px, 36dvh);
   max-height: min(calc(100vh - 13rem), 42vh, 520px);
-  max-height: min(calc(100svh - 13rem), 42svh, 520px);
+  max-height: min(calc(100 * var(--ll-svh) - 13rem), calc(42 * var(--ll-svh)), calc(520 * var(--ll-px)));
 }
 
 /* 登録デッキ統計を開いたときも一覧が十分残るように高さを抑える（サンプルとの併用可） */
@@ -2287,7 +2301,7 @@ body.play-versus-mode .game-tools-row #btn-versus-lobby:not([hidden]) {
   min-height: min(220px, 44vh);
   min-height: min(220px, 44dvh);
   max-height: min(calc(100vh - 15rem), 54vh, 600px);
-  max-height: min(calc(100svh - 15rem), 54svh, 600px);
+  max-height: min(calc(100 * var(--ll-svh) - 15rem), calc(54 * var(--ll-svh)), calc(600 * var(--ll-px)));
 }
 
 #view-deck.view-deck--deck-registration-open.view-deck--sample-panel-open .card-panel-body-stack .card-grid-scroll {
@@ -2295,7 +2309,7 @@ body.play-versus-mode .game-tools-row #btn-versus-lobby:not([hidden]) {
   min-height: min(200px, 38vh);
   min-height: min(200px, 38dvh);
   max-height: min(calc(100vh - 16rem), 48vh, 520px);
-  max-height: min(calc(100svh - 16rem), 48svh, 520px);
+  max-height: min(calc(100 * var(--ll-svh) - 16rem), calc(48 * var(--ll-svh)), calc(520 * var(--ll-px)));
 }
 
 #view-deck.view-deck--deck-registration-open.view-deck--sample-panel-open .card-panel-body-stack .sample-recipes-scroll {
@@ -2303,7 +2317,7 @@ body.play-versus-mode .game-tools-row #btn-versus-lobby:not([hidden]) {
   min-height: min(180px, 32vh);
   min-height: min(180px, 32dvh);
   max-height: min(calc(100vh - 16rem), 40vh, 480px);
-  max-height: min(calc(100svh - 16rem), 40svh, 480px);
+  max-height: min(calc(100 * var(--ll-svh) - 16rem), calc(40 * var(--ll-svh)), calc(480 * var(--ll-px)));
 }
 
 /* 開発者: サンプルサムネイルをカード画像から選択 */
@@ -2499,7 +2513,7 @@ body.play-versus-mode .game-tools-row #btn-versus-lobby:not([hidden]) {
   align-self: stretch;
   min-height: 0;
   max-height: min(calc(100vh - 8.5rem), 78vh, 980px);
-  max-height: min(calc(100svh - 8.5rem), 78svh, 980px);
+  max-height: min(calc(100 * var(--ll-svh) - 8.5rem), calc(78 * var(--ll-svh)), calc(980 * var(--ll-px)));
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior-y: auto;
@@ -2533,7 +2547,7 @@ body.play-versus-mode .game-tools-row #btn-versus-lobby:not([hidden]) {
   min-height: min(240px, 48vh);
   min-height: min(240px, 48dvh);
   max-height: min(calc(100vh - 13rem), 56vh, 640px);
-  max-height: min(calc(100svh - 13rem), 56svh, 640px);
+  max-height: min(calc(100 * var(--ll-svh) - 13rem), calc(56 * var(--ll-svh)), calc(640 * var(--ll-px)));
 }
 
 #view-deck.view-deck--public-decks-open .card-panel-body-stack .public-decks-scroll {
@@ -2541,7 +2555,7 @@ body.play-versus-mode .game-tools-row #btn-versus-lobby:not([hidden]) {
   min-height: min(200px, 36vh);
   min-height: min(200px, 36dvh);
   max-height: min(calc(100vh - 13rem), 42vh, 520px);
-  max-height: min(calc(100svh - 13rem), 42svh, 520px);
+  max-height: min(calc(100 * var(--ll-svh) - 13rem), calc(42 * var(--ll-svh)), calc(520 * var(--ll-px)));
 }
 
 /* 登録デッキ統計と併用したとき（投稿は登録と独立して開ける） */
@@ -2550,7 +2564,7 @@ body.play-versus-mode .game-tools-row #btn-versus-lobby:not([hidden]) {
   min-height: min(200px, 38vh);
   min-height: min(200px, 38dvh);
   max-height: min(calc(100vh - 16rem), 48vh, 520px);
-  max-height: min(calc(100svh - 16rem), 48svh, 520px);
+  max-height: min(calc(100 * var(--ll-svh) - 16rem), calc(48 * var(--ll-svh)), calc(520 * var(--ll-px)));
 }
 
 #view-deck.view-deck--deck-registration-open.view-deck--public-decks-open .card-panel-body-stack .public-decks-scroll {
@@ -2558,7 +2572,7 @@ body.play-versus-mode .game-tools-row #btn-versus-lobby:not([hidden]) {
   min-height: min(180px, 32vh);
   min-height: min(180px, 32dvh);
   max-height: min(calc(100vh - 16rem), 40vh, 480px);
-  max-height: min(calc(100svh - 16rem), 40svh, 480px);
+  max-height: min(calc(100 * var(--ll-svh) - 16rem), calc(40 * var(--ll-svh)), calc(480 * var(--ll-px)));
 }
 
 /* 投稿タイルはサンプルタイル（.sample-recipe-tile）を流用しつつ枠色だけ変える */
@@ -2606,7 +2620,7 @@ body.play-versus-mode .game-tools-row #btn-versus-lobby:not([hidden]) {
   min-height: min(200px, 36vh);
   min-height: min(200px, 36dvh);
   max-height: min(calc(100vh - 8rem), 60vh, 700px);
-  max-height: min(calc(100svh - 8rem), 60svh, 700px);
+  max-height: min(calc(100 * var(--ll-svh) - 8rem), calc(60 * var(--ll-svh)), calc(700 * var(--ll-px)));
 }
 .deck-library-head {
   display: flex;
@@ -2859,7 +2873,7 @@ body.play-versus-mode .game-tools-row #btn-versus-lobby:not([hidden]) {
   #view-deck .sample-recipes-scroll,
   #view-deck .public-decks-scroll {
     max-height: min(calc(100vh - 7.5rem), 86vh, 960px);
-    max-height: min(calc(100svh - 7.5rem), 86svh, 960px);
+    max-height: min(calc(100 * var(--ll-svh) - 7.5rem), calc(86 * var(--ll-svh)), calc(960 * var(--ll-px)));
   }
 }
 
@@ -4251,9 +4265,9 @@ body.play-mode:not(.zone-hints-visible) #view-game p.hint.zone-inline-help:not(.
 body.play-mode {
   /* Android Chrome 対策で svh ベース。vh はフォールバック。 */
   height: 100vh;
-  height: 100svh;
+  height: calc(100 * var(--ll-svh));
   max-height: 100vh;
-  max-height: 100svh;
+  max-height: calc(100 * var(--ll-svh));
   overflow: hidden;
   /* ラブカ標準カード比 63×88mm（短辺=w / 長辺=h）※非公式の見た目目安 */
   --loveca-mm-w: 63;
@@ -4622,9 +4636,9 @@ body.play-mode .game-bar {
   flex-direction: column;
   /* Android Chrome 対策で svh を採用（URL バー連動の dvh は使わない） */
   height: 100vh;
-  height: 100svh;
+  height: calc(100 * var(--ll-svh));
   max-height: 100vh;
-  max-height: 100svh;
+  max-height: calc(100 * var(--ll-svh));
   overflow: hidden;
 }
 
@@ -11460,9 +11474,9 @@ kbd {
   width: min(96vw, 72rem);
   max-width: none;
   max-height: calc(100vh - 0.5rem);
-  max-height: calc(100svh - 0.5rem);
+  max-height: calc(100 * var(--ll-svh) - 0.5rem);
   height: min(calc(100vh - 0.75rem), 860px);
-  height: min(calc(100svh - 0.75rem), 860px);
+  height: min(calc(100 * var(--ll-svh) - 0.75rem), calc(860 * var(--ll-px)));
   margin: auto;
   box-sizing: border-box;
   display: flex;
@@ -11510,7 +11524,7 @@ kbd {
   .dlg-deck-peek {
     width: min(98vw, 100%);
     height: min(calc(100vh - 0.75rem), 900px);
-    height: min(calc(100svh - 0.75rem), 900px);
+    height: min(calc(100 * var(--ll-svh) - 0.75rem), calc(900 * var(--ll-px)));
   }
   .deck-peek-main {
     grid-template-columns: 1fr;
