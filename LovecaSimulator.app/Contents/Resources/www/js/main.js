@@ -9,6 +9,7 @@ import {
   STORAGE_PAGE_RELOAD_RESTORE_FLAG,
   STORAGE_VERSUS_ONLINE_SESSION,
   APP_MODULE_CACHE_BUST,
+  STORAGE_PAGE_ZOOM,
 } from "./config.js";
 import {
   initVersusMode,
@@ -113,21 +114,99 @@ function stripHardReloadQueryFromUrl() {
 }
 stripHardReloadQueryFromUrl();
 
-/** 狭い画面で UI が収まるよう控えめに縮小（ブラウザのページズームそのものは変更しない） */
-function applyPageAutoScale() {
+/** 表示倍率: 75%〜150%、5%刻み。未設定は狭い画面の自動縮小。 */
+var PAGE_ZOOM_MIN = 0.75;
+var PAGE_ZOOM_MAX = 1.5;
+var PAGE_ZOOM_STEP = 0.05;
+
+function readSavedPageZoom() {
   try {
-    var w = window.innerWidth;
-    var s = 1;
-    if (w < 360) s = 0.86;
-    else if (w < 420) s = 0.9;
-    else if (w < 520) s = 0.94;
-    else if (w < 720) s = 0.97;
-    document.documentElement.style.setProperty("--ll-page-scale", String(s));
-    document.body.classList.toggle("ll-page-auto-scaled", s < 0.999);
+    var raw = localStorage.getItem(STORAGE_PAGE_ZOOM);
+    if (raw == null || raw === "" || raw === "auto") return null;
+    var n = Number(raw);
+    if (!Number.isFinite(n)) return null;
+    return Math.min(PAGE_ZOOM_MAX, Math.max(PAGE_ZOOM_MIN, Math.round(n / PAGE_ZOOM_STEP) * PAGE_ZOOM_STEP));
+  } catch (_) {
+    return null;
+  }
+}
+
+function savePageZoom(value) {
+  try {
+    if (value == null) localStorage.removeItem(STORAGE_PAGE_ZOOM);
+    else localStorage.setItem(STORAGE_PAGE_ZOOM, String(value));
   } catch (_) {
     /* noop */
   }
 }
+
+function autoPageScaleForWidth(w) {
+  if (w < 360) return 0.86;
+  if (w < 420) return 0.9;
+  if (w < 520) return 0.94;
+  if (w < 720) return 0.97;
+  return 1;
+}
+
+/** 狭い画面の自動縮小、またはユーザーが選んだ表示倍率を適用する */
+function applyPageAutoScale() {
+  try {
+    var saved = readSavedPageZoom();
+    var s = saved != null ? saved : autoPageScaleForWidth(window.innerWidth);
+    document.documentElement.style.setProperty("--ll-page-scale", String(s));
+    document.body.classList.toggle("ll-page-auto-scaled", Math.abs(s - 1) > 0.001);
+    syncPageZoomControlUi(saved, s);
+  } catch (_) {
+    /* noop */
+  }
+}
+
+function syncPageZoomControlUi(saved, effective) {
+  var label = document.getElementById("btn-page-zoom-label");
+  var outBtn = document.getElementById("btn-page-zoom-out");
+  var inBtn = document.getElementById("btn-page-zoom-in");
+  if (label) {
+    var pct = Math.round((effective || 1) * 100);
+    label.textContent = pct + "%";
+    label.title = saved == null ? "自動（狭い画面は少し縮小）。タップで 100% に固定" : "表示倍率 " + pct + "%。タップで自動に戻す";
+    label.setAttribute("aria-label", "表示倍率 " + pct + "%");
+    label.classList.toggle("is-manual", saved != null);
+  }
+  if (outBtn) outBtn.disabled = effective <= PAGE_ZOOM_MIN + 0.001;
+  if (inBtn) inBtn.disabled = effective >= PAGE_ZOOM_MAX - 0.001;
+}
+
+function bumpPageZoom(deltaSteps) {
+  var cur = readSavedPageZoom();
+  if (cur == null) cur = 1;
+  var next = Math.round((cur + deltaSteps * PAGE_ZOOM_STEP) / PAGE_ZOOM_STEP) * PAGE_ZOOM_STEP;
+  next = Math.min(PAGE_ZOOM_MAX, Math.max(PAGE_ZOOM_MIN, next));
+  savePageZoom(next);
+  applyPageAutoScale();
+}
+
+function wirePageZoomControl() {
+  var root = document.getElementById("page-zoom-control");
+  if (!root || root.dataset.wired === "1") return;
+  root.dataset.wired = "1";
+  document.getElementById("btn-page-zoom-out")?.addEventListener("click", function () {
+    bumpPageZoom(-1);
+  });
+  document.getElementById("btn-page-zoom-in")?.addEventListener("click", function () {
+    bumpPageZoom(1);
+  });
+  document.getElementById("btn-page-zoom-label")?.addEventListener("click", function () {
+    var saved = readSavedPageZoom();
+    if (saved == null) {
+      savePageZoom(1);
+    } else {
+      savePageZoom(null);
+    }
+    applyPageAutoScale();
+  });
+  applyPageAutoScale();
+}
+
 applyPageAutoScale();
 window.addEventListener("resize", applyPageAutoScale);
 
@@ -1201,11 +1280,13 @@ if (document.readyState === "loading") {
     wireCloudAuthBar();
     wireAppDialogBackdropClicks();
     wireBingoDerbyButton();
+    wirePageZoomControl();
   });
 } else {
   wireCloudAuthBar();
   wireAppDialogBackdropClicks();
   wireBingoDerbyButton();
+  wirePageZoomControl();
 }
 
 initVersusModeEarly();

@@ -49,6 +49,46 @@ body.ll-page-auto-scaled {
   }
 }
 
+/* サイト内表示倍率コントロール（全ビュー共通） */
+.page-zoom-control {
+  position: fixed;
+  z-index: 11000;
+  right: max(0.55rem, env(safe-area-inset-right));
+  bottom: max(0.55rem, env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.22rem;
+  border-radius: 999px;
+  background: rgba(16, 8, 20, 0.78);
+  border: 1px solid rgba(255, 140, 190, 0.28);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px);
+}
+.page-zoom-control__btn {
+  min-width: 2rem;
+  padding-left: 0.45rem;
+  padding-right: 0.45rem;
+  font-weight: 700;
+}
+.page-zoom-control__label {
+  min-width: 3.4rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.page-zoom-control__label.is-manual {
+  color: var(--accent);
+  border-color: rgba(255, 90, 154, 0.45);
+}
+body.play-mode .page-zoom-control {
+  opacity: 0.72;
+}
+body.play-mode .page-zoom-control:hover,
+body.play-mode .page-zoom-control:focus-within {
+  opacity: 1;
+}
+
 @supports (padding: max(0px)) {
   body {
     padding-left: max(0px, env(safe-area-inset-left));

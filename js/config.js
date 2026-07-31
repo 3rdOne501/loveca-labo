@@ -131,10 +131,13 @@ export const HISTORY_MAX_STEPS = 35;
 export const DECK_EXPORT_VERSION = 1;
 
 /** index.html の main.js クエリと揃える（JS モジュールのブラウザキャッシュ対策） */
-export const APP_MODULE_CACHE_BUST = "2026080101";
+export const APP_MODULE_CACHE_BUST = "2026080102";
 
 /** 禁止制限ダービー ビンゴカードの localStorage キー */
 export const STORAGE_BINGO_DERBY = "llocg_bingo_derby_v1";
+
+/** サイト内表示倍率（数値文字列 0.75〜1.5、未設定・"auto" なら狭い画面の自動縮小） */
+export const STORAGE_PAGE_ZOOM = "llocg_page_zoom_v1";
 
 /**
  * 組み込みプリセット・初回メインデッキ用（リポジトリ既定の大会用例。カード DB に番号が無い場合はデッキ構築で警告になります）

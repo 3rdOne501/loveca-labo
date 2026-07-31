@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Loveca Labo" />
-    <meta name="loveca-build" content="2026080101" />
+    <meta name="loveca-build" content="2026080102" />
     <title>Loveca Labo</title>
     <!-- 万一以前のバージョンの Service Worker が登録された端末で取り残しが起きた場合に備え、
          先頭で SW 登録を一括解除する。SW 自体は本サイトでは使っていない。 -->
@@ -51,7 +51,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,700;1,9..40,500&family=M+PLUS+Rounded+1c:wght@500;700&family=Noto+Sans+JP:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=2026080101" />
+    <link rel="stylesheet" href="styles.css?v=2026080102" />
     <link rel="stylesheet" href="styles-perf.css?v=2026051910" />
   </head>
   <body>
@@ -232,6 +232,28 @@ python3 -m http.server 8080</pre>
       </div>
     </div>
     <div id="load-status" class="load-status" role="status"></div>
+
+    <div
+      id="page-zoom-control"
+      class="page-zoom-control"
+      role="group"
+      aria-label="表示倍率"
+    >
+      <button type="button" class="btn sm secondary page-zoom-control__btn" id="btn-page-zoom-out" title="縮小" aria-label="縮小">
+        −
+      </button>
+      <button
+        type="button"
+        class="btn sm secondary page-zoom-control__label"
+        id="btn-page-zoom-label"
+        title="自動（狭い画面は少し縮小）。タップで 100% に固定"
+      >
+        100%
+      </button>
+      <button type="button" class="btn sm secondary page-zoom-control__btn" id="btn-page-zoom-in" title="拡大" aria-label="拡大">
+        ＋
+      </button>
+    </div>
 
     <div id="boot-toolbar" class="boot-toolbar" hidden>
       <p class="boot-toolbar-lead">
@@ -2304,7 +2326,7 @@ python3 -m http.server 8080</pre>
     <script>
       (function () {
         var buildMeta = document.querySelector('meta[name="loveca-build"]');
-        var build = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "2026080101";
+        var build = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "2026080102";
         var moduleNames = [
           "abilityEffects.js",
           "bladeHeart.js",
@@ -2354,7 +2376,7 @@ python3 -m http.server 8080</pre>
     </script>
     <script type="module">
       var buildMeta = document.querySelector('meta[name="loveca-build"]');
-      var build = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "2026080101";
+      var build = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "2026080102";
       try {
         await import("./js/main.js?v=" + build);
       } catch (err) {
