@@ -10892,12 +10892,18 @@ details.play-deck-search-fold.deck-tools-pick-fold > summary::-webkit-details-ma
   user-select: none;
 }
 .stream-mask-density-label {
-  display: inline-flex;
+  display: none;
   align-items: center;
   gap: 0.35rem;
   margin: 0;
   cursor: default;
   user-select: none;
+}
+.stream-mask-density-label[hidden] {
+  display: none !important;
+}
+body.hide-hand-stream .stream-mask-density-label:not([hidden]) {
+  display: inline-flex;
 }
 .stream-mask-density-label .muted {
   white-space: nowrap;

@@ -40747,6 +40747,8 @@ export function mountSimulator(
       btnHandMask.textContent = on ? "手札を表示" : "手札を隠す";
       btnHandMask.setAttribute("aria-pressed", on ? "true" : "false");
       btnHandMask.classList.toggle("toggle-hand-mask--on", on);
+      var densityLabel = document.querySelector(".stream-mask-density-label");
+      if (densityLabel) densityLabel.hidden = !on;
     };
     syncHandMaskBtn();
     btnHandMask.addEventListener("click", function () {

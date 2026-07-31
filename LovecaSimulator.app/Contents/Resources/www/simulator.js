@@ -3774,6 +3774,11 @@ export function mountSimulator(
     if (isPlainLiveEndHeartBladeGrantSegment(s)) return null;
     var m = s.match(/ライブ終了時まで、([^。]+を得る)/);
     if (!m) return null;
+    /*
+     * ハート／ブレードの付与は cl.bladeGain / requiredHeartSlot 等で直接適用される。
+     * 常時セグメントに作り直すと二重適用になるため対象外にする（extractStageMemberGrantJouji と同様）。
+     */
+    if (/\{\{heart_|heart_0[1-6]|\{\{[^}]*blade|ブレード/i.test(m[1])) return null;
     return "{{jyouji.png|常時}}" + m[1].trim();
   }
 
@@ -15572,8 +15577,21 @@ export function mountSimulator(
      * 「カードを N 枚引き、手札を M 枚控え室に置く」は本文の効果。
      * コスト判定からは外し、本文側で「引いた後に M 枚控え室へ」を処理する。
      */
-    if (cl.template === "draw_then_hand_discard" || cl.template === "draw_per_stage_member_discard") {
+    if (
+      cl.template === "draw_then_hand_discard" ||
+      cl.template === "draw_per_stage_member_discard" ||
+      cl.template === "toujou_draw_discard_if_from_waiting"
+    ) {
       cl.handDiscardToWaiting = null;
+    }
+    /* 「控え室から登場している場合」は発動条件。満たさないならコスト支払いに入らない */
+    if (kind === "toujyou" && cl.requiresEnteredFromWaiting && !inst._enteredFromWaitingRoom) {
+      showToast("控え室から登場していないためスキップしました");
+      markEffectFizzleVisual(inst);
+      inst._toujouEffectDeclined = true;
+      renderSynchronouslyOnce();
+      if (onComplete) onComplete();
+      return;
     }
     if (
       !handlesOwnCost &&
@@ -18056,14 +18074,14 @@ export function mountSimulator(
       return;
     }
     var drawN = cl.deckDrawCount || 2;
-    if (state.deck.length < drawN) {
-      showToast("山札が " + drawN + " 枚ありません（残り " + state.deck.length + " 枚）");
-      finishResolved();
-      return;
-    }
+    /* 総合ルール 1.3.2: 可能な限り実行する。山札不足でも引ける分だけ引き、控え室からの登場は続行する */
+    var drawableN = Math.min(drawN, state.deck.length);
     pushHistoryBefore("toujou-liella-baton-center");
+    if (drawableN < drawN) {
+      showToast("山札が " + drawN + " 枚ないため " + drawableN + " 枚だけ引きます");
+    }
     var drawn = [];
-    for (var d = 0; d < drawN; d++) {
+    for (var d = 0; d < drawableN; d++) {
       if (state.deck.length) drawn.push(state.deck.shift());
     }
     drawn.forEach(function (c) {
@@ -21251,19 +21269,38 @@ export function mountSimulator(
         return;
       }
       var originColSwap = stageColumnKeyHostingMember(inst.id);
-      if (!originColSwap || originColSwap !== "center") {
+      if (!originColSwap) {
+        showToast("ステージにいるメンバーでのみ起動できます");
+        finishResolved();
+        return;
+      }
+      if (!abilityInstMatchesStageArea(originColSwap, cl)) {
         showToast("センターエリアにいるときのみ起動できます");
         finishResolved();
         return;
       }
-      pushHistoryBefore("kidou-self-wait-stage-swap");
-      if (!moveStageMemberInstToWaiting(inst)) {
-        showToast("自分を控え室に移せませんでした");
+      /* 「このメンバー以外の『Aqours』のメンバー」— 対象候補だけを提示する */
+      var swapTargets = eachStageColumnMemberInsts().filter(function (m) {
+        if (!m || m._soloOpponentProxy === true) return false;
+        if (String(m.id) === String(inst.id)) return false;
+        if (
+          cl.filters &&
+          cl.filters.seriesTag &&
+          !catalogCardMatchesGroupTag(mergedCatalogCard(m), cl.filters.seriesTag)
+        ) {
+          return false;
+        }
+        return true;
+      });
+      if (!swapTargets.length) {
+        showToast("控え室に置ける対象メンバーがステージにいません");
         finishResolved();
         return;
       }
+      /* コストの「このメンバーをウェイトにする」は payAbilityCost 側で済み。ここで控え室に置かない */
+      pushHistoryBefore("kidou-self-wait-stage-swap");
       render();
-      openPickStageMemberDialog(inst.id, "起動: このメンバー以外の対象メンバー1人をステージから控え室へ。", function (stagePid) {
+      openPickFromWaitingDialog(swapTargets, "起動: このメンバー以外の対象メンバー1人をステージから控え室へ。", function (stagePid) {
         if (!stagePid) {
           finishResolved();
           return;
@@ -21271,12 +21308,6 @@ export function mountSimulator(
         var sentMem = findCardInstById(stagePid);
         var sentCol = stageColumnKeyHostingMember(stagePid);
         if (!sentMem || !sentCol) {
-          finishResolved();
-          return;
-        }
-        var sentMc = mergedCatalogCard(sentMem);
-        if (cl.filters && cl.filters.seriesTag && !catalogCardMatchesGroupTag(sentMc, cl.filters.seriesTag)) {
-          showToast("シリーズ条件のメンバーを選んでください");
           finishResolved();
           return;
         }
@@ -21288,7 +21319,7 @@ export function mountSimulator(
         var needCost = sentCost + 2;
         var recCandSwap = waitingPickCandidates(
           Object.assign({}, cl.filters || {}, { pickType: T_MEMBER, minCost: needCost, maxCost: needCost }),
-          null,
+          inst.id,
         );
         if (!recCandSwap.length) {
           showToast("コスト " + needCost + " の控え室メンバーがありません");
@@ -31474,7 +31505,10 @@ export function mountSimulator(
         return;
       }
       var drawDd = Math.max(1, Math.floor(Number(cl.deckDrawCount) || 2));
-      var discardDd = Math.max(1, Math.floor(Number(cl.handDiscardToWaiting) || 1));
+      var discardDd = Math.max(
+        1,
+        Math.floor(Number(cl.effectDiscardCount || cl.handDiscardToWaiting) || 1),
+      );
       pushHistoryBefore("toujou-draw-discard-wait");
       var drawnDd = [];
       for (var ddi = 0; ddi < drawDd; ddi++) {
@@ -31484,25 +31518,15 @@ export function mountSimulator(
         state.hand.push(c);
       });
       if (drawnDd.length) presentAbilityDrawsToHand(drawnDd, inst);
-      if (!state.hand.length) {
-        showToast("手札がないため控え室に置けません");
-        finishResolved();
-        return;
-      }
-      openPickFromWaitingDialog(state.hand, "手札を" + discardDd + "枚控え室に置きます。", function (pid) {
-        if (!pid) {
-          finishResolved();
-          return;
-        }
-        var hi = state.hand.findIndex(function (c) {
-          return c && String(c.id) === String(pid);
-        });
-        if (hi >= 0) {
-          var discCard = state.hand.splice(hi, 1)[0];
-          state.waitingRoom.push(discCard);
-        }
-        showToast("山札から " + drawnDd.length + " 枚引き、手札を控え室に置きました");
-        finishResolved();
+      render();
+      scheduleHandDiscardAfterAbilityDraw({
+        discardN: discardDd,
+        discardLead: "登場時: 手札を " + discardDd + " 枚控え室に置いてください",
+        drawnCount: drawnDd.length,
+        drawnToast: "山札から " + drawnDd.length + " 枚引きました",
+        finishResolved: finishResolved,
+        inst: inst,
+        cl: cl,
       });
       return;
     }
@@ -40723,6 +40747,8 @@ export function mountSimulator(
       btnHandMask.textContent = on ? "手札を表示" : "手札を隠す";
       btnHandMask.setAttribute("aria-pressed", on ? "true" : "false");
       btnHandMask.classList.toggle("toggle-hand-mask--on", on);
+      var densityLabel = document.querySelector(".stream-mask-density-label");
+      if (densityLabel) densityLabel.hidden = !on;
     };
     syncHandMaskBtn();
     btnHandMask.addEventListener("click", function () {
