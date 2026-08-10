@@ -1,6 +1,7 @@
 /**
  * blade_heart（ラブカ DB）のキーを UI 用に解釈する。
- * 1=桃,2=赤,3=黄,4=緑,5=青,6=紫,7=ALL（b_all も b_heart07 も ALL）。
+ * 1=桃,2=赤,3=黄,4=緑,5=青,6=紫,7=ALL（b_all）。
+ * b_heart07 は ALL ではなく「W無色」特殊 BH（エール時に無色ハート2つ分）。
  * ハート形は外部素材なしのインライン SVG（公式アイコンではない簡易表現）。
  */
 
@@ -15,10 +16,11 @@ import { GAME_STATUS_ICON_ART_DIR, resolveGameStatusBundledHref, escapeAttrHtml 
  *   slot = 7   → icon_all.png（ALL）
  *   opts.score: true → icon_score.png（スコア）
  *   opts.draw_yell: true → icon_draw.png（ドロー）
+ *   opts.double_colorless: true → icon_blade_heart07.png（W無色特殊BH）
  *   opts.blade: true → icon_blade.png（ブレードハート）
  *
  * @param {number} slot
- * @param {{score?:boolean, draw_yell?:boolean, blade?:boolean, extraClass?:string}} [opts]
+ * @param {{score?:boolean, draw_yell?:boolean, double_colorless?:boolean, blade?:boolean, extraClass?:string}} [opts]
  */
 export function heartSlotArtIconHtml(slot, opts) {
   opts = opts || {};
@@ -33,6 +35,10 @@ export function heartSlotArtIconHtml(slot, opts) {
     file = "icon_draw.png";
     alt = "ドロー";
     slotCls = "heart-slot-art-ico--draw-yell";
+  } else if (opts.double_colorless) {
+    file = "icon_blade_heart07.png";
+    alt = "W無色";
+    slotCls = "heart-slot-art-ico--double-colorless";
   } else if (opts.blade) {
     file = "icon_blade.png";
     alt = "ブレードハート";
@@ -74,6 +80,18 @@ export function isBladeHeartDrawMarkerKey(key) {
   return k === "b_draw" || k === "b_drow" || k === "draw" || k === "drow";
 }
 
+/**
+ * blade_heart キーが「W無色」特殊 BH（エール時に無色ハート2つ分）か。
+ * DB キーは b_heart07（通常の ALL は b_all）。
+ */
+export function isBladeHeartDoubleColorlessMarkerKey(key) {
+  const k = String(key || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\.(png|gif|webp|jpg|jpeg)$/i, "");
+  return k === "b_heart07" || k === "b_heart7" || k === "blade_heart07";
+}
+
 /** カードの blade_heart にドロー特殊 BH（b_draw / b_drow 等）が 1 つ以上ある */
 export function bladeHeartHasDrawMarker(card) {
   const bh = card && card.blade_heart;
@@ -82,6 +100,33 @@ export function bladeHeartHasDrawMarker(card) {
     const v = Number(bh[k]);
     return isBladeHeartDrawMarkerKey(k) && Number.isFinite(v) && v > 0;
   });
+}
+
+/** カードの blade_heart に W無色特殊 BH（b_heart07）が 1 つ以上ある */
+export function bladeHeartHasDoubleColorlessMarker(card) {
+  const bh = card && card.blade_heart;
+  if (!bh || typeof bh !== "object" || Array.isArray(bh)) return false;
+  return Object.keys(bh).some(function (k) {
+    const v = Number(bh[k]);
+    return isBladeHeartDoubleColorlessMarkerKey(k) && Number.isFinite(v) && v > 0;
+  });
+}
+
+/**
+ * エール解決時に加算する無色ハート数（アイコン1つにつき2）。
+ * @returns {number}
+ */
+export function bladeHeartDoubleColorlessYellPoints(card) {
+  const bh = card && card.blade_heart;
+  if (!bh || typeof bh !== "object" || Array.isArray(bh)) return 0;
+  var pts = 0;
+  Object.keys(bh).forEach(function (k) {
+    if (!isBladeHeartDoubleColorlessMarkerKey(k)) return;
+    var v = Number(bh[k]);
+    if (!Number.isFinite(v) || v <= 0) return;
+    pts += Math.floor(Math.abs(v)) * 2;
+  });
+  return pts;
 }
 
 /**
@@ -95,6 +140,7 @@ export function liveCardHasColoredBhWithoutAll(card) {
   let hasColored = false;
   for (const key of Object.keys(bh)) {
     if (isBladeHeartDrawMarkerKey(key)) continue;
+    if (isBladeHeartDoubleColorlessMarkerKey(key)) return false;
     const slot = parseBladeHeartSlotFromKey(key);
     const v = Number(bh[key]);
     if (!Number.isFinite(v) || v <= 0) continue;
@@ -195,12 +241,14 @@ function wrapHeartGlyphWithScoreBadge(svgHtml, showScore) {
  * @returns {number | null} 1..7 または未対応キーは null
  */
 export function parseBladeHeartSlotFromKey(key) {
+  if (isBladeHeartDoubleColorlessMarkerKey(key)) return null;
   const s = String(key).trim();
   if (s === "b_all") return 7;
   const m = /^b_heart0*(\d+)$/i.exec(s);
   if (!m) return null;
   const n = Number(m[1]);
-  if (n >= 1 && n <= 7) return n;
+  /* b_heart07 は特殊 BH。通常スロットは 1〜6 と b_all(=7) のみ */
+  if (n >= 1 && n <= 6) return n;
   return null;
 }
 
@@ -223,10 +271,16 @@ export function addBladeHeartWeightsPerDisplaySlot(card, accum) {
   const bh = card && card.blade_heart;
   if (!bh || typeof bh !== "object" || Array.isArray(bh)) return accum;
   Object.entries(bh).forEach(function (ent) {
-    var slot = parseBladeHeartSlotFromKey(ent[0]);
-    var u = slot == null ? 99 : slot;
     var n = Number(ent[1]);
     if (!Number.isFinite(n) || n === 0) return;
+    if (isBladeHeartDrawMarkerKey(ent[0])) return;
+    if (isBladeHeartDoubleColorlessMarkerKey(ent[0])) {
+      /* アイコン1つ = 無色ハート2つ分（slot7 = ALL ワイルドカード） */
+      accum[7] = (accum[7] || 0) + Math.abs(n) * 2;
+      return;
+    }
+    var slot = parseBladeHeartSlotFromKey(ent[0]);
+    var u = slot == null ? 99 : slot;
     accum[u] = (accum[u] || 0) + Math.abs(n);
   });
   return accum;
@@ -699,6 +753,16 @@ export function bladeHeartRowIconsHtml(card) {
         return (
           '<span class="blade-heart-row-draw-marker" title="ドロー">' +
           heartSlotArtIconHtml(0, { draw_yell: true, extraClass: "blade-heart-svg blade-heart-svg--row" }) +
+          "</span>"
+        );
+      }
+      if (isBladeHeartDoubleColorlessMarkerKey(k)) {
+        return (
+          '<span class="blade-heart-row-double-colorless-marker" title="W無色（×2）">' +
+          heartSlotArtIconHtml(0, {
+            double_colorless: true,
+            extraClass: "blade-heart-svg blade-heart-svg--row",
+          }) +
           "</span>"
         );
       }

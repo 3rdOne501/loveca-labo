@@ -4,9 +4,16 @@
 
 import { T_LIVE, T_MEMBER } from "./config.js";
 import { catalogCardSchoolLabel, catalogCardSchoolLabels } from "./cardGroups.js";
-import { getCard, cardIsNoteLiveCatalog, cardIsDrawYellLiveCatalog } from "./cards.js";
+import {
+  getCard,
+  cardIsNoteLiveCatalog,
+  cardIsDrawYellLiveCatalog,
+  cardIsDoubleColorlessYellLiveCatalog,
+  catalogEaleDoubleColorlessHeartPoints,
+} from "./cards.js";
 import {
   cardHasBladeHeart,
+  isBladeHeartDoubleColorlessMarkerKey,
   isBladeHeartDrawMarkerKey,
   parseBladeHeartSlotFromKey,
   parseHeartColorSlotFromKey,
@@ -16,6 +23,11 @@ import * as Gsi from "./gameStatusIcons.js";
 /** @deprecated cards.js の `cardIsDrawYellLiveCatalog` を直接使ってください。 */
 export function catalogLiveCardIsDrawYellBladeHeart(card) {
   return cardIsDrawYellLiveCatalog(card);
+}
+
+/** @deprecated cards.js の `cardIsDoubleColorlessYellLiveCatalog` を直接使ってください。 */
+export function catalogLiveCardIsDoubleColorlessYellBladeHeart(card) {
+  return cardIsDoubleColorlessYellLiveCatalog(card);
 }
 
 function escapeHtmlPlain(s) {
@@ -179,24 +191,18 @@ function formatBladeHeartStatusHtmlRow(bh) {
   if (!bh || typeof bh !== "object") return "";
   var parts = [];
   Object.keys(bh).forEach(function (k) {
+    /* ドロー／W無色は「特殊BH」行へ。通常 BH 行には載せない */
+    if (isBladeHeartDrawMarkerKey(k) || isBladeHeartDoubleColorlessMarkerKey(k)) return;
     var slot = parseBladeHeartSlotFromKey(k);
     var v = Number(bh[k]);
     if (!Number.isFinite(v) || v === 0) return;
-    var stem = isBladeHeartDrawMarkerKey(k)
-      ? "icon_draw"
-      : slot === 7
+    var stem =
+      slot === 7
         ? "icon_all"
         : slot != null && slot >= 1 && slot <= 6
           ? "heart_" + String(slot).padStart(2, "0")
           : null;
-    var lbl =
-      stem === "icon_draw"
-        ? "ドロー"
-        : stem === "icon_all"
-          ? "ALL"
-          : stem != null
-            ? stem
-            : "?";
+    var lbl = stem === "icon_all" ? "ALL" : stem != null ? stem : "?";
     var icon = stem != null ? Gsi.wikiAbilityFileStemToIconHtml(lbl, stem) : null;
     var chip =
       icon != null
@@ -214,9 +220,47 @@ function formatBladeHeartStatusHtmlRow(bh) {
   parts.sort(function (a, b) {
     return a.ord - b.ord;
   });
+  if (!parts.length) return "";
   return '<span class="dlg-status-inline-icon-row">' + parts.map(function (p) {
     return p.html;
   }).join("") + "</span>";
+}
+
+/**
+ * カード詳細「特殊BH」行（ドロー／スコア／W無色）。
+ * @param {*} mc
+ * @param {{isDrawYellLive:boolean,isNoteLive:boolean,isDoubleColorlessLive:boolean}} flags
+ */
+function formatSpecialBhStatusHtmlRow(mc, flags) {
+  var bits = [];
+  if (flags.isDrawYellLive) {
+    bits.push(
+      '<span class="dlg-card-catalog-special-heart-pill dlg-card-catalog-special-heart-pill--draw-yell">' +
+        Gsi.catalogDrawYellBadgeHtml() +
+        '<span class="dlg-card-catalog-special-heart-pill__label">ドロー</span>' +
+        "</span>",
+    );
+  }
+  if (flags.isNoteLive) {
+    bits.push(
+      '<span class="dlg-card-catalog-special-heart-pill dlg-card-catalog-special-heart-pill--note-live">' +
+        Gsi.catalogNoteLiveBadgeHtml() +
+        '<span class="dlg-card-catalog-special-heart-pill__label">スコア</span>' +
+        "</span>",
+    );
+  }
+  if (flags.isDoubleColorlessLive) {
+    var colorlessPts = catalogEaleDoubleColorlessHeartPoints(mc);
+    bits.push(
+      '<span class="dlg-card-catalog-special-heart-pill dlg-card-catalog-special-heart-pill--double-colorless">' +
+        Gsi.catalogDoubleColorlessBadgeHtml() +
+        '<span class="dlg-card-catalog-special-heart-pill__label">W無色' +
+        (colorlessPts > 0 ? "×" + colorlessPts : "") +
+        "</span></span>",
+    );
+  }
+  if (!bits.length) return "";
+  return '<span class="dlg-card-catalog-special-heart-row">' + bits.join("") + "</span>";
 }
 
 function formatHeartRecordStatusHtmlRow(h) {
@@ -331,11 +375,13 @@ export function renderCardCatalogContentInto(c, targets, options) {
 
   var isDrawYellLive = isLive && cardIsDrawYellLiveCatalog(mc);
   var isNoteLive = isLive && cardIsNoteLiveCatalog(mc);
+  var isDoubleColorlessLive = isLive && cardIsDoubleColorlessYellLiveCatalog(mc);
 
   if (badgeEl) {
     var bits = [];
     if (isDrawYellLive) bits.push(Gsi.catalogDrawYellBadgeHtml());
     if (isNoteLive) bits.push(Gsi.catalogNoteLiveBadgeHtml());
+    if (isDoubleColorlessLive) bits.push(Gsi.catalogDoubleColorlessBadgeHtml());
     badgeEl.innerHTML = bits.join("");
   }
 
@@ -369,33 +415,28 @@ export function renderCardCatalogContentInto(c, targets, options) {
   var bhLine = formatBladeHeartStatusHtmlRow(mc.blade_heart);
   rows += row("BH", bhLine || escapeHtmlPlain(TEXT_NONE_JA));
 
+  if (isLive) {
+    var specialBhLine = formatSpecialBhStatusHtmlRow(mc, {
+      isDrawYellLive: isDrawYellLive,
+      isNoteLive: isNoteLive,
+      isDoubleColorlessLive: isDoubleColorlessLive,
+    });
+    rows += row(
+      "特殊BH",
+      specialBhLine ||
+        '<span class="dlg-card-catalog-special-heart-row dlg-card-catalog-special-heart-row--none">' +
+          escapeHtmlPlain(TEXT_NONE_JA) +
+          "</span>",
+    );
+  }
+
   if (isMember) {
     var held = formatHeartRecordStatusHtmlRow(mc.base_heart);
     rows += row("所持ハート", held || escapeHtmlPlain(TEXT_NONE_JA));
   }
-  if (isLive && (isDrawYellLive || isNoteLive)) {
+  if (isLive) {
     var needL = formatHeartRecordStatusHtmlRow(mc.need_heart);
     rows += row("必要ハート", needL || escapeHtmlPlain(TEXT_NONE_JA));
-    var specBits = [];
-    if (isDrawYellLive) {
-      specBits.push(
-        '<span class="dlg-card-catalog-special-heart-pill dlg-card-catalog-special-heart-pill--draw-yell">' +
-          Gsi.catalogDrawYellBadgeHtml() +
-          '<span class="dlg-card-catalog-special-heart-pill__label">ドロー</span>' +
-          "</span>",
-      );
-    }
-    if (isNoteLive) {
-      specBits.push(
-        '<span class="dlg-card-catalog-special-heart-pill dlg-card-catalog-special-heart-pill--note-live">' +
-          Gsi.catalogNoteLiveBadgeHtml() +
-          '<span class="dlg-card-catalog-special-heart-pill__label">スコア</span>' +
-          "</span>",
-      );
-    }
-  } else if (isLive) {
-    var needLPlain = formatHeartRecordStatusHtmlRow(mc.need_heart);
-    rows += row("必要ハート", needLPlain || escapeHtmlPlain(TEXT_NONE_JA));
   }
 
   var abHtml = wikiAbilityToStatusHtml(mc.ability || "");

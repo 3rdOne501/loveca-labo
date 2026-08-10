@@ -38,6 +38,8 @@ const ART_FILE_BY_KEY = /** @type {Record<string, string>} */ ({
   live_success: "live_success.png",
   /** ドロー（旧ドローエール） */
   draw_yell: "icon_draw.png",
+  /** W無色特殊 BH（エール時に無色ハート×2） */
+  blade_heart07: "icon_blade_heart07.png",
   /** 自動 */
   jidou: "jidou.png",
   turn1: "turn1.png",
@@ -101,6 +103,9 @@ const STEM_ALIAS = /** @type {Record<string, string>} */ ({
   heart_07: "hall",
   heart07: "hall",
   heart7: "hall",
+  icon_blade_heart07: "blade_heart07",
+  blade_heart07: "blade_heart07",
+  b_heart07: "blade_heart07",
   icon_blade: "blade",
   blade: "blade",
   icon_energy: "energy",
@@ -396,7 +401,7 @@ export function boardMemberEffectIconHtml(canonKey, glowKind) {
   );
 }
 
-/** エール処理で浮かび上がるアイコン（スコア／ドロー） */
+/** エール処理で浮かび上がるアイコン（スコア／ドロー／W無色） */
 export function boardYellFloatIconHtml(kind) {
   if (kind === "score") {
     return htmlStatusGameIconImg(
@@ -412,6 +417,13 @@ export function boardYellFloatIconHtml(kind) {
       "card-yell-float-ico card-yell-float-ico--draw-yell",
     );
   }
+  if (kind === "double_colorless") {
+    return htmlStatusGameIconImg(
+      "W無色",
+      GAME_STATUS_ICON_ART_DIR + ART_FILE_BY_KEY.blade_heart07,
+      "card-yell-float-ico card-yell-float-ico--double-colorless",
+    );
+  }
   return "";
 }
 
@@ -421,6 +433,15 @@ export function catalogNoteLiveBadgeHtml() {
     "スコア",
     GAME_STATUS_ICON_ART_DIR + ART_FILE_BY_KEY.score,
     "dlg-card-catalog-badge-img dlg-card-catalog-badge-img--score",
+  );
+}
+
+/** カード詳細: W無色特殊 BH */
+export function catalogDoubleColorlessBadgeHtml() {
+  return htmlStatusGameIconImg(
+    "W無色",
+    GAME_STATUS_ICON_ART_DIR + ART_FILE_BY_KEY.blade_heart07,
+    "dlg-card-catalog-badge-img dlg-card-catalog-badge-img--double-colorless",
   );
 }
 

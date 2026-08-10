@@ -8916,6 +8916,11 @@ body.play-mode .play-undo-redo-cluster--under-prob .play-undo-redo {
   background: rgba(255, 180, 100, 0.14);
   border-color: rgba(255, 180, 100, 0.45);
 }
+.dlg-card-catalog-special-heart-pill--double-colorless {
+  background: rgba(180, 190, 210, 0.16);
+  border-color: rgba(200, 210, 230, 0.45);
+  color: rgba(240, 245, 255, 0.96);
+}
 .dlg-card-catalog-special-heart-pill .dlg-card-catalog-badge-img {
   height: 1.1rem;
   width: 1.1rem;
@@ -10676,6 +10681,27 @@ body.play-mode .card-member-hb-bar {
   text-shadow:
     0 0 6px rgba(255, 40, 40, 0.95),
     0 0 14px rgba(255, 80, 80, 0.85);
+}
+.card-item--double-colorless-yell-glow {
+  z-index: 4;
+  animation: llDoubleColorlessYellCardGlow 2.6s ease-out forwards;
+}
+@keyframes llDoubleColorlessYellCardGlow {
+  0% {
+    box-shadow:
+      0 0 0 2px rgba(200, 210, 230, 0.85),
+      0 0 24px rgba(180, 195, 220, 0.85);
+  }
+  100% {
+    box-shadow: none;
+  }
+}
+.card-flash-plus-one--double-colorless {
+  color: #e8eef8;
+  font-size: 1.02rem;
+  text-shadow:
+    0 0 6px rgba(160, 175, 200, 0.95),
+    0 0 14px rgba(140, 160, 190, 0.8);
 }
 .card-flash-plus-one--nonbh-member {
   color: #ffffff;

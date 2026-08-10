@@ -666,6 +666,7 @@ verify-ability-coverage OK / verify-ability-handlers OK / verify-ability-runtime
 
 | 日付 | 内容 |
 |------|------|
+| 2026-08-10 | W無色特殊BH（`b_heart07`）: エール時に無色ハート×2。`special_heart.colorless`＋カード詳細「特殊BH」行（ドロー／スコア／W無色）。代表 PL!N-bp7-030-L / PL!SP-bp7-028-L / PL!S-bp7-022-L（SECL含む4枚）。`b_all` とは分離 |
 | 2026-08-10 | 虹ヶ咲 sd2 cheer ライブ: `bladeGainFromIcons` が条件節の blade アイコンを付与数に誤算していたのを付与節のみに修正（代表 026・2枚）。あわせて「ブレードN以上持つ『シリーズ』のメンバー1人は」→`grantToStageSeriesTag`+`minPickedMemberBlade`、シリーズ1人付与の選択プール再構築 |
 | 2026-08-10 | 虹ヶ咲 sd2 cheer メンバー: ①`hand_cost_reduce`+`requiresSuccessLiveSeriesTag`（003）②`そのハートをNつ得る`→`grantHeartSlotCount`（005・横展開既存カードは1のまま）③任意ウェイト付与で「そのメンバーは」なしは自分へ（006）④`draw_then_conditional_extra_draw` + `opponentLiveSuccessThisTurn`（007・2枚） |
 | 2026-08-10 | LL-bp7 クロス初回監修: `LL-bp7-001-R＋`（花丸&せつ菜&千砂都）。`play_cost_set_named_hand_discard`＋登場ライブ回収＋成功メンバー回収。カード文どおりで新規コード修正なし。PENDING `/-bp7-/` 除外を解除 |

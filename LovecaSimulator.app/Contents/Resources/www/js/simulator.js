@@ -40,7 +40,9 @@ import {
   catalogCardNosShareIdentity,
   cardIsNoteLiveCatalog,
   catalogEaleScoreHeartPoints,
+  catalogEaleDoubleColorlessHeartPoints,
   cardIsDrawYellLiveCatalog,
+  cardIsDoubleColorlessYellLiveCatalog,
   liveCardHasExcludedAllBladeHeart,
   memberHasKidouAbility,
   memberHasKidouStageToWaitingPickAbility,
@@ -1962,6 +1964,7 @@ export function mountSimulator(
   /** ドロー（BH）で解決にめくった／遅延ドローで手札に入ったカードのフラッシュ（ピンク） */
   const FLASH_LABEL_DRAW_YELL_PLUS_ONE = "ドロー+1";
   const FLASH_LABEL_SCORE_PLUS_ONE = "スコア＋１";
+  const FLASH_LABEL_DOUBLE_COLORLESS_PLUS_TWO = "無色ハート＋2";
   const FLASH_LABEL_MISS = "ハズレ";
   const FLASH_LABEL_LIVE_YELL_RESOLUTION_OLD = "エール+1";
   function markCardFlashDraw(c, label) {
@@ -1979,9 +1982,11 @@ export function mountSimulator(
       nextLabel === FLASH_LABEL_DRAW_YELL_PLUS_ONE ||
       nextLabel === FLASH_LABEL_PLUS_DRAW;
     var isScoreYellFlash = yellKind === "score" || nextLabel === FLASH_LABEL_SCORE_PLUS_ONE;
+    var isDoubleColorlessFlash =
+      yellKind === "double_colorless" || nextLabel === FLASH_LABEL_DOUBLE_COLORLESS_PLUS_TWO;
     var isNonBhMemberFlash = yellKind === "nonbh_member";
     var flashDur =
-      isDrawYellFlash || isScoreYellFlash || isNonBhMemberFlash
+      isDrawYellFlash || isScoreYellFlash || isDoubleColorlessFlash || isNonBhMemberFlash
         ? FLASH_DRAW_YELL_DURATION_MS
         : FLASH_DRAW_DURATION_MS;
     var flashUntil = (Number(c._flashDrawAt) || 0) + flashDur;
@@ -13285,6 +13290,17 @@ export function mountSimulator(
       markCardFlashDraw(c, scPts > 1 ? "スコア＋" + scPts : FLASH_LABEL_SCORE_PLUS_ONE);
       c._flashYellKind = "score";
       registerScoreYellForLiveTotal(c);
+      return;
+    }
+    var colorlessPts = catalogEaleDoubleColorlessHeartPoints(mc);
+    if (colorlessPts > 0 || cardIsDoubleColorlessYellLiveCatalog(mc)) {
+      markCardFlashDraw(
+        c,
+        colorlessPts === 2
+          ? FLASH_LABEL_DOUBLE_COLORLESS_PLUS_TWO
+          : "無色ハート＋" + Math.max(1, colorlessPts),
+      );
+      c._flashYellKind = "double_colorless";
       return;
     }
     if (mc.type === T_MEMBER && !cardHasBladeHeart(mc)) {
@@ -36967,9 +36983,12 @@ export function mountSimulator(
       c._flashDrawLabel === FLASH_LABEL_DRAW_YELL_PLUS_ONE ||
       c._flashDrawLabel === FLASH_LABEL_PLUS_DRAW;
     var isScoreYellFlash = yellKind === "score" || c._flashDrawLabel === FLASH_LABEL_SCORE_PLUS_ONE;
+    var isDoubleColorlessFlash =
+      yellKind === "double_colorless" ||
+      c._flashDrawLabel === FLASH_LABEL_DOUBLE_COLORLESS_PLUS_TWO;
     var isNonBhMemberFlash = yellKind === "nonbh_member";
     var flashDur =
-      isDrawYellFlash || isScoreYellFlash || isNonBhMemberFlash
+      isDrawYellFlash || isScoreYellFlash || isDoubleColorlessFlash || isNonBhMemberFlash
         ? FLASH_DRAW_YELL_DURATION_MS
         : FLASH_DRAW_DURATION_MS;
     var flashUntil = (Number(c._flashDrawAt) || 0) + flashDur;
@@ -36980,6 +36999,7 @@ export function mountSimulator(
       flash.className = "card-flash-plus-one";
       if (isDrawYellFlash) flash.classList.add("card-flash-plus-one--draw-yell");
       if (isScoreYellFlash) flash.classList.add("card-flash-plus-one--score-yell");
+      if (isDoubleColorlessFlash) flash.classList.add("card-flash-plus-one--double-colorless");
       if (isNonBhMemberFlash) flash.classList.add("card-flash-plus-one--nonbh-member");
       flash.setAttribute("aria-hidden", "true");
       flash.textContent =
@@ -36999,6 +37019,16 @@ export function mountSimulator(
         div.classList.add("card-item--score-yell-glow");
         window.setTimeout(function () {
           div.classList.remove("card-item--score-yell-glow");
+        }, remainMs + 80);
+      } else if (yellKind === "double_colorless" || isDoubleColorlessFlash) {
+        var floatColorless = document.createElement("div");
+        floatColorless.className = "card-yell-float-icon-wrap card-yell-float-icon-wrap--double-colorless";
+        floatColorless.innerHTML = boardYellFloatIconHtml("double_colorless");
+        floatColorless.style.animationDuration = remainMs + "ms";
+        div.appendChild(floatColorless);
+        div.classList.add("card-item--double-colorless-yell-glow");
+        window.setTimeout(function () {
+          div.classList.remove("card-item--double-colorless-yell-glow");
         }, remainMs + 80);
       } else if (yellKind === "nonbh_member" || isNonBhMemberFlash) {
         div.classList.add("card-item--nonbh-yell-glow");

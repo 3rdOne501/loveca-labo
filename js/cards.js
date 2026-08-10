@@ -8,7 +8,10 @@ import {
 } from "./config.js";
 import { abilityWikiCanonicalKeys } from "./gameStatusIcons.js";
 import {
+  bladeHeartDoubleColorlessYellPoints,
+  bladeHeartHasDoubleColorlessMarker,
   cardHasBladeHeart,
+  isBladeHeartDoubleColorlessMarkerKey,
   isBladeHeartDrawMarkerKey,
   liveCardHasColoredBhWithoutAll,
   parseBladeHeartSlotFromKey,
@@ -1018,8 +1021,16 @@ export function cardIsDrawYellLiveCatalog(card) {
 export const cardIsDrawLiveCatalog = cardIsDrawYellLiveCatalog;
 
 /**
+ * W無色特殊 BH ライブ（b_heart07）: エールで無色ハートを2つ分得る。
+ */
+export function cardIsDoubleColorlessYellLiveCatalog(card) {
+  if (!card || card.type !== T_LIVE) return false;
+  return bladeHeartHasDoubleColorlessMarker(card);
+}
+
+/**
  * スコア（旧称音符ライブ）: DB に blade_heart が無いライブのみ。
- * BH 記載があるカードにスコア特殊 BH は付けない。
+ * BH 記載があるカードにスコア特殊 BH は付けない（W無色の b_heart07 も含む）。
  */
 export function cardIsNoteLiveCatalog(card) {
   if (!card || card.type !== T_LIVE) return false;
@@ -1045,6 +1056,20 @@ export function catalogEaleScoreHeartPoints(card) {
   return 0;
 }
 
+/**
+ * エールで解決にめくったとき、必要ハート充足に加算する W無色ハート数（アイコン1つ=2）。
+ * DB の special_heart.colorless を優先。未記載なら b_heart07 から算出。
+ */
+export function catalogEaleDoubleColorlessHeartPoints(card) {
+  if (!card || typeof card !== "object") return 0;
+  var sh = card.special_heart;
+  if (sh && typeof sh === "object" && !Array.isArray(sh)) {
+    var n = Number(sh.colorless);
+    if (Number.isFinite(n) && n > 0) return Math.floor(n);
+  }
+  return bladeHeartDoubleColorlessYellPoints(card);
+}
+
 /* bladeHeart.js のスコア装飾判定を、循環参照を避けて差し込む */
 setIsScoreLiveCheck(cardIsNoteLiveCatalog);
 
@@ -1056,6 +1081,7 @@ export function bladeHeartSlotsOnCard(card) {
   if (!bh || typeof bh !== "object" || Array.isArray(bh)) return out;
   for (const key of Object.keys(bh)) {
     if (isBladeHeartDrawMarkerKey(key)) continue;
+    if (isBladeHeartDoubleColorlessMarkerKey(key)) continue;
     const v = Number(bh[key]);
     if (!Number.isFinite(v) || v === 0) continue;
     const slot = parseBladeHeartSlotFromKey(key);

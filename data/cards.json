@@ -89382,6 +89382,9 @@
         "blade_heart": {
             "b_heart07": 1
         },
+        "special_heart": {
+            "colorless": 2
+        },
         "rare": "L",
         "ability": "{{jyouji.png|常時}}自分のエールは、デッキの上から行う代わりにデッキの下から行う。\n{{live_success.png|ライブ成功時}}エールにより公開された自分のカードの中に、{{heart_02.png|heart02}}、{{heart_04.png|heart04}}、{{heart_05.png|heart05}}を持つ『Aqours』のメンバーカードがそれぞれある場合、このカードのスコアを＋１する。",
         "faq": [],
@@ -89413,6 +89416,9 @@
         },
         "blade_heart": {
             "b_heart07": 1
+        },
+        "special_heart": {
+            "colorless": 2
         },
         "rare": "SECL",
         "ability": "{{jyouji.png|常時}}自分のエールは、デッキの上から行う代わりにデッキの下から行う。\n{{live_success.png|ライブ成功時}}エールにより公開された自分のカードの中に、{{heart_02.png|heart02}}、{{heart_04.png|heart04}}、{{heart_05.png|heart05}}を持つ『Aqours』のメンバーカードがそれぞれある場合、このカードのスコアを＋１する。",
@@ -91898,6 +91904,9 @@
         "blade_heart": {
             "b_heart07": 1
         },
+        "special_heart": {
+            "colorless": 2
+        },
         "rare": "L",
         "ability": "{{live_success.png|ライブ成功時}}自分のデッキの上からカードを3枚見る。その中から好きな枚数を好きな順番でデッキの上に置き、残りを控え室に置く。\n{{live_success.png|ライブ成功時}}このカードをライブカード置き場から手札に戻す。その後、手札を1枚控え室に置く。",
         "faq": [
@@ -93869,6 +93878,9 @@
         },
         "blade_heart": {
             "b_heart07": 1
+        },
+        "special_heart": {
+            "colorless": 2
         },
         "rare": "L",
         "ability": "{{live_start.png|ライブ開始時}}自分の控え室にある『Liella!』のメンバーカードを9枚選び、それらをシャッフルし、デッキの一番下に置いてもよい。そうしたとき、ライブ終了時まで、自分のステージにいるすべてのメンバーは{{icon_blade.png|ブレード}}を得る。\n{{live_success.png|ライブ成功時}}エールにより公開された自分のカードがすべて『Liella!』の場合、このカードのスコアを＋１する。",
