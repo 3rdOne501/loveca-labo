@@ -59,14 +59,9 @@ export function getCardsJsonLoadUrls() {
     /* noop */
   }
 
-  const isLocalHost =
-    typeof location !== "undefined" &&
-    (location.hostname === "localhost" ||
-      location.hostname === "127.0.0.1" ||
-      location.hostname === "[::1]");
-
-  // ローカルサーバ / .app では同梱 JSON を最優先（CDN 待ちで起動不能になるのを防ぐ）
-  if (bundled && isLocalHost && urls.indexOf(bundled) < 0) {
+  // 同梱 JSON を常に最優先（GitHub Pages 含む）。
+  // 旧挙動は CDN ピン（DUO 未収録）を先に読み、Pages でスーパースター!!DUO が消えて見えた。
+  if (bundled && urls.indexOf(bundled) < 0) {
     urls.push(bundled);
   }
 
@@ -74,7 +69,6 @@ export function getCardsJsonLoadUrls() {
     if (remote && urls.indexOf(remote) < 0) urls.push(remote);
   }
 
-  if (bundled && urls.indexOf(bundled) < 0) urls.push(bundled);
   return urls;
 }
 

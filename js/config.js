@@ -23,20 +23,22 @@ export const T_ENERGY = "エネルギー";
 
 /**
  * 公開カードDB
- * llofficial-cardgame.com から自動スクレイピング・日次コミットされる wlt233/llocg_db を既定にしている。
+ * 既定は同梱の `data/cards.json`（本リポジトリで維持）。リモートはフォールバック。
+ * llofficial-cardgame.com から自動スクレイピングされる wlt233/llocg_db を CDN 経由で試す。
  * 画面上の「カードデータ URL」項目は廃止したが、次のキーに保存された URL は引き続き読み込みに使う（手動で localStorage を触った場合など）。
  *
- * 2026-06 時点で master の json/cards.json が空 `{}` になることがあるため、
- * 最後に実データが入っていたコミットをピン留めしてフォールバックする。
+ * master の json/cards.json が空 `{}` になることがあるため、
+ * DUO（PL!SP-pb2）等を含む最後の実データコミットをピン留めしてフォールバックする。
+ * （旧ピン ddc00741 は pb2 未収録のため、GitHub Pages で DUO が消えて見えていた）
  */
-export const CARDS_JSON_LLOCG_DB_PIN = "ddc00741";
+export const CARDS_JSON_LLOCG_DB_PIN = "efe152f9";
 
 export const CARDS_JSON_URL =
   "https://raw.githubusercontent.com/wlt233/llocg_db/" +
   CARDS_JSON_LLOCG_DB_PIN +
   "/json/cards.json";
 
-/** リモート取得失敗時に順に試す URL（master → ピン留め → raw） */
+/** 同梱取得失敗時に順に試す URL（master → ピン留め → raw） */
 export const CARDS_JSON_REMOTE_URLS = [
   "https://cdn.jsdelivr.net/gh/wlt233/llocg_db@master/json/cards.json",
   "https://cdn.jsdelivr.net/gh/wlt233/llocg_db@" + CARDS_JSON_LLOCG_DB_PIN + "/json/cards.json",
@@ -44,7 +46,7 @@ export const CARDS_JSON_REMOTE_URLS = [
   "https://raw.githubusercontent.com/wlt233/llocg_db/master/json/cards.json",
 ];
 
-/** 同一オリジンに置くオフライン用コピー（`data/cards.json`）。CDN 取得失敗時のフォールバック。 */
+/** 同一オリジンの正本（`data/cards.json`）。GitHub Pages / ローカルとも最優先で読む。 */
 export const CARDS_JSON_BUNDLED_PATH = "data/cards.json";
 
 export const STORAGE_DECK = "llocg_deck";
