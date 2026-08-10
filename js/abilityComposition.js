@@ -90,13 +90,16 @@ export function applyAbilityComposition(card, trigger, segRaw, primary, classify
     primary.template === "live_start_hand_discard_cost_boost_grant_if" ||
     primary.template === "toujou_both_shuffle_deck_bottom_grant_if" ||
     primary.template === "live_start_optional_shuffle_deck_bottom_grant_if" ||
+    primary.template === "live_start_optional_shuffle_all_waiting_grant" ||
+    primary.template === "live_start_optional_waiting_shuffle_deck_bottom_grant" ||
     primary.template === "live_start_pay_or_discard_conditional_grant_members" ||
     primary.template === "kidou_reveal_live_opp_decline_grant" ||
     primary.template === "live_start_optional_hand_discard_named_followup_blade" ||
     primary.template === "live_start_pick_live_frame_match_success_live_grant" ||
     primary.template === "live_success_optional_energy_wait_opp_draw" ||
     primary.template === "live_start_love_screem_opp_answer" ||
-    primary.template === "live_start_activate_energy_all_active_score"
+    primary.template === "live_start_activate_energy_all_active_score" ||
+    primary.template === "waiting_to_deck_bottom_activate_per"
   ) {
     return primary;
   }
@@ -163,11 +166,26 @@ export function applyAbilityComposition(card, trigger, segRaw, primary, classify
   }
 
   /** @param {import('./abilityEffects.js').ClassifiedAbility[]} steps */
+  function applyGrantIfRecoveredNames(steps, plainFull) {
+    if (!steps || steps.length < 2) return steps;
+    var m =
+      plainFull.match(/これにより「([^」]+)」(?:か|または)「([^」]+)」を手札に加えた場合/) ||
+      plainFull.match(/これにより「([^」]+)」か「([^」]+)」を手札に加えた場合/);
+    if (!m) return steps;
+    var names = [m[1], m[2]];
+    return steps.map(function (st) {
+      if (!st || st.template !== "grant_jouji_session") return st;
+      return Object.assign({}, st, { grantIfRecoveredNames: names });
+    });
+  }
+
+  /** @param {import('./abilityEffects.js').ClassifiedAbility[]} steps */
   function seq(steps) {
     var usable = steps.filter(function (st) {
       return st && st.template && st.template !== "none" && st.template !== "guided_manual";
     });
     usable = mergeDrawDiscardConditionalGrantSteps(usable, plain);
+    usable = applyGrantIfRecoveredNames(usable, plain);
     usable = stripStepCostsWhenParentPaid(usable, primary);
     if (usable.length === 1) return Object.assign({}, primary, usable[0]);
     if (usable.length < 2) return primary;

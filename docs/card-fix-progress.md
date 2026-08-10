@@ -22,7 +22,7 @@
 |------|------------|----------|----------|
 | ブースター bp（行単位） | **13** | **6** | **49** |
 | プレミアム pb（行単位） | **11** | 0 | **0** |
-| アニバーサリー（12 区分） | **10**⭕️ | 0 | **2** |
+| アニバーサリー（12 区分） | **10**⭕️ + **1**✅ | 0 | **1**（#11 エネルギー対象外） |
 | スタートデッキ（10 区分） | **6**⭕️ | 0 | **4** |
 | PR | **6**⭕️ | 0 | 0 |
 
@@ -38,8 +38,7 @@
 
 各スクール × 各弾。**メンバー**と**ライブ**を別行で管理（計 7 弾 × 5 スクール × 2 = 最大 70 行、実在分のみ記載）。
 
-> **bp7 = ブースターパックMELLOWMOMENT**（2026-08-10 取り込み・190 枚）。全スクール **⬜ 未着手**。
-> 未対応セグメントは `scripts/verify-ability-coverage.mjs` の `PENDING_PRODUCT_CARD_NO` で除外中。監修完了時に外すこと。
+> **bp7 = ブースターパックMELLOWMOMENT**（2026-08-10 取り込み・190 枚）。Aqours / 虹ヶ咲 / Liella! / LL-bp7 は初回監修済（✅）。`PENDING_PRODUCT_CARD_NO` は空。
 
 ### μ's（`PL!-bp*` / クロス `LL-bp*`）
 
@@ -63,7 +62,7 @@
 | bp4 | — | — | 実カード未発売 |
 | bp5 | ⭕️ | ⭕️ | [aqours-bp5-verification-list.md](./aqours-bp5-verification-list.md) **2026-06-30 2回監修完了**（007 heart04×2、006必須ウェイト） |
 | bp6 | ⭕️ | ⭕️ | [aqours-bp6-verification-list.md](./aqours-bp6-verification-list.md) **2026-06-28 ライブ2回監修完了**（023 他） |
-| bp7 | ⬜ | ⬜ | **2026-08-10 取り込み**（MELLOWMOMENT・55 枚）。verify/audit 未新設 |
+| bp7 | ✅ | ✅ | [aqours-bp7-verification-list.md](./aqours-bp7-verification-list.md) **2026-08-10 メンバー+ライブ初回監修**（020/022/025 等） |
 
 ### 虹ヶ咲（`PL!N-bp*` / クロス `LL-bp*`）
 
@@ -75,7 +74,7 @@
 | bp4 | ⭕️ | ⭕️ | [niji-bp4-verification-list.md](./niji-bp4-verification-list.md) **2026-06-30 2回監修完了**（011 ライブ回収・007/025/026 再確認） |
 | bp5 | ⭕️ | ⭕️ | [niji-bp5-verification-list.md](./niji-bp5-verification-list.md) **2026-06-30 メンバー3回監修**（011 2択前提 / 014 E2） |
 | bp6 | — | — | 実カード未発売 |
-| bp7 | ⬜ | ⬜ | **2026-08-10 取り込み**（MELLOWMOMENT・65 枚）。verify/audit 未新設 |
+| bp7 | ✅ | ✅ | [niji-bp7-verification-list.md](./niji-bp7-verification-list.md) **2026-08-10 メンバー+ライブ初回監修**（020/025–029 等） |
 
 ### Liella!（`PL!SP-bp*` / クロス `LL-bp*`）
 
@@ -87,7 +86,7 @@
 | bp4 | ⭕️ | ⭕️ | [liella-bp4-verification-list.md](./liella-bp4-verification-list.md) **2026-06-30 2回監修完了** |
 | bp5 | ⭕️ | ⭕️ | [liella-bp5-verification-list.md](./liella-bp5-verification-list.md) **2026-06-30 2回監修完了**（005 ミル比例ブレード、015 センター限定、009/023 他） |
 | bp6 | — | — | 実カード未発売 |
-| bp7 | ⬜ | ⬜ | **2026-08-10 取り込み**（MELLOWMOMENT・61 枚）。verify/audit 未新設 |
+| bp7 | ✅ | ✅ | [liella-bp7-verification-list.md](./liella-bp7-verification-list.md) **2026-08-10 メンバー+ライブ初回監修**（024/028 等） |
 
 ### 蓮ノ空（`PL!HS-bp*`）
 
@@ -136,9 +135,9 @@
 | 9 | PL!HS-cl1 | ライブ | ⭕️ | 同上 **009/010/011/012 再確認** |
 | 10 | LL-PR | ライブ | ⭕️ | [ll-pr-verification-list.md](./ll-pr-verification-list.md) **2026-06-30 2回監修**（004 愛♡スクリ～ム！） |
 | 11 | LL-PR | エネルギー | — | 能力なし PR（検証対象外） |
-| 12 | （予備） | — | ⬜ | 新アニバ商品追加時に行を割当 |
+| 12 | LL-bp7 クロス | メンバー | ✅ | [ll-anniversary-member-verification-list.md](./ll-anniversary-member-verification-list.md) **2026-08-10 初回監修**（花丸&せつ菜&千砂都・修正なし） |
 
-> #11 LL-PR エネルギーは能力なし。#1–10 は **2026-06-30 2回監修完了**（計25 verify ケース）。
+> #11 LL-PR エネルギーは能力なし。#1–10 は **2026-06-30 2回監修完了**。#12 LL-bp7 は **2026-08-10 初回監修**。
 
 ---
 
@@ -154,7 +153,7 @@
 | Liella! sd1 | `PL!SP-sd1` | ⭕️ | ⭕️ | [liella-sd1-verification-list.md](./liella-sd1-verification-list.md) **2026-06-30 2回監修完了** |
 | 蓮ノ空 sd1 | `PL!HS-sd1` | ⭕️ | ⭕️ | [hasunosora-sd1-verification-list.md](./hasunosora-sd1-verification-list.md) **2026-06-30 2回監修完了** |
 | Liella! sd2 cheer | `PL!SP-sd2` | ⭕️ | ⭕️ | [liella-sd2-verification-list.md](./liella-sd2-verification-list.md) **2026-06-30 2回監修完了** |
-| 虹ヶ咲 sd2 cheer | `PL!N-sd2` | ⬜ | ⬜ | **2026-08-10 取り込み**（43 枚）。verify/audit 未新設 |
+| 虹ヶ咲 sd2 cheer | `PL!N-sd2` | ✅ | ✅ | [niji-sd2-verification-list.md](./niji-sd2-verification-list.md) **2026-08-10 初回監修完了**（003/005–007/026） |
 
 > `PL!SP-sd2` は sd1 DUO とは別商品（cheer）。上記 6 行目として追加。
 > `PL!N-sd2`（虹ヶ咲 cheer）は 2026-08-10 に上流追加。`PL!N-sd1-*-P` / `-SD2` の再録違いを含む。
@@ -193,11 +192,9 @@
 
 ## 6. 推奨作業順（2026-08-10）
 
-1. **bp7 MELLOWMOMENT** — 2026-08-10 取り込み。未対応 67 枚。**商品 × スクール × 区分ごとに 1 セッション**で進める
-   （推奨順: Aqours bp7 メンバー → ライブ → 虹ヶ咲 bp7 メンバー → ライブ → Liella! bp7 メンバー → ライブ → `LL-bp7` クロス）
-2. **虹ヶ咲 sd2 cheer** — 未対応 8 枚。`PL!SP-sd2`（Liella cheer）のリストを雛形にできる
-3. **Aqours bp4** / **虹 bp2** / **Liella bp3** — `cards.json` 未収録。追加後に verify/audit 新設
-4. **🔄 一部済**の bp を `[ ]` 解消（収録済み商品があれば）
+1. **収録済み商品の初回監修は一通り完了**（虹ヶ咲 sd2 cheer ✅✅、bp7 各校 ✅）
+2. **2回監修（✅→⭕️）** — 例: 虹ヶ咲 sd2 cheer / bp7 各校
+3. **Aqours bp4** / **虹 bp2** / **Liella bp3** 等 — `cards.json` 未収録。追加後に verify/audit 新設
 
 > 未対応の内訳は `node scripts/check-new-cards.mjs --markdown docs/card-update-report.md` で再生成できる。
 
@@ -229,6 +226,12 @@ node scripts/verify-niji-bp5.mjs
 node scripts/audit-niji-bp5-text.mjs
 node scripts/verify-aqours-bp5.mjs
 node scripts/audit-aqours-bp5-text.mjs
+node scripts/verify-aqours-bp7.mjs
+node scripts/audit-aqours-bp7-text.mjs
+node scripts/verify-niji-bp7.mjs
+node scripts/audit-niji-bp7-text.mjs
+node scripts/verify-liella-bp7.mjs
+node scripts/audit-liella-bp7-text.mjs
 node scripts/verify-muse-bp5.mjs
 node scripts/audit-muse-bp5-text.mjs
 node scripts/verify-muse-bp6.mjs
@@ -243,6 +246,8 @@ node scripts/verify-niji-sd1.mjs
 node scripts/verify-liella-sd1.mjs
 node scripts/verify-hasunosora-sd1.mjs
 node scripts/verify-liella-sd2.mjs
+node scripts/verify-niji-sd2.mjs
+node scripts/audit-niji-sd2-text.mjs
 
 # 全文監査（例）
 node scripts/audit-niji-bp1-text.mjs
@@ -268,6 +273,15 @@ node scripts/verify-ability-coverage.mjs
 
 | 日付 | 内容 |
 |------|------|
+| 2026-08-10 | **虹ヶ咲 sd2 cheer ライブ初回監修**: 025–027 精査。026 条件ブレード誤算→heart02×2＋ブレード≥4対象を修正。verify/audit OK。✅✅ |
+| 2026-08-10 | **虹ヶ咲 sd2 cheer メンバー初回監修**: 001–024 精査。003手札コスト条件／005ハート×2／006付与先自分／007相手成功条件ドローを修正。verify/audit OK。✅ |
+| 2026-08-10 | **LL-bp7 クロス初回監修**: `LL-bp7-001-R＋` 精査。指名捨てコスト10／控え室ライブ・メンバー回収は既存テンプレでOK。修正なし。verify+audit OK。✅ |
+| 2026-08-10 | **Liella! bp7 ライブ初回監修**: 023–028 精査。024 E差≥2スコア／028 9枚シャッフル付与＋エール全Liella! を修正。verify 38 / audit OK。✅ |
+| 2026-08-10 | **Liella! bp7 メンバー初回監修**: 001–022 精査。002コスト条件／003下比例・公開下置き／004デッキ下条件ブレード／006・010・011・013・018・019 等を修正。verify 30 / audit OK。✅ |
+| 2026-08-10 | **虹ヶ咲 bp7 ライブ初回監修**: 025–031＋漏れメンバー019–024。020ミルBH色／025–029 スコア・付与系を修正。verify 41 / audit OK。✅ |
+| 2026-08-10 | **虹ヶ咲 bp7 メンバー初回監修**: 001–018 精査。003下置きハートコピー／006ミル2択／007差分heart／008・009・012・018 等を修正。verify 24 / audit OK。✅ |
+| 2026-08-10 | **Aqours bp7 ライブ初回監修**: 019–025 精査。020必要ハート条件/ミル、022エール下、025ウェイト2+skipActivate を修正。verify 33 / audit OK。✅ |
+| 2026-08-10 | **Aqours bp7 メンバー初回監修**: 001–018 精査。誤分類12系統修正（バトン手札整理・下ミル条件付与・jouji条件・FC/択 等）。verify 24 / audit OK。✅ |
 | 2026-06-30 | **PR 全スクール一括2回監修**: 能力付き93枚相当を cards.json 全文+分類精査。guided_manual 0。新規修正なし。audit-all-pr 12本/verify 70ケース OK。⭕️ |
 | 2026-06-30 | Liella! sd2 cheer 2回監修: 収録25枚精査。008/020 初回修正の再確認。024 リマインダー文のみ。新規修正なし。verify 10/audit OK。⭕️⭕️ |
 | 2026-06-30 | 蓮 sd1 2回監修: 収録20枚精査。006 LS任意E→ブレード2含む再確認。新規修正なし。verify 15/audit OK。⭕️⭕️ |

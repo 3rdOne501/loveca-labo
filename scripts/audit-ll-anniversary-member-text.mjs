@@ -16,7 +16,7 @@ const cards = JSON.parse(fs.readFileSync(path.join(ROOT, "data/cards.json"), "ut
 
 /** @param {string} id */
 function isAnniversaryCrossMember(id) {
-  return /^LL-bp[1-6]-001-R/.test(id);
+  return /^LL-bp[1-7]-001-R/.test(id);
 }
 
 /** @type {string[]} */
@@ -86,6 +86,21 @@ for (const [id, card] of Object.entries(cards).sort()) {
       } else if ((cl.characterNames || []).some((n) => /ライブ|スコア|ブレード/.test(n))) {
         errors.push(`${id} live_start: grant text leaked into characterNames`);
       }
+    }
+
+  }
+}
+
+for (const [id, card] of Object.entries(cards).sort()) {
+  if (!/^LL-bp7-001-R/.test(id)) continue;
+  const raw = cardAbilityRawText(card);
+  for (const seg of splitAbilityByTriggers(raw)) {
+    if (seg.trigger !== "jouji") continue;
+    const rule = classifyJoujiSegment(seg.text);
+    if (rule?.kind !== "play_cost_set_named_hand_discard") {
+      errors.push(`${id} jouji: play_cost_set_named_hand_discard misclassified (${rule?.kind})`);
+    } else if (rule.playCostSet !== 10 || (rule.playCostNamedDiscard || []).length !== 3) {
+      errors.push(`${id} jouji: play cost set/names mismatch`);
     }
   }
 }

@@ -3,17 +3,17 @@
   "trigger": "toujyou",
   "total": 613,
   "byTemplate": {
-    "toujou_wait_pick_hand": 70,
+    "toujou_wait_pick_hand": 74,
     "deck_top_pick_recover": 114,
     "toujou_success_live_hand_reveal_swap": 1,
     "deck_mill_conditional_draw": 1,
     "deck_top_look_reorder": 18,
     "ability_pick_one": 22,
-    "optional_self_wait_opp_stage": 36,
+    "optional_self_wait_opp_stage": 34,
     "toujou_opp_hand_reveal_no_live_draw": 1,
     "toujou_hand_stage_enter": 11,
-    "grant_jouji_session": 9,
-    "live_start_pick_player_waiting_deck_bottom": 1,
+    "grant_jouji_session": 13,
+    "live_start_pick_player_waiting_deck_bottom": 2,
     "toujou_optional_wait_to_deck_top": 4,
     "draw_then_hand_discard": 46,
     "toujou_opp_emma_punch_answer": 1,
@@ -22,10 +22,10 @@
     "draw_from_deck": 38,
     "energy_deck_to_wait": 15,
     "toujou_optional_hand_discard_draw": 3,
-    "deck_top_to_waiting": 9,
+    "deck_top_to_waiting": 8,
     "toujou_deck_top_wait_if_all_heart": 5,
-    "activate_energy": 19,
-    "ability_sequence": 13,
+    "activate_energy": 17,
+    "ability_sequence": 17,
     "deck_reveal_until_live": 2,
     "draw_then_conditional_extra_draw": 2,
     "toujou_deck_top_wait_if_all_members": 2,
@@ -89,7 +89,11 @@
     "deck_top_pick_enter_or_hand": 2,
     "toujou_baton_discarded_under": 2,
     "optional_pick_member_wait_opp_blade_gap": 2,
-    "guided_manual": 20
+    "deck_peek_relocate": 5,
+    "waiting_member_under_stage": 4,
+    "pick_stage_member_to_center": 1,
+    "energy_deck_under_member": 1,
+    "waiting_pick_to_deck": 1
   },
   "cards": [
     {
@@ -2452,20 +2456,28 @@
     {
       "card_no": "PL!-pb1-006-R",
       "name": "西木野真姫",
-      "template": "optional_self_wait_opp_stage",
+      "template": "ability_sequence",
       "automated": true,
       "optional": false,
       "perTurn": 0,
-      "effect": "自分の控え室から『μ's』のライブカードを1枚までデッキの一番上に置く。その後、相手のステージにウェイト状態のメンバーがいる場合、カードを1枚引く。"
+      "effect": "自分の控え室から『μ's』のライブカードを1枚までデッキの一番上に置く。その後、相手のステージにウェイト状態のメンバーがいる場合、カードを1枚引く。",
+      "steps": [
+        "waiting_pick_to_deck",
+        "draw_from_deck"
+      ]
     },
     {
       "card_no": "PL!-pb1-006-P＋",
       "name": "西木野真姫",
-      "template": "optional_self_wait_opp_stage",
+      "template": "ability_sequence",
       "automated": true,
       "optional": false,
       "perTurn": 0,
-      "effect": "自分の控え室から『μ's』のライブカードを1枚までデッキの一番上に置く。その後、相手のステージにウェイト状態のメンバーがいる場合、カードを1枚引く。"
+      "effect": "自分の控え室から『μ's』のライブカードを1枚までデッキの一番上に置く。その後、相手のステージにウェイト状態のメンバーがいる場合、カードを1枚引く。",
+      "steps": [
+        "waiting_pick_to_deck",
+        "draw_from_deck"
+      ]
     },
     {
       "card_no": "PL!-pb1-008-R",
@@ -5115,8 +5127,8 @@
     {
       "card_no": "PL!S-bp7-003-R＋",
       "name": "松浦果南",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "deck_peek_relocate",
+      "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "自分のデッキの一番上のカードを見る。それをデッキの一番下に置いてもよい。"
@@ -5133,8 +5145,8 @@
     {
       "card_no": "PL!S-bp7-003-P",
       "name": "松浦果南",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "deck_peek_relocate",
+      "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "自分のデッキの一番上のカードを見る。それをデッキの一番下に置いてもよい。"
@@ -5151,8 +5163,8 @@
     {
       "card_no": "PL!S-bp7-003-P＋",
       "name": "松浦果南",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "deck_peek_relocate",
+      "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "自分のデッキの一番上のカードを見る。それをデッキの一番下に置いてもよい。"
@@ -5169,8 +5181,8 @@
     {
       "card_no": "PL!S-bp7-003-SEC",
       "name": "松浦果南",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "deck_peek_relocate",
+      "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "自分のデッキの一番上のカードを見る。それをデッキの一番下に置いてもよい。"
@@ -5205,8 +5217,8 @@
     {
       "card_no": "PL!S-bp7-005-R＋",
       "name": "渡辺 曜",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "waiting_member_under_stage",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "自分の控え室にあるメンバーカード1枚を、自分のステージにいるメンバー1人の下に置く。"
@@ -5214,8 +5226,8 @@
     {
       "card_no": "PL!S-bp7-005-P",
       "name": "渡辺 曜",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "waiting_member_under_stage",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "自分の控え室にあるメンバーカード1枚を、自分のステージにいるメンバー1人の下に置く。"
@@ -5223,8 +5235,8 @@
     {
       "card_no": "PL!S-bp7-005-P＋",
       "name": "渡辺 曜",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "waiting_member_under_stage",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "自分の控え室にあるメンバーカード1枚を、自分のステージにいるメンバー1人の下に置く。"
@@ -5232,8 +5244,8 @@
     {
       "card_no": "PL!S-bp7-005-SEC",
       "name": "渡辺 曜",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "waiting_member_under_stage",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "自分の控え室にあるメンバーカード1枚を、自分のステージにいるメンバー1人の下に置く。"
@@ -5295,8 +5307,8 @@
     {
       "card_no": "PL!S-bp7-010-N",
       "name": "高海千歌",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "deck_peek_relocate",
+      "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "自分のデッキの一番下のカードを見る。それをデッキの上から4番目に置いてもよい。"
@@ -5313,8 +5325,8 @@
     {
       "card_no": "PL!S-bp7-013-N",
       "name": "黒澤ダイヤ",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "live_start_pick_player_waiting_deck_bottom",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "自分か相手を選ぶ。自分は、そのプレイヤーの控え室にあるメンバーカードを2枚まで好きな順番でデッキの下に置く。"
@@ -5322,8 +5334,8 @@
     {
       "card_no": "PL!S-bp7-017-N",
       "name": "小原鞠莉",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "grant_jouji_session",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "自分のデッキの一番下のカードを控え室に置く。それがコスト10以上のメンバーカードの場合、ライブ終了時まで、を得る。"
@@ -5331,8 +5343,8 @@
     {
       "card_no": "PL!S-bp7-018-N",
       "name": "黒澤ルビィ",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "pick_stage_member_to_center",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "自分のステージにいるメンバー1人をセンターエリアにポジションチェンジさせる。"
@@ -5376,20 +5388,28 @@
     {
       "card_no": "PL!N-bp7-008-R",
       "name": "エマ・ヴェルデ",
-      "template": "activate_energy",
+      "template": "ability_sequence",
       "automated": true,
       "optional": true,
       "perTurn": 0,
-      "effect": "自分の控え室からブレードハートを持たないメンバーカードを4枚まで好きな順番でデッキの下に置いてもよい。これによりデッキに置いたカード1枚につき、エネルギーを1枚アクティブにする。"
+      "effect": "自分の控え室からブレードハートを持たないメンバーカードを4枚まで好きな順番でデッキの下に置いてもよい。これによりデッキに置いたカード1枚につき、エネルギーを1枚アクティブにする。",
+      "steps": [
+        "waiting_pick_to_deck",
+        "activate_energy"
+      ]
     },
     {
       "card_no": "PL!N-bp7-008-P",
       "name": "エマ・ヴェルデ",
-      "template": "activate_energy",
+      "template": "ability_sequence",
       "automated": true,
       "optional": true,
       "perTurn": 0,
-      "effect": "自分の控え室からブレードハートを持たないメンバーカードを4枚まで好きな順番でデッキの下に置いてもよい。これによりデッキに置いたカード1枚につき、エネルギーを1枚アクティブにする。"
+      "effect": "自分の控え室からブレードハートを持たないメンバーカードを4枚まで好きな順番でデッキの下に置いてもよい。これによりデッキに置いたカード1枚につき、エネルギーを1枚アクティブにする。",
+      "steps": [
+        "waiting_pick_to_deck",
+        "activate_energy"
+      ]
     },
     {
       "card_no": "PL!N-bp7-009-R",
@@ -5421,8 +5441,8 @@
     {
       "card_no": "PL!N-bp7-017-N",
       "name": "宮下 愛",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "energy_deck_under_member",
+      "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "自分のエネルギーデッキから、エネルギーカード1枚を自分のステージにいる『虹ヶ咲』のメンバーの下に置いてもよい。"
@@ -5439,7 +5459,7 @@
     {
       "card_no": "PL!N-bp7-020-N",
       "name": "エマ・ヴェルデ",
-      "template": "deck_top_to_waiting",
+      "template": "grant_jouji_session",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -5448,8 +5468,8 @@
     {
       "card_no": "PL!N-bp7-024-N",
       "name": "鐘 嵐珠",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "grant_jouji_session",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "自分のステージに『R3BIRTH』のメンバーが3人いる場合、ライブ終了時まで、を得る。"
@@ -5457,8 +5477,8 @@
     {
       "card_no": "PL!SP-bp7-006-R＋",
       "name": "桜小路きな子",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "toujou_wait_pick_hand",
+      "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "エネルギー置き場にあるエネルギー1枚をエネルギーデッキに置いてもよい：自分の控え室にある『Liella!』のメンバーカードを1枚手札に加える。"
@@ -5466,8 +5486,8 @@
     {
       "card_no": "PL!SP-bp7-006-P",
       "name": "桜小路きな子",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "toujou_wait_pick_hand",
+      "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "エネルギー置き場にあるエネルギー1枚をエネルギーデッキに置いてもよい：自分の控え室にある『Liella!』のメンバーカードを1枚手札に加える。"
@@ -5475,8 +5495,8 @@
     {
       "card_no": "PL!SP-bp7-006-P＋",
       "name": "桜小路きな子",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "toujou_wait_pick_hand",
+      "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "エネルギー置き場にあるエネルギー1枚をエネルギーデッキに置いてもよい：自分の控え室にある『Liella!』のメンバーカードを1枚手札に加える。"
@@ -5484,8 +5504,8 @@
     {
       "card_no": "PL!SP-bp7-006-SEC",
       "name": "桜小路きな子",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "toujou_wait_pick_hand",
+      "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "エネルギー置き場にあるエネルギー1枚をエネルギーデッキに置いてもよい：自分の控え室にある『Liella!』のメンバーカードを1枚手札に加える。"
@@ -5511,8 +5531,8 @@
     {
       "card_no": "PL!SP-bp7-012-N",
       "name": "澁谷かのん",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "waiting_pick_to_deck",
+      "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "自分の控え室から、『CatChu!』と『KALEIDOSCORE』と『5yncri5e!』のカードをそれぞれ1枚ずつ選び、それらを好きな順番でデッキの下に置いてもよい。そうしたとき、カードを1枚引く。"
@@ -5646,8 +5666,8 @@
     {
       "card_no": "PL!N-sd2-019-SD2",
       "name": "優木せつ菜",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "grant_jouji_session",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "ライブ終了時まで、を得る。"

@@ -92,6 +92,39 @@ export function classifyJidouAutoSegment(segRaw) {
       filters: { pickType: /メンバーカード/.test(p) ? "member" : "live", seriesTag: parseSeriesTag(p) },
     };
   }
+  // 「このメンバーがステージから控え室に置かれたとき、バトンタッチしていた場合、
+  //   エネルギーデッキからエネルギーカードN枚をこのバトンタッチで登場したメンバーの下に置く」
+  if (
+    /ステージから控え室に置かれたとき/.test(p) &&
+    /バトンタッチしていた/.test(p) &&
+    /エネルギーデッキから/.test(p) &&
+    /バトンタッチで登場したメンバーの下に置/.test(p)
+  ) {
+    var edBaton = p.match(/エネルギーカード([０-９\d]+)枚/);
+    return {
+      template: "jidou_leave_baton_partner_energy_under",
+      eventKind: "leave_stage_baton",
+      filters: { seriesTag: parseSeriesTag(p) },
+      energyUnderCount: edBaton ? Number(normalizeFwDigits(edBaton[1])) || 1 : 1,
+      perTurnLimit: perTurn,
+    };
+  }
+
+  // 「このメンバーがステージから控え室に置かれたとき、控え室にある『X』の(ライブ|メンバー)カードを1枚手札に加える」
+  // （手札コスト無しの必須回収）
+  if (
+    /ステージから控え室に置かれたとき/.test(p) &&
+    /控え室に(?:ある|あり)/.test(p) &&
+    /手札に加える/.test(p) &&
+    !/手札を([０-９\d]+)枚控え室/.test(p)
+  ) {
+    return {
+      template: "jidou_leave_stage_recover_no_cost",
+      eventKind: "leave_stage",
+      filters: { pickType: /メンバーカード/.test(p) ? "member" : "live", seriesTag: parseSeriesTag(p) },
+      perTurnLimit: perTurn,
+    };
+  }
   if (/ステージから控え室に置かれたとき/.test(p) && /デッキの上からカードを(\d+)枚見る/.test(p)) {
     var lk = p.match(/デッキの上からカードを(\d+)枚見る/);
     var pickMember = /メンバーカード/.test(p);
@@ -266,10 +299,18 @@ export function classifyJidouAutoSegment(segRaw) {
 
   if (
     (/自分がエールしたとき/.test(p) || /エールにより公開/.test(p)) &&
-    /ブレードハートを持たないメンバー.*3枚以上/.test(p) &&
+    /ブレードハートを持たないメンバー.*([０-９\d]+)枚以上/.test(p) &&
     /ライブ終了時まで/.test(p)
   ) {
-    return { template: "jidou_yell_grant_jouji_nobh_members", eventKind: "yell", perTurnLimit: perTurn };
+    var nobhJidouM = p.match(/ブレードハートを持たないメンバー[^。]*?([０-９\d]+)枚以上/);
+    return {
+      template: "jidou_yell_grant_jouji_nobh_members",
+      eventKind: "yell",
+      perTurnLimit: perTurn,
+      minYellRevealedNoBladeHeartMembers: nobhJidouM
+        ? Number(normalizeFwDigits(nobhJidouM[1])) || 3
+        : 3,
+    };
   }
   if (/エールにより公開.*ブレードハートを持つカードがない/.test(p) && /ライブ終了時まで/.test(p)) {
     return { template: "jidou_yell_grant_jouji_no_bh", eventKind: "yell", perTurnLimit: perTurn };
@@ -312,12 +353,116 @@ export function classifyJidouAutoSegment(segRaw) {
     return { template: "jidou_yell_grant_jouji", eventKind: "yell", perTurnLimit: perTurn };
   }
 
-  if (/エリアを移動するか.*エネルギー置き場にエネルギーが置かれた/.test(p) && /カードを(\d+)枚引/.test(p)) {
+  // 「ウェイト状態のこのメンバーがエリアを移動したとき、このメンバーをアクティブにする」
+  if (/ウェイト状態のこのメンバーがエリアを移動したとき/.test(p) && /このメンバーをアクティブに/.test(p)) {
+    return { template: "jidou_self_wait_area_move_activate", eventKind: "area_move", perTurnLimit: perTurn };
+  }
+
+  // 「このカードがデッキから控え室に置かれたとき、手札を1枚控え室に置いてもよい。そうしたとき、控え室からこのカードを手札に加える」
+  if (
+    /このカードがデッキから控え室に置かれたとき/.test(p) &&
+    /手札を([０-９\d]+)枚控え室に置いてもよ/.test(p) &&
+    /控え室からこのカードを手札に加える/.test(p)
+  ) {
+    return {
+      template: "jidou_self_deck_to_waiting_discard_recover",
+      eventKind: "self_deck_to_waiting",
+      handDiscardToWaiting: 1,
+      perTurnLimit: perTurn,
+    };
+  }
+
+  // 「自分の□能力によって、カードがデッキから控え室に置かれるたび、それらの中から『X』ライブ1枚を手札に+スコア」
+  if (
+    /自分の.*能力によって/.test(p) &&
+    /デッキから自分の控え室に置かれるたび/.test(p) &&
+    /手札に加えてもよ/.test(p)
+  ) {
+    var millSer = p.match(/『([^』]+)』/);
+    var millSc = p.match(/スコアを＋([０-９\d]+)/);
+    return {
+      template: "jidou_ability_mill_pick_live_score",
+      eventKind: "deck_milled_by_ability",
+      resolvedAbilityKind: /ライブ成功時/.test(p + segRaw) ? "live_success" : null,
+      filters: { seriesTag: millSer ? millSer[1] : null, pickType: "live" },
+      cardScoreGrant: millSc ? Number(normalizeFwDigits(millSc[1])) || 1 : 1,
+      perTurnLimit: perTurn,
+    };
+  }
+
+  // 「ステージから控え室に置かれたとき、バトンタッチしていた場合、このカードをバトンタッチで登場したメンバーの下に置く」
+  if (
+    /ステージから控え室に置かれたとき/.test(p) &&
+    /バトンタッチしていた/.test(p) &&
+    /このカードを.*バトンタッチで登場したメンバーの下に置/.test(p)
+  ) {
+    return {
+      template: "jidou_leave_baton_self_under_partner",
+      eventKind: "leave_stage_baton",
+      perTurnLimit: perTurn,
+    };
+  }
+
+  // 「このメンバーが登場するか、自分のエネルギーがエネルギー置き場からエネルギーデッキに置かれたとき、
+  //   エネルギーデッキからエネルギーカードをN枚ウェイト状態で置く（次のターンはアクティブしない）」
+  if (
+    /エネルギー置き場からエネルギーデッキに置かれたとき/.test(p) &&
+    /エネルギーデッキから/.test(p) &&
+    /ウェイト状態で置/.test(p)
+  ) {
+    var edwRet = p.match(/エネルギーカードを([０-９\d]+)枚ウェイト/);
+    return {
+      template: "jidou_enter_or_energy_returned_energy_wait",
+      eventKind: "energy_returned_to_deck",
+      altEventKind: /このメンバーが登場する/.test(p) ? "stage_entry" : null,
+      energyWaitCount: edwRet ? Number(normalizeFwDigits(edwRet[1])) || 1 : 1,
+      energySkipNextActivate: /次のターンのアクティブフェイズにアクティブしない/.test(p),
+      perTurnLimit: perTurn,
+    };
+  }
+
+  // 「自分のステージにいる『X』のメンバー1人がウェイト状態になったとき、
+  //   手札を1枚控え室に置いてもよい。そうしたとき、そのメンバーをアクティブにする（+ライブ終了時まで付与）」
+  if (
+    /ステージにいる.*メンバー1人がウェイト状態になったとき/.test(p) &&
+    /手札を([０-９\d]+)枚控え室に置/.test(p) &&
+    /アクティブに(?:する|し)/.test(p)
+  ) {
+    var wSeries = p.match(/『([^』]+)』/);
+    var wDiscard = p.match(/手札を([０-９\d]+)枚控え室に置/);
+    return {
+      template: "jidou_own_member_wait_discard_activate",
+      eventKind: "own_member_became_wait",
+      livePhaseOnly: /ライブフェイズの間/.test(p),
+      seriesTag: wSeries ? wSeries[1] : null,
+      handDiscardCount: wDiscard ? Number(normalizeFwDigits(wDiscard[1])) || 1 : 1,
+      grantRaw: /ライブ終了時まで/.test(p) ? segRaw : null,
+      perTurnLimit: perTurn,
+    };
+  }
+
+  // 「自分のエネルギー置き場にあるエネルギーがメンバーの下に置かれたとき、
+  //   自分のエネルギーデッキから、エネルギーカードをN枚ウェイト状態で置く」
+  if (/エネルギー置き場にあるエネルギーがメンバーの下に置かれたとき/.test(p)) {
+    var edwUnder = p.match(/エネルギーカードを([０-９\d]+)枚ウェイト/);
+    return {
+      template: "jidou_energy_under_placed_energy_wait",
+      eventKind: "energy_placed_under_member",
+      energyWaitCount: edwUnder ? Number(normalizeFwDigits(edwUnder[1])) || 1 : 1,
+      perTurnLimit: perTurn,
+    };
+  }
+
+  // 「自分のカードの効果によって（このメンバーがエリアを移動するか）自分のエネルギー置き場に
+  // エネルギーが置かれたとき」。ドローは無い形（ブレード付与のみ等）もある。
+  if (/自分のエネルギー置き場にエネルギーが置かれたとき/.test(p)) {
     var drEg = p.match(/カードを(\d+)枚引/);
+    var alsoAreaMove = /エリアを移動するか/.test(p);
     return {
       template: "jidou_move_or_energy_draw_grant",
-      eventKind: "area_move_or_energy",
-      deckDrawCount: drEg ? Number(drEg[1]) : 1,
+      eventKind: "energy_placed",
+      altEventKind: alsoAreaMove ? "area_move" : undefined,
+      deckDrawCount: drEg ? Number(drEg[1]) : 0,
       perTurnLimit: perTurn,
     };
   }
@@ -629,6 +774,15 @@ export function jidouEffectIsAutomated(template) {
     template === "jidou_on_cost_enter_draw" ||
     template === "jidou_on_cost_enter_energy_wait" ||
     template === "jidou_area_move_activate_energy" ||
+    template === "jidou_energy_under_placed_energy_wait" ||
+    template === "jidou_own_member_wait_discard_activate" ||
+    template === "jidou_leave_stage_recover_no_cost" ||
+    template === "jidou_leave_baton_partner_energy_under" ||
+    template === "jidou_self_wait_area_move_activate" ||
+    template === "jidou_enter_or_energy_returned_energy_wait" ||
+    template === "jidou_self_deck_to_waiting_discard_recover" ||
+    template === "jidou_ability_mill_pick_live_score" ||
+    template === "jidou_leave_baton_self_under_partner" ||
     template === "jidou_move_or_energy_draw_grant" ||
     template === "jidou_card_to_waiting_pick_hand" ||
     template === "jidou_live_zone_to_waiting_deck" ||

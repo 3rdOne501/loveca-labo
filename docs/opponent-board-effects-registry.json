@@ -1,25 +1,26 @@
 {
-  "generatedAt": "2026-07-29T00:15:36.564Z",
+  "generatedAt": "2026-08-10T04:52:32.742Z",
   "purpose": "対戦モード（localDual / オンライン）本格実装時の実装・テスト計画用。ソロ代行入力で動くカードも含む。",
-  "totalEntries": 265,
-  "uniqueCards": 216,
+  "totalEntries": 300,
+  "uniqueCards": 250,
   "kindCounts": {
-    "mutate_opponent_live": 20,
-    "mutate_opponent_stage": 149,
-    "opponent_choice": 41,
-    "read_compare": 88,
+    "mutate_opponent_live": 21,
+    "mutate_opponent_stage": 159,
+    "opponent_choice": 45,
+    "read_compare": 110,
     "mutate_opponent_hand": 5,
-    "passive_opponent": 50,
-    "both_players": 15,
-    "mutate_opponent_deck": 33,
+    "passive_opponent": 55,
+    "both_players": 19,
+    "mutate_opponent_deck": 39,
     "mutate_opponent_waiting": 9,
     "mutate_opponent_success_live": 21,
-    "mutate_opponent_energy": 9,
+    "mutate_opponent_energy": 11,
     "pick_self_or_opponent": 2
   },
   "dualStatusCounts": {
-    "dual_ok": 215,
-    "passive_track": 50
+    "dual_ok": 243,
+    "passive_track": 55,
+    "dual_gap": 2
   },
   "rows": [
     {
@@ -606,7 +607,7 @@
       "name": "西木野真姫",
       "set": "PL!-pb1",
       "trig": "toujyou",
-      "tmpl": "optional_self_wait_opp_stage",
+      "tmpl": "ability_sequence",
       "automated": true,
       "kinds": [
         "mutate_opponent_stage"
@@ -619,7 +620,7 @@
       "name": "西木野真姫",
       "set": "PL!-pb1",
       "trig": "toujyou",
-      "tmpl": "optional_self_wait_opp_stage",
+      "tmpl": "ability_sequence",
       "automated": true,
       "kinds": [
         "mutate_opponent_stage"
@@ -1319,6 +1320,19 @@
       ],
       "dualStatus": "dual_ok",
       "text": "ライブの合計スコアが相手より高い場合、エールにより公開された自分のカードの中から、『虹ヶ咲』のカードを1枚手札に加える。 (必要ハートを確認する時、エールで出たは任意の色のハートとして扱う。)"
+    },
+    {
+      "id": "PL!N-bp1-026-SECL",
+      "name": "Poppin' Up!",
+      "set": "PL!N-bp1",
+      "trig": "live_success",
+      "tmpl": "yell_resolution_pick_hand",
+      "automated": true,
+      "kinds": [
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "ライブの合計スコアが相手より高い場合、エールにより公開された自分のカードの中から、『虹ヶ咲』のカードを1枚手札に加える。"
     },
     {
       "id": "PL!N-bp3-010-P",
@@ -2120,6 +2134,154 @@
       "text": "自分か相手の成功ライブカード置き場にカードが2枚以上あり、かつ自分のステージに名前の異なるメンバーが3人以上いる場合、このカードのスコアを＋１する。"
     },
     {
+      "id": "PL!N-bp7-004-P",
+      "name": "朝香果林",
+      "set": "PL!N-bp7",
+      "trig": "kidou",
+      "tmpl": "kidou_energy_under_opp_wait_by_under",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "エネルギー置き場にあるエネルギー1枚をこのメンバーの下に置く：相手のステージにいる、元々持つの数がこのメンバーの下にあるエネルギーカードの枚数に1を足した数以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!N-bp7-004-R",
+      "name": "朝香果林",
+      "set": "PL!N-bp7",
+      "trig": "kidou",
+      "tmpl": "kidou_energy_under_opp_wait_by_under",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "エネルギー置き場にあるエネルギー1枚をこのメンバーの下に置く：相手のステージにいる、元々持つの数がこのメンバーの下にあるエネルギーカードの枚数に1を足した数以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!N-bp7-009-P",
+      "name": "天王寺璃奈",
+      "set": "PL!N-bp7",
+      "trig": "toujyou",
+      "tmpl": "deck_top_to_waiting",
+      "automated": true,
+      "kinds": [
+        "both_players",
+        "mutate_opponent_deck",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分と相手はそれぞれ、自身のデッキの上からカードを7枚控え室に置く。"
+    },
+    {
+      "id": "PL!N-bp7-009-R",
+      "name": "天王寺璃奈",
+      "set": "PL!N-bp7",
+      "trig": "toujyou",
+      "tmpl": "deck_top_to_waiting",
+      "automated": true,
+      "kinds": [
+        "both_players",
+        "mutate_opponent_deck",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分と相手はそれぞれ、自身のデッキの上からカードを7枚控え室に置く。"
+    },
+    {
+      "id": "PL!N-bp7-027-L",
+      "name": "オードリー",
+      "set": "PL!N-bp7",
+      "trig": "live_success",
+      "tmpl": "live_card_score_plus",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージにいる『虹ヶ咲』のメンバー1人を選ぶ。そのメンバーが、自分と相手のステージにいるほかのすべてのメンバーより多くのを持つ場合、このカードのスコアを＋１する。"
+    },
+    {
+      "id": "PL!N-sd2-007-P",
+      "name": "優木せつ菜",
+      "set": "PL!N-sd2",
+      "trig": "live_success",
+      "tmpl": "draw_then_hand_discard",
+      "automated": true,
+      "kinds": [
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "カードを1枚引く。このターン、相手もライブを成功している場合、さらにカードを1枚引き、手札を1枚控え室に置く。"
+    },
+    {
+      "id": "PL!N-sd2-007-SD2",
+      "name": "優木せつ菜",
+      "set": "PL!N-sd2",
+      "trig": "live_success",
+      "tmpl": "draw_then_hand_discard",
+      "automated": true,
+      "kinds": [
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "カードを1枚引く。このターン、相手もライブを成功している場合、さらにカードを1枚引き、手札を1枚控え室に置く。"
+    },
+    {
+      "id": "PL!N-sd2-013-SD2",
+      "name": "上原歩夢",
+      "set": "PL!N-sd2",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージにいるメンバーが『虹ヶ咲』のみの場合、相手のステージにいる元々持つの数が2つ以下のメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "id": "PL!N-sd2-013-SD2",
+      "name": "上原歩夢",
+      "set": "PL!N-sd2",
+      "trig": "live_start",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージにいるメンバーが『虹ヶ咲』のみの場合、相手のステージにいる元々持つの数が2つ以下のメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "id": "PL!N-sd2-019-SD2",
+      "name": "優木せつ菜",
+      "set": "PL!N-sd2",
+      "trig": "live_start",
+      "tmpl": "live_start_opp_wait_max_cost",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手のステージにいるコスト2以下のメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "id": "PL!N-sd2-021-SD2",
+      "name": "天王寺璃奈",
+      "set": "PL!N-sd2",
+      "trig": "toujyou",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手のステージにいるコスト4以下のメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
       "id": "PL!S-PR-029-PR",
       "name": "渡辺 曜",
       "set": "PL!S-PR",
@@ -2724,6 +2886,146 @@
       ],
       "dualStatus": "dual_ok",
       "text": "ライブ終了時まで、相手は余剰ハートをすべて失う。これにより相手が余剰ハートを2つ以上失っている場合、このカードのスコアを＋１する。"
+    },
+    {
+      "id": "PL!S-bp7-003-P",
+      "name": "松浦果南",
+      "set": "PL!S-bp7",
+      "trig": "toujyou",
+      "tmpl": "ability_pick_one",
+      "automated": true,
+      "kinds": [
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "以下から1つを選ぶ。 ・ライブ終了時まで、自分のステージにいる元々持つの数が3つ以下の『Aqours』のメンバーは、相手の効果によってはウェイトしない。 ・このメンバーを『Aqours』か『SaintSnow』のメンバーがいるエリアにポジションチェンジする。"
+    },
+    {
+      "id": "PL!S-bp7-003-P＋",
+      "name": "松浦果南",
+      "set": "PL!S-bp7",
+      "trig": "toujyou",
+      "tmpl": "ability_pick_one",
+      "automated": true,
+      "kinds": [
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "以下から1つを選ぶ。 ・ライブ終了時まで、自分のステージにいる元々持つの数が3つ以下の『Aqours』のメンバーは、相手の効果によってはウェイトしない。 ・このメンバーを『Aqours』か『SaintSnow』のメンバーがいるエリアにポジションチェンジする。"
+    },
+    {
+      "id": "PL!S-bp7-003-R＋",
+      "name": "松浦果南",
+      "set": "PL!S-bp7",
+      "trig": "toujyou",
+      "tmpl": "ability_pick_one",
+      "automated": true,
+      "kinds": [
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "以下から1つを選ぶ。 ・ライブ終了時まで、自分のステージにいる元々持つの数が3つ以下の『Aqours』のメンバーは、相手の効果によってはウェイトしない。 ・このメンバーを『Aqours』か『SaintSnow』のメンバーがいるエリアにポジションチェンジする。"
+    },
+    {
+      "id": "PL!S-bp7-003-SEC",
+      "name": "松浦果南",
+      "set": "PL!S-bp7",
+      "trig": "toujyou",
+      "tmpl": "ability_pick_one",
+      "automated": true,
+      "kinds": [
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "以下から1つを選ぶ。 ・ライブ終了時まで、自分のステージにいる元々持つの数が3つ以下の『Aqours』のメンバーは、相手の効果によってはウェイトしない。 ・このメンバーを『Aqours』か『SaintSnow』のメンバーがいるエリアにポジションチェンジする。"
+    },
+    {
+      "id": "PL!S-bp7-004-P",
+      "name": "黒澤ダイヤ",
+      "set": "PL!S-bp7",
+      "trig": "toujyou",
+      "tmpl": "toujou_baton_both_keep_hand_shuffle_deck_bottom_draw",
+      "automated": true,
+      "kinds": [
+        "both_players",
+        "mutate_opponent_deck",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_gap",
+      "text": "『Aqours』のメンバーからバトンタッチして登場した場合、自分と相手はそれぞれ、自身の手札のカードを3枚まで選び、選んだカード以外のカードをシャッフルし、自身のデッキの下に置く。その後、自分と相手はそれぞれカードを3枚引く。"
+    },
+    {
+      "id": "PL!S-bp7-004-R",
+      "name": "黒澤ダイヤ",
+      "set": "PL!S-bp7",
+      "trig": "toujyou",
+      "tmpl": "toujou_baton_both_keep_hand_shuffle_deck_bottom_draw",
+      "automated": true,
+      "kinds": [
+        "both_players",
+        "mutate_opponent_deck",
+        "opponent_choice"
+      ],
+      "dualStatus": "dual_gap",
+      "text": "『Aqours』のメンバーからバトンタッチして登場した場合、自分と相手はそれぞれ、自身の手札のカードを3枚まで選び、選んだカード以外のカードをシャッフルし、自身のデッキの下に置く。その後、自分と相手はそれぞれカードを3枚引く。"
+    },
+    {
+      "id": "PL!S-bp7-013-N",
+      "name": "黒澤ダイヤ",
+      "set": "PL!S-bp7",
+      "trig": "toujyou",
+      "tmpl": "live_start_pick_player_waiting_deck_bottom",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_deck",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分か相手を選ぶ。自分は、そのプレイヤーの控え室にあるメンバーカードを2枚まで好きな順番でデッキの下に置く。"
+    },
+    {
+      "id": "PL!S-bp7-014-N",
+      "name": "渡辺 曜",
+      "set": "PL!S-bp7",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_energy",
+        "passive_opponent",
+        "read_compare"
+      ],
+      "dualStatus": "passive_track",
+      "text": "相手のエネルギーが自分より多いかぎり、を得る。"
+    },
+    {
+      "id": "PL!S-bp7-023-L",
+      "name": "夜空はなんでも知ってるの？",
+      "set": "PL!S-bp7",
+      "trig": "live_start",
+      "tmpl": "live_start_optional_energy_to_deck_opp_adv_score",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_deck",
+        "mutate_opponent_energy",
+        "mutate_opponent_live",
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のステージに『Aqours』のメンバーが2人以上いる場合、自分のエネルギー1枚をエネルギーデッキに置いてもよい。そうしたとき、相手のエネルギーが自分より1枚多い場合、このカードのスコアを＋１する。2枚以上多い場合、代わりにスコアを＋２する。"
+    },
+    {
+      "id": "PL!S-bp7-025-L",
+      "name": "Guilty Night, Guilty Kiss!",
+      "set": "PL!S-bp7",
+      "trig": "live_success",
+      "tmpl": "live_success_pick_options",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "以下から1つを選ぶ。 ・相手のステージにいるコスト4以下のメンバーを2人までウェイトにする。そのメンバーは次のターンのアクティブフェイズにアクティブしない。 ・カードを1枚引く。"
     },
     {
       "id": "PL!S-pb1-001-P＋",
@@ -3483,6 +3785,179 @@
       ],
       "dualStatus": "dual_ok",
       "text": "自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置いてもよい。そうした場合、相手はカードを1枚引く。"
+    },
+    {
+      "id": "PL!SP-bp7-002-P",
+      "name": "唐 可可",
+      "set": "PL!SP-bp7",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "passive_opponent",
+        "read_compare"
+      ],
+      "dualStatus": "passive_track",
+      "text": "自分のエネルギーが7枚以上あり、かつ自分のエネルギーが相手より多いかぎり、ステージにいるこのメンバーのコストを＋２する。"
+    },
+    {
+      "id": "PL!SP-bp7-002-R",
+      "name": "唐 可可",
+      "set": "PL!SP-bp7",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "passive_opponent",
+        "read_compare"
+      ],
+      "dualStatus": "passive_track",
+      "text": "自分のエネルギーが7枚以上あり、かつ自分のエネルギーが相手より多いかぎり、ステージにいるこのメンバーのコストを＋２する。"
+    },
+    {
+      "id": "PL!SP-bp7-007-P",
+      "name": "米女メイ",
+      "set": "PL!SP-bp7",
+      "trig": "live_success",
+      "tmpl": "activate_energy",
+      "automated": true,
+      "kinds": [
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のエネルギーが相手より多い場合、エネルギーを6枚アクティブにする。"
+    },
+    {
+      "id": "PL!SP-bp7-007-P＋",
+      "name": "米女メイ",
+      "set": "PL!SP-bp7",
+      "trig": "live_success",
+      "tmpl": "activate_energy",
+      "automated": true,
+      "kinds": [
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のエネルギーが相手より多い場合、エネルギーを6枚アクティブにする。"
+    },
+    {
+      "id": "PL!SP-bp7-007-R＋",
+      "name": "米女メイ",
+      "set": "PL!SP-bp7",
+      "trig": "live_success",
+      "tmpl": "activate_energy",
+      "automated": true,
+      "kinds": [
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のエネルギーが相手より多い場合、エネルギーを6枚アクティブにする。"
+    },
+    {
+      "id": "PL!SP-bp7-007-SEC",
+      "name": "米女メイ",
+      "set": "PL!SP-bp7",
+      "trig": "live_success",
+      "tmpl": "activate_energy",
+      "automated": true,
+      "kinds": [
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のエネルギーが相手より多い場合、エネルギーを6枚アクティブにする。"
+    },
+    {
+      "id": "PL!SP-bp7-009-P",
+      "name": "鬼塚夏美",
+      "set": "PL!SP-bp7",
+      "trig": "live_start",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手のステージにいる元々持つの数が2つ以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!SP-bp7-009-R",
+      "name": "鬼塚夏美",
+      "set": "PL!SP-bp7",
+      "trig": "live_start",
+      "tmpl": "optional_self_wait_opp_stage",
+      "automated": true,
+      "kinds": [
+        "mutate_opponent_stage"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "相手のステージにいる元々持つの数が2つ以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "id": "PL!SP-bp7-020-N",
+      "name": "鬼塚夏美",
+      "set": "PL!SP-bp7",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "passive_opponent",
+        "read_compare"
+      ],
+      "dualStatus": "passive_track",
+      "text": "自分のエネルギーが相手より多いかぎり、を得る。"
+    },
+    {
+      "id": "PL!SP-bp7-021-N",
+      "name": "ウィーン・マルガレーテ",
+      "set": "PL!SP-bp7",
+      "trig": "jouji",
+      "tmpl": "passive_track",
+      "automated": true,
+      "kinds": [
+        "passive_opponent",
+        "read_compare"
+      ],
+      "dualStatus": "passive_track",
+      "text": "自分のエネルギーが相手より多いかぎり、を得る。"
+    },
+    {
+      "id": "PL!SP-bp7-024-L",
+      "name": "WE WILL!!",
+      "set": "PL!SP-bp7",
+      "trig": "live_success",
+      "tmpl": "live_card_score_plus",
+      "automated": true,
+      "kinds": [
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のエネルギーが相手より2枚以上多い場合、このカードのスコアを＋１する。"
+    },
+    {
+      "id": "PL!SP-bp7-024-SECL",
+      "name": "WE WILL!!",
+      "set": "PL!SP-bp7",
+      "trig": "live_success",
+      "tmpl": "live_card_score_plus",
+      "automated": true,
+      "kinds": [
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "自分のエネルギーが相手より2枚以上多い場合、このカードのスコアを＋１する。"
+    },
+    {
+      "id": "PL!SP-bp7-027-L",
+      "name": "What a Wonderful Dream!!",
+      "set": "PL!SP-bp7",
+      "trig": "live_start",
+      "tmpl": "live_card_score_plus",
+      "automated": true,
+      "kinds": [
+        "read_compare"
+      ],
+      "dualStatus": "dual_ok",
+      "text": "エネルギー置き場にあるエネルギー1枚をエネルギーデッキに置いてもよい：自分のエネルギーが相手より多い場合、このカードのスコアを＋１する。"
     },
     {
       "id": "PL!SP-pb1-003-P＋",

@@ -4,9 +4,9 @@
   "total": 296,
   "byTemplate": {
     "kidou_stage_wait_pick_hand": 69,
-    "deck_top_to_waiting": 5,
+    "deck_top_to_waiting": 1,
     "kidou_hand_cost_wait_pick_hand": 23,
-    "draw_from_deck": 21,
+    "draw_from_deck": 17,
     "draw_then_hand_discard": 11,
     "kidou_self_wait_hand_enter_energy": 3,
     "kidou_reveal_all_hand_deck_top_live": 3,
@@ -33,7 +33,7 @@
     "kidou_hand_discard_series_branch": 4,
     "kidou_opp_wait_group_discount_energy": 4,
     "kidou_hand_discard_wait_live_score_pay": 3,
-    "grant_jouji_session": 14,
+    "grant_jouji_session": 9,
     "kidou_wait_or_hand_for_energy": 4,
     "kidou_deck_top_wait_position_change": 3,
     "kidou_reveal_live_wait_pick_name_contains": 4,
@@ -44,9 +44,14 @@
     "kidou_heart_color_deck_reveal_pick": 4,
     "kidou_self_wait_activate_other": 2,
     "kidou_self_to_wait_opp_wait": 1,
-    "ability_sequence": 2,
-    "guided_manual": 8,
-    "deck_top_look_reorder": 4
+    "ability_sequence": 6,
+    "kidou_self_and_other_resolve_toujou": 4,
+    "deck_mill_conditional_grant": 1,
+    "kidou_mill_waiting_under_copy_printed_hearts": 4,
+    "kidou_energy_under_opp_wait_by_under": 2,
+    "deck_top_look_reorder": 4,
+    "deck_mill_conditional_pick_one": 4,
+    "kidou_energy_under_waiting_enter": 2
   },
   "cards": [
     {
@@ -2373,8 +2378,8 @@
     {
       "card_no": "PL!S-bp7-005-R＋",
       "name": "渡辺 曜",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "kidou_self_and_other_resolve_toujou",
+      "automated": true,
       "optional": false,
       "perTurn": 1,
       "effect": "手札を2枚控え室に置く：このメンバーと自分のステージにいるほかの『Aqours』のメンバー1人を選ぶ。それらが持つ能力それぞれ1つを発動させる。"
@@ -2382,8 +2387,8 @@
     {
       "card_no": "PL!S-bp7-005-P",
       "name": "渡辺 曜",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "kidou_self_and_other_resolve_toujou",
+      "automated": true,
       "optional": false,
       "perTurn": 1,
       "effect": "手札を2枚控え室に置く：このメンバーと自分のステージにいるほかの『Aqours』のメンバー1人を選ぶ。それらが持つ能力それぞれ1つを発動させる。"
@@ -2391,8 +2396,8 @@
     {
       "card_no": "PL!S-bp7-005-P＋",
       "name": "渡辺 曜",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "kidou_self_and_other_resolve_toujou",
+      "automated": true,
       "optional": false,
       "perTurn": 1,
       "effect": "手札を2枚控え室に置く：このメンバーと自分のステージにいるほかの『Aqours』のメンバー1人を選ぶ。それらが持つ能力それぞれ1つを発動させる。"
@@ -2400,8 +2405,8 @@
     {
       "card_no": "PL!S-bp7-005-SEC",
       "name": "渡辺 曜",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "kidou_self_and_other_resolve_toujou",
+      "automated": true,
       "optional": false,
       "perTurn": 1,
       "effect": "手札を2枚控え室に置く：このメンバーと自分のステージにいるほかの『Aqours』のメンバー1人を選ぶ。それらが持つ能力それぞれ1つを発動させる。"
@@ -2409,7 +2414,7 @@
     {
       "card_no": "PL!S-bp7-011-N",
       "name": "桜内梨子",
-      "template": "grant_jouji_session",
+      "template": "deck_mill_conditional_grant",
       "automated": true,
       "optional": false,
       "perTurn": 1,
@@ -2418,7 +2423,7 @@
     {
       "card_no": "PL!N-bp7-003-R＋",
       "name": "桜坂しずく",
-      "template": "deck_top_to_waiting",
+      "template": "kidou_mill_waiting_under_copy_printed_hearts",
       "automated": true,
       "optional": false,
       "perTurn": 1,
@@ -2427,7 +2432,7 @@
     {
       "card_no": "PL!N-bp7-003-P",
       "name": "桜坂しずく",
-      "template": "deck_top_to_waiting",
+      "template": "kidou_mill_waiting_under_copy_printed_hearts",
       "automated": true,
       "optional": false,
       "perTurn": 1,
@@ -2436,7 +2441,7 @@
     {
       "card_no": "PL!N-bp7-003-P＋",
       "name": "桜坂しずく",
-      "template": "deck_top_to_waiting",
+      "template": "kidou_mill_waiting_under_copy_printed_hearts",
       "automated": true,
       "optional": false,
       "perTurn": 1,
@@ -2445,7 +2450,7 @@
     {
       "card_no": "PL!N-bp7-003-SEC",
       "name": "桜坂しずく",
-      "template": "deck_top_to_waiting",
+      "template": "kidou_mill_waiting_under_copy_printed_hearts",
       "automated": true,
       "optional": false,
       "perTurn": 1,
@@ -2454,8 +2459,8 @@
     {
       "card_no": "PL!N-bp7-004-R",
       "name": "朝香果林",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "kidou_energy_under_opp_wait_by_under",
+      "automated": true,
       "optional": false,
       "perTurn": 1,
       "effect": "エネルギー置き場にあるエネルギー1枚をこのメンバーの下に置く：相手のステージにいる、元々持つの数がこのメンバーの下にあるエネルギーカードの枚数に1を足した数以下のメンバー1人をウェイトにする。"
@@ -2463,8 +2468,8 @@
     {
       "card_no": "PL!N-bp7-004-P",
       "name": "朝香果林",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "kidou_energy_under_opp_wait_by_under",
+      "automated": true,
       "optional": false,
       "perTurn": 1,
       "effect": "エネルギー置き場にあるエネルギー1枚をこのメンバーの下に置く：相手のステージにいる、元々持つの数がこのメンバーの下にあるエネルギーカードの枚数に1を足した数以下のメンバー1人をウェイトにする。"
@@ -2481,7 +2486,7 @@
     {
       "card_no": "PL!N-bp7-006-R＋",
       "name": "近江彼方",
-      "template": "grant_jouji_session",
+      "template": "deck_mill_conditional_pick_one",
       "automated": true,
       "optional": false,
       "perTurn": 2,
@@ -2499,7 +2504,7 @@
     {
       "card_no": "PL!N-bp7-006-P",
       "name": "近江彼方",
-      "template": "grant_jouji_session",
+      "template": "deck_mill_conditional_pick_one",
       "automated": true,
       "optional": false,
       "perTurn": 2,
@@ -2517,7 +2522,7 @@
     {
       "card_no": "PL!N-bp7-006-P＋",
       "name": "近江彼方",
-      "template": "grant_jouji_session",
+      "template": "deck_mill_conditional_pick_one",
       "automated": true,
       "optional": false,
       "perTurn": 2,
@@ -2535,7 +2540,7 @@
     {
       "card_no": "PL!N-bp7-006-SEC",
       "name": "近江彼方",
-      "template": "grant_jouji_session",
+      "template": "deck_mill_conditional_pick_one",
       "automated": true,
       "optional": false,
       "perTurn": 2,
@@ -2544,8 +2549,8 @@
     {
       "card_no": "PL!N-bp7-010-R",
       "name": "三船栞子",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "kidou_energy_under_waiting_enter",
+      "automated": true,
       "optional": false,
       "perTurn": 1,
       "effect": "エネルギー置き場にあるエネルギー1枚をこのメンバーの下に置く：自分の控え室からコスト2以下の『虹ヶ咲』のメンバーカードを1枚、メンバーのいないエリアにウェイト状態で登場させる。（この効果で登場したメンバーのいるエリアには、このターンにメンバーは登場できない。）"
@@ -2553,8 +2558,8 @@
     {
       "card_no": "PL!N-bp7-010-P",
       "name": "三船栞子",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "kidou_energy_under_waiting_enter",
+      "automated": true,
       "optional": false,
       "perTurn": 1,
       "effect": "エネルギー置き場にあるエネルギー1枚をこのメンバーの下に置く：自分の控え室からコスト2以下の『虹ヶ咲』のメンバーカードを1枚、メンバーのいないエリアにウェイト状態で登場させる。（この効果で登場したメンバーのいるエリアには、このターンにメンバーは登場できない。）"
@@ -2589,38 +2594,54 @@
     {
       "card_no": "PL!SP-bp7-003-R＋",
       "name": "嵐 千砂都",
-      "template": "draw_from_deck",
+      "template": "ability_sequence",
       "automated": true,
       "optional": false,
       "perTurn": 1,
-      "effect": "手札のコストが10か20のメンバーカードを1枚公開する：これにより公開したカードをこのメンバーの下に置く。その後、カードを2枚引く。"
+      "effect": "手札のコストが10か20のメンバーカードを1枚公開する：これにより公開したカードをこのメンバーの下に置く。その後、カードを2枚引く。",
+      "steps": [
+        "kidou_hand_reveal_to_under",
+        "draw_from_deck"
+      ]
     },
     {
       "card_no": "PL!SP-bp7-003-P",
       "name": "嵐 千砂都",
-      "template": "draw_from_deck",
+      "template": "ability_sequence",
       "automated": true,
       "optional": false,
       "perTurn": 1,
-      "effect": "手札のコストが10か20のメンバーカードを1枚公開する：これにより公開したカードをこのメンバーの下に置く。その後、カードを2枚引く。"
+      "effect": "手札のコストが10か20のメンバーカードを1枚公開する：これにより公開したカードをこのメンバーの下に置く。その後、カードを2枚引く。",
+      "steps": [
+        "kidou_hand_reveal_to_under",
+        "draw_from_deck"
+      ]
     },
     {
       "card_no": "PL!SP-bp7-003-P＋",
       "name": "嵐 千砂都",
-      "template": "draw_from_deck",
+      "template": "ability_sequence",
       "automated": true,
       "optional": false,
       "perTurn": 1,
-      "effect": "手札のコストが10か20のメンバーカードを1枚公開する：これにより公開したカードをこのメンバーの下に置く。その後、カードを2枚引く。"
+      "effect": "手札のコストが10か20のメンバーカードを1枚公開する：これにより公開したカードをこのメンバーの下に置く。その後、カードを2枚引く。",
+      "steps": [
+        "kidou_hand_reveal_to_under",
+        "draw_from_deck"
+      ]
     },
     {
       "card_no": "PL!SP-bp7-003-SEC",
       "name": "嵐 千砂都",
-      "template": "draw_from_deck",
+      "template": "ability_sequence",
       "automated": true,
       "optional": false,
       "perTurn": 1,
-      "effect": "手札のコストが10か20のメンバーカードを1枚公開する：これにより公開したカードをこのメンバーの下に置く。その後、カードを2枚引く。"
+      "effect": "手札のコストが10か20のメンバーカードを1枚公開する：これにより公開したカードをこのメンバーの下に置く。その後、カードを2枚引く。",
+      "steps": [
+        "kidou_hand_reveal_to_under",
+        "draw_from_deck"
+      ]
     },
     {
       "card_no": "PL!SP-bp7-008-R",

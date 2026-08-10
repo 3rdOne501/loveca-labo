@@ -1,6 +1,6 @@
 # アニバーサリー クロスメンバー（LL-bp*-001-R＋）効果検証リスト
 
-各弾のクロススクールメンバー1枚（`LL-bp1`〜`LL-bp6` の `-001-R＋`）を検証する。
+各弾のクロススクールメンバー1枚（`LL-bp1`〜`LL-bp7` の `-001-R＋`）を検証する。
 
 - 自動回帰: `node scripts/verify-ll-anniversary-member.mjs`
 - 全文監査: `node scripts/audit-ll-anniversary-member-text.mjs`
@@ -34,6 +34,18 @@
 | 状態 | ID | 名前 | 主テンプレート | 備考 |
 |------|-----|------|----------------|------|
 | [x] | LL-bp6-001-R＋ | ことり&ダイヤ&小鈴 | deck_top_pick_recover / live_start_hand_named_discard_hearts_grant | 登場: 山札6見→2枚手札・残り控え室 / LS: 3名任意枚捨て→捨て札のハート色和集合を各1つ（ライブ終了まで） **2026-06-30: 色重複・ターン限定バグ修正** |
+
+## LL-bp7（001）MELLOWMOMENT
+
+| 状態 | ID | 名前 | 主テンプレート | 備考 |
+|------|-----|------|----------------|------|
+| [x] | LL-bp7-001-R＋ | 花丸&せつ菜&千砂都 | play_cost_set_named_hand_discard / toujou_wait_pick_hand / live_success_recover_from_waiting | 常時: 3名各1枚手札捨て任意でコスト10。登場: 控え室ライブ1枚手札。成功: 控え室メンバー1枚手札 |
+
+## 2026-08-10 修正（LL-bp7 初回監修）
+
+| ID | 内容 |
+|----|------|
+| （なし） | 分類・ハンドラともカード文どおり。新規コード修正なし |
 
 ## 2026-06-30 修正
 

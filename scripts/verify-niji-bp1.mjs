@@ -28,7 +28,10 @@ const CASES = [
     check: (cl) => (cl.filters?.seriesTag === "虹ヶ咲" ? [] : ["seriesTag"]),
   },
   { id: "PL!N-bp1-004-R", trigger: "toujyou", expectTemplate: "activate_energy",
-    check: (cl) => (cl.filters?.minStageSeriesMembers === 2 && cl.filters?.seriesTag === "虹ヶ咲" ? [] : ["other series"]),
+    check: (cl) =>
+      cl.filters?.minStageSeriesMembers === 2 && cl.filters?.minStageSeriesMembersTag === "虹ヶ咲"
+        ? []
+        : ["other series"],
   },
   {
     id: "PL!N-bp1-005-R",

@@ -26,10 +26,7 @@ const THRESHOLDS = {
  * 「既存商品の退行を検知する」というこのゲートの目的を守るために母数から外す。
  * 商品の監修が終わったらこの配列から削除し、除外 0 件に戻すこと。
  */
-const PENDING_PRODUCT_CARD_NO = [
-  /-bp7-/, // ブースターパックMELLOWMOMENT
-  /^PL!N-sd2-/, // スタートデッキ ラブライブ！虹ヶ咲学園スクールアイドル同好会 cheer
-];
+const PENDING_PRODUCT_CARD_NO = [];
 
 function isPendingProduct(cardNo) {
   const s = String(cardNo || "");
@@ -174,6 +171,22 @@ function main() {
   execSync("node scripts/verify-aqours-bp5.mjs", { cwd: ROOT, stdio: "inherit" });
 
   execSync("node scripts/audit-aqours-bp5-text.mjs", { cwd: ROOT, stdio: "inherit" });
+
+  execSync("node scripts/verify-aqours-bp7.mjs", { cwd: ROOT, stdio: "inherit" });
+
+  execSync("node scripts/audit-aqours-bp7-text.mjs", { cwd: ROOT, stdio: "inherit" });
+
+  execSync("node scripts/verify-niji-bp7.mjs", { cwd: ROOT, stdio: "inherit" });
+
+  execSync("node scripts/audit-niji-bp7-text.mjs", { cwd: ROOT, stdio: "inherit" });
+
+  execSync("node scripts/verify-liella-bp7.mjs", { cwd: ROOT, stdio: "inherit" });
+
+  execSync("node scripts/audit-liella-bp7-text.mjs", { cwd: ROOT, stdio: "inherit" });
+
+  execSync("node scripts/verify-niji-sd2.mjs", { cwd: ROOT, stdio: "inherit" });
+
+  execSync("node scripts/audit-niji-sd2-text.mjs", { cwd: ROOT, stdio: "inherit" });
 
   execSync("node scripts/verify-niji-bp5.mjs", { cwd: ROOT, stdio: "inherit" });
 

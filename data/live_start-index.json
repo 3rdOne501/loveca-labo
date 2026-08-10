@@ -3,10 +3,9 @@
   "trigger": "live_start",
   "total": 351,
   "byTemplate": {
-    "heart_color_pick_grant": 28,
-    "grant_jouji_session": 88,
-    "optional_self_wait_opp_stage": 11,
-    "guided_manual": 14,
+    "heart_color_pick_grant": 30,
+    "grant_jouji_session": 79,
+    "optional_self_wait_opp_stage": 14,
     "optional_energy_blade_until_live_end": 32,
     "live_start_pay_or_hand_discard": 3,
     "ability_sequence": 5,
@@ -20,7 +19,7 @@
     "live_start_hand_live_to_deck_bottom_look": 4,
     "live_start_hand_blade_per": 4,
     "live_start_yell_reveal_reduction": 4,
-    "deck_top_look_reorder": 6,
+    "deck_top_look_reorder": 8,
     "live_start_hand_discard_blade_per": 1,
     "live_start_optional_hearts_wild": 2,
     "live_start_activate_all_stage_members": 2,
@@ -64,7 +63,13 @@
     "deck_top_peek_optional_wait": 1,
     "live_start_draw_then_formation_change": 1,
     "optional_pick_member_wait_opp_blade_gap": 2,
-    "live_start_mandatory_energy_deck_unless_hand_discard": 2
+    "live_start_mandatory_energy_deck_unless_hand_discard": 2,
+    "deck_peek_relocate": 4,
+    "deck_mill_conditional_grant": 3,
+    "waiting_to_deck_bottom_blade_per": 4,
+    "deck_bottom_optional_mill_named_hand": 2,
+    "waiting_to_deck_bottom_blade_if_moved_no_bh": 2,
+    "activate_stage_members_up_to": 1
   },
   "cards": [
     {
@@ -115,8 +120,8 @@
     {
       "card_no": "PL!-PR-020-PR",
       "name": "高坂穂乃果",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "grant_jouji_session",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "自分のライブカード置き場にあるライブカードのスコアの合計が８以上の場合、「ライブの合計スコアを＋１する。」を得る。"
@@ -199,8 +204,8 @@
     {
       "card_no": "PL!SP-PR-026-PR",
       "name": "鬼塚夏美",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "grant_jouji_session",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "自分のライブカード置き場にあるライブカードのスコアの合計が８以上の場合、「ライブの合計スコアを＋１する。」を得る。"
@@ -2871,8 +2876,8 @@
     {
       "card_no": "PL!S-bp7-003-R＋",
       "name": "松浦果南",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "deck_peek_relocate",
+      "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "自分のデッキの一番上のカードを見る。それをデッキの一番下に置いてもよい。"
@@ -2880,8 +2885,8 @@
     {
       "card_no": "PL!S-bp7-003-P",
       "name": "松浦果南",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "deck_peek_relocate",
+      "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "自分のデッキの一番上のカードを見る。それをデッキの一番下に置いてもよい。"
@@ -2889,8 +2894,8 @@
     {
       "card_no": "PL!S-bp7-003-P＋",
       "name": "松浦果南",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "deck_peek_relocate",
+      "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "自分のデッキの一番上のカードを見る。それをデッキの一番下に置いてもよい。"
@@ -2898,8 +2903,8 @@
     {
       "card_no": "PL!S-bp7-003-SEC",
       "name": "松浦果南",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "deck_peek_relocate",
+      "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "自分のデッキの一番上のカードを見る。それをデッキの一番下に置いてもよい。"
@@ -2907,8 +2912,8 @@
     {
       "card_no": "PL!S-bp7-004-R",
       "name": "黒澤ダイヤ",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "deck_top_look_reorder",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "自分のデッキの下からカードを3枚見る。その中から好きな枚数を好きな順番でデッキの下に置き、残りを控え室に置く。"
@@ -2916,8 +2921,8 @@
     {
       "card_no": "PL!S-bp7-004-P",
       "name": "黒澤ダイヤ",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "deck_top_look_reorder",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "自分のデッキの下からカードを3枚見る。その中から好きな枚数を好きな順番でデッキの下に置き、残りを控え室に置く。"
@@ -2925,7 +2930,7 @@
     {
       "card_no": "PL!S-bp7-006-R",
       "name": "津島善子",
-      "template": "grant_jouji_session",
+      "template": "deck_mill_conditional_grant",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -2934,7 +2939,7 @@
     {
       "card_no": "PL!S-bp7-006-P",
       "name": "津島善子",
-      "template": "grant_jouji_session",
+      "template": "deck_mill_conditional_grant",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -2943,7 +2948,7 @@
     {
       "card_no": "PL!S-bp7-007-R＋",
       "name": "国木田花丸",
-      "template": "grant_jouji_session",
+      "template": "waiting_to_deck_bottom_blade_per",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -2952,7 +2957,7 @@
     {
       "card_no": "PL!S-bp7-007-P",
       "name": "国木田花丸",
-      "template": "grant_jouji_session",
+      "template": "waiting_to_deck_bottom_blade_per",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -2961,7 +2966,7 @@
     {
       "card_no": "PL!S-bp7-007-P＋",
       "name": "国木田花丸",
-      "template": "grant_jouji_session",
+      "template": "waiting_to_deck_bottom_blade_per",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -2970,7 +2975,7 @@
     {
       "card_no": "PL!S-bp7-007-SEC",
       "name": "国木田花丸",
-      "template": "grant_jouji_session",
+      "template": "waiting_to_deck_bottom_blade_per",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -2979,8 +2984,8 @@
     {
       "card_no": "PL!S-bp7-008-R",
       "name": "小原鞠莉",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "deck_bottom_optional_mill_named_hand",
+      "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "自分のデッキの一番下のカードを控え室に置いてもよい。それが「松浦果南」か「黒澤ダイヤ」の場合、それを手札に加える。"
@@ -2988,8 +2993,8 @@
     {
       "card_no": "PL!S-bp7-008-P",
       "name": "小原鞠莉",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "deck_bottom_optional_mill_named_hand",
+      "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "自分のデッキの一番下のカードを控え室に置いてもよい。それが「松浦果南」か「黒澤ダイヤ」の場合、それを手札に加える。"
@@ -2997,7 +3002,7 @@
     {
       "card_no": "PL!S-bp7-015-N",
       "name": "津島善子",
-      "template": "grant_jouji_session",
+      "template": "deck_mill_conditional_grant",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -3042,7 +3047,7 @@
     {
       "card_no": "PL!N-bp7-012-R",
       "name": "鐘 嵐珠",
-      "template": "grant_jouji_session",
+      "template": "heart_color_pick_grant",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -3051,7 +3056,7 @@
     {
       "card_no": "PL!N-bp7-012-P",
       "name": "鐘 嵐珠",
-      "template": "grant_jouji_session",
+      "template": "heart_color_pick_grant",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -3069,7 +3074,7 @@
     {
       "card_no": "PL!SP-bp7-004-R",
       "name": "平安名すみれ",
-      "template": "grant_jouji_session",
+      "template": "waiting_to_deck_bottom_blade_if_moved_no_bh",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -3078,7 +3083,7 @@
     {
       "card_no": "PL!SP-bp7-004-P",
       "name": "平安名すみれ",
-      "template": "grant_jouji_session",
+      "template": "waiting_to_deck_bottom_blade_if_moved_no_bh",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -3123,8 +3128,8 @@
     {
       "card_no": "PL!SP-bp7-009-R",
       "name": "鬼塚夏美",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "optional_self_wait_opp_stage",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "相手のステージにいる元々持つの数が2つ以下のメンバー1人をウェイトにする。"
@@ -3132,8 +3137,8 @@
     {
       "card_no": "PL!SP-bp7-009-P",
       "name": "鬼塚夏美",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "optional_self_wait_opp_stage",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "相手のステージにいる元々持つの数が2つ以下のメンバー1人をウェイトにする。"
@@ -3222,8 +3227,8 @@
     {
       "card_no": "PL!N-sd2-013-SD2",
       "name": "上原歩夢",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "optional_self_wait_opp_stage",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "自分のステージにいるメンバーが『虹ヶ咲』のみの場合、相手のステージにいる元々持つの数が2つ以下のメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
@@ -3231,8 +3236,8 @@
     {
       "card_no": "PL!N-sd2-017-SD2",
       "name": "宮下 愛",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "activate_stage_members_up_to",
+      "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "支払ってもよい：自分のステージにいるメンバー1人をアクティブにする。"

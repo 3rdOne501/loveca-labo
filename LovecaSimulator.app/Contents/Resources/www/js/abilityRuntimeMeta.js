@@ -2,6 +2,13 @@
  * 能力テンプレートの実行メタデータ（分類器・検証スクリプト・simulator で共有）。
  */
 
+/** 控え室→デッキ下で移動枚数に比例する付与（executeAbilityBody） */
+export const WAITING_TO_DECK_BOTTOM_PER_TEMPLATES = [
+  "waiting_to_deck_bottom_blade_per",
+  "waiting_to_deck_bottom_blade_if_moved_no_bh",
+  "waiting_to_deck_bottom_activate_per",
+];
+
 /** runClassifiedCardAbility の payAbilityCost をスキップし、handler 側でコスト処理する template */
 export const TEMPLATE_HANDLES_OWN_COST = [
   "kidou_hand_cost_wait_pick_hand",
@@ -37,6 +44,8 @@ export const TEMPLATE_HANDLES_OWN_COST = [
   "live_start_waiting_deck_bottom_tiered",
   "toujou_self_wait_draw_then_conditional_discard",
   "live_start_mill_loop_blade_grant",
+  "kidou_mill_waiting_under_copy_printed_hearts",
+  "deck_mill_conditional_pick_one",
   "live_start_pay_or_discard_conditional_grant_members",
   "live_start_dollcostra_cost_set_grant_if",
   "live_start_hand_discard_cost_boost_grant_if",
@@ -45,12 +54,16 @@ export const TEMPLATE_HANDLES_OWN_COST = [
   "live_start_hand_discard_same_group_grant",
   "live_start_hand_discard_group_member_grant",
   "live_start_hand_discard_optional_blade_per",
+  "live_start_hand_discard_optional_blade_pick_equal",
   "live_start_hand_discard_series_member_blade_grant",
   "heart_color_pick_grant",
   "heart_color_pick_replace",
   "live_start_hand_reveal_under_heart_grant",
   "kidou_discard_self_draw_grant",
   "live_start_optional_energy_under_return_grant",
+  "live_start_optional_shuffle_all_waiting_grant",
+  "live_start_optional_waiting_shuffle_deck_bottom_grant",
+  "live_success_under_energy_to_area_score",
   "live_success_optional_energy_recover_waiting",
   "optional_energy_blade_until_live_end",
 ];
@@ -72,6 +85,10 @@ export function classifiedAbilityIsOptionalEnergyOnlyCost(cl) {
   if (cl.costEnergyVariable) return false;
   if (TEMPLATE_OPTIONAL_ENERGY_ONLY_AUTO_PAY.indexOf(cl.template) < 0) return false;
   if (
+    cl.costEnergyToDeck ||
+    cl.costHandDiscardAll ||
+    (cl.costHandDiscardPickType && cl.handDiscardToWaiting) ||
+    cl.costEnergyUnderSelf ||
     cl.costSelfWait ||
     cl.costPickMemberWait ||
     cl.costMandatoryWaitOtherMember ||

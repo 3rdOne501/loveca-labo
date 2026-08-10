@@ -7,7 +7,7 @@
     "optional_energy_live_score_plus": 3,
     "yell_resolution_count_energy_wait": 1,
     "draw_from_deck": 12,
-    "draw_then_hand_discard": 19,
+    "draw_then_hand_discard": 17,
     "yell_resolution_energy_wait": 2,
     "yell_resolution_pick_self_score": 2,
     "energy_less_than_opponent_wait": 2,
@@ -24,12 +24,16 @@
     "yell_reveal_series_live_score_plus": 4,
     "yell_resolution_pick_deck_top": 4,
     "live_success_wait_skip_next_activate": 4,
-    "draw_then_conditional_extra_draw": 1,
+    "draw_then_conditional_extra_draw": 3,
     "live_success_liella_effect_moved_score": 2,
     "live_success_optional_energy_recover_waiting": 2,
     "live_success_yell_nobh_series_score_capped": 2,
     "live_success_pick_options": 2,
-    "guided_manual": 20,
+    "energy_deck_under_member": 4,
+    "waiting_pick_to_deck": 4,
+    "grant_jouji_session": 4,
+    "energy_deck_to_wait": 4,
+    "activate_energy": 4,
     "live_success_recover_from_waiting": 1
   },
   "cards": [
@@ -999,8 +1003,8 @@
     {
       "card_no": "PL!N-bp7-007-R＋",
       "name": "優木せつ菜",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "energy_deck_under_member",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "自分のエネルギーデッキから、エネルギーカード1枚をこのメンバーの下に置く。"
@@ -1008,8 +1012,8 @@
     {
       "card_no": "PL!N-bp7-007-P",
       "name": "優木せつ菜",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "energy_deck_under_member",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "自分のエネルギーデッキから、エネルギーカード1枚をこのメンバーの下に置く。"
@@ -1017,8 +1021,8 @@
     {
       "card_no": "PL!N-bp7-007-P＋",
       "name": "優木せつ菜",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "energy_deck_under_member",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "自分のエネルギーデッキから、エネルギーカード1枚をこのメンバーの下に置く。"
@@ -1026,8 +1030,8 @@
     {
       "card_no": "PL!N-bp7-007-SEC",
       "name": "優木せつ菜",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "energy_deck_under_member",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "自分のエネルギーデッキから、エネルギーカード1枚をこのメンバーの下に置く。"
@@ -1035,8 +1039,8 @@
     {
       "card_no": "PL!N-bp7-011-R＋",
       "name": "ミア・テイラー",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "waiting_pick_to_deck",
+      "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "自分の控え室にある『虹ヶ咲』のカード1枚をデッキの一番上に置いてもよい。"
@@ -1044,8 +1048,8 @@
     {
       "card_no": "PL!N-bp7-011-P",
       "name": "ミア・テイラー",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "waiting_pick_to_deck",
+      "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "自分の控え室にある『虹ヶ咲』のカード1枚をデッキの一番上に置いてもよい。"
@@ -1053,8 +1057,8 @@
     {
       "card_no": "PL!N-bp7-011-P＋",
       "name": "ミア・テイラー",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "waiting_pick_to_deck",
+      "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "自分の控え室にある『虹ヶ咲』のカード1枚をデッキの一番上に置いてもよい。"
@@ -1062,8 +1066,8 @@
     {
       "card_no": "PL!N-bp7-011-SEC",
       "name": "ミア・テイラー",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "waiting_pick_to_deck",
+      "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "自分の控え室にある『虹ヶ咲』のカード1枚をデッキの一番上に置いてもよい。"
@@ -1071,8 +1075,8 @@
     {
       "card_no": "PL!SP-bp7-006-R＋",
       "name": "桜小路きな子",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "grant_jouji_session",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "このターン、自分のエネルギーがエネルギー置き場からエネルギーデッキに置かれていた場合、ライブの合計スコアを＋１する。"
@@ -1080,8 +1084,8 @@
     {
       "card_no": "PL!SP-bp7-006-P",
       "name": "桜小路きな子",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "grant_jouji_session",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "このターン、自分のエネルギーがエネルギー置き場からエネルギーデッキに置かれていた場合、ライブの合計スコアを＋１する。"
@@ -1089,8 +1093,8 @@
     {
       "card_no": "PL!SP-bp7-006-P＋",
       "name": "桜小路きな子",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "grant_jouji_session",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "このターン、自分のエネルギーがエネルギー置き場からエネルギーデッキに置かれていた場合、ライブの合計スコアを＋１する。"
@@ -1098,8 +1102,8 @@
     {
       "card_no": "PL!SP-bp7-006-SEC",
       "name": "桜小路きな子",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "grant_jouji_session",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "このターン、自分のエネルギーがエネルギー置き場からエネルギーデッキに置かれていた場合、ライブの合計スコアを＋１する。"
@@ -1107,8 +1111,8 @@
     {
       "card_no": "PL!SP-bp7-007-R＋",
       "name": "米女メイ",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "energy_deck_to_wait",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "自分のエネルギーデッキから、エネルギーカードを2枚ウェイト状態で置く。それらのエネルギーカードは、次のターンのアクティブフェイズにアクティブしない。"
@@ -1116,8 +1120,8 @@
     {
       "card_no": "PL!SP-bp7-007-R＋",
       "name": "米女メイ",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "activate_energy",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "自分のエネルギーが相手より多い場合、エネルギーを6枚アクティブにする。"
@@ -1125,8 +1129,8 @@
     {
       "card_no": "PL!SP-bp7-007-P",
       "name": "米女メイ",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "energy_deck_to_wait",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "自分のエネルギーデッキから、エネルギーカードを2枚ウェイト状態で置く。それらのエネルギーカードは、次のターンのアクティブフェイズにアクティブしない。"
@@ -1134,8 +1138,8 @@
     {
       "card_no": "PL!SP-bp7-007-P",
       "name": "米女メイ",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "activate_energy",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "自分のエネルギーが相手より多い場合、エネルギーを6枚アクティブにする。"
@@ -1143,8 +1147,8 @@
     {
       "card_no": "PL!SP-bp7-007-P＋",
       "name": "米女メイ",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "energy_deck_to_wait",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "自分のエネルギーデッキから、エネルギーカードを2枚ウェイト状態で置く。それらのエネルギーカードは、次のターンのアクティブフェイズにアクティブしない。"
@@ -1152,8 +1156,8 @@
     {
       "card_no": "PL!SP-bp7-007-P＋",
       "name": "米女メイ",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "activate_energy",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "自分のエネルギーが相手より多い場合、エネルギーを6枚アクティブにする。"
@@ -1161,8 +1165,8 @@
     {
       "card_no": "PL!SP-bp7-007-SEC",
       "name": "米女メイ",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "energy_deck_to_wait",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "自分のエネルギーデッキから、エネルギーカードを2枚ウェイト状態で置く。それらのエネルギーカードは、次のターンのアクティブフェイズにアクティブしない。"
@@ -1170,8 +1174,8 @@
     {
       "card_no": "PL!SP-bp7-007-SEC",
       "name": "米女メイ",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "activate_energy",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "自分のエネルギーが相手より多い場合、エネルギーを6枚アクティブにする。"
@@ -1188,7 +1192,7 @@
     {
       "card_no": "PL!N-sd2-007-P",
       "name": "優木せつ菜",
-      "template": "draw_then_hand_discard",
+      "template": "draw_then_conditional_extra_draw",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -1197,7 +1201,7 @@
     {
       "card_no": "PL!N-sd2-007-SD2",
       "name": "優木せつ菜",
-      "template": "draw_then_hand_discard",
+      "template": "draw_then_conditional_extra_draw",
       "automated": true,
       "optional": false,
       "perTurn": 0,

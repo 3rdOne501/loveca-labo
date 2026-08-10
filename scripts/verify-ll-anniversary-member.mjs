@@ -110,6 +110,38 @@ const CASES = [
       return e;
     },
   },
+  {
+    id: "LL-bp7-001-R＋",
+    trigger: "jouji",
+    check(_cl, seg) {
+      const rule = classifyJoujiSegment(seg.text);
+      const e = [];
+      if (rule?.kind !== "play_cost_set_named_hand_discard") e.push(`kind ${rule?.kind}`);
+      if (rule?.playCostSet !== 10) e.push("cost!=10");
+      const names = rule?.playCostNamedDiscard || [];
+      if (names.indexOf("国木田花丸") < 0 || names.indexOf("優木せつ菜") < 0 || names.indexOf("嵐千砂都") < 0) {
+        e.push("named discard");
+      }
+      return e;
+    },
+  },
+  {
+    id: "LL-bp7-001-R＋",
+    trigger: "toujyou",
+    expectTemplate: "toujou_wait_pick_hand",
+    check(cl) {
+      return cl.filters?.pickType === "ライブ" ? [] : ["pick live"];
+    },
+  },
+  {
+    id: "LL-bp7-001-R＋",
+    trigger: "live_success",
+    expectTemplate: "live_success_recover_from_waiting",
+    check(cl) {
+      const pick = cl.recoverPickFilters?.pickType || cl.filters?.pickType;
+      return pick === "メンバー" ? [] : ["pick member"];
+    },
+  },
 ];
 
 let failed = 0;
@@ -128,11 +160,14 @@ for (const c of CASES) {
   }
   if (c.trigger === "jouji") {
     const rule = classifyJoujiSegment(seg.text);
-    if (!rule) {
+    const errs = [];
+    if (!rule) errs.push("jouji unparsed");
+    if (c.check) errs.push(...c.check({ template: "passive_track" }, seg));
+    if (errs.length) {
       failed++;
-      console.error("FAIL", c.id, c.trigger, "jouji unparsed");
+      console.error("FAIL", c.id, c.trigger, errs.join("; "));
     } else {
-      console.log("OK", c.id, c.trigger, rule.kind);
+      console.log("OK", c.id, c.trigger, rule?.kind || "jouji");
     }
     continue;
   }
