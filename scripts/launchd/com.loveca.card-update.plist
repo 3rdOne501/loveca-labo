@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  ラブカ カードリスト日次更新（scripts/daily-card-update.sh）
+  インストール: bash scripts/launchd/install.sh
+  上流 wlt233/llocg_db の auto-commit は日本時間 14〜16 時台に走るため、17:10 に実行する。
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.loveca.card-update</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>__REPO_ROOT__/scripts/daily-card-update.sh</string>
+        <string>--quiet</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>__REPO_ROOT__</string>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>17</integer>
+        <key>Minute</key>
+        <integer>10</integer>
+    </dict>
+
+    <!-- スリープ等で実行時刻を逃したら復帰後に走らせる -->
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>__REPO_ROOT__/logs/launchd.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>__REPO_ROOT__/logs/launchd.err.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <key>ProcessType</key>
+    <string>Background</string>
+</dict>
+</plist>

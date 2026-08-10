@@ -1,15 +1,15 @@
 {
-  "generated": "2026-07-31",
+  "generated": "2026-08-10",
   "trigger": "toujyou",
-  "total": 548,
+  "total": 613,
   "byTemplate": {
-    "toujou_wait_pick_hand": 61,
-    "deck_top_pick_recover": 107,
+    "toujou_wait_pick_hand": 70,
+    "deck_top_pick_recover": 114,
     "toujou_success_live_hand_reveal_swap": 1,
     "deck_mill_conditional_draw": 1,
-    "deck_top_look_reorder": 16,
-    "ability_pick_one": 16,
-    "optional_self_wait_opp_stage": 34,
+    "deck_top_look_reorder": 18,
+    "ability_pick_one": 22,
+    "optional_self_wait_opp_stage": 36,
     "toujou_opp_hand_reveal_no_live_draw": 1,
     "toujou_hand_stage_enter": 11,
     "grant_jouji_session": 9,
@@ -19,13 +19,13 @@
     "toujou_opp_emma_punch_answer": 1,
     "toujou_wait_to_member_under": 1,
     "draw_until_hand_size": 2,
-    "draw_from_deck": 30,
-    "energy_deck_to_wait": 14,
+    "draw_from_deck": 38,
+    "energy_deck_to_wait": 15,
     "toujou_optional_hand_discard_draw": 3,
-    "deck_top_to_waiting": 6,
+    "deck_top_to_waiting": 9,
     "toujou_deck_top_wait_if_all_heart": 5,
-    "activate_energy": 15,
-    "ability_sequence": 11,
+    "activate_energy": 19,
+    "ability_sequence": 13,
     "deck_reveal_until_live": 2,
     "draw_then_conditional_extra_draw": 2,
     "toujou_deck_top_wait_if_all_members": 2,
@@ -39,7 +39,7 @@
     "toujou_baton_discarded_pick_hand": 4,
     "toujou_wait_pick_opp_live": 2,
     "waiting_reorder_deck_top": 3,
-    "toujou_optional_all_members_relocate": 4,
+    "toujou_optional_all_members_relocate": 5,
     "toujou_baton_series_heart_grant": 2,
     "toujou_main_phase_live_from_waiting": 1,
     "toujou_opp_optional_live_discard_or_score": 2,
@@ -88,7 +88,8 @@
     "toujou_baton_discarded_series_per_card": 2,
     "deck_top_pick_enter_or_hand": 2,
     "toujou_baton_discarded_under": 2,
-    "optional_pick_member_wait_opp_blade_gap": 2
+    "optional_pick_member_wait_opp_blade_gap": 2,
+    "guided_manual": 20
   },
   "cards": [
     {
@@ -5066,6 +5067,599 @@
       "optional": false,
       "perTurn": 0,
       "effect": "カードを2枚引き、手札を2枚控え室に置く。"
+    },
+    {
+      "card_no": "PL!S-bp7-001-R",
+      "name": "高海千歌",
+      "template": "ability_sequence",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札を1枚控え室に置いてもよい：自分の控え室からコスト10以上のメンバーカードを1枚手札に加える。これにより「桜内梨子」か「渡辺曜」を手札に加えた場合、ライブ終了時まで、を得る。",
+      "steps": [
+        "toujou_wait_pick_hand",
+        "grant_jouji_session"
+      ]
+    },
+    {
+      "card_no": "PL!S-bp7-001-P",
+      "name": "高海千歌",
+      "template": "ability_sequence",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札を1枚控え室に置いてもよい：自分の控え室からコスト10以上のメンバーカードを1枚手札に加える。これにより「桜内梨子」か「渡辺曜」を手札に加えた場合、ライブ終了時まで、を得る。",
+      "steps": [
+        "toujou_wait_pick_hand",
+        "grant_jouji_session"
+      ]
+    },
+    {
+      "card_no": "PL!S-bp7-002-R",
+      "name": "桜内梨子",
+      "template": "draw_from_deck",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のステージにコスト9以上の『Aqours』のメンバーがいる場合、カードを1枚引く。"
+    },
+    {
+      "card_no": "PL!S-bp7-002-P",
+      "name": "桜内梨子",
+      "template": "draw_from_deck",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のステージにコスト9以上の『Aqours』のメンバーがいる場合、カードを1枚引く。"
+    },
+    {
+      "card_no": "PL!S-bp7-003-R＋",
+      "name": "松浦果南",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分のデッキの一番上のカードを見る。それをデッキの一番下に置いてもよい。"
+    },
+    {
+      "card_no": "PL!S-bp7-003-R＋",
+      "name": "松浦果南",
+      "template": "ability_pick_one",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "以下から1つを選ぶ。 ・ライブ終了時まで、自分のステージにいる元々持つの数が3つ以下の『Aqours』のメンバーは、相手の効果によってはウェイトしない。 ・このメンバーを『Aqours』か『SaintSnow』のメンバーがいるエリアにポジションチェンジする。"
+    },
+    {
+      "card_no": "PL!S-bp7-003-P",
+      "name": "松浦果南",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分のデッキの一番上のカードを見る。それをデッキの一番下に置いてもよい。"
+    },
+    {
+      "card_no": "PL!S-bp7-003-P",
+      "name": "松浦果南",
+      "template": "ability_pick_one",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "以下から1つを選ぶ。 ・ライブ終了時まで、自分のステージにいる元々持つの数が3つ以下の『Aqours』のメンバーは、相手の効果によってはウェイトしない。 ・このメンバーを『Aqours』か『SaintSnow』のメンバーがいるエリアにポジションチェンジする。"
+    },
+    {
+      "card_no": "PL!S-bp7-003-P＋",
+      "name": "松浦果南",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分のデッキの一番上のカードを見る。それをデッキの一番下に置いてもよい。"
+    },
+    {
+      "card_no": "PL!S-bp7-003-P＋",
+      "name": "松浦果南",
+      "template": "ability_pick_one",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "以下から1つを選ぶ。 ・ライブ終了時まで、自分のステージにいる元々持つの数が3つ以下の『Aqours』のメンバーは、相手の効果によってはウェイトしない。 ・このメンバーを『Aqours』か『SaintSnow』のメンバーがいるエリアにポジションチェンジする。"
+    },
+    {
+      "card_no": "PL!S-bp7-003-SEC",
+      "name": "松浦果南",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分のデッキの一番上のカードを見る。それをデッキの一番下に置いてもよい。"
+    },
+    {
+      "card_no": "PL!S-bp7-003-SEC",
+      "name": "松浦果南",
+      "template": "ability_pick_one",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "以下から1つを選ぶ。 ・ライブ終了時まで、自分のステージにいる元々持つの数が3つ以下の『Aqours』のメンバーは、相手の効果によってはウェイトしない。 ・このメンバーを『Aqours』か『SaintSnow』のメンバーがいるエリアにポジションチェンジする。"
+    },
+    {
+      "card_no": "PL!S-bp7-004-R",
+      "name": "黒澤ダイヤ",
+      "template": "draw_from_deck",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "『Aqours』のメンバーからバトンタッチして登場した場合、自分と相手はそれぞれ、自身の手札のカードを3枚まで選び、選んだカード以外のカードをシャッフルし、自身のデッキの下に置く。その後、自分と相手はそれぞれカードを3枚引く。"
+    },
+    {
+      "card_no": "PL!S-bp7-004-P",
+      "name": "黒澤ダイヤ",
+      "template": "draw_from_deck",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "『Aqours』のメンバーからバトンタッチして登場した場合、自分と相手はそれぞれ、自身の手札のカードを3枚まで選び、選んだカード以外のカードをシャッフルし、自身のデッキの下に置く。その後、自分と相手はそれぞれカードを3枚引く。"
+    },
+    {
+      "card_no": "PL!S-bp7-005-R＋",
+      "name": "渡辺 曜",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分の控え室にあるメンバーカード1枚を、自分のステージにいるメンバー1人の下に置く。"
+    },
+    {
+      "card_no": "PL!S-bp7-005-P",
+      "name": "渡辺 曜",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分の控え室にあるメンバーカード1枚を、自分のステージにいるメンバー1人の下に置く。"
+    },
+    {
+      "card_no": "PL!S-bp7-005-P＋",
+      "name": "渡辺 曜",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分の控え室にあるメンバーカード1枚を、自分のステージにいるメンバー1人の下に置く。"
+    },
+    {
+      "card_no": "PL!S-bp7-005-SEC",
+      "name": "渡辺 曜",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分の控え室にあるメンバーカード1枚を、自分のステージにいるメンバー1人の下に置く。"
+    },
+    {
+      "card_no": "PL!S-bp7-007-R＋",
+      "name": "国木田花丸",
+      "template": "toujou_wait_pick_hand",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分の控え室からコスト2以下のメンバーカードを1枚手札に加える。これによって「津島善子」か「黒澤ルビィ」を手札に加えた場合、そのカードを自分のステージのメンバーのいないエリアに登場させてもよい。"
+    },
+    {
+      "card_no": "PL!S-bp7-007-P",
+      "name": "国木田花丸",
+      "template": "toujou_wait_pick_hand",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分の控え室からコスト2以下のメンバーカードを1枚手札に加える。これによって「津島善子」か「黒澤ルビィ」を手札に加えた場合、そのカードを自分のステージのメンバーのいないエリアに登場させてもよい。"
+    },
+    {
+      "card_no": "PL!S-bp7-007-P＋",
+      "name": "国木田花丸",
+      "template": "toujou_wait_pick_hand",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分の控え室からコスト2以下のメンバーカードを1枚手札に加える。これによって「津島善子」か「黒澤ルビィ」を手札に加えた場合、そのカードを自分のステージのメンバーのいないエリアに登場させてもよい。"
+    },
+    {
+      "card_no": "PL!S-bp7-007-SEC",
+      "name": "国木田花丸",
+      "template": "toujou_wait_pick_hand",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分の控え室からコスト2以下のメンバーカードを1枚手札に加える。これによって「津島善子」か「黒澤ルビィ」を手札に加えた場合、そのカードを自分のステージのメンバーのいないエリアに登場させてもよい。"
+    },
+    {
+      "card_no": "PL!S-bp7-008-R",
+      "name": "小原鞠莉",
+      "template": "deck_top_look_reorder",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のデッキの上からカードを3枚見る。その中から好きな枚数を好きな順番でデッキの上に置き、残りを好きな順番でデッキの下に置く。"
+    },
+    {
+      "card_no": "PL!S-bp7-008-P",
+      "name": "小原鞠莉",
+      "template": "deck_top_look_reorder",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のデッキの上からカードを3枚見る。その中から好きな枚数を好きな順番でデッキの上に置き、残りを好きな順番でデッキの下に置く。"
+    },
+    {
+      "card_no": "PL!S-bp7-010-N",
+      "name": "高海千歌",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分のデッキの一番下のカードを見る。それをデッキの上から4番目に置いてもよい。"
+    },
+    {
+      "card_no": "PL!S-bp7-012-N",
+      "name": "松浦果南",
+      "template": "toujou_optional_all_members_relocate",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分のステージに『Aqours』か『SaintSnow』のメンバーのみがいる場合、フォーメーションチェンジしてもよい。この効果によって『SaintSnow』のメンバーが移動した場合、ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!S-bp7-013-N",
+      "name": "黒澤ダイヤ",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分か相手を選ぶ。自分は、そのプレイヤーの控え室にあるメンバーカードを2枚まで好きな順番でデッキの下に置く。"
+    },
+    {
+      "card_no": "PL!S-bp7-017-N",
+      "name": "小原鞠莉",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のデッキの一番下のカードを控え室に置く。それがコスト10以上のメンバーカードの場合、ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!S-bp7-018-N",
+      "name": "黒澤ルビィ",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のステージにいるメンバー1人をセンターエリアにポジションチェンジさせる。"
+    },
+    {
+      "card_no": "PL!N-bp7-002-R",
+      "name": "中須かすみ",
+      "template": "toujou_wait_pick_hand",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のステージに『QU4RTZ』のメンバーが3人以上いる場合、自分の控え室からカードを1枚手札に加える。"
+    },
+    {
+      "card_no": "PL!N-bp7-002-P",
+      "name": "中須かすみ",
+      "template": "toujou_wait_pick_hand",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のステージに『QU4RTZ』のメンバーが3人以上いる場合、自分の控え室からカードを1枚手札に加える。"
+    },
+    {
+      "card_no": "PL!N-bp7-005-R",
+      "name": "宮下 愛",
+      "template": "ability_pick_one",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のステージに名前の異なる『DiverDiva』のメンバーが2人いる場合、以下から1つを選ぶ。 ・エネルギーを2枚アクティブにする。 ・自分のエネルギーデッキから、エネルギーカード1枚を自分のステージにいる『虹ヶ咲』のメンバーの下に置く。"
+    },
+    {
+      "card_no": "PL!N-bp7-005-P",
+      "name": "宮下 愛",
+      "template": "ability_pick_one",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のステージに名前の異なる『DiverDiva』のメンバーが2人いる場合、以下から1つを選ぶ。 ・エネルギーを2枚アクティブにする。 ・自分のエネルギーデッキから、エネルギーカード1枚を自分のステージにいる『虹ヶ咲』のメンバーの下に置く。"
+    },
+    {
+      "card_no": "PL!N-bp7-008-R",
+      "name": "エマ・ヴェルデ",
+      "template": "activate_energy",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分の控え室からブレードハートを持たないメンバーカードを4枚まで好きな順番でデッキの下に置いてもよい。これによりデッキに置いたカード1枚につき、エネルギーを1枚アクティブにする。"
+    },
+    {
+      "card_no": "PL!N-bp7-008-P",
+      "name": "エマ・ヴェルデ",
+      "template": "activate_energy",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分の控え室からブレードハートを持たないメンバーカードを4枚まで好きな順番でデッキの下に置いてもよい。これによりデッキに置いたカード1枚につき、エネルギーを1枚アクティブにする。"
+    },
+    {
+      "card_no": "PL!N-bp7-009-R",
+      "name": "天王寺璃奈",
+      "template": "deck_top_to_waiting",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分と相手はそれぞれ、自身のデッキの上からカードを7枚控え室に置く。"
+    },
+    {
+      "card_no": "PL!N-bp7-009-P",
+      "name": "天王寺璃奈",
+      "template": "deck_top_to_waiting",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分と相手はそれぞれ、自身のデッキの上からカードを7枚控え室に置く。"
+    },
+    {
+      "card_no": "PL!N-bp7-013-N",
+      "name": "上原歩夢",
+      "template": "draw_from_deck",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のステージに『A・ZU・NA』のメンバーが3人いる場合、カードを1枚引く。"
+    },
+    {
+      "card_no": "PL!N-bp7-017-N",
+      "name": "宮下 愛",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分のエネルギーデッキから、エネルギーカード1枚を自分のステージにいる『虹ヶ咲』のメンバーの下に置いてもよい。"
+    },
+    {
+      "card_no": "PL!N-bp7-018-N",
+      "name": "近江彼方",
+      "template": "deck_top_pick_recover",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札を1枚控え室に置いてもよい：自分のデッキの上からカードを5枚見る。その中からブレードハートを持たない『虹ヶ咲』のメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
+    },
+    {
+      "card_no": "PL!N-bp7-020-N",
+      "name": "エマ・ヴェルデ",
+      "template": "deck_top_to_waiting",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のデッキの上からカードを3枚控え室に置く。それらのメンバーカードの中に2種類以上のブレードハートの色がある場合、ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!N-bp7-024-N",
+      "name": "鐘 嵐珠",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のステージに『R3BIRTH』のメンバーが3人いる場合、ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!SP-bp7-006-R＋",
+      "name": "桜小路きな子",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "エネルギー置き場にあるエネルギー1枚をエネルギーデッキに置いてもよい：自分の控え室にある『Liella!』のメンバーカードを1枚手札に加える。"
+    },
+    {
+      "card_no": "PL!SP-bp7-006-P",
+      "name": "桜小路きな子",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "エネルギー置き場にあるエネルギー1枚をエネルギーデッキに置いてもよい：自分の控え室にある『Liella!』のメンバーカードを1枚手札に加える。"
+    },
+    {
+      "card_no": "PL!SP-bp7-006-P＋",
+      "name": "桜小路きな子",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "エネルギー置き場にあるエネルギー1枚をエネルギーデッキに置いてもよい：自分の控え室にある『Liella!』のメンバーカードを1枚手札に加える。"
+    },
+    {
+      "card_no": "PL!SP-bp7-006-SEC",
+      "name": "桜小路きな子",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "エネルギー置き場にあるエネルギー1枚をエネルギーデッキに置いてもよい：自分の控え室にある『Liella!』のメンバーカードを1枚手札に加える。"
+    },
+    {
+      "card_no": "PL!SP-bp7-011-R",
+      "name": "鬼塚冬毬",
+      "template": "draw_from_deck",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札をすべて控え室に置いてもよい：カードを6枚引く。"
+    },
+    {
+      "card_no": "PL!SP-bp7-011-P",
+      "name": "鬼塚冬毬",
+      "template": "draw_from_deck",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札をすべて控え室に置いてもよい：カードを6枚引く。"
+    },
+    {
+      "card_no": "PL!SP-bp7-012-N",
+      "name": "澁谷かのん",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分の控え室から、『CatChu!』と『KALEIDOSCORE』と『5yncri5e!』のカードをそれぞれ1枚ずつ選び、それらを好きな順番でデッキの下に置いてもよい。そうしたとき、カードを1枚引く。"
+    },
+    {
+      "card_no": "PL!SP-bp7-017-N",
+      "name": "桜小路きな子",
+      "template": "energy_deck_to_wait",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。そのエネルギーカードは、次のターンのアクティブフェイズにアクティブしない。"
+    },
+    {
+      "card_no": "PL!SP-bp7-018-N",
+      "name": "米女メイ",
+      "template": "deck_top_pick_recover",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札のライブカードを1枚控え室に置いてもよい：自分のデッキの上からカードを5枚見る。その中から1枚を手札に加え、残りを控え室に置く。"
+    },
+    {
+      "card_no": "PL!SP-bp7-019-N",
+      "name": "若菜四季",
+      "template": "toujou_wait_pick_hand",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のステージに『5yncri5e!』のメンバーが3人以上いる場合、自分の控え室からライブカードを1枚手札に加える。"
+    },
+    {
+      "card_no": "LL-bp7-001-R＋",
+      "name": "国木田花丸&優木せつ菜&嵐 千砂都",
+      "template": "toujou_wait_pick_hand",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分の控え室からライブカードを1枚手札に加える。"
+    },
+    {
+      "card_no": "PL!N-sd1-001-P",
+      "name": "上原歩夢",
+      "template": "deck_top_pick_recover",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分のデッキの上からカードを5枚見る。その中から『虹ヶ咲』のライブカードを1枚まで公開して手札に加えてもよい。残りを控え室に置く。"
+    },
+    {
+      "card_no": "PL!N-sd1-001-SD2",
+      "name": "上原歩夢",
+      "template": "deck_top_pick_recover",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分のデッキの上からカードを5枚見る。その中から『虹ヶ咲』のライブカードを1枚まで公開して手札に加えてもよい。残りを控え室に置く。"
+    },
+    {
+      "card_no": "PL!N-sd1-008-P",
+      "name": "エマ・ヴェルデ",
+      "template": "activate_energy",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "エネルギーを2枚アクティブにする。"
+    },
+    {
+      "card_no": "PL!N-sd1-008-SD2",
+      "name": "エマ・ヴェルデ",
+      "template": "activate_energy",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "エネルギーを2枚アクティブにする。"
+    },
+    {
+      "card_no": "PL!N-sd2-009-SD2",
+      "name": "天王寺璃奈",
+      "template": "deck_top_pick_recover",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分のデッキの上からカードを3枚見る。その中から『虹ヶ咲』のカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
+    },
+    {
+      "card_no": "PL!N-sd2-010-SD2",
+      "name": "三船栞子",
+      "template": "draw_from_deck",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "カードを2枚引く。"
+    },
+    {
+      "card_no": "PL!N-sd2-011-SD2",
+      "name": "ミア・テイラー",
+      "template": "toujou_wait_pick_hand",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札を1枚控え室に置いてもよい：自分の控え室から『虹ヶ咲』のライブカードを1枚手札に加える。"
+    },
+    {
+      "card_no": "PL!N-sd2-012-SD2",
+      "name": "鐘 嵐珠",
+      "template": "deck_top_pick_recover",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札を1枚控え室に置いてもよい：自分のデッキの上からカードを3枚見る。その中から『虹ヶ咲』のカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
+    },
+    {
+      "card_no": "PL!N-sd2-013-SD2",
+      "name": "上原歩夢",
+      "template": "optional_self_wait_opp_stage",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のステージにいるメンバーが『虹ヶ咲』のみの場合、相手のステージにいる元々持つの数が2つ以下のメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "card_no": "PL!N-sd2-014-SD2",
+      "name": "中須かすみ",
+      "template": "deck_top_pick_recover",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札を1枚控え室に置いてもよい：自分のデッキの上からカードを3枚見る。その中から『虹ヶ咲』のカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
+    },
+    {
+      "card_no": "PL!N-sd2-019-SD2",
+      "name": "優木せつ菜",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!N-sd2-021-SD2",
+      "name": "天王寺璃奈",
+      "template": "optional_self_wait_opp_stage",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "相手のステージにいるコスト4以下のメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
     }
   ]
 }

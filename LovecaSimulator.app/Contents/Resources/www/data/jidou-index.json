@@ -1,14 +1,14 @@
 {
-  "generated": "2026-06-26",
+  "generated": "2026-08-10",
   "trigger": "jidou",
-  "total": 105,
-  "automated": 105,
-  "guided_manual": 0,
+  "total": 130,
+  "automated": 107,
+  "guided_manual": 23,
   "byTemplate": {
     "jidou_leave_stage_activate_one": 2,
-    "jidou_yell_grant_jouji": 7,
+    "jidou_yell_grant_jouji": 3,
     "jidou_enter_or_baton_draw": 1,
-    "jidou_area_move_grant_jouji": 9,
+    "jidou_area_move_grant_jouji": 10,
     "jidou_area_move_draw": 1,
     "jidou_leave_stage_hand_pick_recover": 3,
     "jidou_yell_grant_heart": 2,
@@ -17,7 +17,7 @@
     "jidou_area_move_energy_wait": 2,
     "jidou_yell_grant_jouji_no_bh": 3,
     "jidou_leave_stage_deck_look_pick": 2,
-    "jidou_leave_stage_draw_discard": 6,
+    "jidou_leave_stage_draw_discard": 2,
     "jidou_stage_entry_draw_until": 4,
     "jidou_opp_wait_draw": 2,
     "jidou_self_active_to_wait_draw_discard": 1,
@@ -27,11 +27,14 @@
     "jidou_on_cost_enter_draw": 2,
     "jidou_on_cost_enter_energy_wait": 2,
     "jidou_yell_grant_jouji_nobh_members": 4,
+    "jidou_yell_distinct_bh_tier_grant": 4,
+    "jidou_leave_baton_partner_bh_threshold_energy": 4,
     "jidou_move_or_energy_draw_grant": 4,
     "jidou_card_to_waiting_pick_hand": 4,
     "jidou_leave_stage_position_change": 4,
     "jidou_area_move_activate_energy": 3,
     "jidou_baton_leave_activate_energy": 1,
+    "jidou_yell_grant_heart_per_live_capped": 1,
     "jidou_series_enter_pay_energy": 2,
     "jidou_hand_to_waiting_grant": 2,
     "jidou_series_enter_grant": 2,
@@ -41,7 +44,8 @@
     "jidou_live_success_or_area_move_wait_under": 2,
     "jidou_center_member_move_choice": 2,
     "jidou_yell_optional_hand_live_extra_yell": 2,
-    "jidou_series_member_to_center_blade_grant": 2
+    "jidou_series_member_to_center_blade_grant": 2,
+    "jidou_manual": 23
   },
   "cards": [
     {
@@ -83,6 +87,14 @@
       "automated": true,
       "eventKind": "enter_or_baton",
       "effect": "自分のステージに、このメンバーか、ほかのメンバーがバトンタッチして登場したとき、カードを1枚引く。"
+    },
+    {
+      "card_no": "PL!SP-PR-024-PR",
+      "name": "平安名すみれ",
+      "template": "jidou_yell_grant_jouji",
+      "automated": true,
+      "eventKind": "yell",
+      "effect": "自分がエールしたとき、エールにより公開された自分のカードの中に、を持つ『Liella!』のライブカードが1枚以上ある場合、ライブ終了時まで、を得る。"
     },
     {
       "card_no": "PL!SP-pb1-006-R",
@@ -329,7 +341,7 @@
       "name": "鬼塚冬毬",
       "template": "jidou_area_move_opp_wait",
       "automated": true,
-      "eventKind": "area_move",
+      "eventKind": "enter_or_baton",
       "effect": "このメンバーが登場か、エリアを移動したとき、相手のステージにいる元々持つの数が3つ以下のメンバー1人をウェイトにする。"
     },
     {
@@ -337,7 +349,7 @@
       "name": "鬼塚冬毬",
       "template": "jidou_area_move_opp_wait",
       "automated": true,
-      "eventKind": "area_move",
+      "eventKind": "enter_or_baton",
       "effect": "このメンバーが登場か、エリアを移動したとき、相手のステージにいる元々持つの数が3つ以下のメンバー1人をウェイトにする。"
     },
     {
@@ -345,7 +357,7 @@
       "name": "鬼塚冬毬",
       "template": "jidou_area_move_opp_wait",
       "automated": true,
-      "eventKind": "area_move",
+      "eventKind": "enter_or_baton",
       "effect": "このメンバーが登場か、エリアを移動したとき、相手のステージにいる元々持つの数が3つ以下のメンバー1人をウェイトにする。"
     },
     {
@@ -353,7 +365,7 @@
       "name": "鬼塚冬毬",
       "template": "jidou_area_move_opp_wait",
       "automated": true,
-      "eventKind": "area_move",
+      "eventKind": "enter_or_baton",
       "effect": "このメンバーが登場か、エリアを移動したとき、相手のステージにいる元々持つの数が3つ以下のメンバー1人をウェイトにする。"
     },
     {
@@ -431,7 +443,7 @@
     {
       "card_no": "PL!N-bp5-001-R＋",
       "name": "上原歩夢",
-      "template": "jidou_yell_grant_jouji",
+      "template": "jidou_yell_distinct_bh_tier_grant",
       "automated": true,
       "eventKind": "yell",
       "effect": "自分がエールしたとき、エールにより公開された自分のカードが持つブレードハートの中に、、、、、、のうち、3種類以上ある場合、ライブ終了時まで、を得る。6種類以上ある場合、さらにライブ終了時まで、「ライブの合計スコアを＋１する。」を得る。"
@@ -439,7 +451,7 @@
     {
       "card_no": "PL!N-bp5-001-P",
       "name": "上原歩夢",
-      "template": "jidou_yell_grant_jouji",
+      "template": "jidou_yell_distinct_bh_tier_grant",
       "automated": true,
       "eventKind": "yell",
       "effect": "自分がエールしたとき、エールにより公開された自分のカードが持つブレードハートの中に、、、、、、のうち、3種類以上ある場合、ライブ終了時まで、を得る。6種類以上ある場合、さらにライブ終了時まで、「ライブの合計スコアを＋１する。」を得る。"
@@ -447,7 +459,7 @@
     {
       "card_no": "PL!N-bp5-001-AR",
       "name": "上原歩夢",
-      "template": "jidou_yell_grant_jouji",
+      "template": "jidou_yell_distinct_bh_tier_grant",
       "automated": true,
       "eventKind": "yell",
       "effect": "自分がエールしたとき、エールにより公開された自分のカードが持つブレードハートの中に、、、、、、のうち、3種類以上ある場合、ライブ終了時まで、を得る。6種類以上ある場合、さらにライブ終了時まで、「ライブの合計スコアを＋１する。」を得る。"
@@ -455,7 +467,7 @@
     {
       "card_no": "PL!N-bp5-001-SEC",
       "name": "上原歩夢",
-      "template": "jidou_yell_grant_jouji",
+      "template": "jidou_yell_distinct_bh_tier_grant",
       "automated": true,
       "eventKind": "yell",
       "effect": "自分がエールしたとき、エールにより公開された自分のカードが持つブレードハートの中に、、、、、、のうち、3種類以上ある場合、ライブ終了時まで、を得る。6種類以上ある場合、さらにライブ終了時まで、「ライブの合計スコアを＋１する。」を得る。"
@@ -463,33 +475,33 @@
     {
       "card_no": "PL!N-bp5-005-R＋",
       "name": "宮下 愛",
-      "template": "jidou_leave_stage_draw_discard",
+      "template": "jidou_leave_baton_partner_bh_threshold_energy",
       "automated": true,
-      "eventKind": "leave_stage",
+      "eventKind": "leave_stage_baton",
       "effect": "このメンバーがステージから控え室に置かれたとき、このメンバーがコスト10以上のブレードハートを持たない『虹ヶ咲』のメンバーとバトンタッチしていた場合、エネルギーを2枚アクティブにする。コスト15以上のブレードハートを持たない『虹ヶ咲』のメンバーの場合、さらにカードを1枚引く。"
     },
     {
       "card_no": "PL!N-bp5-005-P",
       "name": "宮下 愛",
-      "template": "jidou_leave_stage_draw_discard",
+      "template": "jidou_leave_baton_partner_bh_threshold_energy",
       "automated": true,
-      "eventKind": "leave_stage",
+      "eventKind": "leave_stage_baton",
       "effect": "このメンバーがステージから控え室に置かれたとき、このメンバーがコスト10以上のブレードハートを持たない『虹ヶ咲』のメンバーとバトンタッチしていた場合、エネルギーを2枚アクティブにする。コスト15以上のブレードハートを持たない『虹ヶ咲』のメンバーの場合、さらにカードを1枚引く。"
     },
     {
       "card_no": "PL!N-bp5-005-AR",
       "name": "宮下 愛",
-      "template": "jidou_leave_stage_draw_discard",
+      "template": "jidou_leave_baton_partner_bh_threshold_energy",
       "automated": true,
-      "eventKind": "leave_stage",
+      "eventKind": "leave_stage_baton",
       "effect": "このメンバーがステージから控え室に置かれたとき、このメンバーがコスト10以上のブレードハートを持たない『虹ヶ咲』のメンバーとバトンタッチしていた場合、エネルギーを2枚アクティブにする。コスト15以上のブレードハートを持たない『虹ヶ咲』のメンバーの場合、さらにカードを1枚引く。"
     },
     {
       "card_no": "PL!N-bp5-005-SEC",
       "name": "宮下 愛",
-      "template": "jidou_leave_stage_draw_discard",
+      "template": "jidou_leave_baton_partner_bh_threshold_energy",
       "automated": true,
-      "eventKind": "leave_stage",
+      "eventKind": "leave_stage_baton",
       "effect": "このメンバーがステージから控え室に置かれたとき、このメンバーがコスト10以上のブレードハートを持たない『虹ヶ咲』のメンバーとバトンタッチしていた場合、エネルギーを2枚アクティブにする。コスト15以上のブレードハートを持たない『虹ヶ咲』のメンバーの場合、さらにカードを1枚引く。"
     },
     {
@@ -639,7 +651,7 @@
     {
       "card_no": "PL!S-sd1-001-SD",
       "name": "高海千歌",
-      "template": "jidou_yell_grant_jouji",
+      "template": "jidou_yell_grant_heart_per_live_capped",
       "automated": true,
       "eventKind": "yell",
       "effect": "自分がエールしたとき、ライブ終了時まで、エールにより公開された自分のカードの中のライブカード1枚につき、を得る。この能力ではは3つまでしか得られない。"
@@ -883,6 +895,198 @@
       "automated": true,
       "eventKind": "area_move",
       "effect": "自分のメインフェイズの間、このメンバーがエリアを移動したとき、エネルギーを2枚アクティブにする。"
+    },
+    {
+      "card_no": "PL!N-bp7-001-R",
+      "name": "上原歩夢",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "自分のエネルギー置き場にあるエネルギーがメンバーの下に置かれたとき、自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。"
+    },
+    {
+      "card_no": "PL!N-bp7-001-P",
+      "name": "上原歩夢",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "自分のエネルギー置き場にあるエネルギーがメンバーの下に置かれたとき、自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。"
+    },
+    {
+      "card_no": "PL!N-bp7-011-R＋",
+      "name": "ミア・テイラー",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "このカードがデッキから控え室に置かれたとき、手札を1枚控え室に置いてもよい。そうしたとき、控え室からこのカードを手札に加える。"
+    },
+    {
+      "card_no": "PL!N-bp7-011-P",
+      "name": "ミア・テイラー",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "このカードがデッキから控え室に置かれたとき、手札を1枚控え室に置いてもよい。そうしたとき、控え室からこのカードを手札に加える。"
+    },
+    {
+      "card_no": "PL!N-bp7-011-P＋",
+      "name": "ミア・テイラー",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "このカードがデッキから控え室に置かれたとき、手札を1枚控え室に置いてもよい。そうしたとき、控え室からこのカードを手札に加える。"
+    },
+    {
+      "card_no": "PL!N-bp7-011-SEC",
+      "name": "ミア・テイラー",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "このカードがデッキから控え室に置かれたとき、手札を1枚控え室に置いてもよい。そうしたとき、控え室からこのカードを手札に加える。"
+    },
+    {
+      "card_no": "PL!N-bp7-014-N",
+      "name": "中須かすみ",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "このメンバーがステージから控え室に置かれたとき、自分の控え室にある『虹ヶ咲』のライブカードを1枚手札に加える。"
+    },
+    {
+      "card_no": "PL!N-bp7-019-N",
+      "name": "優木せつ菜",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "このメンバーがステージから控え室に置かれたとき、このメンバーが『虹ヶ咲』のメンバーとバトンタッチしていた場合、自分のエネルギーデッキから、エネルギーカード1枚をこのバトンタッチで登場したメンバーの下に置く。"
+    },
+    {
+      "card_no": "PL!N-bp7-022-N",
+      "name": "三船栞子",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "ライブフェイズの間、自分のステージにいる『虹ヶ咲』のメンバー1人がウェイト状態になったとき、手札を1枚控え室に置いてもよい。そうしたとき、そのメンバーをアクティブにする。"
+    },
+    {
+      "card_no": "PL!SP-bp7-001-R",
+      "name": "澁谷かのん",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "このメンバーがステージから控え室に置かれたとき、バトンタッチしていた場合、このカードをそのバトンタッチで登場したメンバーの下に置く。"
+    },
+    {
+      "card_no": "PL!SP-bp7-001-P",
+      "name": "澁谷かのん",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "このメンバーがステージから控え室に置かれたとき、バトンタッチしていた場合、このカードをそのバトンタッチで登場したメンバーの下に置く。"
+    },
+    {
+      "card_no": "PL!SP-bp7-005-R＋",
+      "name": "葉月 恋",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "このメンバーが登場するか、自分のエネルギーがエネルギー置き場からエネルギーデッキに置かれたとき、自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。そのエネルギーカードは、次のターンのアクティブフェイズにアクティブしない。"
+    },
+    {
+      "card_no": "PL!SP-bp7-005-R＋",
+      "name": "葉月 恋",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "自分のカードの効果によって、自分のエネルギー置き場にエネルギーが置かれたとき、ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!SP-bp7-005-P",
+      "name": "葉月 恋",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "このメンバーが登場するか、自分のエネルギーがエネルギー置き場からエネルギーデッキに置かれたとき、自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。そのエネルギーカードは、次のターンのアクティブフェイズにアクティブしない。"
+    },
+    {
+      "card_no": "PL!SP-bp7-005-P",
+      "name": "葉月 恋",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "自分のカードの効果によって、自分のエネルギー置き場にエネルギーが置かれたとき、ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!SP-bp7-005-P＋",
+      "name": "葉月 恋",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "このメンバーが登場するか、自分のエネルギーがエネルギー置き場からエネルギーデッキに置かれたとき、自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。そのエネルギーカードは、次のターンのアクティブフェイズにアクティブしない。"
+    },
+    {
+      "card_no": "PL!SP-bp7-005-P＋",
+      "name": "葉月 恋",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "自分のカードの効果によって、自分のエネルギー置き場にエネルギーが置かれたとき、ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!SP-bp7-005-SEC",
+      "name": "葉月 恋",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "このメンバーが登場するか、自分のエネルギーがエネルギー置き場からエネルギーデッキに置かれたとき、自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。そのエネルギーカードは、次のターンのアクティブフェイズにアクティブしない。"
+    },
+    {
+      "card_no": "PL!SP-bp7-005-SEC",
+      "name": "葉月 恋",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "自分のカードの効果によって、自分のエネルギー置き場にエネルギーが置かれたとき、ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!SP-bp7-008-R",
+      "name": "若菜四季",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "ウェイト状態のこのメンバーがエリアを移動したとき、このメンバーをアクティブにする。"
+    },
+    {
+      "card_no": "PL!SP-bp7-008-P",
+      "name": "若菜四季",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "ウェイト状態のこのメンバーがエリアを移動したとき、このメンバーをアクティブにする。"
+    },
+    {
+      "card_no": "PL!SP-bp7-014-N",
+      "name": "嵐 千砂都",
+      "template": "jidou_area_move_grant_jouji",
+      "automated": true,
+      "eventKind": "area_move",
+      "effect": "このメンバーがエリアを移動したとき、ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!SP-bp7-016-N",
+      "name": "葉月 恋",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "自分のカードの効果によって、自分のエネルギー置き場にエネルギーが置かれたとき、ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!N-sd2-010-SD2",
+      "name": "三船栞子",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "自分のステージにいる『虹ヶ咲』のメンバー1人がウェイト状態になったとき、手札を1枚控え室に置いてもよい。そうしたとき、そのメンバーをアクティブにし、ライブ終了時まで、そのメンバーはを得る。"
     }
   ]
 }

@@ -1,13 +1,13 @@
 {
-  "generated": "2026-07-31",
+  "generated": "2026-08-10",
   "trigger": "live_start",
-  "total": 309,
+  "total": 351,
   "byTemplate": {
-    "heart_color_pick_grant": 26,
-    "grant_jouji_session": 64,
+    "heart_color_pick_grant": 28,
+    "grant_jouji_session": 88,
     "optional_self_wait_opp_stage": 11,
-    "guided_manual": 2,
-    "optional_energy_blade_until_live_end": 30,
+    "guided_manual": 14,
+    "optional_energy_blade_until_live_end": 32,
     "live_start_pay_or_hand_discard": 3,
     "ability_sequence": 5,
     "live_start_opp_wait_if_stage_hearts": 1,
@@ -32,7 +32,7 @@
     "live_start_pick_player_waiting_deck_bottom": 2,
     "heart_color_pick_replace": 5,
     "toujou_bibi_wait_opp_active_wait": 2,
-    "draw_from_deck": 6,
+    "draw_from_deck": 7,
     "live_start_position_change": 14,
     "live_start_pick_player_deck_top_peek": 2,
     "live_start_draw_opp_wait": 4,
@@ -55,7 +55,7 @@
     "live_start_hand_reveal_under_heart_grant": 4,
     "live_start_live_frame_pick_deck_top": 4,
     "live_start_pay_or_discard_conditional_grant_members": 2,
-    "live_start_opp_wait_max_cost": 3,
+    "live_start_opp_wait_max_cost": 4,
     "live_start_optional_hand_discard_named_followup_blade": 2,
     "live_start_hand_discard_cost_boost_grant_if": 4,
     "live_start_activate_self_if_low_score_live": 2,
@@ -2867,6 +2867,384 @@
       "optional": true,
       "perTurn": 0,
       "effect": "支払ってもよい：ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!S-bp7-003-R＋",
+      "name": "松浦果南",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分のデッキの一番上のカードを見る。それをデッキの一番下に置いてもよい。"
+    },
+    {
+      "card_no": "PL!S-bp7-003-P",
+      "name": "松浦果南",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分のデッキの一番上のカードを見る。それをデッキの一番下に置いてもよい。"
+    },
+    {
+      "card_no": "PL!S-bp7-003-P＋",
+      "name": "松浦果南",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分のデッキの一番上のカードを見る。それをデッキの一番下に置いてもよい。"
+    },
+    {
+      "card_no": "PL!S-bp7-003-SEC",
+      "name": "松浦果南",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分のデッキの一番上のカードを見る。それをデッキの一番下に置いてもよい。"
+    },
+    {
+      "card_no": "PL!S-bp7-004-R",
+      "name": "黒澤ダイヤ",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のデッキの下からカードを3枚見る。その中から好きな枚数を好きな順番でデッキの下に置き、残りを控え室に置く。"
+    },
+    {
+      "card_no": "PL!S-bp7-004-P",
+      "name": "黒澤ダイヤ",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のデッキの下からカードを3枚見る。その中から好きな枚数を好きな順番でデッキの下に置き、残りを控え室に置く。"
+    },
+    {
+      "card_no": "PL!S-bp7-006-R",
+      "name": "津島善子",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のデッキの下からカードを3枚控え室に置く。それらがすべて『Aqours』のメンバーカードの場合、ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!S-bp7-006-P",
+      "name": "津島善子",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のデッキの下からカードを3枚控え室に置く。それらがすべて『Aqours』のメンバーカードの場合、ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!S-bp7-007-R＋",
+      "name": "国木田花丸",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分の控え室から『Aqours』のメンバーカードを3枚まで好きな順番でデッキの下に置く。ライブ終了時まで、これによりデッキに置かれたカード1枚につき、を得る。"
+    },
+    {
+      "card_no": "PL!S-bp7-007-P",
+      "name": "国木田花丸",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分の控え室から『Aqours』のメンバーカードを3枚まで好きな順番でデッキの下に置く。ライブ終了時まで、これによりデッキに置かれたカード1枚につき、を得る。"
+    },
+    {
+      "card_no": "PL!S-bp7-007-P＋",
+      "name": "国木田花丸",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分の控え室から『Aqours』のメンバーカードを3枚まで好きな順番でデッキの下に置く。ライブ終了時まで、これによりデッキに置かれたカード1枚につき、を得る。"
+    },
+    {
+      "card_no": "PL!S-bp7-007-SEC",
+      "name": "国木田花丸",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分の控え室から『Aqours』のメンバーカードを3枚まで好きな順番でデッキの下に置く。ライブ終了時まで、これによりデッキに置かれたカード1枚につき、を得る。"
+    },
+    {
+      "card_no": "PL!S-bp7-008-R",
+      "name": "小原鞠莉",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分のデッキの一番下のカードを控え室に置いてもよい。それが「松浦果南」か「黒澤ダイヤ」の場合、それを手札に加える。"
+    },
+    {
+      "card_no": "PL!S-bp7-008-P",
+      "name": "小原鞠莉",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分のデッキの一番下のカードを控え室に置いてもよい。それが「松浦果南」か「黒澤ダイヤ」の場合、それを手札に加える。"
+    },
+    {
+      "card_no": "PL!S-bp7-015-N",
+      "name": "津島善子",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のデッキの下からカードを1枚控え室に置く。それがライブカードの場合、ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!N-bp7-003-R＋",
+      "name": "桜坂しずく",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "ライブ終了時まで、このメンバーの下に置かれている名前の異なるメンバーカード1枚につき、を得る。"
+    },
+    {
+      "card_no": "PL!N-bp7-003-P",
+      "name": "桜坂しずく",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "ライブ終了時まで、このメンバーの下に置かれている名前の異なるメンバーカード1枚につき、を得る。"
+    },
+    {
+      "card_no": "PL!N-bp7-003-P＋",
+      "name": "桜坂しずく",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "ライブ終了時まで、このメンバーの下に置かれている名前の異なるメンバーカード1枚につき、を得る。"
+    },
+    {
+      "card_no": "PL!N-bp7-003-SEC",
+      "name": "桜坂しずく",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "ライブ終了時まで、このメンバーの下に置かれている名前の異なるメンバーカード1枚につき、を得る。"
+    },
+    {
+      "card_no": "PL!N-bp7-012-R",
+      "name": "鐘 嵐珠",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "『虹ヶ咲』のメンバー1人をウェイトにしてもよい：好きなハートの色を1つ指定する。ライブ終了時まで、そのハートを1つ得る。"
+    },
+    {
+      "card_no": "PL!N-bp7-012-P",
+      "name": "鐘 嵐珠",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "『虹ヶ咲』のメンバー1人をウェイトにしてもよい：好きなハートの色を1つ指定する。ライブ終了時まで、そのハートを1つ得る。"
+    },
+    {
+      "card_no": "PL!N-bp7-016-N",
+      "name": "朝香果林",
+      "template": "heart_color_pick_grant",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "支払ってもよい：好きなハートの色を1つ指定する。ライブ終了時まで、そのハートを1つ得る。"
+    },
+    {
+      "card_no": "PL!SP-bp7-004-R",
+      "name": "平安名すみれ",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分の控え室から『Liella!』のメンバーカード3枚を好きな順番でデッキの一番下に置いてもよい。これによりデッキの下に置いたカードの中にブレードハートを持たないメンバーカードが1枚以上ある場合、ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!SP-bp7-004-P",
+      "name": "平安名すみれ",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分の控え室から『Liella!』のメンバーカード3枚を好きな順番でデッキの一番下に置いてもよい。これによりデッキの下に置いたカードの中にブレードハートを持たないメンバーカードが1枚以上ある場合、ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!SP-bp7-007-R＋",
+      "name": "米女メイ",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "エネルギー置き場にあるエネルギー2枚をエネルギーデッキに置いてもよい：ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!SP-bp7-007-P",
+      "name": "米女メイ",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "エネルギー置き場にあるエネルギー2枚をエネルギーデッキに置いてもよい：ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!SP-bp7-007-P＋",
+      "name": "米女メイ",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "エネルギー置き場にあるエネルギー2枚をエネルギーデッキに置いてもよい：ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!SP-bp7-007-SEC",
+      "name": "米女メイ",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "エネルギー置き場にあるエネルギー2枚をエネルギーデッキに置いてもよい：ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!SP-bp7-009-R",
+      "name": "鬼塚夏美",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "相手のステージにいる元々持つの数が2つ以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "card_no": "PL!SP-bp7-009-P",
+      "name": "鬼塚夏美",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "相手のステージにいる元々持つの数が2つ以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "card_no": "PL!SP-bp7-015-N",
+      "name": "平安名すみれ",
+      "template": "draw_from_deck",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "支払ってもよい：自分のステージに『CatChu!』のメンバーが3人いる場合、カードを1枚引く。"
+    },
+    {
+      "card_no": "PL!N-sd1-001-P",
+      "name": "上原歩夢",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "支払ってもよい：ライブ終了時まで、自分のステージにいるほかの『虹ヶ咲』のメンバーはを得る。"
+    },
+    {
+      "card_no": "PL!N-sd1-001-SD2",
+      "name": "上原歩夢",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "支払ってもよい：ライブ終了時まで、自分のステージにいるほかの『虹ヶ咲』のメンバーはを得る。"
+    },
+    {
+      "card_no": "PL!N-sd1-004-P",
+      "name": "朝香果林",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札を1枚控え室に置いてもよい：ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!N-sd1-004-SD2",
+      "name": "朝香果林",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札を1枚控え室に置いてもよい：ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!N-sd2-004-SD2",
+      "name": "朝香果林",
+      "template": "optional_energy_blade_until_live_end",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "支払ってもよい：ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!N-sd2-005-SD2",
+      "name": "宮下 愛",
+      "template": "heart_color_pick_grant",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札を2枚控え室に置いてもよい：好きなハートの色を1つ指定する。ライブ終了時まで、そのハートを2つ得る。"
+    },
+    {
+      "card_no": "PL!N-sd2-006-SD2",
+      "name": "近江彼方",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "『虹ヶ咲』のメンバー1人をウェイトにしてもよい：ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!N-sd2-008-SD2",
+      "name": "エマ・ヴェルデ",
+      "template": "optional_energy_blade_until_live_end",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "支払ってもよい：ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!N-sd2-013-SD2",
+      "name": "上原歩夢",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のステージにいるメンバーが『虹ヶ咲』のみの場合、相手のステージにいる元々持つの数が2つ以下のメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "card_no": "PL!N-sd2-017-SD2",
+      "name": "宮下 愛",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "支払ってもよい：自分のステージにいるメンバー1人をアクティブにする。"
+    },
+    {
+      "card_no": "PL!N-sd2-019-SD2",
+      "name": "優木せつ菜",
+      "template": "live_start_opp_wait_max_cost",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "相手のステージにいるコスト2以下のメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
     }
   ]
 }

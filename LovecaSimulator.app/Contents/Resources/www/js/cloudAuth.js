@@ -24,16 +24,7 @@ const FIREBASE_FIRESTORE_URL = "https://www.gstatic.com/firebasejs/10.13.2/fireb
 
 const SYNC_KEYS = [STORAGE_DECK_LIBRARY, STORAGE_DECK, STORAGE_PLAY_ENERGY_CARD_NO];
 
-/**
- * @typedef {{
- *   uid: string,
- *   displayName: string|null,
- *   photoURL: string|null,
- *   email: string|null,
- *   isAnonymous?: boolean,
- *   isGoogle?: boolean,
- * }} CloudUserSummary
- */
+/** @typedef {{ uid: string, displayName: string|null, photoURL: string|null, email: string|null }} CloudUserSummary */
 
 /**
  * 直近ログイン情報のローカルキャッシュキー。リロード直後、Firebase Auth が IndexedDB から
@@ -126,7 +117,15 @@ function prefersGooglePopupAuth() {
 
 /** @returns {Promise<Record<string, string>|null>} */
 async function loadFirebaseConfigObject() {
-  /* インライン JSON を先に読む（import map / キャッシュの影響を受けない） */
+  try {
+    const mod = await import(/* @vite-ignore */ "./firebaseConfig.js");
+    const cfg = mod && mod.firebaseConfig;
+    if (cfg && typeof cfg === "object" && cfg.apiKey && cfg.authDomain && cfg.projectId) {
+      return cfg;
+    }
+  } catch (err) {
+    console.warn("[cloudAuth] firebaseConfig.js import failed:", err);
+  }
   try {
     const el = document.getElementById("llocg-firebase-config-json");
     if (el && el.textContent) {
@@ -138,21 +137,11 @@ async function loadFirebaseConfigObject() {
   } catch (err) {
     console.warn("[cloudAuth] inline firebase config parse failed:", err);
   }
-  try {
-    const url = new URL("./firebaseConfig.js", import.meta.url).href;
-    const mod = await import(/* @vite-ignore */ url);
-    const cfg = mod && mod.firebaseConfig;
-    if (cfg && typeof cfg === "object" && cfg.apiKey && cfg.authDomain && cfg.projectId) {
-      return cfg;
-    }
-  } catch (err) {
-    console.warn("[cloudAuth] firebaseConfig.js import failed:", err);
-  }
   return null;
 }
 
-export async function ensureCloudAuthReady() {
-  if (cloudSyncEnabled && _auth && _authApi && _gp && _db && _firestoreApi) return true;
+async function ensureCloudAuthReady() {
+  if (cloudSyncEnabled && _auth && _authApi && _gp) return true;
   return initCloudAuthIfConfigured();
 }
 
@@ -208,30 +197,11 @@ export function getEffectiveCloudUser() {
 }
 
 function userFromFirebaseAuthUser(user) {
-  const anonymous = !!(user && user.isAnonymous);
-  let isGoogle = false;
-  try {
-    const providers = (user && user.providerData) || [];
-    for (let i = 0; i < providers.length; i++) {
-      if (providers[i] && providers[i].providerId === "google.com") {
-        isGoogle = true;
-        break;
-      }
-    }
-    if (!isGoogle && !anonymous && user && user.uid) {
-      /* providerData が空の非匿名は Google 想定（復元直後） */
-      isGoogle = true;
-    }
-  } catch (_) {
-    isGoogle = !anonymous;
-  }
   return {
     uid: user.uid,
-    displayName: anonymous ? "ゲスト" : user.displayName || null,
+    displayName: user.displayName || null,
     photoURL: user.photoURL || null,
     email: user.email || null,
-    isAnonymous: anonymous,
-    isGoogle: isGoogle,
   };
 }
 
@@ -571,7 +541,7 @@ let lastConfig = null;
 
 export async function initCloudAuthIfConfigured() {
   if (typeof window === "undefined") return false;
-  if (cloudSyncEnabled && _auth && _authApi && _db && _firestoreApi) return true;
+  if (cloudSyncEnabled && _auth && _authApi) return true;
   if (cloudInitInFlight) return cloudInitInFlight;
   cloudInitInFlight = (async function () {
     const config = await loadFirebaseConfigObject();
@@ -582,14 +552,7 @@ export async function initCloudAuthIfConfigured() {
     lastConfig = config;
     installLocalStorageInterceptor();
     try {
-      /* 前回失敗で部分初期化が残っている場合は SDK をやり直す */
-      if (!_db || !_firestoreApi || !_auth || !_authApi) {
-        firebaseInitPromise = null;
-      }
       await loadFirebaseSdk(config);
-      if (!_auth || !_authApi || !_db || !_firestoreApi) {
-        throw new Error("Firebase Auth/Firestore の準備が不完全です");
-      }
       cloudSyncEnabled = true;
       return true;
     } catch (err) {
@@ -603,26 +566,8 @@ export async function initCloudAuthIfConfigured() {
   return cloudInitInFlight;
 }
 
-/** 投稿失敗時などの診断用（ユーザー向け短文） */
-export function describeCloudAuthState() {
-  const parts = [];
-  if (!cloudSyncEnabled) parts.push("Firebase未初期化");
-  else if (!_db || !_firestoreApi) parts.push("Firestore未接続");
-  else parts.push("Firebase接続OK");
-  if (_auth && _auth.currentUser) {
-    if (_auth.currentUser.isAnonymous) parts.push("ゲストログイン中");
-    else if (isGoogleCloudUser()) parts.push("Googleログイン中");
-    else parts.push("ログイン中（Google以外）");
-  } else if (currentUser) {
-    parts.push("画面上はログイン表示（セッション復元中またはキャッシュ）");
-  } else {
-    parts.push("未ログイン");
-  }
-  return parts.join(" / ");
-}
-
 export function isCloudSyncAvailable() {
-  return cloudSyncEnabled && !!_auth && !!_authApi && !!_db && !!_firestoreApi;
+  return cloudSyncEnabled;
 }
 
 /** 対戦マッチ用 Firestore（Google ログイン＋ Firebase 初期化済みのときのみ） */
@@ -736,7 +681,7 @@ export function isGoogleCloudUser() {
       if (providers[i] && providers[i].providerId === "google.com") return true;
     }
     /* providerData が空でも非匿名なら Google 想定（キャッシュ復元直後など） */
-    return true;
+    return !!currentUser && !isGuestCloudUser();
   } catch (_) {
     return false;
   }

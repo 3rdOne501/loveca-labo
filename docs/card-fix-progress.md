@@ -34,9 +34,12 @@
 
 ---
 
-## 1. ブースターパック（bp1–bp6）
+## 1. ブースターパック（bp1–bp7）
 
-各スクール × 各弾。**メンバー**と**ライブ**を別行で管理（計 6 弾 × 5 スクール × 2 = 最大 60 行、実在分のみ記載）。
+各スクール × 各弾。**メンバー**と**ライブ**を別行で管理（計 7 弾 × 5 スクール × 2 = 最大 70 行、実在分のみ記載）。
+
+> **bp7 = ブースターパックMELLOWMOMENT**（2026-08-10 取り込み・190 枚）。全スクール **⬜ 未着手**。
+> 未対応セグメントは `scripts/verify-ability-coverage.mjs` の `PENDING_PRODUCT_CARD_NO` で除外中。監修完了時に外すこと。
 
 ### μ's（`PL!-bp*` / クロス `LL-bp*`）
 
@@ -48,6 +51,7 @@
 | bp4 | ⭕️ | ⭕️ | [mus-bp4-verification-list.md](./mus-bp4-verification-list.md) **2026-06-30 2回監修完了**（002/005/019–023 再確認） |
 | bp5 | ⭕️ | ⭕️ | [muse-bp5-verification-list.md](./muse-bp5-verification-list.md) **2026-06-30 メンバー3回監修**（002/222 optional フラグ） |
 | bp6 | ⭕️ | ⭕️ | [muse-bp6-verification-list.md](./muse-bp6-verification-list.md) **2026-06-28 ライブ2回監修**（020 FAQ255 / 021任意確認） |
+| bp7 | — | — | MELLOWMOMENT に `PL!-bp7` なし（クロス `LL-bp7` はアニバ §3 で管理） |
 
 ### Aqours（`PL!S-bp*` / クロス `LL-bp*`）
 
@@ -59,6 +63,7 @@
 | bp4 | — | — | 実カード未発売 |
 | bp5 | ⭕️ | ⭕️ | [aqours-bp5-verification-list.md](./aqours-bp5-verification-list.md) **2026-06-30 2回監修完了**（007 heart04×2、006必須ウェイト） |
 | bp6 | ⭕️ | ⭕️ | [aqours-bp6-verification-list.md](./aqours-bp6-verification-list.md) **2026-06-28 ライブ2回監修完了**（023 他） |
+| bp7 | ⬜ | ⬜ | **2026-08-10 取り込み**（MELLOWMOMENT・55 枚）。verify/audit 未新設 |
 
 ### 虹ヶ咲（`PL!N-bp*` / クロス `LL-bp*`）
 
@@ -70,6 +75,7 @@
 | bp4 | ⭕️ | ⭕️ | [niji-bp4-verification-list.md](./niji-bp4-verification-list.md) **2026-06-30 2回監修完了**（011 ライブ回収・007/025/026 再確認） |
 | bp5 | ⭕️ | ⭕️ | [niji-bp5-verification-list.md](./niji-bp5-verification-list.md) **2026-06-30 メンバー3回監修**（011 2択前提 / 014 E2） |
 | bp6 | — | — | 実カード未発売 |
+| bp7 | ⬜ | ⬜ | **2026-08-10 取り込み**（MELLOWMOMENT・65 枚）。verify/audit 未新設 |
 
 ### Liella!（`PL!SP-bp*` / クロス `LL-bp*`）
 
@@ -81,6 +87,7 @@
 | bp4 | ⭕️ | ⭕️ | [liella-bp4-verification-list.md](./liella-bp4-verification-list.md) **2026-06-30 2回監修完了** |
 | bp5 | ⭕️ | ⭕️ | [liella-bp5-verification-list.md](./liella-bp5-verification-list.md) **2026-06-30 2回監修完了**（005 ミル比例ブレード、015 センター限定、009/023 他） |
 | bp6 | — | — | 実カード未発売 |
+| bp7 | ⬜ | ⬜ | **2026-08-10 取り込み**（MELLOWMOMENT・61 枚）。verify/audit 未新設 |
 
 ### 蓮ノ空（`PL!HS-bp*`）
 
@@ -92,6 +99,7 @@
 | bp4 | — | — | 実カード未発売 |
 | bp5 | ⭕️ | ⭕️ | [hasunosora-bp5-verification-list.md](./hasunosora-bp5-verification-list.md) **2026-06-30 2回監修完了**（001 ミル条件ブレード、003 同グループメンバー付与、005/022 他） |
 | bp6 | ⭕️ | ⭕️ | [hasunosora-bp6-verification-list.md](./hasunosora-bp6-verification-list.md) **2026-06-30 2回監修完了**（013 登場時 DOLLCHESTRA 除外） |
+| bp7 | — | — | MELLOWMOMENT に `PL!HS-bp7` なし |
 
 ---
 
@@ -146,8 +154,10 @@
 | Liella! sd1 | `PL!SP-sd1` | ⭕️ | ⭕️ | [liella-sd1-verification-list.md](./liella-sd1-verification-list.md) **2026-06-30 2回監修完了** |
 | 蓮ノ空 sd1 | `PL!HS-sd1` | ⭕️ | ⭕️ | [hasunosora-sd1-verification-list.md](./hasunosora-sd1-verification-list.md) **2026-06-30 2回監修完了** |
 | Liella! sd2 cheer | `PL!SP-sd2` | ⭕️ | ⭕️ | [liella-sd2-verification-list.md](./liella-sd2-verification-list.md) **2026-06-30 2回監修完了** |
+| 虹ヶ咲 sd2 cheer | `PL!N-sd2` | ⬜ | ⬜ | **2026-08-10 取り込み**（43 枚）。verify/audit 未新設 |
 
 > `PL!SP-sd2` は sd1 DUO とは別商品（cheer）。上記 6 行目として追加。
+> `PL!N-sd2`（虹ヶ咲 cheer）は 2026-08-10 に上流追加。`PL!N-sd1-*-P` / `-SD2` の再録違いを含む。
 
 ---
 
@@ -181,11 +191,15 @@
 
 ---
 
-## 6. 推奨作業順（2026-06-30）
+## 6. 推奨作業順（2026-08-10）
 
-1. **Aqours bp4** / **虹 bp2** / **Liella bp3** — `cards.json` 未収録。追加後に verify/audit 新設
-2. **PR** 全スクール ⭕️ 完了（2026-06-30 一括2回監修）。未収録 sd2 等（4 区分）
-3. **🔄 一部済**の bp を `[ ]` 解消（収録済み商品があれば）
+1. **bp7 MELLOWMOMENT** — 2026-08-10 取り込み。未対応 67 枚。**商品 × スクール × 区分ごとに 1 セッション**で進める
+   （推奨順: Aqours bp7 メンバー → ライブ → 虹ヶ咲 bp7 メンバー → ライブ → Liella! bp7 メンバー → ライブ → `LL-bp7` クロス）
+2. **虹ヶ咲 sd2 cheer** — 未対応 8 枚。`PL!SP-sd2`（Liella cheer）のリストを雛形にできる
+3. **Aqours bp4** / **虹 bp2** / **Liella bp3** — `cards.json` 未収録。追加後に verify/audit 新設
+4. **🔄 一部済**の bp を `[ ]` 解消（収録済み商品があれば）
+
+> 未対応の内訳は `node scripts/check-new-cards.mjs --markdown docs/card-update-report.md` で再生成できる。
 
 ---
 

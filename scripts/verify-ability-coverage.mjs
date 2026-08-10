@@ -20,6 +20,22 @@ const THRESHOLDS = {
   jidou: { maxManual: 0, minAutomated: 90 },
 };
 
+/**
+ * 未監修商品（docs/card-fix-progress.md の ⬜ 行）の card_no パターン。
+ * 新弾を取り込んだ直後は既存テンプレートに載らない能力が必ず出るため、
+ * 「既存商品の退行を検知する」というこのゲートの目的を守るために母数から外す。
+ * 商品の監修が終わったらこの配列から削除し、除外 0 件に戻すこと。
+ */
+const PENDING_PRODUCT_CARD_NO = [
+  /-bp7-/, // ブースターパックMELLOWMOMENT
+  /^PL!N-sd2-/, // スタートデッキ ラブライブ！虹ヶ咲学園スクールアイドル同好会 cheer
+];
+
+function isPendingProduct(cardNo) {
+  const s = String(cardNo || "");
+  return PENDING_PRODUCT_CARD_NO.some((re) => re.test(s));
+}
+
 function loadIndex(name) {
   return JSON.parse(readFileSync(join(ROOT, "data", name), "utf8"));
 }
@@ -32,23 +48,39 @@ function main() {
   let autoTotal = 0;
   let manualTotal = 0;
 
+  let pendingTotal = 0;
+
   for (const trigger of ["kidou", "toujyou", "live_start", "live_success"]) {
     const idx = loadIndex(`${trigger}-index.json`);
-    const manual = idx.cards.filter((c) => c.template === "guided_manual" || c.automated === false).length;
-    const automated = idx.total - manual;
+    const manualRows = idx.cards.filter(
+      (c) => c.template === "guided_manual" || c.automated === false,
+    );
+    const pending = manualRows.filter((c) => isPendingProduct(c.card_no)).length;
+    const manual = manualRows.length - pending;
+    const automated = idx.total - manualRows.length;
     autoTotal += automated;
     manualTotal += manual;
+    pendingTotal += pending;
     const th = THRESHOLDS[trigger];
-    console.log(`${trigger}: total=${idx.total} automated=${automated} manual=${manual}`);
+    console.log(
+      `${trigger}: total=${idx.total} automated=${automated} manual=${manual}` +
+        (pending ? ` (未監修商品 ${pending} 件を除外)` : ""),
+    );
     if (th.maxManual != null && manual > th.maxManual) {
       errors.push(`${trigger} manual ${manual} exceeds max ${th.maxManual}`);
     }
   }
 
   const jidou = loadIndex("jidou-index.json");
-  const jidouManual = jidou.cards.filter((c) => c.template === "jidou_manual").length;
-  const jidouAuto = jidou.cards.length - jidouManual;
-  console.log(`jidou: total=${jidou.cards.length} automated=${jidouAuto} manual=${jidouManual}`);
+  const jidouManualRows = jidou.cards.filter((c) => c.template === "jidou_manual");
+  const jidouPending = jidouManualRows.filter((c) => isPendingProduct(c.card_no)).length;
+  const jidouManual = jidouManualRows.length - jidouPending;
+  const jidouAuto = jidou.cards.length - jidouManualRows.length;
+  pendingTotal += jidouPending;
+  console.log(
+    `jidou: total=${jidou.cards.length} automated=${jidouAuto} manual=${jidouManual}` +
+      (jidouPending ? ` (未監修商品 ${jidouPending} 件を除外)` : ""),
+  );
   if (jidouManual > (THRESHOLDS.jidou.maxManual ?? 0)) {
     errors.push(`jidou manual ${jidouManual} exceeds max ${THRESHOLDS.jidou.maxManual}`);
   }
@@ -59,6 +91,11 @@ function main() {
   autoTotal += jidouAuto;
   manualTotal += jidouManual;
   console.log(`\n合計: automated=${autoTotal} guided_manual=${manualTotal}`);
+  if (pendingTotal) {
+    console.log(
+      `未監修商品の未対応セグメント: ${pendingTotal} 件（PENDING_PRODUCT_CARD_NO で除外中・監修後に解除）`,
+    );
+  }
 
   execSync("node scripts/verify-ability-handlers.mjs", { cwd: ROOT, stdio: "inherit" });
 

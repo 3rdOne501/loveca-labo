@@ -10,3 +10,6 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+
+# 自動更新ジョブのログ（daily-card-update.sh）
+logs/
