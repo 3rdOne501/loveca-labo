@@ -1237,6 +1237,16 @@ function parseNeedHeartReduceFixedMap(segRaw) {
   return parseNeedHeartMapFromSegmentRaw(rest);
 }
 
+function parseNeedHeartSetFixedMap(segRaw) {
+  var s = String(segRaw || "");
+  var idx = s.search(/必要ハート|このカードを使用するためのコスト/);
+  if (idx < 0) return {};
+  var rest = s.slice(idx);
+  var endM = rest.match(/になる/);
+  if (endM) rest = rest.slice(0, endM.index + endM[0].length);
+  return parseNeedHeartMapFromSegmentRaw(rest);
+}
+
 /**
  * 必要ハート固定減算カードの「〜場合」発動条件をフィルタへ変換（reduce_fixed 専用）。
  * 汎用 parseAbilityPickFilters には混ぜず、ここで個別に解釈する。
@@ -3328,9 +3338,11 @@ export function parseAbilityPickFilters(p, segRaw) {
       /を得る/.test(p);
     if (!movedMemberTargetGrant) f.requiresStageMemberMovedThisTurn = true;
   }
+  var stageHeartBlob = String(segRaw || "") || String(p || "");
   var stageHeartM =
-    p.match(/ステージに.*heart_0?(\d).*を([０-９\d]+)つ以上持つメンバーがいる場合/) ||
-    p.match(/ステージに.*\{\{heart_0?(\d)[^}]*\}\}を([０-９\d]+)つ以上持つメンバーがいる場合/);
+    stageHeartBlob.match(/ステージに.*\{\{heart_0?(\d)[^}]*\}\}を([０-９\d]+)つ以上持つメンバーがいる場合/) ||
+    stageHeartBlob.match(/ステージに.*heart_0?(\d).*を([０-９\d]+)つ以上持つメンバーがいる場合/) ||
+    String(p || "").match(/ステージに.*heart_0?(\d).*を([０-９\d]+)つ以上持つメンバーがいる場合/);
   if (stageHeartM) {
     var shSlot = Number(stageHeartM[1]) || 0;
     if (shSlot >= 1 && shSlot <= 6) f.minStageHeartSlot = shSlot;
@@ -7002,12 +7014,12 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
           needHeartSetChoices: needChoices,
         });
       }
-      var needSet = parseNeedHeartMapFromSegmentRaw(segRaw);
+      var needSet = parseNeedHeartSetFixedMap(segRaw);
       if (Object.keys(needSet).length) {
         return lsT({
           template: "live_start_need_heart_set_fixed",
           requiresOnStage: true,
-          filters: parseAbilityPickFilters(p),
+          filters: parseAbilityPickFilters(p, segRaw),
           needHeartSetMap: needSet,
           cardScoreGrant: parseLiveCardScorePlusFromText(p) || 0,
         });
@@ -7015,12 +7027,12 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
     }
 
     if (/このカードを使用するためのコストは/.test(p) && /になる/.test(p)) {
-      var needSetFromCost = parseNeedHeartMapFromSegmentRaw(segRaw);
+      var needSetFromCost = parseNeedHeartSetFixedMap(segRaw);
       if (Object.keys(needSetFromCost).length) {
         return lsT({
           template: "live_start_need_heart_set_fixed",
           requiresOnStage: true,
-          filters: parseAbilityPickFilters(p),
+          filters: parseAbilityPickFilters(p, segRaw),
           needHeartSetMap: needSetFromCost,
         });
       }

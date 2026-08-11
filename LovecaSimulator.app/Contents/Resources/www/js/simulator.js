@@ -6639,18 +6639,19 @@ export function mountSimulator(
         handRed += computeJoujiHandCostReductionForCard(memberInstOrNull, createJoujiBoardContext());
       } catch (_) {}
       baseCost = Math.max(0, baseCost - handRed);
-      /* プレイ時任意コスト変更（控え室シャッフル減／指名捨てで固定） */
-      if (
-        typeof memberInstOrNull._playCostSet === "number" &&
-        Number.isFinite(memberInstOrNull._playCostSet)
-      ) {
-        baseCost = Math.max(0, Math.floor(memberInstOrNull._playCostSet));
-      } else if (
-        typeof memberInstOrNull._playCostReduce === "number" &&
-        Number.isFinite(memberInstOrNull._playCostReduce)
-      ) {
-        baseCost = Math.max(0, baseCost - Math.floor(memberInstOrNull._playCostReduce));
-      }
+    }
+    /* プレイ時任意コスト変更（控え室シャッフル減／指名捨てで固定）。
+     * 登場後のエネ支払いまでは残す（手札判定だけだと _playCostReduce が無視される）。 */
+    if (
+      typeof memberInstOrNull._playCostSet === "number" &&
+      Number.isFinite(memberInstOrNull._playCostSet)
+    ) {
+      baseCost = Math.max(0, Math.floor(memberInstOrNull._playCostSet));
+    } else if (
+      typeof memberInstOrNull._playCostReduce === "number" &&
+      Number.isFinite(memberInstOrNull._playCostReduce)
+    ) {
+      baseCost = Math.max(0, baseCost - Math.floor(memberInstOrNull._playCostReduce));
     }
     if (stageColumnKeyHostingMember(memberInstOrNull.id) != null) {
       var skipJoujiStageCostForAppear =
@@ -9965,6 +9966,7 @@ export function mountSimulator(
     var nonBh = 0;
     var noteLive = 0;
     var drawYell = 0;
+    var doubleColorless = 0;
     /** @type {Record<number, number>} */
     var slotCount = {};
     for (var i = 0; i < n; i++) {
@@ -9976,6 +9978,7 @@ export function mountSimulator(
       }
       if (cat.type === T_LIVE && cardIsNoteLiveCatalog(cat)) noteLive++;
       if (cat.type === T_LIVE && catalogLiveCardIsDrawYellBladeHeart(cat)) drawYell++;
+      if (cat.type === T_LIVE && cardIsDoubleColorlessYellLiveCatalog(cat)) doubleColorless++;
       if (!cardHasBladeHeart(cat)) {
         nonBh++;
         continue;
@@ -10028,15 +10031,31 @@ export function mountSimulator(
           escapeHtmlPlain(String(drawYell)) +
           "</strong></span>"
         : "";
+    var doubleColorlessPill =
+      doubleColorless > 0
+        ? '<span class="deck-remain-bh-pill deck-remain-bh-pill--double-colorless deck-remain-bh-pill--art" data-bh-slot="double-colorless" title="W無色特殊BHを持つライブ枚数">' +
+          '<span class="deck-remain-bh-pill__lab">' +
+          heartSlotArtIconHtml(0, { double_colorless: true, extraClass: "deck-remain-bh-pill__art-ico" }) +
+          '<span class="visually-hidden">W無色</span>' +
+          '</span><strong class="deck-remain-bh-pill__n">' +
+          escapeHtmlPlain(String(doubleColorless)) +
+          "</strong></span>"
+        : "";
     var bodyRow =
-      '<div class="deck-remain-bh-pill-row">' + nonBhPill + notePill + drawYellPill + parts.join("") + "</div>";
+      '<div class="deck-remain-bh-pill-row">' +
+      nonBhPill +
+      notePill +
+      drawYellPill +
+      doubleColorlessPill +
+      parts.join("") +
+      "</div>";
     colorsHost.innerHTML = bodyRow;
     var deckRemHint = $("deck-remain-zone-hint");
     if (deckRemHint) {
       deckRemHint.textContent =
         "山札合計 " +
         n +
-        " 枚。色ピルはカード1枚につき複数色を持てる集計です（BHなし＝BH未記載、スコア＝DBにBHが無いライブ、ドロー＝BH＋ドロー特殊）。";
+        " 枚。色ピルはカード1枚につき複数色を持てる集計です（BHなし＝BH未記載、スコア＝DBにBHが無いライブ、ドロー＝BH＋ドロー特殊、W無色＝特殊BH）。";
     }
   }
 
@@ -10055,6 +10074,7 @@ export function mountSimulator(
     var nonBh = 0;
     var noteLive = 0;
     var drawYell = 0;
+    var doubleColorless = 0;
     /** @type {Record<number, number>} */
     var slotCount = {};
     for (var wi = 0; wi < n; wi++) {
@@ -10066,6 +10086,7 @@ export function mountSimulator(
       }
       if (catW.type === T_LIVE && cardIsNoteLiveCatalog(catW)) noteLive++;
       if (catW.type === T_LIVE && catalogLiveCardIsDrawYellBladeHeart(catW)) drawYell++;
+      if (catW.type === T_LIVE && cardIsDoubleColorlessYellLiveCatalog(catW)) doubleColorless++;
       if (!cardHasBladeHeart(catW)) {
         nonBh++;
         continue;
@@ -10118,15 +10139,31 @@ export function mountSimulator(
           escapeHtmlPlain(String(drawYell)) +
           "</strong></span>"
         : "";
+    var doubleColorlessPillW =
+      doubleColorless > 0
+        ? '<span class="deck-remain-bh-pill deck-remain-bh-pill--double-colorless deck-remain-bh-pill--art" data-bh-slot="double-colorless" title="W無色特殊BHを持つライブ枚数">' +
+          '<span class="deck-remain-bh-pill__lab">' +
+          heartSlotArtIconHtml(0, { double_colorless: true, extraClass: "deck-remain-bh-pill__art-ico" }) +
+          '<span class="visually-hidden">W無色</span>' +
+          '</span><strong class="deck-remain-bh-pill__n">' +
+          escapeHtmlPlain(String(doubleColorless)) +
+          "</strong></span>"
+        : "";
     var bodyRowW =
-      '<div class="deck-remain-bh-pill-row">' + nonBhPillW + notePillW + drawYellPillW + partsW.join("") + "</div>";
+      '<div class="deck-remain-bh-pill-row">' +
+      nonBhPillW +
+      notePillW +
+      drawYellPillW +
+      doubleColorlessPillW +
+      partsW.join("") +
+      "</div>";
     colorsHost.innerHTML = bodyRowW;
     var wh = $("waiting-remain-zone-hint");
     if (wh) {
       wh.textContent =
         "控え室合計 " +
         n +
-        " 枚。色ピルはカード1枚につき複数色を持てる集計です（BHなし＝BH未記載、スコア＝DBにBHが無いライブ、ドロー＝BH＋ドロー特殊）。";
+        " 枚。色ピルはカード1枚につき複数色を持てる集計です（BHなし＝BH未記載、スコア＝DBにBHが無いライブ、ドロー＝BH＋ドロー特殊、W無色＝特殊BH）。";
     }
   }
 
@@ -10162,6 +10199,11 @@ export function mountSimulator(
     } else if (slotKey === "draw-yell") {
       slotLabel = "ドロー";
       pred = function (cat) { return cat && cat.type === T_LIVE && catalogLiveCardIsDrawYellBladeHeart(cat); };
+    } else if (slotKey === "double-colorless") {
+      slotLabel = "W無色";
+      pred = function (cat) {
+        return cat && cat.type === T_LIVE && cardIsDoubleColorlessYellLiveCatalog(cat);
+      };
     } else {
       var slotNum = Number(slotKey);
       if (!Number.isFinite(slotNum) || slotNum < 1 || slotNum > 7) return;
@@ -11145,6 +11187,7 @@ export function mountSimulator(
    */
   function placeEnergyFromDeckUnderStageMember(memberInst) {
     if (!memberInst) return false;
+    if (remainingFieldEnergyCapacity() <= 0) return false;
     var col = stageColumnKeyHostingMember(memberInst.id);
     if (!col) return false;
     var arr = state.stage[col] || [];
@@ -12988,7 +13031,7 @@ export function mountSimulator(
         delete inst._toujouBatonFromLowerCostMemberId;
         delete inst._toujouBatonPartnerId;
       }
-    } else {
+    } else if (!(opts && opts.preBatonCompleted)) {
       delete inst._toujouBatonFromLowerCostMemberId;
     }
     state.stage[side].push(inst);
@@ -13161,13 +13204,81 @@ export function mountSimulator(
             var liveHand = liveHandInstById(memberInst.id, memberInst);
             delete liveHand._playCostSet;
             delete liveHand._playCostReduce;
+            delete liveHand._appearEnergyOverride;
             if (useOpt) {
+              /* バトン元を先に控え室へ入れてからシャッフル（テキスト: 控え室の全メンバー） */
+              var preIncumbent = null;
+              var preSlot = state.stage[side] || [];
+              for (var psi = 0; psi < preSlot.length; psi++) {
+                if (preSlot[psi] && preSlot[psi].type === T_MEMBER) preIncumbent = preSlot[psi];
+              }
+              if (preIncumbent) {
+                if (memberIsStageFreshThisTurn(preIncumbent)) {
+                  showToast(
+                    (mergedCatalogCard(preIncumbent).name || "メンバー") +
+                      " はこのターンにステージへ載せたばかりのため、バトンタッチできません",
+                  );
+                  confirmEnergyThenPlaceHandMember(liveHand, side, opts);
+                  return;
+                }
+                if (preIncumbent._joujiCannotBatonToWaiting === true) {
+                  showToast(
+                    (mergedCatalogCard(preIncumbent).name || "メンバー") +
+                      " はバトンタッチで控え室に置けないため、登場できません",
+                  );
+                  confirmEnergyThenPlaceHandMember(liveHand, side, opts);
+                  return;
+                }
+                if (preIncumbent._joujiBatonSeriesOnlyTag) {
+                  var enterPreMc = mergedCatalogCard(liveHand);
+                  if (!catalogCardMatchesGroupTag(enterPreMc, preIncumbent._joujiBatonSeriesOnlyTag)) {
+                    showToast(
+                      (mergedCatalogCard(preIncumbent).name || "メンバー") +
+                        " は『" +
+                        preIncumbent._joujiBatonSeriesOnlyTag +
+                        "』以外とのバトンタッチで控え室に置けないため、登場できません",
+                    );
+                    confirmEnergyThenPlaceHandMember(liveHand, side, opts);
+                    return;
+                  }
+                }
+              }
+              pushHistoryBefore("play-cost-reduce-shuffle-waiting");
+              var preBatonMoved = null;
+              var preBatonCost = 0;
+              if (preIncumbent) {
+                var preIdx = (state.stage[side] || []).findIndex(function (c) {
+                  return c && String(c.id) === String(preIncumbent.id);
+                });
+                if (preIdx >= 0) {
+                  preBatonMoved = state.stage[side].splice(preIdx, 1)[0];
+                  clearToujouEffectStateOnLeaveStage(preBatonMoved);
+                  state.waitingRoom.push(preBatonMoved);
+                  preBatonCost = memberFlooredPrintedCost(preBatonMoved);
+                }
+              }
               var movedN = shuffleAllWaitingMembersToDeckBottom();
               if (movedN <= 0) {
                 showToast("控え室にメンバーがないためコスト減少なし");
               } else {
                 liveHand._playCostReduce = reduceN;
                 showToast("控え室メンバー " + movedN + " 枚をデッキ下へ。コスト−" + reduceN);
+              }
+              if (preBatonMoved) {
+                var enterCostPre = memberFlooredPrintedCost(liveHand);
+                liveHand._appearEnergyOverride = Math.max(0, enterCostPre - preBatonCost);
+                liveHand._toujouBatonPartnerId = String(preBatonMoved.id);
+                if (preBatonCost < enterCostPre) {
+                  liveHand._toujouBatonFromLowerCostMemberId = String(preBatonMoved.id);
+                } else {
+                  delete liveHand._toujouBatonFromLowerCostMemberId;
+                }
+                confirmEnergyThenPlaceHandMember(
+                  liveHand,
+                  side,
+                  Object.assign({}, opts, { preBatonCompleted: true }),
+                );
+                return;
               }
             }
             confirmEnergyThenPlaceHandMember(liveHand, side, opts);
@@ -14762,6 +14873,23 @@ export function mountSimulator(
     return n;
   }
 
+  function countEnergyCardsOnAllStageColumns() {
+    var n = 0;
+    ["left", "center", "right"].forEach(function (col) {
+      (state.stage[col] || []).forEach(function (c) {
+        if (c && c.type === T_ENERGY) n++;
+      });
+    });
+    return n;
+  }
+  /** エネ置き場 + ステージに敷かれた（メンバー下含む）エネ。上限判定用。 */
+  function countOwnFieldEnergyTotal() {
+    return (state.energyArea || []).length + countEnergyCardsOnAllStageColumns();
+  }
+  function remainingFieldEnergyCapacity() {
+    return Math.max(0, MAX_ENERGY_SIDE - countOwnFieldEnergyTotal());
+  }
+
   function ownLiveScoreEstimate() {
     try {
       var parts = computeLiveFrameScoreParts();
@@ -15288,7 +15416,7 @@ export function mountSimulator(
     var n = Math.max(0, Math.floor(Number(count) || 0));
     var added = 0;
     for (var i = 0; i < n; i++) {
-      if (state.energyArea.length >= MAX_ENERGY_SIDE) break;
+      if (countOwnFieldEnergyTotal() >= MAX_ENERGY_SIDE) break;
       var e = energyInstance();
       e.isRotated = !!rotated;
       e.lcWait = !!rotated;
@@ -15604,6 +15732,18 @@ export function mountSimulator(
     openDeckTopCardsRevealDialog(
       cards,
       function () {
+        /* 控え室へ送済みの山札ミルで自動（例: ミア PL!N-bp7-011）を起動。
+         * 公開ダイアログ後に初めて控え室へ push する経路はここでは対象外（呼び出し側で fire）。 */
+        try {
+          var waitingIds = {};
+          (state.waitingRoom || []).forEach(function (w) {
+            if (w && w.id != null) waitingIds[String(w.id)] = true;
+          });
+          var milledInWaiting = (cards || []).filter(function (c) {
+            return c && waitingIds[String(c.id)];
+          });
+          if (milledInWaiting.length) fireJidouAfterDeckMilledByAbility(milledInWaiting, null);
+        } catch (_) {}
         if (onDone) onDone();
       },
       {
@@ -30525,9 +30665,6 @@ export function mountSimulator(
                 return mcMillReduce.type === T_MEMBER && catalogCardMatchesGroupTag(mcMillReduce, reqSeriesReduce);
               });
           }
-          try {
-            fireJidouAfterDeckMilledByAbility(milledReduceCards, kind);
-          } catch (_) {}
           if (!condMetReduce) {
             showToast("ミルしたカードが条件を満たさなかったため必要ハートは減りません");
             finishResolved();
@@ -30669,9 +30806,6 @@ export function mountSimulator(
             condMet =
               countDistinctMemberBladeHeartColorsAmong(milledGrantCards) >= needBhColors;
           }
-          try {
-            fireJidouAfterDeckMilledByAbility(milledGrantCards, kind);
-          } catch (_) {}
           if (!condMet) {
             showToast("ミルしたカードが条件を満たさなかったため付与なし");
             finishResolved();
@@ -42387,7 +42521,7 @@ export function mountSimulator(
       c.lcActive = true;
     });
     var extra = false;
-    if (state.energyArea.length < MAX_ENERGY_SIDE) {
+    if (remainingFieldEnergyCapacity() > 0) {
       state.energyArea.push(energyInstance());
       extra = true;
     }
@@ -43489,6 +43623,10 @@ export function mountSimulator(
     render();
   });
 
+  function maxEnergyAreaSetting() {
+    return Math.max(0, MAX_ENERGY_SIDE - countEnergyCardsOnAllStageColumns());
+  }
+
   function openEnergyQtyDialog() {
     const dlg = document.getElementById("dlg-energy-qty");
     const rng = document.getElementById("energy-qty-range");
@@ -43497,9 +43635,12 @@ export function mountSimulator(
     const afterEl = document.getElementById("energy-qty-after");
     if (!dlg || !rng || !nin || !dlg.showModal) return;
     const cur = state.energyArea.length;
+    const maxArea = maxEnergyAreaSetting();
     if (curEl) curEl.textContent = String(cur);
-    const v0 = Math.min(MAX_ENERGY_SIDE, Math.max(0, cur));
+    const v0 = Math.min(maxArea, Math.max(0, cur));
+    rng.max = String(maxArea);
     rng.value = String(v0);
+    nin.max = String(maxArea);
     nin.value = String(v0);
     if (afterEl) afterEl.textContent = String(v0);
     dlg.showModal();
@@ -43514,7 +43655,7 @@ export function mountSimulator(
     const afterEl = document.getElementById("energy-qty-after");
     if (!rng || !nin) return;
     function clampEnergyTarget(v) {
-      return Math.max(0, Math.min(MAX_ENERGY_SIDE, Math.floor(Number(v)) || 0));
+      return Math.max(0, Math.min(maxEnergyAreaSetting(), Math.floor(Number(v)) || 0));
     }
     rng.addEventListener("input", function () {
       const v = clampEnergyTarget(rng.value);
@@ -43537,7 +43678,7 @@ export function mountSimulator(
       const rng = document.getElementById("energy-qty-range");
       const dlg = document.getElementById("dlg-energy-qty");
       if (!rng || !dlg) return;
-      const target = Math.max(0, Math.min(MAX_ENERGY_SIDE, Math.floor(Number(rng.value)) || 0));
+      const target = Math.max(0, Math.min(maxEnergyAreaSetting(), Math.floor(Number(rng.value)) || 0));
       pushHistoryBefore("energy-set-count");
       while (state.energyArea.length < target) state.energyArea.push(energyInstance());
       while (state.energyArea.length > target) state.energyArea.pop();
@@ -43594,7 +43735,7 @@ export function mountSimulator(
       suppressNextEnergyTap = false;
       return;
     }
-    if (state.energyArea.length >= MAX_ENERGY_SIDE) return;
+    if (remainingFieldEnergyCapacity() <= 0) return;
     pushHistoryBefore("energy-plus");
     state.energyArea.push(energyInstance());
     render();

@@ -394,4 +394,26 @@ if (failed) {
   console.error(`\nverify-niji-bp7: ${failed} failed`);
   process.exit(1);
 }
+
+/** ミア周辺ランタイム配線（山札→控え室ミル後の自動／プレイ時コスト減／バトン先出し） */
+const simSrc = fs.readFileSync(path.join(ROOT, "js/simulator.js"), "utf8");
+const wiringErrs = [];
+if (!/function revealCardsSentFromDeckToWaiting[\s\S]*fireJidouAfterDeckMilledByAbility\(milledInWaiting/.test(simSrc)) {
+  wiringErrs.push("revealCardsSentFromDeckToWaiting must fire jidou for milled-in-waiting");
+}
+if (!/プレイ時任意コスト変更[\s\S]{0,400}_playCostReduce/.test(simSrc)) {
+  wiringErrs.push("_playCostReduce must apply outside hand-only gate");
+}
+if (!/play-cost-reduce-shuffle-waiting/.test(simSrc) || !/preBatonCompleted/.test(simSrc)) {
+  wiringErrs.push("play_cost_reduce_shuffle must pre-baton before shuffle");
+}
+if (!/バトン元を先に控え室へ入れてからシャッフル/.test(simSrc)) {
+  wiringErrs.push("missing pre-baton shuffle comment/path");
+}
+if (wiringErrs.length) {
+  console.error("FAIL mia-waiting wiring:", wiringErrs.join("; "));
+  process.exit(1);
+}
+console.log("OK mia-waiting runtime wiring");
+
 console.log(`\nverify-niji-bp7: ${CASES.length} OK`);

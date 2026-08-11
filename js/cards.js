@@ -1101,8 +1101,18 @@ export function printedHeartSlotsOnCard(card) {
   return out;
 }
 
+/** カタログ検索用: 全角半角・空白・ハイフン類を吸収 */
+export function normalizeCatalogSearchText(s) {
+  return String(s == null ? "" : s)
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/[\s\u3000]/g, "")
+    .replace(/[‐‑‒–—―﹣－ｰ]/g, "");
+}
+
 export function filterCards(cards, opts) {
   const q = (opts.search || "").trim().toLowerCase();
+  const qNorm = normalizeCatalogSearchText(opts.search || "");
   const bhSel = opts.bhSlots instanceof Set ? opts.bhSlots : null;
   const bhNonBh = !!opts.bhNonBh;
   const bhNoteLive = !!opts.bhNoteLive;
@@ -1153,8 +1163,8 @@ export function filterCards(cards, opts) {
       if (!hit) return false;
     }
     if (q) {
-      const inName = String(c.name || "").toLowerCase().includes(q);
-      const inAbility = String(c.ability || "").toLowerCase().includes(q);
+      const inName = normalizeCatalogSearchText(c.name).includes(qNorm);
+      const inAbility = normalizeCatalogSearchText(c.ability).includes(qNorm);
       let inSpecial = false;
       if (qHasDrawKeyword && cardIsDrawYellLiveCatalog(c)) inSpecial = true;
       if (qHasScoreKeyword && cardIsNoteLiveCatalog(c)) inSpecial = true;

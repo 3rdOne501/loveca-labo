@@ -3,7 +3,7 @@
  * ソロプレイの盤面ロジックとは独立。
  */
 import { CARD_BACK_DRAG_DATA_URI, T_LIVE, T_MEMBER } from "./config.js";
-import { getCard, cardIsNoteLiveCatalog, bladeHeartSlotsOnCard } from "./cards.js";
+import { getCard, cardIsNoteLiveCatalog, cardIsDoubleColorlessYellLiveCatalog, bladeHeartSlotsOnCard } from "./cards.js";
 import { catalogLiveCardIsDrawYellBladeHeart } from "./cardCatalogDialog.js";
 import {
   bladeHeartDisplaySlotLabel,
@@ -864,6 +864,7 @@ function buildOppWaitingBhColorsHtml(cards) {
   let nonBh = 0;
   let noteLive = 0;
   let drawYell = 0;
+  let doubleColorless = 0;
   /** @type {Record<number, number>} */
   const slotCount = {};
   cards.forEach(function (c) {
@@ -878,6 +879,7 @@ function buildOppWaitingBhColorsHtml(cards) {
     }
     if (cat.type === T_LIVE && cardIsNoteLiveCatalog(cat)) noteLive++;
     if (cat.type === T_LIVE && catalogLiveCardIsDrawYellBladeHeart(cat)) drawYell++;
+    if (cat.type === T_LIVE && cardIsDoubleColorlessYellLiveCatalog(cat)) doubleColorless++;
     if (!cardHasBladeHeart(cat)) {
       nonBh++;
       return;
@@ -925,8 +927,23 @@ function buildOppWaitingBhColorsHtml(cards) {
         escapeHtmlPlain(String(drawYell)) +
         "</strong></span>"
       : "";
+  const doubleColorlessPill =
+    doubleColorless > 0
+      ? '<span class="deck-remain-bh-pill deck-remain-bh-pill--double-colorless deck-remain-bh-pill--art" data-bh-slot="double-colorless" title="W無色特殊BHを持つライブ枚数">' +
+        '<span class="deck-remain-bh-pill__lab">' +
+        heartSlotArtIconHtml(0, { double_colorless: true, extraClass: "deck-remain-bh-pill__art-ico" }) +
+        '<span class="visually-hidden">W無色</span></span><strong class="deck-remain-bh-pill__n">' +
+        escapeHtmlPlain(String(doubleColorless)) +
+        "</strong></span>"
+      : "";
   return (
-    '<div class="deck-remain-bh-pill-row">' + nonBhPill + notePill + drawYellPill + parts.join("") + "</div>"
+    '<div class="deck-remain-bh-pill-row">' +
+    nonBhPill +
+    notePill +
+    drawYellPill +
+    doubleColorlessPill +
+    parts.join("") +
+    "</div>"
   );
 }
 

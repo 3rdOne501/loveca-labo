@@ -9,7 +9,6 @@ import {
   cardIsNoteLiveCatalog,
   cardIsDrawYellLiveCatalog,
   cardIsDoubleColorlessYellLiveCatalog,
-  catalogEaleDoubleColorlessHeartPoints,
 } from "./cards.js";
 import {
   cardHasBladeHeart,
@@ -250,13 +249,11 @@ function formatSpecialBhStatusHtmlRow(mc, flags) {
     );
   }
   if (flags.isDoubleColorlessLive) {
-    var colorlessPts = catalogEaleDoubleColorlessHeartPoints(mc);
     bits.push(
       '<span class="dlg-card-catalog-special-heart-pill dlg-card-catalog-special-heart-pill--double-colorless">' +
         Gsi.catalogDoubleColorlessBadgeHtml() +
-        '<span class="dlg-card-catalog-special-heart-pill__label">W無色' +
-        (colorlessPts > 0 ? "×" + colorlessPts : "") +
-        "</span></span>",
+        '<span class="dlg-card-catalog-special-heart-pill__label">W無色</span>' +
+        "</span>",
     );
   }
   if (!bits.length) return "";

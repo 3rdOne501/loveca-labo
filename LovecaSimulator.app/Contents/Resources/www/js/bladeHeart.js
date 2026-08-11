@@ -696,17 +696,39 @@ export function bladeHeartAggregatePillHtml(dbKey, quantity, additiveQty, opts) 
   opts = opts || {};
   const showScoreBadge = opts.showScoreBadge === true;
   const addP = typeof additiveQty === "number" && Number.isFinite(additiveQty) ? Math.max(0, additiveQty) : 0;
+  const isDoubleColorless = isBladeHeartDoubleColorlessMarkerKey(dbKey);
+  const isDrawMarker = isBladeHeartDrawMarkerKey(dbKey);
   const slot = parseBladeHeartSlotFromKey(dbKey);
-  const slotClass = slot != null ? "bh-slot-" + slot : "bh-slot-unknown";
-  const labelText = slot != null ? SLOT[slot].name : escapeHtml(String(dbKey));
+  const slotClass = isDoubleColorless
+    ? "bh-slot-double-colorless"
+    : isDrawMarker
+      ? "bh-slot-draw"
+      : slot != null
+        ? "bh-slot-" + slot
+        : "bh-slot-unknown";
+  const labelText = isDoubleColorless
+    ? "W無色"
+    : isDrawMarker
+      ? "ドロー"
+      : slot != null
+        ? SLOT[slot].name
+        : escapeHtml(String(dbKey));
   let title = escapeAttr(dbKey + "／BH計 " + quantity);
+  if (isDoubleColorless) title = escapeAttr("W無色／BH計 " + quantity);
   if (addP > 0) {
     if (addP >= quantity) title = escapeAttr(dbKey + "／BH計 " + quantity + "（♪＝ライブのBH）");
     else title = escapeAttr(dbKey + "／BH計 " + quantity + "（♪ライブ由来 " + addP + "）");
   }
   /* 旧 SVG ハートではなく loveca-data-1 の PNG をピル本体に使用する。♪ 添字は note check で別途付与。 */
   let iconHtml = "";
-  if (slot != null && slot >= 1 && slot <= 7) {
+  if (isDoubleColorless) {
+    iconHtml = heartSlotArtIconHtml(0, {
+      double_colorless: true,
+      extraClass: "deck-peek-bh-pill-art-ico",
+    });
+  } else if (isDrawMarker) {
+    iconHtml = heartSlotArtIconHtml(0, { draw_yell: true, extraClass: "deck-peek-bh-pill-art-ico" });
+  } else if (slot != null && slot >= 1 && slot <= 7) {
     iconHtml = heartSlotArtIconHtml(slot, { extraClass: "deck-peek-bh-pill-art-ico" });
   } else {
     iconHtml = svgForBladeHeartKey(dbKey, "blade-heart-svg");
@@ -758,7 +780,7 @@ export function bladeHeartRowIconsHtml(card) {
       }
       if (isBladeHeartDoubleColorlessMarkerKey(k)) {
         return (
-          '<span class="blade-heart-row-double-colorless-marker" title="W無色（×2）">' +
+          '<span class="blade-heart-row-double-colorless-marker" title="W無色">' +
           heartSlotArtIconHtml(0, {
             double_colorless: true,
             extraClass: "blade-heart-svg blade-heart-svg--row",

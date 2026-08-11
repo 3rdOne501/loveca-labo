@@ -241,8 +241,15 @@ const CASES = [
     id: "PL!N-bp5-028-L",
     trigger: "live_start",
     expectTemplate: "live_start_need_heart_set_fixed",
-    check: (cl) =>
-      cl.needHeartSetMap?.heart02 === 6 && cl.cardScoreGrant === 2 ? [] : ["heart02x6 score+2"],
+    check: (cl) => {
+      const errs = [];
+      if (cl.needHeartSetMap?.heart02 !== 5) errs.push("heart02x5");
+      if (cl.cardScoreGrant !== 2) errs.push("score+2");
+      if (cl.filters?.minStageHeartSlot !== 2 || cl.filters?.minStageHeartCount !== 4) {
+        errs.push("stageHeart02x4");
+      }
+      return errs;
+    },
   },
   {
     id: "PL!N-bp5-029-L",
