@@ -72,6 +72,7 @@ import {
   isPlainLiveEndHeartBladeGrantSegment,
   listNativeToujouSegmentRaws,
   listNativeLiveStartSegmentRaws,
+  listNativeKidouSegmentRaws,
   parseLiveTotalScorePlusFromText,
   parseAbilityPickFilters,
 } from "./abilityEffects.js";
@@ -197,6 +198,8 @@ import {
   notifyPlayDragStart,
   playEnergyWaitClick,
   playPremiumBoardFx,
+  playShakaPachiTap,
+  isPlayBoardMarginTapTarget,
   setPlayEffectChain,
   syncDeckRemainBadge,
   syncLivePhaseRail,
@@ -2037,7 +2040,7 @@ export function mountSimulator(
     }
     showToast(
       state.playLightweightMode
-        ? "軽量モード ON（低画質・演出簡略・確率計算抑制）"
+        ? "軽量モード ON（低画質・演出簡略）"
         : "軽量モード OFF",
     );
     render();
@@ -3826,6 +3829,41 @@ export function mountSimulator(
     }
     var k = jidouPerTurnKey(memberInst, segIndex);
     memberInst._perTurnAbilityUsed[k] = Math.floor(Number(memberInst._perTurnAbilityUsed[k] || 0)) + 1;
+  }
+
+  /** 複数起動はセグメント別に回数制限する（jidou_auto_N と同型） */
+  function kidouPerTurnKey(segIndex) {
+    if (segIndex == null || segIndex < 0) return "kidou";
+    return "kidou_seg_" + segIndex;
+  }
+
+  /**
+   * @param {*} cardInst
+   * @returns {Array<{ index: number, raw: string, cl: * }>}
+   */
+  function listKidouAbilitySegments(cardInst) {
+    var mc = mergedCatalogCard(cardInst);
+    var raws = listNativeKidouSegmentRaws(mc);
+    /** @type {Array<{ index: number, raw: string, cl: * }>} */
+    var out = [];
+    for (var i = 0; i < raws.length; i++) {
+      var cl = classifyCardAbility(mc, "kidou", raws[i]);
+      if (!cl || cl.template === "none") continue;
+      out.push({ index: i, raw: raws[i], cl: cl });
+    }
+    return out;
+  }
+
+  /**
+   * @param {*} cardInst
+   * @returns {Array<{ index: number, raw: string, cl: * }>}
+   */
+  function listPlayableKidouSegments(cardInst) {
+    return listKidouAbilitySegments(cardInst).filter(function (seg) {
+      var lim = seg.cl && seg.cl.perTurnLimit ? Number(seg.cl.perTurnLimit) : 0;
+      if (!lim) return true;
+      return !perTurnLimitExhausted(cardInst, kidouPerTurnKey(seg.index), lim);
+    });
   }
 
   function isMainPhasePlay() {
@@ -9131,21 +9169,6 @@ export function mountSimulator(
       return;
     }
 
-    if (isLightweightPlayMode()) {
-      sumEl.classList.remove("is-ok", "is-warn", "is-fail", "has-prob-color", "deck-live-sim-summary--verdict");
-      sumEl.classList.add("is-muted");
-      setOddsRichText(sumEl, "成功確率：—（軽量モードでは詳細計算を省略）", { heroLiveSim: true });
-      syncDeckLiveSimSummaryPctEmphasisClass(sumEl);
-      var bdLw = $("deck-live-sim-breakdown-body");
-      if (bdLw) bdLw.textContent = "";
-      if (stEl) {
-        stEl.hidden = true;
-        stEl.textContent = "";
-      }
-      mirrorDeckLiveSimDesktopToolbarFromSrc(sumEl);
-      return;
-    }
-
     if (typeof requestIdleCallback === "function") {
       deckLiveSimIdleHandle = requestIdleCallback(runDeckLiveSimHeavy, { timeout: isLightweightPlayMode() ? 1200 : 600 });
     } else {
@@ -13424,16 +13447,32 @@ export function mountSimulator(
     return !!(c && c._playEffectResolved && c._playEffectResolved[kind]);
   }
 
-  function markPlayEffectResolved(c, kind) {
+  function markPlayEffectResolved(c, kind, markOpts) {
     if (!c || !kind) return;
     ensureCardBoardFields(c);
     var mc = mergedCatalogCard(c);
-    var cl = classifyCardAbility(mc, kind);
+    markOpts = markOpts || {};
     if (kind === "kidou") {
-      if (cl && cl.perTurnLimit) perTurnIncrement(c, kind);
-      logReplay("play-effect-resolved", { cardId: c.id, kind: kind, kidouRepeatable: true });
+      var kdSegIdx = markOpts.kidouSegIndex;
+      var kdLim = markOpts.perTurnLimit;
+      var kdCl = null;
+      if (kdSegIdx != null && kdSegIdx >= 0) {
+        var kdRaws = listNativeKidouSegmentRaws(mc);
+        if (kdRaws[kdSegIdx]) kdCl = classifyCardAbility(mc, "kidou", kdRaws[kdSegIdx]);
+      } else {
+        kdCl = classifyCardAbility(mc, "kidou");
+      }
+      if (kdLim == null && kdCl) kdLim = kdCl.perTurnLimit;
+      if (kdLim) perTurnIncrement(c, kidouPerTurnKey(kdSegIdx));
+      logReplay("play-effect-resolved", {
+        cardId: c.id,
+        kind: kind,
+        kidouRepeatable: true,
+        kidouSegIndex: kdSegIdx != null ? kdSegIdx : null,
+      });
       return;
     }
+    var cl = classifyCardAbility(mc, kind);
     if (!c._playEffectResolved || typeof c._playEffectResolved !== "object") {
       c._playEffectResolved = {};
     }
@@ -13449,7 +13488,7 @@ export function mountSimulator(
     });
   }
 
-  function resolvePlayCardEffect(c, kind) {
+  function resolvePlayCardEffect(c, kind, kidouSegIndex) {
     if (!c || !kind) return;
     if (blockPlayActionsDuringEffectDialogPeek()) {
       showToast("「効果を続ける」でダイアログに戻るまで、他の効果は解決できません");
@@ -13473,11 +13512,71 @@ export function mountSimulator(
     ensureCardBoardFields(c);
     var mc = mergedCatalogCard(c);
     var cl = classifyCardAbility(mc, kind);
+    var kidouSegOpts = null;
+    if (kind === "kidou") {
+      var allKdSegs = listKidouAbilitySegments(c);
+      var playKdSegs = listPlayableKidouSegments(c);
+      var resolvedSegIdx =
+        kidouSegIndex != null && kidouSegIndex >= 0 ? Math.floor(Number(kidouSegIndex)) : null;
+      if (resolvedSegIdx != null) {
+        var pickedSeg = null;
+        for (var ksi = 0; ksi < allKdSegs.length; ksi++) {
+          if (allKdSegs[ksi].index === resolvedSegIdx) {
+            pickedSeg = allKdSegs[ksi];
+            break;
+          }
+        }
+        if (!pickedSeg) {
+          showToast("起動効果が見つかりません");
+          return;
+        }
+        cl = pickedSeg.cl;
+        kidouSegOpts = { kidouSegIndex: pickedSeg.index, perTurnLimit: pickedSeg.cl.perTurnLimit };
+      } else if (allKdSegs.length > 1) {
+        if (!playKdSegs.length) {
+          showToast("このターンの起動効果はもう使用済みです");
+          return;
+        }
+        if (playKdSegs.length === 1) {
+          cl = playKdSegs[0].cl;
+          kidouSegOpts = {
+            kidouSegIndex: playKdSegs[0].index,
+            perTurnLimit: playKdSegs[0].cl.perTurnLimit,
+          };
+        } else {
+          cl = {
+            trigger: "kidou",
+            template: "kidou_multi_choice",
+            abilityChoices: playKdSegs.map(function (s) {
+              var pl = String(s.raw || "")
+                .replace(/\{\{[^}]+\}\}/g, "")
+                .replace(/\s+/g, "");
+              return pl.length > 96 ? pl.slice(0, 96) + "…" : pl;
+            }),
+            kidouSegmentRaws: playKdSegs.map(function (s) {
+              return s.raw;
+            }),
+            kidouSegmentIndexes: playKdSegs.map(function (s) {
+              return s.index;
+            }),
+            perTurnLimit: 0,
+            requiresOnStage: true,
+          };
+          kidouSegOpts = null;
+        }
+      } else if (allKdSegs.length === 1) {
+        cl = allKdSegs[0].cl;
+        kidouSegOpts = {
+          kidouSegIndex: allKdSegs[0].index,
+          perTurnLimit: allKdSegs[0].cl.perTurnLimit,
+        };
+      }
+    }
     if (cl.trigger !== kind) {
       if (isPlayManualMode()) {
         runPlayFxBeforeAction(c, kind, function () {
           openAbilityGuidedDialog(c, kind, function () {
-            markPlayEffectResolved(c, kind);
+            markPlayEffectResolved(c, kind, kidouSegOpts);
             render();
           });
         });
@@ -13485,7 +13584,7 @@ export function mountSimulator(
       }
       if (cl.template === "none") {
         runPlayFxBeforeAction(c, kind, function () {
-          markPlayEffectResolved(c, kind);
+          markPlayEffectResolved(c, kind, kidouSegOpts);
           render();
         });
         return;
@@ -13493,7 +13592,7 @@ export function mountSimulator(
       showUnsupportedAbilityWarning(c, kind, cl, "この効果は手動で解決してください。");
       runPlayFxBeforeAction(c, kind, function () {
         openAbilityGuidedDialog(c, kind, function () {
-          markPlayEffectResolved(c, kind);
+          markPlayEffectResolved(c, kind, kidouSegOpts);
           render();
         });
       });
@@ -13517,18 +13616,43 @@ export function mountSimulator(
       if (mirrorKidouSources.length) {
         function runMirrorKidou(underInst) {
           if (!underInst) return;
-          var umc = mergedCatalogCard(underInst);
-          var ucl = classifyCardAbility(umc, "kidou");
-          if (!ucl || ucl.template === "none") {
-            showToast("下のカードに起動能力がありません");
+          var playSegsMk = listPlayableKidouSegments(underInst);
+          if (!playSegsMk.length) {
+            showToast("下のカードの起動効果はもう使用済みです");
             return;
           }
-          if (ucl.perTurnLimit && perTurnLimitExhausted(underInst, "kidou", ucl.perTurnLimit)) {
-            var limMk = ucl.perTurnLimit === 2 ? "2" : "1";
-            showToast("このターンの「ターン" + limMk + "回」起動効果はもう使用済みです");
+          function runMirrorKidouSeg(seg) {
+            if (!seg) return;
+            runClassifiedCardAbility(underInst, seg.cl, "kidou", undefined, {
+              kidouSegIndex: seg.index,
+              perTurnLimit: seg.cl.perTurnLimit,
+            });
+          }
+          if (playSegsMk.length === 1) {
+            runMirrorKidouSeg(playSegsMk[0]);
             return;
           }
-          runClassifiedCardAbility(underInst, ucl, "kidou");
+          openAbilityMultiChoiceDialog(
+            playSegsMk.map(function (s, i) {
+              return "起動" + (s.index + 1);
+            }),
+            1,
+            1,
+            "下のカードの起動能力を選びます。",
+            function (selected) {
+              if (!selected || !selected.length) return;
+              var m = String(selected[0] || "").match(/起動(\d+)/);
+              var idx = m ? Number(m[1]) - 1 : playSegsMk[0].index;
+              var hit = null;
+              for (var j = 0; j < playSegsMk.length; j++) {
+                if (playSegsMk[j].index === idx) {
+                  hit = playSegsMk[j];
+                  break;
+                }
+              }
+              runMirrorKidouSeg(hit || playSegsMk[0]);
+            },
+          );
         }
         if (mirrorKidouSources.length === 1) {
           runMirrorKidou(mirrorKidouSources[0]);
@@ -13549,13 +13673,30 @@ export function mountSimulator(
         return;
       }
     }
-    if (cl.perTurnLimit && perTurnLimitExhausted(c, kind, cl.perTurnLimit)) {
+    if (kind === "kidou" && kidouSegOpts && kidouSegOpts.perTurnLimit) {
+      if (
+        perTurnLimitExhausted(
+          c,
+          kidouPerTurnKey(kidouSegOpts.kidouSegIndex),
+          kidouSegOpts.perTurnLimit,
+        )
+      ) {
+        var limKd = kidouSegOpts.perTurnLimit === 2 ? "2" : "1";
+        showToast("このターンの「ターン" + limKd + "回」起動効果はもう使用済みです");
+        return;
+      }
+    } else if (cl.perTurnLimit && perTurnLimitExhausted(c, kind, cl.perTurnLimit)) {
       var lim = cl.perTurnLimit === 2 ? "2" : "1";
       showToast("このターンの「ターン" + lim + "回」効果はもう使用済みです");
       return;
     }
+    var runOpts = { skipPlayFx: true };
+    if (kidouSegOpts) {
+      runOpts.kidouSegIndex = kidouSegOpts.kidouSegIndex;
+      runOpts.perTurnLimit = kidouSegOpts.perTurnLimit;
+    }
     runPlayFxBeforeAction(c, kind, function () {
-      runClassifiedCardAbility(c, cl, kind, undefined, { skipPlayFx: true });
+      runClassifiedCardAbility(c, cl, kind, undefined, runOpts);
     });
   }
 
@@ -16372,7 +16513,10 @@ export function mountSimulator(
     );
   }
 
-  function openDeckLookReorderDialog(looked, onDone) {
+  function openDeckLookReorderDialog(looked, onDone, dlgOpts) {
+    dlgOpts = dlgOpts || {};
+    var partialKeep = dlgOpts.partialKeep === true;
+    var remainToBottom = dlgOpts.remainToBottom === true;
     var dlg = document.getElementById("dlg-deck-look-reorder");
     var list = document.getElementById("dlg-deck-look-reorder-list");
     var lead = document.getElementById("dlg-deck-look-reorder-lead");
@@ -16388,20 +16532,38 @@ export function mountSimulator(
       return;
     }
     if (lead) {
-      lead.textContent =
-        "山札の上に戻すカードにチェックを入れ、↑↓で順番を入れ替えます（上が山札トップ）。チェックがないカードは控え室へ送ります。";
+      if (!partialKeep) {
+        lead.textContent =
+          "↑↓で順番を入れ替えます（上が山札トップ）。見たカードはすべて山札の上に戻します。";
+      } else if (remainToBottom) {
+        lead.textContent =
+          "山札の上に戻すカードにチェックを入れ、↑↓で順番を入れ替えます（上が山札トップ）。チェックがないカードは山札の下へ送ります。";
+      } else {
+        lead.textContent =
+          "山札の上に戻すカードにチェックを入れ、↑↓で順番を入れ替えます（上が山札トップ）。チェックがないカードは控え室へ送ります。";
+      }
     }
     list.innerHTML = "";
+    list.classList.toggle("dlg-deck-look-reorder-list--partial", partialKeep);
     looked.forEach(function (c, i) {
       var mc = mergedCatalogCard(c);
       var row = document.createElement("div");
       row.className = "dlg-deck-look-reorder__row";
       row.dataset.cardId = String(c.id);
-      var cb = document.createElement("input");
-      cb.type = "checkbox";
-      cb.name = "deckLookKeep";
-      cb.value = String(c.id);
-      cb.checked = true;
+      var cb = null;
+      var keepLab = null;
+      if (partialKeep) {
+        cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.name = "deckLookKeep";
+        cb.value = String(c.id);
+        cb.checked = true;
+        cb.className = "dlg-deck-look-reorder__check";
+        cb.setAttribute("aria-label", "山札の上に戻す");
+        keepLab = document.createElement("span");
+        keepLab.className = "dlg-deck-look-reorder__keep-lab";
+        keepLab.textContent = "上に戻す";
+      }
       var ord = document.createElement("span");
       ord.className = "dlg-deck-look-reorder__ord";
       ord.textContent = String(i + 1) + ".";
@@ -16447,7 +16609,18 @@ export function mountSimulator(
       var cap = document.createElement("span");
       cap.className = "dlg-deck-look-reorder__label";
       cap.textContent = (mc.card_no ? mc.card_no + " " : "") + (mc.name || "");
-      row.appendChild(cb);
+      if (cb) {
+        var keepWrap = document.createElement("label");
+        keepWrap.className = "dlg-deck-look-reorder__keep";
+        keepWrap.appendChild(cb);
+        keepWrap.appendChild(keepLab);
+        row.appendChild(keepWrap);
+        row.addEventListener("click", function (ev) {
+          if (ev.target.closest("button, label, input")) return;
+          cb.checked = !cb.checked;
+          cb.dispatchEvent(new Event("change", { bubbles: true }));
+        });
+      }
       row.appendChild(upBtn);
       row.appendChild(downBtn);
       row.appendChild(img);
@@ -16463,19 +16636,20 @@ export function mountSimulator(
     }
     function onOk() {
       var deckIds = [];
+      var waitIds = [];
       var rows = list.querySelectorAll(".dlg-deck-look-reorder__row");
       for (var i = 0; i < rows.length; i++) {
         var rowEl = rows[i];
+        var rowId = String(rowEl.dataset.cardId || "");
+        if (!rowId) continue;
+        if (!partialKeep) {
+          deckIds.push(rowId);
+          continue;
+        }
         var cbEl = rowEl.querySelector('input[name="deckLookKeep"]');
-        if (cbEl && cbEl.checked) deckIds.push(String(cbEl.value));
+        if (cbEl && cbEl.checked) deckIds.push(rowId);
+        else waitIds.push(rowId);
       }
-      var waitIds = looked
-        .filter(function (c) {
-          return deckIds.indexOf(String(c.id)) < 0;
-        })
-        .map(function (c) {
-          return String(c.id);
-        });
       cleanup();
       try {
         dlg.close();
@@ -16488,16 +16662,22 @@ export function mountSimulator(
       try {
         dlg.close();
       } catch (_) {}
-      onDone([], looked.map(function (c) {
-        return String(c.id);
-      }));
+      onDone(
+        looked.map(function (c) {
+          return String(c.id);
+        }),
+        [],
+      );
     }
     function onDismiss() {
       if (shouldIgnoreEffectDialogDismiss()) return;
       cleanup();
-      onDone([], looked.map(function (c) {
-        return String(c.id);
-      }));
+      onDone(
+        looked.map(function (c) {
+          return String(c.id);
+        }),
+        [],
+      );
     }
     ensureDialogViewBoardButton(dlg.querySelector(".app-dialog__actions"), dlg, effectDialogPeekSourceInst);
     btnOk.addEventListener("click", onOk);
@@ -16674,7 +16854,10 @@ export function mountSimulator(
     if (isPlayManualMode()) {
       runPlayFxBeforeAction(inst, kind, function () {
         openAbilityGuidedDialog(inst, kind, function () {
-          markPlayEffectResolved(inst, resolveKind);
+          markPlayEffectResolved(inst, resolveKind, {
+            kidouSegIndex: opts.kidouSegIndex,
+            perTurnLimit: opts.perTurnLimit != null ? opts.perTurnLimit : cl && cl.perTurnLimit,
+          });
           render();
           if (onComplete) onComplete();
         });
@@ -16697,7 +16880,14 @@ export function mountSimulator(
       if (done) return;
       done = true;
       if (effectDialogPeekSourceInst === inst) effectDialogPeekSourceInst = null;
-      markPlayEffectResolved(inst, resolveKind);
+      var markOpts = null;
+      if (kind === "kidou" || resolveKind === "kidou") {
+        markOpts = {
+          kidouSegIndex: opts.kidouSegIndex,
+          perTurnLimit: opts.perTurnLimit != null ? opts.perTurnLimit : cl && cl.perTurnLimit,
+        };
+      }
+      markPlayEffectResolved(inst, resolveKind, markOpts);
       if (resolveKind === "live_start" || resolveKind === "live_success") {
         try {
           fireJidouOnStageMemberAbilityResolved(inst, resolveKind);
@@ -22777,6 +22967,12 @@ export function mountSimulator(
     if (cl.template === "kidou_multi_choice") {
       var kdChoices = cl.abilityChoices && cl.abilityChoices.length ? cl.abilityChoices : [];
       var kdRaws = cl.kidouSegmentRaws && cl.kidouSegmentRaws.length ? cl.kidouSegmentRaws : [];
+      var kdIndexes =
+        cl.kidouSegmentIndexes && cl.kidouSegmentIndexes.length === kdRaws.length
+          ? cl.kidouSegmentIndexes
+          : kdRaws.map(function (_r, i) {
+              return i;
+            });
       if (!kdChoices.length || kdChoices.length !== kdRaws.length) {
         finishGuided();
         return;
@@ -22790,8 +22986,14 @@ export function mountSimulator(
         var pickIdx = kdChoices.indexOf(selected[0]);
         if (pickIdx < 0) pickIdx = 0;
         var segRawPick = kdRaws[pickIdx];
+        var segIndexPick = kdIndexes[pickIdx];
         var subCl = classifyCardAbility(mergedCatalogCard(inst), "kidou", segRawPick);
-        runClassifiedCardAbility(inst, subCl, "kidou", finishResolved);
+        runClassifiedCardAbility(inst, subCl, "kidou", finishResolved, {
+          kidouSegIndex: segIndexPick,
+          perTurnLimit: subCl && subCl.perTurnLimit,
+          skipPlayFx: true,
+          allowRepeatResolve: true,
+        });
       });
       return;
     }
@@ -31616,7 +31818,9 @@ export function mountSimulator(
           lookedCards = state.deck.splice(0, cnt);
         }
         render();
-        openDeckLookReorderDialog(lookedCards, function (deckIds, waitingIds) {
+        openDeckLookReorderDialog(
+          lookedCards,
+          function (deckIds, waitingIds) {
           var byId = {};
           lookedCards.forEach(function (c) {
             byId[String(c.id)] = c;
@@ -31672,6 +31876,8 @@ export function mountSimulator(
           function finishLookReorder() {
             if (cl.deckLookRemainTo === "bottom") {
               showToast("山札の上と下に振り分けました" + (dualOpp ? "（相手）" : ""));
+            } else if (!waitingIds.length) {
+              showToast("山札の上に並べ替えました" + (dualOpp ? "（相手）" : ""));
             } else {
               showToast("山札と控え室に振り分けました" + (dualOpp ? "（相手）" : ""));
             }
@@ -31687,7 +31893,12 @@ export function mountSimulator(
           } else {
             finishLookReorder();
           }
-        });
+        },
+          {
+            partialKeep: cl.deckLookPartialKeep === true,
+            remainToBottom: cl.deckLookRemainTo === "bottom",
+          },
+        );
       }
       function runDeckLookReorder() {
         runDeckLookReorderFor(false);
@@ -35734,18 +35945,16 @@ export function mountSimulator(
     if (memberHasMirrorUnderKidouJouji(mc)) {
       var mirrorKids = collectMirrorUnderKidouSources(cardInst);
       for (var mi = 0; mi < mirrorKids.length; mi++) {
-        var mkCl = classifyCardAbility(mergedCatalogCard(mirrorKids[mi]), "kidou");
-        if (!mkCl || mkCl.template === "none") continue;
-        if (mkCl.perTurnLimit && perTurnLimitExhausted(mirrorKids[mi], "kidou", mkCl.perTurnLimit)) continue;
-        return true;
+        if (listPlayableKidouSegments(mirrorKids[mi]).length) return true;
       }
     }
     if (!memberHasKidouAbility(mc)) return false;
-    var cl = classifyCardAbility(mc, "kidou");
-    if (!cl || cl.template === "none") return false;
-    if (cl.perTurnLimit && perTurnLimitExhausted(cardInst, "kidou", cl.perTurnLimit)) return false;
-    if (cl.template === "kidou_wait_to_stage" || cl.requiresInWaiting) return false;
-    return true;
+    var playSegs = listPlayableKidouSegments(cardInst);
+    if (!playSegs.length) return false;
+    var anyStageKidou = playSegs.some(function (seg) {
+      return seg.cl.template !== "kidou_wait_to_stage" && !seg.cl.requiresInWaiting;
+    });
+    return anyStageKidou;
   }
 
   function collectStageAndLiveBoardCards() {
@@ -35885,14 +36094,11 @@ export function mountSimulator(
         out.glowClasses.push("card-item--bp1002-waiting-top-glow");
       }
       if (mc.type === T_MEMBER && canUseKidouEffectsNow() && memberHasKidouAbility(mc)) {
-        var clWait = classifyCardAbility(mc, "kidou");
-        var perTurnExhausted = clWait.perTurnLimit
-          ? perTurnLimitExhausted(c, "kidou", clWait.perTurnLimit)
-          : false;
+        var waitPlaySegs = listPlayableKidouSegments(c).filter(function (seg) {
+          return seg.cl.template === "kidou_wait_to_stage";
+        });
         if (
-          clWait.template === "kidou_wait_to_stage" &&
-          !isPlayEffectResolved(c, "kidou") &&
-          !perTurnExhausted &&
+          waitPlaySegs.length &&
           (!versusMatchPhaseActive() ||
             !versusSession.remoteMatch ||
             (getVersusPlayRole() &&
@@ -35900,7 +36106,28 @@ export function mountSimulator(
         ) {
           out.glowClasses.push("card-item--play-kidou-glow");
           if (!out.pendingEffectKinds) out.pendingEffectKinds = [];
-          out.pendingEffectKinds.push({ kind: "kidou", label: "起動" });
+          var waitKdAll = listKidouAbilitySegments(c).filter(function (seg) {
+            return seg.cl.template === "kidou_wait_to_stage";
+          });
+          if (waitKdAll.length > 1) {
+            waitKdAll.forEach(function (seg) {
+              var playable = waitPlaySegs.some(function (s) {
+                return s.index === seg.index;
+              });
+              out.pendingEffectKinds.push({
+                kind: "kidou",
+                label: "起動" + (seg.index + 1),
+                kidouSegIndex: seg.index,
+                disabled: !playable,
+              });
+            });
+          } else {
+            out.pendingEffectKinds.push({
+              kind: "kidou",
+              label: "起動",
+              kidouSegIndex: waitPlaySegs[0].index,
+            });
+          }
         }
       }
       if (mc.type === T_MEMBER || mc.type === T_LIVE) {
@@ -35959,18 +36186,39 @@ export function mountSimulator(
         out.effectGlowKind = "hand_playable";
       }
       if (canUseKidouEffectsNow() && memberHasKidouAbility(mc)) {
-        var clHandKd = classifyCardAbility(mc, "kidou");
+        var handPlaySegs = listPlayableKidouSegments(c).filter(function (seg) {
+          return seg.cl.template === "kidou_discard_self_draw_grant";
+        });
         if (
-          clHandKd &&
-          clHandKd.template === "kidou_discard_self_draw_grant" &&
-          (!clHandKd.perTurnLimit || !perTurnLimitExhausted(c, "kidou", clHandKd.perTurnLimit)) &&
+          handPlaySegs.length &&
           (!versusMatchPhaseActive() ||
             !versusSession.remoteMatch ||
             (getVersusPlayRole() && canRoleActInVersus(versusSession.remoteMatch, getVersusPlayRole())))
         ) {
           out.glowClasses.push("card-item--play-kidou-glow");
           if (!out.pendingEffectKinds) out.pendingEffectKinds = [];
-          out.pendingEffectKinds.push({ kind: "kidou", label: "起動" });
+          var handKdAll = listKidouAbilitySegments(c).filter(function (seg) {
+            return seg.cl.template === "kidou_discard_self_draw_grant";
+          });
+          if (handKdAll.length > 1) {
+            handKdAll.forEach(function (seg) {
+              var playable = handPlaySegs.some(function (s) {
+                return s.index === seg.index;
+              });
+              out.pendingEffectKinds.push({
+                kind: "kidou",
+                label: "起動" + (seg.index + 1),
+                kidouSegIndex: seg.index,
+                disabled: !playable,
+              });
+            });
+          } else {
+            out.pendingEffectKinds.push({
+              kind: "kidou",
+              label: "起動",
+              kidouSegIndex: handPlaySegs[0].index,
+            });
+          }
           out.effectIcon = "kidou";
           out.effectGlowKind = "kidou";
           out.effectResolveKind = "kidou";
@@ -36013,9 +36261,36 @@ export function mountSimulator(
     if (pendingLiveStart) out.glowClasses.push("card-item--play-live-start-glow");
     if (pendingLiveSuccess) out.glowClasses.push("card-item--play-live-success-glow");
 
-    /** @type {Array<{kind:string,label:string}>} */
+    /** @type {Array<{kind:string,label:string,kidouSegIndex?:number}>} */
     out.pendingEffectKinds = [];
-    if (pendingKidou) out.pendingEffectKinds.push({ kind: "kidou", label: "起動" });
+    if (pendingKidou) {
+      var stageKdSegs = listPlayableKidouSegments(c).filter(function (seg) {
+        return seg.cl.template !== "kidou_wait_to_stage" && !seg.cl.requiresInWaiting;
+      });
+      var stageKdAll = listKidouAbilitySegments(c).filter(function (seg) {
+        return seg.cl.template !== "kidou_wait_to_stage" && !seg.cl.requiresInWaiting;
+      });
+      if (stageKdAll.length > 1) {
+        // 複数起動は常に「起動1」「起動2」…を並べる（使用済みは disabled）
+        stageKdAll.forEach(function (seg) {
+          var playable = stageKdSegs.some(function (s) {
+            return s.index === seg.index;
+          });
+          out.pendingEffectKinds.push({
+            kind: "kidou",
+            label: "起動" + (seg.index + 1),
+            kidouSegIndex: seg.index,
+            disabled: !playable,
+          });
+        });
+      } else {
+        out.pendingEffectKinds.push({
+          kind: "kidou",
+          label: "起動",
+          kidouSegIndex: stageKdSegs[0] ? stageKdSegs[0].index : 0,
+        });
+      }
+    }
     if (pendingToujou) out.pendingEffectKinds.push({ kind: "toujyou", label: "登場" });
     if (pendingLiveStart) out.pendingEffectKinds.push({ kind: "live_start", label: "開始時" });
     if (pendingLiveSuccess) out.pendingEffectKinds.push({ kind: "live_success", label: "成功時" });
@@ -36810,12 +37085,20 @@ export function mountSimulator(
           resBtn.type = "button";
           resBtn.className =
             "card-effect-resolve-btn card-no-drag card-effect-resolve-btn--" + pe.kind;
-          resBtn.textContent = pe.label ? pe.label + "解決" : "効果解決";
-          resBtn.title = (pe.label || "効果") + "を解決";
+          // 「起動1」「起動2」など番号付きはラベルそのまま。単体は「起動解決」
+          var lab = pe.label ? String(pe.label) : "";
+          resBtn.textContent = /[0-9０-９]$/.test(lab) ? lab : lab ? lab + "解決" : "効果解決";
+          resBtn.title = (lab || "効果") + "を解決";
+          if (pe.disabled) {
+            resBtn.disabled = true;
+            resBtn.classList.add("card-effect-resolve-btn--disabled");
+            resBtn.title = (lab || "効果") + "は今は使えません";
+          }
           resBtn.addEventListener("click", function (e) {
             e.stopPropagation();
             e.preventDefault();
-            resolvePlayCardEffect(c, pe.kind);
+            if (pe.disabled) return;
+            resolvePlayCardEffect(c, pe.kind, pe.kidouSegIndex);
           });
           btnRow.appendChild(resBtn);
         });
@@ -37216,6 +37499,13 @@ export function mountSimulator(
     const isWaitingZone = zoneId === "zone-waiting";
 
     el.innerHTML = "";
+    if (zoneId === "zone-hand" && state._shakaPachi) {
+      if (fillZoneHandShakaPachi(el, cardEl)) return;
+      // 手札操作でシャカパチが解消された → 通常手札描画へ
+    }
+    if (zoneId === "zone-hand") {
+      el.classList.remove("zone-hand--shaka-running");
+    }
     var handMultiRow =
       zoneId === "zone-hand" &&
       arr.length >= 14 &&
@@ -37612,12 +37902,22 @@ export function mountSimulator(
   function isHandZoneSortableEl(el) {
     if (!el) return false;
     if (el.id === "zone-hand") return true;
-    return !!(el.classList && el.classList.contains("hand-zone-row"));
+    if (el.classList && el.classList.contains("hand-zone-row")) return true;
+    if (el.classList && el.classList.contains("shaka-pile")) return true;
+    return false;
   }
 
   function attachHandZoneSortables() {
     var zone = $("zone-hand");
     if (!zone) return;
+    if (zone.classList.contains("zone-hand--shaka-running")) {
+      var piles = zone.querySelectorAll(":scope > .shaka-pile");
+      piles.forEach(function (pileEl, idx) {
+        if (!pileEl.id) pileEl.id = "shaka-pile-" + idx;
+        wireSortable(pileEl.id);
+      });
+      return;
+    }
     var rowEls = zone.querySelectorAll(":scope > .hand-zone-row");
     if (!rowEls.length) {
       wireSortable("zone-hand");
@@ -44140,6 +44440,273 @@ export function mountSimulator(
       }
     };
     root.addEventListener("pointerdown", root.__llocgStanceFocusPointerDown, true);
+  }
+
+  if (root) {
+    if (typeof root.__llocgShakaPachiPdown === "function") {
+      root.removeEventListener("pointerdown", root.__llocgShakaPachiPdown, true);
+    }
+    root.__llocgShakaPachiPdown = function (ev) {
+      if (ev.button != null && ev.button !== 0) return;
+      if (!isPlayBoardMarginTapTarget(ev.target)) return;
+      var intensity = playShakaPachiTap();
+      shuffleHandForShakaPachi(intensity);
+    };
+    root.addEventListener("pointerdown", root.__llocgShakaPachiPdown, true);
+  }
+
+  /**
+   * シャカパチ: クリック1回につきカード1枚を反対側の束へ移す。
+   * 全部移し終えたら通常手札に戻す（結果は逆順）。次のクリックで新しい一周を開始。
+   * @param {number} [intensity]
+   */
+  function shuffleHandForShakaPachi(intensity) {
+    if (!playMountAlive()) return;
+    var inten = Math.max(0, Math.min(1, Number(intensity) || 0));
+    if (!state._shakaPachi) {
+      if (!state.hand || state.hand.length < 2) return;
+      var transferDir = shuffleHandForShakaPachi._dir > 0 ? 1 : -1;
+      shuffleHandForShakaPachi._dir = -transferDir;
+      var cardById = {};
+      var srcIds = [];
+      state.hand.forEach(function (c) {
+        if (!c || c.id == null) return;
+        var id = String(c.id);
+        cardById[id] = c;
+        srcIds.push(id);
+      });
+      if (srcIds.length < 2) return;
+      state._shakaPachi = {
+        src: srcIds,
+        dst: [],
+        dir: transferDir,
+        inten: inten,
+        cardById: cardById,
+        flyMs: Math.max(110, Math.round(200 - inten * 80)),
+        movingId: null,
+      };
+    } else {
+      state._shakaPachi.inten = inten;
+      state._shakaPachi.flyMs = Math.max(110, Math.round(200 - inten * 80));
+    }
+    stepShakaPachiOnce();
+  }
+  shuffleHandForShakaPachi._dir = 1;
+
+  function syncHandFromShakaPachi() {
+    var sp = state._shakaPachi;
+    if (!sp) return;
+    var next = [];
+    function pushId(id) {
+      var c = sp.cardById[String(id)];
+      if (c) next.push(c);
+    }
+    if (sp.dir > 0) {
+      sp.dst.forEach(pushId);
+      sp.src.forEach(pushId);
+    } else {
+      sp.src.forEach(pushId);
+      sp.dst.forEach(pushId);
+    }
+    state.hand = next;
+  }
+
+  /** 手札が途中で増減したとき、シャカパチの二束を追従させる */
+  function reconcileShakaPachiWithHand() {
+    var sp = state._shakaPachi;
+    if (!sp) return false;
+    var inHand = {};
+    (state.hand || []).forEach(function (c) {
+      if (!c || c.id == null) return;
+      var id = String(c.id);
+      inHand[id] = c;
+      sp.cardById[id] = c;
+    });
+    sp.src = (sp.src || []).filter(function (id) {
+      return !!inHand[String(id)];
+    });
+    sp.dst = (sp.dst || []).filter(function (id) {
+      return !!inHand[String(id)];
+    });
+    var known = {};
+    sp.src.concat(sp.dst).forEach(function (id) {
+      known[String(id)] = true;
+    });
+    (state.hand || []).forEach(function (c) {
+      if (!c || c.id == null) return;
+      var id = String(c.id);
+      if (!known[id]) {
+        sp.src.push(id);
+        known[id] = true;
+      }
+    });
+    var total = sp.src.length + sp.dst.length;
+    if (total < 2) {
+      state._shakaPachi = null;
+      return true;
+    }
+    if (!sp.src.length) {
+      // 受け取り束だけ残っている → 一周扱い
+      var done = [];
+      sp.dst.forEach(function (id) {
+        var c = sp.cardById[String(id)];
+        if (c) done.push(c);
+      });
+      if (done.length) state.hand = done;
+      state._shakaPachi = null;
+      return true;
+    }
+    return false;
+  }
+
+  function finishShakaPachi() {
+    var sp = state._shakaPachi;
+    if (sp) {
+      var done = [];
+      sp.dst.forEach(function (id) {
+        var c = sp.cardById[String(id)];
+        if (c) done.push(c);
+      });
+      if (done.length) state.hand = done;
+    }
+    state._shakaPachi = null;
+    var handEl = $("zone-hand");
+    if (handEl) handEl.classList.remove("zone-hand--shaka-running");
+    render();
+  }
+
+  /** クリック1回分: 束から1枚だけ移す */
+  function stepShakaPachiOnce() {
+    var sp = state._shakaPachi;
+    if (!sp) return;
+    if (reconcileShakaPachiWithHand()) {
+      render();
+      return;
+    }
+    sp = state._shakaPachi;
+    if (!sp || !sp.src.length) {
+      finishShakaPachi();
+      return;
+    }
+    var movedId;
+    if (sp.dir > 0) {
+      movedId = sp.src.shift();
+      if (movedId != null) sp.dst.unshift(movedId);
+    } else {
+      movedId = sp.src.pop();
+      if (movedId != null) sp.dst.push(movedId);
+    }
+    sp.movingId = movedId != null ? String(movedId) : null;
+    syncHandFromShakaPachi();
+    if (!sp.src.length) {
+      finishShakaPachi();
+      return;
+    }
+    render();
+  }
+
+  function buildHandCardOptsForShaka(c) {
+    if (c && (c.type === T_MEMBER || c.type === T_LIVE)) {
+      c.lcWait = false;
+    }
+    var playGlow = computePlayCardGlowOpts(c, "zone-hand");
+    var cardOpts = {
+      zoomClick: false,
+      catalogImgClickDetail: c.type === T_MEMBER || c.type === T_LIVE,
+      playGlowClasses: playGlow.glowClasses,
+      effectIcon: playGlow.effectIcon,
+      effectGlowKind: playGlow.effectGlowKind,
+      effectResolveKind: playGlow.effectResolveKind,
+      pendingEffectKinds: playGlow.pendingEffectKinds,
+      hostZoneId: "zone-hand",
+      cardType: c.type,
+      showHandMemberCost:
+        c.type === T_MEMBER &&
+        isHandDependentCost20Member(mergedCatalogCard(c).card_no || c.card_no),
+    };
+    if (isMulliganHandPickActive()) {
+      var selM = state.mulliganSelectedIds;
+      cardOpts.mulliganPick = {
+        isOn: selM.indexOf(c.id) >= 0,
+        onToggle: function (cardId, on) {
+          var i = state.mulliganSelectedIds.indexOf(cardId);
+          if (on) {
+            if (i < 0) state.mulliganSelectedIds.push(cardId);
+          } else if (i >= 0) state.mulliganSelectedIds.splice(i, 1);
+          render();
+        },
+      };
+    } else if (state.liveTurnPickMode) {
+      var selL = state.liveTurnSelectedIds;
+      cardOpts.liveTurnPick = {
+        isOn: selL.indexOf(c.id) >= 0,
+        onToggle: function (cardId, on) {
+          var i = state.liveTurnSelectedIds.indexOf(cardId);
+          if (on) {
+            if (i < 0) state.liveTurnSelectedIds.push(cardId);
+          } else if (i >= 0) state.liveTurnSelectedIds.splice(i, 1);
+          render();
+        },
+      };
+    }
+    return cardOpts;
+  }
+
+  /** @returns {boolean} シャカパチ演出中に手札を二重山で描画したか */
+  function fillZoneHandShakaPachi(el, cardElFn) {
+    var sp = state._shakaPachi;
+    if (!sp || !el) return false;
+    if (reconcileShakaPachiWithHand()) {
+      el.classList.remove("zone-hand--shaka-running");
+      return false;
+    }
+    sp = state._shakaPachi;
+    if (!sp) {
+      el.classList.remove("zone-hand--shaka-running");
+      return false;
+    }
+    el.classList.add("zone-hand--shaka-running");
+    el.style.setProperty("--shaka-inten", String(0.45 + (sp.inten || 0) * 0.8));
+    el.style.setProperty("--shaka-fly-ms", String(sp.flyMs || 140) + "ms");
+    el.style.setProperty("--shaka-fly-sign", sp.dir > 0 ? "1" : "-1");
+    var srcPile = document.createElement("div");
+    srcPile.className = "shaka-pile shaka-pile--src";
+    var dstPile = document.createElement("div");
+    dstPile.className = "shaka-pile shaka-pile--dst";
+    if (sp.dir > 0) {
+      el.appendChild(srcPile);
+      el.appendChild(dstPile);
+    } else {
+      el.appendChild(dstPile);
+      el.appendChild(srcPile);
+    }
+    function appendPile(pileEl, ids, isDst) {
+      var n = ids.length;
+      ids.forEach(function (id, idx) {
+        var c = sp.cardById[String(id)];
+        if (!c) return;
+        var node = cardElFn(c, buildHandCardOptsForShaka(c));
+        var newest =
+          isDst &&
+          sp.movingId &&
+          String(id) === sp.movingId &&
+          (sp.dir > 0 ? idx === 0 : idx === n - 1);
+        if (newest) node.classList.add("card-item--shaka-flying");
+        var fromBack = isDst
+          ? sp.dir > 0
+            ? n - 1 - idx
+            : idx
+          : sp.dir > 0
+            ? n - 1 - idx
+            : idx;
+        node.style.setProperty("--shaka-pile-i", String(fromBack));
+        node.style.zIndex = String(10 + fromBack);
+        pileEl.appendChild(node);
+      });
+    }
+    appendPile(srcPile, sp.src, false);
+    appendPile(dstPile, sp.dst, true);
+    return true;
   }
 
   if (typeof window.__llocgWaKeyHandler === "function") {

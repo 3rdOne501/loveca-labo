@@ -488,6 +488,7 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  * @property {string | null} [excludeBatonPartnerCharacterName] バトンタッチ元にできないキャラ名
  * @property {number | null} [handKeepMax] 手札に残す最大枚数（baton both keep-hand）
  * @property {"bottom"|"waiting"} [deckLookRemainTo] deck_top_look_reorder の残り置き先
+ * @property {boolean} [deckLookPartialKeep] 好きな枚数だけ山に戻し、残りを控/下へ送れるか
  * @property {string[] | null} [optionalEnterRecoveredNames] 回収後に任意登場できるキャラ名
  * @property {string[] | null} [grantIfRecoveredNames] 回収名一致時のみ grant 実行
  * @property {string[] | null} [requiresStageOnlySeriesAny] ステージがいずれかのシリーズのみ
@@ -2021,7 +2022,15 @@ function classifyDeckLookReorderPatch(p) {
     deckLookFrom: fromBottom ? "bottom" : "top",
     pickSelfOrOpponent: /自分か相手を選ぶ/.test(s),
   };
-  if (/残りを好きな順番でデッキの下に置/.test(s)) lookReorderPatch.deckLookRemainTo = "bottom";
+  if (/残りを好きな順番でデッキの下に置/.test(s)) {
+    lookReorderPatch.deckLookRemainTo = "bottom";
+    lookReorderPatch.deckLookPartialKeep = true;
+  } else if (/残りを控え室に置/.test(s) || /好きな枚数を好きな順番でデッキの上に置/.test(s)) {
+    lookReorderPatch.deckLookRemainTo = "waiting";
+    lookReorderPatch.deckLookPartialKeep = true;
+  } else {
+    lookReorderPatch.deckLookPartialKeep = false;
+  }
   return lookReorderPatch;
 }
 
@@ -2811,9 +2820,18 @@ function classifyOptionalSelfWaitEffect(p, base) {
     /デッキの上|山札の上/.test(p) &&
     !(/手札に加/.test(p) && /公開/.test(p))
   ) {
+    var lookOw = classifyDeckLookReorderPatch(p);
+    if (lookOw) return Object.assign(patch, lookOw);
     return Object.assign(patch, {
       template: "deck_top_look_reorder",
       deckTopCount: lookN,
+      deckLookPartialKeep: /残りを控え室に置/.test(p) || /好きな枚数を好きな順番でデッキの上に置/.test(p),
+      deckLookRemainTo:
+        /残りを好きな順番でデッキの下に置/.test(p)
+          ? "bottom"
+          : /残りを控え室に置/.test(p) || /好きな枚数を好きな順番でデッキの上に置/.test(p)
+            ? "waiting"
+            : undefined,
     });
   }
   if (/控え室から/.test(p) && /手札に加/.test(p)) {
@@ -4159,7 +4177,8 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
           kidouSegmentRaws: kidouSegsOnly.map(function (s) {
             return s.text;
           }),
-          perTurnLimit: perTurn,
+          // 回数制限は各セグメント側。ラッパでは共有しない
+          perTurnLimit: 0,
         });
       }
     }
@@ -4654,11 +4673,23 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
       });
     }
 
+    var lookReorderKdPatch = classifyDeckLookReorderPatch(p);
+    if (lookReorderKdPatch) {
+      return kidouT(Object.assign({ perTurnLimit: perTurn }, lookReorderKdPatch));
+    }
     var lookReorderKd = parseDeckTopCount(p);
     if (lookReorderKd != null && /見る/.test(p) && /デッキの上に置/.test(p)) {
       return kidouT({
         template: "deck_top_look_reorder",
         deckTopCount: lookReorderKd,
+        deckLookPartialKeep: /残りを控え室に置/.test(p) || /好きな枚数を好きな順番でデッキの上に置/.test(p),
+        deckLookRemainTo:
+          /残りを好きな順番でデッキの下に置/.test(p)
+            ? "bottom"
+            : /残りを控え室に置/.test(p) || /好きな枚数を好きな順番でデッキの上に置/.test(p)
+              ? "waiting"
+              : undefined,
+        perTurnLimit: perTurn,
       });
     }
 
@@ -5618,11 +5649,25 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
       !/手札に加/.test(p) &&
       /好きな/.test(p)
     ) {
-      return twT({
-        template: "deck_top_look_reorder",
-        deckTopCount: lookReorderN,
-        requiresOnStage: true,
-      });
+      var lookReorderNPatch = classifyDeckLookReorderPatch(p);
+      return twT(
+        Object.assign(
+          {
+            template: "deck_top_look_reorder",
+            deckTopCount: lookReorderN,
+            requiresOnStage: true,
+            deckLookPartialKeep:
+              /残りを控え室に置/.test(p) || /好きな枚数を好きな順番でデッキの上に置/.test(p),
+            deckLookRemainTo:
+              /残りを好きな順番でデッキの下に置/.test(p)
+                ? "bottom"
+                : /残りを控え室に置/.test(p) || /好きな枚数を好きな順番でデッキの上に置/.test(p)
+                  ? "waiting"
+                  : undefined,
+          },
+          lookReorderNPatch || {},
+        ),
+      );
     }
     if (base.bladeGain > 0 && !/手札|控え室|山札|見る|引|公開|成功ライブ|以下から/.test(p)) {
       return twT({
@@ -6150,11 +6195,22 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
         ),
       });
     }
+    var lookReorderLsSuccess = classifyDeckLookReorderPatch(p);
+    if (lookReorderLsSuccess) {
+      return withTrigger("live_success", lookReorderLsSuccess);
+    }
     var ls = parseDeckTopCount(p);
-    if (ls != null && (p.includes("見る") || p.includes("めく"))) {
+    if (ls != null && (p.includes("見る") || p.includes("めく")) && /デッキの上に置/.test(p)) {
       return withTrigger("live_success", {
         template: "deck_top_look_reorder",
         deckTopCount: ls,
+        deckLookPartialKeep: /残りを控え室に置/.test(p) || /好きな枚数を好きな順番でデッキの上に置/.test(p),
+        deckLookRemainTo:
+          /残りを好きな順番でデッキの下に置/.test(p)
+            ? "bottom"
+            : /残りを控え室に置/.test(p) || /好きな枚数を好きな順番でデッキの上に置/.test(p)
+              ? "waiting"
+              : undefined,
       });
     }
     if (/エールにより公開された自分のカードの中から.*手札に加/.test(p)) {
@@ -7501,6 +7557,15 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
       });
     }
 
+    var lookReorderLsPatch = classifyDeckLookReorderPatch(p);
+    if (lookReorderLsPatch) {
+      return lsT(
+        Object.assign({ requiresOnStage: true }, lookReorderLsPatch, {
+          pickSelfOrOpponent:
+            lookReorderLsPatch.pickSelfOrOpponent || /自分か相手を選ぶ/.test(p),
+        }),
+      );
+    }
     var lookReorderLs = parseDeckTopCount(p);
     if (
       lookReorderLs != null &&
@@ -7513,6 +7578,13 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
         deckTopCount: lookReorderLs,
         requiresOnStage: true,
         pickSelfOrOpponent: /自分か相手を選ぶ/.test(p),
+        deckLookPartialKeep: /残りを控え室に置/.test(p) || /好きな枚数を好きな順番でデッキの上に置/.test(p),
+        deckLookRemainTo:
+          /残りを好きな順番でデッキの下に置/.test(p)
+            ? "bottom"
+            : /残りを控え室に置/.test(p) || /好きな枚数を好きな順番でデッキの上に置/.test(p)
+              ? "waiting"
+              : undefined,
       });
     }
 

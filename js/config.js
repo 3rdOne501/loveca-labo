@@ -98,7 +98,7 @@ export const STORAGE_VERSUS_ONLINE_SESSION = "llocg_versus_online_session_v1";
 export const STORAGE_VERSUS_LAST_ROOM = "llocg_versus_last_room_v1";
 /** プレイ画面: 手札・プレビュー配信隠しの濃さ 0〜1（sessionStorage 文字列） */
 export const STORAGE_STREAM_MASK_STRENGTH = "llocg_stream_mask_strength";
-/** プレイ画面: 軽量モード（低画質サムネ・エフェクト簡略・確率計算抑制） */
+/** プレイ画面: 軽量モード（低画質サムネ・エフェクト簡略。成功確率は表示する） */
 export const STORAGE_LIGHTWEIGHT_PLAY = "llocg_lightweight_play_v1";
 /** プレイ画面: 手札を中央下に固定（スマホ風ドック。ソロ/対戦 共通） */
 export const STORAGE_HAND_DOCK_BOTTOM = "llocg_hand_dock_bottom_v1";

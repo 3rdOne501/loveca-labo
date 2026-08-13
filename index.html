@@ -542,6 +542,22 @@ python3 -m http.server 8080</pre>
               >
                 詳細を見る
               </button>
+              <button
+                type="button"
+                class="btn sm secondary"
+                id="btn-deck-save-image"
+                title="編集中デッキのカード一覧を PNG 画像として保存"
+              >
+                画像で保存
+              </button>
+              <button
+                type="button"
+                class="btn sm secondary"
+                id="btn-deck-proxy-print"
+                title="デッキのカード画像を A4（63×88mm）に並べてラブカラボ内で印刷"
+              >
+                プロキシ印刷
+              </button>
             </div>
           </div>
 
@@ -609,15 +625,29 @@ python3 -m http.server 8080</pre>
           </details>
 
           <details class="deck-panel-section" id="deck-section-json-io">
-            <summary class="deck-panel-summary">JSON 入出力</summary>
+            <summary class="deck-panel-summary">JSON 入出力／プロキシ印刷</summary>
             <div class="deck-panel-section-body">
               <p class="hint search-hint-muted">デッキをファイルでバックアップ／共有するときに使います。</p>
               <div class="deck-io-row">
                 <button type="button" class="btn sm secondary" id="btn-deck-export">JSON 書き出し</button>
+                <button type="button" class="btn sm secondary" id="btn-deck-save-image-panel" title="カード一覧を PNG で保存">
+                  画像で保存
+                </button>
                 <label class="btn sm secondary deck-import-label">
                   JSON 読み込み
                   <input type="file" id="deck-import-file" accept="application/json,.json" class="sr-only" />
                 </label>
+              </div>
+              <p class="hint search-hint-muted" style="margin-top:0.75rem">
+                編集中デッキのカード画像を <strong>A4・63×88mm</strong> に並べ、ラブカラボ内の印刷ダイアログから PDF 保存／印刷できます。
+                外部の
+                <a href="https://proxy-card.imasanari.dev/" rel="noopener noreferrer" target="_blank">プロキシカード印刷</a>
+                サイトや ZIP 出力は任意です。
+              </p>
+              <div class="deck-io-row">
+                <button type="button" class="btn sm primary" id="btn-deck-proxy-print-panel">
+                  プロキシ印刷（ラブカラボ内）
+                </button>
               </div>
             </div>
           </details>
@@ -856,7 +886,7 @@ python3 -m http.server 8080</pre>
             class="btn sm secondary"
             id="btn-play-lightweight"
             aria-pressed="false"
-            title="ONにするとカード画像を低解像度にし、光る演出・ビーム・成功確率の重い計算を抑えます"
+            title="ONにするとカード画像を低解像度にし、光る演出・ビームを抑えます（成功確率は表示します）"
           >
             軽量
           </button>
@@ -1686,6 +1716,43 @@ python3 -m http.server 8080</pre>
         本アプリは非公式ツールであり、コンテンツの著作権・商標権は各権利者に帰属します。公式ルールおよび禁止・制限リストは公式サイト・大会運営発表を常に確認してください。
       </p>
     </footer>
+
+    <dialog id="dlg-proxy-print" class="app-dialog dlg-proxy-print" aria-labelledby="dlg-proxy-print-title">
+      <h2 id="dlg-proxy-print-title">プロキシ印刷</h2>
+      <p class="muted dlg-proxy-print-lead">
+        A4・カード 63×88mm・密着配置。ライブは縦向きに揃えます。印刷ダイアログでは余白「なし」・倍率 100% を推奨。
+      </p>
+      <p id="dlg-proxy-print-status" class="dlg-proxy-print-status" aria-live="polite"></p>
+      <div class="dlg-proxy-print-settings">
+        <label>最小余白(mm) <input type="number" id="dlg-proxy-print-margin" min="0" max="20" step="1" value="7" title="この値以上の余白を確保してカード塊を中央配置（カード同士の隙間は常に0）" /></label>
+        <label class="dlg-proxy-print-crop-toggle"><input type="checkbox" id="dlg-proxy-print-crops" checked /> 裁断目安線</label>
+      </div>
+      <div id="dlg-proxy-print-preview" class="dlg-proxy-print-preview" hidden></div>
+      <details class="dlg-proxy-print-advanced">
+        <summary>外部サイト／ZIP（任意）</summary>
+        <div
+          id="dlg-proxy-print-drag"
+          class="dlg-proxy-print-drag"
+          draggable="true"
+          role="button"
+          tabindex="0"
+          aria-label="カード画像をまとめてドラッグ"
+          hidden
+        >
+          <strong id="dlg-proxy-print-drag-label">全枚をまとめてサイトへドラッグ</strong>
+          <span class="muted">Chrome などでは別タブのサイト上にドロップできます</span>
+        </div>
+        <div class="dlg-proxy-print-advanced-actions btn-row wrap">
+          <button type="button" class="btn sm secondary" id="btn-proxy-print-zip">ZIP保存</button>
+          <button type="button" class="btn sm secondary" id="btn-proxy-print-open-site">外部サイトを開く</button>
+          <button type="button" class="btn sm secondary" id="btn-proxy-print-share" hidden>共有…</button>
+        </div>
+      </details>
+      <div class="dlg-actions btn-row wrap">
+        <button type="button" class="btn sm primary" id="btn-proxy-print-do">印刷…</button>
+        <button type="button" class="btn sm secondary" id="btn-proxy-print-close">閉じる</button>
+      </div>
+    </dialog>
 
     <dialog id="dlg-energy-qty" class="app-dialog dlg-energy-qty" aria-labelledby="dlg-energy-qty-title">
       <h2 id="dlg-energy-qty-title">側面エネルギーの枚数</h2>

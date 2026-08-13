@@ -75,6 +75,22 @@ import {
 } from "./testCardLog.js";
 import { showToast } from "./ui.js";
 import {
+  PROXY_CARD_PRINT_URL,
+  attachProxyFilesToDragEvent,
+  buildProxyPrintPageImages,
+  canShareProxyFiles,
+  collectDeckProxyEntries,
+  deckRecipeImageFileName,
+  downloadDeckProxyZip,
+  downloadDeckRecipeImage,
+  exportDeckRecipeImageBlob,
+  openProxyCardPrintSite,
+  prepareDeckProxyPrintFiles,
+  printProxyPageImages,
+  renderProxyPrintPreview,
+  shareProxyFiles,
+} from "./proxyCardPrint.js";
+import {
   deckOddsCellTierClass,
   formatPctFromRate,
   mulliganOddsCumulativeKs,
@@ -3800,6 +3816,260 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
     a.click();
     URL.revokeObjectURL(a.href);
     showToast("デッキを JSON で保存しました");
+  });
+
+  /** @type {{
+   *   files: File[],
+   *   zipFiles: { name: string, data: Uint8Array }[],
+   *   dataUrls: string[],
+   *   pageCount: number,
+   *   layout: { cols: number, rows: number, marginXMm: number, marginYMm: number } | null,
+   * } | null} */
+  let proxyPrintPrepared = null;
+  let proxyPrintBuilding = false;
+
+  function getProxyPrintLayoutOpts() {
+    const marginEl = el("dlg-proxy-print-margin");
+    const cropsEl = el("dlg-proxy-print-crops");
+    const marginRaw = marginEl ? Math.floor(Number(marginEl.value)) : 7;
+    return {
+      pageMarginMm: Number.isFinite(marginRaw) ? Math.max(0, Math.min(20, marginRaw)) : 7,
+      showCropMarks: !cropsEl || !!cropsEl.checked,
+    };
+  }
+
+  function clearProxyPrintPreview() {
+    const previewHost = el("dlg-proxy-print-preview");
+    if (previewHost) {
+      previewHost.innerHTML = "";
+      previewHost.hidden = true;
+    }
+  }
+
+  async function rebuildProxyPrintPages() {
+    if (!proxyPrintPrepared || !proxyPrintPrepared.files.length) return;
+    if (proxyPrintBuilding) return;
+    proxyPrintBuilding = true;
+    const statusEl = el("dlg-proxy-print-status");
+    const btnPrint = el("btn-proxy-print-do");
+    if (btnPrint) btnPrint.disabled = true;
+    if (statusEl) statusEl.textContent = "印刷レイアウトを作成中…";
+    try {
+      const built = await buildProxyPrintPageImages(proxyPrintPrepared.files, getProxyPrintLayoutOpts());
+      proxyPrintPrepared.dataUrls = built.dataUrls;
+      proxyPrintPrepared.pageCount = built.pageCount;
+      proxyPrintPrepared.layout = built.layout;
+      const previewHost = el("dlg-proxy-print-preview");
+      if (previewHost) {
+        previewHost.hidden = false;
+        renderProxyPrintPreview(previewHost, built.dataUrls);
+      }
+      if (statusEl) {
+        const lay = built.layout;
+        const mx = Math.round(lay.marginXMm * 10) / 10;
+        const my = Math.round(lay.marginYMm * 10) / 10;
+        statusEl.textContent =
+          proxyPrintPrepared.files.length +
+          " 枚・" +
+          built.pageCount +
+          " ページ（" +
+          lay.cols +
+          "×" +
+          lay.rows +
+          " / ページ、密着、余白 左右" +
+          mx +
+          "mm・上下" +
+          my +
+          "mm）。";
+      }
+      if (btnPrint) btnPrint.disabled = false;
+    } catch (err) {
+      if (statusEl) {
+        statusEl.textContent = err && err.message ? String(err.message) : "レイアウト作成に失敗しました";
+      }
+      showToast(err && err.message ? String(err.message) : "印刷レイアウトの作成に失敗しました");
+    } finally {
+      proxyPrintBuilding = false;
+    }
+  }
+
+  function wireProxyPrintDialogOnce() {
+    const dlg = el("dlg-proxy-print");
+    if (!dlg || dlg.dataset.proxyWired === "1") return;
+    dlg.dataset.proxyWired = "1";
+    const drag = el("dlg-proxy-print-drag");
+    if (drag) {
+      drag.addEventListener("dragstart", function (ev) {
+        if (!proxyPrintPrepared || !proxyPrintPrepared.files.length) {
+          ev.preventDefault();
+          return;
+        }
+        attachProxyFilesToDragEvent(ev, proxyPrintPrepared.files);
+      });
+    }
+    const marginEl = el("dlg-proxy-print-margin");
+    const cropsEl = el("dlg-proxy-print-crops");
+    function onLayoutInputChange() {
+      void rebuildProxyPrintPages();
+    }
+    marginEl?.addEventListener("change", onLayoutInputChange);
+    cropsEl?.addEventListener("change", onLayoutInputChange);
+    el("btn-proxy-print-do")?.addEventListener("click", function () {
+      if (!proxyPrintPrepared || !proxyPrintPrepared.dataUrls.length) {
+        showToast("まだ印刷レイアウトがありません");
+        return;
+      }
+      const btnPrint = el("btn-proxy-print-do");
+      if (btnPrint) btnPrint.disabled = true;
+      void printProxyPageImages(proxyPrintPrepared.dataUrls)
+        .catch(function (err) {
+          showToast(err && err.message ? String(err.message) : "印刷を開始できませんでした");
+        })
+        .finally(function () {
+          if (btnPrint) btnPrint.disabled = false;
+        });
+    });
+    el("btn-proxy-print-open-site")?.addEventListener("click", function () {
+      const w = openProxyCardPrintSite();
+      if (!w) showToast("ポップアップがブロックされました。手動で " + PROXY_CARD_PRINT_URL + " を開いてください");
+    });
+    el("btn-proxy-print-zip")?.addEventListener("click", function () {
+      if (!proxyPrintPrepared || !proxyPrintPrepared.zipFiles.length) {
+        showToast("まだ画像の準備ができていません");
+        return;
+      }
+      downloadDeckProxyZip(proxyPrintPrepared.zipFiles);
+      showToast("ZIP を保存しました");
+    });
+    el("btn-proxy-print-share")?.addEventListener("click", function () {
+      if (!proxyPrintPrepared || !proxyPrintPrepared.files.length) return;
+      void shareProxyFiles(proxyPrintPrepared.files)
+        .then(function (ok) {
+          if (!ok) showToast("この環境ではファイル共有できません");
+        })
+        .catch(function () {
+          showToast("共有がキャンセルされました");
+        });
+    });
+    el("btn-proxy-print-close")?.addEventListener("click", function () {
+      if (dlg.open) dlg.close();
+    });
+    dlg.addEventListener("close", function () {
+      clearProxyPrintPreview();
+      proxyPrintPrepared = null;
+    });
+  }
+
+  async function runDeckProxyPrintExport() {
+    const entries = collectDeckProxyEntries(deckMap, getCard);
+    if (!entries.length) {
+      showToast("印刷できるカードがデッキにありません");
+      return;
+    }
+    wireProxyPrintDialogOnce();
+    const dlg = el("dlg-proxy-print");
+    const statusEl = el("dlg-proxy-print-status");
+    const dragEl = el("dlg-proxy-print-drag");
+    const dragLabel = el("dlg-proxy-print-drag-label");
+    const btnShare = el("btn-proxy-print-share");
+    const btnPrint = el("btn-proxy-print-do");
+    const btns = [el("btn-deck-proxy-print"), el("btn-deck-proxy-print-panel")].filter(Boolean);
+
+    clearProxyPrintPreview();
+    proxyPrintPrepared = null;
+    if (statusEl) statusEl.textContent = "カード画像を取得中…";
+    if (dragEl) dragEl.hidden = true;
+    if (btnShare) btnShare.hidden = true;
+    if (btnPrint) btnPrint.disabled = true;
+    btns.forEach(function (b) {
+      b.disabled = true;
+    });
+    if (dlg && typeof dlg.showModal === "function") dlg.showModal();
+    else showToast("カード画像を取得中…（" + entries.length + " 種）");
+
+    try {
+      const result = await prepareDeckProxyPrintFiles(deckMap, getCard, {
+        onProgress: function (done, total, label) {
+          if (!statusEl) return;
+          if (done === 0 || done === total || done % 5 === 0) {
+            statusEl.textContent =
+              "画像取得 " + done + "/" + total + (label ? "（" + label + "）" : "") + "…";
+          }
+        },
+      });
+      proxyPrintPrepared = {
+        files: result.files,
+        zipFiles: result.zipFiles,
+        dataUrls: [],
+        pageCount: 0,
+        layout: null,
+      };
+      if (dragLabel) {
+        dragLabel.textContent = "全 " + result.fileCount + " 枚をまとめてサイトへドラッグ";
+      }
+      if (dragEl) dragEl.hidden = false;
+      if (btnShare) btnShare.hidden = !canShareProxyFiles(result.files);
+      await rebuildProxyPrintPages();
+      showToast(result.fileCount + " 枚の印刷レイアウトを用意しました", { duration: 3500 });
+    } catch (err) {
+      if (statusEl) {
+        statusEl.textContent = err && err.message ? String(err.message) : "画像の準備に失敗しました";
+      }
+      showToast(err && err.message ? String(err.message) : "プロキシ印刷用の画像準備に失敗しました");
+    } finally {
+      btns.forEach(function (b) {
+        b.disabled = false;
+      });
+    }
+  }
+
+  async function runDeckRecipeImageExport() {
+    const entries = collectDeckProxyEntries(deckMap, getCard);
+    if (!entries.length) {
+      showToast("画像にできるカードがデッキにありません");
+      return;
+    }
+    const title = getActiveDeckDisplayName();
+    const btns = [el("btn-deck-save-image"), el("btn-deck-save-image-panel")].filter(Boolean);
+    btns.forEach(function (b) {
+      b.disabled = true;
+    });
+    showToast("デッキ画像を作成中…（" + entries.length + " 種）");
+    try {
+      const blob = await exportDeckRecipeImageBlob(deckMap, getCard, {
+        title: title,
+        keyCardNos: Array.from(keyCardNos),
+        keyCard2Nos: Array.from(keyCard2Nos),
+        keyCard3Nos: Array.from(keyCard3Nos),
+        middleCardNos: Array.from(middleCardNos),
+        onProgress: function (done, total) {
+          if (done === 0 || done === total || done % 8 === 0) {
+            showToast("デッキ画像を作成中… " + done + "/" + total, { duration: 1200 });
+          }
+        },
+      });
+      downloadDeckRecipeImage(blob, deckRecipeImageFileName(title));
+      showToast("デッキ画像を保存しました");
+    } catch (err) {
+      showToast(err && err.message ? String(err.message) : "デッキ画像の保存に失敗しました");
+    } finally {
+      btns.forEach(function (b) {
+        b.disabled = false;
+      });
+    }
+  }
+
+  el("btn-deck-proxy-print")?.addEventListener("click", function () {
+    void runDeckProxyPrintExport();
+  });
+  el("btn-deck-proxy-print-panel")?.addEventListener("click", function () {
+    void runDeckProxyPrintExport();
+  });
+  el("btn-deck-save-image")?.addEventListener("click", function () {
+    void runDeckRecipeImageExport();
+  });
+  el("btn-deck-save-image-panel")?.addEventListener("click", function () {
+    void runDeckRecipeImageExport();
   });
 
   el("deck-import-file")?.addEventListener("change", (e) => {

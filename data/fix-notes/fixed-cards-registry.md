@@ -662,10 +662,37 @@ verify-ability-coverage OK / verify-ability-handlers OK / verify-ability-runtime
 
 ---
 
+## 41. 複数起動の分離 + セグメント別ターン制限（2026-08-13）
+
+ユーザー報告: `PL!N-bp7-006-P＋` 近江彼方。起動が2つあるのに `kidou_multi_choice` の複合選択になっており、起動2（ターン2回）が共有キー `"kidou"`＋ラッパ `perTurnLimit:1` で1回しか使えなかった。
+
+| 代表ID | 名前 | 問題 | 修正 | 横展開 |
+|--------|------|------|------|--------|
+| PL!N-bp7-006-P＋ | 近江彼方 | 起動2本が1ボタン＋複合ダイアログ。回数も共有で実質ターン1回 | ステージに起動1/起動2ボタンを分離。`kidou_seg_N` でセグメント別 `perTurnLimit`（jidou 同型）。ラッパ `kidou_multi_choice` の `perTurnLimit` は 0（共有しない） | 複数起動カード8枚: bp7-006 R＋/P/P＋/SEC（4）+ bp1-006 R＋/P/P＋/SEC（4） |
+
+検証: `verify-niji-bp7` 41 OK、`verify-ability-coverage` OK。app 同期済み（`simulator.js` / `abilityEffects.js`）。
+
+---
+
+## 42. 山上捜査ダイアログのチェック表示（2026-08-13）
+
+ユーザー報告: `PL!N-bp1-002-SEC` / `PL!N-bp7-006-P＋`。リード文は「チェックを外すと控え室」なのにチェックが不可視（CSS `opacity:0`）。山上捜査（`deck_top_look_reorder`）全体。
+
+| 代表ID | 名前 | 問題 | 修正 | 横展開 |
+|--------|------|------|------|--------|
+| PL!N-bp1-002-SEC | 中須かすみ | 好きな枚数を山に戻し残り控え室なのにチェック非表示 | チェック＋「上に戻す」を可視化。行タップで切替。`deckLookPartialKeep` で UI 分岐 | `deck_top_look_reorder` 全経路（登場任意ウェイト・起動・LS・成功時）で partial/remain フラグを付与。残り控え室クラスタ全体 |
+| PL!N-bp7-006-P＋ | 近江彼方（起動1） | 全枚山に戻す効果なのにリードが控え室前提 | `partialKeep:false` 時はチェックなし・並べ替えのみ | 同型「それらを好きな順番でデッキの上に置く」 |
+
+検証: `verify-ability-coverage` OK。app 同期済み（`simulator.js` / `abilityEffects.js` / `styles.css`）。
+
+---
+
 ## 更新履歴
 
 | 日付 | 内容 |
 |------|------|
+| 2026-08-13 | 山上捜査ダイアログ: チェック可視化 + `deckLookPartialKeep` 分岐（代表 PL!N-bp1-002-SEC / PL!N-bp7-006-P＋） |
+| 2026-08-13 | 複数起動分離: 起動1/起動2ボタン + `kidou_seg_N` 回数（代表 PL!N-bp7-006-P＋、横展開8枚。bp1-006含む） |
 | 2026-08-10 | W無色特殊BH（`b_heart07`）: エール時に無色ハート×2。`special_heart.colorless`＋カード詳細「特殊BH」行（ドロー／スコア／W無色）。代表 PL!N-bp7-030-L / PL!SP-bp7-028-L / PL!S-bp7-022-L（SECL含む4枚）。`b_all` とは分離 |
 | 2026-08-11 | 横断3件: ①カタログ検索 `normalizeCatalogSearchText`（空白/NFKC/ハイフン吸収・「南ことり」↔「南 ことり」）②PL!N-bp5-028-L `parseNeedHeartSetFixedMap`+`parseAbilityPickFilters` segRaw（必要ハートheart02×5固定・条件heart02×4）③エネ上限: 置き場+ステージ下合計12枚（`countOwnFieldEnergyTotal`/`remainingFieldEnergyCapacity`） |
 | 2026-08-11 | PL!N-bp7-011（ミア）控え室3件: ①`revealCardsSentFromDeckToWaiting` で控え室送り済みミルに `fireJidouAfterDeckMilledByAbility`（`deck_top_pick_recover` / `deck_top_look_reorder` 等・横展開多数。代表ミル源 018/bp5-009/030）②`_playCostReduce`/`_playCostSet` を登場後エネ支払いまで適用（手札限定ゲート外へ）③`play_cost_reduce_shuffle_waiting_members` でバトン元を先に控え室→シャッフル（コスト減4枚） |
