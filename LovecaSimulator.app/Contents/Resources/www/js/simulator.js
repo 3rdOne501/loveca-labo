@@ -9866,8 +9866,43 @@ export function mountSimulator(
 
     var reqCol = $("live-required-colors");
     if (reqCol) {
-      var reqColLinePlain = formatStageHeartMinusNeedRemainderLine(b.mergedSupplyPreview, needAccum);
-      reqCol.innerHTML = formatStageHeartMinusNeedRemainderLineHtml(b.mergedSupplyPreview, needAccum);
+      var flexForReq = b.wildcardBhAllFlex != null ? Number(b.wildcardBhAllFlex) || 0 : 0;
+      var reqGaps = listAllNeedHeartDeficitsSequential(b.mergedSupplyPreview, needAccum, {
+        wildcardAllBump: 0,
+        wildcardBhAllFlex: flexForReq,
+      });
+      var reqColLinePlain =
+        !needAccum || sumSlotAccumValues(needAccum) <= 0
+          ? "—"
+          : reqGaps.length
+            ? reqGaps
+                .map(function (g) {
+                  return bladeHeartDisplaySlotLabel(g.slot) + " 不足 " + g.deficit;
+                })
+                .join(" · ")
+            : "達成";
+      if (reqGaps.length) {
+        reqCol.innerHTML = reqGaps
+          .map(function (g) {
+            return (
+              '<span class="heart-slot-breakdown-item heart-slot-breakdown-item--deficit heart-slot-breakdown-item--s' +
+              g.slot +
+              '">' +
+              heartSlotArtIconHtml(g.slot) +
+              '<span class="heart-slot-breakdown-num-label">不足</span>' +
+              '<span class="heart-slot-breakdown-num">' +
+              g.deficit +
+              "</span></span>"
+            );
+          })
+          .join("");
+      } else if (reqColLinePlain === "—") {
+        reqCol.innerHTML =
+          '<span class="live-stats-heart-line live-stats-heart-line--empty">—</span>';
+      } else {
+        reqCol.innerHTML =
+          '<span class="live-stats-heart-line live-stats-heart-line--met">達成</span>';
+      }
       reqCol.classList.toggle("live-stats-required-colors--met", reqColLinePlain === "達成");
     }
 
@@ -15625,10 +15660,12 @@ export function mountSimulator(
 
   function activateEnergyCount(n, opts) {
     opts = opts || {};
+    /* 「アクティブにする」はウェイト→アクティブのみ（総合ルール 5.9.1 の逆）。デッキ新規配置は allowFromDeck */
+    var waitOnly = opts.allowFromDeck !== true;
     var need = Math.max(0, Math.floor(Number(n) || 0));
     var done = 0;
     for (var i = 0; i < need; i++) {
-      if (activateOneUprightEnergy(opts.waitOnly === true)) done++;
+      if (activateOneUprightEnergy(waitOnly)) done++;
       else break;
     }
     return done;
@@ -17056,8 +17093,15 @@ export function mountSimulator(
   function addLiveSessionBladeBonus(memberInst, n) {
     if (!Number.isFinite(n) || n <= 0 || !memberInst || memberInst.type !== T_MEMBER) return;
     ensureCardBoardFields(memberInst);
-    memberInst.playBonusBladeAlways =
-      sanitizeNonNegativeInt(memberInst.playBonusBladeAlways) + Math.floor(Number(n));
+    var add = Math.floor(Number(n));
+    memberInst.playBonusBladeAlways = sanitizeNonNegativeInt(memberInst.playBonusBladeAlways) + add;
+    showToast(
+      (mergedCatalogCard(memberInst).name || "メンバー") +
+        " にブレード " +
+        add +
+        " 個（ライブ終了時まで）",
+    );
+    logReplay("ability-blade-gain-live-end", { count: add, cardId: memberInst.id });
   }
 
   function mergedInstDisplayName(inst) {
@@ -17934,7 +17978,8 @@ export function mountSimulator(
         return true;
       }
     }
-    if (waitOnly) {
+    /* waitOnly 既定: ウェイトが無いときは増やさない（エネルギーデッキからの新規配置は別効果） */
+    if (waitOnly !== false) {
       return false;
     }
     if (state.energyArea.length < MAX_ENERGY_SIDE) {
@@ -19939,7 +19984,8 @@ export function mountSimulator(
     if (/ライブ終了時まで/.test(t) && /を得る/.test(t) && !/このメンバー以外/.test(t) && !/相手のステージ/.test(t)) {
       var selfBladeN = /ブレード/.test(t) ? Math.max(1, (t.match(/ブレード/g) || []).length) : 2;
       pushHistoryBefore("ability-choice-self-blade");
-      gainBladesUntilEnd(inst, selfBladeN);
+      if (/ブレード/.test(t)) addLiveSessionBladeBonus(inst, selfBladeN);
+      else gainBladesUntilEnd(inst, selfBladeN);
       render();
       onDone();
       return;
@@ -19949,7 +19995,10 @@ export function mountSimulator(
       openPickStageMemberDialog(inst.id, "ステージの対象メンバー1人にブレードを付与します。", function (pid) {
         if (pid) {
           var tm = findCardInstById(pid);
-          if (tm) gainBladesUntilEnd(tm, cl.bladeGain || 1);
+          if (tm) {
+            if (/ブレード/.test(t)) addLiveSessionBladeBonus(tm, cl.bladeGain || 1);
+            else gainBladesUntilEnd(tm, cl.bladeGain || 1);
+          }
         }
         render();
         onDone();
@@ -30438,7 +30487,7 @@ export function mountSimulator(
           "エネルギーを0〜" + maxPayVar + "枚まで支払ってもよい：支払った枚数につきブレードを得ます。",
           function (paidCount) {
             if (paidCount > 0) {
-              gainBladesUntilEnd(inst, paidCount * perBladeVar);
+              addLiveSessionBladeBonus(inst, paidCount * perBladeVar);
             } else if (cl.optional || cl.hasOptionalCost) {
               inst._liveStartEffectDeclined = true;
             }
@@ -30457,12 +30506,15 @@ export function mountSimulator(
             finishResolved();
             return;
           }
-          if (cl.bladeGain && cl.bladeGain > 0) gainBladesUntilEnd(inst, cl.bladeGain);
+          if (cl.bladeGain && cl.bladeGain > 0) addLiveSessionBladeBonus(inst, cl.bladeGain);
           finishResolved();
         });
         return;
       }
-      if (cl.bladeGain && cl.bladeGain > 0) gainBladesUntilEnd(inst, cl.bladeGain);
+      if (cl.bladeGain && cl.bladeGain > 0) {
+        if (cl.template === "optional_energy_blade_until_live_end") addLiveSessionBladeBonus(inst, cl.bladeGain);
+        else gainBladesUntilEnd(inst, cl.bladeGain);
+      }
       finishResolved();
       return;
     }
@@ -31098,13 +31150,11 @@ export function mountSimulator(
         });
         actCount = actCount * Math.max(0, unitCountEn);
       }
-      var actN = activateEnergyCount(actCount, { waitOnly: cl.energyActiveWaitOnly === true });
+      var actN = activateEnergyCount(actCount);
       if (actN > 0) {
         showToast("エネルギーを " + actN + " 枚アクティブにしました");
-      } else if (cl.energyActiveWaitOnly) {
-        showToast("ウェイトのエネルギーがなく、アクティブにできませんでした");
       } else {
-        showToast("エネルギーをアクティブにできませんでした");
+        showToast("ウェイトのエネルギーがなく、アクティブにできませんでした");
       }
       finishResolved();
       return;
@@ -33228,7 +33278,7 @@ export function mountSimulator(
         return;
       }
       pushHistoryBefore("kidou-wait-to-stage");
-      function afterHandCost(next) {
+      function afterLook(next) {
         if (cl.deckTopCount != null && cl.deckTopCount > 0) {
           var lookedK = state.deck.splice(0, Math.min(cl.deckTopCount, state.deck.length));
           if (lookedK.length) {
@@ -33252,32 +33302,14 @@ export function mountSimulator(
         }
         next();
       }
-      function doStage() {
+      afterLook(function () {
         if (!placeWaitingMemberToStage(inst)) {
           abortResolved("ステージに登場できませんでした");
           return;
         }
         showToast("控え室からステージに登場させました");
         finishResolved();
-      }
-      if (cl.handDiscardToWaiting && cl.handDiscardToWaiting > 0) {
-        openPickHandToWaitingDialog(cl.handDiscardToWaiting, function (handIds) {
-          if (!handIds) {
-            render();
-            finishResolved();
-            return;
-          }
-          handIds.forEach(function (hid) {
-            var hi = state.hand.findIndex(function (h) {
-              return h && String(h.id) === String(hid);
-            });
-            if (hi >= 0) state.waitingRoom.push(state.hand.splice(hi, 1)[0]);
-          });
-          afterHandCost(doStage);
-        });
-      } else {
-        afterHandCost(doStage);
-      }
+      });
       return;
     }
 
@@ -34712,13 +34744,23 @@ export function mountSimulator(
         });
         var actTotal = wtdActPer * wtdActPicked.length;
         var actDone = activateEnergyCount(actTotal);
-        showToast(
-          "控え室から " +
-            wtdActPicked.length +
-            " 枚をデッキの下に置き、エネルギーを " +
-            actDone +
-            " 枚アクティブにしました",
-        );
+        if (actDone < actTotal) {
+          showToast(
+            "控え室から " +
+              wtdActPicked.length +
+              " 枚をデッキの下に置き、エネルギーを " +
+              actDone +
+              " 枚アクティブにしました（ウェイトのエネルギーが不足）",
+          );
+        } else {
+          showToast(
+            "控え室から " +
+              wtdActPicked.length +
+              " 枚をデッキの下に置き、エネルギーを " +
+              actDone +
+              " 枚アクティブにしました",
+          );
+        }
         render();
         finishResolved();
       }

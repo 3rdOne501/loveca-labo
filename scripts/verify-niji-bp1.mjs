@@ -65,7 +65,14 @@ const CASES = [
   { id: "PL!N-bp1-010-R", trigger: "toujyou", expectTemplate: "deck_top_pick_recover" },
   { id: "PL!N-bp1-011-R", trigger: "toujyou", expectTemplate: "deck_reveal_until_live" },
   { id: "PL!N-bp1-012-R＋", trigger: "jouji", expectTemplate: "blade_conditional",
-    check: (cl) => (cl.minLiveCardsInFrames === 3 && cl.liveSeriesTag === "虹ヶ咲" && cl.bladeFlat === 2 ? [] : ["jouji live frame"]),
+    check: (cl) =>
+      cl.minLiveCardsInFrames === 3 &&
+      cl.liveSeriesTag === "虹ヶ咲" &&
+      cl.bladeFlat === 2 &&
+      cl.heartFlat &&
+      Number(cl.heartFlat[7] || cl.heartFlat["7"]) === 2
+        ? []
+        : ["jouji live frame / ALL heartFlat[7]"],
   },
   { id: "PL!N-bp1-012-R＋", trigger: "kidou", expectTemplate: "kidou_wait_pick_hand" },
   {

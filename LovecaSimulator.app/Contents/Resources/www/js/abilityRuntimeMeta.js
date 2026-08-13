@@ -16,7 +16,6 @@ export const TEMPLATE_HANDLES_OWN_COST = [
   "kidou_hand_discard_trigger_ability",
   "kidou_energy_or_activate_member",
   "kidou_energy_deck_pick_live",
-  "kidou_wait_to_stage",
   "kidou_stage_wait_pick_hand",
   "live_start_pay_or_hand_discard",
   "live_start_mandatory_energy_deck_unless_hand_discard",

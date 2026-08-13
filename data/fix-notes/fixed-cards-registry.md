@@ -687,10 +687,22 @@ verify-ability-coverage OK / verify-ability-handlers OK / verify-ability-runtime
 
 ---
 
+## 43. 報告4件 — ALL必要色UI / ライブ終了ブレード / 控え室起動E / アクティブ増殖（2026-08-14）
+
+| 代表ID | 名前 | 問題 | 修正 | 横展開 |
+|--------|------|------|------|--------|
+| PL!N-bp1-012-P | 鐘嵐珠 | ALL表示なのに必要色が不足・失敗に見える | 必要色行に `wildcardBhAllFlex` を適用。verify に `heartFlat[7]=2` | bp1-012 全レア + 必要色UI全体 |
+| PL!N-bp7-006-P＋ | 近江彼方 | 起動2の「ライブ終了時まで」ブレードがライブ開始で消える | `gainBladesUntilEnd`(ターン)→`addLiveSessionBladeBonus`。`optional_energy_blade_until_live_end` 同型 | bp7-006×4 + 同テンプレ |
+| PL!N-bp1-002-SEC | 中須かすみ | 控え室起動登場で EE 未支払い | `kidou_wait_to_stage` を `TEMPLATE_HANDLES_OWN_COST` から外し `payAbilityCost` 経由 | bp1-002×4 |
+| PL!N-bp7-008-R | エマ・ヴェルデ | ウェイト無しで「アクティブ」するとエネルギーが増える | `activateEnergyCount` 既定をウェイトのみ。デッキ新規配置は `allowFromDeck` 明示時のみ | 「エネルギーをN枚アクティブ」全体 |
+
+---
+
 ## 更新履歴
 
 | 日付 | 内容 |
 |------|------|
+| 2026-08-14 | 報告4件: ALL必要色flex / ライブ終了ブレード / 控え室起動E / アクティブ増殖防止 |
 | 2026-08-13 | 山上捜査ダイアログ: チェック可視化 + `deckLookPartialKeep` 分岐（代表 PL!N-bp1-002-SEC / PL!N-bp7-006-P＋） |
 | 2026-08-13 | 複数起動分離: 起動1/起動2ボタン + `kidou_seg_N` 回数（代表 PL!N-bp7-006-P＋、横展開8枚。bp1-006含む） |
 | 2026-08-10 | W無色特殊BH（`b_heart07`）: エール時に無色ハート×2。`special_heart.colorless`＋カード詳細「特殊BH」行（ドロー／スコア／W無色）。代表 PL!N-bp7-030-L / PL!SP-bp7-028-L / PL!S-bp7-022-L（SECL含む4枚）。`b_all` とは分離 |
