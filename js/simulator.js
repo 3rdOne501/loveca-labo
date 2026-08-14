@@ -1636,7 +1636,7 @@ export function mountSimulator(
       live_start: { batchKey: "", firstResolved: false },
       live_success: { batchKey: "", firstResolved: false },
     },
-    /** 8.3.16: 機械的ライブ失敗時にライブ枠を控え室へ送り済み */
+    /** 失敗ライブ即時移動の旧互換フラグ（現行 UI はターン終了までライブ枠を維持） */
     liveMechanicalFailFlushed: false,
     /** 8.4.7: ライブ勝利後の成功ライブ移動を完了済み */
     liveWinMoveCommitted: false,
@@ -8014,10 +8014,21 @@ export function mountSimulator(
     state.effectCheckTiming[kind].firstResolved = true;
   }
 
-  /** ライブ成功ロック中・成功時効果中はライブ枠のライブカードを控え室へ送らない（8.3.16 は失敗時のみ） */
+  /**
+   * ライブ開始後は成功／失敗を問わず、ターン終了操作までライブ枠を表示上維持する。
+   * 失敗判定自体は liveSuccessVerdictLockedSim.ok=false で固定し、成功時効果や勝利判定には使わない。
+   * 控え室送りは finishLiveTurnEndCleanup / ターン開始 / 対戦勝敗判定に委ねる。
+   */
   function shouldPreserveLiveFrameDuringLiveTurn() {
     if (state.liveStatsAfterBegin !== true) return false;
     ensureLiveVerdictSnapshotLocked();
+    if (
+      state.liveSuccessVerdictLockedOk === true &&
+      state.liveSuccessVerdictLockedSim &&
+      state.liveSuccessVerdictLockedSim.ok === false
+    ) {
+      return true;
+    }
     if (liveVerdictLockedMechanicalSuccess()) return true;
     if (isLiveSuccessEffectResolutionPhase()) return true;
     if (hasPendingLiveSuccessEffectsOnBoard()) return true;
@@ -8532,9 +8543,10 @@ export function mountSimulator(
     var fieldMemberHeartAcc = boardHeldHeartSlotAccum();
     var bhFromRes = resolutionBladeHeartContributionForFulfillment();
     var mergedSupply = mergeNumericSlotAccums(fieldMemberHeartAcc, bhFromRes.bhSlotsAcc);
-    /** 解決 BH ALL ＋ 場メンバーの play ALL（有色不足の代用にも使う） */
+    /** 場メンバー play ALL → heart0（任意）プールのみ。有色不足には使わない */
     var wildcardHeartBump = wildcardBoardBumpFromMembers();
-    var wildcardBhAllFlex = (bhFromRes.wildcardBumpFromBh || 0) + wildcardHeartBump;
+    /** 解決 BH ALL のみ。有色不足に先充当し、余りは任意プールへ（bladeHeart.js） */
+    var wildcardBhAllFlex = bhFromRes.wildcardBumpFromBh || 0;
 
     var boardHAcc = fieldMemberHeartAcc;
     var resHAcc = resolutionHeldHeartSlotAccum();
@@ -8551,7 +8563,7 @@ export function mountSimulator(
     var liveCt = liveCardCountOnBoard();
     var resolutionBhWeightedSum = sumResolutionBladeHeartWeighted();
     var ev = evaluateNeedHeartFulfillment(mergedSupply, needAccum, {
-      wildcardAllBump: 0,
+      wildcardAllBump: wildcardHeartBump,
       wildcardBhAllFlex: wildcardBhAllFlex,
     });
     return {
@@ -8567,7 +8579,8 @@ export function mountSimulator(
       resHSum: resHSum,
       wildcardHeartBump: wildcardHeartBump,
       wildcardBhAllFlex: wildcardBhAllFlex,
-      wildcardAllBump: wildcardHeartBump + wildcardBhAllFlex,
+      /** 後方互換: heart0 向け ALL のみ（BH flex は含めない・二重計上防止） */
+      wildcardAllBump: wildcardHeartBump,
       mergedSupplyPreview: mergedSupply,
       resolutionBhSlotsAcc: bhFromRes.bhSlotsAcc,
       bhWildcardFromResolution: bhFromRes.wildcardBumpFromBh,
@@ -8741,7 +8754,7 @@ export function mountSimulator(
       mergedSupplyPreview: mergeNumericSlotAccums(base.mergedSupplyPreview, dsum.bh || {}),
       wildcardHeartBump: h,
       wildcardBhAllFlex: bh,
-      wildcardAllBump: h + bh,
+      wildcardAllBump: h,
       needAccum: base.needAccum,
     };
   }
@@ -8847,7 +8860,7 @@ export function mountSimulator(
       mergedSupplyPreview: b.mergedSupplyPreview,
       wildcardHeartBump: wh,
       wildcardBhAllFlex: wb,
-      wildcardAllBump: wh + wb,
+      wildcardAllBump: wh,
       needAccum: b.needAccum,
     };
 
@@ -12725,12 +12738,12 @@ export function mountSimulator(
     return moved;
   }
 
+  /**
+   * 旧: 機械的失敗時に即座にライブ枠を控え室へ送っていた。
+   * 現行は成功時と同様にターン終了まで枠に残すため、移動は行わない（呼び出し元互換の no-op）。
+   */
   function maybeFlushFailedLiveCardsOnMechanicalVerdict() {
-    if (shouldPreserveLiveFrameDuringLiveTurn()) return false;
     ensureLiveVerdictSnapshotLocked();
-    if (isLiveSuccessEffectResolutionPhase()) return false;
-    if (hasPendingLiveSuccessEffectsOnBoard()) return false;
-    if (liveVerdictLockedMechanicalSuccess()) return false;
     if (
       !state.liveSuccessVerdictLockedOk ||
       !state.liveSuccessVerdictLockedSim ||
@@ -12740,15 +12753,7 @@ export function mountSimulator(
     }
     if (state.liveMechanicalFailFlushed === true) return false;
     state.liveMechanicalFailFlushed = true;
-    var n = flushLiveFrameLivesToWaiting();
-    if (n > 0) {
-      showToast(
-        "ライブ失敗 — ライブカード " + n + " 枚を控え室へ送りました（総合ルール 8.3.16）",
-      );
-      logReplay("live-mechanical-fail-flush", { count: n });
-      render();
-    }
-    return true;
+    return false;
   }
 
   /** 8.4.6 相当: 自盤のライブ合計スコアで勝利（同点は両者勝利） */
@@ -13253,14 +13258,28 @@ export function mountSimulator(
     var sideInfo = handMemberStageSideInfo(memberInst, side);
     if (!sideInfo.canEnter) return false;
     if (sideInfo.lacksEnergy && !opts.forceLowEnergy) {
-      var okEn = window.confirm(
+      openAbilityConfirmDialog(
         "エネルギーが足りません（必要 " +
           sideInfo.cost +
           " / アクティブ " +
           sideInfo.upright +
           "）。\nこのまま登場させますか？",
+        function (okEn) {
+          if (!okEn) return;
+          var liveHand = liveHandInstById(memberInst.id, memberInst);
+          confirmEnergyThenPlaceHandMember(
+            liveHand,
+            side,
+            Object.assign({}, opts, { forceLowEnergy: true }),
+          );
+        },
+        {
+          sourceInst: memberInst,
+          dialogTitle: "登場時: エネルギー不足",
+          defaultChoiceIndex: 1,
+        },
       );
-      if (!okEn) return false;
+      return true;
     } else if (sideInfo.lacksEnergy) {
       showToast(
         "エネルギー不足のまま登場しました（必要 " +
@@ -19902,9 +19921,8 @@ export function mountSimulator(
     }
     if (state.liveStatsAfterBegin === true && playLiveMechanicalFailedLocked()) {
       clearLiveSuccessEffectSchedule();
-      if (!hasPendingLiveSuccessEffectsOnBoard()) {
-        maybeFlushFailedLiveCardsOnMechanicalVerdict();
-      }
+      /* 失敗時もライブ枠はターン終了まで残す（成功時と同様。控え送りは turn-end / turn-start） */
+      maybeFlushFailedLiveCardsOnMechanicalVerdict();
       return;
     }
     if (versusMatchPhaseActive() && isVersusLivePhase(versusSession.remoteMatch)) {
@@ -44585,10 +44603,20 @@ export function mountSimulator(
     root.__llocgShakaPachiPdown = function (ev) {
       if (ev.button != null && ev.button !== 0) return;
       if (!isPlayBoardMarginTapTarget(ev.target, { clientX: ev.clientX, clientY: ev.clientY })) return;
+      // 一周完了直後の連打で次の一周が即始まるのを防ぐ
+      if (!state._shakaPachi && performance.now() < shakaPachiRoundCooldownUntil) return;
       var intensity = playShakaPachiTap();
       shuffleHandForShakaPachi(intensity);
     };
     root.addEventListener("pointerdown", root.__llocgShakaPachiPdown, true);
+  }
+
+  /** 一周終了直後の新規開始クールダウン（ms） */
+  var SHAKA_PACHI_ROUND_COOLDOWN_MS = 480;
+  var shakaPachiRoundCooldownUntil = 0;
+
+  function markShakaPachiRoundEnded() {
+    shakaPachiRoundCooldownUntil = performance.now() + SHAKA_PACHI_ROUND_COOLDOWN_MS;
   }
 
   /**
@@ -44600,6 +44628,7 @@ export function mountSimulator(
     if (!playMountAlive()) return;
     var inten = Math.max(0, Math.min(1, Number(intensity) || 0));
     if (!state._shakaPachi) {
+      if (performance.now() < shakaPachiRoundCooldownUntil) return;
       if (!state.hand || state.hand.length < 2) return;
       var transferDir = shuffleHandForShakaPachi._dir > 0 ? 1 : -1;
       shuffleHandForShakaPachi._dir = -transferDir;
@@ -44679,6 +44708,7 @@ export function mountSimulator(
     var total = sp.src.length + sp.dst.length;
     if (total < 2) {
       state._shakaPachi = null;
+      markShakaPachiRoundEnded();
       return true;
     }
     if (!sp.src.length) {
@@ -44690,6 +44720,7 @@ export function mountSimulator(
       });
       if (done.length) state.hand = done;
       state._shakaPachi = null;
+      markShakaPachiRoundEnded();
       return true;
     }
     return false;
@@ -44706,6 +44737,7 @@ export function mountSimulator(
       if (done.length) state.hand = done;
     }
     state._shakaPachi = null;
+    markShakaPachiRoundEnded();
     var handEl = $("zone-hand");
     if (handEl) handEl.classList.remove("zone-hand--shaka-running");
     render();
