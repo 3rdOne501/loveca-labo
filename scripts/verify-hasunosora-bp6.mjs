@@ -108,6 +108,22 @@ if (!/required: !cl\.optional && !cl\.hasOptionalCost,[\s\S]{0,120}dialogTitle: 
   console.error("FAIL PL!HS-bp6-001 mandatory deck-top choice wiring");
   failed++;
 }
+if (!/if \(inLive\) registerLiveTurnYellRevealedCards\(\[drawnR\]\)/.test(simSrc)) {
+  console.error("FAIL button yell must archive revealed card ids (drawOne)");
+  failed++;
+}
+if (!/if \(drawnAllYell\.length\) registerLiveTurnYellRevealedCards\(drawnAllYell\)/.test(simSrc)) {
+  console.error("FAIL button yell must archive revealed card ids (drawAll)");
+  failed++;
+}
+if (!/liveTurnYellRevealedCardIds: Array\.isArray\(state\.liveTurnYellRevealedCardIds\)/.test(simSrc)) {
+  console.error("FAIL liveTurnYellRevealedCardIds must be persisted in snapshotBoard");
+  failed++;
+}
+if (!/state\.liveTurnYellRevealedCardIds = Array\.isArray\(s\.liveTurnYellRevealedCardIds\)/.test(simSrc)) {
+  console.error("FAIL liveTurnYellRevealedCardIds must restore in applyBoard");
+  failed++;
+}
 
 if (failed) { console.error(`\nverify-hasunosora-bp6: ${failed} failed`); process.exit(1); }
 console.log(`\nverify-hasunosora-bp6: ${CASES.length + NO_ABILITY.length} OK`);

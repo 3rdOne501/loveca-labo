@@ -716,6 +716,7 @@ verify-ability-coverage OK / verify-ability-handlers OK / verify-ability-runtime
 |------|------|------|
 | PL!HS-bp6-001（R＋/P/P＋/SEC、4枚）登場時 | デッキ上から見たカードを1枚デッキ上へ置く強制効果で、キャンセル／未選択のまま進めた | `openPickFromDeckLookDialog` に強制選択モードを追加し、キャンセル非表示・Esc抑止・未選択確定を拒否 |
 | ライブ成功時の任意効果全体 | 成功時誘発フラグが描画終端で立つため、任意効果のグロー／解決ボタンが次の再描画（再読み込み等）まで現れない | 誘発フラグを新規設定した場合に再描画を予約。`yell_resolution_pick_deck_top` の「してもよい」は任意効果であり任意コストではない分類へ修正（同型6枚） |
+| エール公開プール | ボタンエールでは `liveTurnYellRevealedCardIds` が未登録で、解決ゾーンを空にすると回収候補が消える場合がある | `drawOneCardToResolution` / `drawAllYellsToResolution` でも登録し、スナップショットへ永続化 |
 
 検証: `verify-hasunosora-bp6` / `audit-hasunosora-bp6-text` / 横断 verify。app 同期対象（`abilityEffects.js` / `simulator.js`）。
 

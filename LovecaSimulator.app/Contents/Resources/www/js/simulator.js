@@ -11493,6 +11493,11 @@ export function mountSimulator(
       liveTurnSelectedIds: Array.isArray(state.liveTurnSelectedIds)
         ? [...state.liveTurnSelectedIds]
         : [],
+      liveTurnYellRevealedCardIds: Array.isArray(state.liveTurnYellRevealedCardIds)
+        ? state.liveTurnYellRevealedCardIds.map(function (x) {
+            return String(x);
+          })
+        : [],
       pendingDrawYellHandDraws: Math.max(0, Math.floor(Number(state.pendingDrawYellHandDraws) || 0)),
       deckMeta: {
         activePlayDeckMap: normalizeDeckMapCounts(activePlayDeckMap),
@@ -11753,6 +11758,11 @@ export function mountSimulator(
     state.liveTurnSelectedIds = Array.isArray(s.liveTurnSelectedIds)
       ? s.liveTurnSelectedIds.slice()
       : [];
+    state.liveTurnYellRevealedCardIds = Array.isArray(s.liveTurnYellRevealedCardIds)
+      ? s.liveTurnYellRevealedCardIds.map(function (x) {
+          return String(x);
+        })
+      : [];
     state.pendingDrawYellHandDraws =
       typeof s.pendingDrawYellHandDraws === "number" && Number.isFinite(s.pendingDrawYellHandDraws)
         ? Math.max(0, Math.floor(s.pendingDrawYellHandDraws))
@@ -11943,30 +11953,80 @@ export function mountSimulator(
     return anchor;
   }
 
-  function repositionEffectDialogResumeChip() {
+  /**
+   * 「効果を続ける」を可能な限り処理中カード上へ。
+   * @param {{ allowCorner?: boolean, scrollIntoView?: boolean }} [opts]
+   * @returns {boolean} true = カード上に置けた / false = 未配置（またはコーナー退避）
+   */
+  function repositionEffectDialogResumeChip(opts) {
+    opts = opts || {};
+    var allowCorner = opts.allowCorner !== false;
+    var doScroll = opts.scrollIntoView !== false;
     if (!effectDialogResumeChip) return false;
     if (effectDialogResumeChip.parentNode !== document.body) {
       document.body.appendChild(effectDialogResumeChip);
     }
     effectDialogResumeChip.classList.add("effect-dialog-resume-chip--on-card");
-    effectDialogResumeChip.classList.remove("effect-dialog-resume-chip--corner");
+    effectDialogResumeChip.classList.remove(
+      "effect-dialog-resume-chip--corner",
+      "effect-dialog-resume-chip--overlay",
+    );
     var anchor = effectDialogPeekSourceInst ? markEffectDialogPeekSourceOnBoard() : null;
     if (anchor) {
       var r = anchor.getBoundingClientRect();
+      var vw = window.innerWidth || document.documentElement.clientWidth || 0;
+      var vh = window.innerHeight || document.documentElement.clientHeight || 0;
+      var mostlyOffscreen =
+        r.width <= 4 ||
+        r.height <= 4 ||
+        r.bottom < 8 ||
+        r.top > vh - 8 ||
+        r.right < 8 ||
+        r.left > vw - 8;
+      if (mostlyOffscreen && doScroll) {
+        try {
+          anchor.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "instant" });
+        } catch (_) {
+          try {
+            anchor.scrollIntoView(false);
+          } catch (__) {
+            /* noop */
+          }
+        }
+        r = anchor.getBoundingClientRect();
+      }
       if (r.width > 4 && r.height > 4) {
+        var chipH = Math.max(40, effectDialogResumeChip.offsetHeight || 48);
+        var chipW = Math.max(120, effectDialogResumeChip.offsetWidth || 160);
+        var placeAbove = r.top - chipH - 12 >= 8;
+        var cx = r.left + r.width / 2;
+        cx = Math.max(chipW / 2 + 8, Math.min(Math.max(chipW / 2 + 8, vw - chipW / 2 - 8), cx));
+        var cy = placeAbove ? r.top : r.top + Math.min(Math.max(28, r.height * 0.22), r.height * 0.4);
+        if (!placeAbove) {
+          effectDialogResumeChip.classList.add("effect-dialog-resume-chip--overlay");
+        }
         effectDialogResumeChip.style.position = "fixed";
-        effectDialogResumeChip.style.left = String(r.left + r.width / 2) + "px";
-        effectDialogResumeChip.style.top = String(r.top) + "px";
+        effectDialogResumeChip.style.left = String(cx) + "px";
+        effectDialogResumeChip.style.top = String(cy) + "px";
         effectDialogResumeChip.style.right = "auto";
         effectDialogResumeChip.style.bottom = "auto";
-        effectDialogResumeChip.style.transform = "translate(-50%, calc(-100% - 10px))";
+        effectDialogResumeChip.style.transform = placeAbove
+          ? "translate(-50%, calc(-100% - 10px))"
+          : "translate(-50%, -50%)";
         effectDialogResumeChip.style.zIndex = "12065";
         effectDialogResumeChip.style.visibility = "visible";
         return true;
       }
     }
+    if (!allowCorner) {
+      effectDialogResumeChip.style.visibility = "hidden";
+      return false;
+    }
     /* 発生源が控え室へ移動した／画面外／取得不能でも、再開ボタンは必ず表示する。 */
-    effectDialogResumeChip.classList.remove("effect-dialog-resume-chip--on-card");
+    effectDialogResumeChip.classList.remove(
+      "effect-dialog-resume-chip--on-card",
+      "effect-dialog-resume-chip--overlay",
+    );
     effectDialogResumeChip.classList.add("effect-dialog-resume-chip--corner");
     effectDialogResumeChip.style.position = "fixed";
     effectDialogResumeChip.style.left = "auto";
@@ -11975,7 +12035,7 @@ export function mountSimulator(
     effectDialogResumeChip.style.bottom = "max(12px, env(safe-area-inset-bottom))";
     effectDialogResumeChip.style.transform = "none";
     effectDialogResumeChip.style.visibility = "visible";
-    return true;
+    return false;
   }
 
   function preserveSuspendedLiveSuccessEffect() {
@@ -12017,15 +12077,18 @@ export function mountSimulator(
     render();
     var resumeChipRetryCount = 0;
     function armResumeChipReposition() {
-      if (repositionEffectDialogResumeChip()) return;
+      /* 描画完了までコーナーへ落とさず、カード上配置だけを待つ */
+      if (repositionEffectDialogResumeChip({ allowCorner: false, scrollIntoView: true })) return;
       if (resumeChipRetryCount++ < 48) {
         window.setTimeout(armResumeChipReposition, 100);
+      } else {
+        repositionEffectDialogResumeChip({ allowCorner: true, scrollIntoView: true });
       }
     }
     armResumeChipReposition();
     if (!effectDialogResumeChipReposition) {
       effectDialogResumeChipReposition = function () {
-        repositionEffectDialogResumeChip();
+        repositionEffectDialogResumeChip({ allowCorner: true, scrollIntoView: false });
       };
       window.addEventListener("resize", effectDialogResumeChipReposition);
       window.addEventListener("scroll", effectDialogResumeChipReposition, true);
@@ -42250,7 +42313,7 @@ export function mountSimulator(
     syncLiveSuccessEffectActivation();
     schedulePersistPlayResume();
     scheduleVersusBoardPublicSync();
-    repositionEffectDialogResumeChip();
+    repositionEffectDialogResumeChip({ allowCorner: true, scrollIntoView: false });
     syncVersusDeckFaceLockUi();
     if (versusDualBoardActive()) {
       if (!versusMulliganCommitPending) {
@@ -43875,6 +43938,7 @@ export function mountSimulator(
       markCardFlashDraw(drawnR);
     }
     state.resolutionArea.push(drawnR);
+    if (inLive) registerLiveTurnYellRevealedCards([drawnR]);
     maybeFlushPendingDrawYellHandDraws(prevResLen);
     if (state.liveStatsAfterBegin === true) ensureLiveVerdictSnapshotLocked();
     showToast(
@@ -43923,6 +43987,8 @@ export function mountSimulator(
     pushHistoryBefore("draw-res-all");
     var fromBottomAll = boardHasYellFromDeckBottomJouji();
     var drewN = 0;
+    /** @type {*[]} */
+    var drawnAllYell = [];
     while (state.resolutionArea.length < bladeTarget) {
       tryReplenishDeckFromWaitingLoop();
       if (!state.deck.length) break;
@@ -43940,9 +44006,11 @@ export function mountSimulator(
         flashResolutionYellCard(drawnR);
       }
       state.resolutionArea.push(drawnR);
+      drawnAllYell.push(drawnR);
       maybeFlushPendingDrawYellHandDraws(prevResLen);
       drewN++;
     }
+    if (drawnAllYell.length) registerLiveTurnYellRevealedCards(drawnAllYell);
     if (state.liveStatsAfterBegin === true) ensureLiveVerdictSnapshotLocked();
     showToast(
       drewN

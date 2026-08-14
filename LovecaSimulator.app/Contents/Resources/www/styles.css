@@ -10551,6 +10551,10 @@ body.play-mode .card-item--effect-peek-source {
     0 0 22px rgba(255, 130, 200, 0.55),
     0 0 36px rgba(255, 220, 140, 0.45);
 }
+.effect-dialog-resume-chip--overlay {
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+}
 @keyframes effect-dialog-resume-chip-glow {
   0%,
   100% {
