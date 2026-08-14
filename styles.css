@@ -6494,7 +6494,8 @@ body.play-mode #zone-hand .card-item[data-type="ライブ"] .card-img.rotated {
   object-fit: contain;
 }
 
-/* シャカパチ: 左右2束（ほぼ重ねた薄い階段山）へ1枚ずつ移す */
+/* シャカパチ: 左右2束（ほぼ重ねた階段山）へ1枚ずつ移す
+   ※ 通常手札の hand-zone--overlap は変更しない。束内のずらしだけ薄くする。 */
 body.play-mode #zone-hand.zone-hand--shaka-running {
   display: flex;
   flex-direction: row;
@@ -6503,21 +6504,21 @@ body.play-mode #zone-hand.zone-hand--shaka-running {
   justify-content: center;
   gap: clamp(36px, 10vw, 88px);
   isolation: isolate;
-  min-height: calc(var(--loveca-play-h, 114px) + 12px);
+  min-height: calc(var(--loveca-play-h, 114px) + 20px);
 }
 body.play-mode #zone-hand.zone-hand--shaka-running .shaka-pile {
   position: relative;
-  width: calc(var(--loveca-play-w, 82px) + 8px);
-  height: calc(var(--loveca-play-h, 114px) + 10px);
+  width: calc(var(--loveca-play-w, 82px) + 14px);
+  height: calc(var(--loveca-play-h, 114px) + 16px);
   flex: 0 0 auto;
 }
 body.play-mode #zone-hand.zone-hand--shaka-running .shaka-pile .card-item {
   position: absolute;
-  left: 4px;
-  bottom: 2px;
+  left: 7px;
+  bottom: 4px;
   margin: 0 !important;
   flex-shrink: 0;
-  /* 束の厚さ: ごく薄いずらし（厚く見えすぎない） */
+  /* シャカパチ束のみ: ずらしを薄く（通常手札の重ねとは別） */
   transform: translate3d(
       calc(var(--shaka-pile-i, 0) * var(--shaka-fly-sign, 1) * 1px),
       calc(var(--shaka-pile-i, 0) * -0.55px),
@@ -6556,7 +6557,7 @@ body.play-mode #zone-hand.zone-hand--shaka-running .card-item--shaka-flying {
       rotate(calc(var(--shaka-fly-sign, 1) * 5deg)) scale(1.07);
   }
   100% {
-    /* 受け取り束の薄い階段位置に着地（アニメ後のスナップを防ぐ） */
+    /* 受け取り束の階段位置に着地（アニメ後のスナップを防ぐ） */
     transform: translate3d(
         calc(var(--shaka-pile-i, 0) * var(--shaka-fly-sign, 1) * -0.8px),
         calc(var(--shaka-pile-i, 0) * -0.5px),

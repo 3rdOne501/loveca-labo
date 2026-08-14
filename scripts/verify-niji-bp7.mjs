@@ -395,7 +395,7 @@ if (failed) {
   process.exit(1);
 }
 
-/** ミア周辺ランタイム配線（山札→控え室ミル後の自動／プレイ時コスト減／バトン先出し） */
+/** ミア周辺ランタイム配線（山札→控え室ミル後の自動／プレイ時コスト減。バトンは通常登場後に控え室へ残す） */
 const simSrc = fs.readFileSync(path.join(ROOT, "js/simulator.js"), "utf8");
 const wiringErrs = [];
 if (!/function revealCardsSentFromDeckToWaiting[\s\S]*fireJidouAfterDeckMilledByAbility\(milledInWaiting/.test(simSrc)) {
@@ -404,11 +404,11 @@ if (!/function revealCardsSentFromDeckToWaiting[\s\S]*fireJidouAfterDeckMilledBy
 if (!/プレイ時任意コスト変更[\s\S]{0,400}_playCostReduce/.test(simSrc)) {
   wiringErrs.push("_playCostReduce must apply outside hand-only gate");
 }
-if (!/play-cost-reduce-shuffle-waiting/.test(simSrc) || !/preBatonCompleted/.test(simSrc)) {
-  wiringErrs.push("play_cost_reduce_shuffle must pre-baton before shuffle");
+if (!/play-cost-reduce-shuffle-waiting/.test(simSrc)) {
+  wiringErrs.push("play_cost_reduce_shuffle history/path missing");
 }
-if (!/バトン元を先に控え室へ入れてからシャッフル/.test(simSrc)) {
-  wiringErrs.push("missing pre-baton shuffle comment/path");
+if (/preBatonCompleted/.test(simSrc) || /バトン元を先に控え室へ入れてからシャッフル/.test(simSrc)) {
+  wiringErrs.push("play_cost_reduce_shuffle must NOT pre-baton before shuffle (baton stays in waiting)");
 }
 if (wiringErrs.length) {
   console.error("FAIL mia-waiting wiring:", wiringErrs.join("; "));

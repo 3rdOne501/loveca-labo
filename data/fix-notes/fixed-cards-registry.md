@@ -710,17 +710,30 @@ verify-ability-coverage OK / verify-ability-handlers OK / verify-ability-runtime
 
 ---
 
+## 45. PL!HS-bp6-001 日野下花帆 — 成功時UI再描画・登場時の強制選択（2026-08-15）
+
+| 対象 | 問題 | 修正 |
+|------|------|------|
+| PL!HS-bp6-001（R＋/P/P＋/SEC、4枚）登場時 | デッキ上から見たカードを1枚デッキ上へ置く強制効果で、キャンセル／未選択のまま進めた | `openPickFromDeckLookDialog` に強制選択モードを追加し、キャンセル非表示・Esc抑止・未選択確定を拒否 |
+| ライブ成功時の任意効果全体 | 成功時誘発フラグが描画終端で立つため、任意効果のグロー／解決ボタンが次の再描画（再読み込み等）まで現れない | 誘発フラグを新規設定した場合に再描画を予約。`yell_resolution_pick_deck_top` の「してもよい」は任意効果であり任意コストではない分類へ修正（同型6枚） |
+
+検証: `verify-hasunosora-bp6` / `audit-hasunosora-bp6-text` / 横断 verify。app 同期対象（`abilityEffects.js` / `simulator.js`）。
+
+---
+
 ## 更新履歴
 
 | 日付 | 内容 |
 |------|------|
+| 2026-08-15 | PL!HS-bp6-001（4枚）: ライブ成功時の任意効果UIを即時再描画、登場時のデッキ上1枚選択を強制化。`yell_resolution_pick_deck_top` 同型6枚の任意効果／任意コスト分類を分離 |
 | 2026-08-15 | 効果ダイアログの意図しない閉じ方を再開可能な中断へ統一。ライブ成功時効果の中断状態を保持 |
 | 2026-08-14 | 報告4件: ALL必要色flex / ライブ終了ブレード / 控え室起動E / アクティブ増殖防止 |
 | 2026-08-13 | 山上捜査ダイアログ: チェック可視化 + `deckLookPartialKeep` 分岐（代表 PL!N-bp1-002-SEC / PL!N-bp7-006-P＋） |
 | 2026-08-13 | 複数起動分離: 起動1/起動2ボタン + `kidou_seg_N` 回数（代表 PL!N-bp7-006-P＋、横展開8枚。bp1-006含む） |
 | 2026-08-10 | W無色特殊BH（`b_heart07`）: エール時に無色ハート×2。`special_heart.colorless`＋カード詳細「特殊BH」行（ドロー／スコア／W無色）。代表 PL!N-bp7-030-L / PL!SP-bp7-028-L / PL!S-bp7-022-L（SECL含む4枚）。`b_all` とは分離 |
 | 2026-08-11 | 横断3件: ①カタログ検索 `normalizeCatalogSearchText`（空白/NFKC/ハイフン吸収・「南ことり」↔「南 ことり」）②PL!N-bp5-028-L `parseNeedHeartSetFixedMap`+`parseAbilityPickFilters` segRaw（必要ハートheart02×5固定・条件heart02×4）③エネ上限: 置き場+ステージ下合計12枚（`countOwnFieldEnergyTotal`/`remainingFieldEnergyCapacity`） |
-| 2026-08-11 | PL!N-bp7-011（ミア）控え室3件: ①`revealCardsSentFromDeckToWaiting` で控え室送り済みミルに `fireJidouAfterDeckMilledByAbility`（`deck_top_pick_recover` / `deck_top_look_reorder` 等・横展開多数。代表ミル源 018/bp5-009/030）②`_playCostReduce`/`_playCostSet` を登場後エネ支払いまで適用（手札限定ゲート外へ）③`play_cost_reduce_shuffle_waiting_members` でバトン元を先に控え室→シャッフル（コスト減4枚） |
+| 2026-08-11 | PL!N-bp7-011（ミア）控え室3件: ①`revealCardsSentFromDeckToWaiting` で控え室送り済みミルに `fireJidouAfterDeckMilledByAbility`（`deck_top_pick_recover` / `deck_top_look_reorder` 等・横展開多数。代表ミル源 018/bp5-009/030）②`_playCostReduce`/`_playCostSet` を登場後エネ支払いまで適用（手札限定ゲート外へ）③`play_cost_reduce_shuffle_waiting_members` は控え室のみデッキ下へ（バトン元は通常登場後に控え室へ残す） |
+| 2026-08-15 | PL!N-bp7-011（ミア）`play_cost_reduce_shuffle_waiting_members` のバトン先出しを撤回。シャッフルは控え室既存メンバーのみ→登場時バトンで控え室に置いたメンバーは効果解決後も控え室に残る |
 | 2026-08-10 | 虹ヶ咲 sd2 cheer ライブ: `bladeGainFromIcons` が条件節の blade アイコンを付与数に誤算していたのを付与節のみに修正（代表 026・2枚）。あわせて「ブレードN以上持つ『シリーズ』のメンバー1人は」→`grantToStageSeriesTag`+`minPickedMemberBlade`、シリーズ1人付与の選択プール再構築 |
 | 2026-08-10 | 虹ヶ咲 sd2 cheer メンバー: ①`hand_cost_reduce`+`requiresSuccessLiveSeriesTag`（003）②`そのハートをNつ得る`→`grantHeartSlotCount`（005・横展開既存カードは1のまま）③任意ウェイト付与で「そのメンバーは」なしは自分へ（006）④`draw_then_conditional_extra_draw` + `opponentLiveSuccessThisTurn`（007・2枚） |
 | 2026-08-10 | LL-bp7 クロス初回監修: `LL-bp7-001-R＋`（花丸&せつ菜&千砂都）。`play_cost_set_named_hand_discard`＋登場ライブ回収＋成功メンバー回収。カード文どおりで新規コード修正なし。PENDING `/-bp7-/` 除外を解除 |

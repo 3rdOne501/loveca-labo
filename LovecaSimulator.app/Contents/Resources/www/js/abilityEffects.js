@@ -6230,7 +6230,7 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
       return withTrigger("live_success", {
         template: "yell_resolution_pick_deck_top",
         optional: /もよい/.test(p),
-        hasOptionalCost: /もよい/.test(p),
+        hasOptionalCost: false,
       });
     }
     if (/エールにより公開された自分のカードの中から.*デッキの一番下/.test(p)) {

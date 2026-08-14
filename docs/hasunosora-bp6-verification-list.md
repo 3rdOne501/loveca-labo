@@ -9,7 +9,7 @@
 
 | 状態 | 番号 | ID（代表） | 主テンプレート | 備考 |
 |------|------|------------|----------------|------|
-| [x] | 1 | PL!HS-bp6-001-P | deck_top_count_stage_plus + yell_resolution_pick_deck_top | 自分のデッキの上から、自分のステージにいるメンバーの数に2を足した数に等しい枚数見る。その中から1枚をデッキの一番上に置 |
+| [x] | 1 | PL!HS-bp6-001-P | deck_top_count_stage_plus + yell_resolution_pick_deck_top | ステージのメンバー数＋2枚を見て1枚をデッキの一番上、残りを控え室。ライブ成功時、エール公開から1枚を任意でデッキの一番上に置く。 |
 | [x] | 2 | PL!HS-bp6-002-P | jouji:blade_conditional | 自分のステージにほかのメンバーがいないかぎり、を得る。 |
 | [x] | 3 | PL!HS-bp6-003-P | toujou_wait_pick_hand + grant_jouji_session | 自分のステージにいるウェイト状態の『みらくらぱーく！』のメンバー1人をアクティブにしてもよい。そうした場合、自分の控え室 |
 | [x] | 4 | PL!HS-bp6-004-P | optional_self_wait_opp_stage + live_start_opp_wait_max_cost + live_start_optional_hand_discard_named_followup_blade | 相手のステージにいるコスト9以下のメンバー1人をウェイトにする。  |

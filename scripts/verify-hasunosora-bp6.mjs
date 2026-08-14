@@ -15,10 +15,20 @@ import { classifyJidouAutoSegment } from "../js/jidouAutoEffects.js";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const cards = JSON.parse(fs.readFileSync(path.join(ROOT, "data/cards.json"), "utf8"));
 
-/** @type {Array<{id:string, trigger:string, expectTemplate:string, jouji?:boolean, jidou?:boolean, segIndex?:number}>} */
+/** @type {Array<{id:string, trigger:string, expectTemplate:string, jouji?:boolean, jidou?:boolean, segIndex?:number, check?:(cl:any)=>string[]}>} */
 const CASES = [
-  { id: "PL!HS-bp6-001-P", trigger: "toujyou", expectTemplate: "deck_top_count_stage_plus" },
-  { id: "PL!HS-bp6-001-P", trigger: "live_success", expectTemplate: "yell_resolution_pick_deck_top" },
+  {
+    id: "PL!HS-bp6-001-P",
+    trigger: "toujyou",
+    expectTemplate: "deck_top_count_stage_plus",
+    check: (cl) => (!cl.optional && !cl.hasOptionalCost && cl.deckTopCountOffset === 2 ? [] : ["mandatory stage+2"]),
+  },
+  {
+    id: "PL!HS-bp6-001-P",
+    trigger: "live_success",
+    expectTemplate: "yell_resolution_pick_deck_top",
+    check: (cl) => (cl.optional && !cl.hasOptionalCost ? [] : ["optional effect, not optional cost"]),
+  },
   { id: "PL!HS-bp6-002-P", trigger: "jouji", jouji: true, expectTemplate: "blade_conditional" },
   { id: "PL!HS-bp6-003-P", trigger: "toujyou", expectTemplate: "toujou_wait_pick_hand" },
   { id: "PL!HS-bp6-003-P", trigger: "live_start", expectTemplate: "grant_jouji_session" },
@@ -76,6 +86,7 @@ for (const c of CASES) {
   const tmpl = c.jouji ? cl.kind : c.jidou ? cl.template : cl.template;
   if (tmpl !== c.expectTemplate) errs.push(`template ${tmpl}`);
   if (!c.jouji && !c.jidou && !abilityEffectIsAutomated(cl.template) && cl.template !== "ability_sequence") errs.push("not automated");
+  if (c.check) errs.push(...c.check(cl));
   if (errs.length) { failed++; console.error("FAIL", c.id, c.trigger, errs.join("; ")); }
   else console.log("OK", c.id, c.trigger);
 }
@@ -86,6 +97,16 @@ for (const id of NO_ABILITY) {
   const raw = cardAbilityRawText(card);
   if (raw && raw.trim()) { failed++; console.error("FAIL", id, "expected no ability"); }
   else console.log("OK", id, "no ability");
+}
+
+const simSrc = fs.readFileSync(path.join(ROOT, "js/simulator.js"), "utf8");
+if (!/if \(markedAny\) render\(\);/.test(simSrc)) {
+  console.error("FAIL PL!HS-bp6-001 live_success activation must redraw optional-effect controls");
+  failed++;
+}
+if (!/required: !cl\.optional && !cl\.hasOptionalCost,[\s\S]{0,120}dialogTitle: "デッキの一番上に置くカード"/.test(simSrc)) {
+  console.error("FAIL PL!HS-bp6-001 mandatory deck-top choice wiring");
+  failed++;
 }
 
 if (failed) { console.error(`\nverify-hasunosora-bp6: ${failed} failed`); process.exit(1); }

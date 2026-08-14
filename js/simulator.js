@@ -11359,6 +11359,8 @@ export function mountSimulator(
     setEffectDialogResolveBtnLabel(btnOk);
     if (dialogOpts && typeof dialogOpts.dialogTitle === "string" && dialogOpts.dialogTitle && dlgTitle) {
       dlgTitle.textContent = dialogOpts.dialogTitle;
+    } else {
+      setEffectCardPickDialogDefaultTitle(dlgTitle);
     }
     if (lead) lead.textContent = leadText;
     list.innerHTML = "";
@@ -11390,7 +11392,7 @@ export function mountSimulator(
 
     function cleanup() {
       btnOk.textContent = prevOkLabel || EFFECT_DIALOG_RESOLVE_BTN_LABEL;
-      if (dlgTitle) dlgTitle.innerHTML = prevDialogTitleHtml || "回収対象カード — 1枚を手札に加える";
+      if (dlgTitle) dlgTitle.innerHTML = prevDialogTitleHtml || EFFECT_CARD_PICK_DIALOG_DEFAULT_TITLE;
       btnOk.removeEventListener("click", onOk);
       if (btnCx) btnCx.removeEventListener("click", onCx);
       dlg.removeEventListener("cancel", onDismiss);
@@ -11872,8 +11874,14 @@ export function mountSimulator(
 
   /** 効果ダイアログ主ボタンの統一表記（表記と実挙動のズレ防止） */
   var EFFECT_DIALOG_RESOLVE_BTN_LABEL = "解決する";
+  /** カード選択共用ダイアログの汎用タイトル（回収以外の用途でも使うため） */
+  var EFFECT_CARD_PICK_DIALOG_DEFAULT_TITLE = "効果の対象カードを選ぶ";
   function setEffectDialogResolveBtnLabel(btn) {
     if (btn) btn.textContent = EFFECT_DIALOG_RESOLVE_BTN_LABEL;
+  }
+
+  function setEffectCardPickDialogDefaultTitle(titleEl) {
+    if (titleEl) titleEl.textContent = EFFECT_CARD_PICK_DIALOG_DEFAULT_TITLE;
   }
 
 
@@ -13158,7 +13166,7 @@ export function mountSimulator(
         delete inst._toujouBatonFromLowerCostMemberId;
         delete inst._toujouBatonPartnerId;
       }
-    } else if (!(opts && opts.preBatonCompleted)) {
+    } else {
       delete inst._toujouBatonFromLowerCostMemberId;
     }
     state.stage[side].push(inst);
@@ -13347,79 +13355,14 @@ export function mountSimulator(
             delete liveHand._playCostReduce;
             delete liveHand._appearEnergyOverride;
             if (useOpt) {
-              /* バトン元を先に控え室へ入れてからシャッフル（テキスト: 控え室の全メンバー） */
-              var preIncumbent = null;
-              var preSlot = state.stage[side] || [];
-              for (var psi = 0; psi < preSlot.length; psi++) {
-                if (preSlot[psi] && preSlot[psi].type === T_MEMBER) preIncumbent = preSlot[psi];
-              }
-              if (preIncumbent) {
-                if (memberIsStageFreshThisTurn(preIncumbent)) {
-                  showToast(
-                    (mergedCatalogCard(preIncumbent).name || "メンバー") +
-                      " はこのターンにステージへ載せたばかりのため、バトンタッチできません",
-                  );
-                  confirmEnergyThenPlaceHandMember(liveHand, side, opts);
-                  return;
-                }
-                if (preIncumbent._joujiCannotBatonToWaiting === true) {
-                  showToast(
-                    (mergedCatalogCard(preIncumbent).name || "メンバー") +
-                      " はバトンタッチで控え室に置けないため、登場できません",
-                  );
-                  confirmEnergyThenPlaceHandMember(liveHand, side, opts);
-                  return;
-                }
-                if (preIncumbent._joujiBatonSeriesOnlyTag) {
-                  var enterPreMc = mergedCatalogCard(liveHand);
-                  if (!catalogCardMatchesGroupTag(enterPreMc, preIncumbent._joujiBatonSeriesOnlyTag)) {
-                    showToast(
-                      (mergedCatalogCard(preIncumbent).name || "メンバー") +
-                        " は『" +
-                        preIncumbent._joujiBatonSeriesOnlyTag +
-                        "』以外とのバトンタッチで控え室に置けないため、登場できません",
-                    );
-                    confirmEnergyThenPlaceHandMember(liveHand, side, opts);
-                    return;
-                  }
-                }
-              }
+              /* 控え室のメンバーだけデッキ下へ。バトン元は通常登場処理で後から控え室へ残り、シャッフル対象に含めない */
               pushHistoryBefore("play-cost-reduce-shuffle-waiting");
-              var preBatonMoved = null;
-              var preBatonCost = 0;
-              if (preIncumbent) {
-                var preIdx = (state.stage[side] || []).findIndex(function (c) {
-                  return c && String(c.id) === String(preIncumbent.id);
-                });
-                if (preIdx >= 0) {
-                  preBatonMoved = state.stage[side].splice(preIdx, 1)[0];
-                  clearToujouEffectStateOnLeaveStage(preBatonMoved);
-                  state.waitingRoom.push(preBatonMoved);
-                  preBatonCost = memberFlooredPrintedCost(preBatonMoved);
-                }
-              }
               var movedN = shuffleAllWaitingMembersToDeckBottom();
               if (movedN <= 0) {
                 showToast("控え室にメンバーがないためコスト減少なし");
               } else {
                 liveHand._playCostReduce = reduceN;
                 showToast("控え室メンバー " + movedN + " 枚をデッキ下へ。コスト−" + reduceN);
-              }
-              if (preBatonMoved) {
-                var enterCostPre = memberFlooredPrintedCost(liveHand);
-                liveHand._appearEnergyOverride = Math.max(0, enterCostPre - preBatonCost);
-                liveHand._toujouBatonPartnerId = String(preBatonMoved.id);
-                if (preBatonCost < enterCostPre) {
-                  liveHand._toujouBatonFromLowerCostMemberId = String(preBatonMoved.id);
-                } else {
-                  delete liveHand._toujouBatonFromLowerCostMemberId;
-                }
-                confirmEnergyThenPlaceHandMember(
-                  liveHand,
-                  side,
-                  Object.assign({}, opts, { preBatonCompleted: true }),
-                );
-                return;
               }
             }
             confirmEnergyThenPlaceHandMember(liveHand, side, opts);
@@ -15777,8 +15720,11 @@ export function mountSimulator(
    * @param {object} filters
    * @param {string} leadText
    * @param {(pickedId: string | null, opts?: { violatedFilter?: boolean }) => void} onDone
+   * @param {{ required?: boolean, dialogTitle?: string }} [dialogOpts]
    */
-  function openPickFromDeckLookDialog(cards, filters, leadText, onDone) {
+  function openPickFromDeckLookDialog(cards, filters, leadText, onDone, dialogOpts) {
+    dialogOpts = dialogOpts || {};
+    var required = dialogOpts.required === true;
     var dlg = document.getElementById("dlg-pick-kidou-waiting");
     var list = document.getElementById("dlg-pick-kidou-waiting-list");
     var lead = document.getElementById("dlg-pick-kidou-waiting-lead");
@@ -15786,12 +15732,16 @@ export function mountSimulator(
     var btnCx = document.getElementById("dlg-pick-kidou-waiting-cancel");
     var dlgTitle = document.getElementById("dlg-pick-kidou-waiting-title");
     if (!dlg || !list || !btnOk || typeof dlg.showModal !== "function") {
-      onDone(null);
+      onDone(required && cards && cards[0] && cards[0].id != null ? String(cards[0].id) : null);
       return;
     }
     var prevOkLabel = btnOk.textContent;
     var prevDialogTitleHtml = dlgTitle ? dlgTitle.innerHTML : "";
+    var prevCxHidden = btnCx ? btnCx.hidden : false;
     setEffectDialogResolveBtnLabel(btnOk);
+    if (dlgTitle && dialogOpts.dialogTitle) dlgTitle.textContent = dialogOpts.dialogTitle;
+    else setEffectCardPickDialogDefaultTitle(dlgTitle);
+    if (btnCx) btnCx.hidden = required;
     if (lead) {
       lead.textContent =
         (leadText || "見たカードから 1 枚を選びます。") +
@@ -15832,13 +15782,18 @@ export function mountSimulator(
     list.appendChild(grid);
     function cleanup() {
       btnOk.textContent = prevOkLabel || EFFECT_DIALOG_RESOLVE_BTN_LABEL;
-      if (dlgTitle) dlgTitle.innerHTML = prevDialogTitleHtml || "回収対象カード — 1枚を手札に加える";
+      if (dlgTitle) dlgTitle.innerHTML = prevDialogTitleHtml || EFFECT_CARD_PICK_DIALOG_DEFAULT_TITLE;
+      if (btnCx) btnCx.hidden = prevCxHidden;
       btnOk.removeEventListener("click", onOk);
       if (btnCx) btnCx.removeEventListener("click", onCx);
       dlg.removeEventListener("cancel", onDismiss);
     }
     function onOk() {
       var r = list.querySelector('input[name="pickKidouWait"]:checked');
+      if (required && (!r || !r.value)) {
+        showToast("カードを1枚選んでください");
+        return;
+      }
       cleanup();
       try {
         dlg.close();
@@ -15846,13 +15801,19 @@ export function mountSimulator(
       onDone(r && r.value ? String(r.value) : null);
     }
     function onCx() {
+      if (required) return;
       cleanup();
       try {
         dlg.close();
       } catch (_) {}
       onDone(null);
     }
-    function onDismiss() {
+    function onDismiss(evt) {
+      if (required) {
+        if (evt && typeof evt.preventDefault === "function") evt.preventDefault();
+        showToast("この効果はカードを1枚選ぶ必要があります");
+        return;
+      }
       cleanup();
       onDone(null);
     }
@@ -15956,7 +15917,7 @@ export function mountSimulator(
 
     function cleanup() {
       btnOk.textContent = prevOkLabel || EFFECT_DIALOG_RESOLVE_BTN_LABEL;
-      if (dlgTitle) dlgTitle.innerHTML = prevDialogTitleHtml || "回収対象カード — 1枚を手札に加える";
+      if (dlgTitle) dlgTitle.innerHTML = prevDialogTitleHtml || EFFECT_CARD_PICK_DIALOG_DEFAULT_TITLE;
       if (lead) lead.textContent = prevLead || "";
       if (btnCx) btnCx.hidden = prevCxHidden;
       btnOk.removeEventListener("click", onOk);
@@ -16055,6 +16016,7 @@ export function mountSimulator(
     var prevOkLabel = btnOk.textContent;
     var prevDialogTitleHtml = dlgTitle ? dlgTitle.innerHTML : "";
     if (sourceInst && dlgTitle) setEffectProcessingDialogTitle(dlgTitle, sourceInst);
+    else setEffectCardPickDialogDefaultTitle(dlgTitle);
     if (lead) {
       lead.textContent =
         (leadText || "見たカードから手札に加える枚数を選びます。") +
@@ -16093,7 +16055,7 @@ export function mountSimulator(
     list.appendChild(grid);
     function cleanup() {
       btnOk.textContent = prevOkLabel || EFFECT_DIALOG_RESOLVE_BTN_LABEL;
-      if (dlgTitle) dlgTitle.innerHTML = prevDialogTitleHtml || "回収対象カード — 1枚を手札に加える";
+      if (dlgTitle) dlgTitle.innerHTML = prevDialogTitleHtml || EFFECT_CARD_PICK_DIALOG_DEFAULT_TITLE;
       btnOk.removeEventListener("click", onOk);
       if (btnCx) btnCx.removeEventListener("click", onCx);
       dlg.removeEventListener("cancel", onDismiss);
@@ -16155,20 +16117,21 @@ export function mountSimulator(
       onDone(candidates && candidates[0] && candidates[0].id != null ? String(candidates[0].id) : null);
       return;
     }
-    if (lead) lead.textContent = leadText || "控え室から 1 枚選んで手札に加えます。";
+    if (lead) lead.textContent = leadText || "対象カードを 1 枚選びます。";
     var dlgTitle = document.getElementById("dlg-pick-kidou-waiting-title");
-    var defaultDialogTitle = "回収対象カード — 1枚を手札に加える";
+    var defaultDialogTitle = EFFECT_CARD_PICK_DIALOG_DEFAULT_TITLE;
     var prevOkLabel = btnOk.textContent;
     var prevDialogTitleHtml = dlgTitle ? dlgTitle.innerHTML : "";
     var titleInst = (opts && opts.sourceInst) || effectDialogPeekSourceInst;
     setEffectDialogResolveBtnLabel(btnOk);
-    if (titleInst && dlgTitle) {
-      setEffectProcessingDialogTitle(dlgTitle, titleInst);
-    } else if (dlgTitle) {
-      dlgTitle.textContent =
-        opts && typeof opts.dialogTitle === "string" && opts.dialogTitle
-          ? opts.dialogTitle
-          : defaultDialogTitle;
+    if (dlgTitle) {
+      if (opts && typeof opts.dialogTitle === "string" && opts.dialogTitle) {
+        dlgTitle.textContent = opts.dialogTitle;
+      } else if (titleInst) {
+        setEffectProcessingDialogTitle(dlgTitle, titleInst);
+      } else {
+        dlgTitle.textContent = defaultDialogTitle;
+      }
     }
     list.innerHTML = "";
     var grid = document.createElement("div");
@@ -16286,6 +16249,7 @@ export function mountSimulator(
     var prevDialogTitleHtml = dlgTitle ? dlgTitle.innerHTML : "";
     var prevOkLabel = btnOk.textContent;
     setEffectDialogResolveBtnLabel(btnOk);
+    if (dlgTitle) dlgTitle.textContent = "手札から控え室に置くカードを選ぶ";
     list.innerHTML = "";
     var grid = document.createElement("div");
     grid.className = "dlg-pick-kidou-waiting__grid";
@@ -16326,7 +16290,7 @@ export function mountSimulator(
       btnOk.removeEventListener("click", onOk);
       if (btnCx) btnCx.removeEventListener("click", onCx);
       dlg.removeEventListener("cancel", onDismiss);
-      if (dlgTitle) dlgTitle.innerHTML = prevDialogTitleHtml || "";
+      if (dlgTitle) dlgTitle.innerHTML = prevDialogTitleHtml || EFFECT_CARD_PICK_DIALOG_DEFAULT_TITLE;
     }
     function onOk() {
       var checked = list.querySelectorAll('input[name="pickHandToWait"]:checked');
@@ -16457,7 +16421,7 @@ export function mountSimulator(
     function cleanup() {
       setEffectDialogResolveBtnLabel(btnOk);
       btnCx.textContent = "キャンセル";
-      if (dlgTitle) dlgTitle.textContent = "回収対象カード — 1枚を手札に加える";
+      setEffectCardPickDialogDefaultTitle(dlgTitle);
       btnOk.removeEventListener("click", onOk);
       if (btnCx) btnCx.removeEventListener("click", onCx);
       dlg.removeEventListener("cancel", onCx);
@@ -18632,7 +18596,7 @@ export function mountSimulator(
     function cleanup() {
       dndBoard.destroy();
       btnOk.textContent = prevOkLabel || EFFECT_DIALOG_RESOLVE_BTN_LABEL;
-      if (dlgTitle) dlgTitle.innerHTML = prevDialogTitleHtml || "回収対象カード — 1枚を手札に加える";
+      if (dlgTitle) dlgTitle.innerHTML = prevDialogTitleHtml || EFFECT_CARD_PICK_DIALOG_DEFAULT_TITLE;
       btnOk.removeEventListener("click", onOk);
       if (btnCx) btnCx.removeEventListener("click", onCx);
       dlg.removeEventListener("cancel", onDismiss);
@@ -18832,7 +18796,7 @@ export function mountSimulator(
     function cleanup() {
       dndBoard.destroy();
       btnOk.textContent = prevOkLabel || EFFECT_DIALOG_RESOLVE_BTN_LABEL;
-      if (dlgTitle) dlgTitle.innerHTML = prevDialogTitleHtml || "回収対象カード — 1枚を手札に加える";
+      if (dlgTitle) dlgTitle.innerHTML = prevDialogTitleHtml || EFFECT_CARD_PICK_DIALOG_DEFAULT_TITLE;
       btnOk.removeEventListener("click", onOk);
       if (btnCx) btnCx.removeEventListener("click", onCx);
       dlg.removeEventListener("cancel", onDismiss);
@@ -18923,7 +18887,7 @@ export function mountSimulator(
 
     function cleanup() {
       btnOk.textContent = prevOkLabel || EFFECT_DIALOG_RESOLVE_BTN_LABEL;
-      if (dlgTitle) dlgTitle.innerHTML = prevDialogTitleHtml || "回収対象カード — 1枚を手札に加える";
+      if (dlgTitle) dlgTitle.innerHTML = prevDialogTitleHtml || EFFECT_CARD_PICK_DIALOG_DEFAULT_TITLE;
       btnOk.removeEventListener("click", onOk);
       if (btnCx) btnCx.removeEventListener("click", onCx);
       dlg.removeEventListener("cancel", onDismiss);
@@ -20725,10 +20689,14 @@ export function mountSimulator(
     var prevDialogTitleHtml = dlgTitle ? dlgTitle.innerHTML : "";
     var titleInst = (dialogOpts && dialogOpts.sourceInst) || effectDialogPeekSourceInst;
     setEffectDialogResolveBtnLabel(btnOk);
-    if (titleInst && dlgTitle) {
-      setEffectProcessingDialogTitle(dlgTitle, titleInst);
-    } else if (dialogOpts && typeof dialogOpts.dialogTitle === "string" && dialogOpts.dialogTitle && dlgTitle) {
-      dlgTitle.textContent = dialogOpts.dialogTitle;
+    if (dlgTitle) {
+      if (dialogOpts && typeof dialogOpts.dialogTitle === "string" && dialogOpts.dialogTitle) {
+        dlgTitle.textContent = dialogOpts.dialogTitle;
+      } else if (titleInst) {
+        setEffectProcessingDialogTitle(dlgTitle, titleInst);
+      } else {
+        setEffectCardPickDialogDefaultTitle(dlgTitle);
+      }
     }
     if (lead) lead.textContent = leadText;
     list.innerHTML = "";
@@ -20760,7 +20728,7 @@ export function mountSimulator(
 
     function cleanup() {
       btnOk.textContent = prevOkLabel || EFFECT_DIALOG_RESOLVE_BTN_LABEL;
-      if (dlgTitle) dlgTitle.innerHTML = prevDialogTitleHtml || "回収対象カード — 1枚を手札に加える";
+      if (dlgTitle) dlgTitle.innerHTML = prevDialogTitleHtml || EFFECT_CARD_PICK_DIALOG_DEFAULT_TITLE;
       btnOk.removeEventListener("click", onOk);
       if (btnCx) btnCx.removeEventListener("click", onCx);
       dlg.removeEventListener("cancel", onDismiss);
@@ -24004,6 +23972,10 @@ export function mountSimulator(
           });
           showToast("山札の上から並べ替えました");
           finishResolved();
+        },
+        {
+          required: !cl.optional && !cl.hasOptionalCost,
+          dialogTitle: "デッキの一番上に置くカード",
         },
       );
       return;
@@ -35859,11 +35831,14 @@ export function mountSimulator(
     var lead = document.getElementById("dlg-pick-kidou-waiting-lead");
     var btnOk = document.getElementById("dlg-pick-kidou-waiting-ok");
     var btnCx = document.getElementById("dlg-pick-kidou-waiting-cancel");
+    var dlgTitle = document.getElementById("dlg-pick-kidou-waiting-title");
     if (!dlg || !list || !btnOk || typeof dlg.showModal !== "function") {
       onDone(candidates && candidates[0] && candidates[0].id != null ? String(candidates[0].id) : null);
       return;
     }
     var typeLabel = recoverType === T_MEMBER ? "メンバー" : "ライブ";
+    var prevDialogTitleHtml = dlgTitle ? dlgTitle.innerHTML : "";
+    if (dlgTitle) dlgTitle.textContent = "回収対象カード — 1枚を手札に加える";
     if (lead) {
       lead.textContent =
         "控え室から " +
@@ -35904,6 +35879,7 @@ export function mountSimulator(
     list.appendChild(grid);
 
     function cleanup() {
+      if (dlgTitle) dlgTitle.innerHTML = prevDialogTitleHtml || EFFECT_CARD_PICK_DIALOG_DEFAULT_TITLE;
       btnOk.removeEventListener("click", onOk);
       if (btnCx) btnCx.removeEventListener("click", onCx);
       dlg.removeEventListener("cancel", onDismiss);
@@ -36220,6 +36196,11 @@ export function mountSimulator(
     if (markedAny) state.liveSuccessEffectsPhaseActive = true;
     syncLiveSuccessCheckTimingBatch();
     syncLiveSuccessEffectsPhaseActiveFlag();
+    /*
+     * renderNowImpl の終端から呼ばれた場合、カードDOMは誘発フラグを立てる前の状態。
+     * 任意効果は自動ダイアログを開かずグロー／解決ボタンを待つため、もう一度描画する。
+     */
+    if (markedAny) render();
   }
 
   /**
