@@ -284,12 +284,43 @@ export function playShakaPachiTap() {
   }
 }
 
+/** Undo/Redo 周辺の余白（px）。連打でボタン外を叩きやすいためシャカパチ対象外にする */
+var UNDO_REDO_SHAKA_EXCLUDE_PAD_PX = 48;
+
+/**
+ * @param {number} clientX
+ * @param {number} clientY
+ * @param {number} pad
+ * @returns {boolean}
+ */
+function isNearPlayUndoRedoCluster(clientX, clientY, pad) {
+  var nodes = document.querySelectorAll(".play-undo-redo-cluster");
+  for (var i = 0; i < nodes.length; i++) {
+    var el = nodes[i];
+    if (!el || typeof el.getBoundingClientRect !== "function") continue;
+    // 非表示クラスタは無視（モバイルで片方だけ出すレイアウト）
+    if (el.offsetParent === null && getComputedStyle(el).position !== "fixed") continue;
+    var r = el.getBoundingClientRect();
+    if (r.width <= 0 || r.height <= 0) continue;
+    if (
+      clientX >= r.left - pad &&
+      clientX <= r.right + pad &&
+      clientY >= r.top - pad &&
+      clientY <= r.bottom + pad
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /**
  * 盤面の余白タップか（カード・ボタン等の操作対象は除外）
  * @param {EventTarget | null} target
+ * @param {{ clientX?: number, clientY?: number } | null} [point]
  * @returns {boolean}
  */
-export function isPlayBoardMarginTapTarget(target) {
+export function isPlayBoardMarginTapTarget(target, point) {
   if (!target || typeof target.closest !== "function") return false;
   if (!document.body.classList.contains("play-mode")) return false;
   var view = document.getElementById("view-game");
@@ -297,13 +328,22 @@ export function isPlayBoardMarginTapTarget(target) {
   if (!view.contains(/** @type {Node} */ (target))) return false;
   if (
     target.closest(
-      'button, a, input, select, textarea, label, summary, dialog, option, .btn, .card-item, .app-dialog, [role="button"], [role="dialog"], .page-zoom-control, .play-undo-redo, .sortable-chosen, .sortable-drag, .thumb, .pill, .chip, .toast, .modal',
+      'button, a, input, select, textarea, label, summary, dialog, option, .btn, .card-item, .app-dialog, [role="button"], [role="dialog"], .page-zoom-control, .play-undo-redo, .play-undo-redo-cluster, .sortable-chosen, .sortable-drag, .thumb, .pill, .chip, .toast, .modal',
     )
   ) {
     return false;
   }
   // 手札帯・ツールバー上の誤爆を減らす
   if (target.closest("#zone-hand, #hand-row, .game-bar, #versus-play-chrome")) return false;
+  // 「ひとつ戻す／進む」周辺は連打が多いので、クラスタ外のわずかな余白も対象外
+  if (
+    point &&
+    typeof point.clientX === "number" &&
+    typeof point.clientY === "number" &&
+    isNearPlayUndoRedoCluster(point.clientX, point.clientY, UNDO_REDO_SHAKA_EXCLUDE_PAD_PX)
+  ) {
+    return false;
+  }
   return true;
 }
 
