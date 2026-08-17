@@ -393,6 +393,10 @@ export function teardownDeckPileLayoutWatchers() {
     window.visualViewport.removeEventListener("resize", window.__llocgDeckPileVvpHandler, { passive: true });
     window.__llocgDeckPileVvpHandler = null;
   }
+  if (window.__llocgAreaResizeEndHandler) {
+    window.removeEventListener("llocg-area-resize-end", window.__llocgAreaResizeEndHandler);
+    window.__llocgAreaResizeEndHandler = null;
+  }
   playChromeMountsLastMobile = null;
   deckPileScheduleLayoutRef = () => {};
 }
@@ -38192,7 +38196,7 @@ export function mountSimulator(
         },
       },
       draggable: ".card-item",
-      filter: ".stance-chip, .card-no-drag, .card-stance-bar, .card-member-hb-bar",
+      filter: ".stance-chip, .card-no-drag, .card-stance-bar, .card-member-hb-bar, .area-resize-handle",
       preventOnFilter: false,
       animation: 0,
       delay: 120,
@@ -44814,6 +44818,11 @@ export function mountSimulator(
   if (typeof window.visualViewport !== "undefined" && window.visualViewport != null) {
     window.visualViewport.addEventListener("resize", window.__llocgDeckPileVvpHandler, { passive: true });
   }
+  if (window.__llocgAreaResizeEndHandler) {
+    window.removeEventListener("llocg-area-resize-end", window.__llocgAreaResizeEndHandler);
+  }
+  window.__llocgAreaResizeEndHandler = deckPileWindowResizeHandler;
+  window.addEventListener("llocg-area-resize-end", window.__llocgAreaResizeEndHandler);
   window.addEventListener(
     "orientationchange",
     function () {

@@ -528,6 +528,89 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
   width: 100%;
 }
 
+/* ドラッグ可能なエリア境界 */
+.area-resize-handle {
+  position: relative;
+  z-index: 40;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
+}
+.area-resize-handle::after {
+  content: "";
+  position: absolute;
+  border-radius: 999px;
+  background: rgba(255, 150, 205, 0.3);
+  transition:
+    background 120ms ease,
+    box-shadow 120ms ease;
+}
+.area-resize-handle:hover::after,
+.area-resize-handle:focus-visible::after,
+.area-resize-handle.is-dragging::after {
+  background: rgba(255, 195, 225, 0.92);
+  box-shadow: 0 0 10px rgba(255, 100, 175, 0.75);
+}
+.area-resize-handle--column {
+  align-self: stretch;
+  min-width: 8px;
+  cursor: col-resize;
+}
+.area-resize-handle--column::after {
+  top: 7px;
+  bottom: 7px;
+  left: 3px;
+  width: 2px;
+}
+.area-resize-handle--row {
+  position: absolute;
+  right: 8px;
+  bottom: -5px;
+  left: 8px;
+  height: 10px;
+  cursor: row-resize;
+}
+.area-resize-handle--versus {
+  position: relative;
+  flex: 0 0 10px;
+  width: 100%;
+  min-height: 10px;
+  margin: 0;
+  cursor: row-resize;
+}
+.area-resize-handle--versus::after {
+  top: 4px;
+  right: 12%;
+  left: 12%;
+  height: 2px;
+}
+.area-resize-handle[hidden] {
+  display: none !important;
+}
+.area-resize-handle--row::after {
+  top: 4px;
+  right: 0;
+  left: 0;
+  height: 2px;
+}
+body.area-resize-active {
+  cursor: grabbing;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#view-deck .builder.area-resize-grid--deck {
+  grid-template-columns:
+    minmax(150px, var(--area-deck-left, 0.13fr))
+    8px
+    minmax(240px, var(--area-deck-center, 0.435fr))
+    8px
+    minmax(240px, var(--area-deck-right, 0.435fr));
+  gap: 0;
+  column-gap: 0.24rem;
+}
+
 /*
  * Flex 親の #view-deck が min-height のみだと grid の 1fr 行が 0 に落ちやすく、カード一覧が消える。
  * デッキ画面では明示的な min と flex-basis 0 で残り領域を確保する。
@@ -549,6 +632,13 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
   }
   #view-deck .builder {
     grid-template-rows: none;
+  }
+  #view-deck .builder.area-resize-grid--deck {
+    grid-template-columns: 1fr;
+    gap: 0.45rem;
+  }
+  #view-deck .builder.area-resize-grid--deck > .area-resize-handle--column {
+    display: none;
   }
 }
 
@@ -981,11 +1071,17 @@ body.play-versus-mode #view-game {
   max-height: 100%;
   overflow: hidden;
 }
+body.play-versus-mode {
+  --versus-opp-pct: 0.3;
+}
+body.play-versus-mode.layout-4-6-board-ratio:not(.area-resize-versus-custom) {
+  --versus-opp-pct: 0.4;
+}
 body.play-versus-mode .versus-opponent-board {
   --versus-opp-card-w: calc(var(--loveca-play-w, 82px) * 0.52);
   --versus-opp-card-h: calc(var(--loveca-play-h, var(--card-h)) * 0.52);
-  flex: 0 0 30%;
-  max-height: 30%;
+  flex: 0 0 calc(var(--versus-opp-pct, 0.3) * 100%);
+  max-height: calc(var(--versus-opp-pct, 0.3) * 100%);
   min-height: 0;
   margin: 0;
   padding: 0.12rem 0.3rem 0;
@@ -997,13 +1093,12 @@ body.play-versus-mode .versus-opponent-board {
   display: flex;
   flex-direction: column;
 }
-body.play-versus-mode.layout-4-6-board-ratio .versus-opponent-board {
-  flex: 0 0 40%;
-  max-height: 40%;
+body.play-versus-mode.layout-4-6-board-ratio:not(.area-resize-versus-custom) .versus-opponent-board {
+  flex: 0 0 calc(var(--versus-opp-pct, 0.4) * 100%);
+  max-height: calc(var(--versus-opp-pct, 0.4) * 100%);
 }
-body.play-versus-mode.layout-4-6-board-ratio .game-board {
-  flex: 1 1 60%;
-  max-height: 60%;
+body.play-versus-mode.layout-4-6-board-ratio:not(.area-resize-versus-custom) .game-board {
+  max-height: calc((1 - var(--versus-opp-pct, 0.4)) * 100%);
 }
 body.play-versus-mode .versus-opp-board-meta {
   margin: 0 0 0.1rem;
@@ -1442,9 +1537,9 @@ body.play-versus-mode.versus-opponent-turn .versus-opponent-board {
   opacity: 0.97;
 }
 body.play-versus-mode .game-board {
-  flex: 1 1 70%;
+  flex: 1 1 0;
   min-height: 0;
-  max-height: 70%;
+  max-height: calc((1 - var(--versus-opp-pct, 0.3)) * 100%);
   overflow: auto;
   border-top: 1px solid rgba(140, 170, 255, 0.22);
 }
@@ -4715,6 +4810,72 @@ body.play-mode .game-board {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.45fr) minmax(0, 1fr);
   gap: 0.4rem;
   grid-template-rows: minmax(0, 1fr);
+}
+
+body.play-mode .game-board.area-resize-grid--play {
+  grid-template-columns:
+    minmax(190px, var(--area-play-left, 0.29fr))
+    8px
+    minmax(240px, var(--area-play-center, 0.42fr))
+    8px
+    minmax(190px, var(--area-play-right, 0.29fr));
+  gap: 0;
+  column-gap: 0.18rem;
+}
+
+body.play-mode .area-resize-zone {
+  position: relative;
+}
+body.play-mode #deck-pile-host.is-open.area-resize-zone--sized #zone-deck.deck-pile {
+  min-height: var(--play-zone-h-deck, min(24vh, 200px));
+  max-height: var(--play-zone-h-deck, min(50vh, 520px));
+}
+body.play-mode #waiting-pile-host.is-open.area-resize-zone--sized #zone-waiting.deck-pile {
+  min-height: var(--play-zone-h-waiting, min(24vh, 200px));
+  max-height: var(--play-zone-h-waiting, min(50vh, 520px));
+}
+body.play-mode #hand-stick-fold[open].area-resize-zone--sized #hand-row {
+  max-height: var(--play-zone-h-hand);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+body.play-mode #energy-fold[open].area-resize-zone--sized .energy-fold__body {
+  max-height: var(--play-zone-h-energy);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+body.play-mode #live-row.area-resize-zone--sized {
+  max-height: var(--play-zone-h-live);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+body.play-mode .three-cols.area-resize-zone--sized:has(#stage-left) {
+  max-height: var(--play-zone-h-stage);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+body.play-mode.chrome-layout-play-mobile-portrait .area-resize-handle--row,
+body.play-mode.play-hand-docked-bottom #hand-stick-fold .area-resize-handle--row,
+body.play-mode #deck-pile-host:not(.is-open) .area-resize-handle--row,
+body.play-mode #waiting-pile-host:not(.is-open) .area-resize-handle--row,
+body.play-mode #hand-stick-fold:not([open]) .area-resize-handle--row,
+body.play-mode #energy-fold:not([open]) .area-resize-handle--row {
+  display: none;
+}
+@media (max-width: 900px) {
+  body.play-versus-mode .area-resize-handle--versus {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  body.play-mode .game-board.area-resize-grid--play {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+  }
+  body.play-mode .game-board.area-resize-grid--play > .area-resize-handle--column {
+    display: none;
+  }
 }
 
 body.play-mode .game-board .col {

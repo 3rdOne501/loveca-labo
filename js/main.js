@@ -883,6 +883,14 @@ function startApp(viewDeck, viewGame, statusEl) {
         });
       },
     });
+    /* エリア境界リサイズは起動を止めないよう遅延・動的 import（失敗してもデッキ画面は開く） */
+    import("./areaResizers.js?v=" + APP_MODULE_CACHE_BUST)
+      .then(function (m) {
+        if (m && typeof m.initAreaResizers === "function") m.initAreaResizers();
+      })
+      .catch(function (err) {
+        console.warn("[areaResizers] init failed:", err);
+      });
     try {
       initDeckBrowsePage();
     } catch (err) {
