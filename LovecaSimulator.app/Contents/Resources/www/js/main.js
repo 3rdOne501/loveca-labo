@@ -42,7 +42,7 @@ let simulatorModulePromise = null;
 let simulatorModuleCache = null;
 function loadSimulatorModule() {
   if (!simulatorModulePromise) {
-    simulatorModulePromise = import("./simulator.js").then(function (m) {
+    simulatorModulePromise = import("./simulator.js?v=" + APP_MODULE_CACHE_BUST).then(function (m) {
       simulatorModuleCache = m;
       return m;
     });

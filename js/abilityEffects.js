@@ -7673,6 +7673,8 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
         requiresStageMembersAllSeriesTag: allMemSerLs019 ? allMemSerLs019[1] : null,
         cardScoreGrant: parseLiveCardScorePlusFromText(normalizeFwDigits(pLsMain)) || 1,
         requiresOnStage: true,
+        /* 『Aqours』は発動条件でありピック対象ではない（filters.seriesTag に載せると全エリア在籍誤判定の元になる） */
+        filters: parseAbilityPickFilters(""),
       });
     }
     if (

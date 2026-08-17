@@ -5808,10 +5808,7 @@ export function mountSimulator(
             return;
           }
           pushHistoryBefore("jidou-mill-pick-live");
-          var wi = state.waitingRoom.findIndex(function (w) {
-            return w && String(w.id) === String(pid);
-          });
-          if (wi >= 0) state.hand.push(state.waitingRoom.splice(wi, 1)[0]);
+          moveInstFromWaitingToHand(String(pid), liveInst);
           applyLiveCardScorePlus(liveInst, cl.cardScoreGrant || 1, "自動（" + liveName + "）: スコアを＋" + (cl.cardScoreGrant || 1));
           jidouPerTurnMark(liveInst, segIndex);
           finishJidouAutoRender();
@@ -14037,6 +14034,14 @@ export function mountSimulator(
         var picked = state.waitingRoom.splice(j, 1)[0];
         state.hand.push(picked);
         presentAbilityDrawsToHand([picked], sourceInst || null);
+        /* DIVE! 等: 控え室→手札の自動効果（DnD 以外の回収経路でも発火） */
+        try {
+          if (mergedCatalogCard(picked).type === T_LIVE) {
+            fireJidouAutoForLiveCard(picked, "waiting_to_hand", { movedCard: picked });
+          }
+        } catch (jidouWaitHandErr) {
+          console.warn(jidouWaitHandErr);
+        }
         return picked;
       }
     }
@@ -31815,7 +31820,7 @@ export function mountSimulator(
         finishResolved();
         return;
       }
-      var allAreasTag = cl.requiresStageAllAreasSeriesTag || (cl.filters && cl.filters.seriesTag) || null;
+      var allAreasTag = cl.requiresStageAllAreasSeriesTag || null;
       if (allAreasTag && !stageAllAreasHaveAnySeriesMember(allAreasTag)) {
         showToast("ステージの全エリアに『" + allAreasTag + "』のメンバーが必要です");
         finishResolved();
@@ -31828,7 +31833,12 @@ export function mountSimulator(
         return;
       }
       if (cl.minStageSeriesPrintedCostSum != null) {
-        var stageCostSum = sumStageSeriesMemberPrintedCost(allAreasTag);
+        var stageCostSumTag =
+          cl.requiresStageAllAreasSeriesTag ||
+          cl.requiresStageMembersAllSeriesTag ||
+          (cl.filters && cl.filters.seriesTag) ||
+          null;
+        var stageCostSum = sumStageSeriesMemberPrintedCost(stageCostSumTag);
         if (stageCostSum < Number(cl.minStageSeriesPrintedCostSum)) {
           showToast(
             "対象メンバーのコスト合計が " +
@@ -34707,10 +34717,7 @@ export function mountSimulator(
           var milledName = mergedCatalogCard(milled).name || "";
           var match = namesOk.indexOf(milledName) >= 0;
           if (match) {
-            var mi = state.waitingRoom.findIndex(function (w) {
-              return w && String(w.id) === String(milled.id);
-            });
-            if (mi >= 0) state.hand.push(state.waitingRoom.splice(mi, 1)[0]);
+            moveInstFromWaitingToHand(String(milled.id), inst);
             showToast(milledName + " を控え室経由で手札に加えました");
           } else {
             showToast(milledName + " を控え室に置きました");

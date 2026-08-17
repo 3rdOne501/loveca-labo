@@ -16,6 +16,26 @@
 
 ---
 
+## 0. PL!N-bp3-008 エマ — ライブ開始手札2捨ての二重支払い（2026-08-17）
+
+| カード番号 | 名前 | 根因 | 対応 | 横展開 |
+|-----------|------|------|------|--------|
+| PL!N-bp3-008-P（R＋/P＋/SEC含む4枚） | エマ・ヴェルデ | `live_start_hand_discard_activate_wait_grant` が `TEMPLATE_HANDLES_OWN_COST` 未登録のため、外枠 `payAbilityCost` とハンドラ内 `payAbilityCost` の両方で手札2枚捨てが走っていた（2枚×2回） | `js/abilityRuntimeMeta.js` の `TEMPLATE_HANDLES_OWN_COST` に追加。同型は cards.json 走査で当該4枚のみ | 4枚 |
+
+## 0b. PL!S-bp6-019-L Step! ZERO to ONE — 全員Aqoursを全面在籍と誤判定（2026-08-17）
+
+| カード番号 | 名前 | 根因 | 対応 | 横展開 |
+|-----------|------|------|------|--------|
+| PL!S-bp6-019-L | Step! ZERO to ONE | `draw_then_hand_to_deck_top` が `filters.seriesTag` を「全エリアにシリーズ在籍」条件に流用していたため、カード文の「メンバーがすべてAqours」なのに左中右すべてにAqoursが必要になっていた | ハンドラは `requiresStageAllAreasSeriesTag` のみで全面判定。019分類は `requiresStageMembersAllSeriesTag` を残し `filters.seriesTag` を空にする | 同型テキストは本カードのみ。全面条件カード（`requiresStageAllAreasSeriesTag`）は従来どおり |
+
+## 0c. PL!N-bp4-026-L DIVE! — 控え室→手札の自動が効果回収で未発火（2026-08-17）
+
+| カード番号 | 名前 | 根因 | 対応 | 横展開 |
+|-----------|------|------|------|--------|
+| PL!N-bp4-026-L | DIVE! | `waiting_to_hand` 自動は DnD 後の `maybeFireJidouAfterWaitingToHand` のみ。能力の控え室回収は `moveInstFromWaitingToHand` 経由で手札に戻すだけで jidou 未発火 | `moveInstFromWaitingToHand` でライブ回収時に `fireJidouAutoForLiveCard(..., "waiting_to_hand")` を呼ぶ（メインフェイズ条件は既存ハンドラ側） | 同型テンプレは本カードのみ |
+
+---
+
 ## 1. 報告バグ11件（2026-05-20）
 
 出典: `data/fix-notes/ability-reported-bugs.md`

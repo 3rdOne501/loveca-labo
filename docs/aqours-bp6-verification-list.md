@@ -25,7 +25,7 @@
 
 | 状態 | 番号 | ID | 主テンプレート | 備考 |
 |------|------|-----|----------------|------|
-| [x] | 019 | PL!S-bp6-019-L | draw_then_hand_to_deck_top | 全員Aqours→スコア+1・1ドロー・手札1枚山札上下 **2026-06-28修正** |
+| [x] | 019 | PL!S-bp6-019-L | draw_then_hand_to_deck_top | ステージのメンバーがすべてAqours→スコア+1・1ドロー・手札1枚山札上下（全面在籍ではない） **2026-08-17修正** |
 | [x] | 020 | PL!S-bp6-020-L | ability_pick_one | 3択（仮想LS成功/バトンheart02/自SL2+スコア+1） |
 | [x] | 021 | PL!S-bp6-021-L | jidou_yell_discard_nobh_series_extra_yell | エール: Aqours無BH1枚捨て→コスト5ごと追加エール（最大4） |
 | [x] | 022 | PL!S-bp6-022-L | live_card_score_plus | 相手エネルギー>自分でスコア+1 **2026-06-28: 条件チェック追加** |

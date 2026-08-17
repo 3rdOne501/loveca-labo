@@ -342,9 +342,24 @@ for (const id of [
   }
 }
 
+/* DIVE! 控え室→手札自動: 効果回収経路でも waiting_to_hand が発火すること */
+{
+  const simSrc = fs.readFileSync(path.join(ROOT, "js/simulator.js"), "utf8");
+  const moveFn = simSrc.match(/function moveInstFromWaitingToHand\([\s\S]*?\n  function /);
+  if (
+    !moveFn ||
+    !moveFn[0].includes('fireJidouAutoForLiveCard(picked, "waiting_to_hand"')
+  ) {
+    console.error("FAIL moveInstFromWaitingToHand must fire waiting_to_hand jidou for live cards");
+    failed++;
+  } else {
+    console.log("OK moveInstFromWaitingToHand fires waiting_to_hand");
+  }
+}
+
 if (failed) {
   console.error(`\n${failed} niji-bp4 case(s) failed`);
   process.exit(1);
 }
-const totalCases = CASES.length + 6;
+const totalCases = CASES.length + 7;
 console.log(`\nAll ${totalCases} niji-bp4 cases passed`);

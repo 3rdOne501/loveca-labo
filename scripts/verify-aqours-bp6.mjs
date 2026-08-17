@@ -139,12 +139,14 @@ const CASES = [
     id: "PL!S-bp6-019-L",
     trigger: "live_start",
     expectTemplate: "draw_then_hand_to_deck_top",
-    check: (cl) =>
-      cl.requiresStageMembersAllSeriesTag === "Aqours" &&
-      cl.handToDeckTopOrBottom &&
-      cl.cardScoreGrant === 1
-        ? []
-        : ["aqours all score draw deck"],
+    check: (cl) => {
+      const errs = [];
+      if (cl.requiresStageMembersAllSeriesTag !== "Aqours") errs.push("all members Aqours");
+      if (cl.requiresStageAllAreasSeriesTag) errs.push("must NOT be all-areas");
+      if (cl.filters?.seriesTag) errs.push("filters.seriesTag must be clear");
+      if (!cl.handToDeckTopOrBottom || cl.cardScoreGrant !== 1) errs.push("score/draw/deck meta");
+      return errs;
+    },
   },
   {
     id: "PL!S-bp6-020-L",

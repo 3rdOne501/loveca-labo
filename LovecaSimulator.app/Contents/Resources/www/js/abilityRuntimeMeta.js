@@ -48,6 +48,7 @@ export const TEMPLATE_HANDLES_OWN_COST = [
   "live_start_pay_or_discard_conditional_grant_members",
   "live_start_dollcostra_cost_set_grant_if",
   "live_start_hand_discard_cost_boost_grant_if",
+  "live_start_hand_discard_activate_wait_grant",
   "live_start_hand_named_discard_grant_jouji",
   "live_start_hand_discard_same_unit_grant",
   "live_start_hand_discard_same_group_grant",

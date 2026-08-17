@@ -9,6 +9,7 @@ import {
   classifyCardAbility,
   splitAbilityByTriggers,
 } from "../js/abilityEffects.js";
+import { templateHandlesOwnCost } from "../js/abilityRuntimeMeta.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const cards = JSON.parse(fs.readFileSync(path.join(ROOT, "data/cards.json"), "utf8"));
@@ -34,6 +35,18 @@ const CASES = [
       cl.filters?.seriesTag === "虹ヶ咲" && cl.filters?.maxCost === 4 ? [] : ["filters"],
   },
   { id: "PL!N-bp3-007-P", trigger: "kidou", expectTemplate: "kidou_self_wait_hand_enter_energy" },
+  {
+    id: "PL!N-bp3-008-P",
+    trigger: "live_start",
+    expectTemplate: "live_start_hand_discard_activate_wait_grant",
+    check: (cl) => {
+      const errs = [];
+      if (cl.handDiscardToWaiting !== 2) errs.push("handDiscard 2");
+      if (!cl.optional || !cl.hasOptionalCost) errs.push("optional cost");
+      if (!templateHandlesOwnCost(cl.template)) errs.push("TEMPLATE_HANDLES_OWN_COST missing");
+      return errs;
+    },
+  },
   {
     id: "PL!N-bp3-009-P",
     trigger: "live_start",
