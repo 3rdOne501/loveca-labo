@@ -563,7 +563,14 @@ python3 -m http.server 8080</pre>
 
           <div id="card-deck-summary" class="card-deck-summary" hidden></div>
           <div id="current-deck-grid-scroll" class="current-deck-grid-scroll" aria-label="現在のデッキのカード一覧">
-            <div id="current-deck-grid" class="card-grid"></div>
+            <section id="current-deck-member-section" class="current-deck-type-section" aria-labelledby="current-deck-member-heading">
+              <h3 id="current-deck-member-heading" class="current-deck-type-heading">メンバーカード</h3>
+              <div id="current-deck-grid" class="card-grid current-deck-type-grid"></div>
+            </section>
+            <section id="current-deck-live-section" class="current-deck-type-section" aria-labelledby="current-deck-live-heading">
+              <h3 id="current-deck-live-heading" class="current-deck-type-heading">ライブカード</h3>
+              <div id="current-deck-live-grid" class="card-grid current-deck-type-grid"></div>
+            </section>
             <p id="current-deck-empty" class="current-deck-empty muted" hidden>まだカードが入っていません。左の一覧からタップして追加してください。</p>
           </div>
 

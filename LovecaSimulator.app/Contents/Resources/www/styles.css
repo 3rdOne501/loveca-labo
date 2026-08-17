@@ -582,13 +582,10 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
 #view-deck .current-deck-grid-scroll {
   display: flex;
   flex-direction: column;
-  flex: 1 1 0;
+  flex: 0 0 auto;
   align-self: stretch;
-  min-height: 200px;
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior-y: auto;
-  -webkit-overflow-scrolling: touch;
+  min-height: 0;
+  overflow: visible;
   margin-top: 0.3rem;
   padding: 0.28rem 0.32rem;
   border-radius: var(--radius-sm);
@@ -596,8 +593,57 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
   background: rgba(8, 4, 14, 0.35);
 }
 
-#view-deck .current-deck-grid-scroll .card-grid {
+#view-deck .current-deck-grid-scroll .card-grid,
+#view-deck .current-deck-type-grid {
   flex: 0 0 auto;
+  overflow: visible;
+  /*
+   * 表示倍率 100% のノート／デスクトップでおおよそ 1 行 7 枚。
+   * 固定列数にしない（サイト内の拡大・縮小で列数が自然に増減する）。
+   */
+  grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
+  gap: 0.4rem;
+}
+
+#view-deck .current-deck-type-section {
+  min-width: 0;
+}
+
+#view-deck .current-deck-type-section + .current-deck-type-section {
+  margin-top: 0.65rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid rgba(255, 160, 205, 0.2);
+}
+
+#view-deck .current-deck-type-heading {
+  position: sticky;
+  top: -0.62rem;
+  z-index: 6;
+  margin: 0 0 0.3rem;
+  padding: 0.28rem 0.38rem;
+  border-radius: 6px;
+  background: rgba(22, 10, 30, 0.94);
+  color: rgba(255, 225, 242, 0.96);
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+}
+
+#view-deck .current-deck-grid-scroll.is-catalog-drag-over {
+  border-color: rgba(255, 210, 100, 0.9);
+  background: rgba(90, 54, 12, 0.3);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 210, 100, 0.28),
+    0 0 22px rgba(255, 170, 70, 0.25);
+}
+
+#view-deck .card-grid-item.is-catalog-dragging {
+  opacity: 0.45;
+}
+
+#view-deck .current-deck-type-grid .card-thumb.is-long-press-armed {
+  outline: 2px solid rgba(255, 220, 110, 0.9);
+  outline-offset: 2px;
+  filter: brightness(1.08);
 }
 
 #view-deck .current-deck-empty {
@@ -1348,7 +1394,7 @@ body.play-versus-mode .versus-opponent-board__cell--center .versus-opp-energy-fo
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.32rem 0.28rem;
-  align-items: end;
+  align-items: stretch;
   padding: 0.2rem 0.1rem 0.3rem;
 }
 body.play-versus-mode .versus-opp-hand-zone .versus-opp-card--facing {
@@ -2240,6 +2286,15 @@ body.play-versus-mode .game-tools-row #btn-versus-lobby:not([hidden]) {
   background: rgba(8, 4, 14, 0.22);
 }
 
+/* 単独のカード一覧は中央パネルの実高をすべて使う（大きいウインドウで下部を空けない）。 */
+@media (min-width: 1101px) {
+  #view-deck:not(.view-deck--sample-panel-open):not(.view-deck--public-decks-open):not(.view-deck--deck-registration-open)
+    .card-panel-body-stack
+    .card-grid-scroll {
+    max-height: none;
+  }
+}
+
 /* サンプルリスト（カード一覧と同様にパネル内スクロール） */
 #view-deck .sample-recipes-scroll {
   display: flex;
@@ -3040,7 +3095,14 @@ body.play-versus-mode .game-tools-row #btn-versus-lobby:not([hidden]) {
 .deck-recipe-panel code {
   font-size: 0.78em;
 }
-.card-thumb img { width: 100%; height: auto; display: block; vertical-align: middle; }
+.card-thumb img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 88 / 126;
+  object-fit: cover;
+  display: block;
+  vertical-align: middle;
+}
 .card-thumb-fav {
   position: absolute;
   right: 4px;
@@ -6223,7 +6285,7 @@ table.deck-odds-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.32rem 0.28rem;
-  align-items: end;
+  align-items: stretch;
   padding: 0.2rem 0.1rem 0.35rem;
 }
 .dlg-zone-bh-list__tile {
@@ -6233,6 +6295,7 @@ table.deck-odds-grid {
   align-items: center;
   gap: 0.15rem;
   min-width: 0;
+  height: 100%;
   padding: 0.28rem 0.22rem 0.38rem;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.04);
@@ -6268,11 +6331,18 @@ table.deck-odds-grid {
   box-shadow: 0 2px 6px rgba(255, 80, 130, 0.4);
 }
 .dlg-zone-bh-list__label {
+  display: -webkit-box;
+  width: 100%;
+  min-height: 3.6em;
+  max-height: 3.6em;
   font-size: 0.68rem;
   line-height: 1.2;
   color: var(--ink, #ffd6ef);
   word-break: break-word;
   margin-top: 0.1rem;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
 .play-deck-preset-panel {
   font-size: 0.78rem;
@@ -7640,7 +7710,7 @@ body.play-mode .site-footer {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.32rem 0.28rem;
-  align-items: end;
+  align-items: stretch;
   margin: 0.65rem 0 0;
   padding: 0.2rem 0.1rem 0.35rem;
   overflow: visible;
@@ -8080,7 +8150,7 @@ body.play-mode .btn--manual-mode-on {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.32rem 0.28rem;
-  align-items: end;
+  align-items: stretch;
   padding: 0.2rem 0.1rem 0.3rem;
 }
 .dlg-heart-color-pick__grid {
@@ -8112,6 +8182,7 @@ body.play-mode .btn--manual-mode-on {
   align-items: center;
   gap: 0.15rem;
   min-width: 0;
+  height: 100%;
   padding: 0.28rem 0.22rem 0.38rem;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.04);
@@ -8154,10 +8225,17 @@ body.play-mode .btn--manual-mode-on {
   filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.55));
 }
 .dlg-pick-kidou-waiting__label {
+  display: -webkit-box;
+  width: 100%;
+  min-height: 3.6em;
+  max-height: 3.6em;
   font-size: 0.62rem;
   line-height: 1.2;
   color: var(--ink, #ffd6ef);
   word-break: break-word;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
 
 .dlg-deck-look-reorder {
@@ -8167,7 +8245,7 @@ body.play-mode .btn--manual-mode-on {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.32rem 0.28rem;
-  align-items: end;
+  align-items: stretch;
   margin: 0.55rem 0;
   padding: 0.2rem 0.1rem 0.35rem;
   overflow: visible;
@@ -8179,6 +8257,7 @@ body.play-mode .btn--manual-mode-on {
   align-items: center;
   gap: 0.15rem;
   min-width: 0;
+  height: 100%;
   padding: 0.28rem 0.22rem 0.38rem;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.04);
@@ -8237,9 +8316,17 @@ body.play-mode .btn--manual-mode-on {
   background: rgba(0, 0, 0, 0.25);
 }
 .dlg-deck-look-reorder__label {
+  display: -webkit-box;
+  width: 100%;
+  min-height: 3.75em;
+  max-height: 3.75em;
   font-size: 0.62rem;
   line-height: 1.25;
   color: var(--ink, #ffd6ef);
+  overflow: hidden;
+  word-break: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
 .dlg-ability-guided-body {
   margin: 0.5rem 0 0.75rem;

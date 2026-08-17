@@ -3002,7 +3002,13 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
     cardGridVirtual.active = true;
     cardGridVirtual.list = filtered;
     if (prevPanel === CARD_GRID_VIRTUAL_PANEL && prevLayoutSig === layoutSig) cardGridVirtual.w0 = -1;
-    cardGridVirtual.rowH = deckRegistrationPanelOpen ? 268 : 234;
+    if (
+      !cardGridVirtual.rowH ||
+      prevPanel !== CARD_GRID_VIRTUAL_PANEL ||
+      prevLayoutSig !== layoutSig
+    ) {
+      cardGridVirtual.rowH = deckRegistrationPanelOpen ? 268 : 234;
+    }
     syncVirtualCardGridWindow(true);
     cardGridVirtual.lastOrderedSig = filtered.map(function (c) {
       return c.card_no;
@@ -3013,14 +3019,74 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
   function renderCurrentDeckGrid(opts) {
     opts = opts || { deckSummary: true };
     if (typeof opts.deckSummary === "undefined") opts.deckSummary = true;
-    const grid = el("current-deck-grid");
+    const memberGrid = el("current-deck-grid");
+    const liveGrid = el("current-deck-live-grid");
+    const memberSection = el("current-deck-member-section");
+    const liveSection = el("current-deck-live-section");
     const empty = el("current-deck-empty");
-    if (!grid) return;
+    if (!memberGrid) return;
     const filtered = computeCurrentDeckCardList();
+    const members = filtered.filter(function (card) {
+      return effectiveMainDeckCategory(card) === T_MEMBER;
+    });
+    const lives = filtered.filter(function (card) {
+      return effectiveMainDeckCategory(card) === T_LIVE;
+    });
     if (empty) empty.hidden = filtered.length > 0;
-    reuseOrCreateCardGridItems(grid, filtered, { deckView: true });
+    if (memberSection) memberSection.hidden = members.length === 0;
+    if (liveSection) liveSection.hidden = lives.length === 0;
+    reuseOrCreateCardGridItems(memberGrid, members, { deckView: true });
+    if (liveGrid) reuseOrCreateCardGridItems(liveGrid, lives, { deckView: true });
+    wireCurrentDeckDropZoneOnce();
     if (opts.deckSummary) flushDeckSummaryDebouncedNow();
     else scheduleDeckSummaryDebounced();
+  }
+
+  function wireCurrentDeckDropZoneOnce() {
+    const host = el("current-deck-grid-scroll");
+    if (!host || host.dataset.catalogDropWired === "1") return;
+    host.dataset.catalogDropWired = "1";
+    host.addEventListener("dragenter", function (ev) {
+      const dt = ev.dataTransfer;
+      const hasCard =
+        dt &&
+        (Array.from(dt.types || []).indexOf("application/x-llocg-card-no") >= 0 ||
+          Array.from(dt.types || []).indexOf("text/plain") >= 0);
+      if (!hasCard) return;
+      ev.preventDefault();
+      host.classList.add("is-catalog-drag-over");
+    });
+    host.addEventListener("dragover", function (ev) {
+      const dt = ev.dataTransfer;
+      if (!dt) return;
+      ev.preventDefault();
+      dt.dropEffect = "copy";
+      host.classList.add("is-catalog-drag-over");
+    });
+    host.addEventListener("dragleave", function (ev) {
+      if (ev.relatedTarget && host.contains(ev.relatedTarget)) return;
+      host.classList.remove("is-catalog-drag-over");
+    });
+    host.addEventListener("drop", function (ev) {
+      ev.preventDefault();
+      host.classList.remove("is-catalog-drag-over");
+      const dt = ev.dataTransfer;
+      const raw = dt
+        ? dt.getData("application/x-llocg-card-no") || dt.getData("text/plain")
+        : "";
+      const card = raw ? getCard(String(raw).trim()) : null;
+      if (!card) {
+        showToast("追加するカードを確認できませんでした");
+        return;
+      }
+      void (async function () {
+        const addNo = await resolvedCardNoForAdd(card);
+        if (!addNo || !canAddNo(addNo, 1)) return;
+        deckMap[addNo] = (deckMap[addNo] || 0) + 1;
+        afterDeckMapQuickChange([String(card.card_no), String(addNo)]);
+        showToast((card.name || addNo) + " をデッキに1枚追加しました");
+      })();
+    });
   }
 
   function estimateCardGridCols(scrollEl) {
@@ -3032,13 +3098,29 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
     return Math.max(2, Math.floor((inner + gap) / (minCol + gap)));
   }
 
+  /** CSS auto-fill の実列数を DOM から読む（見積もりとのズレで空白帯が出るのを防ぐ）。 */
+  function measureVirtualColsFromGrid(gridEl, fallbackCols) {
+    const ch = gridEl && gridEl.children;
+    if (!ch || !ch.length) return Math.max(2, fallbackCols || 6);
+    const firstTop = /** @type {HTMLElement} */ (ch[0]).offsetTop;
+    let cols = 1;
+    for (let i = 1; i < ch.length; i++) {
+      const elItem = /** @type {HTMLElement} */ (ch[i]);
+      if (Math.abs(elItem.offsetTop - firstTop) > 1) break;
+      cols++;
+    }
+    return Math.max(2, cols);
+  }
+
   function measureVirtualRowHeightFromGrid(gridEl, cols) {
     const ch = gridEl.children;
     if (!ch.length) return cardGridVirtual.rowH;
     const n = Math.min(Math.max(1, cols), ch.length);
     let h = 0;
     for (let i = 0; i < n; i++) h = Math.max(h, /** @type {HTMLElement} */ (ch[i]).offsetHeight || 0);
-    return Math.max(168, h + 10);
+    const styles = window.getComputedStyle(gridEl);
+    const gapY = parseFloat(styles.rowGap || styles.gap || "0") || 0;
+    return Math.max(168, h + Math.max(8, Math.round(gapY)));
   }
 
   function createCardGridItemWrap(card, opts) {
@@ -3047,6 +3129,7 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
     const wrap = document.createElement("div");
     wrap.className = "card-grid-item";
     wrap.dataset.cardNo = String(card.card_no);
+    wrap.dataset.deckView = deckView ? "1" : "0";
     const div = document.createElement("div");
     div.className =
       "card-thumb card-thumb--" + (card.type === T_LIVE ? "live" : card.type === T_MEMBER ? "member" : "misc");
@@ -3096,6 +3179,61 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
       fav.setAttribute("aria-pressed", cardFavorites.has(k) ? "true" : "false");
     });
     div.appendChild(fav);
+    let suppressNextCardClick = false;
+    if (!deckView) {
+      div.draggable = true;
+      div.setAttribute("aria-label", (card.name || card.card_no || "カード") + "。デッキ欄へドラッグして追加");
+      div.addEventListener("dragstart", function (ev) {
+        if (!ev.dataTransfer) return;
+        ev.dataTransfer.effectAllowed = "copy";
+        ev.dataTransfer.setData("application/x-llocg-card-no", String(card.card_no));
+        ev.dataTransfer.setData("text/plain", String(card.card_no));
+        wrap.classList.add("is-catalog-dragging");
+      });
+      div.addEventListener("dragend", function () {
+        wrap.classList.remove("is-catalog-dragging");
+      });
+    } else {
+      let longPressTimer = 0;
+      let longPressPointerId = null;
+      let longPressX = 0;
+      let longPressY = 0;
+      function cancelLongPress() {
+        if (longPressTimer) window.clearTimeout(longPressTimer);
+        longPressTimer = 0;
+        longPressPointerId = null;
+        div.classList.remove("is-long-press-armed");
+      }
+      div.addEventListener("pointerdown", function (ev) {
+        if (ev.button != null && ev.button !== 0) return;
+        if (document.body.classList.contains("play-mode") || root.hidden) return;
+        if (ev.target && ev.target.closest && ev.target.closest("button, input, label, a")) return;
+        cancelLongPress();
+        longPressPointerId = ev.pointerId;
+        longPressX = ev.clientX;
+        longPressY = ev.clientY;
+        div.classList.add("is-long-press-armed");
+        longPressTimer = window.setTimeout(function () {
+          longPressTimer = 0;
+          suppressNextCardClick = true;
+          div.classList.remove("is-long-press-armed");
+          openDeckBuilderCardZoom(card);
+        }, 2000);
+      });
+      div.addEventListener("pointermove", function (ev) {
+        if (longPressPointerId == null || ev.pointerId !== longPressPointerId) return;
+        if (Math.abs(ev.clientX - longPressX) > 10 || Math.abs(ev.clientY - longPressY) > 10) {
+          cancelLongPress();
+        }
+      });
+      ["pointerup", "pointercancel", "pointerleave"].forEach(function (kind) {
+        div.addEventListener(kind, cancelLongPress);
+      });
+      div.addEventListener("contextmenu", function (ev) {
+        if (!suppressNextCardClick) return;
+        ev.preventDefault();
+      });
+    }
     div.addEventListener(
       "dblclick",
       function (ev) {
@@ -3113,6 +3251,12 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
       true,
     );
     div.addEventListener("click", function (ev) {
+      if (suppressNextCardClick) {
+        suppressNextCardClick = false;
+        ev.preventDefault();
+        ev.stopPropagation();
+        return;
+      }
       if (ev.target && ev.target.closest && ev.target.closest(".card-thumb-fav")) return;
       if (
         ev.target &&
@@ -3241,10 +3385,15 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
       grid.innerHTML = "";
       return;
     }
-    const cols = estimateCardGridCols(scroll);
+    let cols =
+      cardGridVirtual.cols > 0 ? cardGridVirtual.cols : estimateCardGridCols(scroll);
+    if (!grid.children.length || cardGridVirtual.w0 < 0) {
+      cols = estimateCardGridCols(scroll);
+    }
     const rowH = cardGridVirtual.rowH;
     const totalRows = Math.ceil(N / cols);
-    const overscan = 3;
+    /* 高速スクロール／ウインドウ拡大直後も空白帯を見せない余裕を持たせる */
+    const overscan = 6;
     const st = scroll.scrollTop;
     let firstRow = Math.floor(st / rowH) - overscan;
     if (firstRow < 0) firstRow = 0;
@@ -3266,15 +3415,19 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
     reuseOrCreateCardGridItems(grid, list.slice(startIdx, endIdx));
 
     requestAnimationFrame(function () {
-      if (!cardGridVirtual.active || cardGridVirtualIsScrolling) return;
-      const nh = measureVirtualRowHeightFromGrid(grid, cols);
-      if (nh > 0 && Math.abs(nh - cardGridVirtual.rowH) > 8 && cardGridVirtualMeasureGuard < 5) {
+      if (!cardGridVirtual.active) return;
+      const measuredCols = measureVirtualColsFromGrid(grid, cols);
+      const nh = measureVirtualRowHeightFromGrid(grid, measuredCols);
+      const colsChanged = measuredCols !== cardGridVirtual.cols;
+      const rowChanged = nh > 0 && Math.abs(nh - cardGridVirtual.rowH) > 8;
+      if ((colsChanged || rowChanged) && cardGridVirtualMeasureGuard < 5) {
         cardGridVirtualMeasureGuard++;
         const oldRowH = cardGridVirtual.rowH;
         const anchorRow = oldRowH > 0 ? Math.floor(scroll.scrollTop / oldRowH) : 0;
-        cardGridVirtual.rowH = nh;
+        if (colsChanged) cardGridVirtual.cols = measuredCols;
+        if (rowChanged) cardGridVirtual.rowH = nh;
         cardGridVirtual.w0 = -1;
-        scroll.scrollTop = anchorRow * nh;
+        scroll.scrollTop = anchorRow * cardGridVirtual.rowH;
         syncVirtualCardGridWindow(true);
       }
     });
@@ -3332,8 +3485,9 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
       }
     }
     if (!gridEl) {
-      const deckGrid = el("current-deck-grid");
-      if (deckGrid) patchVisibleGridThumbsForNos(changedNos, deckGrid);
+      [el("current-deck-grid"), el("current-deck-live-grid")].forEach(function (deckGrid) {
+        if (deckGrid) patchVisibleGridThumbsForNos(changedNos, deckGrid);
+      });
     }
   }
 
@@ -5552,11 +5706,23 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
     if (typeof ResizeObserver !== "undefined") {
       const ro = new ResizeObserver(function () {
         if (!cardGridVirtual.active) return;
+        cardGridVirtualMeasureGuard = 0;
         cardGridVirtual.w0 = -1;
         syncVirtualCardGridWindow(true);
       });
       ro.observe(cardGridScrollEl);
     }
+    function invalidateVirtualCardGridGeometry() {
+      if (!cardGridVirtual.active) return;
+      cardGridVirtualMeasureGuard = 0;
+      cardGridVirtual.cols = estimateCardGridCols(cardGridScrollEl);
+      cardGridVirtual.w0 = -1;
+      syncVirtualCardGridWindow(true);
+    }
+    window.addEventListener("pageshow", invalidateVirtualCardGridGeometry);
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "visible") invalidateVirtualCardGridGeometry();
+    });
   }
 
   if (!deckBuilderStorageFlushHooked) {

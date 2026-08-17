@@ -596,6 +596,27 @@ function mountHandStageActionsInEffectSlot(act, dlg) {
   });
 }
 
+/** カード原寸画像を共通拡大ダイアログで表示する。 */
+export function openCardIllustrationZoom(card, options) {
+  options = options || {};
+  if (!card || !card.img) return false;
+  var dlg = document.getElementById("dlg-card-zoom");
+  var img = document.getElementById("dlg-zoom-img");
+  var caption = document.getElementById("dlg-zoom-caption");
+  if (!dlg || !img || typeof dlg.showModal !== "function") return false;
+  img.src = card.img;
+  img.alt = card.name || "";
+  if (caption) caption.textContent = [card.name, card.card_no].filter(Boolean).join(" · ");
+  var controls = document.getElementById("dlg-zoom-deck-controls");
+  if (controls) controls.hidden = options.showDeckControls !== true;
+  try {
+    dlg.showModal();
+  } catch (_) {
+    return false;
+  }
+  return true;
+}
+
 export function openCardCatalogDialog(c, options) {
   var dlg = document.getElementById("dlg-card-catalog");
   if (!dlg) return;
@@ -614,6 +635,29 @@ export function openCardCatalogDialog(c, options) {
   if (options && options.playMode) renderOpts.hideVariants = true;
   var rendered = renderCardCatalogContentInto(c, targets, renderOpts);
   if (!rendered) return;
+  if (targets.img) {
+    targets.img.draggable = false;
+    targets.img.tabIndex = c && c.img ? 0 : -1;
+    targets.img.setAttribute("role", c && c.img ? "button" : "img");
+    targets.img.title = c && c.img ? "クリックして高画質イラストを表示" : "";
+    targets.img.onclick = function (ev) {
+      var latest = targets.body && targets.body.__llocgCatalogLatest;
+      var zoomCard = (latest && latest.card) || c;
+      if (!zoomCard || !zoomCard.img) return;
+      ev.preventDefault();
+      try {
+        dlg.close();
+      } catch (_) {
+        /* noop */
+      }
+      openCardIllustrationZoom(zoomCard);
+    };
+    targets.img.onkeydown = function (ev) {
+      if (ev.key !== "Enter" && ev.key !== " ") return;
+      ev.preventDefault();
+      targets.img.click();
+    };
+  }
   mountHandStageActionsInEffectSlot(options && options.handStageActions, dlg);
   if (dlg.showModal) dlg.showModal();
 }
