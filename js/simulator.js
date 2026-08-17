@@ -13352,7 +13352,7 @@ export function mountSimulator(
         {
           sourceInst: memberInst,
           dialogTitle: "登場時: エネルギー不足",
-          defaultChoiceIndex: 1,
+          defaultChoiceIndex: 0,
         },
       );
       return true;
@@ -19417,7 +19417,7 @@ export function mountSimulator(
         onDone(picked[0].indexOf("はい") === 0);
       },
       sourceInst,
-      { dialogTitle: opponentDecisionDialogTitle(titleSuffix) },
+      { dialogTitle: opponentDecisionDialogTitle(titleSuffix), defaultChoiceIndex: 0 },
     );
   }
 
@@ -20614,6 +20614,22 @@ export function mountSimulator(
     }
     list.innerHTML = "";
     var multi = maxN > 1;
+    var defaultIdx = null;
+    if (
+      opts &&
+      typeof opts.defaultChoiceIndex === "number" &&
+      Number.isFinite(opts.defaultChoiceIndex)
+    ) {
+      defaultIdx = opts.defaultChoiceIndex;
+    } else if (!multi) {
+      /* はい／いいえ系は明示指定がなければ「はい」を初期選択 */
+      for (var di = 0; di < choices.length; di++) {
+        if (/^はい/.test(String(choices[di] || ""))) {
+          defaultIdx = di;
+          break;
+        }
+      }
+    }
     choices.forEach(function (label, i) {
       var lab = document.createElement("label");
       lab.className = "dlg-pick-ability-choice__row";
@@ -20622,12 +20638,7 @@ export function mountSimulator(
       inp.name = "abilityChoicePick";
       inp.value = String(i);
       inp.className = "dlg-pick-ability-choice__input";
-      if (
-        opts &&
-        typeof opts.defaultChoiceIndex === "number" &&
-        Number.isFinite(opts.defaultChoiceIndex) &&
-        opts.defaultChoiceIndex === i
-      ) {
+      if (defaultIdx != null && defaultIdx === i) {
         inp.checked = true;
       }
       var cap = document.createElement("span");
@@ -20689,6 +20700,13 @@ export function mountSimulator(
     if (btnCx) btnCx.addEventListener("click", onCx);
     dlg.addEventListener("cancel", onCx);
     dlg.showModal();
+    try {
+      var checked = list.querySelector('input[name="abilityChoicePick"]:checked');
+      if (checked && typeof checked.focus === "function") checked.focus();
+      else if (btnOk && typeof btnOk.focus === "function") btnOk.focus();
+    } catch (_) {
+      /* noop */
+    }
   }
 
   /**
@@ -21272,7 +21290,7 @@ export function mountSimulator(
       {
         dialogTitle: (opts && opts.dialogTitle) || "確認",
         defaultChoiceIndex:
-          opts && opts.defaultChoiceIndex != null ? opts.defaultChoiceIndex : undefined,
+          opts && opts.defaultChoiceIndex != null ? opts.defaultChoiceIndex : 0,
       },
     );
   }
@@ -39609,6 +39627,12 @@ export function mountSimulator(
     try {
       dlg.showModal();
     } catch (_) {}
+    try {
+      var btnYesFocus = document.getElementById("dlg-versus-action-approve-yes");
+      if (btnYesFocus && typeof btnYesFocus.focus === "function") btnYesFocus.focus();
+    } catch (_) {
+      /* noop */
+    }
   }
 
   function executeVersusApprovedBoardAction(action) {
@@ -44654,11 +44678,28 @@ export function mountSimulator(
     if (typeof root.__llocgShakaPachiPdown === "function") {
       root.removeEventListener("pointerdown", root.__llocgShakaPachiPdown, true);
     }
+    /** 新規一周の開始だけ、素早い2回タップを要求する窓（ms） */
+    var SHAKA_PACHI_DOUBLE_TAP_MS = 380;
+    var shakaPachiArmedAt = 0;
     root.__llocgShakaPachiPdown = function (ev) {
       if (ev.button != null && ev.button !== 0) return;
       if (!isPlayBoardMarginTapTarget(ev.target, { clientX: ev.clientX, clientY: ev.clientY })) return;
       // 一周完了直後の連打で次の一周が即始まるのを防ぐ
-      if (!state._shakaPachi && performance.now() < shakaPachiRoundCooldownUntil) return;
+      if (!state._shakaPachi && performance.now() < shakaPachiRoundCooldownUntil) {
+        shakaPachiArmedAt = 0;
+        return;
+      }
+      var now = performance.now();
+      /* 進行中は従来どおり1タップで1枚。未開始のみ「素早い2回クリック」で発動。 */
+      if (!state._shakaPachi) {
+        if (!shakaPachiArmedAt || now - shakaPachiArmedAt > SHAKA_PACHI_DOUBLE_TAP_MS) {
+          shakaPachiArmedAt = now;
+          return;
+        }
+        shakaPachiArmedAt = 0;
+      } else {
+        shakaPachiArmedAt = 0;
+      }
       var intensity = playShakaPachiTap();
       shuffleHandForShakaPachi(intensity);
     };
@@ -44674,8 +44715,8 @@ export function mountSimulator(
   }
 
   /**
-   * シャカパチ: クリック1回につきカード1枚を反対側の束へ移す。
-   * 全部移し終えたら通常手札に戻す（結果は逆順）。次のクリックで新しい一周を開始。
+   * シャカパチ: 未開始時は素早い2回クリックで一周を開始。開始後はクリック1回につきカード1枚を反対側の束へ移す。
+   * 全部移し終えたら通常手札に戻す（結果は逆順）。次の一周も再び2回クリックで開始。
    * @param {number} [intensity]
    */
   function shuffleHandForShakaPachi(intensity) {
