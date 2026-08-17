@@ -82,6 +82,19 @@ function isVersusBoardResizeEnabled() {
   return document.body.classList.contains("play-versus-mode");
 }
 
+/** スマホ縦積みの左／中央／右（またはデッキ3パネル）の高さ変更 */
+function isPlayStackedResizeEnabled() {
+  return (
+    document.body.classList.contains("play-mode") &&
+    (document.body.classList.contains("chrome-layout-play-mobile-portrait") ||
+      (window.matchMedia && window.matchMedia("(max-width: 900px)").matches))
+  );
+}
+
+function isDeckStackedResizeEnabled() {
+  return window.matchMedia && window.matchMedia("(max-width: 1100px)").matches;
+}
+
 function syncSplitterVisibility() {
   const deckOn = isDeckDesktopSplitters();
   document.querySelectorAll("#view-deck .builder > .area-resize-handle--column").forEach(function (el) {
@@ -107,6 +120,21 @@ function syncSplitterVisibility() {
     versusHandle.hidden = !versusOn;
     versusHandle.setAttribute("aria-hidden", versusOn ? "false" : "true");
   }
+
+  const playStackOn = isPlayStackedResizeEnabled();
+  document.querySelectorAll("#view-game .area-resize-handle--row[data-area-resize-stack='play']").forEach(function (el) {
+    el.hidden = !playStackOn;
+    el.setAttribute("aria-hidden", playStackOn ? "false" : "true");
+  });
+
+  const deckStackOn = isDeckStackedResizeEnabled();
+  document.querySelectorAll("#view-deck .area-resize-handle--row[data-area-resize-stack='deck']").forEach(function (el) {
+    el.hidden = !deckStackOn;
+    el.setAttribute("aria-hidden", deckStackOn ? "false" : "true");
+  });
+
+  document.body.classList.toggle("area-resize-play-stacked", playStackOn);
+  document.body.classList.toggle("area-resize-deck-stacked", deckStackOn);
 }
 
 function makeSeparator(axis, label) {
@@ -517,6 +545,149 @@ function syncHandDockHandleMode() {
   syncHandHandleInvert(handle);
 }
 
+/** @type {{ selector: string, key: string, cssVar: string, min: number, label: string, stackKind: string }[]} */
+const STACK_HEIGHT_SPECS = [
+  {
+    selector: "#view-game .game-board > .col-left",
+    key: "play-left",
+    cssVar: "--area-play-stack-left",
+    min: 72,
+    label: "上段（左エリア）の高さを変更",
+    stackKind: "play",
+  },
+  {
+    selector: "#view-game .game-board > .col-center",
+    key: "play-center",
+    cssVar: "--area-play-stack-center",
+    min: 140,
+    label: "中段（ステージ）の高さを変更",
+    stackKind: "play",
+  },
+  {
+    selector: "#view-game .game-board > .col-right",
+    key: "play-right",
+    cssVar: "--area-play-stack-right",
+    min: 140,
+    label: "下段（手札・ツール）の高さを変更",
+    stackKind: "play",
+  },
+  {
+    selector: "#view-deck .builder > .search-panel",
+    key: "deck-search",
+    cssVar: "--area-deck-stack-search",
+    min: 100,
+    label: "検索欄の高さを変更",
+    stackKind: "deck",
+  },
+  {
+    selector: "#view-deck .builder > .card-panel",
+    key: "deck-cards",
+    cssVar: "--area-deck-stack-cards",
+    min: 160,
+    label: "カード一覧の高さを変更",
+    stackKind: "deck",
+  },
+  {
+    selector: "#view-deck .builder > .deck-panel",
+    key: "deck-current",
+    cssVar: "--area-deck-stack-current",
+    min: 160,
+    label: "現在のデッキ欄の高さを変更",
+    stackKind: "deck",
+  },
+];
+
+function setStackHeight(target, spec, height) {
+  const maxHeight = Math.max(180, ((window.innerHeight || 800) / pageScale()) * 0.78);
+  const next = Math.round(clamp(height, spec.min, maxHeight));
+  const px = next + "px";
+  target.style.setProperty(spec.cssVar, px);
+  document.documentElement.style.setProperty(spec.cssVar, px);
+  target.classList.add("area-resize-stack--sized");
+  if (!savedState.stackHeights || typeof savedState.stackHeights !== "object") {
+    savedState.stackHeights = {};
+  }
+  savedState.stackHeights[spec.key] = next;
+}
+
+function wireStackHandle(target, handle, spec) {
+  let drag = null;
+  const stored =
+    savedState.stackHeights && Number.isFinite(Number(savedState.stackHeights[spec.key]))
+      ? Number(savedState.stackHeights[spec.key])
+      : null;
+  if (stored != null) setStackHeight(target, spec, stored);
+
+  handle.dataset.areaResizeStack = spec.stackKind;
+
+  handle.addEventListener("pointerdown", function (ev) {
+    if (ev.button != null && ev.button !== 0) return;
+    if (handle.hidden) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    drag = {
+      pointerId: ev.pointerId,
+      startY: ev.clientY,
+      startHeight: target.getBoundingClientRect().height / pageScale(),
+    };
+    handle.classList.add("is-dragging");
+    document.body.classList.add("area-resize-active");
+    try {
+      handle.setPointerCapture(ev.pointerId);
+    } catch (_) {
+      /* noop */
+    }
+  });
+  handle.addEventListener("pointermove", function (ev) {
+    if (!drag || ev.pointerId !== drag.pointerId) return;
+    ev.preventDefault();
+    setStackHeight(target, spec, drag.startHeight + (ev.clientY - drag.startY) / pageScale());
+  });
+  function finish(ev) {
+    if (!drag || (ev && ev.pointerId != null && ev.pointerId !== drag.pointerId)) return;
+    drag = null;
+    handle.classList.remove("is-dragging");
+    document.body.classList.remove("area-resize-active");
+    saveStateSoon();
+    notifyLayoutChanged();
+  }
+  handle.addEventListener("pointerup", finish);
+  handle.addEventListener("pointercancel", finish);
+  handle.addEventListener("keydown", function (ev) {
+    if (ev.key !== "ArrowUp" && ev.key !== "ArrowDown") return;
+    ev.preventDefault();
+    const current = target.getBoundingClientRect().height / pageScale();
+    const step = ev.shiftKey ? 30 : 10;
+    setStackHeight(target, spec, current + (ev.key === "ArrowUp" ? -step : step));
+    saveStateSoon();
+    notifyLayoutChanged();
+  });
+  handle.addEventListener("dblclick", function (ev) {
+    ev.preventDefault();
+    target.style.removeProperty(spec.cssVar);
+    document.documentElement.style.removeProperty(spec.cssVar);
+    target.classList.remove("area-resize-stack--sized");
+    if (savedState.stackHeights) delete savedState.stackHeights[spec.key];
+    saveStateSoon();
+    notifyLayoutChanged();
+  });
+}
+
+function refreshStackedRegionHandles() {
+  STACK_HEIGHT_SPECS.forEach(function (spec) {
+    const target = document.querySelector(spec.selector);
+    if (!target || target.dataset.areaResizeStack === "1") return;
+    target.dataset.areaResizeStack = "1";
+    target.classList.add("area-resize-stack");
+    target.dataset.areaResizeKey = spec.key;
+    const handle = makeSeparator("y", spec.label);
+    handle.classList.add("area-resize-handle--stack");
+    handle.dataset.areaResizeBoundary = "stack-" + spec.key;
+    target.appendChild(handle);
+    wireStackHandle(target, handle, spec);
+  });
+}
+
 let visibilityWired = false;
 
 function wireVisibilitySync() {
@@ -539,8 +710,7 @@ function wireVisibilitySync() {
     }
   }
   /* childList 監視はハンドル追加でループしやすいので属性変化のみ */
-  const viewGame = document.getElementById("view-game");
-  if (viewGame && typeof MutationObserver !== "undefined") {
+  if (typeof MutationObserver !== "undefined") {
     let moRaf = 0;
     const observer = new MutationObserver(function () {
       if (moRaf) return;
@@ -548,6 +718,7 @@ function wireVisibilitySync() {
         moRaf = 0;
         syncSplitterVisibility();
         refreshPlayZoneHandles();
+        refreshStackedRegionHandles();
         syncHandDockHandleMode();
       });
     });
@@ -571,6 +742,7 @@ export function initAreaResizers() {
     initPlayColumns();
     initVersusBoardSplit();
     refreshPlayZoneHandles();
+    refreshStackedRegionHandles();
     wireVisibilitySync();
     syncSplitterVisibility();
 

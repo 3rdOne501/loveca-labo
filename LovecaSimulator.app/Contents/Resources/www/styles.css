@@ -579,6 +579,18 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
   margin: 0;
   cursor: row-resize;
 }
+.area-resize-handle--stack {
+  /* 縦積み段の下端ハンドル（ゾーンよりやや強調） */
+  bottom: 0;
+  height: 16px;
+  right: 6px;
+  left: 6px;
+}
+.area-resize-handle--stack::after {
+  top: 6px;
+  height: 3px;
+  background: rgba(255, 170, 215, 0.55);
+}
 /* スマホ／タッチ: 境界を指で掴みやすく */
 @media (max-width: 900px), (pointer: coarse) {
   .area-resize-handle--row {
@@ -590,6 +602,14 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
   .area-resize-handle--row::after {
     top: 7px;
     height: 3px;
+  }
+  .area-resize-handle--stack {
+    height: 22px;
+    bottom: -2px;
+  }
+  .area-resize-handle--stack::after {
+    top: 9px;
+    height: 4px;
   }
   .area-resize-handle--versus {
     flex-basis: 16px;
@@ -663,6 +683,30 @@ body.area-resize-active {
   }
   #view-deck .builder.area-resize-grid--deck > .area-resize-handle--column {
     display: none;
+  }
+  /* デッキ縦積み: 各パネル高さドラッグ */
+  body.area-resize-deck-stacked #view-deck .builder > .search-panel.area-resize-stack,
+  body.area-resize-deck-stacked #view-deck .builder > .card-panel.area-resize-stack,
+  body.area-resize-deck-stacked #view-deck .builder > .deck-panel.area-resize-stack {
+    position: relative;
+  }
+  body.area-resize-deck-stacked #view-deck .builder > .search-panel.area-resize-stack--sized {
+    max-height: var(--area-deck-stack-search);
+    min-height: min(100px, var(--area-deck-stack-search));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  body.area-resize-deck-stacked #view-deck .builder > .card-panel.area-resize-stack--sized {
+    max-height: var(--area-deck-stack-cards);
+    min-height: min(160px, var(--area-deck-stack-cards));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  body.area-resize-deck-stacked #view-deck .builder > .deck-panel.area-resize-stack--sized {
+    max-height: var(--area-deck-stack-current);
+    min-height: min(160px, var(--area-deck-stack-current));
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 }
 
@@ -4907,6 +4951,34 @@ body.play-mode.play-hand-docked-bottom #hand-stick-fold > .area-resize-handle--r
   body.play-mode .game-board.area-resize-grid--play > .area-resize-handle--column {
     display: none;
   }
+
+  /* プレイ縦積み（左→中央→右）: 段ごとの高さ */
+  body.area-resize-play-stacked .game-board > .col.area-resize-stack {
+    position: relative;
+  }
+  body.area-resize-play-stacked .game-board > .col.col-left.area-resize-stack--sized {
+    max-height: var(--area-play-stack-left);
+    min-height: min(72px, var(--area-play-stack-left));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  body.area-resize-play-stacked .game-board > .col.col-center.area-resize-stack--sized {
+    height: var(--area-play-stack-center);
+    max-height: var(--area-play-stack-center);
+    min-height: min(140px, var(--area-play-stack-center));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  body.area-resize-play-stacked .game-board > .col.col-right.area-resize-stack--sized {
+    height: var(--area-play-stack-right);
+    max-height: var(--area-play-stack-right);
+    min-height: min(140px, var(--area-play-stack-right));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  body.area-resize-play-stacked .game-board > .col > .area-resize-handle--stack {
+    z-index: 45;
+  }
 }
 
 body.play-mode .game-board .col {
@@ -6984,6 +7056,11 @@ body.play-mode .deck-pile {
     min-height: min(30vh, 340px);
     min-height: min(30svh, 340px);
   }
+  body.play-mode.chrome-layout-play-mobile-portrait
+    .game-board
+    .col.col-center.area-resize-stack--sized {
+    min-height: min(140px, var(--area-play-stack-center));
+  }
 
   /** 下段: デッキ〜プレビュー〜ツール〜手札（全幅） */
   body.play-mode.chrome-layout-play-mobile-portrait .game-board .col.col-right {
@@ -6999,6 +7076,12 @@ body.play-mode .deck-pile {
     overflow-x: hidden;
     overscroll-behavior: contain;
     width: auto;
+  }
+  body.play-mode.chrome-layout-play-mobile-portrait
+    .game-board
+    .col.col-right.area-resize-stack--sized {
+    min-height: min(140px, var(--area-play-stack-right));
+    overflow-y: auto;
   }
 
   body.play-mode.chrome-layout-play-mobile-portrait .play-top-fixed-strip {
