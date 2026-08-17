@@ -579,6 +579,30 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
   margin: 0;
   cursor: row-resize;
 }
+/* スマホ／タッチ: 境界を指で掴みやすく */
+@media (max-width: 900px), (pointer: coarse) {
+  .area-resize-handle--row {
+    height: 18px;
+    bottom: -8px;
+    right: 4px;
+    left: 4px;
+  }
+  .area-resize-handle--row::after {
+    top: 7px;
+    height: 3px;
+  }
+  .area-resize-handle--versus {
+    flex-basis: 16px;
+    min-height: 16px;
+  }
+  .area-resize-handle--versus::after {
+    top: 6px;
+    height: 3px;
+  }
+  .area-resize-handle--column {
+    min-width: 14px;
+  }
+}
 .area-resize-handle--versus::after {
   top: 4px;
   right: 12%;
@@ -1464,12 +1488,13 @@ body.play-versus-mode .versus-opponent-board__cell--center .versus-opp-energy-fo
   min-height: 0;
 }
 @media (max-width: 720px) {
-  body.play-versus-mode .versus-opponent-board {
+  /* 未カスタム時のみ既定比率。ドラッグで --versus-opp-pct を変えた場合は上書きしない */
+  body.play-versus-mode:not(.area-resize-versus-custom) .versus-opponent-board {
     flex-basis: 28%;
     max-height: 28%;
     padding-inline: 0.18rem;
   }
-  body.play-versus-mode .game-board {
+  body.play-versus-mode:not(.area-resize-versus-custom) .game-board {
     flex-basis: 72%;
     max-height: 72%;
   }
@@ -1480,6 +1505,9 @@ body.play-versus-mode .versus-opponent-board__cell--center .versus-opp-energy-fo
   body.play-versus-mode .versus-opponent-board {
     --versus-opp-card-w: calc(var(--loveca-play-w, 82px) * 0.46);
     --versus-opp-card-h: calc(var(--loveca-play-h, var(--card-h)) * 0.46);
+  }
+  body.play-versus-mode.area-resize-versus-custom .versus-opponent-board {
+    padding-inline: 0.18rem;
   }
 }
 .dlg-versus-opp-hand-reveal-body {
@@ -1967,10 +1995,10 @@ body.play-hand-docked-bottom .btn-hand-dock-turn {
 .zone-block-deck-live-sim.deck-live-sim--versus-yell-only .deck-live-sim-toolbar {
   justify-content: flex-start;
 }
-/* 固定手札に隠れないよう各列の下部に余白 */
+/* 固定手札に隠れないよう各列の下部に余白（高さドラッグに追従） */
 body.play-mode.play-hand-docked-bottom .game-board .col {
-  padding-bottom: 42vh;
-  padding-bottom: 42svh;
+  padding-bottom: var(--play-zone-h-hand, 42vh);
+  padding-bottom: var(--play-zone-h-hand, 42svh);
 }
 /* ドック内は手札を中央寄せ */
 body.play-mode.play-hand-docked-bottom #hand-row {
@@ -4854,18 +4882,21 @@ body.play-mode .three-cols.area-resize-zone--sized:has(#stage-left) {
   overflow: auto;
   overscroll-behavior: contain;
 }
-body.play-mode.chrome-layout-play-mobile-portrait .area-resize-handle--row,
-body.play-mode.play-hand-docked-bottom #hand-stick-fold .area-resize-handle--row,
+/* 折りたたみ中のみ非表示（スマホ縦向きでもゾーン境界は操作可） */
 body.play-mode #deck-pile-host:not(.is-open) .area-resize-handle--row,
 body.play-mode #waiting-pile-host:not(.is-open) .area-resize-handle--row,
 body.play-mode #hand-stick-fold:not([open]) .area-resize-handle--row,
 body.play-mode #energy-fold:not([open]) .area-resize-handle--row {
   display: none;
 }
-@media (max-width: 900px) {
-  body.play-versus-mode .area-resize-handle--versus {
-    display: none;
-  }
+/* 下部ドック手札: 高さドラッグを有効化（ハンドルは上辺） */
+body.play-mode.play-hand-docked-bottom #hand-stick-fold.hand-stick-fold.area-resize-zone--sized {
+  max-height: var(--play-zone-h-hand, 42svh);
+}
+body.play-mode.play-hand-docked-bottom #hand-stick-fold > .area-resize-handle--row {
+  top: -6px;
+  bottom: auto;
+  z-index: 70;
 }
 
 @media (max-width: 900px) {

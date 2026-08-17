@@ -73,8 +73,13 @@ function isPlayDesktopSplitters() {
   );
 }
 
+/** ゾーン高さ・対戦分割はスマホ／縦向きでも有効（列幅ハンドルのみデスクトップ） */
 function isPlayZoneResizeEnabled() {
-  return isPlayDesktopSplitters() && !document.body.classList.contains("play-hand-docked-bottom");
+  return document.body.classList.contains("play-mode");
+}
+
+function isVersusBoardResizeEnabled() {
+  return document.body.classList.contains("play-versus-mode");
 }
 
 function syncSplitterVisibility() {
@@ -96,10 +101,7 @@ function syncSplitterVisibility() {
     el.setAttribute("aria-hidden", zonesOn ? "false" : "true");
   });
 
-  const versusOn =
-    document.body.classList.contains("play-versus-mode") &&
-    !document.body.classList.contains("chrome-layout-play-mobile-portrait") &&
-    window.matchMedia("(min-width: 901px)").matches;
+  const versusOn = isVersusBoardResizeEnabled();
   const versusHandle = document.querySelector(".area-resize-handle--versus");
   if (versusHandle) {
     versusHandle.hidden = !versusOn;
@@ -399,7 +401,10 @@ const PLAY_ZONE_HEIGHT_SPECS = [
 function setZoneHeight(target, spec, height) {
   const maxHeight = Math.max(140, (window.innerHeight || 800) / pageScale() * 0.72);
   const next = Math.round(clamp(height, spec.min, maxHeight));
-  target.style.setProperty(spec.cssVar, next + "px");
+  const px = next + "px";
+  target.style.setProperty(spec.cssVar, px);
+  /* ドック余白など祖先外でも参照できるよう root にも同期 */
+  document.documentElement.style.setProperty(spec.cssVar, px);
   target.classList.add("area-resize-zone--sized");
   if (!savedState.zoneHeights || typeof savedState.zoneHeights !== "object") {
     savedState.zoneHeights = {};
@@ -438,7 +443,10 @@ function wireZoneHandle(target, handle, spec) {
   handle.addEventListener("pointermove", function (ev) {
     if (!drag || ev.pointerId !== drag.pointerId) return;
     ev.preventDefault();
-    setZoneHeight(target, spec, drag.startHeight + (ev.clientY - drag.startY) / pageScale());
+    var deltaY = (ev.clientY - drag.startY) / pageScale();
+    /* 下部ドックの上辺ハンドル: 上へドラッグで高く */
+    if (handle.dataset.areaResizeInvertY === "1") deltaY = -deltaY;
+    setZoneHeight(target, spec, drag.startHeight + deltaY);
   });
   function finish(ev) {
     if (!drag || (ev && ev.pointerId != null && ev.pointerId !== drag.pointerId)) return;
@@ -455,13 +463,16 @@ function wireZoneHandle(target, handle, spec) {
     ev.preventDefault();
     const current = target.getBoundingClientRect().height / pageScale();
     const step = ev.shiftKey ? 30 : 10;
-    setZoneHeight(target, spec, current + (ev.key === "ArrowUp" ? -step : step));
+    var dir = ev.key === "ArrowUp" ? -1 : 1;
+    if (handle.dataset.areaResizeInvertY === "1") dir = -dir;
+    setZoneHeight(target, spec, current + dir * step);
     saveStateSoon();
     notifyLayoutChanged();
   });
   handle.addEventListener("dblclick", function (ev) {
     ev.preventDefault();
     target.style.removeProperty(spec.cssVar);
+    document.documentElement.style.removeProperty(spec.cssVar);
     target.classList.remove("area-resize-zone--sized");
     if (savedState.zoneHeights) delete savedState.zoneHeights[spec.key];
     saveStateSoon();
@@ -480,9 +491,30 @@ function refreshPlayZoneHandles() {
     target.dataset.areaResizeKey = spec.key;
     const handle = makeSeparator("y", spec.label);
     handle.dataset.areaResizeBoundary = "zone-" + spec.key;
+    if (spec.key === "hand-stick") {
+      handle.dataset.areaResizeInvertY = "1";
+      /* ドック時は上辺・通常時は下辺。クラス連動は CSS。invert は常に手札に付け、ドック時のみ CSS で上辺配置 */
+      syncHandHandleInvert(handle);
+    }
     target.appendChild(handle);
     wireZoneHandle(target, handle, spec);
   });
+  syncHandDockHandleMode();
+}
+
+function syncHandHandleInvert(handle) {
+  if (!handle) return;
+  /* 下部ドック時のみ上へドラッグで高く。通常レイアウトは下辺ドラッグのまま */
+  handle.dataset.areaResizeInvertY = document.body.classList.contains("play-hand-docked-bottom")
+    ? "1"
+    : "0";
+}
+
+function syncHandDockHandleMode() {
+  const handle = document.querySelector(
+    '#hand-stick-fold > .area-resize-handle--row[data-area-resize-boundary="zone-hand-stick"]',
+  );
+  syncHandHandleInvert(handle);
 }
 
 let visibilityWired = false;
@@ -516,6 +548,7 @@ function wireVisibilitySync() {
         moRaf = 0;
         syncSplitterVisibility();
         refreshPlayZoneHandles();
+        syncHandDockHandleMode();
       });
     });
     observer.observe(document.body, {
