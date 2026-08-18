@@ -109,6 +109,16 @@ body.play-mode .page-zoom-control:focus-within {
   }
 }
 
+/*
+ * black-translucent + body{zoom} だと env(safe-area) が画面上で不足する。
+ * ページ倍率で割って、ステータスバー（時刻）下に確実に余白を取る（スマホ幅で適用）。
+ */
+:root {
+  --ll-safe-top-raw: env(safe-area-inset-top, 0px);
+  --ll-safe-top-pad: calc(var(--ll-safe-top-raw) / var(--ll-page-scale, 1) + 10px / var(--ll-page-scale, 1));
+  --ll-safe-top-pad-min: calc(47px / var(--ll-page-scale, 1) + 8px);
+}
+
 body {
   margin: 0;
   /* Android Chrome は dvh が URL バー連動でガクガク動くため、svh を主に使う。
@@ -178,6 +188,12 @@ body::before {
 }
 #view-deck .app-header {
   flex-shrink: 0;
+}
+@media (max-width: 900px) {
+  #view-deck .app-header {
+    /* iPhone: ステータスバー時刻と Loveca Labo ロゴが被らないように */
+    padding-top: max(1.25rem, var(--ll-safe-top-pad), var(--ll-safe-top-pad-min));
+  }
 }
 
 /* タイトル位置はそのまま。ログイン欄だけヘッダー右上に固定 */
@@ -4902,6 +4918,9 @@ body.play-mode .game-bar {
   flex-shrink: 0;
   padding: 0.4rem 0.65rem;
   position: relative;
+  /* 解決・成功ライブ直上のピンク枠線を消す */
+  border-bottom: none;
+  box-shadow: none;
 }
 
 #view-game.view:not([hidden]) {
@@ -4913,6 +4932,13 @@ body.play-mode .game-bar {
   max-height: 100vh;
   max-height: calc(100 * var(--ll-svh));
   overflow: hidden;
+  box-sizing: border-box;
+}
+@media (max-width: 900px) {
+  #view-game.view:not([hidden]) {
+    /* 時刻オーバーレイ下へ全体を下げ、ボタンが押せるようにする（chrome クラス非依存） */
+    padding-top: max(var(--ll-safe-top-pad), var(--ll-safe-top-pad-min));
+  }
 }
 
 body.play-mode .game-board {
@@ -7144,19 +7170,16 @@ body.play-mode .deck-pile {
     background: linear-gradient(180deg, rgba(18, 10, 28, 0.98), rgba(14, 9, 22, 0.88));
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.42);
+    box-shadow: none;
     border: none;
+    border-top: none;
+    outline: none;
   }
 
+  /* iPhone 14 (390px) でも解決｜成功ライブを横並び（1行）に */
   body.play-mode.chrome-layout-play-mobile-portrait .play-top-fixed-strip__body {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto;
-  }
-  @media (min-width: 420px) {
-    body.play-mode.chrome-layout-play-mobile-portrait .play-top-fixed-strip__body {
-      grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-      grid-template-rows: auto;
-    }
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    grid-template-rows: auto;
   }
 
   body.play-mode.chrome-layout-play-mobile-portrait .game-board .col.col-left,
@@ -7733,25 +7756,44 @@ summary {
     --deck-thumb-w-pile: 52px;
   }
   /*
-   * スマホ縦（PWA／Safari）: 3行が横並びだと上端／右端の項目がはみ出して
-   * タップしづらいので縦に並べ直し、上のセーフエリアぶん下げる。
+   * スマホ縦: ツール行は縦積み。アクション行（戻る／ガイド／手札隠す）は
+   * 1行固定＋横スクロール（iPhone 14 で 2 行化して時刻に食われないように）。
+   * 上余白は #view-game の --ll-safe-top-pad で確保済み。
    */
+  body.play-mode .game-bar,
   body.play-mode.chrome-layout-play-mobile-portrait .game-bar {
     flex-wrap: wrap;
     overflow-x: hidden;
+    overflow-y: visible;
     gap: 0.32rem;
-    /* black-translucent: 時刻と「デッキ編集に戻る」が被らないよう inset 確保（env 欠落時も最低 2.75rem） */
-    padding-top: max(2.75rem, calc(constant(safe-area-inset-top, 0px) + 0.5rem));
-    padding-top: max(2.75rem, calc(env(safe-area-inset-top, 0px) + 0.5rem));
+    padding-top: 0.34rem;
     padding-right: max(0.45rem, env(safe-area-inset-right, 0px));
     padding-bottom: 0.34rem;
     padding-left: max(0.45rem, env(safe-area-inset-left, 0px));
+    border-bottom: none;
+    box-shadow: none;
   }
-  body.play-mode.chrome-layout-play-mobile-portrait .game-bar-row {
+  body.play-mode .game-bar-row.game-bar-actions {
+    flex: 1 1 100%;
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 0.28rem;
+  }
+  body.play-mode .game-bar-row.game-tools-row,
+  body.play-mode .game-bar-row.versus-play-chrome {
     flex: 1 1 100%;
     width: 100%;
   }
-  body.play-mode.chrome-layout-play-mobile-portrait .game-bar-row.game-bar-actions .btn,
+  body.play-mode .game-bar-row.game-bar-actions .btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    font-size: 0.68rem;
+    padding-left: 0.38rem;
+    padding-right: 0.38rem;
+    min-height: 32px;
+  }
   body.play-mode.chrome-layout-play-mobile-portrait .game-bar-row.game-tools-row .btn {
     font-size: 0.7rem;
     padding-left: 0.4rem;
@@ -7777,6 +7819,14 @@ summary {
   .btn.sm {
     min-height: 40px;
     min-width: 40px;
+  }
+  /* プレイ上バーは1行維持のため coarse 最低高を打ち消す */
+  body.play-mode .game-bar .btn,
+  body.play-mode .game-bar .btn.sm {
+    min-height: 32px;
+    min-width: 0;
+    padding-left: 0.38rem;
+    padding-right: 0.38rem;
   }
   .hud-chip kbd {
     min-width: 2em;
@@ -11554,6 +11604,14 @@ body.play-mode .game-bar-row.game-bar-actions .btn {
   font-size: 0.74rem;
   padding-left: 0.45rem;
   padding-right: 0.45rem;
+}
+@media (max-width: 900px) {
+  body.play-mode .game-bar-row.game-bar-actions .btn {
+    font-size: 0.68rem;
+    padding-left: 0.38rem;
+    padding-right: 0.38rem;
+    min-height: 32px;
+  }
 }
 body.play-mode .play-disclaimer {
   display: none;
