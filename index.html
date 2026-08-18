@@ -51,7 +51,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,700;1,9..40,500&family=M+PLUS+Rounded+1c:wght@500;700&family=Noto+Sans+JP:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=2026081803" />
+    <link rel="stylesheet" href="styles.css?v=2026081815" />
     <link rel="stylesheet" href="styles-perf.css?v=2026051910" />
   </head>
   <body>
@@ -612,13 +612,17 @@ python3 -m http.server 8080</pre>
                     デッキ確認
                   </button>
                   <button type="button" class="btn sm primary" id="btn-preset-save">上書き保存</button>
+                  <button type="button" class="btn sm secondary" id="btn-preset-rename" title="選択中の保存デッキの名前を変更">
+                    名前変更
+                  </button>
                   <button type="button" class="btn sm secondary" id="btn-preset-save-as">新規で保存</button>
                   <button type="button" class="btn sm secondary" id="btn-preset-duplicate">複製</button>
                   <button type="button" class="btn sm secondary" id="btn-preset-delete">削除</button>
                 </div>
               </div>
               <p class="deck-preset-note">
-                「新規で保存」で名前を付けるとリストに増えます。上限 <strong>24</strong> 件まで（超えると古い順に消えます）。
+                「新規で保存」で名前を付けるとリストに増えます。「名前変更」で選択中デッキの名前だけ変えられます。上限
+                <strong>24</strong> 件まで（超えると古い順に消えます）。
               </p>
             </div>
           </details>

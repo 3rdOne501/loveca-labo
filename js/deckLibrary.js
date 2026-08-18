@@ -290,6 +290,26 @@ export function updateDeckSlot(lib, id, deckMap, roleLabels) {
   return { slots: [...getBuiltInPresetSlots(), ...slots] };
 }
 
+/**
+ * ユーザー保存デッキの表示名を変更する（共通初期デッキは不可）。
+ * @param {{ slots: Array<{id:string, name?:string}> }} lib
+ * @param {string} id
+ * @param {string} newName
+ */
+export function renameDeckSlot(lib, id, newName) {
+  if (isBuiltInStarterDeckId(id)) return lib;
+  const nm = String(newName == null ? "" : newName).trim() || "無題のデッキ";
+  const slots = userSlotsOnly(lib).map(function (s) {
+    if (s.id !== id) return s;
+    return {
+      ...s,
+      name: nm.slice(0, 40),
+      updatedAt: new Date().toISOString(),
+    };
+  });
+  return { slots: [...getBuiltInPresetSlots(), ...slots] };
+}
+
 export function removeDeckSlot(lib, id) {
   if (isBuiltInStarterDeckId(id)) {
     /* 共通プリセット（サンプル）は、ユーザー独自デッキが 1 件以上あるときだけ一覧から外せる。 */

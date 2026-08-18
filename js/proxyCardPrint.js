@@ -7,6 +7,18 @@
  * 外部サイト https://proxy-card.imasanari.dev/ への DnD・ZIP は任意フォールバック。
  */
 
+import { T_LIVE, T_MEMBER } from "./config.js";
+import { cardIsDrawYellLiveCatalog, cardIsNoteLiveCatalog } from "./cards.js";
+import {
+  bladeHeartDisplaySlotLabel,
+  cardHasBladeHeart,
+  compareBladeHeartDbKeys,
+  isBladeHeartDoubleColorlessMarkerKey,
+  isBladeHeartDrawMarkerKey,
+  parseBladeHeartSlotFromKey,
+} from "./bladeHeart.js";
+import { GAME_STATUS_ICON_ART_DIR, resolveGameStatusBundledHref } from "./gameStatusIcons.js";
+
 export const PROXY_CARD_PRINT_URL = "https://proxy-card.imasanari.dev/";
 
 /** Love Live! TCG は 63×88mm 相当（サイトの「スタンダードサイズ」） */
@@ -805,6 +817,313 @@ async function loadRecipeImage(url) {
  * @param {number} h
  * @param {number} r
  */
+/** BH スロット色（canvas 用。bladeHeart SLOT.fill と揃える） */
+const RECIPE_BH_SLOT_FILL = {
+  1: "#ff9eb5",
+  2: "#e53935",
+  3: "#fbc02d",
+  4: "#43a047",
+  5: "#1e88e5",
+  6: "#8e24aa",
+  7: "#f5f5f5",
+};
+
+/**
+ * デッキレシピ画像用の BH / 非BH / スコア / ドロー / コスト分布。
+ * @param {Record<string, number>} deckMap
+ * @param {(no: string) => object | null | undefined} getCardFn
+ */
+export function buildDeckRecipeShareStats(deckMap, getCardFn) {
+  /** @type {Record<string, number>} */
+  const byKey = {};
+  /** @type {Record<string, number>} */
+  const byCost = {};
+  let memBh = 0;
+  let liveBh = 0;
+  let memNonBh = 0;
+  let scoreLive = 0;
+  let drawLive = 0;
+  let totalBhWeighted = 0;
+
+  Object.keys(deckMap || {}).forEach(function (no) {
+    const n = Number(deckMap[no]);
+    if (!Number.isInteger(n) || n <= 0) return;
+    const c = getCardFn(no);
+    if (!c) return;
+    if (c.type === T_MEMBER) {
+      if (cardHasBladeHeart(c)) memBh += n;
+      else memNonBh += n;
+      const costN = Number(c.cost);
+      const costKey = Number.isFinite(costN) ? String(Math.floor(costN)) : "—";
+      byCost[costKey] = (byCost[costKey] || 0) + n;
+    } else if (c.type === T_LIVE) {
+      if (cardHasBladeHeart(c)) liveBh += n;
+      if (cardIsNoteLiveCatalog(c)) scoreLive += n;
+      if (cardIsDrawYellLiveCatalog(c)) drawLive += n;
+    }
+    if (!cardHasBladeHeart(c)) return;
+    const bh = c.blade_heart;
+    if (!bh || typeof bh !== "object" || Array.isArray(bh)) return;
+    Object.keys(bh).forEach(function (key) {
+      const v = Number(bh[key]);
+      if (!Number.isFinite(v) || v === 0) return;
+      const add = v * n;
+      byKey[key] = (byKey[key] || 0) + add;
+      totalBhWeighted += add;
+    });
+  });
+
+  const bhEntries = Object.keys(byKey)
+    .map(function (k) {
+      return { key: k, qty: byKey[k] };
+    })
+    .sort(function (a, b) {
+      return compareBladeHeartDbKeys(a.key, b.key);
+    });
+
+  const costEntries = Object.keys(byCost)
+    .map(function (k) {
+      return { cost: k, qty: byCost[k] };
+    })
+    .sort(function (a, b) {
+      if (a.cost === "—") return 1;
+      if (b.cost === "—") return -1;
+      return Number(a.cost) - Number(b.cost);
+    });
+
+  return {
+    memBh: memBh,
+    liveBh: liveBh,
+    memNonBh: memNonBh,
+    scoreLive: scoreLive,
+    drawLive: drawLive,
+    totalBhWeighted: totalBhWeighted,
+    bhEntries: bhEntries,
+    costEntries: costEntries,
+  };
+}
+
+function recipeBhPillMeta(dbKey) {
+  if (isBladeHeartDoubleColorlessMarkerKey(dbKey)) {
+    return { label: "W無色", fill: "#cfd8dc", iconSlot: 0, iconOpts: { double_colorless: true } };
+  }
+  if (isBladeHeartDrawMarkerKey(dbKey)) {
+    return { label: "ドロー", fill: "#80deea", iconSlot: 0, iconOpts: { draw_yell: true } };
+  }
+  const slot = parseBladeHeartSlotFromKey(dbKey);
+  if (slot != null && slot >= 1 && slot <= 7) {
+    return {
+      label: bladeHeartDisplaySlotLabel(slot),
+      fill: RECIPE_BH_SLOT_FILL[slot] || "#ff9eb5",
+      iconSlot: slot,
+      iconOpts: {},
+    };
+  }
+  return { label: String(dbKey), fill: "#9e9e9e", iconSlot: null, iconOpts: {} };
+}
+
+function recipeHeartIconUrl(slot, opts) {
+  opts = opts || {};
+  var file = null;
+  if (opts.score) file = "icon_score.png";
+  else if (opts.draw_yell) file = "icon_draw.png";
+  else if (opts.double_colorless) file = "icon_blade_heart07.png";
+  else if (slot === 7) file = "icon_all.png";
+  else if (typeof slot === "number" && slot >= 1 && slot <= 6) file = "heart_0" + slot + ".png";
+  else if (slot === 0) file = "heart_00.png";
+  if (!file) return "";
+  try {
+    return resolveGameStatusBundledHref(GAME_STATUS_ICON_ART_DIR + file) || "";
+  } catch (_) {
+    return "";
+  }
+}
+
+/**
+ * @param {ReturnType<typeof buildDeckRecipeShareStats>} stats
+ * @param {number} panelInnerW
+ * @returns {{ pills: {label:string, qty:number, fill:string, cacheKey:string}[], pillRows: number, height: number }}
+ */
+function layoutDeckRecipeStatsPanel(stats, panelInnerW) {
+  /** @type {{label:string, qty:number, fill:string, cacheKey:string}[]} */
+  const pills = [];
+  (stats.bhEntries || []).forEach(function (ent) {
+    const meta = recipeBhPillMeta(ent.key);
+    const cacheKey = meta.iconOpts.score
+      ? "score"
+      : meta.iconOpts.draw_yell
+        ? "draw"
+        : meta.iconOpts.double_colorless
+          ? "w07"
+          : "s" + String(meta.iconSlot);
+    pills.push({ label: meta.label, qty: ent.qty, fill: meta.fill, cacheKey: cacheKey });
+  });
+  if (stats.memNonBh > 0) pills.push({ label: "非BH", qty: stats.memNonBh, fill: "#78909c", cacheKey: "" });
+  if (stats.scoreLive > 0) pills.push({ label: "スコア", qty: stats.scoreLive, fill: "#ffb74d", cacheKey: "score" });
+  if (stats.drawLive > 0) pills.push({ label: "ドロー", qty: stats.drawLive, fill: "#4dd0e1", cacheKey: "draw" });
+
+  const measureCanvas = document.createElement("canvas");
+  const mctx = measureCanvas.getContext("2d");
+  let pillRows = 0;
+  if (pills.length && mctx) {
+    mctx.font = '600 14px "Noto Sans JP", system-ui, sans-serif';
+    const pillH = 30;
+    const pillGap = 8;
+    let px = 0;
+    let rows = 1;
+    pills.forEach(function (p) {
+      const label = p.label + " ×" + p.qty;
+      const textW = mctx.measureText(label).width;
+      const iconW = p.cacheKey ? 18 : 0;
+      const pillW = Math.ceil(textW + 18 + iconW + (iconW ? 6 : 0));
+      if (px + pillW > panelInnerW && px > 0) {
+        rows++;
+        px = 0;
+      }
+      px += pillW + pillGap;
+    });
+    pillRows = rows;
+    void pillH;
+  } else if (pills.length) {
+    pillRows = Math.ceil(pills.length / Math.max(1, Math.floor(panelInnerW / 110)));
+  }
+
+  const padIn = 16;
+  const summaryH = 34;
+  const pillsH = pillRows ? pillRows * 38 : 4;
+  const chartTitleH = 26;
+  const chartH = (stats.costEntries || []).length ? 96 : 28;
+  const height = padIn + summaryH + pillsH + chartTitleH + chartH + padIn;
+  return { pills: pills, pillRows: pillRows, height: height };
+}
+
+/**
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {ReturnType<typeof buildDeckRecipeShareStats>} stats
+ * @param {number} x
+ * @param {number} y
+ * @param {number} w
+ * @param {Record<string, HTMLImageElement|null>} iconCache
+ * @returns {number} 描画した高さ
+ */
+function drawDeckRecipeStatsPanel(ctx, stats, x, y, w, iconCache) {
+  const padIn = 16;
+  const layout = layoutDeckRecipeStatsPanel(stats, w - padIn * 2);
+  const panelH = layout.height;
+
+  ctx.fillStyle = "rgba(255, 255, 255, 0.06)";
+  ctx.strokeStyle = "rgba(255, 140, 190, 0.38)";
+  ctx.lineWidth = 1.5;
+  fillRoundRect(ctx, x, y, w, panelH, 14);
+  ctx.stroke();
+
+  let cy = y + padIn;
+  ctx.fillStyle = "rgba(255, 214, 239, 0.92)";
+  ctx.font = '600 18px "Noto Sans JP", system-ui, sans-serif';
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillText(
+    "BH記載 メンバー " +
+      stats.memBh +
+      " · ライブ " +
+      stats.liveBh +
+      " · 非BHメン " +
+      stats.memNonBh +
+      " · スコア " +
+      stats.scoreLive +
+      " · ドロー " +
+      stats.drawLive +
+      " · BH計 " +
+      stats.totalBhWeighted,
+    x + padIn,
+    cy + 16,
+  );
+  cy += 34;
+
+  const pillH = 30;
+  const pillGap = 8;
+  let px = x + padIn;
+  let py = cy;
+  const maxX = x + w - padIn;
+  layout.pills.forEach(function (p) {
+    ctx.font = '600 14px "Noto Sans JP", system-ui, sans-serif';
+    const label = p.label + " ×" + p.qty;
+    const textW = ctx.measureText(label).width;
+    const icon = p.cacheKey ? iconCache[p.cacheKey] || null : null;
+    const iconW = icon ? 18 : 0;
+    const pillW = Math.ceil(textW + 18 + iconW + (iconW ? 6 : 0));
+    if (px + pillW > maxX && px > x + padIn) {
+      px = x + padIn;
+      py += pillH + pillGap;
+    }
+    ctx.fillStyle = p.fill;
+    fillRoundRect(ctx, px, py, pillW, pillH, 10);
+    let tx = px + 9;
+    if (icon) {
+      try {
+        ctx.drawImage(icon, tx, py + 6, 18, 18);
+      } catch (_) {}
+      tx += 24;
+    }
+    ctx.fillStyle =
+      p.fill === "#f5f5f5" || p.fill === "#fbc02d" || p.fill === "#ffb74d" ? "#1a1018" : "#fff";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText(label, tx, py + pillH / 2 + 0.5);
+    px += pillW + pillGap;
+  });
+  if (layout.pills.length) cy = py + pillH + 14;
+  else cy += 4;
+
+  ctx.fillStyle = "rgba(255, 214, 239, 0.78)";
+  ctx.font = '600 16px "Noto Sans JP", system-ui, sans-serif';
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillText("メンバー コスト分布", x + padIn, cy + 14);
+  cy += 26;
+
+  const costs = stats.costEntries || [];
+  if (!costs.length) {
+    ctx.fillStyle = "rgba(255, 214, 239, 0.45)";
+    ctx.font = '500 14px "Noto Sans JP", system-ui, sans-serif';
+    ctx.fillText("（メンバーなし）", x + padIn, cy + 12);
+  } else {
+    const chartH = 88;
+    const chartBottom = cy + chartH;
+    let maxQty = 1;
+    costs.forEach(function (c) {
+      maxQty = Math.max(maxQty, c.qty);
+    });
+    const barGap = 10;
+    const barAreaW = w - padIn * 2;
+    const barW = Math.min(48, Math.max(18, (barAreaW - barGap * (costs.length - 1)) / costs.length));
+    const totalBarsW = costs.length * barW + Math.max(0, costs.length - 1) * barGap;
+    let bx = x + padIn + Math.max(0, (barAreaW - totalBarsW) / 2);
+    costs.forEach(function (c) {
+      const barH = Math.max(6, Math.round((c.qty / maxQty) * (chartH - 28)));
+      const barX = bx;
+      const barY = chartBottom - 18 - barH;
+      const grad = ctx.createLinearGradient(0, barY, 0, chartBottom - 18);
+      grad.addColorStop(0, "#ff7ab8");
+      grad.addColorStop(1, "#ff5a9a");
+      ctx.fillStyle = grad;
+      fillRoundRect(ctx, barX, barY, barW, barH, 6);
+      ctx.fillStyle = "#ffe8f4";
+      ctx.font = 'bold 13px "Noto Sans JP", system-ui, sans-serif';
+      ctx.textAlign = "center";
+      ctx.textBaseline = "bottom";
+      ctx.fillText(String(c.qty), barX + barW / 2, barY - 2);
+      ctx.fillStyle = "rgba(255, 214, 239, 0.85)";
+      ctx.font = '600 13px "Noto Sans JP", system-ui, sans-serif';
+      ctx.textBaseline = "top";
+      ctx.fillText(c.cost === "—" ? "?" : String(c.cost), barX + barW / 2, chartBottom - 14);
+      bx += barW + barGap;
+    });
+  }
+
+  return panelH;
+}
+
 function fillRoundRect(ctx, x, y, w, h, r) {
   const rr = Math.max(0, Math.min(r, w / 2, h / 2));
   ctx.beginPath();
@@ -880,7 +1199,10 @@ export async function exportDeckRecipeImageBlob(deckMap, getCardFn, opts) {
   const rows = Math.ceil(entries.length / cols);
   const gridH = rows * cellH + Math.max(0, rows - 1) * gridGap;
   const footerH = 40;
-  const canvasH = pad + titleH + subH + sectionGap + gridH + pad + footerH;
+  const stats = buildDeckRecipeShareStats(deckMap, getCardFn);
+  const statsLayout = layoutDeckRecipeStatsPanel(stats, gridW - 32);
+  const statsH = statsLayout.height;
+  const canvasH = pad + titleH + subH + sectionGap + statsH + sectionGap + gridH + pad + footerH;
 
   const canvas = document.createElement("canvas");
   canvas.width = W;
@@ -927,7 +1249,34 @@ export async function exportDeckRecipeImageBlob(deckMap, getCardFn, opts) {
     pad + titleH + 8,
   );
 
-  const gridTop = pad + titleH + subH + sectionGap;
+  /** @type {Record<string, HTMLImageElement|null>} */
+  const iconCache = {};
+  const iconLoads = [
+    { key: "score", url: recipeHeartIconUrl(0, { score: true }) },
+    { key: "draw", url: recipeHeartIconUrl(0, { draw_yell: true }) },
+    { key: "w07", url: recipeHeartIconUrl(0, { double_colorless: true }) },
+    { key: "s1", url: recipeHeartIconUrl(1) },
+    { key: "s2", url: recipeHeartIconUrl(2) },
+    { key: "s3", url: recipeHeartIconUrl(3) },
+    { key: "s4", url: recipeHeartIconUrl(4) },
+    { key: "s5", url: recipeHeartIconUrl(5) },
+    { key: "s6", url: recipeHeartIconUrl(6) },
+    { key: "s7", url: recipeHeartIconUrl(7) },
+  ];
+  await Promise.all(
+    iconLoads.map(async function (it) {
+      if (!it.url) {
+        iconCache[it.key] = null;
+        return;
+      }
+      iconCache[it.key] = await loadRecipeImage(it.url);
+    }),
+  );
+
+  const statsTop = pad + titleH + subH + sectionGap;
+  drawDeckRecipeStatsPanel(ctx, stats, pad, statsTop, gridW, iconCache);
+
+  const gridTop = statsTop + statsH + sectionGap;
 
   for (let i = 0; i < entries.length; i++) {
     if (onProgress) onProgress(i, entries.length, entries[i].cardNo);

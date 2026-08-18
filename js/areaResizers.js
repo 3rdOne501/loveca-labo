@@ -524,8 +524,8 @@ function wireStackHandle(target, handle, spec) {
 }
 
 /**
- * スマホ縦: 「デッキ」見出しの上端＝ステージとの境界をドラッグ。
- * 下へドラッグでデッキ上端を下げ（中段を広く）、上へでデッキを上げる。
+ * スマホ縦: 「デッキ」見出しの上端ライン。
+ * 下へドラッグ → デッキ／控え室側（右列）だけ狭くする。ステージ（中段）の固定高さは触らない。
  */
 function refreshPlayDeckTopBoundary() {
   const center = document.querySelector("#view-game .game-board > .col-center");
@@ -553,7 +553,7 @@ function refreshPlayDeckTopBoundary() {
   center.dataset.areaResizeKey = PLAY_CENTER_SPEC.key;
   right.dataset.areaResizeKey = PLAY_RIGHT_SPEC.key;
 
-  const handle = makeSeparator("y", "ステージとデッキの境界を変更（上下にドラッグ）");
+  const handle = makeSeparator("y", "デッキ／控え室の高さを変更（下にドラッグで狭く）");
   handle.classList.add("area-resize-handle--stack", "area-resize-handle--deck-top");
   handle.dataset.areaResizeStack = "play";
   handle.dataset.areaResizeBoundary = "stack-play-deck-top";
@@ -563,8 +563,9 @@ function refreshPlayDeckTopBoundary() {
 
   let drag = null;
 
-  function applySplit(centerH, rightH) {
-    setStackHeight(center, PLAY_CENTER_SPEC, centerH);
+  function applyDeckColumnHeight(rightH) {
+    /* 旧ゼロサム分割で中段が固定されていた場合は外し、ステージは自然高に戻す */
+    clearStackHeight(center, PLAY_CENTER_SPEC);
     setStackHeight(right, PLAY_RIGHT_SPEC, rightH);
   }
 
@@ -573,14 +574,11 @@ function refreshPlayDeckTopBoundary() {
     if (handle.hidden) return;
     ev.preventDefault();
     ev.stopPropagation();
-    const cH = center.getBoundingClientRect().height / pageScale();
     const rH = right.getBoundingClientRect().height / pageScale();
     drag = {
       pointerId: ev.pointerId,
       startY: ev.clientY,
-      startCenter: cH,
       startRight: rH,
-      sum: Math.max(PLAY_CENTER_SPEC.min + PLAY_RIGHT_SPEC.min, cH + rH),
     };
     handle.classList.add("is-dragging");
     document.body.classList.add("area-resize-active");
@@ -595,14 +593,8 @@ function refreshPlayDeckTopBoundary() {
     if (!drag || ev.pointerId !== drag.pointerId) return;
     ev.preventDefault();
     const delta = (ev.clientY - drag.startY) / pageScale();
-    /* 下へ = デッキ上端を下げる = 中段を広く・下段を狭く */
-    const nextCenter = clamp(
-      drag.startCenter + delta,
-      PLAY_CENTER_SPEC.min,
-      drag.sum - PLAY_RIGHT_SPEC.min,
-    );
-    const nextRight = drag.sum - nextCenter;
-    applySplit(nextCenter, nextRight);
+    /* 下へ = デッキ列を狭く / 上へ = デッキ列を広く（ステージは広げない） */
+    applyDeckColumnHeight(drag.startRight - delta);
   });
 
   function finish(ev) {
@@ -619,13 +611,10 @@ function refreshPlayDeckTopBoundary() {
   handle.addEventListener("keydown", function (ev) {
     if (ev.key !== "ArrowUp" && ev.key !== "ArrowDown") return;
     ev.preventDefault();
-    const cH = center.getBoundingClientRect().height / pageScale();
     const rH = right.getBoundingClientRect().height / pageScale();
-    const sum = Math.max(PLAY_CENTER_SPEC.min + PLAY_RIGHT_SPEC.min, cH + rH);
     const step = ev.shiftKey ? 30 : 10;
     const delta = ev.key === "ArrowDown" ? step : -step;
-    const nextCenter = clamp(cH + delta, PLAY_CENTER_SPEC.min, sum - PLAY_RIGHT_SPEC.min);
-    applySplit(nextCenter, sum - nextCenter);
+    applyDeckColumnHeight(rH - delta);
     saveStateSoon();
     notifyLayoutChanged();
   });
@@ -641,9 +630,9 @@ function refreshPlayDeckTopBoundary() {
 
 function restorePlayStageDeckSplit(center, right) {
   const sh = savedState.stackHeights || {};
-  const c = Number(sh[PLAY_CENTER_SPEC.key]);
   const r = Number(sh[PLAY_RIGHT_SPEC.key]);
-  if (Number.isFinite(c)) setStackHeight(center, PLAY_CENTER_SPEC, c);
+  /* 中段の旧固定高さは復元しない（ライン操作はデッキ列のみ） */
+  clearStackHeight(center, PLAY_CENTER_SPEC);
   if (Number.isFinite(r)) setStackHeight(right, PLAY_RIGHT_SPEC, r);
 }
 

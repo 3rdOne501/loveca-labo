@@ -26,6 +26,7 @@ import {
   loadDeckLibrary,
   persistDeckLibrary,
   removeDeckSlot,
+  renameDeckSlot,
   restoreBuiltInStarterSlot,
   updateDeckSlot,
 } from "./deckLibrary.js";
@@ -3831,6 +3832,39 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
     if (sel) sel.value = id;
     persistDeckState();
     showToast(`「${slot.name}」に上書き保存しました`);
+  });
+
+  el("btn-preset-rename")?.addEventListener("click", () => {
+    const sel = el("deck-preset-select");
+    const id = sel && sel.value;
+    if (!id) {
+      showToast("名前を変える保存デッキを一覧から選んでください");
+      return;
+    }
+    if (isBuiltInStarterDeckId(id)) {
+      showToast("共通の初期デッキは名前を変えられません。「新規で保存」で自分用コピーを作ってください。");
+      return;
+    }
+    const slot = library.slots.find((x) => x.id === id);
+    if (!slot) {
+      showToast("一覧がずれました。読み込み直ししてください");
+      return;
+    }
+    const raw = prompt("デッキの新しい名前を入力してください", String(slot.name || ""));
+    if (raw === null) return;
+    const nextName = raw.trim();
+    if (!nextName) {
+      showToast("名前を空にはできません");
+      return;
+    }
+    library = renameDeckSlot(library, id, nextName);
+    persistDeckLibrary(library);
+    renderPresetSelect();
+    if (sel) sel.value = id;
+    writeDeckSummaryDom();
+    persistDeckState();
+    const renamed = library.slots.find((x) => x.id === id);
+    showToast(`デッキ名を「${renamed?.name || nextName}」に変更しました`);
   });
 
   el("btn-preset-save-as")?.addEventListener("click", () => {

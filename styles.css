@@ -4934,7 +4934,7 @@ body.play-mode .game-board.area-resize-grid--play {
   body.area-resize-play-stacked .game-board > .col > .area-resize-handle--stack {
     z-index: 45;
   }
-  /* デッキ見出しの上端＝ステージとの本命境界 */
+  /* デッキ見出しの上端＝デッキ列の高さ境界（ステージは固定しない） */
   body.area-resize-play-stacked .game-board > .col.col-right {
     padding-top: 14px;
   }

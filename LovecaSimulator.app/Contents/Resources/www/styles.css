@@ -591,6 +591,9 @@ button.btn.btn-reload-page.btn-reload-page--play:hover {
   height: 3px;
   background: rgba(255, 170, 215, 0.55);
 }
+.area-resize-handle--deck-top {
+  bottom: auto;
+}
 /* スマホ／タッチ: 境界を指で掴みやすく */
 @media (max-width: 900px), (pointer: coarse) {
   .area-resize-handle--row {
@@ -4931,7 +4934,7 @@ body.play-mode .game-board.area-resize-grid--play {
   body.area-resize-play-stacked .game-board > .col > .area-resize-handle--stack {
     z-index: 45;
   }
-  /* デッキ見出しの上端＝ステージとの本命境界 */
+  /* デッキ見出しの上端＝デッキ列の高さ境界（ステージは固定しない） */
   body.area-resize-play-stacked .game-board > .col.col-right {
     padding-top: 14px;
   }
