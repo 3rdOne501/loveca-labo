@@ -16,6 +16,21 @@
 
 ---
 
+## 0d. 報告バグ一括（2026-08-18）— 控え室回収 / 自動山札仕込み / 必要ハート合計 / 手札コスト / 任意ウェイト加点
+
+| カード番号 | 名前 | 根因 | 対応 | 横展開 |
+|-----------|------|------|------|--------|
+| PL!S-bp5-003-P（R/AR含む3枚） | 松浦果南 | コスト節の「BHなし」が回収 `filters.requiresNoBladeHeart` に漏れ、Aqoursライブ（多数が blade_heart 所持）が候補から除外 | コスト節のみの BH 条件は回収フィルタに載せない。`handDiscardNoBladeHeartMax` 時は `requiresNoBladeHeart` を削除 | 3枚 |
+| PL!S-sd1-005-SD | 渡辺 曜 | `kidou_hand_cost_wait_pick_hand` が自前コスト扱いで外枠 EE 未支払い | ハンドラ内で `costEnergy` を支払ってから手札捨て→回収 | 同テンプレ全体 |
+| PL!S-bp6-002-R＋/P/P＋/SEC | 桜内梨子 | (1) ターン開始のライブ枠→控え室で `live_zone_to_waiting` 未発火 (2) `sumLiveFrameNeedHeartSlots` が文字列キー参照で常に0 (3) SEC/P＋の ability 先頭末尾 `"` | flush 時に jidou 発火、スロット合計を数値キーで集計、`cardAbilityRawText`+cards.json 12枚の引用符除去 | ライブ上下仕込み4枚 + 必要ハート合計7枚 + 引用符12枚 |
+| PL!S-bp5-013-N / 017-N / bp6-010-N | 黒澤ダイヤ 他 | 同上 `sumLiveFrameNeedHeartSlots` | 同上 | ハート合計条件カード |
+| PL!N-sd2-003-SD2 | 桜坂しずく | 登場コスト計算時は手札を離れており `_joujiHandCostReduction` が 0 | `handSnap` 時は常時 `hand_cost_reduce` を再評価して減算 | 手札コスト減・登場経路全般 |
+| PL!N-bp5-005-P（パラレル含む） | 宮下 愛 | `batonPartnerLacksBhAtMinPrintedCost` が「BHなしならコスト無視で真」だった | 印刷コスト ≥ 閾値 かつ BHなし | 同テンプレ |
+| PL!N-sd2-027-SD2/P | 決意の光 | `costPickMemberWait` が外枠で1人ウェイトし、効果側の最大3・加点と二重化 | 分類で `costPickMemberWait:false` + `TEMPLATE_HANDLES_OWN_COST` | 2枚 |
+| PL!S-bp6-006-P/R | 津島善子 | 控え室登場時ブレードが `extractGrantedJoujiTexts` 経路のみで未付与 | `bladeGain` / `addLiveSessionBladeBonus` を直接適用 | 2枚 |
+
+---
+
 ## 0. PL!N-bp3-008 エマ — ライブ開始手札2捨ての二重支払い（2026-08-17）
 
 | カード番号 | 名前 | 根因 | 対応 | 横展開 |

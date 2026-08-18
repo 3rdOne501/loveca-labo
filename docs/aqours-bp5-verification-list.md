@@ -21,7 +21,7 @@
 | [x] | 010 | PL!S-bp5-010-N | toujou_grant_opp_live_need_heart_if_stage_hearts | ステージheart02合計5+→相手LS時ライブ必要ハート+1 |
 | [x] | 011 | PL!S-bp5-011-N | toujou_grant_opp_live_need_heart_if_stage_hearts | ステージheart05合計5+→相手LS時ライブ必要ハート+1 |
 | [x] | 012 / 018 | — | — | 能力なし |
-| [x] | 013 | PL!S-bp5-013-N | grant_jouji_session | ライブ開始: ライブ終了時までブレード2 |
+| [x] | 013 | PL!S-bp5-013-N | grant_jouji_session | ライブ開始: 必要ハート heart04 合計4以上→heart04 を得る |
 | [x] | 014 | PL!S-bp5-014-N | draw_then_hand_to_deck_bottom | 登場: 1ドロー→手札1枚山札下 |
 | [x] | 015 | PL!S-bp5-015-N | deck_top_to_waiting | 登場: 山札上10枚控え室 |
 | [x] | 016 | PL!S-bp5-016-N | grant_jouji_session | 相手全員より高コストの自ステージメンバーがいればブレード2 |

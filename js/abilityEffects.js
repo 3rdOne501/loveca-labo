@@ -617,7 +617,11 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  */
 
 export function cardAbilityRawText(card) {
-  return card && card.ability != null ? String(card.ability) : "";
+  if (!card || card.ability == null) return "";
+  var raw = String(card.ability);
+  if (raw.charAt(0) === '"') raw = raw.slice(1);
+  if (raw.charAt(raw.length - 1) === '"') raw = raw.slice(0, -1);
+  return raw.trim();
 }
 
 export function abilityPlainText(card) {
@@ -2144,6 +2148,8 @@ function classifyOptionalWaitMembersScorePerPatch(p) {
     cardScoreGrant: scM ? Number(scM[1]) || 1 : 1,
     optional: true,
     hasOptionalCost: true,
+    /* 効果本文の任意ウェイト（コストの costPickMemberWait ではない） */
+    costPickMemberWait: false,
     filters: { seriesTag: normalizeQuotedSeriesTag(m[1]), pickType: T_MEMBER },
   };
 }
@@ -3237,7 +3243,12 @@ export function parseAbilityPickFilters(p, segRaw) {
     f.minYellRevealedNoBladeHeartMembers == null &&
     !f.requiresYellRevealedNoBladeHeartMember
   ) {
-    f.requiresNoBladeHeart = true;
+    /* 「手札のBHなしを控え室に置いてもよい：控え室から〜」のコスト節だけなら回収フィルタに載せない */
+    var bhCostOnly =
+      p.indexOf("：") >= 0 &&
+      /ブレードハートを持たない/.test(p.split("：")[0]) &&
+      !/ブレードハートを持たない/.test(p.split("：").slice(1).join("："));
+    if (!bhCostOnly) f.requiresNoBladeHeart = true;
   }
   if (
     /ブレードハートを持たない/.test(p) &&
@@ -5821,6 +5832,7 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
         waitPickPatch.hasOptionalCost = true;
         waitPickPatch.handDiscardNoBladeHeartMax = Number(normalizeFwDigits(handNoBhCostM[1])) || 1;
         if (/同じ枚数/.test(p)) waitPickPatch.recoverCountMatchesDiscarded = true;
+        if (waitPickPatch.filters) delete waitPickPatch.filters.requiresNoBladeHeart;
       }
       if (/バトンタッチして登場した場合/.test(p)) {
         var batonLowSeriesM = p.match(/このメンバーよりコストが低い『([^』]+)』のメンバーからバトンタッチ/);

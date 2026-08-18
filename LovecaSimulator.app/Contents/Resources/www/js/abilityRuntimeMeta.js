@@ -56,6 +56,7 @@ export const TEMPLATE_HANDLES_OWN_COST = [
   "live_start_hand_discard_optional_blade_per",
   "live_start_hand_discard_optional_blade_pick_equal",
   "live_start_hand_discard_series_member_blade_grant",
+  "live_start_optional_wait_members_score_per",
   "heart_color_pick_grant",
   "heart_color_pick_replace",
   "live_start_hand_reveal_under_heart_grant",

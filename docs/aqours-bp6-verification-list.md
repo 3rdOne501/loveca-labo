@@ -15,7 +15,7 @@
 | [x] | 003 | PL!S-bp6-003-P/R | kidou_self_wait_stage_member_swap_recover | 手札1捨→他Aqours退場→控え室から同コスト登場 |
 | [x] | 004 | PL!S-bp6-004-P | live_start_live_frame_pick_deck_top | 任意: 能力なしAqoursライブ→山札上 **2026-06-28: 文中{{live_start}}フィルタの分割誤り修正** |
 | [x] | 005 | PL!S-bp6-005-P/R | deck_top_pick_recover | 山札2見→heart02/04/05全持ちメンバー1枚回収 |
-| [x] | 006 | PL!S-bp6-006-P/R | toujou_draw_grant_if_from_waiting | 2ドロー→控え室登場時のみブレード3 **2026-06-28: sequence誤分割修正** |
+| [x] | 006 | PL!S-bp6-006-P/R | toujou_draw_grant_if_from_waiting | 2ドロー→控え室登場時のみブレード3 |
 | [x] | 007 | PL!S-bp6-007-P/R | live_start_pay_or_discard_conditional_grant_members | 自SL0 & 相手SL2+→常時付与 |
 | [x] | 008 | PL!S-bp6-008-P/R | kidou_self_to_wait_recover | 退場→控え室C17以下Aqours同エリア登場 |
 | [x] | 009 | PL!S-bp6-009-P | jouji + yell_reveal_series_live_score_plus | 相手SL差ブレード / エールAqoursスコアライブ→合計+1 |

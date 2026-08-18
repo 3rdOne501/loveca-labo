@@ -95,7 +95,9 @@ const CASES = [
     expectTemplate: "passive_track",
     check: (_cl, seg) => {
       const rule = classifyJoujiSegment(seg.text);
-      return rule?.kind === "blade_conditional" && rule?.bladeFlat === 1 ? [] : ["succ diff blade"];
+      return rule?.kind === "blade_per_success_live_above_opponent" && rule?.bladePer === 1
+        ? []
+        : ["succ diff blade"];
     },
   },
   {

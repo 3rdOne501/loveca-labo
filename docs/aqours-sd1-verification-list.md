@@ -14,7 +14,7 @@
 | [x] | 002 | PL!S-sd1-002-SD | 桜内梨子 | toujou_wait_pick_hand | 登場: 任意1捨→控え室 Aqours 回収 |
 | [x] | 003 | PL!S-sd1-003-SD | 松浦果南 | deck_top_pick_recover | 登場: 5枚見て Aqours ライブ任意回収 |
 | [x] | 004 | PL!S-sd1-004-SD | 黒澤ダイヤ | draw_then_hand_to_deck_top | LS: 任意1ドロー→手札2枚山札上 **2026-06-28修正** |
-| [x] | 005 | PL!S-sd1-005-SD | 渡辺曜 | kidou_hand_cost_wait_pick_hand | 起動: 手札2捨→控え室ライブ回収 |
+| [x] | 005 | PL!S-sd1-005-SD | 渡辺曜 | kidou_hand_cost_wait_pick_hand | 起動: EE+手札1捨→Aqoursライブ回収 |
 | [x] | 006 | PL!S-sd1-006-SD | 津島善子 | kidou_waiting_to_empty_stage | 登場: 任意1捨→空エリアへ C2以下 Aqours ウェイト登場＋同エリア登場不可 **2026-06-28修正** |
 | [x] | 007 | PL!S-sd1-007-SD | 国木田花丸 | kidou_hand_cost_wait_pick_hand | 起動: 手札2捨→控え室スコア持ち Aqours ライブ **2026-06-28修正** |
 | [x] | 008 | PL!S-sd1-008-SD | 小原鞠莉 | kidou_stage_wait_pick_hand | 起動: 自ステージウェイト→控え室メンバー回収 |
