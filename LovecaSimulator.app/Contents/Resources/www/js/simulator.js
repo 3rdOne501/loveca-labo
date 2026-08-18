@@ -42834,6 +42834,8 @@ export function mountSimulator(
     var preview = $("energy-card-preview");
     var stripHost = $("energy-card-thumb-strip");
     if (!sel) return;
+    var detailsWrap = sel.closest ? sel.closest("details.energy-card-details") : null;
+
     function syncEnergyCardPreview() {
       if (!preview) return;
       var cn = selectedEnergyCardNo || "";
@@ -42935,6 +42937,7 @@ export function mountSimulator(
           syncEnergyCardPreview();
           highlightEnergyStripChip();
           persistSessionTexts();
+          if (detailsWrap && detailsWrap.open) detailsWrap.open = false;
           applyEnergyIdentityToAllEnergies(no);
         });
         stripHost.appendChild(b);
@@ -42963,6 +42966,7 @@ export function mountSimulator(
       syncEnergyCardPreview();
       highlightEnergyStripChip();
       persistSessionTexts();
+      if (detailsWrap && detailsWrap.open) detailsWrap.open = false;
       applyEnergyIdentityToAllEnergies(selectedEnergyCardNo);
     });
 
