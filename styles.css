@@ -967,6 +967,41 @@ body.area-resize-active {
   gap: 0.35rem 0.45rem;
   margin: 0.3rem 0 0;
 }
+/* デッキ編集: エネルギー画像を横一列（ラベル＋セレクト＋プレビュー＋サムネ） */
+#view-deck .deck-energy-picker {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.4rem 0.5rem;
+  margin: 0.4rem 0 0;
+  padding: 0.35rem 0.4rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(120, 170, 230, 0.22);
+  background: rgba(8, 14, 26, 0.35);
+}
+#view-deck .deck-energy-picker__label {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(200, 182, 216, 0.95);
+  white-space: nowrap;
+}
+#view-deck .deck-energy-picker__select {
+  flex: 0 0 auto;
+  margin: 0;
+}
+#view-deck .deck-energy-picker .energy-card-preview {
+  width: 36px;
+  height: 50px;
+}
+#view-deck .energy-card-thumb-strip--row {
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  max-width: none;
+  min-width: 0;
+}
 .btn-start-game-sticky {
   position: static;
   flex: 0 0 auto;
@@ -7724,7 +7759,9 @@ summary {
     flex-wrap: wrap;
     overflow-x: hidden;
     gap: 0.32rem;
-    padding-top: max(0.34rem, env(safe-area-inset-top, 0px));
+    /* black-translucent: 時刻と「デッキ編集に戻る」が被らないよう inset 確保（env 欠落時も最低 2.75rem） */
+    padding-top: max(2.75rem, calc(constant(safe-area-inset-top, 0px) + 0.5rem));
+    padding-top: max(2.75rem, calc(env(safe-area-inset-top, 0px) + 0.5rem));
     padding-right: max(0.45rem, env(safe-area-inset-right, 0px));
     padding-bottom: 0.34rem;
     padding-left: max(0.45rem, env(safe-area-inset-left, 0px));

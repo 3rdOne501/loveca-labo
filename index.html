@@ -51,7 +51,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,700;1,9..40,500&family=M+PLUS+Rounded+1c:wght@500;700&family=Noto+Sans+JP:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=2026081817" />
+    <link rel="stylesheet" href="styles.css?v=2026081818" />
     <link rel="stylesheet" href="styles-perf.css?v=2026051910" />
   </head>
   <body>
@@ -559,6 +559,17 @@ python3 -m http.server 8080</pre>
                 プロキシ印刷
               </button>
             </div>
+            <div class="deck-energy-picker" id="deck-energy-picker" aria-label="エネルギー画像の選択">
+              <span class="deck-energy-picker__label">エネルギー画像</span>
+              <label class="tools-label tools-label-energy deck-energy-picker__select">
+                <span class="visually-hidden">エネルギーカード</span>
+                <select id="select-energy-card" aria-label="側面エネルギーカード">
+                  <option value="">既定（SD）</option>
+                </select>
+              </label>
+              <img id="energy-card-preview" class="energy-card-preview" alt="" hidden width="36" height="50" decoding="async" />
+              <div id="energy-card-thumb-strip" class="energy-card-thumb-strip energy-card-thumb-strip--row" role="group" aria-label="エネルギー画像一覧"></div>
+            </div>
           </div>
 
           <div id="card-deck-summary" class="card-deck-summary" hidden></div>
@@ -870,19 +881,6 @@ python3 -m http.server 8080</pre>
           </label>
         </div>
         <div class="game-bar-row game-tools-row">
-          <details class="energy-card-details">
-            <summary class="energy-card-details-summary">エネルギー画像の選択</summary>
-            <div class="energy-card-picker-wrap energy-card-picker-wrap--expanded">
-              <label class="tools-label tools-label-energy">
-                エネルギーカード
-                <select id="select-energy-card" aria-label="側面エネルギーカード">
-                  <option value="">既定（SD）</option>
-                </select>
-              </label>
-              <img id="energy-card-preview" class="energy-card-preview" alt="" hidden width="46" height="64" decoding="async" />
-              <div id="energy-card-thumb-strip" class="energy-card-thumb-strip" role="group" aria-label="エネルギー画像一覧"></div>
-            </div>
-          </details>
           <button
             type="button"
             class="btn sm secondary"
