@@ -73,11 +73,7 @@ function isPlayDesktopSplitters() {
   );
 }
 
-/** ゾーン高さ・対戦分割はスマホ／縦向きでも有効（列幅ハンドルのみデスクトップ） */
-function isPlayZoneResizeEnabled() {
-  return document.body.classList.contains("play-mode");
-}
-
+/** 対戦分割はスマホでも有効（列幅ハンドルのみデスクトップ） */
 function isVersusBoardResizeEnabled() {
   return document.body.classList.contains("play-versus-mode");
 }
@@ -106,12 +102,6 @@ function syncSplitterVisibility() {
   document.querySelectorAll("#view-game .game-board > .area-resize-handle--column").forEach(function (el) {
     el.hidden = !playColsOn;
     el.setAttribute("aria-hidden", playColsOn ? "false" : "true");
-  });
-
-  const zonesOn = isPlayZoneResizeEnabled();
-  document.querySelectorAll("#view-game .area-resize-handle--row[data-area-resize-zone='1']").forEach(function (el) {
-    el.hidden = !zonesOn;
-    el.setAttribute("aria-hidden", zonesOn ? "false" : "true");
   });
 
   const versusOn = isVersusBoardResizeEnabled();
@@ -377,172 +367,31 @@ function initVersusBoardSplit() {
   });
 }
 
-/** @type {{ selector: string, key: string, cssVar: string, min: number, label: string }[]} */
-const PLAY_ZONE_HEIGHT_SPECS = [
-  {
-    selector: "#deck-pile-host",
-    key: "deck-pile",
-    cssVar: "--play-zone-h-deck",
-    min: 120,
-    label: "山札の高さを変更",
-  },
-  {
-    selector: "#waiting-pile-host",
-    key: "waiting-pile",
-    cssVar: "--play-zone-h-waiting",
-    min: 120,
-    label: "控え室の高さを変更",
-  },
-  {
-    selector: "#hand-stick-fold",
-    key: "hand-stick",
-    cssVar: "--play-zone-h-hand",
-    min: 100,
-    label: "手札の高さを変更",
-  },
-  {
-    selector: "#energy-fold",
-    key: "energy-fold",
-    cssVar: "--play-zone-h-energy",
-    min: 88,
-    label: "エネルギーエリアの高さを変更",
-  },
-  {
-    selector: "#live-row",
-    key: "live-row",
-    cssVar: "--play-zone-h-live",
-    min: 120,
-    label: "ライブエリアの高さを変更",
-  },
-  {
-    selector: "#stage-left",
-    key: "stage-row",
-    cssVar: "--play-zone-h-stage",
-    min: 120,
-    label: "ステージの高さを変更",
-    hostFrom: function (el) {
-      return el.closest(".three-cols");
-    },
-  },
-];
-
-function setZoneHeight(target, spec, height) {
-  const maxHeight = Math.max(140, (window.innerHeight || 800) / pageScale() * 0.72);
-  const next = Math.round(clamp(height, spec.min, maxHeight));
-  const px = next + "px";
-  target.style.setProperty(spec.cssVar, px);
-  /* ドック余白など祖先外でも参照できるよう root にも同期 */
-  document.documentElement.style.setProperty(spec.cssVar, px);
-  target.classList.add("area-resize-zone--sized");
-  if (!savedState.zoneHeights || typeof savedState.zoneHeights !== "object") {
-    savedState.zoneHeights = {};
+/** ライブ・ステージ・手札など個別ゾーンの高さ変更はしない（段／列のみ） */
+function removePlayZoneResizeHandles() {
+  document.querySelectorAll(".area-resize-handle--row[data-area-resize-zone='1']").forEach(function (el) {
+    el.remove();
+  });
+  document.querySelectorAll(".area-resize-zone").forEach(function (el) {
+    el.classList.remove("area-resize-zone", "area-resize-zone--sized");
+    delete el.dataset.areaResizeZone;
+    delete el.dataset.areaResizeKey;
+    [
+      "--play-zone-h-deck",
+      "--play-zone-h-waiting",
+      "--play-zone-h-hand",
+      "--play-zone-h-energy",
+      "--play-zone-h-live",
+      "--play-zone-h-stage",
+    ].forEach(function (prop) {
+      el.style.removeProperty(prop);
+      document.documentElement.style.removeProperty(prop);
+    });
+  });
+  if (savedState.zoneHeights) {
+    delete savedState.zoneHeights;
+    saveStateSoon();
   }
-  savedState.zoneHeights[spec.key] = next;
-}
-
-function wireZoneHandle(target, handle, spec) {
-  let drag = null;
-  const stored =
-    savedState.zoneHeights && Number.isFinite(Number(savedState.zoneHeights[spec.key]))
-      ? Number(savedState.zoneHeights[spec.key])
-      : null;
-  if (stored != null) setZoneHeight(target, spec, stored);
-
-  handle.dataset.areaResizeZone = "1";
-
-  handle.addEventListener("pointerdown", function (ev) {
-    if (ev.button != null && ev.button !== 0) return;
-    if (handle.hidden) return;
-    ev.preventDefault();
-    ev.stopPropagation();
-    drag = {
-      pointerId: ev.pointerId,
-      startY: ev.clientY,
-      startHeight: target.getBoundingClientRect().height / pageScale(),
-    };
-    handle.classList.add("is-dragging");
-    document.body.classList.add("area-resize-active");
-    try {
-      handle.setPointerCapture(ev.pointerId);
-    } catch (_) {
-      /* noop */
-    }
-  });
-  handle.addEventListener("pointermove", function (ev) {
-    if (!drag || ev.pointerId !== drag.pointerId) return;
-    ev.preventDefault();
-    var deltaY = (ev.clientY - drag.startY) / pageScale();
-    /* 下部ドックの上辺ハンドル: 上へドラッグで高く */
-    if (handle.dataset.areaResizeInvertY === "1") deltaY = -deltaY;
-    setZoneHeight(target, spec, drag.startHeight + deltaY);
-  });
-  function finish(ev) {
-    if (!drag || (ev && ev.pointerId != null && ev.pointerId !== drag.pointerId)) return;
-    drag = null;
-    handle.classList.remove("is-dragging");
-    document.body.classList.remove("area-resize-active");
-    saveStateSoon();
-    notifyLayoutChanged();
-  }
-  handle.addEventListener("pointerup", finish);
-  handle.addEventListener("pointercancel", finish);
-  handle.addEventListener("keydown", function (ev) {
-    if (ev.key !== "ArrowUp" && ev.key !== "ArrowDown") return;
-    ev.preventDefault();
-    const current = target.getBoundingClientRect().height / pageScale();
-    const step = ev.shiftKey ? 30 : 10;
-    var dir = ev.key === "ArrowUp" ? -1 : 1;
-    if (handle.dataset.areaResizeInvertY === "1") dir = -dir;
-    setZoneHeight(target, spec, current + dir * step);
-    saveStateSoon();
-    notifyLayoutChanged();
-  });
-  handle.addEventListener("dblclick", function (ev) {
-    ev.preventDefault();
-    target.style.removeProperty(spec.cssVar);
-    document.documentElement.style.removeProperty(spec.cssVar);
-    target.classList.remove("area-resize-zone--sized");
-    if (savedState.zoneHeights) delete savedState.zoneHeights[spec.key];
-    saveStateSoon();
-    notifyLayoutChanged();
-  });
-}
-
-function refreshPlayZoneHandles() {
-  PLAY_ZONE_HEIGHT_SPECS.forEach(function (spec) {
-    const found = document.querySelector(spec.selector);
-    if (!found) return;
-    const target = spec.hostFrom ? spec.hostFrom(found) : found;
-    if (!target || target.dataset.areaResizeZone === "1") return;
-    target.dataset.areaResizeZone = "1";
-    target.classList.add("area-resize-zone");
-    target.dataset.areaResizeKey = spec.key;
-    const handle = makeSeparator("y", spec.label);
-    handle.dataset.areaResizeBoundary = "zone-" + spec.key;
-    if (spec.key === "hand-stick") {
-      handle.dataset.areaResizeInvertY = "1";
-      /* ドック時は上辺・通常時は下辺。クラス連動は CSS。invert は常に手札に付け、ドック時のみ CSS で上辺配置 */
-      syncHandHandleInvert(handle);
-    }
-    target.appendChild(handle);
-    wireZoneHandle(target, handle, spec);
-  });
-  syncHandDockHandleMode();
-}
-
-function syncHandHandleInvert(handle) {
-  if (!handle) return;
-  /* 下部ドック時のみ上へドラッグで高く。通常レイアウトは下辺ドラッグのまま */
-  handle.dataset.areaResizeInvertY = document.body.classList.contains("play-hand-docked-bottom")
-    ? "1"
-    : "0";
-}
-
-function syncHandDockHandleMode() {
-  const handle = document.querySelector(
-    '#hand-stick-fold > .area-resize-handle--row[data-area-resize-boundary="zone-hand-stick"]',
-  );
-  syncHandHandleInvert(handle);
 }
 
 /** @type {{ selector: string, key: string, cssVar: string, min: number, label: string, stackKind: string }[]} */
@@ -553,22 +402,6 @@ const STACK_HEIGHT_SPECS = [
     cssVar: "--area-play-stack-left",
     min: 72,
     label: "上段（左エリア）の高さを変更",
-    stackKind: "play",
-  },
-  {
-    selector: "#view-game .game-board > .col-center",
-    key: "play-center",
-    cssVar: "--area-play-stack-center",
-    min: 140,
-    label: "中段（ステージ）の高さを変更",
-    stackKind: "play",
-  },
-  {
-    selector: "#view-game .game-board > .col-right",
-    key: "play-right",
-    cssVar: "--area-play-stack-right",
-    min: 140,
-    label: "下段（手札・ツール）の高さを変更",
     stackKind: "play",
   },
   {
@@ -597,6 +430,17 @@ const STACK_HEIGHT_SPECS = [
   },
 ];
 
+const PLAY_CENTER_SPEC = {
+  key: "play-center",
+  cssVar: "--area-play-stack-center",
+  min: 140,
+};
+const PLAY_RIGHT_SPEC = {
+  key: "play-right",
+  cssVar: "--area-play-stack-right",
+  min: 160,
+};
+
 function setStackHeight(target, spec, height) {
   const maxHeight = Math.max(180, ((window.innerHeight || 800) / pageScale()) * 0.78);
   const next = Math.round(clamp(height, spec.min, maxHeight));
@@ -608,6 +452,15 @@ function setStackHeight(target, spec, height) {
     savedState.stackHeights = {};
   }
   savedState.stackHeights[spec.key] = next;
+  return next;
+}
+
+function clearStackHeight(target, spec) {
+  if (!target || !spec) return;
+  target.style.removeProperty(spec.cssVar);
+  document.documentElement.style.removeProperty(spec.cssVar);
+  target.classList.remove("area-resize-stack--sized");
+  if (savedState.stackHeights) delete savedState.stackHeights[spec.key];
 }
 
 function wireStackHandle(target, handle, spec) {
@@ -664,13 +517,134 @@ function wireStackHandle(target, handle, spec) {
   });
   handle.addEventListener("dblclick", function (ev) {
     ev.preventDefault();
-    target.style.removeProperty(spec.cssVar);
-    document.documentElement.style.removeProperty(spec.cssVar);
-    target.classList.remove("area-resize-stack--sized");
-    if (savedState.stackHeights) delete savedState.stackHeights[spec.key];
+    clearStackHeight(target, spec);
     saveStateSoon();
     notifyLayoutChanged();
   });
+}
+
+/**
+ * スマホ縦: 「デッキ」見出しの上端＝ステージとの境界をドラッグ。
+ * 下へドラッグでデッキ上端を下げ（中段を広く）、上へでデッキを上げる。
+ */
+function refreshPlayDeckTopBoundary() {
+  const center = document.querySelector("#view-game .game-board > .col-center");
+  const right = document.querySelector("#view-game .game-board > .col-right");
+  if (!center || !right) return;
+
+  /* 旧・下端ハンドルがあれば除去（境界はデッキ上端に一本化） */
+  right.querySelectorAll(
+    '.area-resize-handle--stack[data-area-resize-boundary="stack-play-right"],' +
+      '.area-resize-handle--stack[data-area-resize-boundary="stack-play-center"]',
+  ).forEach(function (el) {
+    el.remove();
+  });
+  center.querySelectorAll('.area-resize-handle--stack[data-area-resize-boundary="stack-play-center"]').forEach(function (el) {
+    el.remove();
+  });
+
+  if (right.dataset.areaResizeDeckTop === "1") {
+    restorePlayStageDeckSplit(center, right);
+    return;
+  }
+  right.dataset.areaResizeDeckTop = "1";
+  center.classList.add("area-resize-stack");
+  right.classList.add("area-resize-stack");
+  center.dataset.areaResizeKey = PLAY_CENTER_SPEC.key;
+  right.dataset.areaResizeKey = PLAY_RIGHT_SPEC.key;
+
+  const handle = makeSeparator("y", "ステージとデッキの境界を変更（上下にドラッグ）");
+  handle.classList.add("area-resize-handle--stack", "area-resize-handle--deck-top");
+  handle.dataset.areaResizeStack = "play";
+  handle.dataset.areaResizeBoundary = "stack-play-deck-top";
+  right.insertBefore(handle, right.firstChild);
+
+  restorePlayStageDeckSplit(center, right);
+
+  let drag = null;
+
+  function applySplit(centerH, rightH) {
+    setStackHeight(center, PLAY_CENTER_SPEC, centerH);
+    setStackHeight(right, PLAY_RIGHT_SPEC, rightH);
+  }
+
+  handle.addEventListener("pointerdown", function (ev) {
+    if (ev.button != null && ev.button !== 0) return;
+    if (handle.hidden) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    const cH = center.getBoundingClientRect().height / pageScale();
+    const rH = right.getBoundingClientRect().height / pageScale();
+    drag = {
+      pointerId: ev.pointerId,
+      startY: ev.clientY,
+      startCenter: cH,
+      startRight: rH,
+      sum: Math.max(PLAY_CENTER_SPEC.min + PLAY_RIGHT_SPEC.min, cH + rH),
+    };
+    handle.classList.add("is-dragging");
+    document.body.classList.add("area-resize-active");
+    try {
+      handle.setPointerCapture(ev.pointerId);
+    } catch (_) {
+      /* noop */
+    }
+  });
+
+  handle.addEventListener("pointermove", function (ev) {
+    if (!drag || ev.pointerId !== drag.pointerId) return;
+    ev.preventDefault();
+    const delta = (ev.clientY - drag.startY) / pageScale();
+    /* 下へ = デッキ上端を下げる = 中段を広く・下段を狭く */
+    const nextCenter = clamp(
+      drag.startCenter + delta,
+      PLAY_CENTER_SPEC.min,
+      drag.sum - PLAY_RIGHT_SPEC.min,
+    );
+    const nextRight = drag.sum - nextCenter;
+    applySplit(nextCenter, nextRight);
+  });
+
+  function finish(ev) {
+    if (!drag || (ev && ev.pointerId != null && ev.pointerId !== drag.pointerId)) return;
+    drag = null;
+    handle.classList.remove("is-dragging");
+    document.body.classList.remove("area-resize-active");
+    saveStateSoon();
+    notifyLayoutChanged();
+  }
+  handle.addEventListener("pointerup", finish);
+  handle.addEventListener("pointercancel", finish);
+
+  handle.addEventListener("keydown", function (ev) {
+    if (ev.key !== "ArrowUp" && ev.key !== "ArrowDown") return;
+    ev.preventDefault();
+    const cH = center.getBoundingClientRect().height / pageScale();
+    const rH = right.getBoundingClientRect().height / pageScale();
+    const sum = Math.max(PLAY_CENTER_SPEC.min + PLAY_RIGHT_SPEC.min, cH + rH);
+    const step = ev.shiftKey ? 30 : 10;
+    const delta = ev.key === "ArrowDown" ? step : -step;
+    const nextCenter = clamp(cH + delta, PLAY_CENTER_SPEC.min, sum - PLAY_RIGHT_SPEC.min);
+    applySplit(nextCenter, sum - nextCenter);
+    saveStateSoon();
+    notifyLayoutChanged();
+  });
+
+  handle.addEventListener("dblclick", function (ev) {
+    ev.preventDefault();
+    clearStackHeight(center, PLAY_CENTER_SPEC);
+    clearStackHeight(right, PLAY_RIGHT_SPEC);
+    saveStateSoon();
+    notifyLayoutChanged();
+  });
+}
+
+function restorePlayStageDeckSplit(center, right) {
+  const sh = savedState.stackHeights || {};
+  const c = Number(sh[PLAY_CENTER_SPEC.key]);
+  const r = Number(sh[PLAY_RIGHT_SPEC.key]);
+  if (Number.isFinite(c)) setStackHeight(center, PLAY_CENTER_SPEC, c);
+  if (Number.isFinite(r)) setStackHeight(right, PLAY_RIGHT_SPEC, r);
 }
 
 function refreshStackedRegionHandles() {
@@ -686,6 +660,7 @@ function refreshStackedRegionHandles() {
     target.appendChild(handle);
     wireStackHandle(target, handle, spec);
   });
+  refreshPlayDeckTopBoundary();
 }
 
 let visibilityWired = false;
@@ -717,9 +692,7 @@ function wireVisibilitySync() {
       moRaf = requestAnimationFrame(function () {
         moRaf = 0;
         syncSplitterVisibility();
-        refreshPlayZoneHandles();
         refreshStackedRegionHandles();
-        syncHandDockHandleMode();
       });
     });
     observer.observe(document.body, {
@@ -738,10 +711,10 @@ function wireVisibilitySync() {
 
 export function initAreaResizers() {
   try {
+    removePlayZoneResizeHandles();
     initDeckColumns();
     initPlayColumns();
     initVersusBoardSplit();
-    refreshPlayZoneHandles();
     refreshStackedRegionHandles();
     wireVisibilitySync();
     syncSplitterVisibility();
