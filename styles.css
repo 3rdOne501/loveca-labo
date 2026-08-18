@@ -4954,6 +4954,41 @@ body.play-mode .game-board.area-resize-grid--play {
     background: rgba(255, 195, 225, 0.85);
     box-shadow: 0 0 8px rgba(255, 120, 180, 0.55);
   }
+
+  /*
+   * デッキ上端ライン操作中: 右列を画面下に固定し、高さ減少で上端（ピンクライン）だけが下降。
+   * 中段（ステージ）が 1fr で残りを吸収する。手札 sticky は右列下端＝画面下付近に残る。
+   */
+  body.play-mode.chrome-layout-play-mobile-portrait.area-resize-deck-bottom-anchored .game-board {
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    overflow-y: hidden;
+    align-content: stretch;
+  }
+  body.play-mode.chrome-layout-play-mobile-portrait.area-resize-deck-bottom-anchored
+    .game-board
+    > .col.col-center {
+    min-height: 0;
+    height: auto;
+    max-height: none;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  body.play-mode.chrome-layout-play-mobile-portrait.area-resize-deck-bottom-anchored
+    .game-board
+    > .col.col-right.area-resize-stack--sized {
+    height: var(--area-play-stack-right);
+    max-height: var(--area-play-stack-right);
+    min-height: min(120px, var(--area-play-stack-right));
+    align-self: end;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  body.play-mode.chrome-layout-play-mobile-portrait.area-resize-deck-bottom-anchored
+    .col.col-right
+    details#hand-stick-fold.hand-stick-fold {
+    margin-top: auto;
+    flex-shrink: 0;
+  }
 }
 
 body.play-mode .game-board .col {
@@ -7055,6 +7090,8 @@ body.play-mode .deck-pile {
   body.play-mode.chrome-layout-play-mobile-portrait
     .game-board
     .col.col-right.area-resize-stack--sized {
+    height: var(--area-play-stack-right);
+    max-height: var(--area-play-stack-right);
     min-height: min(140px, var(--area-play-stack-right));
     overflow-y: auto;
   }

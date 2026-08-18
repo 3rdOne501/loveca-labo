@@ -524,8 +524,9 @@ function wireStackHandle(target, handle, spec) {
 }
 
 /**
- * スマホ縦: 「デッキ」見出しの上端ライン。
- * 下へドラッグ → デッキ／控え室側（右列）だけ狭くする。ステージ（中段）の固定高さは触らない。
+ * スマホ縦: 「デッキ」上端のピンクライン。
+ * 下へドラッグ → 右列を下端固定のまま高さを減らし、ライン自体が下降する。
+ * 手札 sticky は右列下端に残る（迫り上がらない）。
  */
 function refreshPlayDeckTopBoundary() {
   const center = document.querySelector("#view-game .game-board > .col-center");
@@ -553,7 +554,7 @@ function refreshPlayDeckTopBoundary() {
   center.dataset.areaResizeKey = PLAY_CENTER_SPEC.key;
   right.dataset.areaResizeKey = PLAY_RIGHT_SPEC.key;
 
-  const handle = makeSeparator("y", "デッキ／控え室の高さを変更（下にドラッグで狭く）");
+  const handle = makeSeparator("y", "ピンクラインを上下にドラッグ（下へでデッキ側を狭く）");
   handle.classList.add("area-resize-handle--stack", "area-resize-handle--deck-top");
   handle.dataset.areaResizeStack = "play";
   handle.dataset.areaResizeBoundary = "stack-play-deck-top";
@@ -563,10 +564,29 @@ function refreshPlayDeckTopBoundary() {
 
   let drag = null;
 
+  function maxDeckColumnHeight() {
+    const board = document.querySelector("#view-game .game-board");
+    if (!board) return Math.max(280, ((window.innerHeight || 800) / pageScale()) * 0.7);
+    const boardH = board.getBoundingClientRect().height / pageScale();
+    const left = document.querySelector("#view-game .game-board > .col-left");
+    const leftH = left ? left.getBoundingClientRect().height / pageScale() : 0;
+    /* 中段に最低限のステージ領域を残す */
+    return Math.max(
+      PLAY_RIGHT_SPEC.min,
+      boardH - leftH - PLAY_CENTER_SPEC.min - 12,
+    );
+  }
+
+  function syncDeckBottomAnchorClass(enabled) {
+    document.body.classList.toggle("area-resize-deck-bottom-anchored", !!enabled);
+  }
+
   function applyDeckColumnHeight(rightH) {
-    /* 旧ゼロサム分割で中段が固定されていた場合は外し、ステージは自然高に戻す */
     clearStackHeight(center, PLAY_CENTER_SPEC);
-    setStackHeight(right, PLAY_RIGHT_SPEC, rightH);
+    const maxH = maxDeckColumnHeight();
+    const next = setStackHeight(right, PLAY_RIGHT_SPEC, clamp(rightH, PLAY_RIGHT_SPEC.min, maxH));
+    syncDeckBottomAnchorClass(true);
+    return next;
   }
 
   handle.addEventListener("pointerdown", function (ev) {
@@ -574,6 +594,10 @@ function refreshPlayDeckTopBoundary() {
     if (handle.hidden) return;
     ev.preventDefault();
     ev.stopPropagation();
+    /* 未サイズ時は現在の見た目高さを起点に、下端固定モードへ */
+    if (!right.classList.contains("area-resize-stack--sized")) {
+      applyDeckColumnHeight(right.getBoundingClientRect().height / pageScale());
+    }
     const rH = right.getBoundingClientRect().height / pageScale();
     drag = {
       pointerId: ev.pointerId,
@@ -593,7 +617,7 @@ function refreshPlayDeckTopBoundary() {
     if (!drag || ev.pointerId !== drag.pointerId) return;
     ev.preventDefault();
     const delta = (ev.clientY - drag.startY) / pageScale();
-    /* 下へ = デッキ列を狭く / 上へ = デッキ列を広く（ステージは広げない） */
+    /* 下へ = 高さを減らし上端（ピンクライン）を下降 / 上へ = ライン上昇 */
     applyDeckColumnHeight(drag.startRight - delta);
   });
 
@@ -611,6 +635,9 @@ function refreshPlayDeckTopBoundary() {
   handle.addEventListener("keydown", function (ev) {
     if (ev.key !== "ArrowUp" && ev.key !== "ArrowDown") return;
     ev.preventDefault();
+    if (!right.classList.contains("area-resize-stack--sized")) {
+      applyDeckColumnHeight(right.getBoundingClientRect().height / pageScale());
+    }
     const rH = right.getBoundingClientRect().height / pageScale();
     const step = ev.shiftKey ? 30 : 10;
     const delta = ev.key === "ArrowDown" ? step : -step;
@@ -623,6 +650,7 @@ function refreshPlayDeckTopBoundary() {
     ev.preventDefault();
     clearStackHeight(center, PLAY_CENTER_SPEC);
     clearStackHeight(right, PLAY_RIGHT_SPEC);
+    syncDeckBottomAnchorClass(false);
     saveStateSoon();
     notifyLayoutChanged();
   });
@@ -631,9 +659,13 @@ function refreshPlayDeckTopBoundary() {
 function restorePlayStageDeckSplit(center, right) {
   const sh = savedState.stackHeights || {};
   const r = Number(sh[PLAY_RIGHT_SPEC.key]);
-  /* 中段の旧固定高さは復元しない（ライン操作はデッキ列のみ） */
   clearStackHeight(center, PLAY_CENTER_SPEC);
-  if (Number.isFinite(r)) setStackHeight(right, PLAY_RIGHT_SPEC, r);
+  if (Number.isFinite(r)) {
+    setStackHeight(right, PLAY_RIGHT_SPEC, r);
+    document.body.classList.add("area-resize-deck-bottom-anchored");
+  } else {
+    document.body.classList.remove("area-resize-deck-bottom-anchored");
+  }
 }
 
 function refreshStackedRegionHandles() {
