@@ -40469,6 +40469,19 @@ export function mountSimulator(
     }
   }
 
+  function syncTurnStartButtonMirrors() {
+    var src = $("btn-turn-start");
+    if (!src) return;
+    ["btn-hand-dock-turn", "btn-hand-mobile-turn"].forEach(function (id) {
+      var m = $(id);
+      if (!m) return;
+      m.textContent = src.textContent;
+      m.disabled = !!src.disabled;
+      if (src.title) m.title = src.title;
+      m.classList.toggle("btn--versus-end-glow", src.classList.contains("btn--versus-end-glow"));
+    });
+  }
+
   function syncVersusTurnStartButton(remoteMatch) {
     var btn = $("btn-turn-start");
     if (!btn) return;
@@ -40477,6 +40490,7 @@ export function mountSimulator(
       btn.classList.remove("btn--versus-end-glow");
       btn.disabled = false;
       if (versusLocalDualActive()) syncVersusLocalDualEndSwitchButton(null);
+      syncTurnStartButtonMirrors();
       return;
     }
     var playRole = getVersusPlayRole();
@@ -40489,6 +40503,7 @@ export function mountSimulator(
       btn.classList.toggle("btn--versus-end-glow", liveTurnStartGlowArmed);
       btn.title = "自分の通常フェイズを終え、次のフェイズへ進みます（総合ルール 7.3）";
       if (versusLocalDualActive()) syncVersusLocalDualEndSwitchButton(remoteMatch);
+      syncTurnStartButtonMirrors();
       return;
     }
     if (isVersusOpeningMulliganPhase(remoteMatch)) {
@@ -40497,6 +40512,7 @@ export function mountSimulator(
       btn.title = "開幕マリガン中は使用できません";
       btn.classList.remove("btn--versus-end-glow");
       if (versusLocalDualActive()) syncVersusLocalDualEndSwitchButton(remoteMatch);
+      syncTurnStartButtonMirrors();
       return;
     }
     if (phase === "live") {
@@ -40505,12 +40521,14 @@ export function mountSimulator(
       btn.title = "ライブフェイズ中はライブ操作で進めてください";
       btn.classList.remove("btn--versus-end-glow");
       if (versusLocalDualActive()) syncVersusLocalDualEndSwitchButton(remoteMatch);
+      syncTurnStartButtonMirrors();
       return;
     }
     btn.textContent = "ターン開始/次のターンへ";
     btn.disabled = !mineAct;
     btn.classList.remove("btn--versus-end-glow");
     if (versusLocalDualActive()) syncVersusLocalDualEndSwitchButton(remoteMatch);
+    syncTurnStartButtonMirrors();
   }
 
   function syncVersusOpponentActionFeed(remoteMatch) {
@@ -44364,6 +44382,11 @@ export function mountSimulator(
 
   $("btn-hand-dock-turn")?.addEventListener("click", function () {
     /* 下部固定手札用の「次のターンへ」＝既存のターン開始/ターン終了アクションに委譲 */
+    var b = $("btn-turn-start");
+    if (b && !b.disabled) b.click();
+  });
+
+  $("btn-hand-mobile-turn")?.addEventListener("click", function () {
     var b = $("btn-turn-start");
     if (b && !b.disabled) b.click();
   });

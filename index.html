@@ -51,7 +51,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,700;1,9..40,500&family=M+PLUS+Rounded+1c:wght@500;700&family=Noto+Sans+JP:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=2026081816" />
+    <link rel="stylesheet" href="styles.css?v=2026081817" />
     <link rel="stylesheet" href="styles-perf.css?v=2026051910" />
   </head>
   <body>
@@ -1635,6 +1635,14 @@ python3 -m http.server 8080</pre>
                   手札
                   <span id="hand-inline-count" class="badge hand-inline-count" aria-live="polite">0</span>
                 </h3>
+                <button
+                  type="button"
+                  class="btn primary btn-hand-mobile-turn"
+                  id="btn-hand-mobile-turn"
+                  title="解決・ライブ枠を控え室へ送る／手札に山札から 1 枚ドロー／側面エネのウェイト解除・メンバーを縦・アクティブにし側面エネを1枚加算（上限12）。対戦モードの通常フェイズではターン終了。"
+                >
+                  ターン開始/次のターンへ
+                </button>
                 <div class="hand-zone-actions">
                   <button type="button" class="btn sm primary btn-hand-dock-turn" id="btn-hand-dock-turn" title="ターン開始／対戦の通常フェイズではターン終了（下部固定手札のとき表示）">
                     次のターンへ

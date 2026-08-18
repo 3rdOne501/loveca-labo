@@ -2030,6 +2030,32 @@ body.play-hand-docked-bottom .btn-hand-dock-turn {
   display: inline-flex;
 }
 
+/* スマホ縦プレイ: 手札のライブ系ボタン列の上にターン開始を常時表示 */
+.btn-hand-mobile-turn {
+  display: none;
+}
+@media (max-width: 900px) {
+  body.play-mode.chrome-layout-play-mobile-portrait .btn-hand-mobile-turn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 48px;
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    order: 5;
+  }
+  body.play-mode.chrome-layout-play-mobile-portrait .zone-head.zone-head--hand .hand-zone-actions {
+    order: 6;
+  }
+  /* スマホ縦ではフル幅のターン開始があるので、ドック用の短いボタンは出さない */
+  body.play-mode.chrome-layout-play-mobile-portrait.play-hand-docked-bottom .btn-hand-dock-turn {
+    display: none;
+  }
+}
+
 /* 対戦モードのライブ成功確率パネルは「残りエール数」行だけ残す
    （ソロと同じ場所・同じ仕様で残りエールを表示。確率計算・操作系は隠す） */
 .zone-block-deck-live-sim.deck-live-sim--versus-yell-only .deck-live-sim-heading-compact,
