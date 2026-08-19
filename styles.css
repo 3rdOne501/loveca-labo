@@ -13852,29 +13852,6 @@ body.play-board-exporting .deck-live-sim-summary.has-prob-color .deck-odds-pct--
   text-shadow: 0 0 14px rgba(255, 220, 255, 0.95) !important;
 }
 
-/* 画像保存時: ライブ開始後もライブ置き場は横向き（短辺が上下、テキストが水平） */
-body.play-mode.play-board-exporting #live-row.three-cols {
-  transform: none !important;
-  gap: 0.85rem;
-}
-body.play-board-exporting #live-row .live-slot.card-strip {
-  min-width: calc(var(--loveca-play-h) * 1.28 + 28px) !important;
-  min-height: calc(var(--loveca-play-w) * 1.28 + 40px) !important;
-  padding: 12px 10px;
-}
-body.play-board-exporting #live-row .live-slot .card-item[data-type="ライブ"]:not(.card-item--live-h),
-body.play-board-exporting #live-row .live-slot .card-item[data-type="ライブ"]:not(.card-item--live-h) .card-art-wrap {
-  width: calc(var(--loveca-play-h) * 1.28) !important;
-}
-body.play-board-exporting #live-row .live-slot .card-item[data-type="ライブ"]:not(.card-item--live-h) .card-img {
-  width: calc(var(--loveca-play-h) * 1.28) !important;
-  height: calc(var(--loveca-play-w) * 1.28) !important;
-  max-width: none !important;
-  object-fit: contain !important;
-  object-position: center center !important;
-  transform: none !important;
-}
-
 /* 画像保存時: ハート／バッジ画像は即時表示 */
 body.play-board-exporting img.heart-slot-art-ico,
 body.play-board-exporting img.status-inline-game-icon,
