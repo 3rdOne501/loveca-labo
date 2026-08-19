@@ -7999,7 +7999,7 @@ export function mountSimulator(
     return !versusMatchPhaseActive() && !versusOnlineActive() && !isDualOpponentBoardMode();
   }
 
-  /** スクショ用: 成否に関わらず「成功時の点数」表示へ一時切替（復元関数を返す） */
+  /** 画像保存用: 成否に関わらず「成功時の点数」表示へ一時切替（復元関数を返す） */
   function prepareBoardExportSuccessScoreDom() {
     var bar = $("live-center-score-bar");
     var numEl = $("live-center-score-num");
