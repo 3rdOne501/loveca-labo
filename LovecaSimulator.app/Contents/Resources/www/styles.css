@@ -6943,6 +6943,27 @@ body.play-mode .live-slot .card-item.card-item--live-h .card-img.rotated {
   transform-origin: center center;
 }
 
+/* ライブ開始後（表面表示）: 回転せず横長のままスロット中央へ */
+body.play-mode .live-slot .card-item.card-item--live-slot-face-h {
+  width: min(calc(var(--loveca-play-w) * 1.55), 100%);
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+body.play-mode .live-slot .card-item.card-item--live-slot-face-h .card-img {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  transform: none;
+  transform-origin: center center;
+}
+body.play-mode .live-slot .card-item.card-item--live-slot-face-h.card-item--live-venue-boost .card-img {
+  transform: scale(2);
+  transform-origin: center center;
+}
+
 body.play-mode .energy-zone.card-strip {
   flex-wrap: nowrap;
   align-items: center;
@@ -13859,4 +13880,20 @@ body.play-board-exporting img.card-member-bonus-blade-ico,
 body.play-board-exporting img.card-yell-float-ico {
   visibility: visible !important;
   opacity: 1 !important;
+}
+
+/* 画像保存時: ライブ枠の表面ライブは横向きのまま（回転・行スケールを除去） */
+body.play-board-exporting #live-row.three-cols {
+  transform: none !important;
+}
+body.play-board-exporting .live-slot .card-item.card-item--live-slot-face-h,
+body.play-board-exporting .live-slot .card-item[data-type="ライブ"]:not(.card-item--live-h) {
+  width: min(calc(var(--loveca-play-w) * 1.55), 100%) !important;
+  max-width: 100% !important;
+}
+body.play-board-exporting .live-slot .card-item[data-type="ライブ"] .card-img {
+  transform: none !important;
+  width: 100% !important;
+  height: auto !important;
+  object-fit: contain !important;
 }

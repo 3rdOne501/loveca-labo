@@ -104,12 +104,11 @@ function isLandscapeBitmap(bmp) {
   return nw > nh * 1.05;
 }
 
-/** ライブ開始後：ライブ枠の表面ライブ（横向き表示。--live-h はライブターン中のみ） */
+/** ライブ枠の表面ライブ（裏面非表示） */
 function isLiveSlotFaceUpLiveImg(el) {
   if (!el || el.tagName !== "IMG") return false;
   const card = el.closest(".live-slot .card-item[data-type=\"ライブ\"]");
   if (!card) return false;
-  if (card.classList.contains("card-item--live-h")) return false;
   if (el.getAttribute("data-ll-real-face-src")) return false;
   return true;
 }
@@ -121,16 +120,22 @@ function isHandLiveFaceUpImg(el) {
 }
 
 function paintLandscapeCardContained(ctx, el, bmp, origin, anchorEl) {
-  const anchor = anchorEl || el;
+  const slot = el.closest(".live-slot");
+  const anchor = slot || anchorEl || el;
   const rect = anchor.getBoundingClientRect();
   const x = rect.left - origin.left;
   const y = rect.top - origin.top;
   const w = Math.max(rect.width, 1);
   const h = Math.max(rect.height, 1);
   const { nw, nh } = bmpNaturalSize(bmp);
-  const scale = Math.min(w / nw, h / nh);
-  const tw = nw * scale;
-  const th = nh * scale;
+  const maxW = w * 0.94;
+  const maxH = h * 0.9;
+  let tw = maxW;
+  let th = (tw * nh) / nw;
+  if (th > maxH) {
+    th = maxH;
+    tw = (th * nw) / nh;
+  }
   const dx = x + (w - tw) / 2;
   const dy = y + (h - th) / 2;
   const rr = Math.min(6, Math.min(tw, th) * 0.08);
@@ -143,37 +148,56 @@ function paintLandscapeCardContained(ctx, el, bmp, origin, anchorEl) {
   ctx.restore();
 }
 
-/** ライブ枠の表面ライブは常に横長のまま描く（90°回転しない） */
+/** ライブ枠の表面ライブは横向きのまま描く（90°回転・scale 由来のズレを除去） */
 function prepareLiveSlotFaceUpForExport(root) {
   const restore = [];
-  root.querySelectorAll(".live-slot .card-item[data-type=\"ライブ\"]:not(.card-item--live-h)").forEach(function (card) {
+  const liveRow = root.querySelector("#live-row.three-cols");
+  if (liveRow) {
+    restore.push({ el: liveRow, transform: liveRow.style.transform });
+    liveRow.style.transform = "none";
+  }
+  root.querySelectorAll(".live-slot .card-item[data-type=\"ライブ\"]").forEach(function (card) {
     const img = card.querySelector("img.card-img");
     if (!img || img.getAttribute("data-ll-real-face-src")) return;
     restore.push({
+      card: card,
+      cardClassName: card.className,
+      cardWidth: card.style.width,
+      cardMaxWidth: card.style.maxWidth,
       img: img,
-      className: img.className,
+      imgClassName: img.className,
       transform: img.style.transform,
       width: img.style.width,
       height: img.style.height,
       objectFit: img.style.objectFit,
     });
+    card.classList.remove("card-item--live-h");
+    card.style.width = "min(calc(var(--loveca-play-w) * 1.55), 100%)";
+    card.style.maxWidth = "100%";
     img.classList.remove("rotated");
+    img.style.transform = "none";
     img.style.width = "100%";
     img.style.height = "auto";
     img.style.objectFit = "contain";
-    if (card.classList.contains("card-item--live-venue-boost")) {
-      img.style.transform = "scale(2)";
-    } else {
-      img.style.transform = "none";
-    }
   });
   return function undoLiveSlotFaceUpExportPrep() {
     restore.forEach(function (snap) {
-      snap.img.className = snap.className;
-      snap.img.style.transform = snap.transform;
-      snap.img.style.width = snap.width;
-      snap.img.style.height = snap.height;
-      snap.img.style.objectFit = snap.objectFit;
+      if (snap.el) {
+        snap.el.style.transform = snap.transform;
+        return;
+      }
+      if (snap.card) {
+        snap.card.className = snap.cardClassName;
+        snap.card.style.width = snap.cardWidth;
+        snap.card.style.maxWidth = snap.cardMaxWidth;
+      }
+      if (snap.img) {
+        snap.img.className = snap.imgClassName;
+        snap.img.style.transform = snap.transform;
+        snap.img.style.width = snap.width;
+        snap.img.style.height = snap.height;
+        snap.img.style.objectFit = snap.objectFit;
+      }
     });
   };
 }
@@ -494,9 +518,8 @@ function paintHtmlImage(ctx, el, bmp, origin, cs) {
   const h = rect.height;
   if (w < 0.4 || h < 0.4) return;
 
-  if (isLiveSlotFaceUpLiveImg(el) && isLandscapeBitmap(bmp)) {
-    const slot = el.closest(".live-slot");
-    paintLandscapeCardContained(ctx, el, bmp, origin, slot || el.closest(".card-art-wrap") || el);
+  if (isLiveSlotFaceUpLiveImg(el)) {
+    paintLandscapeCardContained(ctx, el, bmp, origin, el.closest(".live-slot") || el);
     return;
   }
   if (isHandLiveFaceUpImg(el) && isLandscapeBitmap(bmp)) {

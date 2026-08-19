@@ -37339,6 +37339,7 @@ export function mountSimulator(
     div.dataset.type = c.type;
 
     if (opts.forceLiveHorizontal) div.classList.add("card-item--live-h");
+    if (opts.liveSlotFaceHorizontal) div.classList.add("card-item--live-slot-face-h");
     if (c.lcWait === true) div.classList.add("card-item--lc-wait");
     if (c.lcActive === false) div.classList.add("card-item--lc-inactive");
     if (opts.successLiveAlwaysGlow) div.classList.add("card-item--success-live-glow");
@@ -37972,6 +37973,8 @@ export function mountSimulator(
 
       var successLiveAlwaysGlow = !isLightweightPlayMode() && isSuccessLive && c.type === T_LIVE;
       var liveVenueBoost = !isLightweightPlayMode() && isLiveBoard && !state.liveTurnPickMode && c.type === T_LIVE;
+      var liveSlotFaceHorizontal =
+        isLiveBoard && c.type === T_LIVE && !(liveSlotFaceDown && !!(c.img));
 
       var catalogImgClickDetail =
         (c.type === T_MEMBER || c.type === T_LIVE) &&
@@ -37989,6 +37992,7 @@ export function mountSimulator(
         onRotate: onRotate || undefined,
         zoomClick: zoomClick,
         forceLiveHorizontal: !!(liveSlotFaceDown && (c.type === T_LIVE || c.type === T_MEMBER)),
+        liveSlotFaceHorizontal: liveSlotFaceHorizontal,
         stanceBar: showStance,
         hideFaceBehindBack:
           liveSlotFaceDown && !!(c.img) && (c.type === T_LIVE || c.type === T_MEMBER),
