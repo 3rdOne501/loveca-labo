@@ -910,6 +910,14 @@ python3 -m http.server 8080</pre>
           >
             手札を下に固定
           </button>
+          <button
+            type="button"
+            class="btn sm secondary"
+            id="btn-export-play-board"
+            title="ソロプレイ中の盤面と手札を PNG で保存します"
+          >
+            盤面画像を保存
+          </button>
           <button type="button" class="btn sm secondary" id="btn-zone-hints" aria-pressed="false">
             ゾーン説明を表示
           </button>
@@ -1374,7 +1382,7 @@ python3 -m http.server 8080</pre>
                       <span id="live-resolution-bh-ref" class="live-stats-metric-answer live-stats-metric-answer--bh">—</span>
                     </div>
                   </dd>
-                  <dt>判定</dt>
+                  <dt class="live-success-verdict-dt">判定</dt>
                   <dd id="live-success-verdict-line" class="live-success-verdict-line">—</dd>
                   <dt title="ライブ効果の固有達成など、打点に手動で足す分（Undo 可）">固有ボーナス点</dt>
                   <dd class="live-score-bonus-dd">

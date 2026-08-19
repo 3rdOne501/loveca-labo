@@ -202,6 +202,7 @@ import {
   syncDeckRemainBadge,
   syncLivePhaseRail,
 } from "./playBoardChrome.js";
+import { exportPlayBoardImage } from "./playBoardExport.js";
 import {
   resolveMemberCharacterIconsFromCatalog,
   resolveEnterFxCardGroupLogo,
@@ -7996,6 +7997,81 @@ export function mountSimulator(
 
   function isSoloBoardPlayMode() {
     return !versusMatchPhaseActive() && !versusOnlineActive() && !isDualOpponentBoardMode();
+  }
+
+  /** スクショ用: 成否に関わらず「成功時の点数」表示へ一時切替（復元関数を返す） */
+  function prepareBoardExportSuccessScoreDom() {
+    var bar = $("live-center-score-bar");
+    var numEl = $("live-center-score-num");
+    var noteWrap = $("live-center-score-note-wrap");
+    var noteSuf = $("live-center-score-note-suffix");
+    if (!bar || !numEl) return function () {};
+
+    var snap = {
+      barHidden: bar.hidden,
+      barClass: bar.className,
+      numText: numEl.textContent,
+      numClass: numEl.className,
+      noteHidden: noteWrap ? noteWrap.hidden : true,
+      noteHtml: noteSuf ? noteSuf.innerHTML : "",
+      noteClass: noteSuf ? noteSuf.className : "",
+      noteTitle: noteSuf ? noteSuf.title : "",
+    };
+
+    try {
+      if (!state.liveStatsAfterBegin || liveLiveCardsInFramesOnly() === 0) {
+        return function () {};
+      }
+      var bund = getRenderPassLiveBundle();
+      var vp = liveVerdictScorePoints(bund);
+      if (!vp.hasMech) return function () {};
+
+      var successBase = Math.max(0, Math.floor(Number(vp.framePlusBonus) || 0));
+      var notePts = Math.max(0, Math.floor(Number(countEaleNoteLiveScorePoints()) || 0));
+      var displayTotal = successBase + notePts;
+
+      bar.hidden = false;
+      numEl.textContent = String(successBase);
+      numEl.className = "live-score-center-bar__num";
+      bar.classList.remove(
+        "live-score-center-bar--placeholder",
+        "live-score-center-bar--ok",
+        "live-score-center-bar--fail",
+        "live-score-center-bar--muted",
+      );
+      bar.classList.add("live-score-center-bar--ok");
+
+      var t = displayTotal;
+      if (Number.isFinite(t) && t >= 22) numEl.classList.add("live-score-num--ge22");
+      else if (Number.isFinite(t) && t >= 14) numEl.classList.add("live-score-num--glow-14plus");
+      else if (Number.isFinite(t) && t >= 0) {
+        var tier;
+        if (t <= 1) tier = 0;
+        else if (t <= 3) tier = 1;
+        else if (t <= 5) tier = 2;
+        else if (t <= 7) tier = 3;
+        else if (t <= 9) tier = 4;
+        else if (t <= 10) tier = 6;
+        else if (t <= 12) tier = 8;
+        else tier = 9;
+        numEl.classList.add("live-score-num--tier-" + String(Math.min(10, tier)));
+      }
+    } catch (_) {
+      return function () {};
+    }
+
+    return function () {
+      bar.hidden = snap.barHidden;
+      bar.className = snap.barClass;
+      numEl.textContent = snap.numText;
+      numEl.className = snap.numClass;
+      if (noteWrap) noteWrap.hidden = snap.noteHidden;
+      if (noteSuf) {
+        noteSuf.innerHTML = snap.noteHtml;
+        noteSuf.className = snap.noteClass;
+        noteSuf.title = snap.noteTitle;
+      }
+    };
   }
 
   function ensureEffectCheckTimingState() {
@@ -44378,6 +44454,27 @@ export function mountSimulator(
 
   $("btn-hand-dock")?.addEventListener("click", function () {
     toggleHandDockBottom();
+  });
+
+  $("btn-export-play-board")?.addEventListener("click", async function () {
+    if (!isSoloBoardPlayMode()) {
+      showToast("ソロプレイ中のみ盤面画像を保存できます");
+      return;
+    }
+    var btn = $("btn-export-play-board");
+    if (btn) btn.disabled = true;
+    try {
+      await exportPlayBoardImage({
+        prepareDom: function () {
+          return prepareBoardExportSuccessScoreDom();
+        },
+      });
+      showToast("盤面＋手札の画像を保存しました");
+    } catch (err) {
+      showToast("画像出力に失敗: " + (err && err.message ? err.message : String(err)));
+    } finally {
+      if (btn) btn.disabled = false;
+    }
   });
 
   $("btn-hand-dock-turn")?.addEventListener("click", function () {
