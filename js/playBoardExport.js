@@ -345,18 +345,53 @@ function bmpNaturalSize(bmp) {
   };
 }
 
-function cssRotateQuarterTurns(el, cs) {
-  if (el.classList.contains("rotated")) return 1;
+function parseCssTransformMatrix(cs) {
   const t = cs && cs.transform;
-  if (!t || t === "none") return 0;
+  if (!t || t === "none") return [1, 0, 0, 1, 0, 0];
+  const m3 = String(t).match(/matrix3d\(([^)]+)\)/);
+  if (m3) {
+    const p = m3[1].split(",").map(function (x) {
+      return parseFloat(x.trim());
+    });
+    if (p.length >= 6) return [p[0], p[1], p[4], p[5], p[12] || 0, p[13] || 0];
+  }
   const m = String(t).match(/matrix\(([^)]+)\)/);
-  if (!m) return 0;
-  const p = m[1].split(",").map(function (x) {
-    return parseFloat(x.trim());
-  });
-  if (p.length < 2 || !Number.isFinite(p[0]) || !Number.isFinite(p[1])) return 0;
-  const q = Math.round(Math.atan2(p[1], p[0]) / (Math.PI / 2));
-  return ((q % 4) + 4) % 4;
+  if (m) {
+    const p = m[1].split(",").map(function (x) {
+      return parseFloat(x.trim());
+    });
+    if (p.length >= 4) return [p[0], p[1], p[2], p[3], p[4] || 0, p[5] || 0];
+  }
+  return [1, 0, 0, 1, 0, 0];
+}
+
+/** 実際の computed transform から 90° 単位の回転のみ抽出（.rotated クラスは見ない） */
+function cssRotateQuarterTurns(_el, cs) {
+  const p = parseCssTransformMatrix(cs);
+  const a = p[0];
+  const b = p[1];
+  const c = p[2];
+  const d = p[3];
+  if (!Number.isFinite(a) || !Number.isFinite(b) || !Number.isFinite(c) || !Number.isFinite(d)) return 0;
+  const eps = 0.08;
+  if (Math.abs(a) < eps && Math.abs(d) < eps) {
+    if (b > eps && c < -eps) return 1;
+    if (b < -eps && c > eps) return 3;
+  }
+  if (Math.abs(b) < eps && Math.abs(c) < eps && a < -eps && d < -eps) return 2;
+  return 0;
+}
+
+function objectFitForPaint(cs, dw, dh, bmp) {
+  let fit = String((cs && cs.objectFit) || "fill");
+  if (fit !== "fill" && fit !== "contain" && fit !== "cover") fit = "fill";
+  if (fit === "fill") {
+    const { nw, nh } = bmpNaturalSize(bmp);
+    const destLandscape = dw > dh * 1.05;
+    const bmpLandscape = nw > nh * 1.05;
+    if (destLandscape !== bmpLandscape) fit = "contain";
+  }
+  return fit;
 }
 
 function drawBitmapFitted(ctx, bmp, dx, dy, dw, dh, fit) {
@@ -382,14 +417,8 @@ function paintHtmlImage(ctx, el, bmp, origin, cs) {
 
   const cx = x + w / 2;
   const cy = y + h / 2;
-  let fit = String(cs.objectFit || "fill");
-  if (fit === "fill") {
-    const { nw, nh } = bmpNaturalSize(bmp);
-    const destLandscape = w > h * 1.05;
-    const bmpLandscape = nw > nh * 1.05;
-    if (destLandscape !== bmpLandscape) fit = "contain";
-  }
   const quarter = cssRotateQuarterTurns(el, cs);
+  const fit = objectFitForPaint(cs, w, h, bmp);
   const rr = Math.min(6, Math.min(w, h) * 0.08);
 
   ctx.save();
@@ -400,7 +429,22 @@ function paintHtmlImage(ctx, el, bmp, origin, cs) {
     roundRect(ctx, -h / 2, -w / 2, h, w, rr);
     ctx.clip();
     try {
-      drawBitmapFitted(ctx, bmp, -h / 2, -w / 2, h, w, fit === "contain" ? "contain" : "fill");
+      drawBitmapFitted(
+        ctx,
+        bmp,
+        -h / 2,
+        -w / 2,
+        h,
+        w,
+        fit === "contain" ? "contain" : "fill",
+      );
+    } catch (_) {}
+  } else if (quarter === 2) {
+    ctx.rotate(Math.PI);
+    roundRect(ctx, -w / 2, -h / 2, w, h, rr);
+    ctx.clip();
+    try {
+      drawBitmapFitted(ctx, bmp, -w / 2, -h / 2, w, h, fit);
     } catch (_) {}
   } else {
     roundRect(ctx, -w / 2, -h / 2, w, h, rr);
@@ -579,10 +623,6 @@ export async function exportPlayBoardImage(opts) {
     col.style.overflow = "visible";
     col.style.maxHeight = "none";
     col.style.height = "auto";
-    col.style.minWidth = "980px";
-    col.style.width = "980px";
-    col.style.paddingLeft = "1.4rem";
-    col.style.paddingRight = "1.4rem";
     await waitFrame();
     await ensureImagesDecoded(col);
     await waitFrame();
