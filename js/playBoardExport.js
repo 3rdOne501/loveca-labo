@@ -83,20 +83,99 @@ function loadImage(src) {
 
 async function resolveImgBitmap(imgEl) {
   if (!imgEl) return null;
+  if (imgEl.complete && imgEl.naturalWidth > 0) {
+    return imgEl;
+  }
   const visible = imgEl.currentSrc || imgEl.src || "";
   const realFace = imgEl.getAttribute("data-ll-real-face-src") || "";
   const src =
     visible && realFace && visible !== realFace ? visible : visible || realFace;
   if (!src) return null;
-  if (imgEl.complete && imgEl.naturalWidth > 0 && isSameOriginOrData(src)) {
-    return imgEl;
-  }
   try {
     return await loadImage(src);
   } catch (_) {
     if (imgEl.complete && imgEl.naturalWidth > 0) return imgEl;
     return null;
   }
+}
+
+function isLandscapeBitmap(bmp) {
+  const { nw, nh } = bmpNaturalSize(bmp);
+  return nw > nh * 1.05;
+}
+
+/** ライブ開始後：ライブ枠の表面ライブ（横向き表示。--live-h はライブターン中のみ） */
+function isLiveSlotFaceUpLiveImg(el) {
+  if (!el || el.tagName !== "IMG") return false;
+  const card = el.closest(".live-slot .card-item[data-type=\"ライブ\"]");
+  if (!card) return false;
+  if (card.classList.contains("card-item--live-h")) return false;
+  if (el.getAttribute("data-ll-real-face-src")) return false;
+  return true;
+}
+
+/** 手札のライブ（メンバー枠内に横長画像を contain） */
+function isHandLiveFaceUpImg(el) {
+  if (!el || el.tagName !== "IMG" || el.classList.contains("rotated")) return false;
+  return !!el.closest("#zone-hand .card-item[data-type=\"ライブ\"]");
+}
+
+function paintLandscapeCardContained(ctx, el, bmp, origin, anchorEl) {
+  const anchor = anchorEl || el;
+  const rect = anchor.getBoundingClientRect();
+  const x = rect.left - origin.left;
+  const y = rect.top - origin.top;
+  const w = Math.max(rect.width, 1);
+  const h = Math.max(rect.height, 1);
+  const { nw, nh } = bmpNaturalSize(bmp);
+  const scale = Math.min(w / nw, h / nh);
+  const tw = nw * scale;
+  const th = nh * scale;
+  const dx = x + (w - tw) / 2;
+  const dy = y + (h - th) / 2;
+  const rr = Math.min(6, Math.min(tw, th) * 0.08);
+  ctx.save();
+  roundRect(ctx, dx, dy, tw, th, rr);
+  ctx.clip();
+  try {
+    ctx.drawImage(bmp, dx, dy, tw, th);
+  } catch (_) {}
+  ctx.restore();
+}
+
+/** ライブ枠の表面ライブは常に横長のまま描く（90°回転しない） */
+function prepareLiveSlotFaceUpForExport(root) {
+  const restore = [];
+  root.querySelectorAll(".live-slot .card-item[data-type=\"ライブ\"]:not(.card-item--live-h)").forEach(function (card) {
+    const img = card.querySelector("img.card-img");
+    if (!img || img.getAttribute("data-ll-real-face-src")) return;
+    restore.push({
+      img: img,
+      className: img.className,
+      transform: img.style.transform,
+      width: img.style.width,
+      height: img.style.height,
+      objectFit: img.style.objectFit,
+    });
+    img.classList.remove("rotated");
+    img.style.width = "100%";
+    img.style.height = "auto";
+    img.style.objectFit = "contain";
+    if (card.classList.contains("card-item--live-venue-boost")) {
+      img.style.transform = "scale(2)";
+    } else {
+      img.style.transform = "none";
+    }
+  });
+  return function undoLiveSlotFaceUpExportPrep() {
+    restore.forEach(function (snap) {
+      snap.img.className = snap.className;
+      snap.img.style.transform = snap.transform;
+      snap.img.style.width = snap.width;
+      snap.img.style.height = snap.height;
+      snap.img.style.objectFit = snap.objectFit;
+    });
+  };
 }
 
 function isTransparentColor(c) {
@@ -415,6 +494,16 @@ function paintHtmlImage(ctx, el, bmp, origin, cs) {
   const h = rect.height;
   if (w < 0.4 || h < 0.4) return;
 
+  if (isLiveSlotFaceUpLiveImg(el) && isLandscapeBitmap(bmp)) {
+    const slot = el.closest(".live-slot");
+    paintLandscapeCardContained(ctx, el, bmp, origin, slot || el.closest(".card-art-wrap") || el);
+    return;
+  }
+  if (isHandLiveFaceUpImg(el) && isLandscapeBitmap(bmp)) {
+    paintLandscapeCardContained(ctx, el, bmp, origin, el.closest(".card-item") || el);
+    return;
+  }
+
   const cx = x + w / 2;
   const cy = y + h / 2;
   const quarter = cssRotateQuarterTurns(el, cs);
@@ -601,11 +690,13 @@ export async function exportPlayBoardImage(opts) {
   };
   let handClone = null;
   let prepareRestore = null;
+  let liveLayoutRestore = null;
   hideChromeClass(true);
   try {
     if (typeof opts.prepareDom === "function") {
       prepareRestore = opts.prepareDom() || null;
     }
+
     if (typeof document.fonts !== "undefined" && document.fonts.ready) {
       await document.fonts.ready.catch(function () {});
     }
@@ -623,6 +714,7 @@ export async function exportPlayBoardImage(opts) {
     col.style.overflow = "visible";
     col.style.maxHeight = "none";
     col.style.height = "auto";
+    liveLayoutRestore = prepareLiveSlotFaceUpForExport(col);
     await waitFrame();
     await ensureImagesDecoded(col);
     await waitFrame();
@@ -689,6 +781,11 @@ export async function exportPlayBoardImage(opts) {
       String(stamp.getMinutes()).padStart(2, "0");
     downloadBlob(blob, "loveca-board_" + ts + ".png");
   } finally {
+    if (typeof liveLayoutRestore === "function") {
+      try {
+        liveLayoutRestore();
+      } catch (_) {}
+    }
     if (typeof prepareRestore === "function") {
       try {
         prepareRestore();
