@@ -13882,16 +13882,17 @@ body.play-board-exporting img.card-yell-float-ico {
   opacity: 1 !important;
 }
 
-/* 画像保存時: ライブ枠の表面ライブは横向きのまま（回転・行スケールを除去） */
+/* 画像保存時: ライブ行のスケールを解除（canvas のテキストは CSS scale を追従できないため） */
 body.play-board-exporting #live-row.three-cols {
   transform: none !important;
 }
-body.play-board-exporting .live-slot .card-item.card-item--live-slot-face-h,
+/* 表面ライブは会場演出の scale(2) ぶんスロットをはみ出すので、枠幅を広げて等倍で収める。
+   ライブターン中の裏・横向き（.card-item--live-h＝img が .rotated）は画面どおりに残す。 */
 body.play-board-exporting .live-slot .card-item[data-type="ライブ"]:not(.card-item--live-h) {
   width: min(calc(var(--loveca-play-w) * 1.55), 100%) !important;
   max-width: 100% !important;
 }
-body.play-board-exporting .live-slot .card-item[data-type="ライブ"] .card-img {
+body.play-board-exporting .live-slot .card-item[data-type="ライブ"] .card-img:not(.rotated) {
   transform: none !important;
   width: 100% !important;
   height: auto !important;

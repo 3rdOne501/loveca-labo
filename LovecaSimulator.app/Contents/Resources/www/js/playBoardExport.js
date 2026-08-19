@@ -99,109 +99,6 @@ async function resolveImgBitmap(imgEl) {
   }
 }
 
-function isLandscapeBitmap(bmp) {
-  const { nw, nh } = bmpNaturalSize(bmp);
-  return nw > nh * 1.05;
-}
-
-/** ライブ枠の表面ライブ（裏面非表示） */
-function isLiveSlotFaceUpLiveImg(el) {
-  if (!el || el.tagName !== "IMG") return false;
-  const card = el.closest(".live-slot .card-item[data-type=\"ライブ\"]");
-  if (!card) return false;
-  if (el.getAttribute("data-ll-real-face-src")) return false;
-  return true;
-}
-
-/** 手札のライブ（メンバー枠内に横長画像を contain） */
-function isHandLiveFaceUpImg(el) {
-  if (!el || el.tagName !== "IMG" || el.classList.contains("rotated")) return false;
-  return !!el.closest("#zone-hand .card-item[data-type=\"ライブ\"]");
-}
-
-function paintLandscapeCardContained(ctx, el, bmp, origin, anchorEl) {
-  const slot = el.closest(".live-slot");
-  const anchor = slot || anchorEl || el;
-  const rect = anchor.getBoundingClientRect();
-  const x = rect.left - origin.left;
-  const y = rect.top - origin.top;
-  const w = Math.max(rect.width, 1);
-  const h = Math.max(rect.height, 1);
-  const { nw, nh } = bmpNaturalSize(bmp);
-  const maxW = w * 0.94;
-  const maxH = h * 0.9;
-  let tw = maxW;
-  let th = (tw * nh) / nw;
-  if (th > maxH) {
-    th = maxH;
-    tw = (th * nw) / nh;
-  }
-  const dx = x + (w - tw) / 2;
-  const dy = y + (h - th) / 2;
-  const rr = Math.min(6, Math.min(tw, th) * 0.08);
-  ctx.save();
-  roundRect(ctx, dx, dy, tw, th, rr);
-  ctx.clip();
-  try {
-    ctx.drawImage(bmp, dx, dy, tw, th);
-  } catch (_) {}
-  ctx.restore();
-}
-
-/** ライブ枠の表面ライブは横向きのまま描く（90°回転・scale 由来のズレを除去） */
-function prepareLiveSlotFaceUpForExport(root) {
-  const restore = [];
-  const liveRow = root.querySelector("#live-row.three-cols");
-  if (liveRow) {
-    restore.push({ el: liveRow, transform: liveRow.style.transform });
-    liveRow.style.transform = "none";
-  }
-  root.querySelectorAll(".live-slot .card-item[data-type=\"ライブ\"]").forEach(function (card) {
-    const img = card.querySelector("img.card-img");
-    if (!img || img.getAttribute("data-ll-real-face-src")) return;
-    restore.push({
-      card: card,
-      cardClassName: card.className,
-      cardWidth: card.style.width,
-      cardMaxWidth: card.style.maxWidth,
-      img: img,
-      imgClassName: img.className,
-      transform: img.style.transform,
-      width: img.style.width,
-      height: img.style.height,
-      objectFit: img.style.objectFit,
-    });
-    card.classList.remove("card-item--live-h");
-    card.style.width = "min(calc(var(--loveca-play-w) * 1.55), 100%)";
-    card.style.maxWidth = "100%";
-    img.classList.remove("rotated");
-    img.style.transform = "none";
-    img.style.width = "100%";
-    img.style.height = "auto";
-    img.style.objectFit = "contain";
-  });
-  return function undoLiveSlotFaceUpExportPrep() {
-    restore.forEach(function (snap) {
-      if (snap.el) {
-        snap.el.style.transform = snap.transform;
-        return;
-      }
-      if (snap.card) {
-        snap.card.className = snap.cardClassName;
-        snap.card.style.width = snap.cardWidth;
-        snap.card.style.maxWidth = snap.cardMaxWidth;
-      }
-      if (snap.img) {
-        snap.img.className = snap.imgClassName;
-        snap.img.style.transform = snap.transform;
-        snap.img.style.width = snap.width;
-        snap.img.style.height = snap.height;
-        snap.img.style.objectFit = snap.objectFit;
-      }
-    });
-  };
-}
-
 function isTransparentColor(c) {
   if (!c || c === "transparent") return true;
   const m = String(c).match(/rgba?\(([^)]+)\)/);
@@ -518,15 +415,6 @@ function paintHtmlImage(ctx, el, bmp, origin, cs) {
   const h = rect.height;
   if (w < 0.4 || h < 0.4) return;
 
-  if (isLiveSlotFaceUpLiveImg(el)) {
-    paintLandscapeCardContained(ctx, el, bmp, origin, el.closest(".live-slot") || el);
-    return;
-  }
-  if (isHandLiveFaceUpImg(el) && isLandscapeBitmap(bmp)) {
-    paintLandscapeCardContained(ctx, el, bmp, origin, el.closest(".card-item") || el);
-    return;
-  }
-
   const cx = x + w / 2;
   const cy = y + h / 2;
   const quarter = cssRotateQuarterTurns(el, cs);
@@ -713,7 +601,6 @@ export async function exportPlayBoardImage(opts) {
   };
   let handClone = null;
   let prepareRestore = null;
-  let liveLayoutRestore = null;
   hideChromeClass(true);
   try {
     if (typeof opts.prepareDom === "function") {
@@ -737,7 +624,6 @@ export async function exportPlayBoardImage(opts) {
     col.style.overflow = "visible";
     col.style.maxHeight = "none";
     col.style.height = "auto";
-    liveLayoutRestore = prepareLiveSlotFaceUpForExport(col);
     await waitFrame();
     await ensureImagesDecoded(col);
     await waitFrame();
@@ -804,11 +690,6 @@ export async function exportPlayBoardImage(opts) {
       String(stamp.getMinutes()).padStart(2, "0");
     downloadBlob(blob, "loveca-board_" + ts + ".png");
   } finally {
-    if (typeof liveLayoutRestore === "function") {
-      try {
-        liveLayoutRestore();
-      } catch (_) {}
-    }
     if (typeof prepareRestore === "function") {
       try {
         prepareRestore();
