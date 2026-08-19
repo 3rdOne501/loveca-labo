@@ -372,14 +372,13 @@ function drawBitmapFitted(ctx, bmp, dx, dy, dw, dh, fit) {
   ctx.drawImage(bmp, dx, dy, dw, dh);
 }
 
-/** ライブ開始後の縦置きライブを、画像保存では横長枠へ（縦長原画だけ 90°） */
-function liveFaceNeedsLandscapeRotate(el, bmp, destW, destH) {
-  if (el.classList.contains("rotated")) return false;
+/** ライブ開始後の表面：原画が縦長なら 90° してテキストを水平にする */
+function liveFaceNeedsLandscapeRotate(el, bmp) {
   const item = el.closest("#live-row .live-slot .card-item");
   if (!item || item.classList.contains("card-item--live-h")) return false;
   if (String(item.getAttribute("data-type") || "") !== "ライブ") return false;
   const { nw, nh } = bmpNaturalSize(bmp);
-  return nh > nw * 1.05 && destW > destH * 1.05;
+  return nh > nw * 1.05;
 }
 
 function paintHtmlImage(ctx, el, bmp, origin, cs) {
@@ -405,12 +404,12 @@ function paintHtmlImage(ctx, el, bmp, origin, cs) {
   ctx.save();
   ctx.translate(cx, cy);
 
-  if (liveFaceNeedsLandscapeRotate(el, bmp, w, h)) {
+  if (liveFaceNeedsLandscapeRotate(el, bmp)) {
     ctx.rotate(Math.PI / 2);
     roundRect(ctx, -h / 2, -w / 2, h, w, rr);
     ctx.clip();
     try {
-      drawBitmapFitted(ctx, bmp, -h / 2, -w / 2, h, w, "fill");
+      drawBitmapFitted(ctx, bmp, -h / 2, -w / 2, h, w, "contain");
     } catch (_) {}
     ctx.restore();
     return;
@@ -541,6 +540,49 @@ function hideChromeClass(on) {
   document.body.classList.toggle("play-board-exporting", !!on);
 }
 
+/** ライブ開始後の表面ライブを、読みやすい横長（88∶63）で置く */
+function layoutExportLiveCardsLandscape(root) {
+  const restore = [];
+  if (!root || !root.querySelectorAll) return function () {};
+  const longSide = "calc(var(--loveca-play-h) * 1.28)";
+  const shortSide = "calc(var(--loveca-play-w) * 1.28)";
+  const items = root.querySelectorAll(
+    "#live-row .live-slot .card-item[data-type='ライブ']:not(.card-item--live-h)",
+  );
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    restore.push({ el: item, cssText: item.style.cssText });
+    item.style.setProperty("width", longSide, "important");
+    const wrap = item.querySelector(".card-art-wrap");
+    if (wrap) {
+      restore.push({ el: wrap, cssText: wrap.style.cssText });
+      wrap.style.setProperty("width", longSide, "important");
+      wrap.style.setProperty("height", shortSide, "important");
+    }
+    const img = item.querySelector(".card-img");
+    if (img) {
+      restore.push({
+        el: img,
+        cssText: img.style.cssText,
+        rotated: img.classList.contains("rotated"),
+      });
+      img.classList.remove("rotated");
+      img.style.setProperty("width", longSide, "important");
+      img.style.setProperty("height", shortSide, "important");
+      img.style.setProperty("max-width", "none", "important");
+      img.style.setProperty("max-height", "none", "important");
+      img.style.setProperty("object-fit", "contain", "important");
+      img.style.setProperty("transform", "none", "important");
+    }
+  }
+  return function () {
+    restore.forEach(function (r) {
+      r.el.style.cssText = r.cssText;
+      if (r.rotated) r.el.classList.add("rotated");
+    });
+  };
+}
+
 function openFoldsForExport() {
   const restore = [];
   ["energy-fold", "hand-stick-fold"].forEach(function (id) {
@@ -578,6 +620,7 @@ export async function exportPlayBoardImage(opts) {
   };
   let handClone = null;
   let prepareRestore = null;
+  let liveLayoutRestore = null;
   hideChromeClass(true);
   try {
     if (typeof opts.prepareDom === "function") {
@@ -604,6 +647,7 @@ export async function exportPlayBoardImage(opts) {
     col.style.width = "980px";
     col.style.paddingLeft = "1.4rem";
     col.style.paddingRight = "1.4rem";
+    liveLayoutRestore = layoutExportLiveCardsLandscape(col);
     await waitFrame();
     await ensureImagesDecoded(col);
     await waitFrame();
@@ -670,6 +714,11 @@ export async function exportPlayBoardImage(opts) {
       String(stamp.getMinutes()).padStart(2, "0");
     downloadBlob(blob, "loveca-board_" + ts + ".png");
   } finally {
+    if (typeof liveLayoutRestore === "function") {
+      try {
+        liveLayoutRestore();
+      } catch (_) {}
+    }
     if (typeof prepareRestore === "function") {
       try {
         prepareRestore();
