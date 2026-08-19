@@ -372,6 +372,16 @@ function drawBitmapFitted(ctx, bmp, dx, dy, dw, dh, fit) {
   ctx.drawImage(bmp, dx, dy, dw, dh);
 }
 
+/** ライブ開始後の縦置きライブを、画像保存では横長枠へ（縦長原画だけ 90°） */
+function liveFaceNeedsLandscapeRotate(el, bmp, destW, destH) {
+  if (el.classList.contains("rotated")) return false;
+  const item = el.closest("#live-row .live-slot .card-item");
+  if (!item || item.classList.contains("card-item--live-h")) return false;
+  if (String(item.getAttribute("data-type") || "") !== "ライブ") return false;
+  const { nw, nh } = bmpNaturalSize(bmp);
+  return nh > nw * 1.05 && destW > destH * 1.05;
+}
+
 function paintHtmlImage(ctx, el, bmp, origin, cs) {
   const rect = el.getBoundingClientRect();
   const x = rect.left - origin.left;
@@ -394,6 +404,17 @@ function paintHtmlImage(ctx, el, bmp, origin, cs) {
 
   ctx.save();
   ctx.translate(cx, cy);
+
+  if (liveFaceNeedsLandscapeRotate(el, bmp, w, h)) {
+    ctx.rotate(Math.PI / 2);
+    roundRect(ctx, -h / 2, -w / 2, h, w, rr);
+    ctx.clip();
+    try {
+      drawBitmapFitted(ctx, bmp, -h / 2, -w / 2, h, w, "fill");
+    } catch (_) {}
+    ctx.restore();
+    return;
+  }
 
   if (quarter === 1 || quarter === 3) {
     ctx.rotate(quarter === 1 ? Math.PI / 2 : -Math.PI / 2);
