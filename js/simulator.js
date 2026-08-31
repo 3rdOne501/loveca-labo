@@ -3309,7 +3309,7 @@ export function mountSimulator(
       },
       memberOnStageOrLive: memberIsOnStageOrLiveSlot,
       memberOnStageOnly: function (inst) {
-        return !!(inst && inst.id != null && stageColumnKeyHostingMember(inst.id) != null);
+        return memberIsStageStackTop(inst);
       },
       memberIsWait: function (inst) {
         return !!(inst && inst.lcWait === true);
@@ -6469,7 +6469,7 @@ export function mountSimulator(
     /** @type {{seriesTag: string|null, blade: number}[]} */
     var stageGrants = [];
     eachStageColumnMemberInsts().forEach(function (src) {
-      if (!src) return;
+      if (!src || !memberIsStageStackTop(src)) return;
       listNativeJoujiSegmentRaws(mergedCatalogCard(src)).forEach(function (raw) {
         var rule = classifyJoujiSegment(raw);
         if (rule && rule.kind === "blade_grant_series_with_member_under") {
@@ -6478,7 +6478,7 @@ export function mountSimulator(
       });
     });
     eachStageColumnMemberInsts().forEach(function (host) {
-      if (!host || host.type !== T_MEMBER) return;
+      if (!host || host.type !== T_MEMBER || !memberIsStageStackTop(host)) return;
       var underMembers = getStackMembersBelowHost(host);
       var hasMemberUnder = underMembers.length > 0;
       if (hasMemberUnder && stageGrants.length) {
@@ -6810,12 +6810,12 @@ export function mountSimulator(
     return boardColumnKeyHostingCard(cardInst.id) != null;
   }
 
-  /** スナップショット上の当該列で、「新規載せのメンバー以外」の先行メンバー（バトン退場予定） */
+  /** スナップショット上の当該列で、「新規載せのメンバー以外」の面メンバー（バトン退場予定） */
   function incumbentFromSnapStageSlot(snap, colKey, newMemberId) {
     if (!snap || !snap.stage || !colKey) return null;
     var arr = snap.stage[colKey];
     if (!Array.isArray(arr)) return null;
-    for (var i = 0; i < arr.length; i++) {
+    for (var i = arr.length - 1; i >= 0; i--) {
       var pc = arr[i];
       if (pc && pc.type === T_MEMBER && String(pc.id) !== String(newMemberId)) return pc;
     }
@@ -7276,6 +7276,44 @@ export function mountSimulator(
 
   function stageColumnIncumbentMember(col) {
     return stageColumnTopMember(col);
+  }
+
+  /** 列で面（一番上）のメンバーか。下置きメンバーは false（総合ルール 4.5.5 / FAQ Q247 趣旨）。 */
+  function memberIsStageStackTop(memberInst) {
+    if (!memberInst || memberInst.id == null || memberInst.type !== T_MEMBER) return false;
+    var col = stageColumnKeyHostingMember(memberInst.id);
+    if (!col) return false;
+    var top = stageColumnTopMember(col);
+    return !!(top && String(top.id) === String(memberInst.id));
+  }
+
+  /** スナップ上の列で面にいるメンバー（バトン相手判定用）。 */
+  function snapStageColumnTopMember(snap, col) {
+    if (!snap || !snap.stage || !col) return null;
+    var slot = snap.stage[col] || [];
+    for (var si = slot.length - 1; si >= 0; si--) {
+      if (slot[si] && slot[si].type === T_MEMBER) return slot[si];
+    }
+    return null;
+  }
+
+  /**
+   * 総合ルール 10.5.3: ホスト退場後に露出した下置きメンバーを控え室へ。
+   * `_placedAsUnderMember` は「メンバーの下に置く」効果で載せた印。
+   */
+  function applyRule1053ExposedUnderMembers() {
+    var moved = 0;
+    ["left", "center", "right"].forEach(function (col) {
+      var top = stageColumnTopMember(col);
+      if (!top || top.type !== T_MEMBER || top._placedAsUnderMember !== true) return;
+      if (removeStageMemberToWaiting(top)) moved++;
+    });
+    if (moved > 0) {
+      try {
+        syncJoujiPassiveEffectsAll();
+      } catch (_) {}
+    }
+    return moved;
   }
 
   /** 当ターンに載せたメンバーへのバトンタッチ不可・列登場不可（pb1-018 等）を含む */
@@ -18008,6 +18046,7 @@ export function mountSimulator(
     var out = [];
     eachStageColumnMemberInsts().forEach(function (m) {
       if (!m || m.type !== T_MEMBER) return;
+      if (!memberIsStageStackTop(m)) return;
       if (excludeInstId && String(m.id) === String(excludeInstId)) return;
       if (m.lcWait === true) return;
       var cat = mergedCatalogCard(m);
