@@ -51,7 +51,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,700;1,9..40,500&family=M+PLUS+Rounded+1c:wght@500;700&family=Noto+Sans+JP:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=2026081820" />
+    <link rel="stylesheet" href="styles.css?v=2026081917" />
     <link rel="stylesheet" href="styles-perf.css?v=2026051910" />
   </head>
   <body>
@@ -909,6 +909,15 @@ python3 -m http.server 8080</pre>
             title="ONにすると手札を画面中央下に固定します（スマホのような配置。ソロ・対戦とも有効）"
           >
             手札を下に固定
+          </button>
+          <button
+            type="button"
+            class="btn sm secondary"
+            id="btn-export-play-board"
+            hidden
+            title="盤面と手札だけを記事用 PNG で保存（操作ボタン・Undo 等は写りません）"
+          >
+            盤面画像を保存
           </button>
           <button type="button" class="btn sm secondary" id="btn-zone-hints" aria-pressed="false">
             ゾーン説明を表示
@@ -1925,53 +1934,58 @@ python3 -m http.server 8080</pre>
       <h2 id="dlg-member-hb-title">所持H／ブレードを追加</h2>
       <p id="dlg-member-hb-lead" class="muted dlg-member-hb-lead"></p>
       <p class="hint">
-        メンバーDBの<code>base_heart</code>・<code>blade</code>に<strong>加算</strong>して集計します（Undo 可能）。<strong>常時</strong>はターンをまたいで残り、<strong>登場／起動／開始時</strong>はターン終了で消えます。<strong>場にいるメンバー</strong>への所持H加算は<strong>ライブ成功判定の「場メンバー所持H」に反映</strong>されます。
+        メンバーDBの<code>base_heart</code>・<code>blade</code>に<strong>加算</strong>して集計します（Undo 可能）。
+        <strong>ライブ終了まで</strong>はライブ終了で消え、<strong>登場／起動／開始時</strong>はターン終了で消えます（印刷の常時能力は別枠で自動加算）。
+        <strong>場にいるメンバー</strong>への所持H加算は<strong>ライブ成功判定の「場メンバー所持H」に反映</strong>されます。
         数値は<strong>クリックで +1</strong>（<kbd>Shift</kbd>+クリックで −1、上限 999）。
       </p>
       <div class="dlg-member-hb-fields" role="group" aria-label="追加する所持ハートとブレード">
         <div class="member-hb-row member-hb-row--head" aria-hidden="true">
           <span class="member-hb-lab"></span>
-          <span class="member-hb-colhead">常時</span>
+          <span class="member-hb-colhead">ライブ終了まで</span>
           <span class="member-hb-colhead">登場／起動／開始時</span>
         </div>
         <div class="member-hb-row">
           <span class="member-hb-lab"><img src="assets/game-icons/loveca-data-1/heart_01.png" alt="桃ハート" class="member-hb-lab-icon" />桃 H</span>
-          <button type="button" class="member-hb-step" data-member-hb-slot="1" data-member-hb-scope="always" aria-label="桃H 常時">0</button>
+          <button type="button" class="member-hb-step" data-member-hb-slot="1" data-member-hb-scope="always" aria-label="桃H ライブ終了まで">0</button>
           <button type="button" class="member-hb-step" data-member-hb-slot="1" data-member-hb-scope="turn" aria-label="桃H 登場など">0</button>
         </div>
         <div class="member-hb-row">
           <span class="member-hb-lab"><img src="assets/game-icons/loveca-data-1/heart_02.png" alt="赤ハート" class="member-hb-lab-icon" />赤 H</span>
-          <button type="button" class="member-hb-step" data-member-hb-slot="2" data-member-hb-scope="always" aria-label="赤H 常時">0</button>
+          <button type="button" class="member-hb-step" data-member-hb-slot="2" data-member-hb-scope="always" aria-label="赤H ライブ終了まで">0</button>
           <button type="button" class="member-hb-step" data-member-hb-slot="2" data-member-hb-scope="turn" aria-label="赤H 登場など">0</button>
         </div>
         <div class="member-hb-row">
           <span class="member-hb-lab"><img src="assets/game-icons/loveca-data-1/heart_03.png" alt="黄ハート" class="member-hb-lab-icon" />黄 H</span>
-          <button type="button" class="member-hb-step" data-member-hb-slot="3" data-member-hb-scope="always" aria-label="黄H 常時">0</button>
+          <button type="button" class="member-hb-step" data-member-hb-slot="3" data-member-hb-scope="always" aria-label="黄H ライブ終了まで">0</button>
           <button type="button" class="member-hb-step" data-member-hb-slot="3" data-member-hb-scope="turn" aria-label="黄H 登場など">0</button>
         </div>
         <div class="member-hb-row">
           <span class="member-hb-lab"><img src="assets/game-icons/loveca-data-1/heart_04.png" alt="緑ハート" class="member-hb-lab-icon" />緑 H</span>
-          <button type="button" class="member-hb-step" data-member-hb-slot="4" data-member-hb-scope="always" aria-label="緑H 常時">0</button>
+          <button type="button" class="member-hb-step" data-member-hb-slot="4" data-member-hb-scope="always" aria-label="緑H ライブ終了まで">0</button>
           <button type="button" class="member-hb-step" data-member-hb-slot="4" data-member-hb-scope="turn" aria-label="緑H 登場など">0</button>
         </div>
         <div class="member-hb-row">
           <span class="member-hb-lab"><img src="assets/game-icons/loveca-data-1/heart_05.png" alt="青ハート" class="member-hb-lab-icon" />青 H</span>
-          <button type="button" class="member-hb-step" data-member-hb-slot="5" data-member-hb-scope="always" aria-label="青H 常時">0</button>
+          <button type="button" class="member-hb-step" data-member-hb-slot="5" data-member-hb-scope="always" aria-label="青H ライブ終了まで">0</button>
           <button type="button" class="member-hb-step" data-member-hb-slot="5" data-member-hb-scope="turn" aria-label="青H 登場など">0</button>
         </div>
         <div class="member-hb-row">
           <span class="member-hb-lab"><img src="assets/game-icons/loveca-data-1/heart_06.png" alt="紫ハート" class="member-hb-lab-icon" />紫 H</span>
-          <button type="button" class="member-hb-step" data-member-hb-slot="6" data-member-hb-scope="always" aria-label="紫H 常時">0</button>
+          <button type="button" class="member-hb-step" data-member-hb-slot="6" data-member-hb-scope="always" aria-label="紫H ライブ終了まで">0</button>
           <button type="button" class="member-hb-step" data-member-hb-slot="6" data-member-hb-scope="turn" aria-label="紫H 登場など">0</button>
         </div>
         <div class="member-hb-row">
-          <span class="member-hb-lab"><img src="assets/game-icons/loveca-data-1/icon_all.png" alt="ALLハート" class="member-hb-lab-icon" />ALL（任意用）</span>
-          <button type="button" class="member-hb-step" data-member-hb-slot="7" data-member-hb-scope="always" aria-label="ALL 常時">0</button>
-          <button type="button" class="member-hb-step" data-member-hb-slot="7" data-member-hb-scope="turn" aria-label="ALL 登場など">0</button>
+          <span
+            class="member-hb-lab"
+            title="総合ルール 8.3.15.1.1: 必要ハート確認時、任意の色のハート1つとして扱えます（heart0＝任意プールとは別）"
+          ><img src="assets/game-icons/loveca-data-1/icon_all.png" alt="ALLハート" class="member-hb-lab-icon" />ALL（どの色にも）</span>
+          <button type="button" class="member-hb-step" data-member-hb-slot="7" data-member-hb-scope="always" aria-label="ALL（どの色にも）ライブ終了まで">0</button>
+          <button type="button" class="member-hb-step" data-member-hb-slot="7" data-member-hb-scope="turn" aria-label="ALL（どの色にも）登場など">0</button>
         </div>
         <div class="member-hb-row member-hb-row--blade">
           <span class="member-hb-lab"><img src="assets/game-icons/loveca-data-1/icon_blade.png" alt="ブレード" class="member-hb-lab-icon" />ブレード追加</span>
-          <button type="button" class="member-hb-step" data-member-hb-blade data-member-hb-scope="always" aria-label="ブレード 常時">0</button>
+          <button type="button" class="member-hb-step" data-member-hb-blade data-member-hb-scope="always" aria-label="ブレード ライブ終了まで">0</button>
           <button type="button" class="member-hb-step" data-member-hb-blade data-member-hb-scope="turn" aria-label="ブレード 登場など">0</button>
         </div>
       </div>
@@ -2417,6 +2431,7 @@ python3 -m http.server 8080</pre>
           "jidouAutoEffects.js",
           "liveSpecialBhOverride.js",
           "main.js",
+          "playBoardExport.js",
           "bingoDerby.js",
           "deckBrowsePage.js",
           "viewNav.js",

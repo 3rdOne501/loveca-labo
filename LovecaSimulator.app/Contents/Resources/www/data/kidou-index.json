@@ -1,12 +1,12 @@
 {
-  "generated": "2026-08-10",
+  "generated": "2026-08-31",
   "trigger": "kidou",
   "total": 296,
   "byTemplate": {
     "kidou_stage_wait_pick_hand": 69,
-    "deck_top_to_waiting": 5,
+    "deck_top_to_waiting": 1,
     "kidou_hand_cost_wait_pick_hand": 23,
-    "draw_from_deck": 21,
+    "draw_from_deck": 17,
     "draw_then_hand_discard": 11,
     "kidou_self_wait_hand_enter_energy": 3,
     "kidou_reveal_all_hand_deck_top_live": 3,
@@ -33,7 +33,7 @@
     "kidou_hand_discard_series_branch": 4,
     "kidou_opp_wait_group_discount_energy": 4,
     "kidou_hand_discard_wait_live_score_pay": 3,
-    "grant_jouji_session": 14,
+    "grant_jouji_session": 9,
     "kidou_wait_or_hand_for_energy": 4,
     "kidou_deck_top_wait_position_change": 3,
     "kidou_reveal_live_wait_pick_name_contains": 4,
@@ -44,10 +44,13 @@
     "kidou_heart_color_deck_reveal_pick": 4,
     "kidou_self_wait_activate_other": 2,
     "kidou_self_to_wait_opp_wait": 1,
-    "ability_sequence": 2,
+    "ability_sequence": 6,
     "kidou_self_and_other_resolve_toujou": 4,
+    "deck_mill_conditional_grant": 1,
+    "kidou_mill_waiting_under_copy_printed_hearts": 4,
     "kidou_energy_under_opp_wait_by_under": 2,
     "deck_top_look_reorder": 4,
+    "deck_mill_conditional_pick_one": 4,
     "kidou_energy_under_waiting_enter": 2
   },
   "cards": [
@@ -958,7 +961,7 @@
       "automated": true,
       "optional": false,
       "perTurn": 1,
-      "effect": "このメンバーをウェイトにする：かかのうち、1つを選ぶ。ライブ終了時まで、選んだハートを1つ得る。\""
+      "effect": "このメンバーをウェイトにする：かかのうち、1つを選ぶ。ライブ終了時まで、選んだハートを1つ得る。"
     },
     {
       "card_no": "PL!-bp3-009-SEC",
@@ -967,7 +970,7 @@
       "automated": true,
       "optional": false,
       "perTurn": 1,
-      "effect": "このメンバーをウェイトにする：かかのうち、1つを選ぶ。ライブ終了時まで、選んだハートを1つ得る。\""
+      "effect": "このメンバーをウェイトにする：かかのうち、1つを選ぶ。ライブ終了時まで、選んだハートを1つ得る。"
     },
     {
       "card_no": "PL!S-bp3-001-R＋",
@@ -2411,7 +2414,7 @@
     {
       "card_no": "PL!S-bp7-011-N",
       "name": "桜内梨子",
-      "template": "grant_jouji_session",
+      "template": "deck_mill_conditional_grant",
       "automated": true,
       "optional": false,
       "perTurn": 1,
@@ -2420,7 +2423,7 @@
     {
       "card_no": "PL!N-bp7-003-R＋",
       "name": "桜坂しずく",
-      "template": "deck_top_to_waiting",
+      "template": "kidou_mill_waiting_under_copy_printed_hearts",
       "automated": true,
       "optional": false,
       "perTurn": 1,
@@ -2429,7 +2432,7 @@
     {
       "card_no": "PL!N-bp7-003-P",
       "name": "桜坂しずく",
-      "template": "deck_top_to_waiting",
+      "template": "kidou_mill_waiting_under_copy_printed_hearts",
       "automated": true,
       "optional": false,
       "perTurn": 1,
@@ -2438,7 +2441,7 @@
     {
       "card_no": "PL!N-bp7-003-P＋",
       "name": "桜坂しずく",
-      "template": "deck_top_to_waiting",
+      "template": "kidou_mill_waiting_under_copy_printed_hearts",
       "automated": true,
       "optional": false,
       "perTurn": 1,
@@ -2447,7 +2450,7 @@
     {
       "card_no": "PL!N-bp7-003-SEC",
       "name": "桜坂しずく",
-      "template": "deck_top_to_waiting",
+      "template": "kidou_mill_waiting_under_copy_printed_hearts",
       "automated": true,
       "optional": false,
       "perTurn": 1,
@@ -2483,7 +2486,7 @@
     {
       "card_no": "PL!N-bp7-006-R＋",
       "name": "近江彼方",
-      "template": "grant_jouji_session",
+      "template": "deck_mill_conditional_pick_one",
       "automated": true,
       "optional": false,
       "perTurn": 2,
@@ -2501,7 +2504,7 @@
     {
       "card_no": "PL!N-bp7-006-P",
       "name": "近江彼方",
-      "template": "grant_jouji_session",
+      "template": "deck_mill_conditional_pick_one",
       "automated": true,
       "optional": false,
       "perTurn": 2,
@@ -2519,7 +2522,7 @@
     {
       "card_no": "PL!N-bp7-006-P＋",
       "name": "近江彼方",
-      "template": "grant_jouji_session",
+      "template": "deck_mill_conditional_pick_one",
       "automated": true,
       "optional": false,
       "perTurn": 2,
@@ -2537,7 +2540,7 @@
     {
       "card_no": "PL!N-bp7-006-SEC",
       "name": "近江彼方",
-      "template": "grant_jouji_session",
+      "template": "deck_mill_conditional_pick_one",
       "automated": true,
       "optional": false,
       "perTurn": 2,
@@ -2591,38 +2594,54 @@
     {
       "card_no": "PL!SP-bp7-003-R＋",
       "name": "嵐 千砂都",
-      "template": "draw_from_deck",
+      "template": "ability_sequence",
       "automated": true,
       "optional": false,
       "perTurn": 1,
-      "effect": "手札のコストが10か20のメンバーカードを1枚公開する：これにより公開したカードをこのメンバーの下に置く。その後、カードを2枚引く。"
+      "effect": "手札のコストが10か20のメンバーカードを1枚公開する：これにより公開したカードをこのメンバーの下に置く。その後、カードを2枚引く。",
+      "steps": [
+        "kidou_hand_reveal_to_under",
+        "draw_from_deck"
+      ]
     },
     {
       "card_no": "PL!SP-bp7-003-P",
       "name": "嵐 千砂都",
-      "template": "draw_from_deck",
+      "template": "ability_sequence",
       "automated": true,
       "optional": false,
       "perTurn": 1,
-      "effect": "手札のコストが10か20のメンバーカードを1枚公開する：これにより公開したカードをこのメンバーの下に置く。その後、カードを2枚引く。"
+      "effect": "手札のコストが10か20のメンバーカードを1枚公開する：これにより公開したカードをこのメンバーの下に置く。その後、カードを2枚引く。",
+      "steps": [
+        "kidou_hand_reveal_to_under",
+        "draw_from_deck"
+      ]
     },
     {
       "card_no": "PL!SP-bp7-003-P＋",
       "name": "嵐 千砂都",
-      "template": "draw_from_deck",
+      "template": "ability_sequence",
       "automated": true,
       "optional": false,
       "perTurn": 1,
-      "effect": "手札のコストが10か20のメンバーカードを1枚公開する：これにより公開したカードをこのメンバーの下に置く。その後、カードを2枚引く。"
+      "effect": "手札のコストが10か20のメンバーカードを1枚公開する：これにより公開したカードをこのメンバーの下に置く。その後、カードを2枚引く。",
+      "steps": [
+        "kidou_hand_reveal_to_under",
+        "draw_from_deck"
+      ]
     },
     {
       "card_no": "PL!SP-bp7-003-SEC",
       "name": "嵐 千砂都",
-      "template": "draw_from_deck",
+      "template": "ability_sequence",
       "automated": true,
       "optional": false,
       "perTurn": 1,
-      "effect": "手札のコストが10か20のメンバーカードを1枚公開する：これにより公開したカードをこのメンバーの下に置く。その後、カードを2枚引く。"
+      "effect": "手札のコストが10か20のメンバーカードを1枚公開する：これにより公開したカードをこのメンバーの下に置く。その後、カードを2枚引く。",
+      "steps": [
+        "kidou_hand_reveal_to_under",
+        "draw_from_deck"
+      ]
     },
     {
       "card_no": "PL!SP-bp7-008-R",

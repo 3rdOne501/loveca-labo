@@ -1,10 +1,10 @@
 {
-  "generated": "2026-08-10",
+  "generated": "2026-08-31",
   "trigger": "live_start",
   "total": 351,
   "byTemplate": {
-    "heart_color_pick_grant": 28,
-    "grant_jouji_session": 90,
+    "heart_color_pick_grant": 30,
+    "grant_jouji_session": 79,
     "optional_self_wait_opp_stage": 14,
     "optional_energy_blade_until_live_end": 32,
     "live_start_pay_or_hand_discard": 3,
@@ -65,7 +65,10 @@
     "optional_pick_member_wait_opp_blade_gap": 2,
     "live_start_mandatory_energy_deck_unless_hand_discard": 2,
     "deck_peek_relocate": 4,
+    "deck_mill_conditional_grant": 3,
+    "waiting_to_deck_bottom_blade_per": 4,
     "deck_bottom_optional_mill_named_hand": 2,
+    "waiting_to_deck_bottom_blade_if_moved_no_bh": 2,
     "activate_stage_members_up_to": 1
   },
   "cards": [
@@ -1024,7 +1027,7 @@
       "automated": true,
       "optional": true,
       "perTurn": 0,
-      "effect": "手札を2枚まで控え室に置いてもよい：ライブ終了時まで、これによって控え室に置いたカード1枚につき、を得る。\""
+      "effect": "手札を2枚まで控え室に置いてもよい：ライブ終了時まで、これによって控え室に置いたカード1枚につき、を得る。"
     },
     {
       "card_no": "PL!S-bp3-003-SEC",
@@ -1033,7 +1036,7 @@
       "automated": true,
       "optional": true,
       "perTurn": 0,
-      "effect": "手札を2枚まで控え室に置いてもよい：ライブ終了時まで、これによって控え室に置いたカード1枚につき、を得る。\""
+      "effect": "手札を2枚まで控え室に置いてもよい：ライブ終了時まで、これによって控え室に置いたカード1枚につき、を得る。"
     },
     {
       "card_no": "PL!S-bp3-012-N",
@@ -1132,7 +1135,7 @@
       "automated": true,
       "optional": false,
       "perTurn": 0,
-      "effect": "このターン、自分のステージにメンバーが2回以上登場している場合、ライブ終了時まで、「ライブの合計スコアを＋１する。」を得る。\""
+      "effect": "このターン、自分のステージにメンバーが2回以上登場している場合、ライブ終了時まで、「ライブの合計スコアを＋１する。」を得る。"
     },
     {
       "card_no": "PL!N-bp3-005-SEC",
@@ -1141,7 +1144,7 @@
       "automated": true,
       "optional": false,
       "perTurn": 0,
-      "effect": "このターン、自分のステージにメンバーが2回以上登場している場合、ライブ終了時まで、「ライブの合計スコアを＋１する。」を得る。\""
+      "effect": "このターン、自分のステージにメンバーが2回以上登場している場合、ライブ終了時まで、「ライブの合計スコアを＋１する。」を得る。"
     },
     {
       "card_no": "PL!N-bp3-008-R＋",
@@ -2499,7 +2502,7 @@
       "automated": true,
       "optional": false,
       "perTurn": 0,
-      "effect": "自分のライブカード置き場にあるカードが『Aqours』のみで、かつそれらの必要ハートに含まれるととの合計が12以上の場合、ライブ終了時まで、を得る。\""
+      "effect": "自分のライブカード置き場にあるカードが『Aqours』のみで、かつそれらの必要ハートに含まれるととの合計が12以上の場合、ライブ終了時まで、を得る。"
     },
     {
       "card_no": "PL!S-bp6-002-SEC",
@@ -2508,7 +2511,7 @@
       "automated": true,
       "optional": false,
       "perTurn": 0,
-      "effect": "自分のライブカード置き場にあるカードが『Aqours』のみで、かつそれらの必要ハートに含まれるととの合計が12以上の場合、ライブ終了時まで、を得る。\""
+      "effect": "自分のライブカード置き場にあるカードが『Aqours』のみで、かつそれらの必要ハートに含まれるととの合計が12以上の場合、ライブ終了時まで、を得る。"
     },
     {
       "card_no": "PL!S-bp6-004-R＋",
@@ -2927,7 +2930,7 @@
     {
       "card_no": "PL!S-bp7-006-R",
       "name": "津島善子",
-      "template": "grant_jouji_session",
+      "template": "deck_mill_conditional_grant",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -2936,7 +2939,7 @@
     {
       "card_no": "PL!S-bp7-006-P",
       "name": "津島善子",
-      "template": "grant_jouji_session",
+      "template": "deck_mill_conditional_grant",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -2945,7 +2948,7 @@
     {
       "card_no": "PL!S-bp7-007-R＋",
       "name": "国木田花丸",
-      "template": "grant_jouji_session",
+      "template": "waiting_to_deck_bottom_blade_per",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -2954,7 +2957,7 @@
     {
       "card_no": "PL!S-bp7-007-P",
       "name": "国木田花丸",
-      "template": "grant_jouji_session",
+      "template": "waiting_to_deck_bottom_blade_per",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -2963,7 +2966,7 @@
     {
       "card_no": "PL!S-bp7-007-P＋",
       "name": "国木田花丸",
-      "template": "grant_jouji_session",
+      "template": "waiting_to_deck_bottom_blade_per",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -2972,7 +2975,7 @@
     {
       "card_no": "PL!S-bp7-007-SEC",
       "name": "国木田花丸",
-      "template": "grant_jouji_session",
+      "template": "waiting_to_deck_bottom_blade_per",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -2999,7 +3002,7 @@
     {
       "card_no": "PL!S-bp7-015-N",
       "name": "津島善子",
-      "template": "grant_jouji_session",
+      "template": "deck_mill_conditional_grant",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -3044,7 +3047,7 @@
     {
       "card_no": "PL!N-bp7-012-R",
       "name": "鐘 嵐珠",
-      "template": "grant_jouji_session",
+      "template": "heart_color_pick_grant",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -3053,7 +3056,7 @@
     {
       "card_no": "PL!N-bp7-012-P",
       "name": "鐘 嵐珠",
-      "template": "grant_jouji_session",
+      "template": "heart_color_pick_grant",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -3071,7 +3074,7 @@
     {
       "card_no": "PL!SP-bp7-004-R",
       "name": "平安名すみれ",
-      "template": "grant_jouji_session",
+      "template": "waiting_to_deck_bottom_blade_if_moved_no_bh",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -3080,7 +3083,7 @@
     {
       "card_no": "PL!SP-bp7-004-P",
       "name": "平安名すみれ",
-      "template": "grant_jouji_session",
+      "template": "waiting_to_deck_bottom_blade_if_moved_no_bh",
       "automated": true,
       "optional": true,
       "perTurn": 0,

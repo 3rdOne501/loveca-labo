@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-10",
+  "generated": "2026-08-31",
   "trigger": "toujyou",
   "total": 613,
   "byTemplate": {
@@ -12,20 +12,20 @@
     "optional_self_wait_opp_stage": 34,
     "toujou_opp_hand_reveal_no_live_draw": 1,
     "toujou_hand_stage_enter": 11,
-    "grant_jouji_session": 13,
+    "grant_jouji_session": 11,
     "live_start_pick_player_waiting_deck_bottom": 2,
     "toujou_optional_wait_to_deck_top": 4,
     "draw_then_hand_discard": 46,
     "toujou_opp_emma_punch_answer": 1,
     "toujou_wait_to_member_under": 1,
     "draw_until_hand_size": 2,
-    "draw_from_deck": 38,
+    "draw_from_deck": 36,
     "energy_deck_to_wait": 15,
     "toujou_optional_hand_discard_draw": 3,
     "deck_top_to_waiting": 8,
     "toujou_deck_top_wait_if_all_heart": 5,
     "activate_energy": 17,
-    "ability_sequence": 17,
+    "ability_sequence": 15,
     "deck_reveal_until_live": 2,
     "draw_then_conditional_extra_draw": 2,
     "toujou_deck_top_wait_if_all_members": 2,
@@ -90,8 +90,11 @@
     "toujou_baton_discarded_under": 2,
     "optional_pick_member_wait_opp_blade_gap": 2,
     "deck_peek_relocate": 5,
+    "toujou_baton_both_keep_hand_shuffle_deck_bottom_draw": 2,
     "waiting_member_under_stage": 4,
+    "deck_mill_conditional_grant": 2,
     "pick_stage_member_to_center": 1,
+    "waiting_to_deck_bottom_activate_per": 2,
     "energy_deck_under_member": 1,
     "waiting_pick_to_deck": 1
   },
@@ -5199,7 +5202,7 @@
     {
       "card_no": "PL!S-bp7-004-R",
       "name": "黒澤ダイヤ",
-      "template": "draw_from_deck",
+      "template": "toujou_baton_both_keep_hand_shuffle_deck_bottom_draw",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -5208,7 +5211,7 @@
     {
       "card_no": "PL!S-bp7-004-P",
       "name": "黒澤ダイヤ",
-      "template": "draw_from_deck",
+      "template": "toujou_baton_both_keep_hand_shuffle_deck_bottom_draw",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -5334,7 +5337,7 @@
     {
       "card_no": "PL!S-bp7-017-N",
       "name": "小原鞠莉",
-      "template": "grant_jouji_session",
+      "template": "deck_mill_conditional_grant",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -5388,28 +5391,20 @@
     {
       "card_no": "PL!N-bp7-008-R",
       "name": "エマ・ヴェルデ",
-      "template": "ability_sequence",
+      "template": "waiting_to_deck_bottom_activate_per",
       "automated": true,
       "optional": true,
       "perTurn": 0,
-      "effect": "自分の控え室からブレードハートを持たないメンバーカードを4枚まで好きな順番でデッキの下に置いてもよい。これによりデッキに置いたカード1枚につき、エネルギーを1枚アクティブにする。",
-      "steps": [
-        "waiting_pick_to_deck",
-        "activate_energy"
-      ]
+      "effect": "自分の控え室からブレードハートを持たないメンバーカードを4枚まで好きな順番でデッキの下に置いてもよい。これによりデッキに置いたカード1枚につき、エネルギーを1枚アクティブにする。"
     },
     {
       "card_no": "PL!N-bp7-008-P",
       "name": "エマ・ヴェルデ",
-      "template": "ability_sequence",
+      "template": "waiting_to_deck_bottom_activate_per",
       "automated": true,
       "optional": true,
       "perTurn": 0,
-      "effect": "自分の控え室からブレードハートを持たないメンバーカードを4枚まで好きな順番でデッキの下に置いてもよい。これによりデッキに置いたカード1枚につき、エネルギーを1枚アクティブにする。",
-      "steps": [
-        "waiting_pick_to_deck",
-        "activate_energy"
-      ]
+      "effect": "自分の控え室からブレードハートを持たないメンバーカードを4枚まで好きな順番でデッキの下に置いてもよい。これによりデッキに置いたカード1枚につき、エネルギーを1枚アクティブにする。"
     },
     {
       "card_no": "PL!N-bp7-009-R",
@@ -5459,7 +5454,7 @@
     {
       "card_no": "PL!N-bp7-020-N",
       "name": "エマ・ヴェルデ",
-      "template": "grant_jouji_session",
+      "template": "deck_mill_conditional_grant",
       "automated": true,
       "optional": false,
       "perTurn": 0,

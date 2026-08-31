@@ -1,8 +1,8 @@
 /**
  * blade_heart（ラブカ DB）のキーを UI 用に解釈する。
- * 1=桃,2=赤,3=黄,4=緑,5=青,6=紫,7=ALL（b_all）。
+ * 1=桃,2=赤,3=黄,4=緑,5=青,6=紫,7=ALL（b_all／icon_all。必要ハート確認時に任意の色1つとして扱える＝総合ルール 8.3.15.1.1）。
  * b_heart07 は ALL ではなく「W無色」特殊 BH（エール時に無色ハート2つ分）。
- * ハート形は外部素材なしのインライン SVG（公式アイコンではない簡易表現）。
+ * heart0 は「任意プール」必要／余り用で、ALL（どの色にもなれる）とは別。
  */
 
 import { T_LIVE } from "./config.js";
@@ -422,8 +422,8 @@ export function applyWildcardBhAllFlexToColoredSupply(supplyAccum, needAccum, fl
  * 所持H（色情報別）かつ need_heart に対する充足判定。
  * 1〜6 は同色をそのまま比較。残りポイント集合で slot0（heart0／任意ハート）を支払い。99 は同色キーのみ対応。
  *
- * options.wildcardBhAllFlex: 解決・エールで得た BH ALL の点数。有色不足を埋めた残りは任意プールに加算する。
- * options.wildcardAllBump: メンバー play ボーナス等の「heart0 のみ」向け ALL 加算（従来どおり）。
+ * options.wildcardBhAllFlex: 解決 BH ALL および場メンバーの ALL（常時・play）。有色不足を埋めた残りは任意プールに加算する。
+ * options.wildcardAllBump: 任意プール（heart0）のみへ加算する従来向け（flex と二重に渡さないこと）。
  */
 export function evaluateNeedHeartFulfillment(supplyAccum, needAccum, options) {
   options = options || {};

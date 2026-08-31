@@ -13779,3 +13779,106 @@ body.play-mode .card-item--energy-wait-flip .card-img {
   outline: 2px solid var(--accent, #3b82f6);
   outline-offset: 2px;
 }
+
+/* 盤面画像保存: 2列目を記事用に撮るとき、操作UIだけ消す（フォント・盤面サイズはそのまま） */
+body.play-board-exporting .play-undo-redo-cluster,
+body.play-board-exporting .zone-block-snapshots,
+body.play-board-exporting .card-effect-resolve-btn,
+body.play-board-exporting .card-effect-resolve-btn-row,
+body.play-board-exporting .card-effect-icon-host,
+body.play-board-exporting #btn-live-turn-primary,
+body.play-board-exporting #btn-live-turn-begin,
+body.play-board-exporting #btn-live-turn-end,
+body.play-board-exporting #btn-mulligan-execute,
+body.play-board-exporting #btn-reset-game,
+body.play-board-exporting .energy-fold__controls,
+body.play-board-exporting .energy-fold__hint,
+body.play-board-exporting .hint,
+body.play-board-exporting .zone-inline-help,
+body.play-board-exporting .play-top-fixed-strip__toggle,
+body.play-board-exporting #section-resolution-zone .btn-row,
+body.play-board-exporting .live-need-heart-adjust-btn,
+body.play-board-exporting .live-score-bonus-controls,
+body.play-board-exporting .first-player-badge,
+body.play-board-exporting .hand-zone-actions,
+body.play-board-exporting .hand-stick-fold__hint,
+body.play-board-exporting #versus-phase-live-banner-mount,
+body.play-board-exporting .live-turn-stats-summary-hint,
+body.play-board-exporting .live-stats-zone-hint-block,
+body.play-board-exporting .play-top-success-live-hint {
+  display: none !important;
+}
+body.play-board-exporting .card-item--play-kidou-glow,
+body.play-board-exporting .card-item--play-toujou-glow,
+body.play-board-exporting .card-item--play-live-start-glow,
+body.play-board-exporting .card-item--play-live-success-glow,
+body.play-board-exporting .card-item--stage-veteran-glow {
+  animation: none !important;
+  filter: none !important;
+  box-shadow: none !important;
+}
+body.play-board-exporting .card-item--play-kidou-glow .card-img,
+body.play-board-exporting .card-item--play-toujou-glow .card-img,
+body.play-board-exporting .card-item--play-live-start-glow .card-img,
+body.play-board-exporting .card-item--play-live-success-glow .card-img {
+  filter: none !important;
+  box-shadow: none !important;
+}
+body.play-board-exporting #play-board-export-hand {
+  margin-top: 0.55rem;
+}
+
+/* スクショ時: ターン数字と成功確率％を同じディスプレイ書体・サイズ・発光に揃える */
+body.play-board-exporting .play-turn-badge__n,
+body.play-board-exporting .deck-odds-pct--hero,
+body.play-board-exporting .deck-live-sim-line-hit {
+  font-family: var(--font-display) !important;
+  font-size: 1.42rem !important;
+  font-weight: 900 !important;
+  font-style: normal !important;
+  line-height: 1 !important;
+  letter-spacing: 0.02em !important;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 14px rgba(255, 220, 255, 0.95) !important;
+}
+body.play-board-exporting .deck-live-sim-summary.has-prob-color .deck-odds-pct,
+body.play-board-exporting .deck-live-sim-summary.has-prob-color .deck-odds-pct--hero {
+  text-shadow: 0 0 14px rgba(255, 220, 255, 0.95) !important;
+}
+
+/* スクショ時: ライブカードをステージメンバー相当の縦スロットへ（横長原画は export JS で 90°） */
+body.play-board-exporting #live-row .live-slot.card-strip {
+  min-height: calc(var(--loveca-play-h) * 1.35 + 36px);
+  padding: 10px 8px;
+}
+body.play-board-exporting #live-row .live-slot .card-item {
+  width: calc(var(--loveca-play-w) * 1.35);
+}
+body.play-board-exporting #live-row .live-slot .card-item:not(.card-item--live-h) .card-img:not(.rotated) {
+  width: calc(var(--loveca-play-w) * 1.35);
+  height: calc(var(--loveca-play-h) * 1.35);
+  object-fit: contain;
+  object-position: center center;
+}
+body.play-board-exporting #live-row .live-slot .card-item.card-item--live-h .card-img.rotated {
+  width: calc(var(--loveca-play-w) * 1.35);
+  height: auto;
+}
+body.play-board-exporting #live-row .live-slot .card-item.card-item--live-h {
+  width: calc(var(--loveca-play-w) * 1.35);
+}
+body.play-board-exporting .success-live-strip .card-item[data-type="ライブ"] .card-img:not(.rotated) {
+  width: var(--loveca-play-w);
+  height: var(--loveca-play-h);
+  object-fit: contain;
+  object-position: center center;
+}
+
+/* スクショ時: ハート／バッジ画像は即時表示 */
+body.play-board-exporting img.heart-slot-art-ico,
+body.play-board-exporting img.status-inline-game-icon,
+body.play-board-exporting img.card-member-bonus-blade-ico,
+body.play-board-exporting img.card-yell-float-ico {
+  visibility: visible !important;
+  opacity: 1 !important;
+}

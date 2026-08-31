@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-10",
+  "generated": "2026-08-31",
   "trigger": "live_success",
   "total": 130,
   "byTemplate": {
@@ -7,7 +7,7 @@
     "optional_energy_live_score_plus": 3,
     "yell_resolution_count_energy_wait": 1,
     "draw_from_deck": 12,
-    "draw_then_hand_discard": 19,
+    "draw_then_hand_discard": 17,
     "yell_resolution_energy_wait": 2,
     "yell_resolution_pick_self_score": 2,
     "energy_less_than_opponent_wait": 2,
@@ -24,7 +24,7 @@
     "yell_reveal_series_live_score_plus": 4,
     "yell_resolution_pick_deck_top": 4,
     "live_success_wait_skip_next_activate": 4,
-    "draw_then_conditional_extra_draw": 1,
+    "draw_then_conditional_extra_draw": 3,
     "live_success_liella_effect_moved_score": 2,
     "live_success_optional_energy_recover_waiting": 2,
     "live_success_yell_nobh_series_score_capped": 2,
@@ -647,7 +647,7 @@
       "automated": true,
       "optional": false,
       "perTurn": 0,
-      "effect": "エールにより公開された自分のカードの中に、ブレードハートを持たない『μ's』のメンバーカードがある場合、カードを1枚引き、手札を1枚控え室に置く。\""
+      "effect": "エールにより公開された自分のカードの中に、ブレードハートを持たない『μ's』のメンバーカードがある場合、カードを1枚引き、手札を1枚控え室に置く。"
     },
     {
       "card_no": "PL!-bp6-001-SEC",
@@ -656,7 +656,7 @@
       "automated": true,
       "optional": false,
       "perTurn": 0,
-      "effect": "エールにより公開された自分のカードの中に、ブレードハートを持たない『μ's』のメンバーカードがある場合、カードを1枚引き、手札を1枚控え室に置く。\""
+      "effect": "エールにより公開された自分のカードの中に、ブレードハートを持たない『μ's』のメンバーカードがある場合、カードを1枚引き、手札を1枚控え室に置く。"
     },
     {
       "card_no": "PL!-bp6-003-R＋",
@@ -683,7 +683,7 @@
       "automated": true,
       "optional": true,
       "perTurn": 0,
-      "effect": "このメンバーの下にあるコスト2以下の『μ's』のメンバーカードを1枚、メンバーのいないエリアに登場させてもよい。\""
+      "effect": "このメンバーの下にあるコスト2以下の『μ's』のメンバーカードを1枚、メンバーのいないエリアに登場させてもよい。"
     },
     {
       "card_no": "PL!-bp6-003-SEC",
@@ -692,7 +692,7 @@
       "automated": true,
       "optional": true,
       "perTurn": 0,
-      "effect": "このメンバーの下にあるコスト2以下の『μ's』のメンバーカードを1枚、メンバーのいないエリアに登場させてもよい。\""
+      "effect": "このメンバーの下にあるコスト2以下の『μ's』のメンバーカードを1枚、メンバーのいないエリアに登場させてもよい。"
     },
     {
       "card_no": "PL!-bp6-007-R＋",
@@ -1192,7 +1192,7 @@
     {
       "card_no": "PL!N-sd2-007-P",
       "name": "優木せつ菜",
-      "template": "draw_then_hand_discard",
+      "template": "draw_then_conditional_extra_draw",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -1201,7 +1201,7 @@
     {
       "card_no": "PL!N-sd2-007-SD2",
       "name": "優木せつ菜",
-      "template": "draw_then_hand_discard",
+      "template": "draw_then_conditional_extra_draw",
       "automated": true,
       "optional": false,
       "perTurn": 0,

@@ -233,6 +233,7 @@ import {
   sumBladeHeartWeightedValues,
   sumSlotAccumValues,
 } from "./bladeHeart.js";
+import { exportPlayBoardImage } from "./playBoardExport.js";
 import * as Gsi from "./gameStatusIcons.js";
 import { showToast } from "./ui.js";
 import {
@@ -7996,6 +7997,15 @@ export function mountSimulator(
 
   function isSoloBoardPlayMode() {
     return !versusMatchPhaseActive() && !versusOnlineActive() && !isDualOpponentBoardMode();
+  }
+
+  function syncExportPlayBoardChrome() {
+    var btn = document.getElementById("btn-export-play-board");
+    if (!btn) return;
+    var vg = document.getElementById("view-game");
+    var show =
+      !!(vg && !vg.hidden && !vg.hasAttribute("hidden") && isSoloBoardPlayMode());
+    btn.hidden = !show;
   }
 
   function ensureEffectCheckTimingState() {
@@ -42422,6 +42432,7 @@ export function mountSimulator(
       syncVersusLocalDualChrome();
       checkLocalVersusWinCondition();
     }
+    syncExportPlayBoardChrome();
   }
 
   /**
@@ -44388,6 +44399,21 @@ export function mountSimulator(
   $("btn-hand-mobile-turn")?.addEventListener("click", function () {
     var b = $("btn-turn-start");
     if (b && !b.disabled) b.click();
+  });
+
+  $("btn-export-play-board")?.addEventListener("click", function () {
+    exportPlayBoardImage({
+      prepareDom: function () {
+        renderSynchronouslyOnce();
+        return function () {
+          render();
+        };
+      },
+    }).catch(function (e) {
+      showToast(
+        "盤面画像の保存に失敗: " + (e && e.message ? e.message : String(e)),
+      );
+    });
   });
 
   function saveSnapshotSlot(si) {

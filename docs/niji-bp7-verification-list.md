@@ -39,7 +39,7 @@
 
 | 状態 | 番号 | ID | 主テンプレート | 備考 |
 |------|------|-----|----------------|------|
-| [x] | 025 | PL!N-bp7-025-L/SECL | grant_jouji_session + live_card_score_plus | LS: 虹ヶ咲1人にブレード。成功: エール公開のheart01–06が3種類以上ならスコア+1 |
+| [x] | 025 | PL!N-bp7-025-L/SECL | grant_jouji_session + live_card_score_plus | LS: ライブ終了時まで虹ヶ咲1人にブレード。成功: エール公開のheart01–06が3種類以上ならスコア+1 |
 | [x] | 026 | PL!N-bp7-026-L/SECL | live_start_hand_discard_optional_blade_pick_equal + live_card_score_plus | LS: 手札最大2捨て→同数まで虹ヶ咲にブレード。成功: エールのBHなしメンバー2枚以上でスコア+1 |
 | [x] | 027 | PL!N-bp7-027-L | live_card_score_plus | 虹ヶ咲1人を選び、自他ステージの他全員よりブレード多ければスコア+1 |
 | [x] | 028 | PL!N-bp7-028-L | live_start_optional_shuffle_all_waiting_grant | 控え室に虹ヶ咲ライブとBHなし虹ヶ咲メンバーがいれば全控え室シャッフルデッキ下任意→全虹ヶ咲にheart01 |

@@ -962,10 +962,32 @@ function layoutDeckRecipeStatsPanel(stats, panelInnerW) {
   if (stats.scoreLive > 0) pills.push({ label: "スコア", qty: stats.scoreLive, fill: "#ffb74d", cacheKey: "score" });
   if (stats.drawLive > 0) pills.push({ label: "ドロー", qty: stats.drawLive, fill: "#4dd0e1", cacheKey: "draw" });
 
-  /* 概算: 1 ピルあたり最大 ~110px */
-  const approxPillW = 110;
-  const perRow = Math.max(1, Math.floor(panelInnerW / (approxPillW + 8)));
-  const pillRows = pills.length ? Math.ceil(pills.length / perRow) : 0;
+  const measureCanvas = document.createElement("canvas");
+  const mctx = measureCanvas.getContext("2d");
+  let pillRows = 0;
+  if (pills.length && mctx) {
+    mctx.font = '600 14px "Noto Sans JP", system-ui, sans-serif';
+    const pillH = 30;
+    const pillGap = 8;
+    let px = 0;
+    let rows = 1;
+    pills.forEach(function (p) {
+      const label = p.label + " ×" + p.qty;
+      const textW = mctx.measureText(label).width;
+      const iconW = p.cacheKey ? 18 : 0;
+      const pillW = Math.ceil(textW + 18 + iconW + (iconW ? 6 : 0));
+      if (px + pillW > panelInnerW && px > 0) {
+        rows++;
+        px = 0;
+      }
+      px += pillW + pillGap;
+    });
+    pillRows = rows;
+    void pillH;
+  } else if (pills.length) {
+    pillRows = Math.ceil(pills.length / Math.max(1, Math.floor(panelInnerW / 110)));
+  }
+
   const padIn = 16;
   const summaryH = 34;
   const pillsH = pillRows ? pillRows * 38 : 4;
