@@ -3918,10 +3918,10 @@ export function mountSimulator(
     var m = s.match(/ライブ終了時まで、([^。]+を得る)/);
     if (!m) return null;
     /*
-     * ハート／ブレードの付与は cl.bladeGain / requiredHeartSlot 等で直接適用される。
+     * ハート／ブレード／ALL の付与は cl.bladeGain / grantAllHeartCount 等で直接適用される。
      * 常時セグメントに作り直すと二重適用になるため対象外にする（extractStageMemberGrantJouji と同様）。
      */
-    if (/\{\{heart_|heart_0[1-6]|\{\{[^}]*blade|ブレード/i.test(m[1])) return null;
+    if (/\{\{heart_|heart_0[1-6]|\{\{[^}]*blade|\{\{icon_all|icon_all|heart_07|ブレード/i.test(m[1])) return null;
     return "{{jyouji.png|常時}}" + m[1].trim();
   }
 
@@ -17143,7 +17143,8 @@ export function mountSimulator(
         cl.costSelfWait ||
         cl.costPickMemberWait ||
         cl.costMandatoryWaitOtherMember ||
-        cl.handDiscardToWaiting)
+        cl.handDiscardToWaiting ||
+        cl.costHandDiscardAll)
     ) {
       payAbilityCost(inst, cl, mandatory, function (ok) {
         if (!ok && !mandatory) {
@@ -23057,19 +23058,16 @@ export function mountSimulator(
           opponentDecisionLeadPrefix() + " 控え室からライブカードを1枚手札に加えます。",
           function (oppPid) {
             if (oppPid) {
-              if (isDualOpponentBoardMode()) {
-                mutateInactiveOpponentBoard(function () {
-                  var wi = state.waitingRoom.findIndex(function (w) {
-                    return w && String(w.id) === String(oppPid);
-                  });
-                  if (wi >= 0) state.hand.push(state.waitingRoom.splice(wi, 1)[0]);
-                });
-                showToast("相手が控え室からライブカードを手札に加えました");
-              } else {
-                var gotOpp = moveInstFromWaitingToHand(oppPid, inst);
-                if (gotOpp) {
-                  showToast((mergedCatalogCard(gotOpp).name || "ライブ") + " を手札に加えました（相手想定）");
-                }
+              var gotOpp = null;
+              runOnTargetPlayerBoard("opponent", function () {
+                gotOpp = moveInstFromWaitingToHand(oppPid, inst);
+              });
+              if (gotOpp) {
+                showToast(
+                  (mergedCatalogCard(gotOpp).name || "ライブ") +
+                    " を手札に加えました" +
+                    (isDualOpponentBoardMode() ? "（相手）" : "（相手想定）"),
+                );
               }
             }
             finishResolved();
@@ -35006,7 +35004,8 @@ export function mountSimulator(
           "デッキの下に置くカード (" + (step + 1) + "/" + wtdActNeed + ")（キャンセルで終了）",
           function (pid) {
             if (!pid) {
-              wtdActFinish();
+              showToast("効果をキャンセルしました");
+              finishResolved();
               return;
             }
             var chosen = state.waitingRoom.find(function (w) {

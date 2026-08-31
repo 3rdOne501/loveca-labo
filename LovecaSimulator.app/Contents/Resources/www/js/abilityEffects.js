@@ -4059,6 +4059,9 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
     keys = abilityWikiKeys(card);
   }
   base.optional = /もよい/.test(segRaw);
+  if (/控え室から登場している場合/.test(p)) {
+    base.requiresEnteredFromWaiting = true;
+  }
   base.filters = parseAbilityPickFilters(p, segRaw);
   if (trigger === "live_start" || trigger === "live_success") {
     base.filters = mergeAbilityPickFilters(base.filters, parseConditionalPrefixFilters(p, segRaw));

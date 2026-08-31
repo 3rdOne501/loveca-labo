@@ -31,6 +31,20 @@
 
 ---
 
+## 0d. #デバック部 直近3週間 — 未反映分（2026-08-31）
+
+| 代表ID | 内容 | 根因 | 対応 | 横展開 |
+|--------|------|------|------|--------|
+| PL!N-bp4-007-P | せつ菜登場 — 相手控えライブ→相手手札 | dual 時相手盤操作が自盤 `waitingRoom`/`hand` を触っていた | `runOnTargetPlayerBoard("opponent", …)` + `moveInstFromWaitingToHand` | 007 4レアリティ |
+| PL!SP-bp7-011-R | 手札全捨てせず6ドロー | `payAbilityCost` ゲートに `costHandDiscardAll` 未列入 | ゲート追加 | `costHandDiscardAll` 全件 |
+| PL!S-bp6-016-N | 手札登場でも3ルック | `requiresEnteredFromWaiting` が deck_top 分類に未伝播 | `classifyCardAbility` 基底で「控え室から登場」を設定 | 同条件テキスト全件 |
+| PL!S-bp6-002-SEC | ALL2個が4個 | `extractInlineLiveEndGrantJouji` が icon_all を常時化 | icon_all / heart_07 を inline 除外 | bp4-029 同型と同ガード |
+| PL!N-bp7-008-P | MM15エマ登場 — 途中キャンセル不可 | `waiting_to_deck_bottom_activate_per` がキャンセル=部分適用 | キャンセル時は未適用で終了 | 同テンプレ |
+
+※ 同チャンネル Aug 10–17 報告の bp7-005 / bp6-019 / bp3-008 等は registry §0–§29 に既修正済み。
+
+---
+
 ## 0. PL!N-bp3-008 エマ — ライブ開始手札2捨ての二重支払い（2026-08-17）
 
 | カード番号 | 名前 | 根因 | 対応 | 横展開 |

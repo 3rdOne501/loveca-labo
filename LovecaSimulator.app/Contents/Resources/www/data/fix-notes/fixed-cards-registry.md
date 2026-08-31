@@ -16,6 +16,55 @@
 
 ---
 
+## 0d. 報告バグ一括（2026-08-18）— 控え室回収 / 自動山札仕込み / 必要ハート合計 / 手札コスト / 任意ウェイト加点
+
+| カード番号 | 名前 | 根因 | 対応 | 横展開 |
+|-----------|------|------|------|--------|
+| PL!S-bp5-003-P（R/AR含む3枚） | 松浦果南 | コスト節の「BHなし」が回収 `filters.requiresNoBladeHeart` に漏れ、Aqoursライブ（多数が blade_heart 所持）が候補から除外 | コスト節のみの BH 条件は回収フィルタに載せない。`handDiscardNoBladeHeartMax` 時は `requiresNoBladeHeart` を削除 | 3枚 |
+| PL!S-sd1-005-SD | 渡辺 曜 | `kidou_hand_cost_wait_pick_hand` が自前コスト扱いで外枠 EE 未支払い | ハンドラ内で `costEnergy` を支払ってから手札捨て→回収 | 同テンプレ全体 |
+| PL!S-bp6-002-R＋/P/P＋/SEC | 桜内梨子 | (1) ターン開始のライブ枠→控え室で `live_zone_to_waiting` 未発火 (2) `sumLiveFrameNeedHeartSlots` が文字列キー参照で常に0 (3) SEC/P＋の ability 先頭末尾 `"` | flush 時に jidou 発火、スロット合計を数値キーで集計、`cardAbilityRawText`+cards.json 12枚の引用符除去 | ライブ上下仕込み4枚 + 必要ハート合計7枚 + 引用符12枚 |
+| PL!S-bp5-013-N / 017-N / bp6-010-N | 黒澤ダイヤ 他 | 同上 `sumLiveFrameNeedHeartSlots` | 同上 | ハート合計条件カード |
+| PL!N-sd2-003-SD2 | 桜坂しずく | 登場コスト計算時は手札を離れており `_joujiHandCostReduction` が 0 | `handSnap` 時は常時 `hand_cost_reduce` を再評価して減算 | 手札コスト減・登場経路全般 |
+| PL!N-bp5-005-P（パラレル含む） | 宮下 愛 | `batonPartnerLacksBhAtMinPrintedCost` が「BHなしならコスト無視で真」だった | 印刷コスト ≥ 閾値 かつ BHなし | 同テンプレ |
+| PL!N-sd2-027-SD2/P | 決意の光 | `costPickMemberWait` が外枠で1人ウェイトし、効果側の最大3・加点と二重化 | 分類で `costPickMemberWait:false` + `TEMPLATE_HANDLES_OWN_COST` | 2枚 |
+| PL!S-bp6-006-P/R | 津島善子 | 控え室登場時ブレードが `extractGrantedJoujiTexts` 経路のみで未付与 | `bladeGain` / `addLiveSessionBladeBonus` を直接適用 | 2枚 |
+
+---
+
+## 0d. #デバック部 直近3週間 — 未反映分（2026-08-31）
+
+| 代表ID | 内容 | 根因 | 対応 | 横展開 |
+|--------|------|------|------|--------|
+| PL!N-bp4-007-P | せつ菜登場 — 相手控えライブ→相手手札 | dual 時相手盤操作が自盤 `waitingRoom`/`hand` を触っていた | `runOnTargetPlayerBoard("opponent", …)` + `moveInstFromWaitingToHand` | 007 4レアリティ |
+| PL!SP-bp7-011-R | 手札全捨てせず6ドロー | `payAbilityCost` ゲートに `costHandDiscardAll` 未列入 | ゲート追加 | `costHandDiscardAll` 全件 |
+| PL!S-bp6-016-N | 手札登場でも3ルック | `requiresEnteredFromWaiting` が deck_top 分類に未伝播 | `classifyCardAbility` 基底で「控え室から登場」を設定 | 同条件テキスト全件 |
+| PL!S-bp6-002-SEC | ALL2個が4個 | `extractInlineLiveEndGrantJouji` が icon_all を常時化 | icon_all / heart_07 を inline 除外 | bp4-029 同型と同ガード |
+| PL!N-bp7-008-P | MM15エマ登場 — 途中キャンセル不可 | `waiting_to_deck_bottom_activate_per` がキャンセル=部分適用 | キャンセル時は未適用で終了 | 同テンプレ |
+
+※ 同チャンネル Aug 10–17 報告の bp7-005 / bp6-019 / bp3-008 等は registry §0–§29 に既修正済み。
+
+---
+
+## 0. PL!N-bp3-008 エマ — ライブ開始手札2捨ての二重支払い（2026-08-17）
+
+| カード番号 | 名前 | 根因 | 対応 | 横展開 |
+|-----------|------|------|------|--------|
+| PL!N-bp3-008-P（R＋/P＋/SEC含む4枚） | エマ・ヴェルデ | `live_start_hand_discard_activate_wait_grant` が `TEMPLATE_HANDLES_OWN_COST` 未登録のため、外枠 `payAbilityCost` とハンドラ内 `payAbilityCost` の両方で手札2枚捨てが走っていた（2枚×2回） | `js/abilityRuntimeMeta.js` の `TEMPLATE_HANDLES_OWN_COST` に追加。同型は cards.json 走査で当該4枚のみ | 4枚 |
+
+## 0b. PL!S-bp6-019-L Step! ZERO to ONE — 全員Aqoursを全面在籍と誤判定（2026-08-17）
+
+| カード番号 | 名前 | 根因 | 対応 | 横展開 |
+|-----------|------|------|------|--------|
+| PL!S-bp6-019-L | Step! ZERO to ONE | `draw_then_hand_to_deck_top` が `filters.seriesTag` を「全エリアにシリーズ在籍」条件に流用していたため、カード文の「メンバーがすべてAqours」なのに左中右すべてにAqoursが必要になっていた | ハンドラは `requiresStageAllAreasSeriesTag` のみで全面判定。019分類は `requiresStageMembersAllSeriesTag` を残し `filters.seriesTag` を空にする | 同型テキストは本カードのみ。全面条件カード（`requiresStageAllAreasSeriesTag`）は従来どおり |
+
+## 0c. PL!N-bp4-026-L DIVE! — 控え室→手札の自動が効果回収で未発火（2026-08-17）
+
+| カード番号 | 名前 | 根因 | 対応 | 横展開 |
+|-----------|------|------|------|--------|
+| PL!N-bp4-026-L | DIVE! | `waiting_to_hand` 自動は DnD 後の `maybeFireJidouAfterWaitingToHand` のみ。能力の控え室回収は `moveInstFromWaitingToHand` 経由で手札に戻すだけで jidou 未発火 | `moveInstFromWaitingToHand` でライブ回収時に `fireJidouAutoForLiveCard(..., "waiting_to_hand")` を呼ぶ（メインフェイズ条件は既存ハンドラ側） | 同型テンプレは本カードのみ |
+
+---
+
 ## 1. 報告バグ11件（2026-05-20）
 
 出典: `data/fix-notes/ability-reported-bugs.md`
@@ -662,12 +711,89 @@ verify-ability-coverage OK / verify-ability-handlers OK / verify-ability-runtime
 
 ---
 
+## 41. 複数起動の分離 + セグメント別ターン制限（2026-08-13）
+
+ユーザー報告: `PL!N-bp7-006-P＋` 近江彼方。起動が2つあるのに `kidou_multi_choice` の複合選択になっており、起動2（ターン2回）が共有キー `"kidou"`＋ラッパ `perTurnLimit:1` で1回しか使えなかった。
+
+| 代表ID | 名前 | 問題 | 修正 | 横展開 |
+|--------|------|------|------|--------|
+| PL!N-bp7-006-P＋ | 近江彼方 | 起動2本が1ボタン＋複合ダイアログ。回数も共有で実質ターン1回 | ステージに起動1/起動2ボタンを分離。`kidou_seg_N` でセグメント別 `perTurnLimit`（jidou 同型）。ラッパ `kidou_multi_choice` の `perTurnLimit` は 0（共有しない） | 複数起動カード8枚: bp7-006 R＋/P/P＋/SEC（4）+ bp1-006 R＋/P/P＋/SEC（4） |
+
+検証: `verify-niji-bp7` 41 OK、`verify-ability-coverage` OK。app 同期済み（`simulator.js` / `abilityEffects.js`）。
+
+---
+
+## 42. 山上捜査ダイアログのチェック表示（2026-08-13）
+
+ユーザー報告: `PL!N-bp1-002-SEC` / `PL!N-bp7-006-P＋`。リード文は「チェックを外すと控え室」なのにチェックが不可視（CSS `opacity:0`）。山上捜査（`deck_top_look_reorder`）全体。
+
+| 代表ID | 名前 | 問題 | 修正 | 横展開 |
+|--------|------|------|------|--------|
+| PL!N-bp1-002-SEC | 中須かすみ | 好きな枚数を山に戻し残り控え室なのにチェック非表示 | チェック＋「上に戻す」を可視化。行タップで切替。`deckLookPartialKeep` で UI 分岐 | `deck_top_look_reorder` 全経路（登場任意ウェイト・起動・LS・成功時）で partial/remain フラグを付与。残り控え室クラスタ全体 |
+| PL!N-bp7-006-P＋ | 近江彼方（起動1） | 全枚山に戻す効果なのにリードが控え室前提 | `partialKeep:false` 時はチェックなし・並べ替えのみ | 同型「それらを好きな順番でデッキの上に置く」 |
+
+検証: `verify-ability-coverage` OK。app 同期済み（`simulator.js` / `abilityEffects.js` / `styles.css`）。
+
+---
+
+## 43. 報告4件 — ALL必要色UI / ライブ終了ブレード / 控え室起動E / アクティブ増殖（2026-08-14）
+
+| 代表ID | 名前 | 問題 | 修正 | 横展開 |
+|--------|------|------|------|--------|
+| PL!N-bp1-012-P | 鐘嵐珠 | ALL表示なのに必要色が不足・失敗に見える | 必要色行に `wildcardBhAllFlex` を適用。verify に `heartFlat[7]=2` | bp1-012 全レア + 必要色UI全体 |
+| PL!N-bp7-006-P＋ | 近江彼方 | 起動2の「ライブ終了時まで」ブレードがライブ開始で消える | `gainBladesUntilEnd`(ターン)→`addLiveSessionBladeBonus`。`optional_energy_blade_until_live_end` 同型 | bp7-006×4 + 同テンプレ |
+| PL!N-bp1-002-SEC | 中須かすみ | 控え室起動登場で EE 未支払い | `kidou_wait_to_stage` を `TEMPLATE_HANDLES_OWN_COST` から外し `payAbilityCost` 経由 | bp1-002×4 |
+| PL!N-bp7-008-R | エマ・ヴェルデ | ウェイト無しで「アクティブ」するとエネルギーが増える | `activateEnergyCount` 既定をウェイトのみ。デッキ新規配置は `allowFromDeck` 明示時のみ | 「エネルギーをN枚アクティブ」全体 |
+
+---
+
+## 44. 効果ダイアログ中断・ライブ成功時効果保持（2026-08-15）
+
+| 対象 | 問題 | 修正 |
+|------|------|------|
+| 効果解決ダイアログ全体 | 無操作部分・Esc で閉じるとキャンセル扱いになり、発生源が画面外だと「効果を続ける」も非表示 | 対応ダイアログの意図しない閉じ方を盤面確認中断へ統一。発生源へ置けない場合は画面右下へ必ず表示 |
+| ライブ成功時効果全体 | 中断中の再描画で成功時効果の active/phase 状態が消える場合がある | 中断時・再開直前に成功判定ロック、`liveSuccessEffectsPhaseActive`、発生源の `_liveSuccessEffectActive` を保持 |
+| 手動解決ダイアログ | キャンセルで未解決のまま閉じ、再開手段がない | キャンセルを効果破棄ではなく中断扱いに変更 |
+
+検証: `verify-ability-coverage` OK。app 同期済み（`simulator.js`）。
+
+---
+
+## 45. PL!HS-bp6-001 日野下花帆 — 成功時UI再描画・登場時の強制選択（2026-08-15）
+
+| 対象 | 問題 | 修正 |
+|------|------|------|
+| PL!HS-bp6-001（R＋/P/P＋/SEC、4枚）登場時 | デッキ上から見たカードを1枚デッキ上へ置く強制効果で、キャンセル／未選択のまま進めた | `openPickFromDeckLookDialog` に強制選択モードを追加し、キャンセル非表示・Esc抑止・未選択確定を拒否 |
+| ライブ成功時の任意効果全体 | 成功時誘発フラグが描画終端で立つため、任意効果のグロー／解決ボタンが次の再描画（再読み込み等）まで現れない | 誘発フラグを新規設定した場合に再描画を予約。`yell_resolution_pick_deck_top` の「してもよい」は任意効果であり任意コストではない分類へ修正（同型6枚） |
+| エール公開プール | ボタンエールでは `liveTurnYellRevealedCardIds` が未登録で、解決ゾーンを空にすると回収候補が消える場合がある | `drawOneCardToResolution` / `drawAllYellsToResolution` でも登録し、スナップショットへ永続化 |
+
+検証: `verify-hasunosora-bp6` / `audit-hasunosora-bp6-text` / 横断 verify。app 同期対象（`abilityEffects.js` / `simulator.js`）。
+
+---
+
 ## 更新履歴
 
 | 日付 | 内容 |
 |------|------|
+| 2026-08-15 | PL!HS-bp6-001（4枚）: ライブ成功時の任意効果UIを即時再描画、登場時のデッキ上1枚選択を強制化。`yell_resolution_pick_deck_top` 同型6枚の任意効果／任意コスト分類を分離 |
+| 2026-08-15 | 効果ダイアログの意図しない閉じ方を再開可能な中断へ統一。ライブ成功時効果の中断状態を保持 |
+| 2026-08-14 | 報告4件: ALL必要色flex / ライブ終了ブレード / 控え室起動E / アクティブ増殖防止 |
+| 2026-08-13 | 山上捜査ダイアログ: チェック可視化 + `deckLookPartialKeep` 分岐（代表 PL!N-bp1-002-SEC / PL!N-bp7-006-P＋） |
+| 2026-08-13 | 複数起動分離: 起動1/起動2ボタン + `kidou_seg_N` 回数（代表 PL!N-bp7-006-P＋、横展開8枚。bp1-006含む） |
+| 2026-08-10 | W無色特殊BH（`b_heart07`）: エール時に無色ハート×2。`special_heart.colorless`＋カード詳細「特殊BH」行（ドロー／スコア／W無色）。代表 PL!N-bp7-030-L / PL!SP-bp7-028-L / PL!S-bp7-022-L（SECL含む4枚）。`b_all` とは分離 |
+| 2026-08-11 | 横断3件: ①カタログ検索 `normalizeCatalogSearchText`（空白/NFKC/ハイフン吸収・「南ことり」↔「南 ことり」）②PL!N-bp5-028-L `parseNeedHeartSetFixedMap`+`parseAbilityPickFilters` segRaw（必要ハートheart02×5固定・条件heart02×4）③エネ上限: 置き場+ステージ下合計12枚（`countOwnFieldEnergyTotal`/`remainingFieldEnergyCapacity`） |
+| 2026-08-11 | PL!N-bp7-011（ミア）控え室3件: ①`revealCardsSentFromDeckToWaiting` で控え室送り済みミルに `fireJidouAfterDeckMilledByAbility`（`deck_top_pick_recover` / `deck_top_look_reorder` 等・横展開多数。代表ミル源 018/bp5-009/030）②`_playCostReduce`/`_playCostSet` を登場後エネ支払いまで適用（手札限定ゲート外へ）③`play_cost_reduce_shuffle_waiting_members` は控え室のみデッキ下へ（バトン元は通常登場後に控え室へ残す） |
+| 2026-08-15 | PL!N-bp7-011（ミア）`play_cost_reduce_shuffle_waiting_members` のバトン先出しを撤回。シャッフルは控え室既存メンバーのみ→登場時バトンで控え室に置いたメンバーは効果解決後も控え室に残る |
+| 2026-08-10 | 虹ヶ咲 sd2 cheer ライブ: `bladeGainFromIcons` が条件節の blade アイコンを付与数に誤算していたのを付与節のみに修正（代表 026・2枚）。あわせて「ブレードN以上持つ『シリーズ』のメンバー1人は」→`grantToStageSeriesTag`+`minPickedMemberBlade`、シリーズ1人付与の選択プール再構築 |
+| 2026-08-10 | 虹ヶ咲 sd2 cheer メンバー: ①`hand_cost_reduce`+`requiresSuccessLiveSeriesTag`（003）②`そのハートをNつ得る`→`grantHeartSlotCount`（005・横展開既存カードは1のまま）③任意ウェイト付与で「そのメンバーは」なしは自分へ（006）④`draw_then_conditional_extra_draw` + `opponentLiveSuccessThisTurn`（007・2枚） |
+| 2026-08-10 | LL-bp7 クロス初回監修: `LL-bp7-001-R＋`（花丸&せつ菜&千砂都）。`play_cost_set_named_hand_discard`＋登場ライブ回収＋成功メンバー回収。カード文どおりで新規コード修正なし。PENDING `/-bp7-/` 除外を解除 |
+| 2026-08-10 | Liella! bp7 ライブ: ①`minEnergyAdvantageOverOpponent`（024・2枚、相手よりN枚以上多い）②`live_start_optional_waiting_shuffle_deck_bottom_grant`（028・9枚 exact シャッフルデッキ下→全メンバーブレード）③`requiresYellRevealedAllSeriesTag`（028成功・エール公開すべてシリーズ） |
+| 2026-08-10 | Liella! bp7 メンバー初回監修: ①`stage_cost_plus` minEnergy+opponentMoreEnergy（002・2枚）②`blade_per_member_under` + `minMemberCardsUnder`（003・4枚）③`kidou_hand_reveal_to_under` costsAnyOf 10\|20→draw（003）④`waiting_to_deck_bottom_blade_if_moved_no_bh`（004・2枚）⑤grant live_success に `requiresEnergyReturnedToDeckThisTurn`+center 実判定（006）⑥`energyToDeckCount`+`pickAny`（010）⑦`costHandDiscardAll`（011）⑧`costHandDiscardPickType` ライブ＋effect pickType分離（018・横展開 PL!S-bp3-003 / PL!N-bp4-011）⑨ステージ人数タグと回収seriesTag分離（019）⑩jouji `minStageSeriesMembers`（013） |
+| 2026-08-10 | 虹ヶ咲 bp7 ライブ+メンバー019–024: ①`deck_mill_conditional_grant` top+`millRequireDistinctBladeHeartColors`（020）②`minYellRevealedHeartColorKinds`（025・2枚）③`live_start_hand_discard_optional_blade_pick_equal`（026・2枚）④`minYellRevealedNoBladeHeartMembers`（026・横展開で bp5-004 jidou も件数化）⑤`requiresStrictlyMostBladesBothStages`（027）⑥`live_start_optional_shuffle_all_waiting_grant`（028）⑦`live_success_under_energy_to_area_score`（029） |
+| 2026-08-10 | 虹ヶ咲 bp7 メンバー初回監修: ①`kidou_mill_waiting_under_copy_printed_hearts` + `_printedHeartsCopyMapUntilLiveEnd`（PL!N-bp7-003・4枚）②`bladePerDistinctNameUnder`（同LS）③`deck_mill_conditional_pick_one`（006・4枚）④jouji `heart_per_energy_below` / `heart_per_energy_above`（007・4枚）＋横展開 `blade_per_success_live_above_opponent`（PL!S-bp6-009・4枚）⑤`waiting_to_deck_bottom_activate_per`（008・2枚）⑥`millBothPlayers` on `deck_top_to_waiting`（009・2枚）⑦「N人いる」ステージ人数（005/013 + Liella bp7 013/015）⑧任意ウェイト→`heart_color_pick_grant`（012・2枚）⑨`requiresNoBladeHeart` on deck_top_pick（018） |
+| 2026-08-10 | Aqours bp7 ライブ3件: ①`boardHasYellFromDeckBottomJouji` が `liveArea` オブジェクトを forEach して常時エール下向き判定が壊れていた → `eachLiveFrameLiveCardInsts()`（PL!S-bp7-022-L/SECL・横展開2枚の jouji 連動）②PL!S-bp7-020-L seg1 `requiresAllStageMembersActive` + seg2 新テンプレ `deck_mill_conditional_need_heart_reduce`（デッキ下ミル→Aqoursメンバーで必要ハート減、2枚）③PL!S-bp7-025-L 選択肢「2人までウェイト＋次ターン非アクティブ」: `executeAbilityChoiceText` が1人固定＋`_skipAutoActivateUntilTurn` 未設定 → `maxWaitN` 解析・multi-pick・skip 付与（登場同型の2人までは既存 template 経由で別） |
 | 2026-08-10 | 残常時 jouji 4 系統（unclassified 0）: ①`opp_across_lose_blade`（正面コストN以下がブレード失う、代表 PL!S-bp7-009・横展開 2）②`yell_from_deck_bottom`（エールをデッキ下から、代表 PL!S-bp7-022・横展開 2）③`play_cost_reduce_shuffle_waiting_members`（控え室全メンバー→デッキ下でコスト減、代表 PL!N-bp7-011・横展開 4）④`play_cost_set_named_hand_discard`（指名手札各1捨てでコスト固定、代表 LL-bp7-001・横展開 1）。あわせて `live_card_score_plus` に `requiresYellRevealedSeriesHeartSlots`（PL!S-bp7-022 の heart02/04/05×Aqours）。`listNativeJoujiSegmentRaws` の誤結合も修正 |
-| 2026-08-10 | 「エネルギー置き場のエネルギーをエネルギーデッキに置く」を**共通コスト**として実装（新テンプレなし・8 セグメント自動化）: `base.costEnergyToDeck` / `costEnergyToDeckCount` を `_classifyCardAbilityCore` のコスト解析（`：`より前）に追加したため `withTrigger` 経由で**全テンプレートが自動的に対応**。E支払い（総合ルール 5.9.1 のウェイト化）とは別コストで、共通コスト支払いダイアログに専用ピック（`appendCostPayEnergyToDeckGrid`、ウェイト状態も選択可）を追加。**既存の PL!SP-bp7-022 / 026-L / 007 / 027-L はテンプレートには載っていたがコストを無視して効果だけ実行していた**。`moveEnergyAreaCardsToEnergyDeck` に集約し `state._turnEnergyReturnedToDeck`（ターン開始でリセット）と `energy_returned_to_deck` 自動効果イベントを発火。`kidou_energy_deck_pick_live`（PL!SP-bp5-111）の inline pop も同ヘルパーへ寄せた。あわせて ①`toujou_wait_pick_hand` の回収判定が「控え室**から**」表記のみで「控え室に**ある**」を取りこぼしていた（PL!SP-bp7-006）②`live_card_score_plus` に `requiresMoreEnergyThanOpponent`（PL!SP-bp7-027-L）③ライブ成功時「このターン置き場→エネルギーデッキが発生していた場合、合計スコア+1」= `requiresEnergyReturnedToDeckThisTurn`（PL!SP-bp7-006） |
+| 2026-08-10 | Aqours bp7 メンバー Part2（004/007/008/001/012/003）: ①`toujou_baton_both_keep_hand_shuffle_deck_bottom_draw` 新設（PL!S-bp7-004-R/P のみ・2枚）— `requiresBatonFromSeriesTag` + `openHandKeepInHandDialog` `discardTo:deck_bottom_shuffle` + `runOpponentHandKeepShuffleDeckBottomDraw` ②`deck_top_look_reorder` + `deckLookRemainTo:bottom`（008 登場・1クラスタ2枚）③`toujou_wait_pick_hand` + `optionalEnterRecoveredNames`（007 登場・4枚）④`waiting_to_deck_bottom_blade_per`（007 LS・4枚）⑤`abilityComposition.applyGrantIfRecoveredNames` → `grantIfRecoveredNames` + `state._lastWaitPickHandRecoveredInst`（001・2枚）⑥`toujou_optional_all_members_relocate` + `requiresStageOnlySeriesAny` + SaintSnow FC 移動時 blade（012-N）⑦`ability_pick_one` 003: `_joujiImmuneOppWaitMaxPrintedBlade` + 自身 PC 至 Aqours/SaintSnow エリア | `base.costEnergyToDeck` / `costEnergyToDeckCount` を `_classifyCardAbilityCore` のコスト解析（`：`より前）に追加したため `withTrigger` 経由で**全テンプレートが自動的に対応**。E支払い（総合ルール 5.9.1 のウェイト化）とは別コストで、共通コスト支払いダイアログに専用ピック（`appendCostPayEnergyToDeckGrid`、ウェイト状態も選択可）を追加。**既存の PL!SP-bp7-022 / 026-L / 007 / 027-L はテンプレートには載っていたがコストを無視して効果だけ実行していた**。`moveEnergyAreaCardsToEnergyDeck` に集約し `state._turnEnergyReturnedToDeck`（ターン開始でリセット）と `energy_returned_to_deck` 自動効果イベントを発火。`kidou_energy_deck_pick_live`（PL!SP-bp5-111）の inline pop も同ヘルパーへ寄せた。あわせて ①`toujou_wait_pick_hand` の回収判定が「控え室**から**」表記のみで「控え室に**ある**」を取りこぼしていた（PL!SP-bp7-006）②`live_card_score_plus` に `requiresMoreEnergyThanOpponent`（PL!SP-bp7-027-L）③ライブ成功時「このターン置き場→エネルギーデッキが発生していた場合、合計スコア+1」= `requiresEnergyReturnedToDeckThisTurn`（PL!SP-bp7-006） |
 | 2026-08-10 | `jidou_move_or_energy_draw_grant` の3系統バグ + bp7 横展開（5 セグメント自動化）: ①`eventKind: "area_move_or_energy"` はどこからも発火されておらず **PL!SP-bp5-004（R＋/P/P＋/SEC）の自動効果が一度も動いていなかった** → `eventKind: "energy_placed"` + `altEventKind: "area_move"` に分割 ②ハンドラが常時「ライブの合計スコアを＋１する」を**ハードコード**しており、カード文の heart02 付与を無視していた → `applyJidouPlainLiveEndHeartBladeGrant` を先に通しカード文どおりに付与（指定が無い形のみスコア+1へフォールバック）③分類がドロー必須だったためドローの無い同型（PL!SP-bp7-005 能力2 / PL!SP-bp7-016）が `jidou_manual` に落ちていた → `自分のエネルギー置き場にエネルギーが置かれたとき` を主条件にし `deckDrawCount` 既定を 0 に。エネルギーフェイズの配置は `addEnergyFromDeckToArea` を通らないため、`energy_placed` は元々「カードの効果による配置」のみで発火する |
 | 2026-08-10 | 「そのエネルギーは次のターンのアクティブフェイズにアクティブしない」を実装（新テンプレなし・8 セグメント自動化）: `markEnergySkipNextActivatePhase` でエネルギー inst に `_skipActivatePhaseUntilTurn` を持たせ、ターン開始のアクティブフェイズが該当ターンだけ縦戻しを飛ばす（FAQ Q280: 途中でアクティブ→再ウェイトになっても対象ターンは飛ばす）。`addEnergyFromDeckToArea(n, rotated, {skipNextActivatePhase})` + 分類側 `energySkipNextActivate` を `energy_deck_to_wait` 全 3 箇所へ。**既存の PL!SP-bp7-017 は `energy_deck_to_wait` に載っていたが当該節を黙って無視していた**。あわせてライブ成功時に `energy_deck_to_wait` / `activate_energy`（`requiresMoreEnergyThanOpponent` + `soloEnergyMoreThanOpponent`）分岐を fallback 直前に追加（PL!SP-bp7-007 / PL!SP-bp7-027-L）。`live_success_surplus_heart_energy_wait`（PL!N-bp3-027-L）を奪わない配置順に修正済み |
 | 2026-08-10 | bp7 第5バッチ続き: ⑩`pick_stage_member_to_center`（PL!S-bp7-018）⑪`live_start_optional_wait_members_score_per`（PL!N-sd2-027）⑫`live_return_hand_then_discard`（PL!N-bp7-030）⑬`deck_bottom_optional_mill_named_hand`（PL!S-bp7-008）⑭`deck_top_look_reorder` を下から見る形へ拡張（PL!S-bp7-004）⑮`waiting_member_under_stage`（PL!S-bp7-005 登場）⑯`kidou_self_and_other_resolve_toujou`（同起動）⑰`live_start_deck_bottom_mill_member_tier`（PL!S-bp7-021）⑱`live_start_optional_energy_to_deck_opp_adv_score`（PL!S-bp7-023）⑲共通コスト `costEnergyUnderSelf` + `kidou_energy_under_opp_wait_by_under` / `kidou_energy_under_waiting_enter`（PL!N-bp7-004 / 010）⑳`jidou_self_deck_to_waiting_discard_recover`（PL!N-bp7-011）㉑`jidou_ability_mill_pick_live_score` + `fireJidouAfterDeckMilledByAbility`（PL!N-bp7-031）㉒`jidou_leave_baton_self_under_partner`（PL!SP-bp7-001）㉓`grant_jouji_session` + `minLiveAreaScoreSum`（PL!-PR-020）㉔常時 `blade_grant_series_with_member_under` / `blade_while_under_series_host`（PL!S-bp7-005 / PL!SP-bp7-001）。index 上 `guided_manual=0` / `jidou_manual=0` |
