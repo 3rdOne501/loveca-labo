@@ -15499,6 +15499,7 @@ export function mountSimulator(
   /** @param {*} inst @param {import('./abilityEffects.js').ClassifiedAbility} cl */
   function checkAbilityToujouPreconditionsForInst(inst, cl) {
     if (!checkAbilityToujouPreconditions(cl)) return false;
+    if (cl.requiresEnteredFromWaiting && !inst._enteredFromWaitingRoom) return false;
     if (cl.filters && cl.filters.requiresOtherStageMemberMovedThisTurn) {
       var otherMoved = listMovedStageMembersThisTurn(null).some(function (m) {
         return m && String(m.id) !== String(inst && inst.id);
@@ -17181,6 +17182,7 @@ export function mountSimulator(
       showToast("控え室から登場していないためスキップしました");
       markEffectFizzleVisual(inst);
       inst._toujouEffectDeclined = true;
+      markPlayEffectResolved(inst, resolveKind);
       renderSynchronouslyOnce();
       if (onComplete) onComplete();
       return;
@@ -22022,7 +22024,7 @@ export function mountSimulator(
     }
     function stepPassesTriggerPreconditions(stepCl) {
       if (!stepCl) return false;
-      if (kind === "toujyou") return checkAbilityToujouPreconditions(stepCl);
+      if (kind === "toujyou") return checkAbilityToujouPreconditionsForInst(inst, stepCl);
       if (kind === "kidou") return checkAbilityKidouPreconditions(stepCl);
       if (kind === "live_start") return checkAbilityLiveStartPreconditions(stepCl);
       if (kind === "live_success") return checkAbilityLiveSuccessPreconditions(stepCl);
@@ -22109,8 +22111,12 @@ export function mountSimulator(
 
     // 登場時は全テンプレートで共通前提を先に評価する。
     // 個別 handler 側の重複チェックは許容し、未チェック template の取りこぼしを防ぐ。
-    if (kind === "toujyou" && !checkAbilityToujouPreconditions(cl)) {
-      abortResolved("登場時効果の条件を満たしていません");
+    if (kind === "toujyou" && !checkAbilityToujouPreconditionsForInst(inst, cl)) {
+      abortResolved(
+        cl.requiresEnteredFromWaiting && !inst._enteredFromWaitingRoom
+          ? "控え室から登場していないためスキップしました"
+          : "登場時効果の条件を満たしていません",
+      );
       return;
     }
     if (kind === "kidou" && !checkAbilityKidouPreconditions(cl)) {
@@ -36859,6 +36865,12 @@ export function mountSimulator(
       if (!memberHasToujouAbility(mc)) return;
       if (inst._toujouEffectActive === true || inst._toujouEffectDeclined === true) return;
       var cl = classifyCardAbility(mc, "toujyou");
+      if (cl.requiresEnteredFromWaiting && !inst._enteredFromWaitingRoom) {
+        inst._toujouEffectDeclined = true;
+        markPlayEffectResolved(inst, "toujyou");
+        logReplay("toujou-wait-entry-skip", { cardId: inst.id, cardNo: inst.card_no });
+        return;
+      }
       var optional = cl.optional || cl.hasOptionalCost;
       if (optional) {
         inst._toujouEffectActive = true;
@@ -36941,6 +36953,15 @@ export function mountSimulator(
                   return checkAbilityLiveSuccessPreconditions(st);
                 });
                 if (!anyLssStepOk) return;
+              }
+            } else if (k === "toujyou") {
+              if (clK.template === "ability_sequence" && clK.steps && clK.steps.length) {
+                var anyTjStepOk = clK.steps.some(function (st) {
+                  return checkAbilityToujouPreconditionsForInst(c, st);
+                });
+                if (!anyTjStepOk) return;
+              } else if (!checkAbilityToujouPreconditionsForInst(c, clK)) {
+                return;
               }
             }
             var mandatory = !clK.optional && !clK.hasOptionalCost;

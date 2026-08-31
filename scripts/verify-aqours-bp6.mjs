@@ -126,6 +126,17 @@ const CASES = [
         : ["draw2 effectDiscard1 waiting"],
   },
   {
+    id: "PL!S-bp6-016-N",
+    trigger: "toujyou",
+    expectTemplate: "deck_top_pick_recover",
+    check: (cl) =>
+      cl.deckTopCount === 3 &&
+      cl.deckTopPickMax === 1 &&
+      cl.requiresEnteredFromWaiting
+        ? []
+        : ["deck3 pick1 requiresEnteredFromWaiting"],
+  },
+  {
     id: "PL!S-bp6-013-N",
     trigger: "toujyou",
     expectTemplate: "grant_jouji_session",

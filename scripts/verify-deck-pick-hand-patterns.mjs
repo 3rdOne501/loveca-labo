@@ -28,6 +28,9 @@ for (const [id, card] of Object.entries(cards)) {
         }
         continue;
       }
+      if (/控え室から登場している場合/.test(plain) && !cl.requiresEnteredFromWaiting) {
+        errors.push(`${id} ${seg.trigger}: requiresEnteredFromWaiting missing (deck pick from waiting)`);
+      }
       if (cl.template === "deck_top_to_waiting") {
         errors.push(`${id} ${seg.trigger}: deck_top_to_waiting but text has hand recover`);
         continue;

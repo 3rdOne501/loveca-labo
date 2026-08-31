@@ -87,6 +87,12 @@ for (const [id, card] of Object.entries(cards).sort()) {
       }
     }
 
+    if (/控え室から登場している場合/.test(plain) && /見る/.test(plain) && /手札に加/.test(plain)) {
+      if (cl.template !== "deck_top_pick_recover" || !cl.requiresEnteredFromWaiting) {
+        errors.push(`${id} toujyou: deck look from waiting misclassified`);
+      }
+    }
+
     if (/右サイドエリアか左サイドエリア/.test(plain) && /コスト13以上/.test(plain)) {
       if (
         cl.template !== "optional_self_wait_opp_stage" ||
