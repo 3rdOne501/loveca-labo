@@ -303,6 +303,7 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  * @property {string | null} [characterName]
  * @property {boolean} [acceptNoAbilityOrNativeJouji]
  * @property {number[]} [heartSlotsAny] メンバーがいずれかのスロットを持つ
+ * @property {number[]} [heartSlotsAll] メンバーが列挙した全スロットを持つ（「をすべて持つ」）
  * @property {Object.<number, number>} [minPrintedHeartBySlot] メンバーカード印刷ハートのスロット別下限（例: heart04×2）
  * @property {boolean} [requiresStageMemberMovedThisTurn] このターン中にエリア移動したメンバー参照
  * @property {boolean} [requiresSelfMovedThisTurn] このカード（メンバー）自身がこのターン中にエリア移動
@@ -881,8 +882,7 @@ function classifyDeckTopPickToHandPatch(p, segRaw, extraPatch) {
       patch.filters = { pickFilterAlternatives: [memberPickAlt, livePickAlt] };
     } else {
       var pickFilters = parseAbilityPickFilters(p);
-      var heartAny = parseHeartSlotsAnyFromText(p, segRaw);
-      if (heartAny.length) pickFilters = Object.assign({}, pickFilters, { heartSlotsAny: heartAny });
+      pickFilters = assignHeartSlotPickFilters(pickFilters, p, segRaw);
       var heartMin = parseMinPrintedHeartBySlotFromText(p, segRaw);
       if (heartMin) pickFilters = Object.assign({}, pickFilters, { minPrintedHeartBySlot: heartMin });
       patch.filters = pickFilters;
@@ -3806,6 +3806,15 @@ export function catalogCardMatchesPickFilters(cat, filters) {
     if (!noAb && !hasJ) return false;
   }
   if (filters.characterName && String(cat.name || "") !== String(filters.characterName)) return false;
+  if (filters.heartSlotsAll && filters.heartSlotsAll.length) {
+    if (cat.type !== T_MEMBER) return false;
+    var slotsAll = filters.heartSlotsAll;
+    for (var hai = 0; hai < slotsAll.length; hai++) {
+      var slotAllN = Math.floor(Number(slotsAll[hai]));
+      if (!(slotAllN >= 1 && slotAllN <= 6)) continue;
+      if (catalogMemberPrintedHeartCountBySlot(cat, slotAllN) < 1) return false;
+    }
+  }
   if (filters.heartSlotsAny && filters.heartSlotsAny.length) {
     if (cat.type !== T_MEMBER) return false;
     var slotsAny = filters.heartSlotsAny;
@@ -3894,6 +3903,23 @@ function parseHeartSlotsAnyFromText(p, segRaw) {
   return out.filter(function (v, i, a) {
     return a.indexOf(v) === i;
   });
+}
+
+/**
+ * 「をすべて持つ」は heartSlotsAll、それ以外の複数色参照は heartSlotsAny。
+ * @param {AbilityPickFilters} pickFilters
+ * @param {string} p
+ * @param {string} segRaw
+ * @returns {AbilityPickFilters}
+ */
+function assignHeartSlotPickFilters(pickFilters, p, segRaw) {
+  var heartSlots = parseHeartSlotsAnyFromText(p, segRaw);
+  if (!heartSlots.length) return pickFilters;
+  var blob = String(p || "") + String(segRaw || "");
+  if (/をすべて持つ/.test(blob)) {
+    return Object.assign({}, pickFilters, { heartSlotsAll: heartSlots });
+  }
+  return Object.assign({}, pickFilters, { heartSlotsAny: heartSlots });
 }
 
 /**

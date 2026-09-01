@@ -47,6 +47,11 @@ for (const [id, card] of Object.entries(cards)) {
         if (/各グループ名につき1枚ずつ/.test(plain) && !cl.deckTopPickDistinctGroup) {
           errors.push(`${id} ${seg.trigger}: deckTopPickDistinctGroup missing`);
         }
+        if (/をすべて持つ/.test(plain)) {
+          if (!cl.filters?.heartSlotsAll?.length || cl.filters?.heartSlotsAny?.length) {
+            errors.push(`${id} ${seg.trigger}: heartSlotsAll expected for すべて持つ`);
+          }
+        }
       }
     }
 

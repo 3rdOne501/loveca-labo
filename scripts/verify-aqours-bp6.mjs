@@ -70,9 +70,10 @@ const CASES = [
     check: (cl) =>
       cl.deckTopCount === 2 &&
       cl.filters?.pickType === "メンバー" &&
-      cl.filters?.heartSlotsAny?.join() === "2,4,5"
+      cl.filters?.heartSlotsAll?.join() === "2,4,5" &&
+      !cl.filters?.heartSlotsAny?.length
         ? []
-        : ["deck2 hearts245"],
+        : ["deck2 hearts245 all"],
   },
   {
     id: "PL!S-bp6-006-P",

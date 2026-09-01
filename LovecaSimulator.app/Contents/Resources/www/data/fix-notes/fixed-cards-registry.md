@@ -16,6 +16,14 @@
 
 ---
 
+## 0e. heartSlotsAll（2026-09-01）— 「をすべて持つ」回収条件
+
+| カード番号 | 名前 | 根因 | 対応 | 横展開 |
+|-----------|------|------|------|--------|
+| PL!S-bp6-005-P | 渡辺 曜 | `deck_top_pick_recover` の heart02/04/05 条件が `heartSlotsAny`（OR）で 1色だけのメンバーも回収候補になっていた | 「をすべて持つ」→ `heartSlotsAll`（AND）。`assignHeartSlotPickFilters` + `catalogCardMatchesPickFilters` | PL!S-bp6-005-R 含む2枚 |
+
+---
+
 ## 0d. 報告バグ一括（2026-08-18）— 控え室回収 / 自動山札仕込み / 必要ハート合計 / 手札コスト / 任意ウェイト加点
 
 | カード番号 | 名前 | 根因 | 対応 | 横展開 |
