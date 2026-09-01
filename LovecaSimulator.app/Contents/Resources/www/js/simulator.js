@@ -17199,6 +17199,7 @@ export function mountSimulator(
         cl.costSelfWait ||
         cl.costPickMemberWait ||
         cl.costMandatoryWaitOtherMember ||
+        cl.costHandDiscardOptional ||
         cl.handDiscardToWaiting ||
         cl.costHandDiscardAll)
     ) {
@@ -17573,9 +17574,15 @@ export function mountSimulator(
       html +=
         '<p class="dlg-cost-payment-or-hint muted">コストは<strong>どちらか一方</strong>を選んで支払ってください。</p>';
     }
-    if (cl.handDiscardToWaiting && cl.handDiscardToWaiting > 0) {
+    if (cl.handDiscardToWaiting && cl.handDiscardToWaiting > 0 && !cl.costHandDiscardOptional) {
       html += '<div class="dlg-cost-payment-row">手札を ' + cl.handDiscardToWaiting + " 枚控え室へ置く</div>";
       html += '<div id="cost-pay-hand-grid" class="dlg-pick-kidou-waiting__grid dlg-cost-payment-hand-grid"></div>';
+    }
+    if (cl.costHandDiscardOptional && cl.handDiscardToWaiting) {
+      html +=
+        '<div class="dlg-cost-payment-row muted">手札を ' +
+        cl.handDiscardToWaiting +
+        " 枚控え室に置くかどうかは、山札を見る前に選びます（任意）。</div>";
     }
     if (cl.costHandDiscardAll) {
       html +=
@@ -17645,7 +17652,7 @@ export function mountSimulator(
         }
       }
     }
-    if (cl.handDiscardToWaiting && cl.handDiscardToWaiting > 0) {
+    if (cl.handDiscardToWaiting && cl.handDiscardToWaiting > 0 && !cl.costHandDiscardOptional) {
       var grid = document.getElementById("cost-pay-hand-grid");
       if (grid) {
         var handCostPool = (state.hand || []).slice();
@@ -22059,6 +22066,8 @@ export function mountSimulator(
       cl.costSelfWait ||
       cl.costPickMemberWait ||
       cl.costMandatoryWaitOtherMember ||
+      cl.costHandDiscardOptional ||
+      cl.costHandDiscardAll ||
       (cl.handDiscardToWaiting && cl.handDiscardToWaiting > 0);
     if (seqHasCost) {
       var seqMandatory = !cl.hasOptionalCost && !cl.optional;
@@ -32371,6 +32380,7 @@ export function mountSimulator(
     }
 
     if (cl.template === "deck_top_pick_recover") {
+      function runDeckTopPickRecoverBody() {
       var dCnt = cl.deckTopCount || 0;
       if (state.deck.length < 1) {
         showToast("山札が空です");
@@ -32600,6 +32610,25 @@ export function mountSimulator(
         );
       }
       pickNextFromDeckLook();
+      }
+      if (
+        cl.costHandDiscardOptional &&
+        cl.handDiscardToWaiting &&
+        (state.hand || []).length
+      ) {
+        openHandDiscardToWaitingDialog(
+          cl.handDiscardToWaiting,
+          "手札を " +
+            cl.handDiscardToWaiting +
+            " 枚控え室に置いてもよい。置くなら選んで「解決する」、置かないなら「スキップ」。",
+          function () {
+            runDeckTopPickRecoverBody();
+          },
+          inst,
+        );
+        return;
+      }
+      runDeckTopPickRecoverBody();
       return;
     }
 
