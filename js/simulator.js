@@ -6354,6 +6354,16 @@ export function mountSimulator(
     });
   }
 
+  /** ライブ中のエール公開後に jidou(yell) を発火（D&D とボタン経路の共通入口） */
+  function maybeFireJidouAfterLiveYellReveal(resolutionCountBeforeReveal) {
+    if (state.liveStatsAfterBegin !== true) return;
+    try {
+      fireJidouAutoYellAll({ yellFirstReveal: resolutionCountBeforeReveal === 0 });
+    } catch (jErr) {
+      console.warn(jErr);
+    }
+  }
+
   function memberSkipAutoActivateThisTurn(inst) {
     return (
       inst &&
@@ -11050,11 +11060,7 @@ export function mountSimulator(
       { duration: 4000 },
     );
     logReplay("live-turn-eale-resolution", { flipCount: afterCnt, bhTotal: rsBh.totalBh });
-    try {
-      fireJidouAutoYellAll({ yellFirstReveal: beforeCnt === 0 });
-    } catch (jErr) {
-      console.warn(jErr);
-    }
+    maybeFireJidouAfterLiveYellReveal(beforeCnt);
   }
 
   /** 控え室リフレッシュ時の集計用（card_no 別） */
@@ -44124,6 +44130,7 @@ export function mountSimulator(
     if (inLive) registerLiveTurnYellRevealedCards([drawnR]);
     maybeFlushPendingDrawYellHandDraws(prevResLen);
     if (state.liveStatsAfterBegin === true) ensureLiveVerdictSnapshotLocked();
+    maybeFireJidouAfterLiveYellReveal(prevResLen);
     showToast(
       inLive
         ? fromBottom
@@ -44168,6 +44175,7 @@ export function mountSimulator(
       return;
     }
     pushHistoryBefore("draw-res-all");
+    var initialResLen = state.resolutionArea.length;
     var fromBottomAll = boardHasYellFromDeckBottomJouji();
     var drewN = 0;
     /** @type {*[]} */
@@ -44195,6 +44203,7 @@ export function mountSimulator(
     }
     if (drawnAllYell.length) registerLiveTurnYellRevealedCards(drawnAllYell);
     if (state.liveStatsAfterBegin === true) ensureLiveVerdictSnapshotLocked();
+    if (drewN) maybeFireJidouAfterLiveYellReveal(initialResLen);
     showToast(
       drewN
         ? fromBottomAll

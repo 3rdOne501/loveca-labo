@@ -37,7 +37,7 @@
 |--------|------|------|------|--------|
 | PL!N-bp4-007-P | せつ菜登場 — 相手控えライブ→相手手札 | dual 時相手盤操作が自盤 `waitingRoom`/`hand` を触っていた | `runOnTargetPlayerBoard("opponent", …)` + `moveInstFromWaitingToHand` | 007 4レアリティ |
 | PL!SP-bp7-011-R | 手札全捨てせず6ドロー | `payAbilityCost` ゲートに `costHandDiscardAll` 未列入 | ゲート追加 | `costHandDiscardAll` 全件 |
-| PL!S-bp6-016-N | 手札登場でも3ルック | `requiresEnteredFromWaiting` が deck_top 分類に未伝播 | `classifyCardAbility` 基底で「控え室から登場」を設定 | 同条件テキスト全件 |
+| PL!S-bp6-016-N | 手札登場でも3ルック | `requiresEnteredFromWaiting` が deck_top 分類に未伝播 | `classifyCardAbility` 基底で「控え室から登場」を設定 + 実行側 `checkAbilityToujouPreconditionsForInst` / 登場時 pending スキップ | 同条件テキスト6件（bp6-001/006/011/016 等） |
 | PL!S-bp6-002-SEC | ALL2個が4個 | `extractInlineLiveEndGrantJouji` が icon_all を常時化 | icon_all / heart_07 を inline 除外 | bp4-029 同型と同ガード |
 | PL!N-bp7-008-P | MM15エマ登場 — 途中キャンセル不可 | `waiting_to_deck_bottom_activate_per` がキャンセル=部分適用 | キャンセル時は未適用で終了 | 同テンプレ |
 

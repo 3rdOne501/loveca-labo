@@ -31,6 +31,14 @@
 
 ---
 
+## 0e. エールボタン経路で jidou(yell) 未発火（2026-09-01）
+
+| 代表ID | 内容 | 根因 | 対応 | 横展開 |
+|--------|------|------|------|--------|
+| PL!SP-bp2-015-N / 020-N / 021-N | 非BHエールでも自動効果が発動しない | `fireJidouAutoYellAll` が D&D（山札→解決）のみで、`drawOneCardToResolution` / `drawAllYellsToResolution`（1枚エール・全てエール）では未呼び出し | `maybeFireJidouAfterLiveYellReveal` を共通化し3経路すべてで発火 | jidou eventKind=yell 全25件（`jidou_yell_*` テンプレ群） |
+
+---
+
 ## 0d. #デバック部 直近3週間 — 未反映分（2026-08-31）
 
 | 代表ID | 内容 | 根因 | 対応 | 横展開 |
