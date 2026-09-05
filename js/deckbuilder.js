@@ -570,6 +570,8 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
   let currentDeckPanelOpen = true;
   /** 「再読込」復元時にスクロールを戻すための一次バッファ */
   let pendingBuilderUiRestoreScroll = /** @type {{ card: number, sample: number } | null} */ (null);
+  /** 再読込後に絞り込みシートを開き直す */
+  let pendingDeckFiltersDialogOpen = false;
   const cards = getAllCards();
   const allCosts = uniqueCosts(cards);
   const filterCosts = {};
@@ -633,6 +635,10 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
     if (detFi && detFi.tagName === "DETAILS") {
       payload.deckSearchFiltersOpen = /** @type {HTMLDetailsElement} */ (detFi).open;
     }
+    var dlgFi = document.getElementById("dlg-deck-filters");
+    if (dlgFi && typeof dlgFi.open === "boolean") {
+      payload.deckSearchFiltersOpen = !!dlgFi.open;
+    }
     return payload;
   }
 
@@ -680,6 +686,7 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
     if (detR && detR.tagName === "DETAILS" && typeof o.deckSearchFiltersOpen === "boolean") {
       /** @type {HTMLDetailsElement} */ (detR).open = o.deckSearchFiltersOpen;
     }
+    pendingDeckFiltersDialogOpen = o.v >= 2 && o.deckSearchFiltersOpen === true;
     pendingBuilderUiRestoreScroll = {
       card: typeof o.cardGridScrollTop === "number" ? o.cardGridScrollTop : 0,
       sample: typeof o.sampleScrollTop === "number" ? o.sampleScrollTop : 0,
@@ -702,11 +709,14 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
     if (sortEl) sortEl.value = catalogSortOrder || "default";
     var fo = el("filter-favorites-only");
     if (fo) fo.checked = !!filterFavoritesOnly;
-    root.querySelectorAll("#filter-costs input[data-cost]").forEach(function (inpCost) {
-      var n = Number(inpCost.getAttribute("data-cost"));
-      if (Number.isFinite(n)) inpCost.checked = !!filterCosts[n];
-    });
-    var bhPanel = root.querySelector("#filter-bh-slots");
+    var costHost = el("filter-costs");
+    if (costHost) {
+      costHost.querySelectorAll("input[data-cost]").forEach(function (inpCost) {
+        var n = Number(inpCost.getAttribute("data-cost"));
+        if (Number.isFinite(n)) inpCost.checked = !!filterCosts[n];
+      });
+    }
+    var bhPanel = el("filter-bh-slots");
     if (bhPanel && o.v >= 2 && Array.isArray(o.bhSlots)) {
       var bhSet = new Set(o.bhSlots.map(Number));
       bhPanel.querySelectorAll("input[data-bh-slot]").forEach(function (inp) {
@@ -720,7 +730,7 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
       var dy = bhPanel.querySelector("input[data-bh-filter='draw-yell']");
       if (dy) dy.checked = !!o.bhDrawYell;
     }
-    var heartPanel = root.querySelector("#filter-heart-slots");
+    var heartPanel = el("filter-heart-slots");
     if (heartPanel && o.v >= 2 && Array.isArray(o.heartSlots)) {
       var hsSet = new Set(o.heartSlots.map(Number));
       heartPanel.querySelectorAll("input[data-heart-slot]").forEach(function (inp) {
@@ -736,6 +746,7 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
       btnTl.textContent = deckListOpen ? "登録カード一覧を隠す" : "登録カード一覧を表示";
     }
     invalidateCatalogFilterCache();
+    syncAllFilterChoiceLists();
   }
 
   function restoreDeckBuilderUiFromSession(opts) {
@@ -867,7 +878,7 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
   wireTestCardVariantDialogOnce();
 
   function readBhSlotFilters() {
-    const panel = root.querySelector("#filter-bh-slots");
+    const panel = el("filter-bh-slots");
     /** @type {Set<number>} */
     const s = new Set();
     if (!panel) return s;
@@ -879,7 +890,7 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
   }
 
   function readBhFilterExtras() {
-    const panel = root.querySelector("#filter-bh-slots");
+    const panel = el("filter-bh-slots");
     if (!panel) return { nonBh: false, noteLive: false, drawYell: false };
     return {
       nonBh: !!panel.querySelector("input[data-bh-filter='non-bh']:checked"),
@@ -889,7 +900,7 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
   }
 
   function readHeartSlotFilters() {
-    const panel = root.querySelector("#filter-heart-slots");
+    const panel = el("filter-heart-slots");
     /** @type {Set<number>} */
     const s = new Set();
     if (!panel) return s;
@@ -898,6 +909,64 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
       if (n >= 1 && n <= 6) s.add(n);
     });
     return s;
+  }
+
+  function deckFiltersDialogEl() {
+    return el("dlg-deck-filters") || document.getElementById("dlg-deck-filters");
+  }
+
+  function closeDeckFiltersDialog() {
+    var dlg = deckFiltersDialogEl();
+    if (dlg && dlg.open && typeof dlg.close === "function") {
+      try {
+        dlg.close();
+      } catch (_) {
+        /* noop */
+      }
+    }
+  }
+
+  function openDeckFiltersDialog() {
+    var dlg = deckFiltersDialogEl();
+    if (!dlg) return;
+    if (dlg.open) return;
+    try {
+      if (typeof dlg.showModal === "function") dlg.showModal();
+      else if (typeof dlg.show === "function") dlg.show();
+    } catch (_) {
+      /* noop */
+    }
+  }
+
+  function syncDeckFiltersOpenButtons() {
+    var n = 0;
+    if (filterProduct) n += 1;
+    if (filterSeries) n += 1;
+    if (filterUnit) n += 1;
+    if (!filterTypes[T_MEMBER] || !filterTypes[T_LIVE]) n += 1;
+    if (filterFavoritesOnly) n += 1;
+    if (catalogSortOrder && catalogSortOrder !== "default") n += 1;
+    if (
+      allCosts.some(function (c) {
+        return !filterCosts[c];
+      })
+    ) {
+      n += 1;
+    }
+    var bh = readBhSlotFilters();
+    var bx = readBhFilterExtras();
+    var hs = readHeartSlotFilters();
+    if (bh.size || bx.nonBh || bx.noteLive || bx.drawYell || hs.size) n += 1;
+    var side = el("btn-open-deck-filters");
+    var cardBtn = el("btn-open-deck-filters-card");
+    if (side) {
+      side.textContent = n ? "絞り込みを開く（" + n + "）" : "絞り込みを開く";
+      side.classList.toggle("is-active", n > 0);
+    }
+    if (cardBtn) {
+      cardBtn.textContent = n ? "絞り込み（" + n + "）" : "絞り込み";
+      cardBtn.classList.toggle("is-active", n > 0);
+    }
   }
 
   let zoomTargetCardForBuilder = null;
@@ -2942,6 +3011,7 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
   function renderCardGrid(opts) {
     opts = opts || { deckSummary: true };
     if (typeof opts.deckSummary === "undefined") opts.deckSummary = true;
+    syncDeckFiltersOpenButtons();
     const grid = el("card-grid");
     if (!grid) return;
     const heading = el("card-panel-heading");
@@ -3560,6 +3630,46 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
     scheduleRenderCardGridOpts(null);
   }
 
+  function syncFilterChoiceList(selectId, listId) {
+    var sel = el(selectId);
+    var list = el(listId);
+    if (!sel || !list) return;
+    var value = sel.value;
+    list.querySelectorAll(".filter-choice").forEach(function (btn) {
+      var on = btn.getAttribute("data-value") === value;
+      btn.classList.toggle("is-selected", on);
+      btn.setAttribute("aria-selected", on ? "true" : "false");
+    });
+  }
+
+  function syncAllFilterChoiceLists() {
+    syncFilterChoiceList("filter-product", "filter-product-list");
+    syncFilterChoiceList("filter-series", "filter-series-list");
+    syncFilterChoiceList("filter-unit", "filter-unit-list");
+  }
+
+  function fillFilterChoiceList(selectId, listId) {
+    var sel = el(selectId);
+    var list = el(listId);
+    if (!sel || !list) return;
+    list.innerHTML = "";
+    Array.prototype.forEach.call(sel.options, function (opt) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "filter-choice";
+      btn.setAttribute("role", "option");
+      btn.setAttribute("data-value", opt.value);
+      btn.textContent = opt.textContent || "（空）";
+      btn.addEventListener("click", function () {
+        sel.value = opt.value;
+        sel.dispatchEvent(new Event("change", { bubbles: true }));
+        syncFilterChoiceList(selectId, listId);
+      });
+      list.appendChild(btn);
+    });
+    syncFilterChoiceList(selectId, listId);
+  }
+
   function fillSelects() {
     const ps = el("filter-product");
     if (ps) {
@@ -3595,12 +3705,15 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
         us.appendChild(o);
       });
     }
+    fillFilterChoiceList("filter-product", "filter-product-list");
+    fillFilterChoiceList("filter-series", "filter-series-list");
+    fillFilterChoiceList("filter-unit", "filter-unit-list");
     const fc = el("filter-costs");
     if (fc) {
       fc.innerHTML = "";
       allCosts.forEach((n) => {
         const lab = document.createElement("label");
-        lab.className = "chk";
+        lab.className = "chk filter-cost-chk";
         lab.innerHTML = `<input type="checkbox" data-cost="${n}" checked /> ${n}`;
         fc.appendChild(lab);
       });
@@ -3675,7 +3788,7 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
     showToast("検索だけクリアしました");
   });
 
-  el("btn-reset-filters")?.addEventListener("click", () => {
+  function resetDeckCatalogFilters() {
     searchText = "";
     const inp = el("search-text");
     if (inp) inp.value = "";
@@ -3693,6 +3806,7 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
     el("filter-product") && (el("filter-product").value = "");
     el("filter-series") && (el("filter-series").value = "");
     el("filter-unit") && (el("filter-unit").value = "");
+    syncAllFilterChoiceLists();
     allCosts.forEach((n) => {
       filterCosts[n] = true;
     });
@@ -3703,7 +3817,27 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
       });
     renderCardGrid();
     showToast("絞り込みをすべてリセットしました");
-  });
+  }
+
+  el("btn-reset-filters")?.addEventListener("click", resetDeckCatalogFilters);
+  el("dlg-deck-filters-reset")?.addEventListener("click", resetDeckCatalogFilters);
+
+  function wireDeckFiltersDialog() {
+    var dlg = deckFiltersDialogEl();
+    ["btn-open-deck-filters", "btn-open-deck-filters-card"].forEach(function (id) {
+      el(id)?.addEventListener("click", function () {
+        openDeckFiltersDialog();
+      });
+    });
+    el("dlg-deck-filters-close")?.addEventListener("click", closeDeckFiltersDialog);
+    el("dlg-deck-filters-done")?.addEventListener("click", closeDeckFiltersDialog);
+    if (dlg) {
+      dlg.addEventListener("close", function () {
+        schedulePersistDeckBuilderUiState();
+      });
+    }
+  }
+  wireDeckFiltersDialog();
 
   el("btn-deck-text-import")?.addEventListener("click", () => {
     const text = el("deck-text-import")?.value || "";
@@ -4354,10 +4488,10 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
     scheduleRenderCardGrid();
   });
   el("btn-filter-bh-heart-clear")?.addEventListener("click", function () {
-    root.querySelectorAll("#filter-bh-slots input[type=checkbox]").forEach(function (x) {
+    el("filter-bh-slots")?.querySelectorAll("input[type=checkbox]").forEach(function (x) {
       x.checked = false;
     });
-    root.querySelectorAll("#filter-heart-slots input[type=checkbox]").forEach(function (x) {
+    el("filter-heart-slots")?.querySelectorAll("input[type=checkbox]").forEach(function (x) {
       x.checked = false;
     });
     scheduleRenderCardGrid();
@@ -5790,6 +5924,7 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
         filterProduct = pick;
         sel.value = pick;
         invalidateCatalogFilterCache();
+        syncAllFilterChoiceLists();
       }
     }
   }
@@ -5799,6 +5934,10 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
   fillSelects();
   applyStartupCatalogProductFilter();
   consumeBuilderUiRestoreFlag();
+  if (pendingDeckFiltersDialogOpen) {
+    pendingDeckFiltersDialogOpen = false;
+    openDeckFiltersDialog();
+  }
   wireSampleRecipesGridOnce();
   wireSampleRecipesDnDOnce();
   wirePublicDecksGridOnce();

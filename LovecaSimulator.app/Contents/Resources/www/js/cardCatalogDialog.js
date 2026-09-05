@@ -553,28 +553,64 @@ function wireCatalogVariantsRowOnce(bodyEl) {
  * @param {*} c カード実体または card_no を含むオブジェクト
  * @param {{ onVariantSelected?: (cardNo: string) => boolean | void }} [options]
  */
+function stageSideButtonHtml(side, label, dataAttr) {
+  var ico =
+    side === "left"
+      ? "leftside.png"
+      : side === "right"
+        ? "rightside.png"
+        : "center.png";
+  var lab = escapeHtmlPlain(label || "");
+  return (
+    '<button type="button" class="dlg-card-catalog-stage-btn" ' +
+    dataAttr +
+    '="' +
+    side +
+    '" aria-label="' +
+    lab +
+    '">' +
+    '<img class="dlg-card-catalog-stage-btn__ico" alt="" src="assets/game-icons/loveca-data-1/' +
+    ico +
+    '" decoding="async" />' +
+    '<span class="dlg-card-catalog-stage-btn__lab">' +
+    lab +
+    "</span></button>"
+  );
+}
+
 function mountHandStageActionsInEffectSlot(act, dlg) {
   var mount = document.getElementById("dlg-card-catalog-stage-mount");
   if (!mount) return;
-  if (!act || typeof act.onStage !== "function") {
+  var hasEnter = !!(act && typeof act.onStage === "function");
+  var hasUnder = !!(act && typeof act.onPlaceUnder === "function");
+  if (!hasEnter && !hasUnder) {
     mount.hidden = true;
     mount.innerHTML = "";
     return;
   }
   mount.hidden = false;
-  mount.innerHTML =
-    '<p class="dlg-card-catalog-hand-stage-hint">選択したエリアに登場</p>' +
-    '<div class="dlg-card-catalog-hand-stage-row">' +
-    '<button type="button" class="dlg-card-catalog-stage-btn" data-stage-side="left" aria-label="左サイドに登場">' +
-    '<img class="dlg-card-catalog-stage-btn__ico" alt="" src="assets/game-icons/loveca-data-1/leftside.png" decoding="async" />' +
-    '<span class="dlg-card-catalog-stage-btn__lab">左サイド</span></button>' +
-    '<button type="button" class="dlg-card-catalog-stage-btn" data-stage-side="center" aria-label="センターに登場">' +
-    '<img class="dlg-card-catalog-stage-btn__ico" alt="" src="assets/game-icons/loveca-data-1/center.png" decoding="async" />' +
-    '<span class="dlg-card-catalog-stage-btn__lab">センター</span></button>' +
-    '<button type="button" class="dlg-card-catalog-stage-btn" data-stage-side="right" aria-label="右サイドに登場">' +
-    '<img class="dlg-card-catalog-stage-btn__ico" alt="" src="assets/game-icons/loveca-data-1/rightside.png" decoding="async" />' +
-    '<span class="dlg-card-catalog-stage-btn__lab">右サイド</span></button>' +
-    "</div>";
+  var html = "";
+  if (hasEnter) {
+    html +=
+      '<p class="dlg-card-catalog-hand-stage-hint">選択したエリアに登場</p>' +
+      '<div class="dlg-card-catalog-hand-stage-row">' +
+      stageSideButtonHtml("left", "左サイド", "data-stage-side") +
+      stageSideButtonHtml("center", "センター", "data-stage-side") +
+      stageSideButtonHtml("right", "右サイド", "data-stage-side") +
+      "</div>";
+  }
+  if (hasUnder) {
+    html +=
+      '<button type="button" class="btn sm primary dlg-card-catalog-under-open">メンバーの下に置く</button>' +
+      '<div class="dlg-card-catalog-under-picker" hidden>' +
+      '<p class="dlg-card-catalog-hand-stage-hint">下に置くメンバーを選ぶ</p>' +
+      '<div class="dlg-card-catalog-hand-stage-row">' +
+      stageSideButtonHtml("left", (act.underLabels && act.underLabels.left) || "左サイド", "data-under-side") +
+      stageSideButtonHtml("center", (act.underLabels && act.underLabels.center) || "センター", "data-under-side") +
+      stageSideButtonHtml("right", (act.underLabels && act.underLabels.right) || "右サイド", "data-under-side") +
+      "</div></div>";
+  }
+  mount.innerHTML = html;
   mount.querySelectorAll("[data-stage-side]").forEach(function (btn) {
     var side = btn.getAttribute("data-stage-side");
     if (!side) return;
@@ -589,6 +625,42 @@ function mountHandStageActionsInEffectSlot(act, dlg) {
       }
       try {
         act.onStage(side);
+      } catch (e) {
+        console.error(e);
+      }
+    });
+  });
+  var underOpen = mount.querySelector(".dlg-card-catalog-under-open");
+  var underPicker = mount.querySelector(".dlg-card-catalog-under-picker");
+  if (underOpen && underPicker) {
+    underOpen.addEventListener("click", function () {
+      underPicker.hidden = false;
+      underOpen.hidden = true;
+      try {
+        underPicker.scrollIntoView({ block: "nearest" });
+      } catch (_) {
+        /* noop */
+      }
+    });
+  }
+  mount.querySelectorAll("[data-under-side]").forEach(function (btn) {
+    var side = btn.getAttribute("data-under-side");
+    if (!side) return;
+    var canGlow = !act.underGlow || act.underGlow[side] === true;
+    btn.classList.toggle("dlg-card-catalog-stage-btn--glow", canGlow);
+    btn.classList.toggle("dlg-card-catalog-stage-btn--dim", !canGlow);
+    if (!canGlow) {
+      btn.disabled = true;
+      return;
+    }
+    btn.addEventListener("click", function () {
+      try {
+        dlg.close();
+      } catch (_) {
+        /* noop */
+      }
+      try {
+        act.onPlaceUnder(side);
       } catch (e) {
         console.error(e);
       }

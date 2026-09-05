@@ -3631,8 +3631,107 @@ export function mountSimulator(
       state.waitingRoom.push(placed);
       return false;
     }
+    placed._placedAsUnderMember = true;
     arr.splice(hostIdx, 0, placed);
     state.stage[col] = arr;
+    return true;
+  }
+
+  function boardArrayContainingInst(inst) {
+    if (!inst || inst.id == null) return null;
+    var id = String(inst.id);
+    function has(arr) {
+      return !!(
+        arr &&
+        arr.some(function (c) {
+          return c && String(c.id) === id;
+        })
+      );
+    }
+    if (has(state.hand)) return state.hand;
+    if (has(state.waitingRoom)) return state.waitingRoom;
+    if (has(state.deck)) return state.deck;
+    if (has(state.resolutionArea)) return state.resolutionArea;
+    if (has(state.previewScratch)) return state.previewScratch;
+    var cols = ["left", "center", "right"];
+    var ci;
+    for (ci = 0; ci < cols.length; ci++) {
+      if (has(state.stage[cols[ci]])) return state.stage[cols[ci]];
+      if (has(state.liveArea[cols[ci]])) return state.liveArea[cols[ci]];
+    }
+    return null;
+  }
+
+  function detachCardInstFromBoard(inst) {
+    var arr = boardArrayContainingInst(inst);
+    if (!arr) return false;
+    var id = String(inst.id);
+    var idx = arr.findIndex(function (c) {
+      return c && String(c.id) === id;
+    });
+    if (idx < 0) return false;
+    var fromStage = ["left", "center", "right"].some(function (col) {
+      return arr === state.stage[col];
+    });
+    arr.splice(idx, 1);
+    if (fromStage) {
+      try {
+        clearToujouEffectStateOnLeaveStage(inst);
+      } catch (_) {
+        /* noop */
+      }
+      try {
+        applyRule1053ExposedUnderMembers();
+      } catch (_) {
+        /* noop */
+      }
+    }
+    return true;
+  }
+
+  /**
+   * 手札／控え室／山札／他列などからメンバーを、面メンバーの下に置く（総合ルール 4.5.5）。
+   * @returns {boolean}
+   */
+  function placeMemberInstanceUnderStageHost(hostInst, placedInst) {
+    if (!hostInst || !placedInst || hostInst.id == null || placedInst.id == null) return false;
+    if (String(hostInst.id) === String(placedInst.id)) return false;
+    if (placedInst.type !== T_MEMBER) return false;
+    if (hostInst._soloOpponentProxy === true) return false;
+    var col = stageColumnKeyHostingMember(hostInst.id);
+    if (!col) return false;
+    var top = stageColumnTopMember(col);
+    if (!top || String(top.id) !== String(hostInst.id)) return false;
+    if (
+      getStackMembersBelowHost(hostInst).some(function (u) {
+        return u && String(u.id) === String(placedInst.id);
+      })
+    ) {
+      return false;
+    }
+    if (!boardArrayContainingInst(placedInst)) return false;
+    pushHistoryBefore("manual-member-under");
+    if (!detachCardInstFromBoard(placedInst)) return false;
+    var arr = state.stage[col] || [];
+    var hostIdx = -1;
+    for (var hi = 0; hi < arr.length; hi++) {
+      if (arr[hi] && String(arr[hi].id) === String(hostInst.id)) {
+        hostIdx = hi;
+        break;
+      }
+    }
+    if (hostIdx < 0) {
+      state.waitingRoom.push(placedInst);
+      return false;
+    }
+    placedInst._placedAsUnderMember = true;
+    arr.splice(hostIdx, 0, placedInst);
+    state.stage[col] = arr;
+    try {
+      syncJoujiPassiveEffectsAll();
+    } catch (_) {
+      /* noop */
+    }
     return true;
   }
 
@@ -11403,6 +11502,7 @@ export function mountSimulator(
     });
     if (hostIdx < 0) return false;
     var moved = state.waitingRoom.splice(wi, 1)[0];
+    moved._placedAsUnderMember = true;
     arr.splice(hostIdx, 0, moved);
     state.stage[col] = arr;
     return true;
@@ -37337,21 +37437,61 @@ export function mountSimulator(
     dlg.showModal();
   }
 
+  function catalogUnderTargetInfo(exceptInst) {
+    var glow = { left: false, center: false, right: false };
+    var labels = { left: "左サイド", center: "センター", right: "右サイド" };
+    ["left", "center", "right"].forEach(function (side) {
+      var top = stageColumnTopMember(side);
+      if (!top || top._soloOpponentProxy === true) return;
+      if (exceptInst && exceptInst.id != null && String(top.id) === String(exceptInst.id)) return;
+      glow[side] = true;
+      labels[side] = mergedCatalogCard(top).name || labels[side];
+    });
+    return { glow: glow, labels: labels };
+  }
+
   function openCardCatalogDetail(c) {
     var inHand = !!(c && state.hand.some(function (h) { return h && String(h.id) === String(c.id); }));
-    var memberInHand = inHand && c && c.type === T_MEMBER;
+    var memberInst = !!(c && c.type === T_MEMBER && c.id != null);
     var actions = null;
-    if (memberInHand) {
+    if (memberInst) {
+      var underInfo = catalogUnderTargetInfo(c);
+      var canUnder = underInfo.glow.left || underInfo.glow.center || underInfo.glow.right;
       actions = {
-        sideGlow: {
+        underGlow: underInfo.glow,
+        underLabels: underInfo.labels,
+      };
+      if (inHand) {
+        actions.sideGlow = {
           left: handMemberStageSideInfo(c, "left").canEnter,
           center: handMemberStageSideInfo(c, "center").canEnter,
           right: handMemberStageSideInfo(c, "right").canEnter,
-        },
-        onStage: function (side) {
+        };
+        actions.onStage = function (side) {
           placeHandMemberOnStageSide(c, side);
-        },
-      };
+        };
+      }
+      if (canUnder) {
+        actions.onPlaceUnder = function (side) {
+          var host = stageColumnTopMember(side);
+          if (!host) {
+            showToast("そのエリアにメンバーがいません");
+            return;
+          }
+          if (placeMemberInstanceUnderStageHost(host, c)) {
+            showToast(
+              (mergedCatalogCard(c).name || "メンバー") +
+                " を " +
+                (mergedCatalogCard(host).name || "メンバー") +
+                " の下に置きました",
+            );
+            render();
+          } else {
+            showToast("下に置けませんでした");
+          }
+        };
+      }
+      if (!actions.onStage && !actions.onPlaceUnder) actions = null;
     }
     openCardCatalogDialog(c, { playMode: true, handStageActions: actions });
     logReplay("card-catalog-detail-open");

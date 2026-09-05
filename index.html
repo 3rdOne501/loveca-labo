@@ -51,7 +51,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,700;1,9..40,500&family=M+PLUS+Rounded+1c:wght@500;700&family=Noto+Sans+JP:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=2026081917" />
+    <link rel="stylesheet" href="styles.css?v=2026090202" />
     <link rel="stylesheet" href="styles-perf.css?v=2026051910" />
   </head>
   <body>
@@ -312,6 +312,15 @@ python3 -m http.server 8080</pre>
           </button>
           <div class="search-panel-tools">
             <h2 class="panel-h2-plain">検索・絞り込み</h2>
+            <button
+              type="button"
+              class="btn primary search-panel-filters-open"
+              id="btn-open-deck-filters"
+              aria-haspopup="dialog"
+              aria-controls="dlg-deck-filters"
+            >
+              絞り込みを開く
+            </button>
             <div class="search-quick-tools">
               <button
                 type="button"
@@ -325,87 +334,6 @@ python3 -m http.server 8080</pre>
               <button type="button" class="btn sm secondary" id="btn-reset-filters">絞り込み全リセット</button>
             </div>
           </div>
-          <details class="search-panel-filters-fold" id="deck-search-panel-filters">
-            <summary class="search-panel-filters-fold__summary">詳細検索・絞り込み</summary>
-            <div class="search-panel-filters-fold__body">
-          <div class="field">
-            <span>一覧に出すカード種別</span>
-            <div class="filter-type-chk-row" id="filter-type-chk-row">
-              <label class="chk filter-type-chk"
-                ><input type="checkbox" id="filter-show-member" checked /> メンバー</label
-              >
-              <label class="chk filter-type-chk"
-                ><input type="checkbox" id="filter-show-live" checked /> ライブ</label
-              >
-            </div>
-          </div>
-          <label class="field">
-            <span>一覧の並べ替え</span>
-            <select id="catalog-sort-order" class="filter-card-kind-select" aria-label="カード一覧の並べ替え">
-              <option value="default">既定（DB順）</option>
-              <option value="fav-first">お気に入り優先</option>
-              <option value="name">名前（あいうえお）</option>
-              <option value="cost-asc">コストの低い順</option>
-              <option value="card-no">カード番号順</option>
-            </select>
-          </label>
-          <label class="chk filter-fav-only-row">
-            <input type="checkbox" id="filter-favorites-only" />
-            お気に入りのみ表示
-          </label>
-          <p class="hint search-hint-muted">サムネ左上の色でも区別しています（メンバー＝青系・ライブ＝ピンク系）。星はイラスト右下でお気に入り。</p>
-          <label class="field">
-            <span>商品</span>
-            <select id="filter-product"></select>
-          </label>
-          <label class="field">
-            <span>シリーズ</span>
-            <select id="filter-series"></select>
-          </label>
-          <label class="field">
-            <span>ユニット</span>
-            <select id="filter-unit"></select>
-          </label>
-          <div class="field">
-            <span>コスト</span>
-            <div id="filter-costs" class="cost-grid"></div>
-            <div class="cost-actions">
-              <button type="button" class="btn sm" id="cost-all-on">全選択</button>
-              <button type="button" class="btn sm" id="cost-all-off">全解除</button>
-            </div>
-          </div>
-          <div class="field">
-            <span>ブレードハート種別（色）</span>
-            <div id="filter-bh-slots" class="heart-bh-filter-strip">
-              <label class="chk bh-filter-chk"><input type="checkbox" data-bh-slot="1" /> 桃</label>
-              <label class="chk bh-filter-chk"><input type="checkbox" data-bh-slot="2" /> 赤</label>
-              <label class="chk bh-filter-chk"><input type="checkbox" data-bh-slot="3" /> 黄</label>
-              <label class="chk bh-filter-chk"><input type="checkbox" data-bh-slot="4" /> 緑</label>
-              <label class="chk bh-filter-chk"><input type="checkbox" data-bh-slot="5" /> 青</label>
-              <label class="chk bh-filter-chk"><input type="checkbox" data-bh-slot="6" /> 紫</label>
-              <label class="chk bh-filter-chk"><input type="checkbox" data-bh-slot="7" /> ALL</label>
-              <label class="chk bh-filter-chk"><input type="checkbox" data-bh-filter="non-bh" /> 非BH</label>
-              <label class="chk bh-filter-chk"><input type="checkbox" data-bh-filter="note-live" /> スコア</label>
-              <label class="chk bh-filter-chk"><input type="checkbox" data-bh-filter="draw-yell" /> ドロー</label>
-            </div>
-          </div>
-          <div class="field">
-            <span>ハート色（所持／必要）</span>
-            <p class="hint search-hint-muted" style="margin: 0 0 0.35rem">メンバーの base_heart またはライブの need_heart にその色が出るカード。</p>
-            <div id="filter-heart-slots" class="heart-bh-filter-strip">
-              <label class="chk bh-filter-chk"><input type="checkbox" data-heart-slot="1" /> 桃</label>
-              <label class="chk bh-filter-chk"><input type="checkbox" data-heart-slot="2" /> 赤</label>
-              <label class="chk bh-filter-chk"><input type="checkbox" data-heart-slot="3" /> 黄</label>
-              <label class="chk bh-filter-chk"><input type="checkbox" data-heart-slot="4" /> 緑</label>
-              <label class="chk bh-filter-chk"><input type="checkbox" data-heart-slot="5" /> 青</label>
-              <label class="chk bh-filter-chk"><input type="checkbox" data-heart-slot="6" /> 紫</label>
-            </div>
-            <div class="cost-actions" style="margin-top: 0.35rem">
-              <button type="button" class="btn sm secondary" id="btn-filter-bh-heart-clear">BH・ハート絞り込み解除</button>
-            </div>
-          </div>
-            </div>
-          </details>
         </aside>
 
         <section class="card-panel">
@@ -422,6 +350,15 @@ python3 -m http.server 8080</pre>
                 aria-label="カード名・能力で検索"
               />
             </label>
+            <button
+              type="button"
+              class="btn sm secondary card-panel-filters-btn"
+              id="btn-open-deck-filters-card"
+              aria-haspopup="dialog"
+              aria-controls="dlg-deck-filters"
+            >
+              絞り込み
+            </button>
             <div class="card-panel-mode-row">
               <button
                 type="button"
@@ -1830,7 +1767,7 @@ python3 -m http.server 8080</pre>
           <details open>
             <summary><strong>左：検索・絞り込み</strong></summary>
             <p>
-              複数の条件で一覧を絞り込めます。
+              複数の条件で一覧を絞り込めます。「絞り込みを開く」をタップすると、商品・シリーズ・ユニットなどを一覧で選べます。
             </p>
           </details>
           <details>
@@ -2384,6 +2321,98 @@ python3 -m http.server 8080</pre>
         <button type="button" class="btn secondary" id="dlg-pick-success-live-skip" hidden>置かない</button>
         <button type="button" class="btn secondary" id="dlg-pick-success-live-cancel">キャンセル</button>
         <button type="button" class="btn primary" id="dlg-pick-success-live-ok">解決する</button>
+      </div>
+    </dialog>
+
+    <dialog id="dlg-deck-filters" class="app-dialog dlg-deck-filters" aria-labelledby="dlg-deck-filters-title">
+      <div class="dlg-deck-filters__head">
+        <h2 id="dlg-deck-filters-title" class="app-dialog__title">検索・絞り込み</h2>
+        <button type="button" class="btn sm secondary" id="dlg-deck-filters-close">閉じる</button>
+      </div>
+      <div class="dlg-deck-filters__body">
+        <div class="field">
+          <span>一覧に出すカード種別</span>
+          <div class="filter-type-chk-row" id="filter-type-chk-row">
+            <label class="chk filter-type-chk"
+              ><input type="checkbox" id="filter-show-member" checked /> メンバー</label
+            >
+            <label class="chk filter-type-chk"
+              ><input type="checkbox" id="filter-show-live" checked /> ライブ</label
+            >
+          </div>
+        </div>
+        <label class="field">
+          <span>一覧の並べ替え</span>
+          <select id="catalog-sort-order" class="filter-card-kind-select" aria-label="カード一覧の並べ替え">
+            <option value="default">既定（DB順）</option>
+            <option value="fav-first">お気に入り優先</option>
+            <option value="name">名前（あいうえお）</option>
+            <option value="cost-asc">コストの低い順</option>
+            <option value="card-no">カード番号順</option>
+          </select>
+        </label>
+        <label class="chk filter-fav-only-row">
+          <input type="checkbox" id="filter-favorites-only" />
+          お気に入りのみ表示
+        </label>
+        <p class="hint search-hint-muted">サムネ左上の色でも区別しています（メンバー＝青系・ライブ＝ピンク系）。星はイラスト右下でお気に入り。</p>
+        <div class="field">
+          <span>商品</span>
+          <select id="filter-product" class="sr-only" aria-label="商品"></select>
+          <div id="filter-product-list" class="filter-choice-list" role="listbox" aria-label="商品"></div>
+        </div>
+        <div class="field">
+          <span>シリーズ</span>
+          <select id="filter-series" class="sr-only" aria-label="シリーズ"></select>
+          <div id="filter-series-list" class="filter-choice-list" role="listbox" aria-label="シリーズ"></div>
+        </div>
+        <div class="field">
+          <span>ユニット</span>
+          <select id="filter-unit" class="sr-only" aria-label="ユニット"></select>
+          <div id="filter-unit-list" class="filter-choice-list" role="listbox" aria-label="ユニット"></div>
+        </div>
+        <div class="field">
+          <span>コスト</span>
+          <div id="filter-costs" class="cost-grid"></div>
+          <div class="cost-actions">
+            <button type="button" class="btn sm" id="cost-all-on">全選択</button>
+            <button type="button" class="btn sm" id="cost-all-off">全解除</button>
+          </div>
+        </div>
+        <div class="field">
+          <span>ブレードハート種別（色）</span>
+          <div id="filter-bh-slots" class="heart-bh-filter-strip">
+            <label class="chk bh-filter-chk"><input type="checkbox" data-bh-slot="1" /> 桃</label>
+            <label class="chk bh-filter-chk"><input type="checkbox" data-bh-slot="2" /> 赤</label>
+            <label class="chk bh-filter-chk"><input type="checkbox" data-bh-slot="3" /> 黄</label>
+            <label class="chk bh-filter-chk"><input type="checkbox" data-bh-slot="4" /> 緑</label>
+            <label class="chk bh-filter-chk"><input type="checkbox" data-bh-slot="5" /> 青</label>
+            <label class="chk bh-filter-chk"><input type="checkbox" data-bh-slot="6" /> 紫</label>
+            <label class="chk bh-filter-chk"><input type="checkbox" data-bh-slot="7" /> ALL</label>
+            <label class="chk bh-filter-chk"><input type="checkbox" data-bh-filter="non-bh" /> 非BH</label>
+            <label class="chk bh-filter-chk"><input type="checkbox" data-bh-filter="note-live" /> スコア</label>
+            <label class="chk bh-filter-chk"><input type="checkbox" data-bh-filter="draw-yell" /> ドロー</label>
+          </div>
+        </div>
+        <div class="field">
+          <span>ハート色（所持／必要）</span>
+          <p class="hint search-hint-muted" style="margin: 0 0 0.35rem">メンバーの base_heart またはライブの need_heart にその色が出るカード。</p>
+          <div id="filter-heart-slots" class="heart-bh-filter-strip">
+            <label class="chk bh-filter-chk"><input type="checkbox" data-heart-slot="1" /> 桃</label>
+            <label class="chk bh-filter-chk"><input type="checkbox" data-heart-slot="2" /> 赤</label>
+            <label class="chk bh-filter-chk"><input type="checkbox" data-heart-slot="3" /> 黄</label>
+            <label class="chk bh-filter-chk"><input type="checkbox" data-heart-slot="4" /> 緑</label>
+            <label class="chk bh-filter-chk"><input type="checkbox" data-heart-slot="5" /> 青</label>
+            <label class="chk bh-filter-chk"><input type="checkbox" data-heart-slot="6" /> 紫</label>
+          </div>
+          <div class="cost-actions" style="margin-top: 0.35rem">
+            <button type="button" class="btn sm secondary" id="btn-filter-bh-heart-clear">BH・ハート絞り込み解除</button>
+          </div>
+        </div>
+      </div>
+      <div class="dlg-deck-filters__foot">
+        <button type="button" class="btn sm secondary" id="dlg-deck-filters-reset">絞り込み全リセット</button>
+        <button type="button" class="btn primary" id="dlg-deck-filters-done">閉じる</button>
       </div>
     </dialog>
 
