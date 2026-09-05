@@ -28,7 +28,10 @@
         <integer>10</integer>
     </dict>
 
-    <!-- スリープ等で実行時刻を逃したら復帰後に走らせる -->
+    <!--
+      RunAtLoad=false: ログイン／plist 読み込み時には走らせない（定時のみ）。
+      StartCalendarInterval はマシン起床後に取りこぼし分を起動することがある。
+    -->
     <key>RunAtLoad</key>
     <false/>
 
