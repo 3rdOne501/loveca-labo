@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Loveca Labo" />
-    <meta name="loveca-build" content="2026081704" />
+    <meta name="loveca-build" content="2026090204" />
     <title>Loveca Labo</title>
     <!-- 万一以前のバージョンの Service Worker が登録された端末で取り残しが起きた場合に備え、
          先頭で SW 登録を一括解除する。SW 自体は本サイトでは使っていない。 -->
@@ -51,7 +51,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,700;1,9..40,500&family=M+PLUS+Rounded+1c:wght@500;700&family=Noto+Sans+JP:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=2026090202" />
+    <link rel="stylesheet" href="styles.css?v=2026090204" />
     <link rel="stylesheet" href="styles-perf.css?v=2026051910" />
   </head>
   <body>
@@ -309,6 +309,14 @@ python3 -m http.server 8080</pre>
             title="みんなで最弱カードを挙げて投票する会議室"
           >
             最弱カード会議
+          </button>
+          <button
+            type="button"
+            class="btn sm secondary cloud-auth-bingo-btn"
+            id="btn-tournament"
+            title="大会の使用率選抜（主催者用）"
+          >
+            トーナメント
           </button>
           <div class="search-panel-tools">
             <h2 class="panel-h2-plain">検索・絞り込み</h2>
@@ -778,6 +786,105 @@ python3 -m http.server 8080</pre>
         </section>
       </div>
     </div>
+
+    <div id="view-tournament" class="view" hidden>
+      <header class="tourney-bar">
+        <div class="tourney-bar__row">
+          <button type="button" class="btn primary" id="btn-tournament-back">デッキ編集に戻る</button>
+          <h1 class="tourney-bar__title">トーナメント / 使用率選抜</h1>
+        </div>
+      </header>
+      <div class="tourney-body">
+        <p class="hint tourney-lead">
+          主催者用です。公式は選手にポイントを公開しません。となめるの参加者は公開 API が無いので、戦績とレシピは貼り付けか手入力です。
+          デッキコードは DECK LOG の共有コードとして記録し、レシピ本文（<code>4 x PL!…</code>）から枚数を読みます。
+        </p>
+        <section class="tourney-panel" aria-labelledby="tourney-settings-h">
+          <h2 id="tourney-settings-h">大会設定</h2>
+          <div class="tourney-settings-grid">
+            <label class="field"><span>大会名</span><input type="text" id="input-tourney-title" class="input" maxlength="80" /></label>
+            <label class="field"><span>となめる URL</span><input type="url" id="input-tourney-tonamel" class="input" placeholder="https://tonamel.com/competition/…" spellcheck="false" /></label>
+            <label class="field"><span>開催日</span><input type="text" id="input-tourney-date" class="input" maxlength="20" /></label>
+            <label class="field"><span>定員</span><input type="number" id="input-tourney-capacity" class="input" min="0" /></label>
+            <label class="field"><span>スイス最大</span><input type="number" id="input-tourney-swiss" class="input" min="0" /></label>
+            <label class="field"><span>決勝枠</span><input type="number" id="input-tourney-finals" class="input" min="1" /></label>
+            <label class="field"><span>集計（N勝以上）</span><input type="number" id="input-tourney-pool-min" class="input" min="0" /></label>
+          </div>
+          <div class="tourney-actions">
+            <button type="button" class="btn sm secondary" id="btn-tourney-preset">小星CSの枠を入れる</button>
+          </div>
+        </section>
+        <div id="tourney-summary" class="tourney-summary" aria-live="polite"></div>
+        <div class="tourney-cols">
+          <section class="tourney-panel tourney-panel--grow" aria-labelledby="tourney-players-h">
+            <div class="tourney-panel__head">
+              <h2 id="tourney-players-h">選手</h2>
+              <div class="tourney-actions">
+                <button type="button" class="btn sm primary" id="btn-tourney-add">選手を追加</button>
+                <button type="button" class="btn sm secondary" id="btn-tourney-import-open">貼り付け</button>
+                <button type="button" class="btn sm secondary" id="btn-tourney-sample">動作確認用12人</button>
+                <button type="button" class="btn sm secondary" id="btn-tourney-copy">結果をコピー</button>
+                <button type="button" class="btn sm danger" id="btn-tourney-clear">選手をクリア</button>
+              </div>
+            </div>
+            <div class="tourney-table-wrap">
+              <table class="tourney-table tourney-table--players">
+                <thead>
+                  <tr>
+                    <th>名前</th>
+                    <th>勝</th>
+                    <th>負</th>
+                    <th>リタイア</th>
+                    <th>デッキコード</th>
+                    <th>レシピ</th>
+                    <th>P</th>
+                    <th>結果</th>
+                  </tr>
+                </thead>
+                <tbody id="tourney-players-body"></tbody>
+              </table>
+            </div>
+          </section>
+          <section class="tourney-panel" aria-labelledby="tourney-advance-h">
+            <h2 id="tourney-advance-h">進出</h2>
+            <div id="tourney-advance"></div>
+          </section>
+        </div>
+        <div class="tourney-cols">
+          <section class="tourney-panel tourney-panel--grow" aria-labelledby="tourney-detail-h">
+            <h2 id="tourney-detail-h">選手のレシピ・内訳</h2>
+            <div id="tourney-player-detail"></div>
+          </section>
+          <section class="tourney-panel" aria-labelledby="tourney-cards-h">
+            <h2 id="tourney-cards-h">カードポイント（採用合計）</h2>
+            <p class="hint">2勝以上のメインデッキを合算。レア違いは同一カードです。1枚あたりのポイント＝この列。</p>
+            <div class="tourney-table-wrap">
+              <table class="tourney-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>カード</th>
+                    <th>P</th>
+                  </tr>
+                </thead>
+                <tbody id="tourney-cards-body"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <dialog id="dlg-tourney-import" class="app-dialog dlg-tourney-import" aria-labelledby="dlg-tourney-import-title">
+      <h2 id="dlg-tourney-import-title">選手の貼り付け</h2>
+      <p class="hint">TSV / CSV（名前, 勝, 負, リタイア, デッキコード, レシピ）、JSON、または <code># 名前 4-1</code> のブロック。</p>
+      <textarea id="tourney-import-text" class="input tourney-import-text" rows="14" spellcheck="false" placeholder="名前	勝	負	リタイア	デッキコード&#10;山田	4	1		4ASG5"></textarea>
+      <div class="app-dialog__actions">
+        <button type="button" class="btn secondary" id="btn-tourney-import-close">閉じる</button>
+        <button type="button" class="btn secondary" id="btn-tourney-import-add">追加する</button>
+        <button type="button" class="btn primary" id="btn-tourney-import-replace">置き換える</button>
+      </div>
+    </dialog>
 
     <div id="view-game" class="view" hidden>
       <header class="game-bar">
@@ -2441,7 +2548,7 @@ python3 -m http.server 8080</pre>
     <script>
       (function () {
         var buildMeta = document.querySelector('meta[name="loveca-build"]');
-        var build = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "2026081704";
+        var build = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "2026090204";
         var moduleNames = [
           "abilityEffects.js",
           "bladeHeart.js",
@@ -2468,7 +2575,9 @@ python3 -m http.server 8080</pre>
           "sampleDeckRecipes.js",
           "simulator.js",
           "testCardLog.js",
+          "tournament.js",
           "ui.js",
+          "usageRateSelection.js",
           "versusBoardSync.js",
           "versusMatch.js",
           "versusMode.js",
@@ -2492,7 +2601,7 @@ python3 -m http.server 8080</pre>
     </script>
     <script type="module">
       var buildMeta = document.querySelector('meta[name="loveca-build"]');
-      var build = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "2026081704";
+      var build = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "2026090204";
       try {
         await import("./js/main.js?v=" + build);
       } catch (err) {

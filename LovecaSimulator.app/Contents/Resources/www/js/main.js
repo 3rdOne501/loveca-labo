@@ -776,6 +776,30 @@ function wireWeakestConferenceButton() {
   });
 }
 
+function loadTournamentModule() {
+  return import("./tournament.js?v=" + APP_MODULE_CACHE_BUST);
+}
+
+function wireTournamentButton() {
+  var btn = document.getElementById("btn-tournament");
+  if (!btn || btn.dataset.wired === "1") return;
+  btn.dataset.wired = "1";
+  btn.addEventListener("click", function () {
+    if (!document.getElementById("view-tournament")) {
+      showToast("トーナメント画面を読み込めません。ページを再読込（Cmd+Shift+R）してください。");
+      return;
+    }
+    loadTournamentModule()
+      .then(function (m) {
+        if (m && typeof m.showTournamentView === "function") m.showTournamentView();
+      })
+      .catch(function (err) {
+        console.warn("[tournament] open failed:", err);
+        showToast("トーナメント画面を開けませんでした");
+      });
+  });
+}
+
 function startApp(viewDeck, viewGame, statusEl) {
   viewDeckRef = viewDeck;
   viewGameRef = viewGame;
@@ -910,12 +934,20 @@ function startApp(viewDeck, viewGame, statusEl) {
     }
     wireBingoDerbyButton();
     wireWeakestConferenceButton();
+    wireTournamentButton();
     /* 招待リンク（#weakest=CODE）で来たときに会議画面を出せるよう、初期ビュー確定後に呼ぶ */
     try {
       initWeakestConference();
     } catch (err) {
       console.warn("[weakest] init failed:", err);
     }
+    import("./tournament.js?v=" + APP_MODULE_CACHE_BUST)
+      .then(function (m) {
+        if (m && typeof m.initTournament === "function") m.initTournament();
+      })
+      .catch(function (err) {
+        console.warn("[tournament] init failed:", err);
+      });
     resumeSessionsAfterBoot(viewDeck, viewGame);
   } else {
     location.reload();
