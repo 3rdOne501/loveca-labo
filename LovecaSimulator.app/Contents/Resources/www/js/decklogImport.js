@@ -59,6 +59,47 @@ export function parseDeckTextRecipe(text, catalog) {
   return { deckMap: out, warns };
 }
 
+/**
+ * 貼り付けが HTML（DECK LOG のページコピー）でも、`4 x PL!…` 行を拾う。
+ * @param {string} text
+ */
+export function extractDeckRecipeLines(text) {
+  const raw = String(text || "");
+  if (!raw.trim()) return "";
+  const plain = raw
+    .replace(/<script[\s\S]*?<\/script>/gi, "\n")
+    .replace(/<style[\s\S]*?<\/style>/gi, "\n")
+    .replace(/<[^>]+>/g, "\n")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#(\d+);/g, function (_, n) {
+      return String.fromCharCode(Number(n));
+    });
+  /** @type {string[]} */
+  const lines = [];
+  const seen = new Set();
+  const re = /(\d+)\s*[x×]\s*(PL[!！][^\s<,;]+)/gi;
+  let m;
+  while ((m = re.exec(plain))) {
+    const line = m[1] + " x " + m[2].replace(/[),.;]+$/, "");
+    if (seen.has(line)) continue;
+    seen.add(line);
+    lines.push(line);
+  }
+  if (lines.length) return lines.join("\n");
+  const already = parseDeckTextRecipe(plain, {});
+  if (Object.keys(already.deckMap).length) {
+    return Object.entries(already.deckMap)
+      .map(function (e) {
+        return e[1] + " x " + e[0];
+      })
+      .join("\n");
+  }
+  return "";
+}
+
 function fuzzyResolveCardNo(catalog, raw) {
   if (!raw) return "";
   let s = normalizeDecklogCardNumberKey(raw).replace(/\s+/g, "");

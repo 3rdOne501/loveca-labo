@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Loveca Labo" />
-    <meta name="loveca-build" content="2026090204" />
+    <meta name="loveca-build" content="2026092124" />
     <title>Loveca Labo</title>
     <!-- 万一以前のバージョンの Service Worker が登録された端末で取り残しが起きた場合に備え、
          先頭で SW 登録を一括解除する。SW 自体は本サイトでは使っていない。 -->
@@ -48,10 +48,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,700;1,9..40,500&family=M+PLUS+Rounded+1c:wght@500;700&family=Noto+Sans+JP:wght@400;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,700;1,9..40,500&family=M+PLUS+Rounded+1c:wght@500;700;800&family=Noto+Sans+JP:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=2026090204" />
+    <link rel="stylesheet" href="styles.css?v=2026092124" />
     <link rel="stylesheet" href="styles-perf.css?v=2026051910" />
   </head>
   <body>
@@ -792,39 +792,136 @@ python3 -m http.server 8080</pre>
         <div class="tourney-bar__row">
           <button type="button" class="btn primary" id="btn-tournament-back">デッキ編集に戻る</button>
           <h1 class="tourney-bar__title">トーナメント / 使用率選抜</h1>
+          <button type="button" class="btn sm secondary" id="btn-tourney-guide">使い方</button>
+        </div>
+        <div class="tourney-events-bar" aria-label="大会の切り替え">
+          <label class="field tourney-event-field">
+            <span>大会</span>
+            <select id="tourney-event-select" class="input" aria-label="保存した大会"></select>
+          </label>
+          <button type="button" class="btn sm secondary" id="btn-tourney-event-new">空の大会</button>
+          <button type="button" class="btn sm secondary" id="btn-tourney-event-dup">この大会を複製</button>
+          <button type="button" class="btn sm secondary" id="btn-tourney-undo" title="直前の選手操作を取り消す（⌘Z）">取り消す</button>
+          <button type="button" class="btn sm secondary" id="btn-tourney-export">大会JSON</button>
+          <button type="button" class="btn sm secondary" id="btn-tourney-import-json">JSON読込</button>
+          <input type="file" id="input-tourney-json" accept="application/json,.json" hidden />
+          <button type="button" class="btn sm secondary" id="btn-tourney-export-results">結果CSV</button>
         </div>
       </header>
       <div class="tourney-body">
         <p class="hint tourney-lead">
-          主催者用です。公式は選手にポイントを公開しません。となめるの参加者は公開 API が無いので、戦績とレシピは貼り付けか手入力です。
-          デッキコードは DECK LOG の共有コードとして記録し、レシピ本文（<code>4 x PL!…</code>）から枚数を読みます。
+          運営向け。選手を貼る → 予選抜けと全勝を確認 → 進出者を出す、の順です。使用率ポイントは
+          <strong>指定した勝数範囲</strong>（既定は2勝以上）のメインデッキから集計します。
         </p>
-        <section class="tourney-panel" aria-labelledby="tourney-settings-h">
-          <h2 id="tourney-settings-h">大会設定</h2>
+        <section class="tourney-panel tourney-ops-panel" aria-labelledby="tourney-paste-h">
+          <h2 id="tourney-paste-h">1. 選手を貼る</h2>
+          <p class="hint">選手CSVは置き換え、勝敗CSVは名前で当ててデッキは残します。⌘/Ctrl+Enter で置き換え取り込み。名簿の増減は「名簿を更新」（デッキは残す）。</p>
+          <div id="tourney-roster-flags" class="tourney-roster-flags" aria-label="名簿に入れるステータス"></div>
+          <label class="field tourney-col-field">
+            <span>となめる任意項目のデッキコード列</span>
+            <select id="tourney-col-deckcode" class="input" aria-label="デッキコード列"></select>
+          </label>
+          <textarea id="tourney-quick-paste" class="input tourney-import-text" rows="8" spellcheck="false" placeholder="順位,エントリー名,勝,負&#10;1,佐藤,5,0&#10;2,山田,4,1"></textarea>
+          <div class="tourney-actions">
+            <button type="button" class="btn primary" id="btn-tourney-quick-import">貼って置き換える</button>
+            <button type="button" class="btn sm secondary" id="btn-tourney-roster-merge">名簿を更新</button>
+            <button type="button" class="btn sm secondary" id="btn-tourney-quick-add">末尾に追加</button>
+            <button type="button" class="btn sm secondary" id="btn-tourney-apply-records">勝敗を当てる</button>
+            <button type="button" class="btn sm secondary" id="btn-tourney-csv">選手CSV</button>
+            <input type="file" id="input-tourney-csv" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain" hidden />
+            <button type="button" class="btn sm secondary" id="btn-tourney-records-csv">勝敗CSV</button>
+            <input type="file" id="input-tourney-records-csv" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain" hidden />
+            <button type="button" class="btn sm secondary" id="btn-tourney-import-open">別窓で貼る</button>
+            <button type="button" class="btn sm secondary" id="btn-tourney-sample">動作確認用12人</button>
+            <button type="button" class="btn sm danger" id="btn-tourney-clear">選手をクリア</button>
+          </div>
+          <div id="tourney-ops-notes" class="tourney-ops-notes" aria-live="polite"></div>
+          <details class="tourney-more tourney-bulk-decks">
+            <summary>デッキをまとめて当てる</summary>
+            <p class="hint">
+              <code># 名前</code> のあとに <code>4 x PL!…</code>。DECK LOG のページをコピーした HTML からもカード行を拾います（ログインはしません）。
+              保存デッキは選手名とプリセット名が一致する人だけ、空のレシピに当てます。
+            </p>
+            <textarea id="tourney-bulk-decks" class="input tourney-import-text" rows="8" spellcheck="false" placeholder="# 佐藤&#10;4 x PL!S-bp5-111-R&#10;4 x PL!SP-bp5-006-R"></textarea>
+            <div class="tourney-actions">
+              <button type="button" class="btn sm primary" id="btn-tourney-bulk-decks">一括で当てる</button>
+              <button type="button" class="btn sm secondary" id="btn-tourney-saved-decks">保存デッキを名前で当てる</button>
+            </div>
+          </details>
+        </section>
+        <section class="tourney-panel" aria-labelledby="tourney-range-h">
+          <h2 id="tourney-range-h">2. 集計する勝数（0〜4勝＋以上）</h2>
+          <p class="hint">カード使用率の母数です。公式は2勝以上。0〜4勝だけ見る切替もここです。</p>
+          <div id="tourney-pool-range" class="tourney-pool-range"></div>
+        </section>
+        <section class="tourney-panel tourney-output-panel" aria-labelledby="tourney-output-h">
+          <h2 id="tourney-output-h">3. 予選上がりを出す</h2>
           <div class="tourney-settings-grid">
+            <label class="field"><span>予選抜け人数</span><input type="number" id="input-tourney-advance-count" class="input" min="1" /></label>
+            <label class="field"><span>全勝者の数</span><input type="number" id="input-tourney-undefeated-count" class="input" min="0" /></label>
+            <label class="field"><span>見出し</span><input type="text" id="input-tourney-board-headline" class="input" maxlength="40" value="決勝ラウンド進出者" /></label>
+          </div>
+          <div class="tourney-actions">
+            <button type="button" class="btn sm secondary" id="btn-tourney-fill-counts">計算値を入れる</button>
+            <button type="button" class="btn sm secondary" id="btn-tourney-lottery">抽選を振る</button>
+            <button type="button" class="btn primary" id="btn-tourney-show-board">進出者を出す</button>
+            <button type="button" class="btn sm secondary" id="btn-tourney-copy">進出者名をコピー</button>
+          </div>
+          <p id="tourney-output-meta" class="tourney-output-meta"></p>
+          <div id="tourney-output-names" class="tourney-output-names" aria-label="予選上がりしたプレイヤー"></div>
+        </section>
+        <section class="tourney-panel tourney-output-panel" aria-labelledby="tourney-usage-h">
+          <h2 id="tourney-usage-h">4. 使用率ポイント内訳を出す</h2>
+          <p class="hint">1〜30位は代表レアの画像付き。31〜50位は型番とキャラ名だけです。メンバー／ライブ切替は下のカード表と同じ。選手のデッキ得点は出しません。</p>
+          <div class="tourney-settings-grid">
+            <label class="field"><span>何位まで</span><input type="number" id="input-tourney-usage-count" class="input" min="1" max="80" value="50" /></label>
+            <label class="field"><span>見出し</span><input type="text" id="input-tourney-usage-headline" class="input" maxlength="40" value="使用率ポイント 1〜50位" /></label>
+          </div>
+          <div class="tourney-actions">
+            <button type="button" class="btn primary" id="btn-tourney-show-usage">内訳を出す</button>
+            <button type="button" class="btn sm secondary" id="btn-tourney-copy-usage">内訳をコピー</button>
+          </div>
+          <p id="tourney-usage-meta" class="tourney-output-meta"></p>
+          <div id="tourney-usage-preview" class="tourney-usage-preview" aria-label="使用率ポイント内訳"></div>
+        </section>
+        <div id="tourney-summary" class="tourney-summary" aria-live="polite"></div>
+        <details class="tourney-more">
+          <summary>大会名など</summary>
+          <div class="tourney-settings-grid" style="margin-top:0.75rem">
             <label class="field"><span>大会名</span><input type="text" id="input-tourney-title" class="input" maxlength="80" /></label>
             <label class="field"><span>となめる URL</span><input type="url" id="input-tourney-tonamel" class="input" placeholder="https://tonamel.com/competition/…" spellcheck="false" /></label>
             <label class="field"><span>開催日</span><input type="text" id="input-tourney-date" class="input" maxlength="20" /></label>
             <label class="field"><span>定員</span><input type="number" id="input-tourney-capacity" class="input" min="0" /></label>
             <label class="field"><span>スイス最大</span><input type="number" id="input-tourney-swiss" class="input" min="0" /></label>
             <label class="field"><span>決勝枠</span><input type="number" id="input-tourney-finals" class="input" min="1" /></label>
-            <label class="field"><span>集計（N勝以上）</span><input type="number" id="input-tourney-pool-min" class="input" min="0" /></label>
           </div>
           <div class="tourney-actions">
             <button type="button" class="btn sm secondary" id="btn-tourney-preset">小星CSの枠を入れる</button>
           </div>
-        </section>
-        <div id="tourney-summary" class="tourney-summary" aria-live="polite"></div>
+        </details>
         <div class="tourney-cols">
           <section class="tourney-panel tourney-panel--grow" aria-labelledby="tourney-players-h">
             <div class="tourney-panel__head">
               <h2 id="tourney-players-h">選手</h2>
+              <label class="tourney-filter-toggle">
+                <input type="checkbox" id="input-tourney-filter-pool" />
+                一覧も集計範囲で絞る
+              </label>
+              <label class="field tourney-search-field">
+                <span class="visually-hidden">選手を検索</span>
+                <input type="search" id="input-tourney-player-q" class="input" placeholder="名前で検索" autocomplete="off" />
+              </label>
+              <label class="field tourney-sort-field">
+                <span class="visually-hidden">並べ替え</span>
+                <select id="select-tourney-player-sort" class="input" aria-label="選手の並べ替え">
+                  <option value="default">並び：取り込み順</option>
+                  <option value="wins">勝数</option>
+                  <option value="points">ポイント（低い順）</option>
+                  <option value="missing">レシピ未入力を先に</option>
+                </select>
+              </label>
               <div class="tourney-actions">
                 <button type="button" class="btn sm primary" id="btn-tourney-add">選手を追加</button>
-                <button type="button" class="btn sm secondary" id="btn-tourney-import-open">貼り付け</button>
-                <button type="button" class="btn sm secondary" id="btn-tourney-sample">動作確認用12人</button>
-                <button type="button" class="btn sm secondary" id="btn-tourney-copy">結果をコピー</button>
-                <button type="button" class="btn sm danger" id="btn-tourney-clear">選手をクリア</button>
               </div>
             </div>
             <div class="tourney-table-wrap">
@@ -834,9 +931,10 @@ python3 -m http.server 8080</pre>
                     <th>名前</th>
                     <th>勝</th>
                     <th>負</th>
+                    <th>分</th>
                     <th>リタイア</th>
                     <th>デッキコード</th>
-                    <th>レシピ</th>
+                    <th>デッキ</th>
                     <th>P</th>
                     <th>結果</th>
                   </tr>
@@ -852,12 +950,13 @@ python3 -m http.server 8080</pre>
         </div>
         <div class="tourney-cols">
           <section class="tourney-panel tourney-panel--grow" aria-labelledby="tourney-detail-h">
-            <h2 id="tourney-detail-h">選手のレシピ・内訳</h2>
+            <h2 id="tourney-detail-h">選手のデッキ</h2>
             <div id="tourney-player-detail"></div>
           </section>
           <section class="tourney-panel" aria-labelledby="tourney-cards-h">
             <h2 id="tourney-cards-h">カードポイント（採用合計）</h2>
-            <p class="hint">2勝以上のメインデッキを合算。レア違いは同一カードです。1枚あたりのポイント＝この列。</p>
+            <p class="hint" id="tourney-cards-hint">2勝以上のメインデッキを合算。レア違いは同一カードです。1枚あたりのポイント＝この列。</p>
+            <div id="tourney-card-kind" class="tourney-card-kind" aria-label="カード種別"></div>
             <div class="tourney-table-wrap">
               <table class="tourney-table">
                 <thead>
@@ -875,15 +974,174 @@ python3 -m http.server 8080</pre>
       </div>
     </div>
 
+    <div id="tourney-board" class="tourney-board" hidden role="dialog" aria-modal="true" aria-labelledby="tourney-board-headline">
+      <div class="tourney-board-chrome">
+        <button type="button" class="btn sm secondary" id="btn-tourney-board-fs">全画面</button>
+        <button type="button" class="btn sm primary" id="btn-tourney-board-close">閉じる</button>
+      </div>
+      <div class="tourney-board-inner">
+        <p class="tourney-board-event" id="tourney-board-event"></p>
+        <h2 class="tourney-board-headline" id="tourney-board-headline">決勝ラウンド進出者</h2>
+        <div class="tourney-board-names" id="tourney-board-names"></div>
+      </div>
+    </div>
+
+    <div id="tourney-usage-board" class="tourney-board tourney-usage-board" hidden role="dialog" aria-modal="true" aria-labelledby="tourney-usage-board-headline">
+      <div class="tourney-board-chrome">
+        <button type="button" class="btn sm secondary" id="btn-tourney-usage-board-fs">全画面</button>
+        <button type="button" class="btn sm primary" id="btn-tourney-usage-board-close">閉じる</button>
+      </div>
+      <div class="tourney-board-inner tourney-usage-board-inner">
+        <p class="tourney-board-event" id="tourney-usage-board-event"></p>
+        <h2 class="tourney-board-headline" id="tourney-usage-board-headline">使用率ポイント 1〜50位</h2>
+        <p class="tourney-usage-board-meta" id="tourney-usage-board-meta"></p>
+        <ol class="tourney-usage-board-list tourney-usage-board-list--art" id="tourney-usage-board-list"></ol>
+        <p class="tourney-usage-board-subhead" id="tourney-usage-board-subhead" hidden>31〜50位</p>
+        <ol class="tourney-usage-board-list tourney-usage-board-list--text" id="tourney-usage-board-list-text" hidden></ol>
+      </div>
+    </div>
+
+    <div id="tourney-deck-view" class="tourney-deck-view" hidden role="dialog" aria-modal="true" aria-labelledby="tourney-deck-view-head">
+      <div class="tourney-deck-view-panel">
+        <div class="tourney-deck-view-chrome">
+          <button type="button" class="btn sm primary" id="btn-tourney-deck-view-close">閉じる</button>
+        </div>
+        <header id="tourney-deck-view-head" class="tourney-deck-view-head"></header>
+        <p class="hint">母数を切り替えると、このデッキのポイントだけが変わります。選抜の集計範囲は別です。</p>
+        <div id="tourney-deck-view-lines"></div>
+        <p id="tourney-deck-view-now" class="tourney-deck-line-now"></p>
+        <div id="tourney-deck-view-list"></div>
+      </div>
+    </div>
+
     <dialog id="dlg-tourney-import" class="app-dialog dlg-tourney-import" aria-labelledby="dlg-tourney-import-title">
       <h2 id="dlg-tourney-import-title">選手の貼り付け</h2>
-      <p class="hint">TSV / CSV（名前, 勝, 負, リタイア, デッキコード, レシピ）、JSON、または <code># 名前 4-1</code> のブロック。</p>
+      <p class="hint">選手CSVは置き換え。勝敗CSV（順位,エントリー名,勝,負）は「勝敗を当てる」でデッキを残したまま更新します。</p>
       <textarea id="tourney-import-text" class="input tourney-import-text" rows="14" spellcheck="false" placeholder="名前	勝	負	リタイア	デッキコード&#10;山田	4	1		4ASG5"></textarea>
       <div class="app-dialog__actions">
         <button type="button" class="btn secondary" id="btn-tourney-import-close">閉じる</button>
+        <button type="button" class="btn secondary" id="btn-tourney-import-records">勝敗を当てる</button>
+        <button type="button" class="btn secondary" id="btn-tourney-import-merge">名簿を更新</button>
         <button type="button" class="btn secondary" id="btn-tourney-import-add">追加する</button>
         <button type="button" class="btn primary" id="btn-tourney-import-replace">置き換える</button>
       </div>
+    </dialog>
+
+    <dialog id="dlg-tourney-guide" class="app-dialog dlg-tutorial dlg-tourney-guide" aria-labelledby="dlg-tourney-guide-title">
+      <h2 id="dlg-tourney-guide-title">使用率選抜の使い方</h2>
+      <p class="muted" style="margin-top: 0">
+        主催者用です。公式は選手にポイントを公開しません。となめるから選手を自動取得はできません。CSV か貼り付けです。
+      </p>
+      <div class="tutorial-dialog-body">
+        <section class="tutorial-section">
+          <h3>当日の順番</h3>
+          <ol>
+            <li>受付前〜スイス開始前：となめるの<strong>選手CSV</strong>を取り込む。必要ならデッキを手入れする。</li>
+            <li>予選（スイス）進行中：勝敗はまだ当てない。デッキ入力を進めてよい。</li>
+            <li>5回戦が全部ついたら：成績表の<strong>勝敗CSV</strong>を当てる（デッキは残る）。</li>
+            <li>集計範囲を確認（既定は2勝以上）。予選抜け人数と全勝者の数を見て<strong>進出者を出す</strong>。</li>
+          </ol>
+        </section>
+        <section class="tutorial-section">
+          <h3>CSV は2種類。ボタンを混ぜない</h3>
+          <p>
+            となめるの「参加者 → CSVダウンロード」（ファイル名が <code>EntryInfo_…</code>）は<strong>名簿</strong>です。エントリー名と、エントリー項目に書いた内容だけです。<strong>5回戦が終わっても勝敗は入りません。</strong>
+          </p>
+          <p>
+            勝敗は対戦表・成績表側です。順位と勝・負の表を CSV にするか、画面からコピーして貼ります。
+          </p>
+          <table class="tourney-table tourney-guide-table">
+            <thead>
+              <tr><th>用途</th><th>押すボタン</th><th>中身</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>名簿を入れる</td>
+                <td><strong>選手CSV</strong> または 貼って置き換える</td>
+                <td>名前が入れ替わる。デッキも消える（確認あり）</td>
+              </tr>
+              <tr>
+                <td>名簿の増減（デッキは残す）</td>
+                <td><strong>名簿を更新</strong></td>
+                <td>同じ名前のデッキは残す。CSVにいない人は外す</td>
+              </tr>
+              <tr>
+                <td>5回戦後の勝敗</td>
+                <td><strong>勝敗CSV</strong> または 勝敗を当てる</td>
+                <td>名前で突合。デッキは残る。いない人は追加</td>
+              </tr>
+            </tbody>
+          </table>
+          <p>勝敗だけなのに「貼って置き換える」を押すと、手入れしたデッキが消えます。</p>
+        </section>
+        <section class="tutorial-section">
+          <h3>読める列</h3>
+          <details open>
+            <summary><strong>選手CSV（名簿）</strong></summary>
+            <p>
+              <code>エントリー名</code> / <code>名前</code> が選手名になります。任意で <code>デッキコード</code>、<code>レシピ</code>。勝敗列が無ければ全員 0-0 です。
+            </p>
+            <p>
+              列名が <code>ステータス</code> / <code>エントリー状態</code> でなくても、セルに <strong>エントリーキャンセル</strong> と書いてあれば入れません。キャンセルとキャンセル待ちは常に除外です。<strong>未払い</strong>と<strong>エントリー済み</strong>は画面上の「反映する / しない」で切り替えます。既定は未払いを入れない・エントリー済みを入れる。出場済みは常に入れます。列が無い CSV は従来どおり全員です。
+            </p>
+            <p class="muted">当日現金なら未払いを「反映する」にしてから選手CSVを取り込んでください。取り込んだあとに切替えても、最後のCSVをもう一度当てます。</p>
+          </details>
+          <details open>
+            <summary><strong>勝敗CSV（成績）</strong></summary>
+            <p>どれかあれば読めます。</p>
+            <ul>
+              <li><code>順位,エントリー名,勝,負</code>（任意で <code>分</code>）</li>
+              <li><code>名前,戦績</code>（<code>4-1</code> や <code>4勝1敗</code>）</li>
+              <li><code>エントリー名,試合数,勝数</code>（負 = 試合数 − 勝数）</li>
+            </ul>
+            <p class="muted">勝ち点（3点×勝数）の列だけでは勝ち数に使いません。勝・負か戦績を入れてください。名前の空白は無視して突合します（「山 田」と「山田」は同一）。</p>
+          </details>
+        </section>
+        <section class="tutorial-section">
+          <h3>デッキ</h3>
+          <p>
+            選手表の<strong>デッキ</strong>（枚数）をクリックすると一覧が出ます。レシピは <code>4 x PL!…</code> を貼って反映。DECK LOG のページをコピーした HTML からもカード行を拾います（API は叩きません）。
+          </p>
+          <p>
+            「デッキをまとめて当てる」に <code># 名前</code> ブロックを貼ると、名簿の同名に一括で入ります。保存デッキはプリセット名＝選手名のときだけ空レシピに当てます。
+          </p>
+          <p>
+            一覧の上で<strong>全デッキ / 1勝〜 / 2勝〜 / 3勝〜 / 4勝〜</strong>を切り替えると、そのデッキのポイントだけ母数が変わります。選抜そのものの集計範囲とは別です。
+          </p>
+        </section>
+        <section class="tutorial-section">
+          <h3>選抜の決まり</h3>
+          <ul>
+            <li>使用率ポイントの母数は、上の<strong>集計する勝数</strong>（既定 2勝以上。リタイアも含む）。</li>
+            <li>カードの同一判定はレア違いを同一（rare_list）。</li>
+            <li>1枚あたりのポイント = 母数デッキ全体での採用枚数。デッキ得点は Σ（1枚P × 自分の枚数）。<strong>低いほど上位</strong>。</li>
+            <li>全勝（0敗・未脱落・1勝以上）は自動進出。残り枠はちょうど1敗から得点順。</li>
+            <li>当落線上の同点は抽選フラグが出ます。<strong>抽選を振る</strong>と当選者を進出に入れます（やり直しは「取り消す」）。</li>
+            <li>レシピ未入力の1敗は選抜に入れません（0P扱いしない）。</li>
+          </ul>
+        </section>
+        <section class="tutorial-section">
+          <h3>進出者ボード</h3>
+          <p>
+            予選抜け人数と全勝者の数は、取り込み後に自動で入ります。直してから<strong>進出者を出す</strong>。会場用のピンク画面です。全画面にできます。ポイントは選手に見せない想定です。
+          </p>
+          <p>
+            カードの採用合計（1枚あたりのP）は <strong>内訳を出す</strong> で出せます。1〜30位は代表レアの画像、31〜50位は型番とキャラ名です。メンバー／ライブ切替が効きます。選手のデッキ得点は載りません。
+          </p>
+        </section>
+        <section class="tutorial-section">
+          <h3>運営の便利機能</h3>
+          <ul>
+            <li>選手表は検索・並べ替えできます。既定では 0-0 も隠しません（「一覧も集計範囲で絞る」はオフ）。</li>
+            <li>レシピ未入力の全勝・1敗、直前のCSVで除外した人、同名は取り込み下に出ます。</li>
+            <li>大会JSONでバックアップ。結果CSVは進出とカードP。複数大会は上の切替。</li>
+            <li>となめる任意項目の列がデッキコードなら、取り込み後に列を指定し直してください。</li>
+          </ul>
+        </section>
+      </div>
+      <form method="dialog" class="btn-row" style="margin-top: 0.75rem">
+        <button type="submit" class="btn primary wide">閉じる</button>
+      </form>
     </dialog>
 
     <div id="view-game" class="view" hidden>
@@ -2548,7 +2806,7 @@ python3 -m http.server 8080</pre>
     <script>
       (function () {
         var buildMeta = document.querySelector('meta[name="loveca-build"]');
-        var build = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "2026090204";
+        var build = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "2026092124";
         var moduleNames = [
           "abilityEffects.js",
           "bladeHeart.js",
@@ -2601,7 +2859,7 @@ python3 -m http.server 8080</pre>
     </script>
     <script type="module">
       var buildMeta = document.querySelector('meta[name="loveca-build"]');
-      var build = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "2026090204";
+      var build = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "2026092124";
       try {
         await import("./js/main.js?v=" + build);
       } catch (err) {
