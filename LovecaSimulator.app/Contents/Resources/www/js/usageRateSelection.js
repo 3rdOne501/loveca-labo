@@ -1246,6 +1246,253 @@ export function advancementLabel(result, playerId) {
   return { kind: "other", label: "—" };
 }
 
+/** 同系統: メンバー半数以上が重なる、またはライブがある程度重なる（OR）。差は35枚まで */
+export const DECK_FAMILY_MEMBER_OVERLAP = 0.5;
+export const DECK_FAMILY_MIN_SHARED_LIVES = 2;
+export const DECK_FAMILY_LIVE_OVERLAP = 0.4;
+export const DECK_FAMILY_MAX_DIFF = 35;
+
+/**
+ * レア違いを同一にした枚数マップ。
+ * @param {Record<string, number>|null|undefined} deckMap
+ * @param {(cardNo: string) => string} [identityFn]
+ */
+export function collapseDeckMapByIdentity(deckMap, identityFn) {
+  /** @type {Record<string, number>} */
+  const out = {};
+  for (const [no, qty] of Object.entries(normalizeDeckMap(deckMap))) {
+    const id = cardIdentityKey(no, identityFn);
+    if (!id) continue;
+    out[id] = (out[id] || 0) + toNonNegInt(qty, 0);
+  }
+  return out;
+}
+
+/**
+ * 2デッキの入れ替え枚数（片側から見て入れ替える枚数 = L1/2）。
+ * @param {Record<string, number>} a
+ * @param {Record<string, number>} b
+ */
+export function deckHalfL1(a, b) {
+  const seen = Object.create(null);
+  let l1 = 0;
+  for (const k of Object.keys(a || {})) {
+    seen[k] = 1;
+    l1 += Math.abs(toNonNegInt((a || {})[k], 0) - toNonNegInt((b || {})[k], 0));
+  }
+  for (const k of Object.keys(b || {})) {
+    if (seen[k]) continue;
+    l1 += toNonNegInt((b || {})[k], 0);
+  }
+  return l1 / 2;
+}
+
+/**
+ * @param {string} cardNo
+ * @param {(cardNo: string) => string} [typeFn] live / member / other
+ */
+export function deckCardKindFromNo(cardNo, typeFn) {
+  if (typeof typeFn === "function") {
+    const t = typeFn(cardNo);
+    if (t === "live" || t === "member" || t === "other") return t;
+  }
+  const s = String(cardNo || "");
+  if (/LL-E-/i.test(s)) return "other";
+  if (/-L(?:$|-)/i.test(s)) return "live";
+  return "member";
+}
+
+/**
+ * @param {Record<string, number>} map
+ * @param {(cardNo: string) => string} [typeFn]
+ */
+export function splitDeckMapByKind(map, typeFn) {
+  /** @type {Record<string, number>} */
+  const members = {};
+  /** @type {Record<string, number>} */
+  const lives = {};
+  Object.entries(map || {}).forEach(function (ent) {
+    const qty = toNonNegInt(ent[1], 0);
+    if (qty <= 0) return;
+    const kind = deckCardKindFromNo(ent[0], typeFn);
+    if (kind === "live") lives[ent[0]] = (lives[ent[0]] || 0) + qty;
+    else if (kind === "member") members[ent[0]] = (members[ent[0]] || 0) + qty;
+  });
+  return { members: members, lives: lives };
+}
+
+function countMap(map) {
+  let n = 0;
+  Object.keys(map || {}).forEach(function (k) {
+    n += toNonNegInt((map || {})[k], 0);
+  });
+  return n;
+}
+
+function sharedPositiveKeys(a, b) {
+  let n = 0;
+  Object.keys(a || {}).forEach(function (k) {
+    if (toNonNegInt((a || {})[k], 0) > 0 && toNonNegInt((b || {})[k], 0) > 0) n += 1;
+  });
+  return n;
+}
+
+function copyOverlap(a, b) {
+  let n = 0;
+  const seen = Object.create(null);
+  Object.keys(a || {}).forEach(function (k) {
+    seen[k] = 1;
+    n += Math.min(toNonNegInt((a || {})[k], 0), toNonNegInt((b || {})[k], 0));
+  });
+  Object.keys(b || {}).forEach(function (k) {
+    if (seen[k]) return;
+    n += Math.min(toNonNegInt((a || {})[k], 0), toNonNegInt((b || {})[k], 0));
+  });
+  return n;
+}
+
+/**
+ * 同系統か。メンバー半数以上が重なる、またはライブがある程度重なる（OR）。
+ * 入れ替えが35枚を超えたら別系統。完全一致は常に同系統。
+ * @param {Record<string, number>} mapA
+ * @param {Record<string, number>} mapB
+ * @param {(cardNo: string) => string} [typeFn]
+ */
+export function isSameDeckFamily(mapA, mapB, typeFn) {
+  const diff = deckHalfL1(mapA, mapB);
+  if (diff === 0) return true;
+  if (diff > DECK_FAMILY_MAX_DIFF) return false;
+  const a = splitDeckMapByKind(mapA, typeFn);
+  const b = splitDeckMapByKind(mapB, typeFn);
+  const memberDenom = Math.min(countMap(a.members), countMap(b.members));
+  const membersHit =
+    memberDenom > 0 && copyOverlap(a.members, b.members) / memberDenom >= DECK_FAMILY_MEMBER_OVERLAP;
+  const liveKinds = sharedPositiveKeys(a.lives, b.lives);
+  const liveDenom = Math.min(countMap(a.lives), countMap(b.lives));
+  const livesHit =
+    liveKinds >= DECK_FAMILY_MIN_SHARED_LIVES ||
+    (liveDenom > 0 && copyOverlap(a.lives, b.lives) / liveDenom >= DECK_FAMILY_LIVE_OVERLAP);
+  return membersHit || livesHit;
+}
+
+function deckIdentitySignature(map) {
+  return Object.keys(map || {})
+    .sort()
+    .map(function (k) {
+      return k + ":" + toNonNegInt(map[k], 0);
+    })
+    .join("|");
+}
+
+function clusterKeyFromMap(map) {
+  const sig = deckIdentitySignature(map);
+  let h = 5381;
+  for (let i = 0; i < sig.length; i++) h = (h << 5) + h + sig.charCodeAt(i);
+  return "c_" + (h >>> 0).toString(36);
+}
+
+function clusterSignature(members) {
+  /** @type {Record<string, number>} */
+  const acc = {};
+  members.forEach(function (m) {
+    Object.entries(m.map || {}).forEach(function (ent) {
+      acc[ent[0]] = (acc[ent[0]] || 0) + toNonNegInt(ent[1], 0);
+    });
+  });
+  const n = Math.max(1, members.length);
+  return Object.keys(acc)
+    .map(function (id) {
+      return { id: id, avg: acc[id] / n };
+    })
+    .sort(function (x, y) {
+      return y.avg - x.avg;
+    })
+    .slice(0, 8);
+}
+
+/**
+ * レシピありデッキを完全一致と「同系統」（差35枚まで、かつメンバー半数以上またはライブが重なる）でまとめる。
+ * 最大の完全一致リストを種にして、種と同系統のものだけ取り込む。
+ * @param {UsageRatePlayerIn[]} players
+ * @param {{ identityFn?: (cardNo: string) => string, typeFn?: (cardNo: string) => string, minCards?: number }} [opts]
+ */
+export function clusterSimilarDecks(players, opts) {
+  opts = opts || {};
+  const identityFn = opts.identityFn;
+  const typeFn = opts.typeFn;
+  const minCards = Number.isFinite(Number(opts.minCards)) ? Math.max(1, Number(opts.minCards)) : 50;
+  /** @type {{ playerId: string, name: string, map: Record<string, number>, sig: string }[]} */
+  const entries = [];
+  (players || []).forEach(function (p, i) {
+    const map = collapseDeckMapByIdentity(p && p.deckMap, identityFn);
+    if (deckMapTotal(map) < minCards) return;
+    entries.push({
+      playerId: String((p && p.id) || "p" + i),
+      name: String((p && p.name) || ""),
+      map: map,
+      sig: deckIdentitySignature(map),
+    });
+  });
+  /** @type {Map<string, typeof entries>} */
+  const exact = new Map();
+  entries.forEach(function (e) {
+    const list = exact.get(e.sig) || [];
+    list.push(e);
+    exact.set(e.sig, list);
+  });
+  const exactGroups = Array.from(exact.values()).sort(function (a, b) {
+    if (b.length !== a.length) return b.length - a.length;
+    return a[0].sig.localeCompare(b[0].sig);
+  });
+  const assigned = new Set();
+  const clusters = [];
+  exactGroups.forEach(function (group) {
+    if (assigned.has(group[0].playerId)) return;
+    const seed = group[0].map;
+    /** @type {{ playerId: string, name: string, map: Record<string, number>, diff: number }[]} */
+    const members = [];
+    exactGroups.forEach(function (g) {
+      if (assigned.has(g[0].playerId)) return;
+      if (!isSameDeckFamily(seed, g[0].map, typeFn)) return;
+      const diff = deckHalfL1(seed, g[0].map);
+      g.forEach(function (e) {
+        assigned.add(e.playerId);
+        members.push({ playerId: e.playerId, name: e.name, map: e.map, diff: diff });
+      });
+    });
+    members.sort(function (a, b) {
+      if (a.diff !== b.diff) return a.diff - b.diff;
+      return String(a.name).localeCompare(String(b.name), "ja");
+    });
+    const exactSize = members.filter(function (m) {
+      return m.diff === 0;
+    }).length;
+    clusters.push({
+      key: clusterKeyFromMap(seed),
+      size: members.length,
+      exactSize: exactSize,
+      nearSize: members.length - exactSize,
+      playerIds: members.map(function (m) {
+        return m.playerId;
+      }),
+      players: members.map(function (m) {
+        return { id: m.playerId, name: m.name, diff: m.diff };
+      }),
+      seedMap: seed,
+      signature: clusterSignature(members),
+    });
+  });
+  return {
+    withRecipe: entries.length,
+    skipped: (players || []).length - entries.length,
+    memberOverlap: DECK_FAMILY_MEMBER_OVERLAP,
+    minSharedLives: DECK_FAMILY_MIN_SHARED_LIVES,
+    liveOverlap: DECK_FAMILY_LIVE_OVERLAP,
+    maxDiff: DECK_FAMILY_MAX_DIFF,
+    clusters: clusters,
+  };
+}
+
 export const KOBOSHI_CS_PRESET = {
   title: "【公認サポート】小星CS",
   tonamelUrl: "https://tonamel.com/competition/0lHxM",

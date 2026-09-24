@@ -4,9 +4,10 @@
  * デッキコードは DECK LOG の共有コードとして記録し、ブラウザから API は叩かない。
  */
 import { catalogCardIdentityKey, catalogListThumbnailUrl, getCard, getCardCatalogSnapshot } from "./cards.js";
-import { MAIN_SIZE, STORAGE_TOURNAMENT, T_ENERGY, T_LIVE, T_MEMBER } from "./config.js";
+import { DEFAULT_STARTER_DECK_MAP, MAIN_SIZE, SAMPLE_DECK_RECIPES_PUBLIC_FILENAME, STORAGE_TOURNAMENT, T_ENERGY, T_LIVE, T_MEMBER } from "./config.js";
 import { extractDeckRecipeLines, parseDeckTextRecipe } from "./decklogImport.js";
 import { isBuiltInStarterDeckId, loadDeckLibrary } from "./deckLibrary.js";
+import { getSampleDeckRecipes } from "./sampleDeckRecipes.js";
 import { showToast } from "./ui.js";
 import { showAppView, showDeckBuilderView } from "./viewNav.js";
 import {
@@ -33,6 +34,9 @@ import {
   mergePlayerRecords,
   pickPrelimAdvancers,
   poolRangeLabel,
+  clusterSimilarDecks,
+  collapseDeckMapByIdentity,
+  deckHalfL1,
 } from "./usageRateSelection.js";
 
 function newPlayerId() {
@@ -86,6 +90,13 @@ function emptyEventFields() {
     playerQuery: "",
     playerSort: "default",
     cardKindFilter: "all",
+    trialBackup: null,
+    clusterNames: {},
+    clusterThumbs: {},
+    clusterThumbPos: {},
+    clusterAssign: {},
+    distChartKind: "bar",
+    distSort: "size",
   };
 }
 
@@ -126,6 +137,13 @@ function cloneEventBlob() {
     playerQuery: state.playerQuery || "",
     playerSort: state.playerSort || "default",
     cardKindFilter: state.cardKindFilter || "all",
+    trialBackup: state.trialBackup ? JSON.parse(JSON.stringify(state.trialBackup)) : null,
+    clusterNames: Object.assign({}, state.clusterNames || {}),
+    clusterThumbs: Object.assign({}, state.clusterThumbs || {}),
+    clusterThumbPos: JSON.parse(JSON.stringify(state.clusterThumbPos || {})),
+    clusterAssign: Object.assign({}, state.clusterAssign || {}),
+    distChartKind: state.distChartKind === "pie" ? "pie" : "bar",
+    distSort: state.distSort === "found" ? "found" : "size",
   };
 }
 
@@ -144,12 +162,12 @@ function applyEventBlob(blob) {
   settings.rosterIncludeUnpaid = settings.rosterIncludeUnpaid === true;
   settings.rosterIncludeEntered = settings.rosterIncludeEntered !== false;
   settings.filterListByPool = settings.filterListByPool === true;
-  if (Number(settings.usageRankCount) === 30 && String(settings.usageBoardHeadline || "") === "使用率ポイント 1〜30位") {
-    settings.usageRankCount = 50;
-    settings.usageBoardHeadline = "使用率ポイント 1〜50位";
+  settings.usageRankCount = Number(settings.usageRankCount) === 80 ? 80 : 50;
+  if (!settings.usageBoardHeadline || /^使用率ポイント 1〜\d+位$/.test(String(settings.usageBoardHeadline))) {
+    settings.usageBoardHeadline = usageHeadlineForCount(settings.usageRankCount);
+  } else {
+    settings.usageBoardHeadline = String(settings.usageBoardHeadline);
   }
-  settings.usageRankCount = Math.max(1, Math.min(80, Number(settings.usageRankCount) || 50));
-  settings.usageBoardHeadline = String(settings.usageBoardHeadline || "使用率ポイント 1〜50位");
   const extras = emptyEventFields();
   state.settings = settings;
   state.players = hydratePlayers(src.players);
@@ -163,6 +181,13 @@ function applyEventBlob(blob) {
   state.playerQuery = src.playerQuery || "";
   state.playerSort = src.playerSort || "default";
   state.cardKindFilter = src.cardKindFilter || "all";
+  state.trialBackup = Array.isArray(src.trialBackup) ? src.trialBackup : null;
+  state.clusterNames = src.clusterNames && typeof src.clusterNames === "object" ? Object.assign({}, src.clusterNames) : {};
+  state.clusterThumbs = src.clusterThumbs && typeof src.clusterThumbs === "object" ? Object.assign({}, src.clusterThumbs) : {};
+  state.clusterThumbPos = src.clusterThumbPos && typeof src.clusterThumbPos === "object" ? JSON.parse(JSON.stringify(src.clusterThumbPos)) : {};
+  state.clusterAssign = src.clusterAssign && typeof src.clusterAssign === "object" ? Object.assign({}, src.clusterAssign) : {};
+  state.distChartKind = src.distChartKind === "pie" ? "pie" : "bar";
+  state.distSort = src.distSort === "found" ? "found" : "size";
 }
 
 /** @type {ReturnType<typeof cloneEventBlob>[]} */
@@ -294,11 +319,11 @@ function cardTypeLabel(card) {
   return card.type || "？";
 }
 
-function cardThumbHtml(card) {
+function cardThumbHtml(card, opts) {
   if (!card) return '<span class="deck-thumb deck-thumb-missing" title="カードデータなし"></span>';
   const full = card.img ? String(card.img) : "";
   if (!full) return '<span class="deck-thumb deck-thumb-missing" title="画像なし"></span>';
-  const src = catalogListThumbnailUrl(full) || full;
+  const src = catalogListThumbnailUrl(full, opts && opts.hi ? { hi: true } : undefined) || full;
   return (
     '<img class="deck-thumb deck-builder-card-thumb" src="' +
     escapeHtml(src) +
@@ -419,8 +444,8 @@ function fillSettingsForm() {
   setVal("input-tourney-advance-count", s.advanceCount != null ? s.advanceCount : s.finalsSlots);
   if (s.undefeatedCount != null) setVal("input-tourney-undefeated-count", s.undefeatedCount);
   setVal("input-tourney-board-headline", s.boardHeadline || "決勝ラウンド進出者");
-  setVal("input-tourney-usage-count", s.usageRankCount != null ? s.usageRankCount : 50);
-  setVal("input-tourney-usage-headline", s.usageBoardHeadline || "使用率ポイント 1〜50位");
+  setVal("input-tourney-usage-headline", s.usageBoardHeadline || usageHeadlineForCount(usageRankLimit()));
+  renderUsageCountButtons();
   const filterEl = document.getElementById("input-tourney-filter-pool");
   if (filterEl) filterEl.checked = s.filterListByPool === true;
   const qEl = document.getElementById("input-tourney-player-q");
@@ -458,13 +483,13 @@ function readSettingsFromForm() {
     s.undefeatedCount = null;
   }
   s.boardHeadline = strVal("input-tourney-board-headline") || "決勝ラウンド進出者";
-  const usageCountEl = document.getElementById("input-tourney-usage-count");
-  if (usageCountEl && String(usageCountEl.value).trim() !== "") {
-    s.usageRankCount = Math.max(1, Math.min(80, numVal("input-tourney-usage-count", 50)));
+  s.usageRankCount = Number(s.usageRankCount) === 80 ? 80 : 50;
+  const typedHeadline = strVal("input-tourney-usage-headline");
+  if (typedHeadline && !/^使用率ポイント 1〜\d+位$/.test(typedHeadline)) {
+    s.usageBoardHeadline = typedHeadline;
   } else {
-    s.usageRankCount = 50;
+    s.usageBoardHeadline = usageHeadlineForCount(s.usageRankCount);
   }
-  s.usageBoardHeadline = strVal("input-tourney-usage-headline") || "使用率ポイント 1〜50位";
   const filterEl = document.getElementById("input-tourney-filter-pool");
   if (filterEl) s.filterListByPool = !!filterEl.checked;
 }
@@ -490,12 +515,14 @@ function render(opts) {
   renderEventsBar();
   renderColumnSelect();
   renderOpsNotes(result);
+  renderTrialBanner();
   if (opts.skipPlayers) highlightSelectedRow();
   else renderPlayers(result);
   renderAdvance(result);
   renderOutputBoard(result);
   renderCards(result);
   renderUsagePreview(result);
+  renderDeckDist();
   renderPlayerDetail(result);
   renderDeckView();
 }
@@ -697,6 +724,13 @@ function renderPlayers(result) {
       "<tr><td colspan=\"9\" class=\"muted tourney-empty-row\">この条件の選手はいません。検索や絞り込みを外してください。</td></tr>";
     return;
   }
+  const clusterById = {};
+  currentDeckDist().clusters.forEach(function (c) {
+    const label = clusterLabel(c);
+    (c.playerIds || []).forEach(function (id) {
+      clusterById[id] = label;
+    });
+  });
   tb.innerHTML = rows
     .map(function (p) {
       const adv = advancementLabel(result, p.id);
@@ -705,6 +739,7 @@ function renderPlayers(result) {
         return x.id === p.id;
       });
       const selected = state.selectedId === p.id ? " is-selected" : "";
+      const cluster = clusterById[p.id] || "";
       return (
         "<tr class=\"tourney-player-row" +
         selected +
@@ -729,8 +764,11 @@ function renderPlayers(result) {
         "<td><input type=\"text\" class=\"input tourney-inline\" data-field=\"deckCode\" value=\"" +
         escapeHtml(p.deckCode) +
         "\" placeholder=\"DECK LOG\" spellcheck=\"false\" /></td>" +
-        "<td><button type=\"button\" class=\"btn sm secondary\" data-act=\"recipe\" title=\"デッキ一覧を開く\">" +
+        "<td><button type=\"button\" class=\"btn sm secondary tourney-recipe-btn\" data-act=\"recipe\" title=\"" +
+        escapeHtml(cluster || "デッキ一覧を開く") +
+        "\">" +
         rec.text +
+        (cluster ? "<span class=\"tourney-dist-mini\">" + escapeHtml(cluster) + "</span>" : "") +
         "</button></td>" +
         "<td class=\"tourney-pts\">" +
         (scored && scored.hasRecipe ? String(scored.points) : "—") +
@@ -890,6 +928,7 @@ function openAdvanceBoard() {
   readSettingsFromForm();
   persist();
   closeUsageBoard();
+  closeDistChartBoard();
   const pick = currentAdvancePick();
   const eventEl = document.getElementById("tourney-board-event");
   const headEl = document.getElementById("tourney-board-headline");
@@ -913,7 +952,8 @@ function closeAdvanceBoard() {
   const board = document.getElementById("tourney-board");
   if (board) board.hidden = true;
   const usage = document.getElementById("tourney-usage-board");
-  if (!usage || usage.hidden) document.body.classList.remove("tourney-board-open");
+  const dist = document.getElementById("tourney-dist-board");
+  if ((!usage || usage.hidden) && (!dist || dist.hidden)) document.body.classList.remove("tourney-board-open");
   if (document.fullscreenElement && board && document.fullscreenElement === board) {
     document.exitFullscreen().catch(function () {});
   }
@@ -1017,10 +1057,43 @@ function cardKindFilterLabel() {
 }
 
 function usageRankLimit() {
-  return Math.max(1, Math.min(80, Number(state.settings.usageRankCount) || 50));
+  return Number(state.settings.usageRankCount) === 80 ? 80 : 50;
 }
 
-const USAGE_ART_RANKS = 30;
+function usageHeadlineForCount(n) {
+  return "使用率ポイント 1〜" + n + "位";
+}
+
+function usageArtLimit() {
+  return usageRankLimit();
+}
+
+function renderUsageCountButtons() {
+  const host = document.getElementById("tourney-usage-count");
+  if (!host) return;
+  const n = usageRankLimit();
+  host.innerHTML = [50, 80]
+    .map(function (count) {
+      return (
+        "<button type=\"button\" class=\"btn sm " +
+        (n === count ? "primary" : "secondary") +
+        "\" data-usage-count=\"" +
+        count +
+        "\">" +
+        count +
+        "位まで</button>"
+      );
+    })
+    .join("");
+}
+
+function setUsageRankCount(raw) {
+  readSettingsFromForm();
+  const n = Number(raw) === 80 ? 80 : 50;
+  state.settings.usageRankCount = n;
+  state.settings.usageBoardHeadline = usageHeadlineForCount(n);
+  persistAndRender();
+}
 
 function catalogTypeNo(cardNo) {
   const id = catalogCardIdentityKey(cardNo) || String(cardNo || "");
@@ -1058,7 +1131,7 @@ function usageRankRows(result) {
     const charName = card && card.name ? String(card.name) : cardLabel(srcNo);
     return {
       rank: i + 1,
-      withArt: i < USAGE_ART_RANKS,
+      withArt: i < usageArtLimit(),
       cardNo: card && card.card_no ? card.card_no : srcNo,
       typeNo: typeNo,
       charName: charName,
@@ -1070,8 +1143,1165 @@ function usageRankRows(result) {
   });
 }
 
+function deckCardTypeFn(cardNo) {
+  const card = getCard(cardNo) || usageDisplayCard(cardNo);
+  if (card && card.type === T_LIVE) return "live";
+  if (card && card.type === T_MEMBER) return "member";
+  if (card && card.type === T_ENERGY) return "other";
+  return "";
+}
+
+function currentDeckDist() {
+  return applyClusterAssigns(
+    clusterSimilarDecks(state.players, {
+      identityFn: identityFn,
+      typeFn: deckCardTypeFn,
+      minCards: 50,
+    }),
+  );
+}
+
+const DIST_OTHER_KEY = "__other__";
+const DIST_BAR_COLORS = ["#c43a78", "#6d4cff", "#d9773a", "#2a9d8f", "#c9a227", "#3d5a80", "#9b5de5", "#118ab2", "#e63946", "#457b9d"];
+let distPaintToken = 0;
+
+function deckDistRuleText() {
+  return "レア違いは同一。差は35枚まで。メンバー半数以上、またはライブがある程度重なると同一系統。系統は手動で移動できます";
+}
+
+function clusterNamesMap() {
+  if (!state.clusterNames || typeof state.clusterNames !== "object") state.clusterNames = {};
+  return state.clusterNames;
+}
+
+function clusterThumbsMap() {
+  if (!state.clusterThumbs || typeof state.clusterThumbs !== "object") state.clusterThumbs = {};
+  return state.clusterThumbs;
+}
+
+function clusterThumbPosMap() {
+  if (!state.clusterThumbPos || typeof state.clusterThumbPos !== "object") state.clusterThumbPos = {};
+  return state.clusterThumbPos;
+}
+
+function clusterAssignMap() {
+  if (!state.clusterAssign || typeof state.clusterAssign !== "object") state.clusterAssign = {};
+  return state.clusterAssign;
+}
+
+function isManualClusterKey(key) {
+  return String(key || "").indexOf("m_") === 0;
+}
+
+function isKeptCluster(c) {
+  return !!(c && ((c.size || 0) >= 2 || isManualClusterKey(c.key)));
+}
+
+function playerIdentityMap(playerId) {
+  const p = state.players.find(function (x) {
+    return x.id === playerId;
+  });
+  return collapseDeckMapByIdentity(p && p.deckMap, identityFn);
+}
+
+function clusterSignatureFromPlayers(players) {
+  /** @type {Record<string, number>} */
+  const acc = {};
+  (players || []).forEach(function (p) {
+    Object.entries(playerIdentityMap(p.id) || {}).forEach(function (ent) {
+      acc[ent[0]] = (acc[ent[0]] || 0) + (Number(ent[1]) || 0);
+    });
+  });
+  const n = Math.max(1, (players || []).length);
+  return Object.keys(acc)
+    .map(function (id) {
+      return { id: id, avg: acc[id] / n };
+    })
+    .sort(function (a, b) {
+      return b.avg - a.avg;
+    })
+    .slice(0, 8);
+}
+
+function rebuildClusterStats(c) {
+  const seed = c.seedMap && Object.keys(c.seedMap).length ? c.seedMap : playerIdentityMap((c.players[0] && c.players[0].id) || "");
+  c.seedMap = seed;
+  (c.players || []).forEach(function (p) {
+    p.diff = Math.round(deckHalfL1(seed, playerIdentityMap(p.id)));
+  });
+  c.players.sort(function (a, b) {
+    if ((a.diff || 0) !== (b.diff || 0)) return (a.diff || 0) - (b.diff || 0);
+    return String(a.name || "").localeCompare(String(b.name || ""), "ja");
+  });
+  c.exactSize = (c.players || []).filter(function (p) {
+    return !p.diff;
+  }).length;
+  c.size = (c.players || []).length;
+  c.nearSize = c.size - c.exactSize;
+  c.playerIds = (c.players || []).map(function (p) {
+    return p.id;
+  });
+  c.signature = clusterSignatureFromPlayers(c.players);
+}
+
+function emptyAssignCluster(key, seedMap) {
+  return {
+    key: key,
+    size: 0,
+    exactSize: 0,
+    nearSize: 0,
+    playerIds: [],
+    players: [],
+    seedMap: seedMap || {},
+    signature: [],
+  };
+}
+
+function applyClusterAssigns(dist) {
+  const assigns = clusterAssignMap();
+  const clusters = (dist.clusters || []).map(function (c) {
+    return Object.assign({}, c, {
+      players: (c.players || []).map(function (p) {
+        return Object.assign({}, p);
+      }),
+      playerIds: (c.playerIds || []).slice(),
+    });
+  });
+  const locById = Object.create(null);
+  clusters.forEach(function (c) {
+    (c.players || []).forEach(function (p) {
+      locById[p.id] = { cluster: c, player: p };
+    });
+  });
+  Object.keys(assigns).forEach(function (pid) {
+    const destRaw = String(assigns[pid] || "");
+    if (!destRaw) return;
+    const loc = locById[pid];
+    if (!loc) return;
+    const dest = destRaw === DIST_OTHER_KEY ? "s_" + pid : destRaw;
+    if (dest === loc.cluster.key) return;
+    loc.cluster.players = loc.cluster.players.filter(function (p) {
+      return p.id !== pid;
+    });
+    loc.cluster.playerIds = loc.cluster.playerIds.filter(function (id) {
+      return id !== pid;
+    });
+    let to = clusters.find(function (c) {
+      return c.key === dest;
+    });
+    if (!to) {
+      to = emptyAssignCluster(dest, playerIdentityMap(pid));
+      clusters.push(to);
+    }
+    if (!to.seedMap || !Object.keys(to.seedMap).length) to.seedMap = playerIdentityMap(pid);
+    const moved = { id: pid, name: loc.player.name, diff: 0 };
+    to.players.push(moved);
+    to.playerIds.push(pid);
+    locById[pid] = { cluster: to, player: moved };
+  });
+  const kept = clusters.filter(function (c) {
+    return (c.players || []).length > 0;
+  });
+  kept.forEach(rebuildClusterStats);
+  return Object.assign({}, dist, { clusters: kept });
+}
+
+function newManualClusterKey() {
+  return "m_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 5);
+}
+
+function setClusterAssign(playerId, dest) {
+  if (!playerId) return;
+  pushUndo();
+  const map = clusterAssignMap();
+  const v = String(dest || "");
+  if (!v) delete map[playerId];
+  else if (v === "__new__") map[playerId] = newManualClusterKey();
+  else map[playerId] = v;
+  persistAndRender();
+}
+
+function clusterAssignOptionsHtml(playerId, dist) {
+  const assigned = String(clusterAssignMap()[playerId] || "");
+  const parts = ["<option value=\"\"" + (assigned ? "" : " selected") + ">自動</option>"];
+  (dist.clusters || []).filter(isKeptCluster).forEach(function (c) {
+    const sel = assigned === c.key ? " selected" : "";
+    parts.push("<option value=\"" + escapeHtml(c.key) + "\"" + sel + ">" + escapeHtml(clusterDisplayName(c)) + "</option>");
+  });
+  parts.push(
+    "<option value=\"" +
+      DIST_OTHER_KEY +
+      "\"" +
+      (assigned === DIST_OTHER_KEY ? " selected" : "") +
+      ">その他</option>",
+  );
+  parts.push("<option value=\"__new__\">新しい系統</option>");
+  return parts.join("");
+}
+
+function distPersonHtml(p, dist, extra) {
+  const assigned = String(clusterAssignMap()[p.id] || "");
+  const off = p.diff ? "（" + p.diff + "枚差）" : "";
+  const extraTxt = extra ? "　" + extra : "";
+  return (
+    "<span class=\"tourney-dist-person\">" +
+    "<button type=\"button\" class=\"tourney-dist-player\" data-select=\"" +
+    escapeHtml(p.id) +
+    "\">" +
+    escapeHtml(p.name || "（無名）") +
+    extraTxt +
+    off +
+    (assigned ? "<span class=\"tourney-dist-moved\">手動</span>" : "") +
+    "</button>" +
+    "<select class=\"tourney-dist-assign\" data-cluster-assign=\"" +
+    escapeHtml(p.id) +
+    "\" title=\"系統を移動\" aria-label=\"" +
+    escapeHtml((p.name || "選手") + "の系統") +
+    "\">" +
+    clusterAssignOptionsHtml(p.id, dist) +
+    "</select></span>"
+  );
+}
+
+function defaultThumbPos() {
+  return { x: 0.5, y: 0.38, z: 1.25 };
+}
+
+function normalizeThumbPos(raw) {
+  const d = defaultThumbPos();
+  const o = raw && typeof raw === "object" ? raw : {};
+  const x = Number(o.x);
+  const y = Number(o.y);
+  const z = Number(o.z);
+  return {
+    x: Math.max(0.08, Math.min(0.92, Number.isFinite(x) ? x : d.x)),
+    y: Math.max(0.08, Math.min(0.92, Number.isFinite(y) ? y : d.y)),
+    z: Math.max(0.7, Math.min(2.8, Number.isFinite(z) ? z : d.z)),
+  };
+}
+
+function clusterThumbPos(key) {
+  return normalizeThumbPos(clusterThumbPosMap()[key]);
+}
+
+function distSortMode() {
+  return state.distSort === "found" ? "found" : "size";
+}
+
+function cardIdentityId(cardOrNo) {
+  if (!cardOrNo) return "";
+  if (typeof cardOrNo === "string") return catalogCardIdentityKey(cardOrNo) || String(cardOrNo);
+  const no = cardOrNo.card_no || cardOrNo.id || "";
+  return catalogCardIdentityKey(no) || String(no || "");
+}
+
+function clusterLabel(cluster) {
+  if (cluster && cluster.key === DIST_OTHER_KEY) return "その他";
+  const named = ((cluster && cluster.signature) || []).map(function (s) {
+    const card = usageDisplayCard(s.id) || getCard(s.id);
+    return {
+      avg: s.avg,
+      name: card && card.name ? String(card.name) : String(s.id || ""),
+      type: card && card.type,
+    };
+  });
+  const parts = [];
+  named.forEach(function (c) {
+    if (c.type !== T_MEMBER || c.avg < 2.5 || parts.length >= 2) return;
+    if (parts.indexOf(c.name) < 0) parts.push(c.name);
+  });
+  named.forEach(function (c) {
+    if (c.type !== T_LIVE || c.avg < 2 || parts.length >= 3) return;
+    if (parts.indexOf(c.name) < 0) parts.push(c.name);
+  });
+  named.forEach(function (c) {
+    if (parts.length >= 3) return;
+    if (parts.indexOf(c.name) < 0) parts.push(c.name);
+  });
+  const base = parts.filter(Boolean).join(" / ") || "系統不明";
+  return cluster && cluster.size >= 2 ? base + " 系" : base;
+}
+
+function clusterDisplayName(cluster) {
+  const key = cluster && cluster.key ? String(cluster.key) : "";
+  const custom = String(clusterNamesMap()[key] || "").trim();
+  if (custom) return custom;
+  return clusterLabel(cluster);
+}
+
+function mergeClusterSignatures(clusters) {
+  /** @type {Record<string, number>} */
+  const acc = {};
+  (clusters || []).forEach(function (c) {
+    ((c && c.signature) || []).forEach(function (s) {
+      const id = String((s && s.id) || "");
+      if (!id) return;
+      acc[id] = (acc[id] || 0) + (Number(s.avg) || 0);
+    });
+  });
+  return Object.keys(acc)
+    .map(function (id) {
+      return { id: id, avg: acc[id] };
+    })
+    .sort(function (a, b) {
+      return b.avg - a.avg;
+    })
+    .slice(0, 8);
+}
+
+function defaultClusterThumb(cluster) {
+  let fallback = null;
+  for (let i = 0; i < ((cluster && cluster.signature) || []).length; i++) {
+    const s = cluster.signature[i];
+    const card = usageDisplayCard(s.id) || getCard(s.id);
+    if (!card) continue;
+    if (!fallback) fallback = card;
+    if (card.type === T_MEMBER) return card;
+  }
+  return fallback;
+}
+
+function clusterThumbCard(key, cluster) {
+  const stored = String(clusterThumbsMap()[key] || "");
+  if (stored === "__none__") return null;
+  if (stored) return usageDisplayCard(stored) || getCard(stored) || null;
+  if (key === DIST_OTHER_KEY) return null;
+  return defaultClusterThumb(cluster);
+}
+
+function clusterThumbSelectedId(key, cluster) {
+  const stored = String(clusterThumbsMap()[key] || "");
+  if (stored === "__none__") return "";
+  if (stored) return stored;
+  if (key === DIST_OTHER_KEY) return "";
+  return cardIdentityId(defaultClusterThumb(cluster));
+}
+
+function clusterThumbCandidates(cluster) {
+  const seen = Object.create(null);
+  const out = [];
+  ((cluster && cluster.signature) || []).forEach(function (s) {
+    const card = usageDisplayCard(s.id) || getCard(s.id);
+    if (!card) return;
+    const id = cardIdentityId(card) || String(s.id || "");
+    if (!id || seen[id]) return;
+    seen[id] = 1;
+    out.push(card);
+  });
+  return out.slice(0, 8);
+}
+
+function sortDistClusters(clusters) {
+  const list = (clusters || []).slice();
+  if (distSortMode() !== "size") return list;
+  return list.sort(function (a, b) {
+    if ((b.size || 0) !== (a.size || 0)) return (b.size || 0) - (a.size || 0);
+    return clusterDisplayName(a).localeCompare(clusterDisplayName(b), "ja");
+  });
+}
+
+function distListEntries(dist) {
+  const grouped = (dist.clusters || []).filter(isKeptCluster);
+  const singles = (dist.clusters || []).filter(function (c) {
+    return !isKeptCluster(c);
+  });
+  const entries = sortDistClusters(grouped).map(function (c) {
+    return { kind: "cluster", size: c.size, cluster: c };
+  });
+  if (singles.length) {
+    entries.push({
+      kind: "other",
+      size: singles.length,
+      singles: singles,
+      cluster: {
+        key: DIST_OTHER_KEY,
+        size: singles.length,
+        signature: mergeClusterSignatures(singles),
+      },
+    });
+  }
+  return entries;
+}
+
+function distChartRows(dist) {
+  return distListEntries(dist).map(function (ent) {
+    const c = ent.cluster;
+    return {
+      key: c.key,
+      name: clusterDisplayName(c),
+      size: ent.size,
+      card: clusterThumbCard(c.key, c),
+      pos: clusterThumbPos(c.key),
+    };
+  });
+}
+
+function setClusterName(key, value) {
+  if (!key) return;
+  const names = clusterNamesMap();
+  const next = String(value || "").trim();
+  if (next) names[key] = next;
+  else delete names[key];
+  persist();
+}
+
+function setClusterThumb(key, cardId) {
+  if (!key) return;
+  const thumbs = clusterThumbsMap();
+  const next = String(cardId || "").trim();
+  const prev = String(thumbs[key] || "");
+  if (!next || next === "__auto__") delete thumbs[key];
+  else thumbs[key] = next;
+  if (prev !== next) delete clusterThumbPosMap()[key];
+  persist();
+  document.querySelectorAll('.tourney-dist-art[data-cluster-key="' + key.replace(/"/g, "") + '"] .tourney-dist-thumb').forEach(function (btn) {
+    const stored = String(thumbs[key] || "");
+    const on = stored ? (btn.getAttribute("data-thumb-id") || "") === stored : btn.getAttribute("data-thumb-auto") === "1";
+    btn.classList.toggle("is-on", on);
+  });
+  paintClusterPanPreview(key);
+  refreshDistCharts();
+}
+
+let panPersistTimer = 0;
+let panChartTimer = 0;
+
+function setClusterThumbPos(key, pos, opts) {
+  if (!key) return;
+  opts = opts || {};
+  clusterThumbPosMap()[key] = normalizeThumbPos(pos);
+  paintClusterPanPreview(key);
+  if (opts.persist === false) {
+    clearTimeout(panPersistTimer);
+    panPersistTimer = setTimeout(persist, 280);
+  } else {
+    persist();
+  }
+  if (opts.chart === false) {
+    if (!panChartTimer) {
+      panChartTimer = setTimeout(function () {
+        panChartTimer = 0;
+        refreshDistCharts();
+      }, 70);
+    }
+  } else {
+    refreshDistCharts();
+  }
+}
+
+function setDistSort(mode) {
+  state.distSort = mode === "found" ? "found" : "size";
+  persistAndRender();
+}
+
+function renderDistSortButtons() {
+  const host = document.getElementById("tourney-dist-sort");
+  if (!host) return;
+  const kinds = [
+    { id: "size", label: "多い順" },
+    { id: "found", label: "検出順" },
+  ];
+  const cur = distSortMode();
+  host.innerHTML = kinds
+    .map(function (k) {
+      return (
+        "<button type=\"button\" class=\"btn sm " +
+        (cur === k.id ? "primary" : "secondary") +
+        "\" data-dist-sort=\"" +
+        k.id +
+        "\">" +
+        k.label +
+        "</button>"
+      );
+    })
+    .join("");
+}
+
+function renderDeckDist() {
+  const host = document.getElementById("tourney-deck-dist");
+  const meta = document.getElementById("tourney-deck-dist-meta");
+  if (!host) return;
+  const dist = currentDeckDist();
+  if (meta) {
+    if (!dist.withRecipe) {
+      meta.textContent = "レシピが入ると、近いデッキを系統にまとめます。";
+    } else {
+      const groupedN = dist.clusters.filter(isKeptCluster).length;
+      const singleN = dist.clusters.filter(function (c) {
+        return !isKeptCluster(c);
+      }).length;
+      meta.textContent =
+        "レシピ " + dist.withRecipe + " / 近い系統 " + groupedN + " / 独自 " + singleN + "（" + deckDistRuleText() + "）";
+    }
+  }
+  renderDistSortButtons();
+  renderDistChartKindButtons();
+  if (!dist.withRecipe) {
+    host.innerHTML = "<p class=\"muted\">選手のデッキを入れると、ここに分布が出ます。</p>";
+    drawDistChartPreview([]);
+    renderDistIconPanels(dist);
+    return;
+  }
+  const entries = distListEntries(dist);
+  host.innerHTML = entries
+    .map(function (ent, i) {
+      if (ent.kind === "other") return distOtherHtml(ent.singles, ent.cluster, i < 6, dist);
+      return distClusterHtml(ent.cluster, i < 6, dist);
+    })
+    .join("");
+  drawDistChartPreview(distChartRows(dist));
+  renderDistIconPanels(dist);
+  paintAllClusterPanPreviews();
+}
+
+function distThumbPickerHtml(cluster) {
+  const key = cluster && cluster.key ? String(cluster.key) : "";
+  const selected = clusterThumbSelectedId(key, cluster);
+  const autoId = cardIdentityId(defaultClusterThumb(cluster));
+  const cards = clusterThumbCandidates(cluster);
+  if (!cards.length) return "";
+  const btns = cards
+    .map(function (card) {
+      const id = cardIdentityId(card);
+      const on = id === selected;
+      const auto = id && id === autoId && key !== DIST_OTHER_KEY;
+      return (
+        "<button type=\"button\" class=\"tourney-dist-thumb" +
+        (on ? " is-on" : "") +
+        "\" data-thumb-id=\"" +
+        escapeHtml(id) +
+        "\"" +
+        (auto ? " data-thumb-auto=\"1\"" : "") +
+        " title=\"" +
+        escapeHtml((card.name || "") + "をグラフに使う") +
+        "\">" +
+        cardThumbHtml(card, { hi: true }) +
+        "</button>"
+      );
+    })
+    .join("");
+  return (
+    "<div class=\"tourney-dist-art\" data-cluster-key=\"" +
+    escapeHtml(key) +
+    "\"><div class=\"tourney-dist-thumbs\" role=\"group\" aria-label=\"グラフ用カード\"><span class=\"tourney-dist-thumbs-label\">グラフのカード</span>" +
+    btns +
+    "</div><div class=\"tourney-dist-pan\"><canvas class=\"tourney-dist-pan-canvas\" width=\"176\" height=\"176\" data-pan-key=\"" +
+    escapeHtml(key) +
+    "\" title=\"ドラッグで顔の位置\"></canvas><div class=\"tourney-dist-pan-tools\"><button type=\"button\" class=\"btn sm secondary\" data-pan-zoom=\"out\" title=\"縮小\">−</button><button type=\"button\" class=\"btn sm secondary\" data-pan-zoom=\"in\" title=\"拡大\">+</button><button type=\"button\" class=\"btn sm secondary\" data-pan-zoom=\"reset\">リセット</button><span class=\"tourney-dist-pan-hint\">ドラッグで顔の位置</span></div></div></div>"
+  );
+}
+
+function distIconAdjustHtml(cluster) {
+  const key = cluster && cluster.key ? String(cluster.key) : "";
+  const name = clusterDisplayName(cluster);
+  const picker = distThumbPickerHtml(cluster);
+  return (
+    "<div class=\"tourney-dist-icon-row\">" +
+    "<p class=\"tourney-dist-icon-name\">" +
+    escapeHtml((cluster && cluster.size ? cluster.size + "人　" : "") + name) +
+    "</p>" +
+    (picker || "<p class=\"muted\">カードなし</p>") +
+    "</div>"
+  );
+}
+
+function renderDistIconPanels(dist) {
+  const html =
+    dist && dist.withRecipe
+      ? distListEntries(dist)
+          .map(function (ent) {
+            return distIconAdjustHtml(ent.cluster);
+          })
+          .join("")
+      : "<p class=\"muted\">レシピが入ると、ここでカード位置を合わせられます。</p>";
+  ["tourney-dist-icons", "tourney-dist-board-icons"].forEach(function (id) {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = html;
+  });
+}
+
+function distClusterHtml(c, open, dist) {
+  const label = clusterDisplayName(c);
+  const auto = clusterLabel(c);
+  const sub = "完全一致 " + c.exactSize + " 人" + (c.nearSize ? " · 近い " + c.nearSize + " 人" : "");
+  const people = (c.players || [])
+    .map(function (p) {
+      return distPersonHtml(p, dist);
+    })
+    .join("");
+  return (
+    "<details class=\"tourney-dist-cluster\"" +
+    (open ? " open" : "") +
+    "><summary><span class=\"tourney-dist-count\">" +
+    c.size +
+    "人</span><span class=\"tourney-dist-label\">" +
+    escapeHtml(label) +
+    "</span><span class=\"tourney-dist-sub\">" +
+    escapeHtml(sub) +
+    "</span></summary><label class=\"tourney-dist-name-field\"><span>デッキ名</span><input type=\"text\" class=\"input tourney-dist-name\" data-cluster-key=\"" +
+    escapeHtml(c.key || "") +
+    "\" maxlength=\"40\" value=\"" +
+    escapeHtml(label) +
+    "\" placeholder=\"" +
+    escapeHtml(auto) +
+    "\" /></label>" +
+    distThumbPickerHtml(c) +
+    "<div class=\"tourney-dist-people\">" +
+    people +
+    "</div></details>"
+  );
+}
+
+function distOtherHtml(singles, cluster, open, dist) {
+  const people = (singles || [])
+    .map(function (c) {
+      const p = (c.players || [])[0] || { id: "", name: "" };
+      return distPersonHtml(p, dist, clusterLabel(c));
+    })
+    .join("");
+  const otherName = clusterDisplayName(cluster);
+  return (
+    "<details class=\"tourney-dist-cluster\"" +
+    (open ? " open" : "") +
+    "><summary><span class=\"tourney-dist-count\">" +
+    (cluster.size || singles.length) +
+    "人</span><span class=\"tourney-dist-label\">" +
+    escapeHtml(otherName) +
+    "</span><span class=\"tourney-dist-sub\">近い相手なし</span></summary><label class=\"tourney-dist-name-field\"><span>デッキ名</span><input type=\"text\" class=\"input tourney-dist-name\" data-cluster-key=\"" +
+    DIST_OTHER_KEY +
+    "\" maxlength=\"40\" value=\"" +
+    escapeHtml(otherName) +
+    "\" placeholder=\"その他\" /></label>" +
+    distThumbPickerHtml(cluster) +
+    "<div class=\"tourney-dist-people\">" +
+    people +
+    "</div></details>"
+  );
+}
+
+function copyDeckDist() {
+  const dist = currentDeckDist();
+  if (!dist.withRecipe) {
+    showToast("まとめるデッキがありません。レシピを入れてください");
+    return;
+  }
+  const lines = [];
+  if (state.settings.title) lines.push(state.settings.title);
+  const rows = distChartRows(dist);
+  lines.push("デッキ分布　レシピ " + dist.withRecipe);
+  lines.push(deckDistRuleText() + "。");
+  lines.push("");
+  rows.forEach(function (row) {
+    const pct = dist.withRecipe ? Math.round((row.size / dist.withRecipe) * 1000) / 10 : 0;
+    lines.push(row.size + "人（" + pct + "%）　" + row.name);
+  });
+  const text = lines.join("\n");
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(
+      function () {
+        showToast("デッキ分布をコピーしました");
+      },
+      function () {
+        fallbackCopy(text);
+      },
+    );
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function distChartKind() {
+  return state.distChartKind === "pie" ? "pie" : "bar";
+}
+
+function setDistChartKind(kind) {
+  state.distChartKind = kind === "pie" ? "pie" : "bar";
+  persist();
+  renderDistChartKindButtons();
+  refreshDistCharts();
+}
+
+function renderDistChartKindButtons() {
+  const host = document.getElementById("tourney-dist-chart-kind");
+  if (!host) return;
+  const kinds = [
+    { id: "bar", label: "棒グラフ" },
+    { id: "pie", label: "円グラフ" },
+  ];
+  const cur = distChartKind();
+  host.innerHTML = kinds
+    .map(function (k) {
+      return (
+        "<button type=\"button\" class=\"btn sm " +
+        (cur === k.id ? "primary" : "secondary") +
+        "\" data-chart-kind=\"" +
+        k.id +
+        "\">" +
+        k.label +
+        "</button>"
+      );
+    })
+    .join("");
+}
+
+function refreshDistCharts() {
+  drawDistChartPreview();
+  const board = document.getElementById("tourney-dist-board");
+  const canvas = document.getElementById("tourney-dist-board-chart");
+  if (!board || board.hidden || !(canvas instanceof HTMLCanvasElement)) return;
+  const dist = currentDeckDist();
+  const rows = distChartRows(dist);
+  if (!rows.length) return;
+  paintDistChart(canvas, rows, {
+    title: state.settings.title || "",
+    headline: "デッキ分布",
+    total: dist.withRecipe || 0,
+    preview: false,
+  });
+}
+
+function drawDistChartPreview(rows) {
+  const canvas = document.getElementById("tourney-dist-chart");
+  if (!(canvas instanceof HTMLCanvasElement)) return;
+  const dist = currentDeckDist();
+  paintDistChart(canvas, rows && rows.length ? rows : distChartRows(dist), {
+    title: state.settings.title || "",
+    headline: "デッキ分布",
+    total: dist.withRecipe || 0,
+    preview: true,
+  });
+}
+
+function paintDistChart(canvas, rows, opts) {
+  opts = opts || {};
+  const live = !!(canvas && (canvas.id === "tourney-dist-chart" || canvas.id === "tourney-dist-board-chart"));
+  const token = live ? ++distPaintToken : distPaintToken;
+  function run(images) {
+    if (live && token !== distPaintToken) return;
+    if (distChartKind() === "pie") paintDistPie(canvas, rows, opts, images);
+    else paintDistBar(canvas, rows, opts, images);
+  }
+  const list = rows || [];
+  run(list.map(function () {
+    return null;
+  }));
+  return Promise.all(
+    list.map(function (row) {
+      if (!row || !row.card) return Promise.resolve(null);
+      return loadUsageCardImage(row.card, distChartKind() === "pie" ? { pie: true } : { hi: true });
+    }),
+  ).then(function (images) {
+    run(images);
+    return canvas;
+  });
+}
+
+function distHeaderHeight(opts, preview) {
+  let y = preview ? 10 : 24;
+  if (opts && opts.title) y += preview ? 30 : 76;
+  y += preview ? 22 : 50;
+  y += preview ? 12 : 22;
+  return y;
+}
+
+function paintDistHeader(ctx, opts, W, preview) {
+  const pink = "#c43a78";
+  ctx.fillStyle = pink;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  let y = preview ? 10 : 24;
+  if (opts.title) {
+    ctx.font = usageRankFont(800, preview ? 24 : 68);
+    ctx.fillText(ellipsizeText(ctx, opts.title, W - (preview ? 48 : 120)), W / 2, y);
+    y += preview ? 30 : 76;
+  }
+  ctx.font = usageRankFont(800, preview ? 18 : 46);
+  ctx.fillText(opts.headline || "デッキ分布", W / 2, y);
+  y += preview ? 22 : 50;
+  const total = Math.max(0, Number(opts.total) || 0);
+  ctx.font = usageRankFont(700, preview ? 13 : 26);
+  ctx.fillText(total + "レシピ", W / 2, y);
+  y += preview ? 12 : 22;
+  return y;
+}
+
+function paintDistBar(canvas, rows, opts, images) {
+  opts = opts || {};
+  images = images || [];
+  const preview = opts.preview === true;
+  const W = preview ? 900 : 1600;
+  const padX = preview ? 28 : 72;
+  const padTop = preview ? 56 : 92;
+  const padBot = preview ? 28 : 56;
+  const rowH = preview ? 44 : 68;
+  const gap = preview ? 8 : 14;
+  const thumbW = preview ? 28 : 44;
+  const thumbH = preview ? 40 : 62;
+  const n = Math.max(1, (rows || []).length);
+  const H = padTop + n * rowH + gap * Math.max(0, n - 1) + padBot;
+  const scale = preview ? 1.25 : 1.5;
+  canvas.width = Math.round(W * scale);
+  canvas.height = Math.round(H * scale);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  fillUsagePosterBg(ctx, W, H);
+  let y = paintDistHeader(ctx, opts, W, preview);
+  const total = Math.max(1, Number(opts.total) || 0);
+  const maxSize = Math.max(1, (rows || []).reduce(function (m, r) {
+    return Math.max(m, r.size || 0);
+  }, 0));
+  const labelW = preview ? 186 : 320;
+  const numW = preview ? 92 : 140;
+  const thumbGap = preview ? 8 : 12;
+  const barX = padX + thumbW + thumbGap + labelW + 12;
+  const barMax = W - padX - numW - barX;
+  const pink = "#c43a78";
+  ctx.textBaseline = "middle";
+  (rows || []).forEach(function (row, i) {
+    const cy = y + i * (rowH + gap) + rowH / 2;
+    const img = images[i];
+    const tx = padX;
+    const ty = cy - thumbH / 2;
+    if (img) {
+      drawCoverImage(ctx, img, tx, ty, thumbW, thumbH, 6);
+    } else {
+      ctx.fillStyle = DIST_BAR_COLORS[i % DIST_BAR_COLORS.length];
+      roundRectPath(ctx, tx, ty, thumbW, thumbH, 6);
+      ctx.fill();
+    }
+    const bw = Math.max(6, (row.size / maxSize) * barMax);
+    ctx.fillStyle = DIST_BAR_COLORS[i % DIST_BAR_COLORS.length];
+    roundRectPath(ctx, barX, cy - rowH * 0.32, bw, rowH * 0.64, 8);
+    ctx.fill();
+    ctx.fillStyle = pink;
+    ctx.textAlign = "right";
+    ctx.font = usageRankFont(800, preview ? 14 : 22);
+    ctx.fillText(ellipsizeText(ctx, row.name || "系統", labelW), barX - 12, cy);
+    ctx.textAlign = "left";
+    ctx.font = usageRankFont(700, preview ? 13 : 20);
+    const pct = Math.round((row.size / total) * 1000) / 10;
+    ctx.fillText(row.size + "人　" + pct + "%", barX + bw + 10, cy);
+  });
+  return canvas;
+}
+
+function wrapPieDeckName(ctx, name, maxW) {
+  const raw = String(name || "系統").trim();
+  const parts = raw.split(/\s*\/\s*/).filter(Boolean);
+  if (parts.length >= 2) {
+    const lines = parts.map(function (p) {
+      return ellipsizeText(ctx, p, maxW);
+    });
+    if (lines.length <= 3) return lines;
+    return [lines[0], lines[1], ellipsizeText(ctx, parts.slice(2).join(" / "), maxW)];
+  }
+  if (ctx.measureText(raw).width <= maxW) return [raw];
+  let line = "";
+  const lines = [];
+  Array.from(raw).forEach(function (ch) {
+    const next = line + ch;
+    if (line && ctx.measureText(next).width > maxW) {
+      lines.push(line);
+      line = ch;
+    } else {
+      line = next;
+    }
+  });
+  if (line) lines.push(line);
+  if (lines.length <= 3) return lines;
+  return [lines[0], lines[1], ellipsizeText(ctx, lines.slice(2).join(""), maxW)];
+}
+
+function spreadPieLabelSide(group, yMin, yMax) {
+  if (!group.length) return;
+  group.sort(function (a, b) {
+    return a.y - b.y;
+  });
+  function minSep(a, b) {
+    return (a.h + b.h) / 2 + 8;
+  }
+  const firstTop = group[0].y - group[0].h / 2;
+  if (firstTop < yMin) {
+    const shift = yMin - firstTop;
+    for (let i = 0; i < group.length; i++) group[i].y += shift;
+  }
+  for (let i = 1; i < group.length; i++) {
+    const need = minSep(group[i - 1], group[i]);
+    if (group[i].y < group[i - 1].y + need) group[i].y = group[i - 1].y + need;
+  }
+  const last = group[group.length - 1];
+  const lastBottom = last.y + last.h / 2;
+  if (lastBottom > yMax) {
+    const shift = lastBottom - yMax;
+    for (let i = 0; i < group.length; i++) group[i].y -= shift;
+  }
+}
+
+function paintDistPie(canvas, rows, opts, images) {
+  opts = opts || {};
+  images = images || [];
+  const preview = opts.preview === true;
+  const W = preview ? 1200 : 2200;
+  const list = rows || [];
+  const basePieR = preview ? 176 : 360;
+  const labelW = preview ? 248 : 420;
+  const sidePad = preview ? 14 : 28;
+  const radialOut = preview ? 12 : 18;
+  const pieGapTop = preview ? 8 : 14;
+  const padBot = preview ? 16 : 28;
+  const nameFont = preview ? 14 : 34;
+  const metaFont = preview ? 12 : 26;
+  const lineH = preview ? 16 : 38;
+  const metaH = preview ? 15 : 32;
+  const pieClearPad = preview ? 8 : 14;
+  const total = Math.max(
+    1,
+    Number(opts.total) ||
+      list.reduce(function (s, r) {
+        return s + (r.size || 0);
+      }, 0),
+  );
+  const minGap = 2 * lineH + metaH + 8;
+  const yHead = distHeaderHeight(opts, preview);
+  const pieCx = W / 2;
+  const pink = "#c43a78";
+  const lineGap = preview ? 8 : 14;
+  const measure = document.createElement("canvas").getContext("2d");
+  if (!measure) return null;
+  let angle = -Math.PI / 2;
+  const callouts = [];
+  list.forEach(function (row) {
+    const slice = (Math.max(0, row.size || 0) / total) * Math.PI * 2;
+    const a0 = angle;
+    const a1 = angle + slice;
+    const mid = a0 + slice / 2;
+    callouts.push({
+      row: row,
+      a0: a0,
+      a1: a1,
+      mid: mid,
+      right: Math.cos(mid) >= 0,
+      h: minGap,
+      names: [],
+      tw: 0,
+    });
+    angle = a1;
+  });
+  measure.font = usageRankFont(800, nameFont);
+  callouts.forEach(function (c) {
+    c.names = wrapPieDeckName(measure, c.row.name || "系統", labelW);
+    let tw = 0;
+    c.names.forEach(function (line) {
+      tw = Math.max(tw, measure.measureText(line).width);
+    });
+    measure.font = usageRankFont(700, metaFont);
+    const pct = Math.round((c.row.size / total) * 1000) / 10;
+    c.meta = c.row.size + "人　" + pct + "%";
+    tw = Math.max(tw, measure.measureText(c.meta).width);
+    measure.font = usageRankFont(800, nameFont);
+    c.tw = tw;
+    c.h = c.names.length * lineH + metaH;
+  });
+  function stackSpan(side) {
+    const hs = callouts
+      .filter(function (c) {
+        return !!c.right === side;
+      })
+      .map(function (c) {
+        return c.h;
+      });
+    if (!hs.length) return 0;
+    return hs.reduce(function (s, h) {
+      return s + h;
+    }, 0) + Math.max(0, hs.length - 1) * 8;
+  }
+  const labelH = Math.max(stackSpan(false) + 8, stackSpan(true) + 8, basePieR * 2);
+  const maxPieR = W / 2 - sidePad - labelW - lineGap - radialOut - pieClearPad;
+  const pieR = Math.max(basePieR, Math.min(labelH / 2, maxPieR));
+  const contentH = Math.max(labelH, pieR * 2);
+  const pieClear = pieR + radialOut + pieClearPad;
+  const pieCy = yHead + pieGapTop + contentH / 2;
+  const yMin = yHead + pieGapTop + 4;
+  const yMax = yHead + pieGapTop + contentH - 4;
+  callouts.forEach(function (c) {
+    c.xRim = pieCx + Math.cos(c.mid) * pieR;
+    c.yRim = pieCy + Math.sin(c.mid) * pieR;
+    c.y = pieCy + Math.sin(c.mid) * (pieR + radialOut);
+  });
+  spreadPieLabelSide(
+    callouts.filter(function (c) {
+      return !c.right;
+    }),
+    yMin,
+    yMax,
+  );
+  spreadPieLabelSide(
+    callouts.filter(function (c) {
+      return c.right;
+    }),
+    yMin,
+    yMax,
+  );
+  let bottom = pieCy + pieR;
+  callouts.forEach(function (c) {
+    bottom = Math.max(bottom, c.y + c.h / 2);
+  });
+  const H = Math.ceil(Math.max(bottom, yHead + pieGapTop + contentH) + padBot);
+  const scale = preview ? 1.25 : 2;
+  canvas.width = Math.round(W * scale);
+  canvas.height = Math.round(H * scale);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  fillUsagePosterBg(ctx, W, H);
+  paintDistHeader(ctx, opts, W, preview);
+  callouts.forEach(function (c, i) {
+    ctx.beginPath();
+    ctx.moveTo(pieCx, pieCy);
+    ctx.arc(pieCx, pieCy, pieR, c.a0, c.a1);
+    ctx.closePath();
+    ctx.fillStyle = DIST_BAR_COLORS[i % DIST_BAR_COLORS.length];
+    ctx.fill();
+    const img = images[i];
+    if (img) drawPieSliceArt(ctx, img, pieCx, pieCy, pieR, c.a0, c.a1, c.row.pos);
+    ctx.beginPath();
+    ctx.moveTo(pieCx, pieCy);
+    ctx.arc(pieCx, pieCy, pieR, c.a0, c.a1);
+    ctx.closePath();
+    ctx.strokeStyle = "rgba(255, 249, 252, 0.95)";
+    ctx.lineWidth = preview ? 3 : 6;
+    ctx.stroke();
+  });
+  callouts.forEach(function (c) {
+    const kx = pieCx + Math.cos(c.mid) * (pieR + radialOut);
+    const ky = pieCy + Math.sin(c.mid) * (pieR + radialOut);
+    const textX = c.right ? W - sidePad : sidePad;
+    let innerX = c.right ? textX - c.tw - lineGap : textX + c.tw + lineGap;
+    if (c.right) innerX = Math.max(innerX, pieCx + pieClear);
+    else innerX = Math.min(innerX, pieCx - pieClear);
+    ctx.beginPath();
+    ctx.moveTo(c.xRim, c.yRim);
+    ctx.lineTo(kx, ky);
+    ctx.lineTo(innerX, c.y);
+    ctx.strokeStyle = pink;
+    ctx.lineWidth = preview ? 1.5 : 3;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(c.xRim, c.yRim, preview ? 2.4 : 4.2, 0, Math.PI * 2);
+    ctx.fillStyle = pink;
+    ctx.fill();
+    let ty = c.y - c.h / 2 + lineH / 2;
+    ctx.textAlign = c.right ? "right" : "left";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = pink;
+    ctx.font = usageRankFont(800, nameFont);
+    c.names.forEach(function (line) {
+      ctx.fillText(line, textX, ty);
+      ty += lineH;
+    });
+    ctx.font = usageRankFont(700, metaFont);
+    ctx.fillStyle = "rgba(140, 40, 90, 0.88)";
+    ctx.fillText(c.meta, textX, ty);
+  });
+  return canvas;
+}
+
+function openDistChartBoard() {
+  const board = document.getElementById("tourney-dist-board");
+  const canvas = document.getElementById("tourney-dist-board-chart");
+  if (!board || !(canvas instanceof HTMLCanvasElement)) {
+    showToast("分布グラフを読み込めません");
+    return;
+  }
+  const dist = currentDeckDist();
+  const rows = distChartRows(dist);
+  if (!rows.length) {
+    showToast("まとめるデッキがありません。レシピを入れてください");
+    return;
+  }
+  closeAdvanceBoard();
+  closeUsageBoard();
+  const eventEl = document.getElementById("tourney-dist-board-event");
+  const headEl = document.getElementById("tourney-dist-board-headline");
+  if (eventEl) eventEl.textContent = state.settings.title || "";
+  if (headEl) headEl.textContent = "デッキ分布";
+  paintDistChart(canvas, rows, {
+    title: state.settings.title || "",
+    headline: "デッキ分布",
+    total: dist.withRecipe || 0,
+    preview: false,
+  });
+  renderDistIconPanels(dist);
+  paintAllClusterPanPreviews();
+  board.hidden = false;
+  document.body.classList.add("tourney-board-open");
+  const closeBtn = document.getElementById("btn-tourney-dist-board-close");
+  if (closeBtn) closeBtn.focus();
+}
+
+function closeDistChartBoard() {
+  const board = document.getElementById("tourney-dist-board");
+  if (board) board.hidden = true;
+  const advance = document.getElementById("tourney-board");
+  const usage = document.getElementById("tourney-usage-board");
+  if ((!advance || advance.hidden) && (!usage || usage.hidden)) document.body.classList.remove("tourney-board-open");
+  if (document.fullscreenElement && board && document.fullscreenElement === board) {
+    document.exitFullscreen().catch(function () {});
+  }
+}
+
+function toggleDistChartFullscreen() {
+  const board = document.getElementById("tourney-dist-board");
+  if (!board) return;
+  if (document.fullscreenElement) {
+    document.exitFullscreen().catch(function () {});
+    return;
+  }
+  if (board.requestFullscreen) board.requestFullscreen().catch(function () {});
+}
+
+function exportDistChartImage() {
+  const dist = currentDeckDist();
+  const rows = distChartRows(dist);
+  if (!rows.length) {
+    showToast("まとめるデッキがありません。レシピを入れてください");
+    return;
+  }
+  const canvas = document.createElement("canvas");
+  showToast("画像を作っています…");
+  paintDistChart(canvas, rows, {
+    title: state.settings.title || "",
+    headline: "デッキ分布",
+    total: dist.withRecipe || 0,
+    preview: false,
+  }).then(function () {
+    canvas.toBlob(
+      function (blob) {
+        if (!blob) {
+          showToast("画像にできませんでした");
+          return;
+        }
+        downloadBlob(blob, "loveca-deck-dist-" + (state.settings.dateLabel || "event") + ".jpg");
+        showToast("分布グラフを保存しました");
+      },
+      "image/jpeg",
+      0.92,
+    );
+  });
+}
+
 function usageHeadlineText() {
-  return state.settings.usageBoardHeadline || "使用率ポイント 1〜" + usageRankLimit() + "位";
+  const n = usageRankLimit();
+  const cur = String(state.settings.usageBoardHeadline || "");
+  if (!cur || /^使用率ポイント 1〜\d+位$/.test(cur)) return usageHeadlineForCount(n);
+  return cur;
 }
 
 function renderUsagePreview(result) {
@@ -1088,7 +2318,7 @@ function renderUsagePreview(result) {
         rows.length +
         " 枚（最大 " +
         usageRankLimit() +
-        " 位・1〜30 は画像）"
+        " 位・画像付き）"
       : "レシピが集まると、カードごとのポイント内訳が出ます。";
   }
   if (!list) return;
@@ -1098,10 +2328,12 @@ function renderUsagePreview(result) {
   }
   list.innerHTML = rows
     .map(function (row) {
-      const art = row.withArt ? cardThumbHtml(row.card) : "";
+      const top = row.rank <= 10;
+      const art = row.withArt ? cardThumbHtml(row.card, { hi: top }) : "";
       return (
         "<button type=\"button\" class=\"tourney-usage-preview-item" +
         (row.withArt ? " is-art" : " is-text") +
+        (top ? " is-top" : "") +
         "\" data-card-no=\"" +
         escapeHtml(row.cardNo) +
         "\"><span class=\"tourney-usage-rank\">" +
@@ -1109,10 +2341,10 @@ function renderUsagePreview(result) {
         "</span>" +
         art +
         "<span class=\"tourney-usage-name\">" +
-        escapeHtml(row.withArt ? row.charName : row.typeNo + "　" + row.charName) +
+        escapeHtml(row.charName) +
         "</span><span class=\"tourney-pts\">" +
-        (row.withArt ? row.points + "P" : "") +
-        "</span></button>"
+        row.points +
+        "P</span></button>"
       );
     })
     .join("");
@@ -1154,6 +2386,429 @@ function copyUsageRanks() {
   }
 }
 
+let usageImageBusy = false;
+
+function setUsageImageButtonsBusy(busy) {
+  ["btn-tourney-usage-image", "btn-tourney-usage-board-image"].forEach(function (id) {
+    const el = document.getElementById(id);
+    if (el) el.disabled = !!busy;
+  });
+}
+
+function usageExportCols(n) {
+  if (n <= 12) return 2;
+  if (n <= 24) return 3;
+  if (n <= 40) return 4;
+  return 5;
+}
+
+function usageRankFont(weight, sizePx) {
+  return String(weight) + " " + sizePx + "px \"M PLUS Rounded 1c\", \"Hiragino Sans\", sans-serif";
+}
+
+function loadUsageCardImage(card, opts) {
+  const full = card && card.img ? String(card.img) : "";
+  if (!full) return Promise.resolve(null);
+  const thumbOpts = opts && opts.pie ? { pie: true } : opts && opts.poster ? { poster: true } : { hi: true };
+  const src = catalogListThumbnailUrl(full, thumbOpts) || full;
+  return new Promise(function (resolve) {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    const timer = setTimeout(function () {
+      resolve(null);
+    }, 8000);
+    img.onload = function () {
+      clearTimeout(timer);
+      resolve(img);
+    };
+    img.onerror = function () {
+      clearTimeout(timer);
+      resolve(null);
+    };
+    img.src = src;
+  });
+}
+
+function fillUsagePosterBg(ctx, w, h) {
+  const g = ctx.createRadialGradient(w * 0.5, h * 0.16, 24, w * 0.5, h * 0.4, Math.max(w, h) * 0.78);
+  g.addColorStop(0, "#fff9fc");
+  g.addColorStop(0.46, "#f7cfe8");
+  g.addColorStop(0.78, "#e9b3d8");
+  g.addColorStop(1, "#e3a6d0");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, h);
+}
+
+function roundRectPath(ctx, x, y, w, h, r) {
+  const rr = Math.max(0, Math.min(r, w / 2, h / 2));
+  ctx.beginPath();
+  if (typeof ctx.roundRect === "function") {
+    ctx.roundRect(x, y, w, h, rr);
+    return;
+  }
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
+}
+
+function drawCoverImage(ctx, img, x, y, w, h, r) {
+  const iw = img.naturalWidth || img.width;
+  const ih = img.naturalHeight || img.height;
+  if (!iw || !ih) return;
+  const scale = Math.max(w / iw, h / ih);
+  const dw = iw * scale;
+  const dh = ih * scale;
+  ctx.save();
+  roundRectPath(ctx, x, y, w, h, r);
+  ctx.clip();
+  ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
+  ctx.restore();
+}
+
+function drawCardArtAtFocus(ctx, img, destX, destY, coverR, pos) {
+  pos = normalizeThumbPos(pos);
+  const iw = img.naturalWidth || img.width;
+  const ih = img.naturalHeight || img.height;
+  if (!iw || !ih) return;
+  const scale = (coverR * 2 * pos.z) / Math.min(iw, ih);
+  const dw = iw * scale;
+  const dh = ih * scale;
+  ctx.drawImage(img, destX - pos.x * dw, destY - pos.y * dh, dw, dh);
+}
+
+function drawPieSliceArt(ctx, img, cx, cy, r, a0, a1, pos) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.arc(cx, cy, r, a0, a1);
+  ctx.closePath();
+  ctx.clip();
+  const mid = (a0 + a1) / 2;
+  const destX = cx + Math.cos(mid) * r * 0.56;
+  const destY = cy + Math.sin(mid) * r * 0.56;
+  drawCardArtAtFocus(ctx, img, destX, destY, r * 1.08, pos);
+  ctx.restore();
+}
+
+function paintAllClusterPanPreviews() {
+  document.querySelectorAll(".tourney-dist-pan-canvas[data-pan-key]").forEach(function (el) {
+    if (el instanceof HTMLCanvasElement) paintClusterPanPreview(el.getAttribute("data-pan-key") || "");
+  });
+}
+
+const panPreviewImgCache = Object.create(null);
+
+function paintClusterPanPreview(key) {
+  if (!key) return;
+  const canvases = document.querySelectorAll('.tourney-dist-pan-canvas[data-pan-key="' + key.replace(/"/g, "") + '"]');
+  if (!canvases.length) return;
+  const row = distChartRows(currentDeckDist()).find(function (r) {
+    return r.key === key;
+  });
+  const size = 88;
+  const dpr = 2;
+  const px = size * dpr;
+  function paintOn(canvas, img) {
+    if (!(canvas instanceof HTMLCanvasElement)) return;
+    if (canvas.width !== px || canvas.height !== px) {
+      canvas.width = px;
+      canvas.height = px;
+    }
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, size, size);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(size / 2, size / 2, size / 2 - 1, 0, Math.PI * 2);
+    ctx.clip();
+    if (img) {
+      drawCardArtAtFocus(ctx, img, size / 2, size / 2, size / 2 - 1, clusterThumbPos(key));
+    } else {
+      ctx.fillStyle = "rgba(196, 58, 120, 0.16)";
+      ctx.fillRect(0, 0, size, size);
+    }
+    ctx.restore();
+    ctx.strokeStyle = "rgba(196, 58, 120, 0.55)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(size / 2, size / 2, size / 2 - 1, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  function paintAll(img) {
+    canvases.forEach(function (canvas) {
+      paintOn(canvas, img);
+    });
+  }
+  if (!row || !row.card) {
+    paintAll(null);
+    return;
+  }
+  const cacheId = String(row.card.card_no || row.card.id || key);
+  if (panPreviewImgCache[cacheId]) {
+    paintAll(panPreviewImgCache[cacheId]);
+    return;
+  }
+  paintAll(null);
+  loadUsageCardImage(row.card, { hi: true }).then(function (img) {
+    if (img) panPreviewImgCache[cacheId] = img;
+    paintAll(img);
+  });
+}
+
+function ellipsizeText(ctx, text, maxW) {
+  const raw = String(text || "");
+  if (ctx.measureText(raw).width <= maxW) return raw;
+  let s = raw;
+  while (s.length > 1 && ctx.measureText(s + "…").width > maxW) s = s.slice(0, -1);
+  return s + "…";
+}
+
+function usageRankGridHeight(n, spec) {
+  const rowsN = Math.ceil(Math.max(0, n) / spec.cols);
+  if (!rowsN) return 0;
+  return rowsN * spec.cellH + spec.gapY * Math.max(0, rowsN - 1);
+}
+
+function usageRankFeaturedSpec(W, padX) {
+  const cols = 5;
+  const gapX = 24;
+  const gapY = 20;
+  const cellW = (W - padX * 2 - gapX * (cols - 1)) / cols;
+  const thumbW = 268;
+  const thumbH = 374;
+  return {
+    cols: cols,
+    padX: padX,
+    gapX: gapX,
+    gapY: gapY,
+    cellW: cellW,
+    cellH: thumbH + 118,
+    thumbW: thumbW,
+    thumbH: thumbH,
+    featured: true,
+    rankFont: 34,
+    nameFont: 24,
+    typeFont: 16,
+    ptsFont: 26,
+  };
+}
+
+function usageRankRestSpec(W, padX) {
+  const cols = 5;
+  const gapX = 22;
+  const gapY = 16;
+  const cellW = (W - padX * 2 - gapX * (cols - 1)) / cols;
+  const thumbW = 96;
+  const thumbH = 134;
+  return {
+    cols: cols,
+    padX: padX,
+    gapX: gapX,
+    gapY: gapY,
+    cellW: cellW,
+    cellH: Math.max(152, thumbH + 18),
+    thumbW: thumbW,
+    thumbH: thumbH,
+    featured: false,
+    rankFont: 26,
+    nameFont: 22,
+    typeFont: 15,
+    ptsFont: 22,
+  };
+}
+
+function drawUsageRankGrid(ctx, rows, images, originY, spec) {
+  const pink = "#c43a78";
+  const n = rows.length;
+  for (let i = 0; i < n; i++) {
+    const row = rows[i];
+    const col = i % spec.cols;
+    const r = Math.floor(i / spec.cols);
+    const x = spec.padX + col * (spec.cellW + spec.gapX);
+    const cy = originY + r * (spec.cellH + spec.gapY);
+    const img = images[i];
+    if (spec.featured) {
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillStyle = pink;
+      ctx.font = usageRankFont(800, spec.rankFont);
+      ctx.fillText(String(row.rank), x + spec.cellW / 2, cy);
+      const ix = x + (spec.cellW - spec.thumbW) / 2;
+      const iy = cy + 42;
+      if (img) {
+        drawCoverImage(ctx, img, ix, iy, spec.thumbW, spec.thumbH, 12);
+      } else {
+        ctx.fillStyle = "rgba(196, 58, 120, 0.18)";
+        roundRectPath(ctx, ix, iy, spec.thumbW, spec.thumbH, 12);
+        ctx.fill();
+      }
+      ctx.fillStyle = pink;
+      ctx.font = usageRankFont(800, spec.nameFont);
+      ctx.fillText(ellipsizeText(ctx, row.charName, spec.cellW - 12), x + spec.cellW / 2, iy + spec.thumbH + 10);
+      ctx.font = usageRankFont(700, spec.typeFont);
+      ctx.globalAlpha = 0.78;
+      ctx.fillText(ellipsizeText(ctx, row.typeNo, spec.cellW - 12), x + spec.cellW / 2, iy + spec.thumbH + 38);
+      ctx.globalAlpha = 1;
+      ctx.font = usageRankFont(800, spec.ptsFont);
+      ctx.fillText(row.points + "P", x + spec.cellW / 2, iy + spec.thumbH + 58);
+    } else {
+      const ty = cy + (spec.cellH - spec.thumbH) / 2;
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = pink;
+      ctx.font = usageRankFont(800, spec.rankFont);
+      ctx.fillText(String(row.rank), x + 42, cy + spec.cellH / 2);
+      const ix = x + 52;
+      if (img) {
+        drawCoverImage(ctx, img, ix, ty, spec.thumbW, spec.thumbH, 8);
+      } else {
+        ctx.fillStyle = "rgba(196, 58, 120, 0.18)";
+        roundRectPath(ctx, ix, ty, spec.thumbW, spec.thumbH, 8);
+        ctx.fill();
+      }
+      const textX = ix + spec.thumbW + 12;
+      const textW = Math.max(40, x + spec.cellW - textX - 8);
+      ctx.textAlign = "left";
+      ctx.fillStyle = pink;
+      ctx.font = usageRankFont(800, spec.nameFont);
+      ctx.fillText(ellipsizeText(ctx, row.charName, textW), textX, cy + spec.cellH / 2 - 18);
+      ctx.font = usageRankFont(700, spec.typeFont);
+      ctx.globalAlpha = 0.78;
+      ctx.fillText(ellipsizeText(ctx, row.typeNo, textW * 0.72), textX, cy + spec.cellH / 2 + 8);
+      ctx.globalAlpha = 1;
+      ctx.textAlign = "right";
+      ctx.font = usageRankFont(800, spec.ptsFont);
+      ctx.fillText(row.points + "P", x + spec.cellW - 8, cy + spec.cellH / 2 + 10);
+    }
+  }
+  return originY + usageRankGridHeight(n, spec);
+}
+
+function renderUsageRankPng(rows) {
+  const topRows = rows.slice(0, 10);
+  const restRows = rows.slice(10);
+  const W = 1920;
+  const padX = 56;
+  const padTop = 48;
+  const padBot = 52;
+  const title = String(state.settings.title || "").trim();
+  const headline = usageHeadlineText();
+  const meta =
+    poolRangeLabel(state.settings.poolMinWins, state.settings.poolMaxWins) + "　" + cardKindFilterLabel();
+  const headH = (title ? 58 : 0) + 62 + 36;
+  const topSpec = usageRankFeaturedSpec(W, padX);
+  const restSpec = usageRankRestSpec(W, padX);
+  const topH = topRows.length ? usageRankGridHeight(topRows.length, topSpec) : 0;
+  const restGap = topRows.length && restRows.length ? 40 : 0;
+  const restH = restRows.length ? usageRankGridHeight(restRows.length, restSpec) : 0;
+  const H = padTop + headH + topH + restGap + restH + padBot;
+  const scale = 1.5;
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(W * scale);
+  canvas.height = Math.round(H * scale);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return Promise.reject(new Error("canvas"));
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  fillUsagePosterBg(ctx, W, H);
+  const pink = "#c43a78";
+  ctx.fillStyle = pink;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  let y = padTop;
+  if (title) {
+    ctx.font = usageRankFont(800, 36);
+    ctx.fillText(ellipsizeText(ctx, title, W - padX * 2), W / 2, y);
+    y += 50;
+  }
+  ctx.font = usageRankFont(800, 44);
+  ctx.fillText(ellipsizeText(ctx, headline, W - padX * 2), W / 2, y);
+  y += 56;
+  ctx.font = usageRankFont(700, 22);
+  ctx.fillText(ellipsizeText(ctx, meta, W - padX * 2), W / 2, y);
+  y += 40;
+  const fontReady =
+    document.fonts && document.fonts.ready
+      ? document.fonts.ready.catch(function () {})
+      : Promise.resolve();
+  return fontReady
+    .then(function () {
+      return Promise.all(
+        rows.map(function (row, i) {
+          return loadUsageCardImage(row.card, { poster: i < 10 });
+        }),
+      );
+    })
+    .then(function (images) {
+      if (topRows.length) {
+        y = drawUsageRankGrid(ctx, topRows, images.slice(0, topRows.length), y, topSpec);
+      }
+      if (restRows.length) {
+        y += restGap;
+        drawUsageRankGrid(ctx, restRows, images.slice(topRows.length), y, restSpec);
+      }
+      return new Promise(function (resolve, reject) {
+        canvas.toBlob(
+          function (blob) {
+            if (blob) resolve(blob);
+            else reject(new Error("blob"));
+          },
+          "image/jpeg",
+          0.9,
+        );
+      });
+    });
+}
+
+function exportUsageRankImage() {
+  if (usageImageBusy) return;
+  readSettingsFromForm();
+  persist();
+  const rows = usageRankRows(compute());
+  if (!rows.length) {
+    showToast("まとめるカードがありません。レシピを入れてください");
+    return;
+  }
+  usageImageBusy = true;
+  setUsageImageButtonsBusy(true);
+  showToast("画像を作っています…");
+  renderUsageRankPng(rows)
+    .then(function (blob) {
+      downloadBlob(blob, "loveca-usage-" + (state.settings.dateLabel || "event") + ".jpg");
+      showToast("画像を保存しました（" + rows.length + " 位）");
+    })
+    .catch(function () {
+      showToast("画像にできませんでした");
+    })
+    .finally(function () {
+      usageImageBusy = false;
+      setUsageImageButtonsBusy(false);
+    });
+}
+
+function usageBoardItemHtml(row, top) {
+  return (
+    "<li class=\"is-art" +
+    (top ? " is-top" : "") +
+    "\"><span class=\"tourney-usage-board-rank\">" +
+    row.rank +
+    "</span>" +
+    cardThumbHtml(row.card, { hi: top }) +
+    "<span class=\"tourney-usage-board-copy\"><span class=\"tourney-usage-board-name\">" +
+    escapeHtml(row.charName) +
+    "</span><span class=\"tourney-usage-board-type\">" +
+    escapeHtml(row.typeNo) +
+    "</span></span><span class=\"tourney-usage-board-pts\">" +
+    row.points +
+    "P</span></li>"
+  );
+}
+
 function openUsageBoard() {
   const board = document.getElementById("tourney-usage-board");
   if (!board) {
@@ -1169,60 +2824,37 @@ function openUsageBoard() {
     return;
   }
   closeAdvanceBoard();
+  closeDistChartBoard();
   const eventEl = document.getElementById("tourney-usage-board-event");
   const headEl = document.getElementById("tourney-usage-board-headline");
   const metaEl = document.getElementById("tourney-usage-board-meta");
+  const topEl = document.getElementById("tourney-usage-board-list-top");
   const listEl = document.getElementById("tourney-usage-board-list");
-  const textEl = document.getElementById("tourney-usage-board-list-text");
-  const subEl = document.getElementById("tourney-usage-board-subhead");
   if (eventEl) eventEl.textContent = state.settings.title || "";
   if (headEl) headEl.textContent = usageHeadlineText();
   if (metaEl) {
     metaEl.textContent =
       poolRangeLabel(state.settings.poolMinWins, state.settings.poolMaxWins) + "　" + cardKindFilterLabel();
   }
-  const artRows = rows.filter(function (row) {
-    return row.withArt;
+  const topRows = rows.filter(function (row) {
+    return row.rank <= 10;
   });
-  const textRows = rows.filter(function (row) {
-    return !row.withArt;
+  const restRows = rows.filter(function (row) {
+    return row.rank > 10;
   });
-  if (listEl) {
-    listEl.innerHTML = artRows
+  if (topEl) {
+    topEl.hidden = !topRows.length;
+    topEl.innerHTML = topRows
       .map(function (row) {
-        return (
-          "<li class=\"is-art\"><span class=\"tourney-usage-board-rank\">" +
-          row.rank +
-          "</span>" +
-          cardThumbHtml(row.card) +
-          "<span class=\"tourney-usage-board-copy\"><span class=\"tourney-usage-board-name\">" +
-          escapeHtml(row.charName) +
-          "</span><span class=\"tourney-usage-board-type\">" +
-          escapeHtml(row.typeNo) +
-          "</span></span><span class=\"tourney-usage-board-pts\">" +
-          row.points +
-          "P</span></li>"
-        );
+        return usageBoardItemHtml(row, true);
       })
       .join("");
   }
-  if (subEl) {
-    subEl.hidden = !textRows.length;
-    subEl.textContent = "31〜50位";
-  }
-  if (textEl) {
-    textEl.hidden = !textRows.length;
-    textEl.innerHTML = textRows
+  if (listEl) {
+    listEl.hidden = !restRows.length;
+    listEl.innerHTML = restRows
       .map(function (row) {
-        return (
-          "<li class=\"is-text\"><span class=\"tourney-usage-board-rank\">" +
-          row.rank +
-          "</span><span class=\"tourney-usage-board-type\">" +
-          escapeHtml(row.typeNo) +
-          "</span><span class=\"tourney-usage-board-name\">" +
-          escapeHtml(row.charName) +
-          "</span></li>"
-        );
+        return usageBoardItemHtml(row, false);
       })
       .join("");
   }
@@ -1236,7 +2868,8 @@ function closeUsageBoard() {
   const board = document.getElementById("tourney-usage-board");
   if (board) board.hidden = true;
   const advance = document.getElementById("tourney-board");
-  if (!advance || advance.hidden) document.body.classList.remove("tourney-board-open");
+  const dist = document.getElementById("tourney-dist-board");
+  if ((!advance || advance.hidden) && (!dist || dist.hidden)) document.body.classList.remove("tourney-board-open");
   if (document.fullscreenElement && board && document.fullscreenElement === board) {
     document.exitFullscreen().catch(function () {});
   }
@@ -1441,6 +3074,173 @@ function playersHaveDecks() {
   });
 }
 
+function playersHaveRecords() {
+  return state.players.some(function (p) {
+    return (p.wins || 0) > 0 || (p.losses || 0) > 0 || (p.draws || 0) > 0 || p.dropped;
+  });
+}
+
+function snapshotTrialPlayers() {
+  return state.players.map(function (p) {
+    return {
+      id: p.id,
+      wins: p.wins,
+      losses: p.losses,
+      draws: p.draws || 0,
+      dropped: !!p.dropped,
+      deckCode: p.deckCode || "",
+      recipeText: p.recipeText || "",
+      deckMap: JSON.parse(JSON.stringify(p.deckMap || {})),
+    };
+  });
+}
+
+function addSixtyCardPack(packs, seen, deck) {
+  const clean = sanitizeMainDeckMap(deck);
+  if (deckMapTotal(clean) !== MAIN_SIZE) return;
+  const key = Object.keys(clean)
+    .sort()
+    .map(function (k) {
+      return k + ":" + clean[k];
+    })
+    .join("|");
+  if (seen.has(key)) return;
+  seen.add(key);
+  packs.push(clean);
+}
+
+async function fetchPublishedSampleDecks() {
+  try {
+    const u = new URL(SAMPLE_DECK_RECIPES_PUBLIC_FILENAME, window.location.href);
+    const r = await fetch(u.toString(), { cache: "no-store" });
+    if (!r.ok) return [];
+    const data = await r.json();
+    return Array.isArray(data) ? data : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+async function loadSixtyCardPacks() {
+  const packs = [];
+  const seen = new Set();
+  (getSampleDeckRecipes() || []).forEach(function (r) {
+    addSixtyCardPack(packs, seen, r && r.deck);
+  });
+  if (packs.length < 2) {
+    const remote = await fetchPublishedSampleDecks();
+    remote.forEach(function (r) {
+      addSixtyCardPack(packs, seen, r && r.deck);
+    });
+  }
+  try {
+    const lib = loadDeckLibrary();
+    (lib && lib.slots ? lib.slots : []).forEach(function (s) {
+      if (!s || isBuiltInStarterDeckId(s.id)) return;
+      addSixtyCardPack(packs, seen, s.deck);
+    });
+  } catch (_) {}
+  if (!packs.length) addSixtyCardPack(packs, seen, DEFAULT_STARTER_DECK_MAP);
+  return packs;
+}
+
+function trialRecordForIndex(i, n) {
+  const undefeated = Math.max(1, Math.min(3, Math.floor(n / 16) || 1));
+  const oneLoss = Math.max(2, Math.min(n - undefeated, Math.ceil(n * 0.45)));
+  if (i < undefeated) return { wins: 5, losses: 0, draws: 0, dropped: false };
+  if (i < undefeated + oneLoss) return { wins: 4, losses: 1, draws: 0, dropped: false };
+  if (n > 8 && i === n - 1) return { wins: 2, losses: 1, draws: 0, dropped: true };
+  const rest = [
+    { wins: 3, losses: 2 },
+    { wins: 2, losses: 3 },
+    { wins: 3, losses: 1 },
+    { wins: 1, losses: 4 },
+    { wins: 0, losses: 2 },
+  ];
+  const rec = rest[(i - undefeated - oneLoss) % rest.length];
+  return { wins: rec.wins, losses: rec.losses, draws: 0, dropped: false };
+}
+
+function applyTrialFill() {
+  if (!state.players.length) {
+    showToast("先に選手CSVで名簿を入れてください");
+    return;
+  }
+  if (!state.trialBackup && (playersHaveDecks() || playersHaveRecords())) {
+    if (!window.confirm("今の勝敗とデッキを退避して、仮の内容を入れます。「お試しを消す」で戻ります。続けますか？")) {
+      return;
+    }
+  }
+  loadSixtyCardPacks().then(function (packs) {
+    if (!packs.length) {
+      showToast("60枚のサンプルデッキを読めませんでした");
+      return;
+    }
+    pushUndo();
+    if (!state.trialBackup) state.trialBackup = snapshotTrialPlayers();
+    state.players.forEach(function (p, i) {
+      const rec = trialRecordForIndex(i, state.players.length);
+      p.wins = rec.wins;
+      p.losses = rec.losses;
+      p.draws = rec.draws;
+      p.dropped = rec.dropped;
+      p.deckMap = sanitizeMainDeckMap(packs[i % packs.length]);
+      p.recipeText = deckMapToRecipeText(p.deckMap);
+      if (!p.deckCode) p.deckCode = "TRIAL" + String(i + 1);
+    });
+    state.lotteryWinnerIds = [];
+    autoFillOutputCountsSilent();
+    persistAndRender();
+    showToast(
+      "お試しの勝敗と60枚デッキを入れました（" +
+        state.players.length +
+        " 人 / レシピ " +
+        packs.length +
+        " 種）。消すと名簿だけ残ります",
+    );
+  });
+}
+
+function clearTrialFill() {
+  if (!state.trialBackup) {
+    showToast("お試し中ではありません");
+    return;
+  }
+  pushUndo();
+  const byId = new Map();
+  state.trialBackup.forEach(function (p) {
+    byId.set(p.id, p);
+  });
+  state.players.forEach(function (p) {
+    const old = byId.get(p.id);
+    if (!old) return;
+    p.wins = old.wins;
+    p.losses = old.losses;
+    p.draws = old.draws || 0;
+    p.dropped = !!old.dropped;
+    p.deckCode = old.deckCode || "";
+    p.recipeText = old.recipeText || "";
+    p.deckMap = old.deckMap && typeof old.deckMap === "object" ? old.deckMap : {};
+  });
+  state.trialBackup = null;
+  state.lotteryWinnerIds = [];
+  persistAndRender();
+  showToast("お試しの入力を消しました。名簿はそのままです");
+}
+
+function renderTrialBanner() {
+  const el = document.getElementById("tourney-trial-banner");
+  if (!el) return;
+  if (!state.trialBackup) {
+    el.hidden = true;
+    el.innerHTML = "";
+    return;
+  }
+  el.hidden = false;
+  el.innerHTML =
+    "<strong>お試し中</strong>　勝敗とデッキは仮です。本番のCSVを当てる前に「お試しを消す」を押してください。";
+}
+
 function rememberParseMeta(text, parsed, asRoster) {
   if (asRoster) state.lastRosterText = String(text || "");
   state.skippedRows = parsed.skippedRows || [];
@@ -1626,8 +3426,10 @@ function importPlayersFromText(text, replace) {
     if (n.recipeText) applyRecipeText(n, n.recipeText);
     return n;
   });
-  if (replace) state.players = incoming;
-  else state.players = state.players.concat(incoming);
+  if (replace) {
+    state.trialBackup = null;
+    state.players = incoming;
+  } else state.players = state.players.concat(incoming);
   rememberParseMeta(text, parsed, true);
   autoFillOutputCountsSilent();
   toastImport(incoming, parsed.errors, parsed.skippedRoster);
@@ -1771,13 +3573,17 @@ function rollLottery() {
 
 function downloadText(filename, text, mime) {
   const blob = new Blob([text], { type: mime || "text/plain;charset=utf-8" });
+  downloadBlob(blob, filename);
+}
+
+function downloadBlob(blob, filename) {
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = filename;
   a.click();
   setTimeout(function () {
     URL.revokeObjectURL(a.href);
-  }, 1000);
+  }, 4000);
 }
 
 function exportEventJson() {
@@ -1954,34 +3760,37 @@ function applyCsvFile(file, recordsOnly) {
 }
 
 function loadSample() {
-  pushUndo();
-  state.settings = defaultSettings();
-  state.players = buildSamplePlayers();
-  state.selectedId = state.players[0] ? state.players[0].id : "";
-  autoFillOutputCountsSilent();
-  persistAndRender();
-  showToast("動作確認用の12人を入れました。進出者を出せます");
+  loadSixtyCardPacks().then(function (packs) {
+    pushUndo();
+    state.trialBackup = null;
+    state.settings = defaultSettings();
+    state.players = buildSamplePlayers(packs);
+    state.selectedId = state.players[0] ? state.players[0].id : "";
+    autoFillOutputCountsSilent();
+    persistAndRender();
+    showToast("動作確認用の12人を入れました（デッキは60枚）。進出者を出せます");
+  });
 }
 
-function buildSamplePlayers() {
-  const pop = { "PL!S-bp5-111-R": 4, "PL!SP-bp5-006-R": 4, "PL!N-pb1-011-R": 4, "PL!S-PR-026-PR": 4 };
-  const mid = { "PL!S-bp5-111-R": 2, "PL!SP-bp5-006-R": 2, "PL!HS-PR-022-PR": 4, "PL!S-sd1-008-SD": 2 };
-  const uniqA = { "PL!HS-bp5-001-P": 1, "PL!-bp5-007-R": 1, "PL!S-bp2-009-R": 1, "PL!S-pb1-004-R": 1 };
-  const uniqB = { "PL!-bp5-003-R＋": 2, "PL!N-bp1-003-R＋": 1, "PL!SP-bp5-001-R＋": 2, "PL!SP-bp2-019-N": 3 };
-  return [
-    sampleRow("天王寺 璃奈", 5, 0, false, "RINA1", uniqA),
-    sampleRow("中須 かすみ", 5, 0, false, "KASU1", pop),
-    sampleRow("優木 せつ菜", 4, 1, false, "SETU1", uniqB),
-    sampleRow("三船 栞子", 4, 1, false, "SHIK1", uniqA),
-    sampleRow("近江 彼方", 4, 1, false, "KANA1", mid),
-    sampleRow("桜坂 しずく", 4, 1, false, "SHIZ1", mid),
-    sampleRow("宮下 愛", 4, 1, false, "AI001", Object.assign({}, mid, { "PL!S-bp5-111-R": 4 })),
-    sampleRow("エマ・ヴェルデ", 4, 1, false, "EMMA1", Object.assign({}, pop, { "PL!S-bp2-016-N": 4 })),
-    sampleRow("朝香 果林", 4, 1, false, "KARI1", pop),
-    sampleRow("上原 歩夢", 4, 1, false, "AYUM1", pop),
-    sampleRow("鐘 嵐珠", 1, 1, false, "LANZ1", pop),
-    sampleRow("ミア・テイラー", 3, 1, true, "MIA01", mid),
+function buildSamplePlayers(packs) {
+  const list = packs && packs.length ? packs : [DEFAULT_STARTER_DECK_MAP];
+  const rows = [
+    ["天王寺 璃奈", 5, 0, false, "RINA1"],
+    ["中須 かすみ", 5, 0, false, "KASU1"],
+    ["優木 せつ菜", 4, 1, false, "SETU1"],
+    ["三船 栞子", 4, 1, false, "SHIK1"],
+    ["近江 彼方", 4, 1, false, "KANA1"],
+    ["桜坂 しずく", 4, 1, false, "SHIZ1"],
+    ["宮下 愛", 4, 1, false, "AI001"],
+    ["エマ・ヴェルデ", 4, 1, false, "EMMA1"],
+    ["朝香 果林", 4, 1, false, "KARI1"],
+    ["上原 歩夢", 4, 1, false, "AYUM1"],
+    ["鐘 嵐珠", 1, 1, false, "LANZ1"],
+    ["ミア・テイラー", 3, 1, true, "MIA01"],
   ];
+  return rows.map(function (row, i) {
+    return sampleRow(row[0], row[1], row[2], row[3], row[4], list[i % list.length]);
+  });
 }
 
 function sampleRow(name, wins, losses, dropped, deckCode, deckMap) {
@@ -2114,11 +3923,154 @@ export function initTournament() {
     readSettingsFromForm();
     persistAndRender();
   });
-  ["input-tourney-usage-count", "input-tourney-usage-headline"].forEach(function (id) {
-    document.getElementById(id)?.addEventListener("change", function () {
-      readSettingsFromForm();
-      persistAndRender();
-    });
+  document.getElementById("input-tourney-usage-headline")?.addEventListener("change", function () {
+    readSettingsFromForm();
+    persistAndRender();
+  });
+  document.getElementById("tourney-usage-count")?.addEventListener("click", function (ev) {
+    const t = ev.target;
+    if (!(t instanceof HTMLElement)) return;
+    const btn = t.closest("[data-usage-count]");
+    if (!btn) return;
+    setUsageRankCount(btn.getAttribute("data-usage-count"));
+  });
+  document.getElementById("btn-tourney-copy-dist")?.addEventListener("click", copyDeckDist);
+  document.getElementById("btn-tourney-show-dist-chart")?.addEventListener("click", openDistChartBoard);
+  document.getElementById("btn-tourney-dist-image")?.addEventListener("click", exportDistChartImage);
+  function handleDistArtClick(ev, allowSelect) {
+    const t = ev.target;
+    if (!(t instanceof HTMLElement)) return false;
+    if (t.closest(".tourney-dist-name-field") || t.closest(".tourney-dist-assign")) {
+      ev.stopPropagation();
+      return true;
+    }
+    const thumb = t.closest("[data-thumb-id]");
+    if (thumb) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const wrap = thumb.closest(".tourney-dist-art") || thumb.closest(".tourney-dist-thumbs");
+      setClusterThumb(wrap ? wrap.getAttribute("data-cluster-key") : "", thumb.getAttribute("data-thumb-id"));
+      return true;
+    }
+    const zoomBtn = t.closest("[data-pan-zoom]");
+    if (zoomBtn) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const art = zoomBtn.closest(".tourney-dist-art");
+      const key = art ? art.getAttribute("data-cluster-key") : "";
+      const pos = clusterThumbPos(key);
+      const act = zoomBtn.getAttribute("data-pan-zoom");
+      if (act === "in") setClusterThumbPos(key, { x: pos.x, y: pos.y, z: pos.z * 1.12 });
+      else if (act === "out") setClusterThumbPos(key, { x: pos.x, y: pos.y, z: pos.z / 1.12 });
+      else setClusterThumbPos(key, defaultThumbPos());
+      return true;
+    }
+    if (!allowSelect) return false;
+    const btn = t.closest("[data-select]");
+    if (!btn) return false;
+    state.selectedId = btn.getAttribute("data-select") || "";
+    persistAndRender();
+    openDeckView(state.selectedId);
+    return true;
+  }
+  document.getElementById("tourney-deck-dist")?.addEventListener("click", function (ev) {
+    handleDistArtClick(ev, true);
+  });
+  document.getElementById("tourney-dist-icons")?.addEventListener("click", function (ev) {
+    handleDistArtClick(ev, false);
+  });
+  document.getElementById("tourney-dist-board")?.addEventListener("click", function (ev) {
+    handleDistArtClick(ev, false);
+  });
+  (function bindDistPan() {
+    let panDrag = null;
+    function bindHost(host) {
+      if (!host) return;
+      host.addEventListener("pointerdown", function (ev) {
+        const canvas = ev.target instanceof Element ? ev.target.closest(".tourney-dist-pan-canvas") : null;
+        if (!(canvas instanceof HTMLCanvasElement)) return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        const key = canvas.getAttribute("data-pan-key") || "";
+        panDrag = {
+          pointerId: ev.pointerId,
+          key: key,
+          x0: ev.clientX,
+          y0: ev.clientY,
+          pos: clusterThumbPos(key),
+          size: canvas.getBoundingClientRect().width || 88,
+        };
+        try {
+          canvas.setPointerCapture(ev.pointerId);
+        } catch (e) {}
+      });
+      host.addEventListener("pointermove", function (ev) {
+        if (!panDrag || ev.pointerId !== panDrag.pointerId) return;
+        ev.preventDefault();
+        const cover = Math.max(24, panDrag.size * panDrag.pos.z);
+        setClusterThumbPos(
+          panDrag.key,
+          {
+            x: panDrag.pos.x - (ev.clientX - panDrag.x0) / cover,
+            y: panDrag.pos.y - (ev.clientY - panDrag.y0) / cover,
+            z: panDrag.pos.z,
+          },
+          { persist: false, chart: false },
+        );
+      });
+      function endPan(ev) {
+        if (!panDrag || (ev && ev.pointerId !== panDrag.pointerId)) return;
+        panDrag = null;
+        persist();
+        refreshDistCharts();
+      }
+      host.addEventListener("pointerup", endPan);
+      host.addEventListener("pointercancel", endPan);
+      host.addEventListener(
+        "wheel",
+        function (ev) {
+          const canvas = ev.target instanceof Element ? ev.target.closest(".tourney-dist-pan-canvas") : null;
+          if (!canvas) return;
+          ev.preventDefault();
+          const key = canvas.getAttribute("data-pan-key") || "";
+          const pos = clusterThumbPos(key);
+          const z = ev.deltaY > 0 ? pos.z / 1.08 : pos.z * 1.08;
+          setClusterThumbPos(key, { x: pos.x, y: pos.y, z: z }, { persist: false, chart: false });
+        },
+        { passive: false },
+      );
+    }
+    bindHost(document.getElementById("view-tournament"));
+    bindHost(document.getElementById("tourney-dist-board"));
+  })();
+  document.getElementById("tourney-deck-dist")?.addEventListener("change", function (ev) {
+    const t = ev.target;
+    if (t instanceof HTMLSelectElement && t.getAttribute("data-cluster-assign")) {
+      setClusterAssign(t.getAttribute("data-cluster-assign"), t.value);
+      return;
+    }
+    if (!(t instanceof HTMLInputElement)) return;
+    const key = t.getAttribute("data-cluster-key");
+    if (!key) return;
+    setClusterName(key, t.value);
+    const details = t.closest(".tourney-dist-cluster");
+    const lab = details && details.querySelector(".tourney-dist-label");
+    if (lab) lab.textContent = String(t.value || "").trim() || t.getAttribute("placeholder") || "";
+    refreshDistCharts();
+  });
+  document.getElementById("tourney-dist-chart-kind")?.addEventListener("click", function (ev) {
+    const t = ev.target;
+    if (!(t instanceof HTMLElement)) return;
+    const btn = t.closest("[data-chart-kind]");
+    if (!btn) return;
+    setDistChartKind(btn.getAttribute("data-chart-kind"));
+  });
+  document.getElementById("tourney-dist-sort")?.addEventListener("click", function (ev) {
+    const t = ev.target;
+    if (!(t instanceof HTMLElement)) return;
+    const btn = t.closest("[data-dist-sort]");
+    if (!btn) return;
+    setDistSort(btn.getAttribute("data-dist-sort"));
   });
 
   document.getElementById("btn-tourney-preset")?.addEventListener("click", applyPresetKoboshi);
@@ -2127,11 +4079,14 @@ export function initTournament() {
     if (state.players.length && !window.confirm("動作確認用の12人で現在の選手を置き換えますか？")) return;
     loadSample();
   });
+  document.getElementById("btn-tourney-trial")?.addEventListener("click", applyTrialFill);
+  document.getElementById("btn-tourney-trial-clear")?.addEventListener("click", clearTrialFill);
   document.getElementById("btn-tourney-clear")?.addEventListener("click", function () {
     if (!state.players.length) return;
     if (!window.confirm("選手を全員削除しますか？（大会設定は残します）")) return;
     pushUndo();
     state.players = [];
+    state.trialBackup = null;
     state.selectedId = "";
     persistAndRender();
   });
@@ -2161,6 +4116,7 @@ export function initTournament() {
   document.getElementById("btn-tourney-show-board")?.addEventListener("click", openAdvanceBoard);
   document.getElementById("btn-tourney-show-usage")?.addEventListener("click", openUsageBoard);
   document.getElementById("btn-tourney-copy-usage")?.addEventListener("click", copyUsageRanks);
+  document.getElementById("btn-tourney-usage-image")?.addEventListener("click", exportUsageRankImage);
   document.getElementById("btn-tourney-quick-import")?.addEventListener("click", function () {
     importPlayers(true, "tourney-quick-paste");
   });
@@ -2282,6 +4238,10 @@ export function initTournament() {
   document.getElementById("btn-tourney-board-fs")?.addEventListener("click", toggleAdvanceBoardFullscreen);
   document.getElementById("btn-tourney-usage-board-close")?.addEventListener("click", closeUsageBoard);
   document.getElementById("btn-tourney-usage-board-fs")?.addEventListener("click", toggleUsageBoardFullscreen);
+  document.getElementById("btn-tourney-usage-board-image")?.addEventListener("click", exportUsageRankImage);
+  document.getElementById("btn-tourney-dist-board-close")?.addEventListener("click", closeDistChartBoard);
+  document.getElementById("btn-tourney-dist-board-fs")?.addEventListener("click", toggleDistChartFullscreen);
+  document.getElementById("btn-tourney-dist-board-image")?.addEventListener("click", exportDistChartImage);
   document.getElementById("tourney-usage-preview")?.addEventListener("click", function (ev) {
     const t = ev.target;
     if (!(t instanceof HTMLElement)) return;
@@ -2301,6 +4261,12 @@ export function initTournament() {
     if (usageBoard && !usageBoard.hidden) {
       ev.preventDefault();
       closeUsageBoard();
+      return;
+    }
+    const distBoard = document.getElementById("tourney-dist-board");
+    if (distBoard && !distBoard.hidden) {
+      ev.preventDefault();
+      closeDistChartBoard();
       return;
     }
     const deckView = document.getElementById("tourney-deck-view");

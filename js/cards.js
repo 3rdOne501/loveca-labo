@@ -82,7 +82,7 @@ export function setCardsJsonUrlOverride(urlOrEmpty) {
 /**
  * デッキ構築のカード一覧サムネ用に軽量 URL を返す（一覧は wsrv.nl 経由の縮小 JPEG、拡大プレビューは元 URL）。
  * @param {string} originalUrl
- * @param {{ hi?: boolean } | undefined} opts `hi` で一覧より高解像（サンプルサムネ等）
+ * @param {{ hi?: boolean, poster?: boolean, pie?: boolean } | undefined} opts `hi` で一覧より高解像、`poster` で書き出し用、`pie` で円グラフ塗りつぶし用
  * @returns {string}
  */
 export function catalogListThumbnailUrl(originalUrl, opts) {
@@ -111,6 +111,14 @@ export function catalogListThumbnailUrl(originalUrl, opts) {
       w = 120;
       h = 172;
       q = 55;
+    } else if (o.pie === true) {
+      w = 720;
+      h = 720;
+      q = 82;
+    } else if (o.poster === true) {
+      w = 420;
+      h = 588;
+      q = 82;
     } else if (hi) {
       w = 200;
       h = 286;

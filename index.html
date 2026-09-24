@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Loveca Labo" />
-    <meta name="loveca-build" content="2026092124" />
+    <meta name="loveca-build" content="2026092242" />
     <title>Loveca Labo</title>
     <!-- 万一以前のバージョンの Service Worker が登録された端末で取り残しが起きた場合に備え、
          先頭で SW 登録を一括解除する。SW 自体は本サイトでは使っていない。 -->
@@ -51,7 +51,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,700;1,9..40,500&family=M+PLUS+Rounded+1c:wght@500;700;800&family=Noto+Sans+JP:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=2026092124" />
+    <link rel="stylesheet" href="styles.css?v=2026092242" />
     <link rel="stylesheet" href="styles-perf.css?v=2026051910" />
   </head>
   <body>
@@ -833,8 +833,11 @@ python3 -m http.server 8080</pre>
             <input type="file" id="input-tourney-records-csv" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain" hidden />
             <button type="button" class="btn sm secondary" id="btn-tourney-import-open">別窓で貼る</button>
             <button type="button" class="btn sm secondary" id="btn-tourney-sample">動作確認用12人</button>
+            <button type="button" class="btn sm secondary" id="btn-tourney-trial">お試しを入れる</button>
+            <button type="button" class="btn sm danger" id="btn-tourney-trial-clear">お試しを消す</button>
             <button type="button" class="btn sm danger" id="btn-tourney-clear">選手をクリア</button>
           </div>
+          <p id="tourney-trial-banner" class="tourney-trial-banner" hidden></p>
           <div id="tourney-ops-notes" class="tourney-ops-notes" aria-live="polite"></div>
           <details class="tourney-more tourney-bulk-decks">
             <summary>デッキをまとめて当てる</summary>
@@ -872,19 +875,42 @@ python3 -m http.server 8080</pre>
         </section>
         <section class="tourney-panel tourney-output-panel" aria-labelledby="tourney-usage-h">
           <h2 id="tourney-usage-h">4. 使用率ポイント内訳を出す</h2>
-          <p class="hint">1〜30位は代表レアの画像付き。31〜50位は型番とキャラ名だけです。メンバー／ライブ切替は下のカード表と同じ。選手のデッキ得点は出しません。</p>
+          <p class="hint">50位まで / 80位までを選べます。見出しは位に合わせて変わります。メンバー／ライブ切替は下のカード表と同じ。選手のデッキ得点は出しません。画像にするで会場用の画像を保存できます。</p>
           <div class="tourney-settings-grid">
-            <label class="field"><span>何位まで</span><input type="number" id="input-tourney-usage-count" class="input" min="1" max="80" value="50" /></label>
+            <div class="field">
+              <span>何位まで</span>
+              <div class="tourney-card-kind tourney-usage-count" id="tourney-usage-count" role="group" aria-label="使用率ランキングの件数"></div>
+            </div>
             <label class="field"><span>見出し</span><input type="text" id="input-tourney-usage-headline" class="input" maxlength="40" value="使用率ポイント 1〜50位" /></label>
           </div>
           <div class="tourney-actions">
             <button type="button" class="btn primary" id="btn-tourney-show-usage">内訳を出す</button>
             <button type="button" class="btn sm secondary" id="btn-tourney-copy-usage">内訳をコピー</button>
+            <button type="button" class="btn sm secondary" id="btn-tourney-usage-image">画像にする</button>
           </div>
           <p id="tourney-usage-meta" class="tourney-output-meta"></p>
           <div id="tourney-usage-preview" class="tourney-usage-preview" aria-label="使用率ポイント内訳"></div>
         </section>
         <div id="tourney-summary" class="tourney-summary" aria-live="polite"></div>
+        <section class="tourney-panel" aria-labelledby="tourney-dist-h">
+          <div class="tourney-panel__head">
+            <h2 id="tourney-dist-h">デッキ分布</h2>
+          </div>
+          <p class="hint">レア違いは同一カード。差は35枚まで、メンバー半数以上またはライブがある程度重なると同一系統です。選手ごとの系統は手動で移動できます。グラフの横でカードと顔の位置を合わせられます。グラフに選手名は出ません。</p>
+          <p id="tourney-deck-dist-meta" class="tourney-output-meta"></p>
+          <div class="tourney-actions">
+            <button type="button" class="btn sm secondary" id="btn-tourney-copy-dist">分布をコピー</button>
+            <button type="button" class="btn sm primary" id="btn-tourney-show-dist-chart">グラフを出す</button>
+            <button type="button" class="btn sm secondary" id="btn-tourney-dist-image">画像にする</button>
+            <div class="tourney-card-kind" id="tourney-dist-sort" role="group" aria-label="並び順"></div>
+            <div class="tourney-card-kind" id="tourney-dist-chart-kind" role="group" aria-label="グラフの種類"></div>
+          </div>
+          <div class="tourney-dist-stage">
+            <canvas id="tourney-dist-chart" class="tourney-dist-chart" aria-label="デッキ分布グラフ"></canvas>
+            <aside id="tourney-dist-icons" class="tourney-dist-icons" aria-label="グラフのカード位置"></aside>
+          </div>
+          <div id="tourney-deck-dist" class="tourney-deck-dist" aria-label="デッキ分布"></div>
+        </section>
         <details class="tourney-more">
           <summary>大会名など</summary>
           <div class="tourney-settings-grid" style="margin-top:0.75rem">
@@ -988,6 +1014,7 @@ python3 -m http.server 8080</pre>
 
     <div id="tourney-usage-board" class="tourney-board tourney-usage-board" hidden role="dialog" aria-modal="true" aria-labelledby="tourney-usage-board-headline">
       <div class="tourney-board-chrome">
+        <button type="button" class="btn sm secondary" id="btn-tourney-usage-board-image">画像にする</button>
         <button type="button" class="btn sm secondary" id="btn-tourney-usage-board-fs">全画面</button>
         <button type="button" class="btn sm primary" id="btn-tourney-usage-board-close">閉じる</button>
       </div>
@@ -995,9 +1022,21 @@ python3 -m http.server 8080</pre>
         <p class="tourney-board-event" id="tourney-usage-board-event"></p>
         <h2 class="tourney-board-headline" id="tourney-usage-board-headline">使用率ポイント 1〜50位</h2>
         <p class="tourney-usage-board-meta" id="tourney-usage-board-meta"></p>
-        <ol class="tourney-usage-board-list tourney-usage-board-list--art" id="tourney-usage-board-list"></ol>
-        <p class="tourney-usage-board-subhead" id="tourney-usage-board-subhead" hidden>31〜50位</p>
-        <ol class="tourney-usage-board-list tourney-usage-board-list--text" id="tourney-usage-board-list-text" hidden></ol>
+        <ol class="tourney-usage-board-list tourney-usage-board-list--top" id="tourney-usage-board-list-top"></ol>
+        <ol class="tourney-usage-board-list tourney-usage-board-list--rest" id="tourney-usage-board-list"></ol>
+      </div>
+    </div>
+
+    <div id="tourney-dist-board" class="tourney-board tourney-dist-board" hidden role="dialog" aria-modal="true" aria-labelledby="tourney-dist-board-headline">
+      <div class="tourney-board-chrome">
+        <button type="button" class="btn sm secondary" id="btn-tourney-dist-board-image">画像にする</button>
+        <button type="button" class="btn sm secondary" id="btn-tourney-dist-board-fs">全画面</button>
+        <button type="button" class="btn sm primary" id="btn-tourney-dist-board-close">閉じる</button>
+      </div>
+      <div class="tourney-board-inner tourney-dist-board-inner">
+        <h2 class="visually-hidden" id="tourney-dist-board-headline">デッキ分布</h2>
+        <canvas id="tourney-dist-board-chart" class="tourney-dist-board-chart" aria-label="デッキ分布グラフ"></canvas>
+        <aside id="tourney-dist-board-icons" class="tourney-dist-icons tourney-dist-icons--board" aria-label="グラフのカード位置"></aside>
       </div>
     </div>
 
@@ -1126,7 +1165,7 @@ python3 -m http.server 8080</pre>
             予選抜け人数と全勝者の数は、取り込み後に自動で入ります。直してから<strong>進出者を出す</strong>。会場用のピンク画面です。全画面にできます。ポイントは選手に見せない想定です。
           </p>
           <p>
-            カードの採用合計（1枚あたりのP）は <strong>内訳を出す</strong> で出せます。1〜30位は代表レアの画像、31〜50位は型番とキャラ名です。メンバー／ライブ切替が効きます。選手のデッキ得点は載りません。
+            カードの採用合計（1枚あたりのP）は <strong>内訳を出す</strong> で出せます。<strong>50位まで / 80位まで</strong>で件数を切り替え、見出しは 1〜50位 / 1〜80位 に合わせます。<strong>画像にする</strong>で保存できます。メンバー／ライブ切替が効きます。選手のデッキ得点は載りません。
           </p>
         </section>
         <section class="tutorial-section">
@@ -1134,6 +1173,8 @@ python3 -m http.server 8080</pre>
           <ul>
             <li>選手表は検索・並べ替えできます。既定では 0-0 も隠しません（「一覧も集計範囲で絞る」はオフ）。</li>
             <li>レシピ未入力の全勝・1敗、直前のCSVで除外した人、同名は取り込み下に出ます。</li>
+            <li>名簿を入れたあと <strong>お試しを入れる</strong> で仮の勝敗とデッキが全員に付きます。<strong>お試しを消す</strong> で元に戻ります（名簿は残る）。</li>
+            <li>デッキ分布はレア違いを同一と見て、差は35枚まで、メンバー半数以上またはライブがある程度重なると同一系統です。系統は選手ごとに手動で移動できます。多い順／検出順を切り替えられます。グラフの横でカードと顔の位置を合わせられます。グラフに選手名は出ません。</li>
             <li>大会JSONでバックアップ。結果CSVは進出とカードP。複数大会は上の切替。</li>
             <li>となめる任意項目の列がデッキコードなら、取り込み後に列を指定し直してください。</li>
           </ul>
@@ -2806,7 +2847,7 @@ python3 -m http.server 8080</pre>
     <script>
       (function () {
         var buildMeta = document.querySelector('meta[name="loveca-build"]');
-        var build = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "2026092124";
+        var build = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "2026092242";
         var moduleNames = [
           "abilityEffects.js",
           "bladeHeart.js",
@@ -2859,7 +2900,7 @@ python3 -m http.server 8080</pre>
     </script>
     <script type="module">
       var buildMeta = document.querySelector('meta[name="loveca-build"]');
-      var build = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "2026092124";
+      var build = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "2026092242";
       try {
         await import("./js/main.js?v=" + build);
       } catch (err) {

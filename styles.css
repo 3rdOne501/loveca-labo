@@ -14073,6 +14073,18 @@ body.play-board-exporting img.card-yell-float-ico {
   flex: 1 1 8rem;
   max-width: 16rem;
 }
+.tourney-trial-banner {
+  margin: 0.55rem 0 0;
+  padding: 0.45rem 0.7rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 180, 80, 0.45);
+  background: rgba(80, 48, 8, 0.35);
+  color: #f3d9a4;
+  font-size: 0.88rem;
+}
+.tourney-trial-banner[hidden] {
+  display: none !important;
+}
 .tourney-ops-notes {
   display: grid;
   gap: 0.55rem;
@@ -14098,6 +14110,288 @@ body.play-board-exporting img.card-yell-float-ico {
   flex-wrap: wrap;
   gap: 0.35rem;
   margin: 0 0 0.55rem;
+}
+.tourney-usage-count {
+  margin: 0;
+}
+.tourney-recipe-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.08rem;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.25;
+}
+.tourney-dist-mini {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--muted);
+  max-width: 11.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tourney-deck-dist {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+}
+.tourney-dist-cluster {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(16, 8, 24, 0.38);
+  padding: 0.15rem 0.6rem 0.4rem;
+}
+.tourney-dist-cluster summary {
+  display: grid;
+  grid-template-columns: 3.2rem minmax(0, 1fr) auto;
+  gap: 0.4rem 0.65rem;
+  align-items: baseline;
+  cursor: pointer;
+  list-style: none;
+  padding: 0.4rem 0 0.15rem;
+}
+.tourney-dist-cluster summary::-webkit-details-marker {
+  display: none;
+}
+.tourney-dist-count {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.tourney-dist-label {
+  font-weight: 700;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tourney-dist-sub {
+  color: var(--muted);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.tourney-dist-people {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  padding: 0.15rem 0 0.2rem;
+}
+.tourney-dist-person {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.22rem;
+  max-width: 100%;
+}
+.tourney-dist-player {
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  font: inherit;
+  font-size: 0.86rem;
+  padding: 0.18rem 0.45rem;
+  cursor: pointer;
+}
+.tourney-dist-player:hover {
+  background: var(--accent-soft);
+}
+.tourney-dist-moved {
+  display: inline-block;
+  margin-left: 0.28rem;
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+.tourney-dist-assign {
+  max-width: 11rem;
+  font: inherit;
+  font-size: 0.75rem;
+  padding: 0.12rem 0.28rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(0, 0, 0, 0.22);
+  color: inherit;
+}
+.tourney-dist-chart {
+  display: block;
+  width: 100%;
+  max-width: none;
+  height: auto;
+  margin: 0;
+  border-radius: var(--radius-sm);
+  background: #f7cfe8;
+}
+.tourney-dist-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(16.5rem, 22rem);
+  gap: 0.75rem;
+  align-items: start;
+  margin: 0.55rem 0 0.7rem;
+}
+.tourney-dist-icons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  max-height: min(46rem, 78vh);
+  overflow: auto;
+  padding: 0.45rem 0.55rem 0.6rem;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.tourney-dist-icon-row {
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.tourney-dist-icon-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.tourney-dist-icon-name {
+  margin: 0 0 0.28rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.tourney-dist-icons .tourney-dist-art {
+  margin: 0;
+}
+.tourney-dist-icons .tourney-dist-thumbs-label {
+  display: none;
+}
+.tourney-dist-name-field {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.35rem 0 0.2rem;
+}
+.tourney-dist-name-field span {
+  font-size: 0.78rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.tourney-dist-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.tourney-dist-art {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.65rem 1rem;
+  margin: 0.2rem 0 0.45rem;
+}
+.tourney-dist-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.28rem;
+  margin: 0;
+}
+.tourney-dist-thumbs-label {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-right: 0.15rem;
+  white-space: nowrap;
+}
+.tourney-dist-thumb {
+  width: 2.2rem;
+  height: 3.05rem;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 0.3rem;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+}
+.tourney-dist-thumb .deck-thumb,
+.tourney-dist-thumb .deck-builder-card-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 0;
+}
+.tourney-dist-thumb.is-on {
+  border-color: #c43a78;
+  box-shadow: 0 0 0 1px rgba(196, 58, 120, 0.45);
+}
+.tourney-dist-thumb:hover {
+  border-color: rgba(196, 58, 120, 0.55);
+}
+.tourney-dist-pan {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.tourney-dist-pan-canvas {
+  width: 5.5rem;
+  height: 5.5rem;
+  border-radius: 50%;
+  cursor: grab;
+  touch-action: none;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 1px rgba(196, 58, 120, 0.28);
+}
+.tourney-dist-pan-canvas:active {
+  cursor: grabbing;
+}
+.tourney-dist-pan-tools {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.22rem;
+}
+.tourney-dist-pan-hint {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.tourney-dist-board-inner {
+  justify-content: flex-start;
+  align-items: flex-start;
+  flex-direction: row;
+  flex-wrap: wrap;
+  overflow: auto;
+  padding-top: 6vh;
+  gap: 1rem 1.2rem;
+}
+.tourney-dist-board-chart {
+  width: min(70vw, 64rem);
+  height: auto;
+  border-radius: 0.6rem;
+  box-shadow: 0 8px 28px rgba(90, 20, 60, 0.18);
+}
+.tourney-dist-icons--board {
+  width: min(22rem, 28vw);
+  max-height: 78vh;
+  background: rgba(18, 10, 16, 0.78);
+  color: #f7eaf2;
+}
+@media (max-width: 60rem) {
+  .tourney-dist-stage {
+    grid-template-columns: 1fr;
+  }
+  .tourney-dist-icons {
+    max-height: 22rem;
+  }
+  .tourney-dist-board-inner {
+    flex-direction: column;
+    align-items: center;
+  }
+  .tourney-dist-icons--board {
+    width: min(96vw, 28rem);
+    max-height: 40vh;
+  }
+}
+@media (max-width: 52rem) {
+  .tourney-dist-cluster summary {
+    grid-template-columns: 3.2rem minmax(0, 1fr);
+  }
+  .tourney-dist-sub {
+    grid-column: 2;
+    white-space: normal;
+  }
 }
 .tourney-bulk-decks {
   margin-top: 0.75rem;
@@ -14161,6 +14455,9 @@ body.play-board-exporting img.card-yell-float-ico {
   flex-wrap: wrap;
   gap: 0.4rem;
   margin-top: 0.65rem;
+}
+.tourney-actions .tourney-card-kind {
+  margin: 0;
 }
 .tourney-panel__head .tourney-actions {
   margin-top: 0;
@@ -14462,18 +14759,20 @@ body.tourney-board-open .page-zoom-control {
 
 .tourney-usage-preview {
   display: grid;
-  gap: 0.28rem;
+  gap: 0.32rem;
   margin-top: 0.35rem;
-  max-height: 22rem;
+  max-height: 34rem;
   overflow: auto;
 }
-.tourney-usage-preview-item {
+.tourney-usage-preview-item,
+.tourney-usage-preview-item.is-art,
+.tourney-usage-preview-item.is-text {
   display: grid;
-  grid-template-columns: 2.2rem minmax(0, 1fr) 3.6rem;
+  grid-template-columns: 2.6rem 2.6rem minmax(0, 1fr) 4.2rem;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.5rem;
   width: 100%;
-  padding: 0.28rem 0.45rem;
+  padding: 0.34rem 0.5rem;
   border: 0;
   border-radius: var(--radius-sm);
   background: rgba(16, 8, 24, 0.35);
@@ -14482,28 +14781,46 @@ body.tourney-board-open .page-zoom-control {
   cursor: pointer;
   font: inherit;
 }
-.tourney-usage-preview-item.is-art {
-  grid-template-columns: 2.2rem 1.7rem minmax(0, 1fr) 3.6rem;
-}
 .tourney-usage-preview-item .deck-thumb,
 .tourney-usage-preview-item .deck-builder-card-thumb {
-  width: 1.55rem;
-  height: 2.15rem;
+  width: 2.35rem;
+  height: 3.25rem;
   object-fit: cover;
-  border-radius: 0.2rem;
+  border-radius: 0.22rem;
+}
+.tourney-usage-preview-item.is-top {
+  grid-template-columns: 3rem 4rem minmax(0, 1fr) 4.8rem;
+  padding: 0.45rem 0.55rem;
+}
+.tourney-usage-preview-item.is-top .deck-thumb,
+.tourney-usage-preview-item.is-top .deck-builder-card-thumb {
+  width: 3.7rem;
+  height: 5.15rem;
 }
 .tourney-usage-preview-item:hover {
   background: var(--accent-soft);
 }
 .tourney-usage-rank {
   font-variant-numeric: tabular-nums;
-  font-weight: 700;
-  color: var(--muted);
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: var(--text);
+}
+.tourney-usage-preview-item.is-top .tourney-usage-rank {
+  font-size: 1.35rem;
+}
+.tourney-usage-preview-item.is-top .tourney-pts {
+  font-size: 1.2rem;
+  font-weight: 800;
 }
 .tourney-usage-name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.tourney-usage-preview-item.is-top .tourney-usage-name {
+  font-size: 1.08rem;
+  font-weight: 700;
 }
 .tourney-usage-kind {
   font-size: 0.78rem;
@@ -14513,67 +14830,68 @@ body.tourney-board-open .page-zoom-control {
 .tourney-usage-board-inner {
   justify-content: flex-start;
   overflow: auto;
-  padding-top: 5vh;
+  padding-top: 4.2vh;
 }
 .tourney-usage-board-meta {
   margin: 0 0 0.85em;
   font-family: "M PLUS Rounded 1c", var(--font-display);
   font-weight: 700;
-  font-size: clamp(0.95rem, 2vw, 1.35rem);
+  font-size: clamp(1.05rem, 2.2vw, 1.5rem);
   color: #c43a78;
   letter-spacing: 0.04em;
 }
 .tourney-usage-board-list {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.28rem 1.4rem;
-  width: min(92vw, 64rem);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.45rem 0.85rem;
+  width: min(96vw, 92rem);
   margin: 0;
   padding: 0;
   list-style: none;
   text-align: left;
 }
-.tourney-usage-board-list--art li {
-  display: grid;
-  grid-template-columns: 2.1rem 2.6rem minmax(0, 1fr) 3.6rem;
+.tourney-usage-board-list--top {
+  gap: 0.85rem 1.1rem;
+  margin-bottom: 1.15rem;
+}
+.tourney-usage-board-list--top li {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.45rem;
-  min-height: 2.8rem;
+  text-align: center;
+  gap: 0.28rem;
+  min-height: 0;
 }
-.tourney-usage-board-list--text {
-  margin-top: 0.15rem;
-}
-.tourney-usage-board-list--text li {
+.tourney-usage-board-list--rest li {
   display: grid;
-  grid-template-columns: 2.1rem minmax(7.5rem, 0.9fr) minmax(0, 1.1fr);
-  align-items: baseline;
-  gap: 0.45rem 0.7rem;
-  min-height: 1.55rem;
-}
-.tourney-usage-board-subhead {
-  width: min(92vw, 64rem);
-  margin: 0.85em 0 0.35em;
-  font-family: "M PLUS Rounded 1c", var(--font-display);
-  font-weight: 800;
-  font-size: clamp(1rem, 2vw, 1.4rem);
-  color: #c43a78;
-  letter-spacing: 0.06em;
-  text-align: left;
+  grid-template-columns: 2.4rem 3.35rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.4rem 0.5rem;
+  min-height: 0;
 }
 .tourney-usage-board-rank {
   font-family: "M PLUS Rounded 1c", var(--font-display);
   font-weight: 800;
-  font-size: clamp(1rem, 2vw, 1.45rem);
+  font-size: clamp(1.05rem, 1.7vw, 1.4rem);
   color: #c43a78;
   font-variant-numeric: tabular-nums;
 }
+.tourney-usage-board-list--top .tourney-usage-board-rank {
+  font-size: clamp(1.45rem, 2.6vw, 2.15rem);
+}
 .tourney-usage-board-list .deck-thumb,
 .tourney-usage-board-list .deck-builder-card-thumb {
-  width: 2.4rem;
-  height: 3.35rem;
+  width: 3.15rem;
+  height: 4.4rem;
   object-fit: cover;
   border-radius: 0.28rem;
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+.tourney-usage-board-list--top .deck-thumb,
+.tourney-usage-board-list--top .deck-builder-card-thumb {
+  width: clamp(6.4rem, 12.5vw, 9.6rem);
+  height: clamp(8.9rem, 17.4vw, 13.4rem);
+  border-radius: 0.4rem;
 }
 .tourney-usage-board-copy {
   display: flex;
@@ -14581,50 +14899,69 @@ body.tourney-board-open .page-zoom-control {
   min-width: 0;
   gap: 0.05em;
 }
+.tourney-usage-board-list--top .tourney-usage-board-copy {
+  align-items: center;
+  width: 100%;
+}
 .tourney-usage-board-name {
   font-family: "M PLUS Rounded 1c", var(--font-display);
   font-weight: 800;
-  font-size: clamp(0.92rem, 1.7vw, 1.25rem);
+  font-size: clamp(0.9rem, 1.4vw, 1.15rem);
   color: #c43a78;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.tourney-usage-board-list--top .tourney-usage-board-name {
+  font-size: clamp(1.08rem, 1.9vw, 1.5rem);
+  width: 100%;
+}
 .tourney-usage-board-type {
   font-family: "M PLUS Rounded 1c", var(--font-display);
   font-weight: 700;
-  font-size: clamp(0.72rem, 1.3vw, 0.95rem);
+  font-size: clamp(0.68rem, 1.05vw, 0.88rem);
   color: #c43a78;
   opacity: 0.78;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.tourney-usage-board-list--text .tourney-usage-board-type {
-  opacity: 0.9;
-  font-size: clamp(0.82rem, 1.45vw, 1.05rem);
-}
-.tourney-usage-board-list--text .tourney-usage-board-name {
-  font-size: clamp(0.88rem, 1.55vw, 1.12rem);
+.tourney-usage-board-list--top .tourney-usage-board-type {
+  font-size: clamp(0.78rem, 1.2vw, 1rem);
 }
 .tourney-usage-board-pts {
-  font-weight: 700;
-  font-size: clamp(0.82rem, 1.5vw, 1.05rem);
+  font-weight: 800;
+  font-size: clamp(0.95rem, 1.5vw, 1.2rem);
   color: #c43a78;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   text-align: right;
 }
-@media (max-width: 52rem) {
+.tourney-usage-board-list--top .tourney-usage-board-pts {
+  font-size: clamp(1.15rem, 1.9vw, 1.55rem);
+  text-align: center;
+}
+@media (max-width: 72rem) {
   .tourney-usage-board-list {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+@media (max-width: 56rem) {
+  .tourney-usage-board-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 42rem) {
+  .tourney-usage-board-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .tourney-usage-preview-item,
-  .tourney-usage-preview-item.is-art {
-    grid-template-columns: 2rem 1.5rem minmax(0, 1fr) 3.2rem;
-  }
+  .tourney-usage-preview-item.is-art,
   .tourney-usage-preview-item.is-text {
-    grid-template-columns: 2rem minmax(0, 1fr);
+    grid-template-columns: 2.4rem 2.4rem minmax(0, 1fr) 3.6rem;
+  }
+  .tourney-usage-preview-item.is-top {
+    grid-template-columns: 2.8rem 3.6rem minmax(0, 1fr) 4.2rem;
   }
 }
 

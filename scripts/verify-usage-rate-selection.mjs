@@ -20,6 +20,10 @@ import {
   parseWlRecord,
   isWinsInPool,
   poolRangeLabel,
+  clusterSimilarDecks,
+  deckHalfL1,
+  collapseDeckMapByIdentity,
+  isSameDeckFamily,
 } from "../js/usageRateSelection.js";
 import { extractDeckRecipeLines } from "../js/decklogImport.js";
 
@@ -320,6 +324,72 @@ function main() {
 
   const htmlDeck = extractDeckRecipeLines('<div>4 x PL!S-bp5-111-R</div><span>2 × PL!SP-bp5-006-R</span>');
   assert(/4 x PL!S-bp5-111-R/.test(htmlDeck) && /2 x PL!SP-bp5-006-R/.test(htmlDeck), "DECK LOG HTMLからレシピ行");
+
+  const ident = (n) => String(n).replace(/-(SR|R)$/i, "");
+  const typeFn = (n) => (String(n).indexOf("LIVE") === 0 ? "live" : "member");
+  const nearId = collapseDeckMapByIdentity({ "X-R": 4, "Y-SR": 56 }, ident);
+  assert(nearId.X === 4 && nearId.Y === 56, "レア違いを同一に畳む");
+  assert(deckHalfL1({ A: 4, B: 56 }, { A: 4, B: 48, C: 8 }) === 8, "入れ替え8枚");
+  const familyBase = {
+    M1: 24,
+    M2: 24,
+    LIVEA: 4,
+    LIVEB: 4,
+    LIVEC: 4,
+  };
+  assert(isSameDeckFamily(familyBase, familyBase, typeFn), "完全一致は同系統");
+  assert(
+    isSameDeckFamily(familyBase, { M1: 24, M2: 20, M3: 4, LIVEA: 4, LIVEB: 4, LIVED: 4 }, typeFn),
+    "メンバー半数以上は同系統",
+  );
+  assert(
+    isSameDeckFamily(familyBase, { M1: 24, M2: 24, LIVEA: 4, LIVEX: 4, LIVEY: 4 }, typeFn),
+    "ライブが違ってもメンバー半数が重なれば同系統",
+  );
+  assert(
+    isSameDeckFamily(familyBase, { M1: 8, M2: 8, M9: 32, LIVEA: 4, LIVEB: 4, LIVEC: 4 }, typeFn),
+    "メンバーが少なくてもライブが重なれば同系統",
+  );
+  assert(
+    isSameDeckFamily(familyBase, { M1: 13, M9: 35, LIVEA: 4, LIVEB: 4, LIVEC: 4 }, typeFn),
+    "35枚差まで同系統",
+  );
+  assert(
+    !isSameDeckFamily(familyBase, { M1: 12, M9: 36, LIVEA: 4, LIVEB: 4, LIVEC: 4 }, typeFn),
+    "36枚差は別系統",
+  );
+  assert(
+    !isSameDeckFamily(familyBase, { M1: 4, M2: 4, M9: 40, LIVEA: 4, LIVEB: 4, LIVEC: 4 }, typeFn),
+    "40枚差は別系統",
+  );
+  assert(
+    !isSameDeckFamily(familyBase, { M1: 8, M2: 8, M9: 32, LIVEA: 4, LIVEX: 4, LIVEY: 4 }, typeFn),
+    "メンバー少なくライブ1種だけなら別系統",
+  );
+  const clustered = clusterSimilarDecks(
+    [
+      { id: "a", name: "A", deckMap: Object.assign({}, familyBase, { "LIVEA-R": 0 }) },
+      { id: "b", name: "B", deckMap: { M1: 24, M2: 24, "LIVEA-R": 4, "LIVEB-SR": 4, LIVEC: 4 } },
+      { id: "c", name: "C", deckMap: { M1: 24, M2: 20, M3: 4, LIVEA: 4, LIVEB: 4, LIVED: 4 } },
+      { id: "d", name: "D", deckMap: { M9: 48, LIVEX: 6, LIVEY: 6 } },
+    ],
+    { identityFn: ident, typeFn: typeFn, minCards: 50 },
+  );
+  assert(clustered.withRecipe === 4, "レシピ4");
+  assert(clustered.clusters[0].size === 3 && clustered.clusters[0].exactSize === 2, "完全一致2+同系統1");
+  assert(clustered.clusters.some((c) => c.size === 1 && c.playerIds[0] === "d"), "別軸は独自");
+  assert(clustered.maxDiff === 35, "系統の最大差は35枚");
+  const clusteredFar = clusterSimilarDecks(
+    [
+      { id: "a", name: "A", deckMap: familyBase },
+      { id: "z", name: "Z", deckMap: { M1: 4, M2: 4, M9: 40, LIVEA: 4, LIVEB: 4, LIVEC: 4 } },
+    ],
+    { typeFn: typeFn, minCards: 50 },
+  );
+  assert(
+    clusteredFar.clusters.length === 2 && clusteredFar.clusters.every((c) => c.size === 1),
+    "40枚差はクラスタしない",
+  );
 
   if (failed) {
     console.error("verify-usage-rate-selection: " + failed + " failed");
