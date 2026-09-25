@@ -7397,7 +7397,25 @@ export function mountSimulator(
     return !!(top && String(top.id) === String(memberInst.id));
   }
 
-  /** スナップ上の列で面にいるメンバー（バトン相手判定用）。 */
+  /** ライブ枠列で面にいるメンバー（下置きは列配列のホストより前に挿入される）。 */
+  function liveColumnTopMember(col) {
+    if (!col) return null;
+    var slot = state.liveArea[col] || [];
+    for (var li = slot.length - 1; li >= 0; li--) {
+      if (slot[li] && slot[li].type === T_MEMBER) return slot[li];
+    }
+    return null;
+  }
+
+  function memberIsLiveStackTop(memberInst) {
+    if (!memberInst || memberInst.id == null || memberInst.type !== T_MEMBER) return false;
+    var col = liveSlotColumnKeyHostingMember(memberInst.id);
+    if (!col) return false;
+    var top = liveColumnTopMember(col);
+    return !!(top && String(top.id) === String(memberInst.id));
+  }
+
+  /** スナップ上の列で面にいるメンバー（バトon相手判定用）。 */
   function snapStageColumnTopMember(snap, col) {
     if (!snap || !snap.stage || !col) return null;
     var slot = snap.stage[col] || [];
@@ -7453,22 +7471,22 @@ export function mountSimulator(
   function wildcardBoardBumpFromMembers() {
     var w = 0;
     ["left", "center", "right"].forEach(function (k) {
-      state.stage[k].forEach(function (inst) {
-        if (inst.type !== T_MEMBER) return;
-        ensureCardBoardFields(inst);
-        w += memberPlayBonusAllWildcardBump(inst);
-        if (inst._baseHeartsWildcardUntilLiveEnd === true) {
-          w += memberTotalPrintedHearts(inst);
+      var topStage = stageColumnTopMember(k);
+      if (topStage) {
+        ensureCardBoardFields(topStage);
+        w += memberPlayBonusAllWildcardBump(topStage);
+        if (topStage._baseHeartsWildcardUntilLiveEnd === true) {
+          w += memberTotalPrintedHearts(topStage);
         }
-      });
-      state.liveArea[k].forEach(function (inst) {
-        if (inst.type !== T_MEMBER) return;
-        ensureCardBoardFields(inst);
-        w += memberPlayBonusAllWildcardBump(inst);
-        if (inst._baseHeartsWildcardUntilLiveEnd === true) {
-          w += memberTotalPrintedHearts(inst);
+      }
+      var topLive = liveColumnTopMember(k);
+      if (topLive) {
+        ensureCardBoardFields(topLive);
+        w += memberPlayBonusAllWildcardBump(topLive);
+        if (topLive._baseHeartsWildcardUntilLiveEnd === true) {
+          w += memberTotalPrintedHearts(topLive);
         }
-      });
+      }
     });
     return w;
   }
@@ -7545,13 +7563,14 @@ export function mountSimulator(
           addMemberPlayBonusSolidHearts(topStage, acc);
         }
       }
-      state.liveArea[k].forEach(function (inst) {
-        if (inst.type !== T_MEMBER) return;
-        ensureCardBoardFields(inst);
-        if (inst._baseHeartsWildcardUntilLiveEnd === true) return;
-        addMemberPrintedBaseHeartToSlotAccum(inst, acc);
-        addMemberPlayBonusSolidHearts(inst, acc);
-      });
+      var topLiveH = liveColumnTopMember(k);
+      if (topLiveH) {
+        ensureCardBoardFields(topLiveH);
+        if (topLiveH._baseHeartsWildcardUntilLiveEnd !== true) {
+          addMemberPrintedBaseHeartToSlotAccum(topLiveH, acc);
+          addMemberPlayBonusSolidHearts(topLiveH, acc);
+        }
+      }
     });
     return acc;
   }
@@ -7573,12 +7592,11 @@ export function mountSimulator(
   function liveHeldHeartSlotAccumOnly() {
     var acc = {};
     ["left", "center", "right"].forEach(function (k) {
-      state.liveArea[k].forEach(function (inst) {
-        if (inst.type !== T_MEMBER) return;
-        ensureCardBoardFields(inst);
-        addMemberPrintedBaseHeartToSlotAccum(inst, acc);
-        addMemberPlayBonusSolidHearts(inst, acc);
-      });
+      var top = liveColumnTopMember(k);
+      if (!top) return;
+      ensureCardBoardFields(top);
+      addMemberPrintedBaseHeartToSlotAccum(top, acc);
+      addMemberPlayBonusSolidHearts(top, acc);
     });
     return acc;
   }
@@ -7681,10 +7699,8 @@ export function mountSimulator(
   function sumStageMemberBladesOnly() {
     var s = 0;
     ["left", "center", "right"].forEach(function (k) {
-      state.stage[k].forEach(function (inst) {
-        if (inst.type !== T_MEMBER) return;
-        s += memberEffectiveBlade(inst);
-      });
+      var top = stageColumnTopMember(k);
+      if (top) s += memberEffectiveBlade(top);
     });
     var raw = Math.floor(s);
     var reduction = liveStartBladeReductionFromAbilities();
@@ -7707,18 +7723,16 @@ export function mountSimulator(
     if (!state.liveStatsAfterBegin) return 0;
     var reduction = 0;
     ["left", "center", "right"].forEach(function (k) {
-      (state.stage[k] || []).forEach(function (c) {
-        if (!c || c.type !== T_MEMBER) return;
-        if (c._liveStartAbilitiesDisabledUntilLiveEnd === true) return;
-        var r = Math.max(0, Math.floor(Number(c._liveSessionYellRevealReduction) || 0));
+      var topSt = stageColumnTopMember(k);
+      if (topSt && topSt._liveStartAbilitiesDisabledUntilLiveEnd !== true) {
+        var r = Math.max(0, Math.floor(Number(topSt._liveSessionYellRevealReduction) || 0));
         if (r > 0) reduction += r;
-      });
-      (state.liveArea[k] || []).forEach(function (c) {
-        if (!c || c.type !== T_MEMBER) return;
-        if (c._liveStartAbilitiesDisabledUntilLiveEnd === true) return;
-        var r2 = Math.max(0, Math.floor(Number(c._liveSessionYellRevealReduction) || 0));
+      }
+      var topLv = liveColumnTopMember(k);
+      if (topLv && topLv._liveStartAbilitiesDisabledUntilLiveEnd !== true) {
+        var r2 = Math.max(0, Math.floor(Number(topLv._liveSessionYellRevealReduction) || 0));
         if (r2 > 0) reduction += r2;
-      });
+      }
     });
     return reduction;
   }
@@ -7726,14 +7740,10 @@ export function mountSimulator(
   function sumBoardMemberBlades() {
     var s = 0;
     ["left", "center", "right"].forEach(function (k) {
-      state.stage[k].forEach(function (inst) {
-        if (inst.type !== T_MEMBER) return;
-        s += memberEffectiveBlade(inst);
-      });
-      state.liveArea[k].forEach(function (inst) {
-        if (inst.type !== T_MEMBER) return;
-        s += memberEffectiveBlade(inst);
-      });
+      var topSt = stageColumnTopMember(k);
+      if (topSt) s += memberEffectiveBlade(topSt);
+      var topLv = liveColumnTopMember(k);
+      if (topLv) s += memberEffectiveBlade(topLv);
     });
     var raw = Math.floor(s);
     var reduction = liveStartBladeReductionFromAbilities();
@@ -7752,14 +7762,10 @@ export function mountSimulator(
   function sumBoardMemberBladesWithBreakdown() {
     var s = 0;
     ["left", "center", "right"].forEach(function (k) {
-      state.stage[k].forEach(function (inst) {
-        if (inst.type !== T_MEMBER) return;
-        s += memberEffectiveBlade(inst);
-      });
-      state.liveArea[k].forEach(function (inst) {
-        if (inst.type !== T_MEMBER) return;
-        s += memberEffectiveBlade(inst);
-      });
+      var topSt = stageColumnTopMember(k);
+      if (topSt) s += memberEffectiveBlade(topSt);
+      var topLv = liveColumnTopMember(k);
+      if (topLv) s += memberEffectiveBlade(topLv);
     });
     var raw = Math.floor(s);
     var reduction = liveStartBladeReductionFromAbilities();
@@ -7869,14 +7875,10 @@ export function mountSimulator(
   function computeGrantedJoujiYellScoreBonus() {
     var total = 0;
     ["left", "center", "right"].forEach(function (col) {
-      (state.stage[col] || []).forEach(function (c) {
-        if (!c || c.type !== T_MEMBER) return;
-        total += sumLiveTotalScorePlusFromJoujiSegments(c._grantedJoujiSegmentRaws);
-      });
-      (state.liveArea[col] || []).forEach(function (c) {
-        if (!c || c.type !== T_MEMBER) return;
-        total += sumLiveTotalScorePlusFromJoujiSegments(c._grantedJoujiSegmentRaws);
-      });
+      var topSt = stageColumnTopMember(col);
+      if (topSt) total += sumLiveTotalScorePlusFromJoujiSegments(topSt._grantedJoujiSegmentRaws);
+      var topLv = liveColumnTopMember(col);
+      if (topLv) total += sumLiveTotalScorePlusFromJoujiSegments(topLv._grantedJoujiSegmentRaws);
     });
     return Math.max(0, Math.min(99, Math.floor(total)));
   }
@@ -29685,6 +29687,7 @@ export function mountSimulator(
                 finishResolved();
                 return;
               }
+              placedU._placedAsUnderMember = true;
               arrUH.splice(hostIdxUH, 0, placedU);
               state.stage[colUH] = arrUH;
               try {

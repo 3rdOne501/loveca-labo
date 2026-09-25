@@ -16,6 +16,14 @@
 
 ---
 
+## 0g. ライブ判定・下置きメンバーのスタッツ除外（2026-09-25）
+
+| カード番号 | 名前 | 根因 | 対応 | 横展開 |
+|-----------|------|------|------|--------|
+| PL!S-bp7-005-SEC | 渡辺 曜 | 2026-08 の `stageColumnTopMember` 修正が**所持ハート（ステージ面）のみ**で、ライブ中のブレード合計・任意ハート・ライブ枠メンバーのハート集計は列内の**下置きメンバーまで含めていた**（登場で下に載せた控え室メンバー等） | `liveColumnTopMember` / `memberIsLiveStackTop` を追加し、`boardHeldHeartSlotAccum`・`liveHeldHeartSlotAccumOnly`・`wildcardBoardBumpFromMembers`・`sumBoardMemberBlades*`・`sumStageMemberBladesOnly`・`liveStartBladeReductionFromAbilities`・`computeGrantedJoujiYellScoreBonus` を面メンバーのみに限定。`live_start_hand_reveal_under_heart_grant` の下置きに `_placedAsUnderMember` 付与漏れも修正 | 代表 PL!S-bp7-005 R＋/P/P＋/SEC（4枚・登場 `waiting_member_under_stage`）。下置き全経路＋ライブ枠列スタック共通（件数: コード横断・カード個別分岐なし） |
+
+---
+
 ## 0f. エール公開ライブ tier 合計スコア（2026-09-25）
 
 | カード番号 | 名前 | 根因 | 対応 | 横展開 |
