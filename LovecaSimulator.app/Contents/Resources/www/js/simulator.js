@@ -38394,6 +38394,7 @@ export function mountSimulator(
         const mainDisplaced = displaced[0] || null;
         const extraDisplaced = displaced.slice(1);
         extraDisplaced.forEach(function (m) {
+          if (!m || m._placedAsUnderMember === true) return;
           state.waitingRoom.push(m);
           fireJidouLeaveStageEvents(m, newMember);
         });
@@ -38405,12 +38406,19 @@ export function mountSimulator(
         energiesResolved[k] = energiesByCol[prevCol] || [];
         energiesResolved[prevCol] = energies || [];
       } else {
-        // baton touch（手からの配置 / snap に無い新規）: 追い出し側メンバーは控えへ、列下エネは破棄（消える）
+        // baton touch（手からの配置 / snap に無い新規）: 面メンバーだけ控えへ。下置きは列に残す（総合ルール 4.5.5）
+        /** @type {any[]} */
+        var underMembersKept = [];
         displaced.forEach(function (m) {
+          if (!m) return;
+          if (m._placedAsUnderMember === true) {
+            underMembersKept.push(m);
+            return;
+          }
           state.waitingRoom.push(m);
           fireJidouLeaveStageEvents(m, newMember);
         });
-        membersResolved[k] = [newMember];
+        membersResolved[k] = underMembersKept.concat([newMember]);
         energiesResolved[k] = [];
       }
     });
@@ -38418,13 +38426,13 @@ export function mountSimulator(
     // 最終整形: 「メンバーが無い列の energies は破棄」
     cols.forEach(function (k) {
       if (keepStageSlotOrder[k]) return;
-      const mem = membersResolved[k] && membersResolved[k][0] ? membersResolved[k][0] : null;
-      if (!mem) {
+      const mems = membersResolved[k] || [];
+      if (!mems.length) {
         state.stage[k] = [];
         return;
       }
       const en = energiesResolved[k] || [];
-      state.stage[k] = mem ? [...en, mem] : [];
+      state.stage[k] = [...en, ...mems];
     });
 
     ["left", "center", "right"].forEach(function (k) {

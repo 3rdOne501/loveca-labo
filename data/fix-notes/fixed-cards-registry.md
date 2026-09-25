@@ -16,6 +16,14 @@
 
 ---
 
+## 0j. 登場バトン normalize と下置きメンバー（2026-09-25）
+
+| カード番号 | 名前 | 根因 | 対応 | 横展開 |
+|-----------|------|------|------|--------|
+| PL!S-bp7-005-SEC | 渡辺 曜 | メンバー**登場**（手札 D&D バトン）で列に面＋下置き＋新着の3体になると `normalizeAfterDrop` の baton 分岐が `displaced` を**全員**控え室へ送り、他メンバーの下に置いた `_placedAsUnderMember` まで消えていた | baton 追い出しは面メンバーのみ。下置きは `membersResolved` に残し、最終整形を `[...en, ...mems]` に変更 | 代表 PL!S-bp7-005（`waiting_member_under_stage` 4枚: R＋/P/P＋/SEC）。共通 `normalizeAfterDrop` baton 分岐（`_placedAsUnderMember` 全経路・件数: コード横断・カード個別分岐なし） |
+
+---
+
 ## 0i. ドラッグ後 normalize と下置きメンバー（2026-09-25）
 
 | カード番号 | 名前 | 根因 | 対応 | 横展開 |
