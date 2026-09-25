@@ -74,6 +74,7 @@ import {
   listNativeLiveStartSegmentRaws,
   listNativeKidouSegmentRaws,
   parseLiveTotalScorePlusFromText,
+  yellRevealLiveCountScoreBonusFromText,
   parseAbilityPickFilters,
 } from "./abilityEffects.js";
 import { lastCostDiscardedIncludesLive } from "./abilityComposition.js";
@@ -7855,14 +7856,9 @@ export function mountSimulator(
     var total = 0;
     (segments || []).forEach(function (seg) {
       var plain = String(seg || "").replace(/\{\{[^}]+\}\}/g, "");
-      if (/エールにより公開/.test(plain) && /ライブカード/.test(plain) && /合計スコア/.test(plain)) {
-        var livesN = countOwnYellRevealedLiveCards();
-        if (livesN < 1) return;
-        if (livesN >= 3 && /代わりに/.test(plain) && /[＋+]2/.test(plain)) {
-          total += 2;
-          return;
-        }
-        total += parseLiveTotalScorePlusFromText(plain) || 1;
+      var yellTier = yellRevealLiveCountScoreBonusFromText(plain, countOwnYellRevealedLiveCards());
+      if (yellTier != null) {
+        total += yellTier;
         return;
       }
       total += parseLiveTotalScorePlusFromText(plain);
@@ -26885,8 +26881,11 @@ export function mountSimulator(
         finishResolved();
         return;
       }
+      var tierAt = cl.tierResolutionLives != null ? Math.max(1, Math.floor(Number(cl.tierResolutionLives))) : 3;
       var grantSc =
-        livesN >= 3 && cl.liveScoreGrantHigh != null ? cl.liveScoreGrantHigh : cl.liveScoreGrant || 1;
+        cl.liveScoreGrantHigh != null && livesN >= tierAt
+          ? cl.liveScoreGrantHigh
+          : cl.liveScoreGrant || 1;
       pushHistoryBefore("yell-res-live-score");
       if (!inst._grantedJoujiSegmentRaws) inst._grantedJoujiSegmentRaws = [];
       var scSeg = "{{jyouji.png|常時}}ライブの合計スコアを＋" + grantSc + "する。";

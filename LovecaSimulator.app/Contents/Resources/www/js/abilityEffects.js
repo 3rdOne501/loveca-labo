@@ -3619,6 +3619,24 @@ export function parseLiveTotalScorePlusFromText(p) {
   return 0;
 }
 
+/**
+ * エール公開ライブ枚数に応じた合計スコア加点（付与常時セグメント／ライブ成功時 tier 共通）。
+ * @param {string} plain
+ * @param {number} livesN
+ * @returns {number|null} 対象外の文面は null
+ */
+export function yellRevealLiveCountScoreBonusFromText(plain, livesN) {
+  var p = String(plain || "").replace(/\{\{[^}]+\}\}/g, "");
+  if (!/エールにより公開/.test(p) || !/ライブカード/.test(p) || !/合計スコア/.test(p)) return null;
+  var n = Math.max(0, Math.floor(Number(livesN) || 0));
+  if (n < 1) return 0;
+  var norm = normalizeFwDigits(p);
+  var highM = norm.match(/代わりに合計スコアを[＋+](\d+)/);
+  var tierAt = /ライブカードが3枚以上/.test(norm) ? 3 : null;
+  if (highM && tierAt != null && n >= tierAt) return Number(highM[1]) || 2;
+  return parseLiveTotalScorePlusFromText(p) || 1;
+}
+
 /** @param {string} p */
 export function parseLiveCardScorePlusFromText(p) {
   var s = normalizeFwDigits(String(p || ""));
@@ -6380,11 +6398,16 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
     }
     if (/エールにより公開.*ライブカードが1枚以上/.test(p) && /合計スコアを/.test(p)) {
       var scLive = parseScorePlusFromText(p) || 1;
+      var normYellSc = normalizeFwDigits(p);
+      var highYellScM = normYellSc.match(/代わりに合計スコアを[＋+](\d+)/);
+      var tierYellAt = /ライブカードが3枚以上/.test(normYellSc) ? 3 : null;
       return withTrigger("live_success", {
         template: "yell_resolution_live_count_score",
         liveScoreGrant: scLive,
-        minResolutionLives: /ライブカードが3枚以上/.test(p) ? 3 : 1,
-        liveScoreGrantHigh: /代わりに合計スコアを＋２|代わりに合計スコアを\+2/.test(p) ? 2 : scLive,
+        minResolutionLives: 1,
+        tierResolutionLives: tierYellAt,
+        liveScoreGrantHigh:
+          highYellScM && tierYellAt != null ? Number(highYellScM[1]) || scLive + 1 : null,
       });
     }
     if (/エールにより公開/.test(p) && /ライブカードがある場合/.test(p) && /合計スコアを/.test(p)) {

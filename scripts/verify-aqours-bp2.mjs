@@ -8,6 +8,7 @@ import {
   cardAbilityRawText,
   classifyCardAbility,
   splitAbilityByTriggers,
+  yellRevealLiveCountScoreBonusFromText,
 } from "../js/abilityEffects.js";
 import { classifyJoujiSegment } from "../js/joujiEffects.js";
 
@@ -217,6 +218,13 @@ for (const id of ["PL!S-bp2-019-L", "PL!S-bp2-020-L", "PL!S-bp2-026-L"]) {
     if (rule?.seriesTag !== "Aqours") errs.push("series Aqours");
     if (grantRule?.kind !== "yell_reveal_live_score_tiered") errs.push("grant yell tier");
     if (grantRule?.liveScorePlus !== 1 || grantRule?.liveScorePlusHigh !== 2) errs.push("tier +1/+2");
+    const quoted = grantM ? grantM[1] : "";
+    const lsCl = quoted ? classifyCardAbility(card, "live_success", quoted) : null;
+    if (lsCl?.template !== "yell_resolution_live_count_score") errs.push("grant live_success template");
+    if (lsCl?.minResolutionLives !== 1) errs.push("minResolutionLives must be 1");
+    if (lsCl?.liveScoreGrantHigh !== 2) errs.push("liveScoreGrantHigh");
+    if (yellRevealLiveCountScoreBonusFromText(quoted, 3) !== 2) errs.push("yell tier score at 3 lives");
+    if (yellRevealLiveCountScoreBonusFromText(quoted, 2) !== 1) errs.push("yell tier score at 2 lives");
     if (errs.length) {
       failed++;
       console.error("FAIL", id, "jouji", errs.join("; "));
