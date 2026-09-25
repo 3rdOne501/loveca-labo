@@ -7415,7 +7415,7 @@ export function mountSimulator(
     return !!(top && String(top.id) === String(memberInst.id));
   }
 
-  /** スナップ上の列で面にいるメンバー（バトon相手判定用）。 */
+  /** スナップ上の列で面にいるメンバー（バトン相手判定用）。 */
   function snapStageColumnTopMember(snap, col) {
     if (!snap || !snap.stage || !col) return null;
     var slot = snap.stage[col] || [];
@@ -18181,7 +18181,7 @@ export function mountSimulator(
     return out;
   }
 
-  /** 控え室カードの登場時能力を1つ解決（SP-bp2-006 kidou / N-bp3-003 登場 等） */
+  /** 効果で選んだカードの登場時能力を1つ解決（控え室起動・曜 bp7-005 起動等。既に登場時解決済みでも再発動可） */
   function openResolvePickedCardToujyouAbility(cardInst, onDone) {
     if (!cardInst) {
       if (onDone) onDone();
@@ -18197,7 +18197,7 @@ export function mountSimulator(
     function resolveSegRaw(segRaw) {
       var clT = classifyCardAbility(mc, "toujyou", segRaw);
       if (abilityEffectIsAutomated(clT.template)) {
-        runClassifiedCardAbility(cardInst, clT, "toujyou", onDone);
+        runClassifiedCardAbility(cardInst, clT, "toujyou", onDone, { allowRepeatResolve: true });
         return;
       }
       var dlg = document.getElementById("dlg-ability-guided");

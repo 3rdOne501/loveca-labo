@@ -16,6 +16,14 @@
 
 ---
 
+## 0h. 起動で登場能力再発動（2026-09-25）
+
+| カード番号 | 名前 | 根因 | 対応 | 横展開 |
+|-----------|------|------|------|--------|
+| PL!S-bp7-005-SEC | 渡辺 曜 | `kidou_self_and_other_resolve_toujou` が `openResolvePickedCardToujyouAbility` 経由で登場時を解決するが、`runClassifiedCardAbility` が `isPlayEffectResolved(toujyou)` で**登場済みメンバー（ほかの Aqours）を即 return** していた | `openResolvePickedCardToujyouAbility` から `{ allowRepeatResolve: true }` を渡す（ライブ開始時再発動と同型） | `kidou_self_and_other_resolve_toujou` 4枚（PL!S-bp7-005-R＋ / P / P＋ / SEC）。共通ハンドラ `openResolvePickedCardToujyouAbility` 全経路（`kidou_hand_discard_trigger_ability`・`toujou_wait_pick_trigger_ability` 含む・件数: コード横断） |
+
+---
+
 ## 0g. ライブ判定・下置きメンバーのスタッツ除外（2026-09-25）
 
 | カード番号 | 名前 | 根因 | 対応 | 横展開 |
