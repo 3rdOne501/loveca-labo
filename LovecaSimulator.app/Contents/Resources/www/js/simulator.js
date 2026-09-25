@@ -3566,6 +3566,37 @@ export function mountSimulator(
     return out;
   }
 
+  /** 列のメンバー一覧が「面メンバー＋その下置きメンバー」のみか（バトン追い出しと区別） */
+  function stageColumnMembersAreHostUnderStack(colKey, members) {
+    if (!colKey || !members || members.length < 2) return false;
+    var topMem = stageColumnTopMember(colKey);
+    if (!topMem) return false;
+    var under = getStackMembersBelowHost(topMem);
+    if (!under.length || members.length !== 1 + under.length) return false;
+    /** @type {Record<string, boolean>} */
+    var allowed = {};
+    allowed[String(topMem.id)] = true;
+    under.forEach(function (u) {
+      if (u && u.id != null) allowed[String(u.id)] = true;
+    });
+    for (var i = 0; i < members.length; i++) {
+      if (!members[i] || !allowed[String(members[i].id)]) return false;
+    }
+    return true;
+  }
+
+  /** ドラッグで当該列に新規メンバーが載った（手札等からのバトンタッチ） */
+  function normalizeDragAddsNewMemberToStageColumn(colKey, dragId, snapBefore) {
+    if (!dragId) return false;
+    var inst = findCardInstById(dragId);
+    if (!inst || inst.type !== T_MEMBER) return false;
+    var prev = snapBefore && snapBefore.stage && snapBefore.stage[colKey];
+    if (!Array.isArray(prev)) return true;
+    return !prev.some(function (c) {
+      return c && c.type === T_MEMBER && String(c.id) === dragId;
+    });
+  }
+
   function countDistinctMemberNamesUnderHost(hostInst) {
     if (!hostInst) return 0;
     /** @type {Record<string, boolean>} */
@@ -38307,6 +38338,8 @@ export function mountSimulator(
 
     const membersResolved = { left: [], center: [], right: [] };
     const energiesResolved = { left: [], center: [], right: [] };
+    /** @type {Record<string, boolean>} */
+    var keepStageSlotOrder = {};
 
     // 置換（stage-stag）: 入ってきたメンバーが snap に居たなら入れ替え、それ以外なら baton touch とみなし控えへ
     cols.forEach(function (k) {
@@ -38329,6 +38362,15 @@ export function mountSimulator(
 
       // members.length >= 2: Sortable の DOM 順は列・ドロップ位置で末尾＝新着とは限らない
       const dragId = draggedDomId != null ? String(draggedDomId || "") : "";
+      if (
+        stageColumnMembersAreHostUnderStack(k, members) &&
+        !normalizeDragAddsNewMemberToStageColumn(k, dragId, snapBeforeDrag)
+      ) {
+        keepStageSlotOrder[k] = true;
+        membersResolved[k] = members.slice();
+        energiesResolved[k] = energies;
+        return;
+      }
       let newMember = null;
       if (dragId) {
         for (let mi = 0; mi < members.length; mi++) {
@@ -38375,6 +38417,7 @@ export function mountSimulator(
 
     // 最終整形: 「メンバーが無い列の energies は破棄」
     cols.forEach(function (k) {
+      if (keepStageSlotOrder[k]) return;
       const mem = membersResolved[k] && membersResolved[k][0] ? membersResolved[k][0] : null;
       if (!mem) {
         state.stage[k] = [];

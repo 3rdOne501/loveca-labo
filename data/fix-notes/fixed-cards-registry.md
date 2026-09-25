@@ -16,6 +16,14 @@
 
 ---
 
+## 0i. ドラッグ後 normalize と下置きメンバー（2026-09-25）
+
+| カード番号 | 名前 | 根因 | 対応 | 横展開 |
+|-----------|------|------|------|--------|
+| PL!S-bp7-005-SEC | 渡辺 曜 | Sortable `onEnd` の `normalizeAfterDrop` が列内メンバー2体以上を**すべてバトンタッチ追い出し**とみなし、`_placedAsUnderMember` の下置きメンバーを `waitingRoom` へ送っていた（登場 `waiting_member_under_stage` 後に何かドラッグするたび再現） | `stageColumnMembersAreHostUnderStack` で面＋下置きのみの列はスキップ。手札等からの新規載せ（`normalizeDragAddsNewMemberToStageColumn`）時だけ従来の baton 正規化 | 代表 PL!S-bp7-005（`waiting_member_under_stage` 4枚: R＋/P/P＋/SEC）。共通 `normalizeAfterDrop` 全経路（`_placedAsUnderMember` スタック共通・件数: コード横断・カード個別分岐なし） |
+
+---
+
 ## 0h. 起動で登場能力再発動（2026-09-25）
 
 | カード番号 | 名前 | 根因 | 対応 | 横展開 |
