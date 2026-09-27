@@ -4104,7 +4104,14 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
   }
   base.optional = /もよい/.test(segRaw);
   if (/控え室から登場している場合/.test(p)) {
-    base.requiresEnteredFromWaiting = true;
+    /* 「引いた後、控え室登場なら付与」はドローは常時・付与のみ控え室条件（PL!S-bp6-006 等） */
+    var waitClauseOnlyAfterUnconditionalDraw =
+      /カードを(\d+)枚引/.test(p) &&
+      /その後.*控え室から登場している場合/.test(p) &&
+      !/手札を(\d+)枚控え室に置/.test(p);
+    if (!waitClauseOnlyAfterUnconditionalDraw) {
+      base.requiresEnteredFromWaiting = true;
+    }
   }
   base.filters = parseAbilityPickFilters(p, segRaw);
   if (trigger === "live_start" || trigger === "live_success") {
@@ -5325,6 +5332,7 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
       return twT({
         template: "toujou_draw_grant_if_from_waiting",
         deckDrawCount: drawGr ? Number(drawGr[1]) : 2,
+        requiresEnteredFromWaiting: false,
         requiresOnStage: true,
       });
     }

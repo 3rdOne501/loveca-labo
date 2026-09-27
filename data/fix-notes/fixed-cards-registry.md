@@ -16,6 +16,16 @@
 
 ---
 
+## 0k. 登場2ドロー＋控え室条件付与（2026-09-28）
+
+| カード番号 | 名前 | 根因 | 対応 | 横展開 |
+|-----------|------|------|------|--------|
+| PL!S-bp6-006-P/R | 津島善子 | 本文は「2枚引く→その後控え室ならブレード」だが `classifyCardAbility` の「控え室から登場している場合」一括フラグで `requiresEnteredFromWaiting` が立ち、手札登場時に登場効果全体がスキップされ2ドローしない | 「カードをN枚引く。その後、控え室…」型は `requiresEnteredFromWaiting` を付けない。`toujou_draw_grant_if_from_waiting` は `requiresEnteredFromWaiting: false` を明示 | 2枚（P/R・同型 `toujou_draw_grant_if_from_waiting` のみ） |
+
+Discord: messageId 1553782413912702978（ms_yw_330_kanana）
+
+---
+
 ## 0j. 登場バトン normalize と下置きメンバー（2026-09-25）
 
 | カード番号 | 名前 | 根因 | 対応 | 横展開 |
