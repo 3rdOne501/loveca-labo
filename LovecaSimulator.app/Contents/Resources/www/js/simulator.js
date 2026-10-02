@@ -3566,6 +3566,19 @@ export function mountSimulator(
     return out;
   }
 
+  /** 列メンバー配列から面（ホスト）メンバーを選ぶ（下置き・excludeId を除く） */
+  function pickStageFaceMemberFromColumnMembers(members, excludeMemberId) {
+    if (!members || !members.length) return null;
+    for (var pfi = members.length - 1; pfi >= 0; pfi--) {
+      var pm = members[pfi];
+      if (!pm || pm.type !== T_MEMBER) continue;
+      if (pm._placedAsUnderMember === true) continue;
+      if (excludeMemberId != null && String(pm.id) === String(excludeMemberId)) continue;
+      return pm;
+    }
+    return null;
+  }
+
   /** 列のメンバー一覧が「面メンバー＋その下置きメンバー」のみか（バトン追い出しと区別） */
   function stageColumnMembersAreHostUnderStack(colKey, members) {
     if (!colKey || !members || members.length < 2) return false;
@@ -38390,17 +38403,25 @@ export function mountSimulator(
 
       const prevCol = newMember && newMember.id ? findPrevStageColByMemberId(newMember.id) : null;
       if (prevCol && prevCol !== k) {
-        // stage-stag 入れ替え（追い出し側は “置換元の列” へ）
-        const mainDisplaced = displaced[0] || null;
-        const extraDisplaced = displaced.slice(1);
-        extraDisplaced.forEach(function (m) {
+        // stage-stag 入れ替え（追い出し側は “置換元の列” へ）。下置きは列に残す（総合ルール 4.5.5）
+        /** @type {any[]} */
+        var underKeptSwap = [];
+        displaced.forEach(function (m) {
+          if (m && m._placedAsUnderMember === true) underKeptSwap.push(m);
+        });
+        var faceDisplaced = pickStageFaceMemberFromColumnMembers(
+          members,
+          newMember && newMember.id != null ? newMember.id : null,
+        );
+        displaced.forEach(function (m) {
           if (!m || m._placedAsUnderMember === true) return;
+          if (faceDisplaced && String(m.id) === String(faceDisplaced.id)) return;
           state.waitingRoom.push(m);
           fireJidouLeaveStageEvents(m, newMember);
         });
 
-        membersResolved[k] = [newMember];
-        membersResolved[prevCol] = mainDisplaced ? [mainDisplaced] : [];
+        membersResolved[k] = underKeptSwap.concat([newMember]);
+        membersResolved[prevCol] = faceDisplaced ? [faceDisplaced] : [];
 
         // 付随エネルギーも下に付くものとして入れ替え
         energiesResolved[k] = energiesByCol[prevCol] || [];

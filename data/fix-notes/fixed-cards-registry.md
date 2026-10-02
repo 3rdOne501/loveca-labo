@@ -16,6 +16,16 @@
 
 ---
 
+## 0l. ステージ間バトン normalize と下置きメンバー（2026-10-02）
+
+| カード番号 | 名前 | 根因 | 対応 | 横展開 |
+|-----------|------|------|------|--------|
+| PL!S-bp7-005-SEC | 渡辺 曜 | 他列からの**バトンタッチ**（`normalizeAfterDrop` の stage-stag 入れ替え分岐）で `displaced[0]` が配列先頭の**下置きメンバー**になり、面メンバーが控え室へ・下置きが別列へ飛ぶ／列から消える。手札バトン分岐は 0j で直済みだが列間 D&D が未対応 | `pickStageFaceMemberFromColumnMembers` で面のみ追い出し対象に。下置きは `underKeptSwap` として列に残す | 代表 PL!S-bp7-005（`waiting_member_under_stage` 4枚: R＋/P/P＋/SEC）。共通 `normalizeAfterDrop` stage-stag 分岐（`_placedAsUnderMember` 全経路・件数: コード横断・カード個別分岐なし） |
+
+Discord: messageId 1555577058950774885（kanon_sibuya717_59145）
+
+---
+
 ## 0k. 登場2ドロー＋控え室条件付与（2026-09-28）
 
 | カード番号 | 名前 | 根因 | 対応 | 横展開 |
