@@ -5332,6 +5332,7 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
       return twT({
         template: "toujou_draw_grant_if_from_waiting",
         deckDrawCount: drawGr ? Number(drawGr[1]) : 2,
+        requiresEnteredFromWaiting: false,
         requiresOnStage: true,
       });
     }
