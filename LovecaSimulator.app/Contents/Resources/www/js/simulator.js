@@ -34500,13 +34500,18 @@ export function mountSimulator(
     }
 
     if (cl.template === "toujou_optional_wait_to_deck_top") {
-      var wTop = state.waitingRoom || [];
+      var wTop = waitingPickCandidates(cl.filters || {}, null);
       if (!wTop.length) {
         finishResolved();
         return;
       }
+      var waitDeckNth = cl.deckRelocateTo === "nth_from_top" ? Number(cl.deckRelocateIndex) || 1 : 0;
+      var waitDeckPickMsg =
+        waitDeckNth > 0
+          ? "控え室からデッキの上から" + waitDeckNth + "枚目に置くカードを選びます（キャンセル可）。"
+          : "控え室からデッキの一番上に置くカードを選びます（キャンセル可）。";
       pushHistoryBefore("toujou-wait-deck-top");
-      openPickFromWaitingDialog(wTop, "控え室からデッキの一番上に置くカードを選びます（キャンセル可）。", function (pid) {
+      openPickFromWaitingDialog(wTop, waitDeckPickMsg, function (pid) {
         if (!pid) {
           finishResolved();
           return;
@@ -34516,8 +34521,19 @@ export function mountSimulator(
         });
         if (wiT >= 0) {
           var cardT = state.waitingRoom.splice(wiT, 1)[0];
-          state.deck.unshift(cardT);
-          showToast((mergedCatalogCard(cardT).name || "カード") + " を山札の上に置きました");
+          var cardTName = mergedCatalogCard(cardT).name || "カード";
+          if (waitDeckNth > 0) {
+            if (state.deck.length < waitDeckNth) {
+              state.deck.push(cardT);
+              showToast(cardTName + " を山札の一番下に置きました");
+            } else {
+              state.deck.splice(waitDeckNth - 1, 0, cardT);
+              showToast(cardTName + " を山札の上から" + waitDeckNth + "枚目に置きました");
+            }
+          } else {
+            state.deck.unshift(cardT);
+            showToast(cardTName + " を山札の上に置きました");
+          }
         }
         finishResolved();
       });

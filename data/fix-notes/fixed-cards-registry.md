@@ -16,6 +16,16 @@
 
 ---
 
+## 0m. 登場・控え室ライブを山札上からN枚目へ（2026-10-11）
+
+| カード番号 | 名前 | 根因 | 対応 | 横展開 |
+|-----------|------|------|------|--------|
+| PL!N-bp5-021-N | 天王寺璃奈 | `toujou_optional_wait_to_deck_top` の分類 regex が「デッキの一番上**から4枚目**」も山札**天**扱いにし、実行も常に `unshift` していた | 「一番上からN枚目」を `deckRelocateTo: nth_from_top` + `deckRelocateIndex` で分類。実行は FAQ 通り枚数不足時は山札下、それ以外は splice 差し込み。控え室ピックは `filters`（ライブ）適用 | 代表 PL!N-bp5-021-N のみ（同型カード 0 件）。共通 `toujou_optional_wait_to_deck_top` ハンドラ（`PL!N-bp4-021-N` 等・山札天は従来通り） |
+
+Discord: messageId 1558517081329369139（.n1ssh1）
+
+---
+
 ## 0l. ステージ間バトン normalize と下置きメンバー（2026-10-02）
 
 | カード番号 | 名前 | 根因 | 対応 | 横展開 |

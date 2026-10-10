@@ -198,6 +198,7 @@ const CASES = [
       const errs = [];
       if (steps[0]?.template !== "deck_top_to_waiting" || steps[0]?.deckTopCount !== 2) errs.push("step0 mill");
       if (steps[1]?.template !== "toujou_optional_wait_to_deck_top") errs.push("step1 deck top");
+      if (steps[1]?.deckRelocateTo !== "nth_from_top" || steps[1]?.deckRelocateIndex !== 4) errs.push("step1 deck 4th");
       if (steps[0]?.optional || steps[0]?.hasOptionalCost) errs.push("step0 optional inherit");
       return errs;
     },

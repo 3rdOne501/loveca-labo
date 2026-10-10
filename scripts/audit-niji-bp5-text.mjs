@@ -74,6 +74,9 @@ for (let n = 1; n <= 30; n++) {
       if (step1?.template !== "toujou_optional_wait_to_deck_top") {
         errors.push(`${id} toujyou: wait-to-deck-top step misclassified`);
       }
+      if (step1?.deckRelocateTo !== "nth_from_top" || step1?.deckRelocateIndex !== 4) {
+        errors.push(`${id} toujyou: wait-to-deck 4th meta`);
+      }
     }
 
     if (/コスト\d+以上のブレードハートを持たない.*バトンタッチ/.test(plain)) {

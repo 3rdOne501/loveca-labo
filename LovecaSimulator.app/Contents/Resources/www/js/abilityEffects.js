@@ -5074,12 +5074,25 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
       }
       return twT(relocatePatch);
     }
-    if (/控え室.*カード1枚.*デッキの一番上/.test(p) && /もよい/.test(p)) {
+    var waitToDeckNthM = p.match(/控え室.*(?:カード|ライブカード)1枚.*デッキの一番上から([０-９\d]+)枚目/);
+    if (waitToDeckNthM && /もよい/.test(p)) {
+      return twT({
+        template: "toujou_optional_wait_to_deck_top",
+        deckRelocateTo: "nth_from_top",
+        deckRelocateIndex: Number(normalizeFwDigits(waitToDeckNthM[1])) || 1,
+        optional: true,
+        hasOptionalCost: true,
+        requiresOnStage: true,
+        filters: parseAbilityPickFilters(p),
+      });
+    }
+    if (/控え室.*(?:カード|ライブカード).*デッキの一番上に置/.test(p) && /もよい/.test(p)) {
       return twT({
         template: "toujou_optional_wait_to_deck_top",
         optional: true,
         hasOptionalCost: true,
         requiresOnStage: true,
+        filters: parseAbilityPickFilters(p),
       });
     }
     if (/エネルギー置き場.*下に置/.test(p) && /もよい/.test(p)) {
