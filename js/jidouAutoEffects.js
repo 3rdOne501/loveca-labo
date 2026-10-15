@@ -136,40 +136,33 @@ export function classifyJidouAutoSegment(segRaw) {
       perTurnLimit: perTurn,
     };
   }
+  // バトン退場でエネアクティブ（花帆 / にこ / 愛）。
+  // ユニット・コスト・BH有無・追加ドローは filters。文言差で型を分けない。
+  var batonLeaveEnergy =
+    /バトンタッチして控え室に置かれた/.test(p) ||
+    (/ステージから控え室に置かれたとき/.test(p) && /バトンタッチしていた/.test(p));
   if (
-    /ステージから控え室に置かれたとき/.test(p) &&
-    /バトンタッチしていた/.test(p) &&
+    batonLeaveEnergy &&
     /エネルギーを(\d+)枚アクティブ/.test(p) &&
-    /コスト(\d+)以上のブレードハートを持たない/.test(p)
+    !/エネルギーデッキから/.test(p)
   ) {
-    var aeBh = p.match(/エネルギーを(\d+)枚アクティブ/);
-    var bhThreshAll = [...p.matchAll(/コスト(\d+)以上のブレードハートを持たない/g)];
-    var drawBh = p.match(/さらにカードを(\d+)枚引/);
-    return {
-      template: "jidou_leave_baton_partner_bh_threshold_energy",
-      eventKind: "leave_stage_baton",
-      filters: { seriesTag: parseSeriesTag(p) },
-      energyActiveCount: aeBh ? Number(aeBh[1]) : 2,
-      batonPartnerBhThreshold: bhThreshAll[0] ? Number(bhThreshAll[0][1]) : 10,
-      deckDrawCount: drawBh ? Number(drawBh[1]) : 1,
-      batonPartnerDrawBhThreshold: bhThreshAll[1] ? Number(bhThreshAll[1][1]) : 15,
-      perTurnLimit: perTurn,
-    };
-  }
-  // 「ステージから控え室に置かれたとき、コストN以上の『X』のメンバーとバトンタッチしていた場合、エネルギーをM枚アクティブにする」
-  if (
-    /ステージから控え室に置かれたとき/.test(p) &&
-    /バトンタッチしていた/.test(p) &&
-    /エネルギーを(\d+)枚アクティブ/.test(p) &&
-    !/ブレードハート/.test(p)
-  ) {
-    var aeBatonCost = p.match(/エネルギーを(\d+)枚アクティブ/);
-    var mcBatonCost = p.match(/コスト(\d+)以上/);
+    var aeBaton = p.match(/エネルギーを(\d+)枚アクティブ/);
+    var costAll = [...p.matchAll(/コスト(\d+)以上/g)].map(function (m) {
+      return Number(m[1]);
+    });
+    var drawBaton = p.match(/さらにカードを(\d+)枚引/);
+    var noBh = /ブレードハートを持たない/.test(p);
     return {
       template: "jidou_baton_leave_activate_energy",
       eventKind: "leave_stage_baton",
-      filters: { seriesTag: parseSeriesTag(p), minCost: mcBatonCost ? Number(mcBatonCost[1]) : 0 },
-      energyActiveCount: aeBatonCost ? Number(aeBatonCost[1]) : 2,
+      filters: {
+        seriesTag: parseSeriesTag(p),
+        minCost: costAll[0] || 0,
+        requireNoBladeHeart: noBh,
+      },
+      energyActiveCount: aeBaton ? Number(aeBaton[1]) : 2,
+      deckDrawCount: drawBaton ? Number(drawBaton[1]) : 0,
+      extraDrawMinCost: drawBaton ? costAll[1] || costAll[0] || 0 : 0,
       perTurnLimit: perTurn,
     };
   }
@@ -647,17 +640,6 @@ export function classifyJidouAutoSegment(segRaw) {
   }
   if (/エネルギー置き場にエネルギーカードが置かれるたび/.test(p) && /ライブ終了時まで/.test(p)) {
     return { template: "jidou_energy_placed_grant", eventKind: "energy_placed", perTurnLimit: perTurn };
-  }
-  if (/バトンタッチして控え室に置かれた/.test(p) && /エネルギーを(\d+)枚アクティブ/.test(p)) {
-    var aeB = p.match(/エネルギーを(\d+)枚アクティブ/);
-    var mcB = p.match(/コスト(\d+)以上/);
-    return {
-      template: "jidou_baton_leave_activate_energy",
-      eventKind: "leave_stage_baton",
-      filters: { seriesTag: parseSeriesTag(p), minCost: mcB ? Number(mcB[1]) : 10 },
-      energyActiveCount: aeB ? Number(aeB[1]) : 2,
-      perTurnLimit: perTurn,
-    };
   }
   if (/ステージから控え室に置かれたとき/.test(p) && /手札を(\d+)枚控え室に置いてもよい/.test(p) && /ステージにいるメンバー1人/.test(p)) {
     var hdGm = p.match(/手札を(\d+)枚控え室/);

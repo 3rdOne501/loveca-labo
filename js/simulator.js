@@ -5156,11 +5156,41 @@ export function mountSimulator(
       render();
       return;
     }
-    if (cl.template === "jidou_baton_leave_activate_energy") {
+    if (
+      cl.template === "jidou_baton_leave_activate_energy" ||
+      cl.template === "jidou_leave_baton_partner_bh_threshold_energy"
+    ) {
       pushHistoryBefore("jidou-baton-leave-energy");
       activateEnergyCount(cl.energyActiveCount || 2);
+      var drawnBaton = 0;
+      var drawNBaton = Number(cl.deckDrawCount) || 0;
+      var drawThBaton =
+        cl.extraDrawMinCost != null && cl.extraDrawMinCost > 0
+          ? cl.extraDrawMinCost
+          : cl.batonPartnerDrawBhThreshold;
+      var bpDraw = ctx && ctx.batonPartner;
+      var needNoBhDraw =
+        (cl.filters && cl.filters.requireNoBladeHeart) ||
+        cl.template === "jidou_leave_baton_partner_bh_threshold_energy";
+      if (bpDraw && drawNBaton > 0 && drawThBaton != null) {
+        var drawOk = needNoBhDraw
+          ? batonPartnerLacksBhAtMinPrintedCost(bpDraw, drawThBaton)
+          : memberFlooredPrintedCost(bpDraw) >= drawThBaton;
+        if (drawOk) {
+          for (var dbi = 0; dbi < drawNBaton && state.deck.length; dbi++) {
+            state.hand.push(state.deck.shift());
+            drawnBaton++;
+          }
+          if (drawnBaton) presentAbilityDrawsToHand(state.hand.slice(-drawnBaton), memberInst);
+        }
+      }
       jidouPerTurnMark(memberInst, segIndex);
-      showToast("自動: バトン退場によりエネルギーを " + (cl.energyActiveCount || 2) + " 枚アクティブにしました");
+      showToast(
+        "自動: バトン退場によりエネルギーを " +
+          (cl.energyActiveCount || 2) +
+          " 枚アクティブにしました" +
+          (drawnBaton ? "。カードを " + drawnBaton + " 枚引きました" : ""),
+      );
       render();
       return;
     }
@@ -5177,38 +5207,6 @@ export function mountSimulator(
       showToast("自動: バトンタッチで登場したメンバーの下にエネルギー " + underPlaced + " 枚を置きました");
       jidouPerTurnMark(memberInst, segIndex);
       finishJidouAutoRender();
-      return;
-    }
-    if (cl.template === "jidou_leave_baton_partner_bh_threshold_energy") {
-      pushHistoryBefore("jidou-baton-bh-threshold");
-      activateEnergyCount(cl.energyActiveCount || 2);
-      var drawnBh = 0;
-      var bpInst = ctx && ctx.batonPartner;
-      var drawBhTh =
-        cl.batonPartnerDrawBhThreshold != null
-          ? cl.batonPartnerDrawBhThreshold
-          : cl.batonPartnerDrawMaxCostExclusive;
-      if (
-        bpInst &&
-        cl.deckDrawCount > 0 &&
-        drawBhTh != null &&
-        batonPartnerLacksBhAtMinPrintedCost(bpInst, drawBhTh)
-      ) {
-        for (var dbi = 0; dbi < cl.deckDrawCount && state.deck.length; dbi++) {
-          state.hand.push(state.deck.shift());
-          drawnBh++;
-        }
-        if (drawnBh) presentAbilityDrawsToHand(state.hand.slice(-drawnBh), memberInst);
-      }
-      jidouPerTurnMark(memberInst, segIndex);
-      showToast(
-        "自動: バトン退場によりエネルギーを " +
-          (cl.energyActiveCount || 2) +
-          " 枚アクティブ" +
-          (drawnBh ? "、カードを " + drawnBh + " 枚引きました" : "") +
-          "しました",
-      );
-      render();
       return;
     }
     if (cl.template === "jidou_leave_stage_recover_no_cost") {
@@ -6394,23 +6392,30 @@ export function mountSimulator(
         if (/ほかの/.test(raws[i]) && String(ctx.enteredInst.id) === String(memberInst.id)) continue;
         if (cl.requiresCenter && stageColumnKeyHostingMember(memberInst.id) !== "center") continue;
       }
-      if (cl.template === "jidou_baton_leave_activate_energy") {
+      if (
+        cl.template === "jidou_baton_leave_activate_energy" ||
+        cl.template === "jidou_leave_baton_partner_bh_threshold_energy"
+      ) {
         if (!ctx || !ctx.batonPartner) continue;
-        var bpCost = memberFlooredPrintedCost(ctx.batonPartner);
-        if (cl.filters && cl.filters.minCost != null && bpCost < cl.filters.minCost) continue;
-        if (cl.filters && cl.filters.seriesTag && !catalogCardMatchesGroupTag(mergedCatalogCard(ctx.batonPartner), cl.filters.seriesTag)) continue;
-      }
-      if (cl.template === "jidou_leave_baton_partner_bh_threshold_energy") {
-        if (!ctx || !ctx.batonPartner) continue;
-        var enBhTh =
-          cl.batonPartnerBhThreshold != null
-            ? cl.batonPartnerBhThreshold
-            : cl.batonPartnerMaxCostExclusive;
-        if (enBhTh != null && !batonPartnerLacksBhAtMinPrintedCost(ctx.batonPartner, enBhTh)) continue;
+        var bp = ctx.batonPartner;
+        var fltBaton = cl.filters || {};
+        var minBaton =
+          fltBaton.minCost != null
+            ? fltBaton.minCost
+            : cl.batonPartnerBhThreshold != null
+              ? cl.batonPartnerBhThreshold
+              : cl.batonPartnerMaxCostExclusive;
+        var needNoBh =
+          !!fltBaton.requireNoBladeHeart ||
+          cl.template === "jidou_leave_baton_partner_bh_threshold_energy";
+        if (needNoBh) {
+          if (minBaton != null && !batonPartnerLacksBhAtMinPrintedCost(bp, minBaton)) continue;
+        } else if (minBaton != null && memberFlooredPrintedCost(bp) < minBaton) {
+          continue;
+        }
         if (
-          cl.filters &&
-          cl.filters.seriesTag &&
-          !catalogCardMatchesGroupTag(mergedCatalogCard(ctx.batonPartner), cl.filters.seriesTag)
+          fltBaton.seriesTag &&
+          !catalogCardMatchesGroupTag(mergedCatalogCard(bp), fltBaton.seriesTag)
         ) {
           continue;
         }
