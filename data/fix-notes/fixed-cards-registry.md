@@ -22,7 +22,7 @@
 |-----------|------|------|------|--------|
 | PL!-pb2-009-R | 矢澤にこ | 「ステージから控え室＋バトンタッチしていた＋コストN以上」型が `classifyJidouAutoSegment` 未対応で `jidou_manual`。既存 `jidou_baton_leave_activate_energy` は「バトンタッチして控え室に置かれた」文言のみ | BH なしの退場バトン＋エネルギーアクティブ型を `jidou_baton_leave_activate_energy`（`leave_stage_baton`・`filters.minCost`/`seriesTag`）に分類。実行は既存ハンドラ | 2枚（PL!-pb2-009-R / PL!-pb2-009-PP・同型全文一致） |
 
-Discord: messageId 1559942285272031313（yahhonn）
+Discord: messageId 1559942285272031313（yahhonn） / 1560234930905026631（kanon_sibuya717_59145・再報告・同一根因）
 
 ---
 
