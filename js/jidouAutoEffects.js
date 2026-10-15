@@ -156,6 +156,23 @@ export function classifyJidouAutoSegment(segRaw) {
       perTurnLimit: perTurn,
     };
   }
+  // 「ステージから控え室に置かれたとき、コストN以上の『X』のメンバーとバトンタッチしていた場合、エネルギーをM枚アクティブにする」
+  if (
+    /ステージから控え室に置かれたとき/.test(p) &&
+    /バトンタッチしていた/.test(p) &&
+    /エネルギーを(\d+)枚アクティブ/.test(p) &&
+    !/ブレードハート/.test(p)
+  ) {
+    var aeBatonCost = p.match(/エネルギーを(\d+)枚アクティブ/);
+    var mcBatonCost = p.match(/コスト(\d+)以上/);
+    return {
+      template: "jidou_baton_leave_activate_energy",
+      eventKind: "leave_stage_baton",
+      filters: { seriesTag: parseSeriesTag(p), minCost: mcBatonCost ? Number(mcBatonCost[1]) : 0 },
+      energyActiveCount: aeBatonCost ? Number(aeBatonCost[1]) : 2,
+      perTurnLimit: perTurn,
+    };
+  }
   if (/ステージから控え室に置かれたとき/.test(p) && /カードを(\d+)枚引/.test(p)) {
     var dr = p.match(/カードを(\d+)枚引/);
     var hd2 = p.match(/手札を(\d+)枚控え室/);

@@ -16,6 +16,16 @@
 
 ---
 
+## 0n. 自動・バトン退場コスト閾値でエネルギー2枚アクティブ（2026-10-15）
+
+| カード番号 | 名前 | 根因 | 対応 | 横展開 |
+|-----------|------|------|------|--------|
+| PL!-pb2-009-R | 矢澤にこ | 「ステージから控え室＋バトンタッチしていた＋コストN以上」型が `classifyJidouAutoSegment` 未対応で `jidou_manual`。既存 `jidou_baton_leave_activate_energy` は「バトンタッチして控え室に置かれた」文言のみ | BH なしの退場バトン＋エネルギーアクティブ型を `jidou_baton_leave_activate_energy`（`leave_stage_baton`・`filters.minCost`/`seriesTag`）に分類。実行は既存ハンドラ | 2枚（PL!-pb2-009-R / PL!-pb2-009-PP・同型全文一致） |
+
+Discord: messageId 1559942285272031313（yahhonn）
+
+---
+
 ## 0m. 登場・控え室ライブを山札上からN枚目へ（2026-10-11）
 
 | カード番号 | 名前 | 根因 | 対応 | 横展開 |
