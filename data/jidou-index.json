@@ -1,12 +1,12 @@
 {
-  "generated": "2026-10-15",
+  "generated": "2026-10-17",
   "trigger": "jidou",
   "total": 144,
   "automated": 132,
   "guided_manual": 12,
   "byTemplate": {
     "jidou_manual": 12,
-    "jidou_baton_leave_activate_energy": 3,
+    "jidou_baton_leave_activate_energy": 7,
     "jidou_energy_under_placed_energy_wait": 2,
     "jidou_self_deck_to_waiting_discard_recover": 4,
     "jidou_leave_stage_recover_no_cost": 1,
@@ -33,7 +33,6 @@
     "jidou_yell_grant_jouji_nobh_members": 4,
     "jidou_leave_stage_position_change": 4,
     "jidou_yell_distinct_bh_tier_grant": 4,
-    "jidou_leave_baton_partner_bh_threshold_energy": 4,
     "jidou_area_move_opp_wait": 6,
     "jidou_card_to_waiting_pick_hand": 4,
     "jidou_yell_grant_heart_per_live_capped": 1,
@@ -667,7 +666,7 @@
     {
       "card_no": "PL!N-bp5-005-AR",
       "name": "宮下 愛",
-      "template": "jidou_leave_baton_partner_bh_threshold_energy",
+      "template": "jidou_baton_leave_activate_energy",
       "automated": true,
       "eventKind": "leave_stage_baton",
       "effect": "このメンバーがステージから控え室に置かれたとき、このメンバーがコスト10以上のブレードハートを持たない『虹ヶ咲』のメンバーとバトンタッチしていた場合、エネルギーを2枚アクティブにする。コスト15以上のブレードハートを持たない『虹ヶ咲』のメンバーの場合、さらにカードを1枚引く。"
@@ -675,7 +674,7 @@
     {
       "card_no": "PL!N-bp5-005-P",
       "name": "宮下 愛",
-      "template": "jidou_leave_baton_partner_bh_threshold_energy",
+      "template": "jidou_baton_leave_activate_energy",
       "automated": true,
       "eventKind": "leave_stage_baton",
       "effect": "このメンバーがステージから控え室に置かれたとき、このメンバーがコスト10以上のブレードハートを持たない『虹ヶ咲』のメンバーとバトンタッチしていた場合、エネルギーを2枚アクティブにする。コスト15以上のブレードハートを持たない『虹ヶ咲』のメンバーの場合、さらにカードを1枚引く。"
@@ -683,7 +682,7 @@
     {
       "card_no": "PL!N-bp5-005-SEC",
       "name": "宮下 愛",
-      "template": "jidou_leave_baton_partner_bh_threshold_energy",
+      "template": "jidou_baton_leave_activate_energy",
       "automated": true,
       "eventKind": "leave_stage_baton",
       "effect": "このメンバーがステージから控え室に置かれたとき、このメンバーがコスト10以上のブレードハートを持たない『虹ヶ咲』のメンバーとバトンタッチしていた場合、エネルギーを2枚アクティブにする。コスト15以上のブレードハートを持たない『虹ヶ咲』のメンバーの場合、さらにカードを1枚引く。"
@@ -691,7 +690,7 @@
     {
       "card_no": "PL!N-bp5-005-R＋",
       "name": "宮下 愛",
-      "template": "jidou_leave_baton_partner_bh_threshold_energy",
+      "template": "jidou_baton_leave_activate_energy",
       "automated": true,
       "eventKind": "leave_stage_baton",
       "effect": "このメンバーがステージから控え室に置かれたとき、このメンバーがコスト10以上のブレードハートを持たない『虹ヶ咲』のメンバーとバトンタッチしていた場合、エネルギーを2枚アクティブにする。コスト15以上のブレードハートを持たない『虹ヶ咲』のメンバーの場合、さらにカードを1枚引く。"

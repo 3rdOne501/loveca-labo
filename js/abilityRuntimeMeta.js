@@ -195,6 +195,7 @@ export const JIDOU_AUTO_TEMPLATES = [
   "jidou_baton_leave_activate_energy",
   "jidou_leave_baton_partner_bh_threshold_energy",
   "jidou_leave_stage_hand_grant_member",
+  "jidou_leave_stage_recover_no_cost",
   "jidou_member_live_start_grant_all_heart",
   "jidou_member_live_success_draw",
   "jidou_live_success_or_area_move_wait_under",

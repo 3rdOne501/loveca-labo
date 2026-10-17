@@ -3847,6 +3847,32 @@ export function mountSimulator(
     });
   }
 
+  /** スナップ比較でステージから控え室へ送られたメンバーの退場自動効果を発火（D&D 直送・バトン normalize 後） */
+  function fireJidouAfterMembersLeftStageFromSnap(snapBefore) {
+    if (isPlayManualMode() || !snapBefore || !snapBefore.stage) return;
+    var prev = stageMemberIdSetFromSnap(snapBefore);
+    var nowOnStage = stageMemberIdSetFromState();
+    prev.forEach(function (id) {
+      if (nowOnStage.has(id)) return;
+      var inst = findCardInstById(id);
+      if (!inst || inst.type !== T_MEMBER) return;
+      if (!instIsInWaitingRoom(id)) return;
+      var prevCol = stageColumnKeyFromSnap(snapBefore, id);
+      var batonPartner = null;
+      if (prevCol) {
+        (state.stage[prevCol] || []).forEach(function (m) {
+          if (!m || m.type !== T_MEMBER || m._soloOpponentProxy === true) return;
+          if (!prev.has(String(m.id))) batonPartner = m;
+        });
+      }
+      try {
+        fireJidouLeaveStageEvents(inst, batonPartner);
+      } catch (jErr) {
+        console.warn(jErr);
+      }
+    });
+  }
+
   /** ドラッグ＆ドロップでの列移動も「エリアを移動した」扱いで自動効果を発火させる */
   function fireJidouAfterStageAreaMovesFromSnap(snapBefore) {
     if (isPlayManualMode() || !snapBefore || !snapBefore.stage) return;
@@ -6925,7 +6951,7 @@ export function mountSimulator(
     return sumireCenterDoubleBatonEnergyCost(enteringInst, centerMem, leftMem || rightMem);
   }
 
-  function removeStageMemberToWaiting(memberInst) {
+  function removeStageMemberToWaiting(memberInst, batonPartnerInst) {
     if (!memberInst || memberInst.id == null) return false;
     var col = stageColumnKeyHostingMember(memberInst.id);
     if (!col) return false;
@@ -6937,6 +6963,11 @@ export function mountSimulator(
     var removed = slot.splice(idx, 1)[0];
     clearToujouEffectStateOnLeaveStage(removed);
     state.waitingRoom.push(removed);
+    try {
+      fireJidouLeaveStageEvents(removed, batonPartnerInst || null);
+    } catch (jErr) {
+      console.warn(jErr);
+    }
     return true;
   }
 
@@ -13448,6 +13479,11 @@ export function mountSimulator(
         var replaced = state.stage[side].splice(incIdx, 1)[0];
         clearToujouEffectStateOnLeaveStage(replaced);
         state.waitingRoom.push(replaced);
+        try {
+          fireJidouLeaveStageEvents(replaced, inst);
+        } catch (jErrTj) {
+          console.warn(jErrTj);
+        }
       }
       if (prevMemForBaton && prevMemForBaton.type === T_MEMBER) {
         inst._toujouBatonPartnerId = String(prevMemForBaton.id);
@@ -15849,25 +15885,8 @@ export function mountSimulator(
     return true;
   }
 
-  function moveStageMemberInstToWaiting(memberInst) {
-    if (!memberInst) return false;
-    var moved = false;
-    ["left", "center", "right"].forEach(function (k) {
-      if (moved) return;
-      var arr = state.stage[k] || [];
-      for (var i = 0; i < arr.length; i++) {
-        if (arr[i] && String(arr[i].id) === String(memberInst.id)) {
-          arr.splice(i, 1);
-          state.waitingRoom.push(memberInst);
-          moved = true;
-          break;
-        }
-      }
-    });
-    if (moved) {
-      fireJidouLeaveStageEvents(memberInst, null);
-    }
-    return moved;
+  function moveStageMemberInstToWaiting(memberInst, batonPartnerInst) {
+    return removeStageMemberToWaiting(memberInst, batonPartnerInst || null);
   }
 
   function clearLiveSessionGrantedState(inst) {
@@ -38438,7 +38457,6 @@ export function mountSimulator(
           if (!m || m._placedAsUnderMember === true) return;
           if (faceDisplaced && String(m.id) === String(faceDisplaced.id)) return;
           state.waitingRoom.push(m);
-          fireJidouLeaveStageEvents(m, newMember);
         });
 
         membersResolved[k] = underKeptSwap.concat([newMember]);
@@ -38458,7 +38476,6 @@ export function mountSimulator(
             return;
           }
           state.waitingRoom.push(m);
-          fireJidouLeaveStageEvents(m, newMember);
         });
         membersResolved[k] = underMembersKept.concat([newMember]);
         energiesResolved[k] = [];
@@ -38769,6 +38786,7 @@ export function mountSimulator(
           maybeFireJidouAfterWaitingRoomChanges(dragUndoSnap);
           maybeFireJidouAfterWaitingToHand(dragUndoSnap);
           maybeFireJidouAfterLiveAreaChanges(dragUndoSnap);
+          fireJidouAfterMembersLeftStageFromSnap(dragUndoSnap);
           fireJidouAfterStageAreaMovesFromSnap(dragUndoSnap);
         } catch (jErr) {
           console.warn(jErr);

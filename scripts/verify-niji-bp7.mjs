@@ -407,6 +407,12 @@ if (!/プレイ時任意コスト変更[\s\S]{0,400}_playCostReduce/.test(simSrc
 if (!/play-cost-reduce-shuffle-waiting/.test(simSrc)) {
   wiringErrs.push("play_cost_reduce_shuffle history/path missing");
 }
+if (!/function fireJidouAfterMembersLeftStageFromSnap/.test(simSrc)) {
+  wiringErrs.push("fireJidouAfterMembersLeftStageFromSnap missing");
+}
+if (!/fireJidouAfterMembersLeftStageFromSnap\(dragUndoSnap\)/.test(simSrc)) {
+  wiringErrs.push("onEnd drop must fire jidou for stage→waiting via snap diff");
+}
 if (/preBatonCompleted/.test(simSrc) || /バトン元を先に控え室へ入れてからシャッフル/.test(simSrc)) {
   wiringErrs.push("play_cost_reduce_shuffle must NOT pre-baton before shuffle (baton stays in waiting)");
 }

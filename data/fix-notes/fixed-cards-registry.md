@@ -16,6 +16,16 @@
 
 ---
 
+## 0o. ステージ→控え室の退場自動（D&D 直送）（2026-10-18）
+
+| カード番号 | 名前 | 根因 | 対応 | 横展開 |
+|-----------|------|------|------|--------|
+| PL!N-bp7-014-N | 中須かすみ | 分類・ハンドラは済みだが、ステージから控え室へ D&D 直送した退場で `leave_stage` 自動が発火せず、起動経路の `removeStageMemberToWaiting` も同様 | `fireJidouAfterMembersLeftStageFromSnap` をドロップ後に実行。`removeStageMemberToWaiting` / 登場時追い出し / バトン normalize から退場自動を一本化（二重発火を normalize 側から除去） | 同型 `jidou_leave_stage_recover_no_cost` は 1 枚のみ。退場自動全般（退場時控え室回収・退場時5枚見る・退場時手札捨て回収 等）に配線横展開 |
+
+Discord: messageId 1561097025481744465（.n1ssh1）
+
+---
+
 ## 0n. 自動・バトン退場コスト閾値でエネルギー2枚アクティブ（2026-10-15）
 
 | カード番号 | 名前 | 根因 | 対応 | 横展開 |
