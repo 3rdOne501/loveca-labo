@@ -473,41 +473,9 @@ export async function loadCardDatabase(statusEl) {
   throw new Error(msg);
 }
 
-export {
-  classifyCardAbility,
-  abilityPlainText,
-  catalogCardMatchesPickFilters,
-  catalogCardMatchesSeriesTag,
-  memberHasKidouAbility,
-  memberKidouRecoverHandType,
-  memberHasKidouStageToWaitingPickAbility,
-  memberHasToujouAbility,
-  memberHasOptionalToujouAbility,
-  memberHasLiveStartAbility,
-  memberHasOptionalLiveStartAbility,
-  memberHasLiveSuccessAbility,
-  abilityEffectIsAutomated,
-  cardHasTrigger,
-  splitAbilityByTriggers,
-  abilityRawSegmentForTrigger,
-  cardAbilityRawText,
-} from "./abilityEffects.js";
-
-export {
-  evaluateMemberJouji,
-  joujiHeartSlotRead,
-  listNativeJoujiSegmentRaws,
-} from "./joujiEffects.js";
-
-export {
-  listNativeToujouSegmentRaws,
-  listNativeLiveStartSegmentRaws,
-  listNativeKidouSegmentRaws,
-  cardCannotPlaceOnSuccessLive,
-  cardOffersSuccessLiveWaitingSubstitute,
-  successLiveWaitingSubstitutePickFilters,
-  parseQuotedCharacterNames,
-} from "./abilityEffects.js";
+/* 能力エンジン（abilityEffects / joujiEffects）はここから再エクスポートしない。
+ * デッキ編集など cards.js だけの画面で ~460KB 超を先行取得しないため。
+ * プレイ側は simulator.js が abilityEffects.js / joujiEffects.js を直接 import する。 */
 
 export const UNSET_PLACEHOLDER_PRODUCT = "未設定（テスト用）";
 const UNSET_PLACEHOLDER_PREFIX = "UNSET-M-";
