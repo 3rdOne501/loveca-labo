@@ -16,7 +16,12 @@ import { openCardCatalogDialog } from "./cardCatalogDialog.js";
 import { showToast } from "./ui.js";
 import { getCurrentCloudUser, onCloudUserChange, signInWithGoogle } from "./cloudAuth.js";
 import { showDeckBuilderView, showTierListView } from "./viewNav.js";
-import { getMemberCharacterById, listMemberCharacterRoster } from "./memberCharacterIcons.js";
+import {
+  getMemberCharacterById,
+  listMemberCharacterRoster,
+  resolveMemberCharacterIcon,
+  resolveMemberCharacterIconsFromCatalog,
+} from "./memberCharacterIcons.js";
 import { isPageVisible, onPageVisibilityChange } from "./pageVisibility.js";
 import {
   TIERLIST_KIND_CHARACTER,
@@ -44,6 +49,8 @@ import {
 
 const STORAGE_RECENT = "llocg.tierlist.recentRooms";
 const STORAGE_PICKER_FILTERS = "llocg.tierlist.pickerFilters";
+/** カードティアで麻雀／ドンジャラと同じキャラ顔アイコンを使う */
+const STORAGE_SHOW_CHAR_FACES = "llocg.tierlist.showCharFaces";
 const RECENT_MAX = 6;
 const PRESENCE_INTERVAL_MS = 30000;
 const PRESENCE_STALE_MS = 90000;
@@ -106,8 +113,118 @@ const state = {
   presenceTimer: null,
   /** タブ非表示で Firestore 購読を外している（code は保持） */
   syncPaused: false,
+  /** カードルーム: 麻雀キャラ顔で表示 */
+  showCharFaces: (function loadShowCharFaces() {
+    try {
+      return localStorage.getItem(STORAGE_SHOW_CHAR_FACES) === "1";
+    } catch (_) {
+      return false;
+    }
+  })(),
+  /** @type {number|null} */
+  boardRenderTimer: null,
+  /** @type {string} */
+  lastRoomShellSig: "",
   wired: false,
 };
+
+function roomShellSig(room) {
+  if (!room) return "";
+  const tiers = tierListSortedTiers(room);
+  return (
+    tierListRoomKind(room) +
+    "|" +
+    (room.hostUid || "") +
+    "|" +
+    tiers
+      .map(function (t) {
+        return t.id + ":" + String(t.label || "") + ":" + String(t.color || "") + ":" + String(t.order || "");
+      })
+      .join(";")
+  );
+}
+
+function scheduleBoardRender() {
+  if (state.boardRenderTimer != null) clearTimeout(state.boardRenderTimer);
+  state.boardRenderTimer = setTimeout(function () {
+    state.boardRenderTimer = null;
+    renderBoard();
+    renderMoveBar();
+  }, 48);
+}
+
+function persistShowCharFaces() {
+  try {
+    localStorage.setItem(STORAGE_SHOW_CHAR_FACES, state.showCharFaces ? "1" : "0");
+  } catch (_) {
+    /* noop */
+  }
+}
+
+/** カードルームかつキャラ顔表示オン */
+function useCardCharFaces() {
+  return !isCharacterRoom() && !!state.showCharFaces;
+}
+
+/**
+ * カードから麻雀キャラ顔を解決（メンバー優先、ライブ等は名前から推定）。
+ * @param {object|null|undefined} card
+ * @returns {Array<{ id: string, label: string, href: string }>}
+ */
+function resolveCardCharacterIcons(card) {
+  if (!card) return [];
+  const fromCat = resolveMemberCharacterIconsFromCatalog(card);
+  if (fromCat.length) return fromCat;
+  const raw = String(card.name || card.card_name || "").trim();
+  if (!raw) return [];
+  const parts = raw.indexOf("&") >= 0 ? raw.split("&") : [raw];
+  /** @type {Record<string, true>} */
+  const seen = {};
+  /** @type {Array<{ id: string, label: string, href: string }>} */
+  const out = [];
+  for (let i = 0; i < parts.length; i++) {
+    const icon = resolveMemberCharacterIcon(String(parts[i] || "").trim());
+    if (!icon || seen[icon.id]) continue;
+    seen[icon.id] = true;
+    out.push(icon);
+    if (out.length >= 3) break;
+  }
+  return out;
+}
+
+/**
+ * @param {object|null|undefined} card
+ * @param {string} name
+ * @param {{ eager?: boolean } | undefined} [opts]
+ */
+function cardVisualInnerHtml(card, name, opts) {
+  if (useCardCharFaces()) {
+    const icons = resolveCardCharacterIcons(card);
+    if (icons.length === 1) {
+      return (
+        memberIconHtml(icons[0].href, icons[0].label || name) +
+        '<span class="tierlist-char__name">' +
+        escapeHtml(icons[0].label || name) +
+        "</span>"
+      );
+    }
+    if (icons.length > 1) {
+      return (
+        '<span class="tierlist-card-faces">' +
+        icons
+          .map(function (ic) {
+            return memberIconHtml(ic.href, ic.label);
+          })
+          .join("") +
+        '</span><span class="tierlist-char__name">' +
+        escapeHtml(name) +
+        "</span>"
+      );
+    }
+  }
+  const img = card ? catalogCardImageUrl(card) : "";
+  return thumbHtml(img || "", name, opts);
+}
 
 function el(id) {
   return document.getElementById(id);
@@ -281,9 +398,21 @@ function bindRoomWatchers() {
         leaveToLobby(false);
         return;
       }
+      const prevShell = state.lastRoomShellSig;
       state.room = room;
+      const nextShell = roomShellSig(room);
+      state.lastRoomShellSig = nextShell;
       pushRecent({ code: state.code, title: room.title || "" });
-      renderAll();
+      renderLobby();
+      renderRoomHeader();
+      renderRoomToolbar();
+      renderMembers();
+      renderHostTools();
+      /* 在席更新だけではボードを触らない（点滅防止）。ティア構成が変わったときだけ再描画 */
+      if (prevShell !== nextShell) {
+        renderBoard();
+        renderMoveBar();
+      }
     },
     function () {
       showToast("ルームの同期に失敗しました");
@@ -293,8 +422,7 @@ function bindRoomWatchers() {
     code,
     function (entries) {
       state.entries = Array.isArray(entries) ? entries : [];
-      renderBoard();
-      renderMoveBar();
+      scheduleBoardRender();
     },
     function () {
       showToast("カード一覧の同期に失敗しました");
@@ -320,17 +448,23 @@ function resumeRoomSyncFromHidden() {
 function detachRoom() {
   stopPresenceTimer();
   unbindRoomWatchers();
+  if (state.boardRenderTimer != null) {
+    clearTimeout(state.boardRenderTimer);
+    state.boardRenderTimer = null;
+  }
   state.syncPaused = false;
   state.code = "";
   state.room = null;
   state.entries = [];
   state.selectedCardNo = "";
+  state.lastRoomShellSig = "";
 }
 
 function attachRoom(code) {
   detachRoom();
   state.code = normalizeTierListRoomCode(code);
   state.syncPaused = false;
+  state.lastRoomShellSig = "";
   if (isPageVisible()) {
     bindRoomWatchers();
     startPresenceTimer();
@@ -509,17 +643,18 @@ function charChipHtml(entry) {
 function cardChipHtml(entry) {
   const card = getCard(entry.cardNo);
   const name = (card && (card.name || card.card_name)) || entry.cardNo;
-  const img = card ? catalogCardImageUrl(card) : "";
   const selected = state.selectedCardNo === entry.cardNo ? " is-selected" : "";
+  const faceCls = useCardCharFaces() ? " tierlist-card--char-face" : "";
   return (
     '<button type="button" class="tierlist-card' +
+    faceCls +
     selected +
     '" data-card-no="' +
     escapeHtml(entry.cardNo) +
     '" title="' +
     escapeHtml(name) +
     '" draggable="true">' +
-    thumbHtml(img || "", name) +
+    cardVisualInnerHtml(card, name) +
     "</button>"
   );
 }
@@ -543,15 +678,15 @@ function createTierChipElement(entry, charMode) {
   }
   const card = getCard(entry.cardNo);
   const name = (card && (card.name || card.card_name)) || entry.cardNo;
-  const img = card ? catalogCardImageUrl(card) : "";
   const selected = state.selectedCardNo === entry.cardNo;
   const btn = document.createElement("button");
   btn.type = "button";
-  btn.className = "tierlist-card" + (selected ? " is-selected" : "");
+  btn.className =
+    "tierlist-card" + (useCardCharFaces() ? " tierlist-card--char-face" : "") + (selected ? " is-selected" : "");
   btn.dataset.cardNo = entry.cardNo;
   btn.title = name;
   btn.draggable = true;
-  btn.innerHTML = thumbHtml(img || "", name);
+  btn.innerHTML = cardVisualInnerHtml(card, name);
   return btn;
 }
 
@@ -561,8 +696,14 @@ function entryChipHtml(entry) {
 
 function renderRoomToolbar() {
   const addBtn = el("btn-tierlist-add-card");
-  if (!addBtn || !state.room) return;
-  addBtn.textContent = isCharacterRoom() ? "キャラを追加" : "カードを追加";
+  if (addBtn && state.room) {
+    addBtn.textContent = isCharacterRoom() ? "キャラを追加" : "カードを追加";
+  }
+  const faceLabel = el("tierlist-face-toggle");
+  const faceChk = /** @type {HTMLInputElement|null} */ (el("tierlist-show-char-faces"));
+  const inCardRoom = !!state.room && !isCharacterRoom();
+  if (faceLabel) faceLabel.hidden = !inCardRoom;
+  if (faceChk && inCardRoom) faceChk.checked = !!state.showCharFaces;
 }
 
 function renderBoard() {
@@ -575,12 +716,15 @@ function renderBoard() {
     return;
   }
   const charMode = isCharacterRoom();
+  const faceMode = useCardCharFaces();
   const emptyTier = charMode ? "キャラを配置" : "カードを配置";
   const emptyPool = charMode ? "キャラを追加して配置" : "カードを追加して配置";
   const tiers = tierListSortedTiers(state.room);
   const host = isTierListHost(state.room, getTierListMyUid());
   const shellSig =
     (charMode ? "c" : "k") +
+    "|f" +
+    (faceMode ? "1" : "0") +
     "|" +
     (host ? "h" : "g") +
     "|" +
@@ -637,17 +781,33 @@ function renderBoard() {
   }
 
   function placeEntries(tierId, entries, emptyText) {
-    const container = board.querySelector('.tierlist-row__cards[data-drop-tier="' + escapeHtml(tierId) + '"]');
-    if (!container) return;
-    container.querySelectorAll(":scope > .tierlist-card, :scope > .tierlist-char").forEach(function (btn) {
-      btn.remove();
+    /** @type {HTMLElement|null} */
+    let container = null;
+    board.querySelectorAll(".tierlist-row__cards[data-drop-tier]").forEach(function (node) {
+      if (!container && node.getAttribute("data-drop-tier") === tierId) {
+        container = /** @type {HTMLElement} */ (node);
+      }
     });
+    if (!container) return;
     const emptyEl = container.querySelector(":scope > .tierlist-row__empty");
-    if (emptyEl) emptyEl.remove();
     if (!entries.length) {
-      container.innerHTML = '<span class="tierlist-row__empty muted">' + escapeHtml(emptyText) + "</span>";
+      container.querySelectorAll(":scope > .tierlist-card, :scope > .tierlist-char").forEach(function (btn) {
+        const id = btn.getAttribute("data-card-no") || btn.getAttribute("data-char-id") || "";
+        if (id) chipPool.delete(id);
+        btn.remove();
+      });
+      if (!emptyEl) {
+        container.insertAdjacentHTML(
+          "beforeend",
+          '<span class="tierlist-row__empty muted">' + escapeHtml(emptyText) + "</span>",
+        );
+      } else if (emptyEl.textContent !== emptyText) {
+        emptyEl.textContent = emptyText;
+      }
       return;
     }
+    if (emptyEl) emptyEl.remove();
+    /** 外して付け直さず、順序どおり appendChild で移動する（点滅防止） */
     entries.forEach(function (entry) {
       const id = tierListEntryItemId(entry);
       let btn = chipPool.get(id);
@@ -768,7 +928,7 @@ function openCardPicker() {
     '<div class="tierlist-picker__head">' +
     "<h2>カードを追加</h2>" +
     '<button type="button" class="btn sm secondary tierlist-picker__close">閉じる</button></div>' +
-    '<p class="hint muted tierlist-picker__lead">クリックで複数選択できます。絞り込みは次回も保持されます。</p>' +
+    '<p class="hint muted tierlist-picker__lead">クリックで複数選択 → 未配置へ一括追加できます（追加後もピッカーは開いたまま）。絞り込みは保持されます。</p>' +
     '<div class="tierlist-picker__filters">' +
     '<label class="field"><span>種類</span><select id="tierlist-pick-type"><option value="">すべて</option>' +
     TYPE_OPTIONS.map(function (t) {
@@ -793,8 +953,9 @@ function openCardPicker() {
     '<div class="tierlist-picker__foot">' +
     '<p class="hint muted" id="tierlist-pick-hint"></p>' +
     '<div class="tierlist-picker__foot-actions">' +
+    '<button type="button" class="btn sm secondary" id="tierlist-pick-select-visible">表示中をすべて選択</button>' +
     '<button type="button" class="btn sm secondary" id="tierlist-pick-clear-sel" hidden>選択解除</button>' +
-    '<button type="button" class="btn primary" id="tierlist-pick-add" disabled>選択したカードを追加</button>' +
+    '<button type="button" class="btn primary" id="tierlist-pick-add" disabled>未配置へ追加</button>' +
     "</div></div></div>";
   document.body.appendChild(overlay);
 
@@ -826,19 +987,21 @@ function openCardPicker() {
     });
   }
 
+  /** @type {Array<{ card_no?: string, name?: string, card_name?: string }>} */
+  let lastMatched = [];
+
   function syncFooter() {
     const n = selected.size;
     const addBtn = /** @type {HTMLButtonElement|null} */ (overlay.querySelector("#tierlist-pick-add"));
     const clearBtn = /** @type {HTMLButtonElement|null} */ (overlay.querySelector("#tierlist-pick-clear-sel"));
     if (addBtn) {
       addBtn.disabled = n === 0;
-      addBtn.textContent = n ? "選択した " + n + " 枚を追加" : "選択したカードを追加";
+      addBtn.textContent = n ? "未配置へ " + n + " 枚追加" : "未配置へ追加";
     }
     if (clearBtn) clearBtn.hidden = n === 0;
   }
 
-  function renderGrid() {
-    persistFiltersFromUi();
+  function collectMatched() {
     const type = typeEl ? typeEl.value : "";
     const school = schoolEl ? schoolEl.value : "";
     const product = productEl ? productEl.value : "";
@@ -864,6 +1027,13 @@ function openCardPicker() {
       matched.push(c);
       if (matched.length >= PICKER_CAP) break;
     }
+    return matched;
+  }
+
+  function renderGrid() {
+    persistFiltersFromUi();
+    const matched = collectMatched();
+    lastMatched = matched;
     const grid = overlay.querySelector("#tierlist-pick-grid");
     const hint = overlay.querySelector("#tierlist-pick-hint");
     if (hint) {
@@ -884,35 +1054,40 @@ function openCardPicker() {
         const isOn = selected.has(no);
         let btn = pool.get(no);
         pool.delete(no);
+        const name = c.name || c.card_name || c.card_no;
+        const faceOn = useCardCharFaces();
         if (!btn) {
-          const name = c.name || c.card_name || c.card_no;
-          const img = catalogCardImageUrl(c);
           btn = document.createElement("button");
           btn.type = "button";
-          btn.className = "tierlist-pick-card" + (isOn ? " is-selected" : "");
           btn.dataset.cardNo = no;
-          btn.setAttribute("aria-pressed", isOn ? "true" : "false");
           btn.title = name;
           btn.innerHTML =
-            thumbHtml(img || "", name, { eager: idx < PICKER_THUMB_EAGER }) +
-            '<span class="tierlist-pick-card__name">' +
-            escapeHtml(name) +
-            "</span>";
-        } else {
-          btn.classList.toggle("is-selected", isOn);
-          btn.setAttribute("aria-pressed", isOn ? "true" : "false");
+            cardVisualInnerHtml(c, name, { eager: idx < PICKER_THUMB_EAGER }) +
+            (faceOn ? "" : '<span class="tierlist-pick-card__name">' + escapeHtml(name) + "</span>");
+        } else if (btn.dataset.faceMode !== (faceOn ? "1" : "0")) {
+          btn.innerHTML =
+            cardVisualInnerHtml(c, name, { eager: idx < PICKER_THUMB_EAGER }) +
+            (faceOn ? "" : '<span class="tierlist-pick-card__name">' + escapeHtml(name) + "</span>");
         }
+        btn.dataset.faceMode = faceOn ? "1" : "0";
+        btn.className =
+          "tierlist-pick-card" +
+          (faceOn ? " tierlist-pick-card--char-face" : "") +
+          (isOn ? " is-selected" : "");
+        btn.setAttribute("aria-pressed", isOn ? "true" : "false");
         grid.appendChild(btn);
       });
       pool.forEach(function (b) {
         b.remove();
       });
-      prefetchCatalogListThumbnails(
-        matched.slice(0, PICKER_THUMB_PREFETCH).map(function (c) {
-          return catalogCardImageUrl(c);
-        }),
-        { limit: PICKER_THUMB_PREFETCH, eagerCount: PICKER_THUMB_EAGER },
-      );
+      if (!useCardCharFaces()) {
+        prefetchCatalogListThumbnails(
+          matched.slice(0, PICKER_THUMB_PREFETCH).map(function (c) {
+            return catalogCardImageUrl(c);
+          }),
+          { limit: PICKER_THUMB_PREFETCH, eagerCount: PICKER_THUMB_EAGER },
+        );
+      }
     }
     syncFooter();
   }
@@ -952,6 +1127,18 @@ function openCardPicker() {
       hint.textContent = selected.size ? base + " · 選択 " + selected.size + " 枚" : base;
     }
   });
+  overlay.querySelector("#tierlist-pick-select-visible")?.addEventListener("click", function () {
+    lastMatched.forEach(function (c) {
+      if (c && c.card_no) selected.add(c.card_no);
+    });
+    syncPickerSelectionOnly();
+    syncFooter();
+    const hint = overlay.querySelector("#tierlist-pick-hint");
+    if (hint) {
+      const base = String(hint.textContent || "").replace(/\s*·\s*選択\s+\d+\s*枚/, "");
+      hint.textContent = selected.size ? base + " · 選択 " + selected.size + " 枚" : base;
+    }
+  });
   overlay.querySelector("#tierlist-pick-clear-sel")?.addEventListener("click", function () {
     selected.clear();
     syncPickerSelectionOnly();
@@ -974,19 +1161,22 @@ function openCardPicker() {
         if (!cardNo || placed.has(cardNo)) continue;
         await placeTierListCard(state.code, { cardNo: cardNo, tierId: TIERLIST_POOL_ID });
         placed.add(cardNo);
+        selected.delete(cardNo);
         ok++;
         lastNo = cardNo;
       }
       if (lastNo) state.selectedCardNo = lastNo;
       showToast(ok ? ok + " 枚を未配置に追加しました" : "追加できるカードがありません");
-      close();
-      renderAll();
+      /* ピッカーは閉じず続けて追加できる。ボードは entries 購読の debounce 描画に任せる */
+      renderGrid();
     } catch (err) {
       showToast(errorMessage(err));
       selected.forEach(function (no) {
         if (placed.has(no)) selected.delete(no);
       });
       renderGrid();
+    } finally {
+      if (addBtn) addBtn.disabled = selected.size === 0;
     }
   });
   renderGrid();
@@ -1161,6 +1351,12 @@ function wireRoom() {
   el("btn-tierlist-add-card")?.addEventListener("click", function () {
     if (isCharacterRoom()) openCharacterPicker();
     else openCardPicker();
+  });
+  el("tierlist-show-char-faces")?.addEventListener("change", function (ev) {
+    state.showCharFaces = !!(/** @type {HTMLInputElement} */ (ev.target).checked);
+    persistShowCharFaces();
+    renderRoomToolbar();
+    renderBoard();
   });
   el("btn-tierlist-add-tier")?.addEventListener("click", async function () {
     if (!state.code) return;

@@ -15452,6 +15452,54 @@ body.tourney-deck-view-open {
   font-size: 0.9rem;
   cursor: pointer;
 }
+.tierlist-face-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.86rem;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.tierlist-face-toggle[hidden] {
+  display: none !important;
+}
+.tierlist-face-toggle input {
+  margin: 0;
+}
+.tierlist-card--char-face,
+.tierlist-pick-card--char-face {
+  width: auto;
+  min-width: 3.1rem;
+  align-items: center;
+}
+.tierlist-card--char-face {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.15rem;
+}
+.tierlist-card-faces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.12rem;
+  justify-content: center;
+}
+.tierlist-card--char-face .tierlist-char-icon,
+.tierlist-pick-card--char-face .tierlist-char-icon {
+  width: 44px;
+  height: 44px;
+}
+.tierlist-pick-card--char-face .tierlist-char__name {
+  font-size: 0.68rem;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-align: center;
+  white-space: normal;
+}
 .tierlist-char {
   flex-direction: column;
   align-items: center;
