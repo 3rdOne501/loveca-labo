@@ -638,10 +638,6 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
     if (detFi && detFi.tagName === "DETAILS") {
       payload.deckSearchFiltersOpen = /** @type {HTMLDetailsElement} */ (detFi).open;
     }
-    var dlgFi = document.getElementById("dlg-deck-filters");
-    if (dlgFi && typeof dlgFi.open === "boolean") {
-      payload.deckSearchFiltersOpen = !!dlgFi.open;
-    }
     return payload;
   }
 
@@ -914,62 +910,18 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
     return s;
   }
 
-  function deckFiltersDialogEl() {
-    return el("dlg-deck-filters") || document.getElementById("dlg-deck-filters");
+  /** 旧仕様: 左サイドの details 折りたたみ。ダイアログは使わない。 */
+  function openDeckFiltersDialog() {
+    var fold = el("deck-search-panel-filters");
+    if (fold) fold.open = true;
   }
 
   function closeDeckFiltersDialog() {
-    var dlg = deckFiltersDialogEl();
-    if (dlg && dlg.open && typeof dlg.close === "function") {
-      try {
-        dlg.close();
-      } catch (_) {
-        /* noop */
-      }
-    }
-  }
-
-  function openDeckFiltersDialog() {
-    var dlg = deckFiltersDialogEl();
-    if (!dlg) return;
-    if (dlg.open) return;
-    try {
-      if (typeof dlg.showModal === "function") dlg.showModal();
-      else if (typeof dlg.show === "function") dlg.show();
-    } catch (_) {
-      /* noop */
-    }
+    /* サイド折りたたみ運用のため no-op */
   }
 
   function syncDeckFiltersOpenButtons() {
-    var n = 0;
-    if (filterProduct) n += 1;
-    if (filterSeries) n += 1;
-    if (filterUnit) n += 1;
-    if (!filterTypes[T_MEMBER] || !filterTypes[T_LIVE]) n += 1;
-    if (filterFavoritesOnly) n += 1;
-    if (catalogSortOrder && catalogSortOrder !== "default") n += 1;
-    if (
-      allCosts.some(function (c) {
-        return !filterCosts[c];
-      })
-    ) {
-      n += 1;
-    }
-    var bh = readBhSlotFilters();
-    var bx = readBhFilterExtras();
-    var hs = readHeartSlotFilters();
-    if (bh.size || bx.nonBh || bx.noteLive || bx.drawYell || hs.size) n += 1;
-    var side = el("btn-open-deck-filters");
-    var cardBtn = el("btn-open-deck-filters-card");
-    if (side) {
-      side.textContent = n ? "絞り込みを開く（" + n + "）" : "絞り込みを開く";
-      side.classList.toggle("is-active", n > 0);
-    }
-    if (cardBtn) {
-      cardBtn.textContent = n ? "絞り込み（" + n + "）" : "絞り込み";
-      cardBtn.classList.toggle("is-active", n > 0);
-    }
+    /* ダイアログ時代のバッジ更新は不要 */
   }
 
   let zoomTargetCardForBuilder = null;
@@ -1858,16 +1810,22 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
   function builderCatalogThumbImgHtml(url, className, imgOpts) {
     if (!url) return "";
     imgOpts = imgOpts || {};
+    // 公式 img を優先表示。wsrv 縮小は任意の高速化で、失敗時は公式へ戻す。
     const low = catalogListThumbnailUrl(url, imgOpts.hiQuality ? { hi: true } : undefined);
     const cls = className || "deck-builder-card-thumb";
     const eager = imgOpts.eager === true;
+    const primary = url;
+    const fallback = low && low !== url ? low : "";
     return (
       '<img class="' +
       escapeAttr(cls) +
       '" src="' +
-      escapeAttr(low) +
+      escapeAttr(primary) +
       '" data-full-src="' +
       escapeAttr(url) +
+      (fallback
+        ? '" data-low-src="' + escapeAttr(fallback)
+        : "") +
       '" alt="" loading="' +
       (eager ? "eager" : "lazy") +
       '" fetchpriority="' +
@@ -3827,24 +3785,6 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
   }
 
   el("btn-reset-filters")?.addEventListener("click", resetDeckCatalogFilters);
-  el("dlg-deck-filters-reset")?.addEventListener("click", resetDeckCatalogFilters);
-
-  function wireDeckFiltersDialog() {
-    var dlg = deckFiltersDialogEl();
-    ["btn-open-deck-filters", "btn-open-deck-filters-card"].forEach(function (id) {
-      el(id)?.addEventListener("click", function () {
-        openDeckFiltersDialog();
-      });
-    });
-    el("dlg-deck-filters-close")?.addEventListener("click", closeDeckFiltersDialog);
-    el("dlg-deck-filters-done")?.addEventListener("click", closeDeckFiltersDialog);
-    if (dlg) {
-      dlg.addEventListener("close", function () {
-        schedulePersistDeckBuilderUiState();
-      });
-    }
-  }
-  wireDeckFiltersDialog();
 
   el("btn-deck-text-import")?.addEventListener("click", () => {
     const text = el("deck-text-import")?.value || "";
