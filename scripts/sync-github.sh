@@ -149,8 +149,21 @@ if [[ "$PUSH_OK" -ne 1 ]]; then
 fi
 
 echo
+echo "GitHub Pages（gh-pages）へ反映しています..."
+if [[ -x "${ROOT}/scripts/deploy-github-pages.sh" ]]; then
+  if bash "${ROOT}/scripts/deploy-github-pages.sh"; then
+    echo "  Pages: https://3rdone501.github.io/loveca-labo/"
+  else
+    echo "警告: GitHub Pages への反映に失敗しました（main の push 自体は成功しています）" >&2
+  fi
+else
+  echo "警告: scripts/deploy-github-pages.sh がありません" >&2
+fi
+
+echo
 echo "完了しました。"
 if [[ "$COMMIT_CREATED" -eq 1 ]]; then
   echo "  コミット: ${LAST_COMMIT_HASH}"
 fi
 echo "  https://github.com/3rdOne501/loveca-labo (branch: ${BRANCH})"
+echo "  https://3rdone501.github.io/loveca-labo/"
