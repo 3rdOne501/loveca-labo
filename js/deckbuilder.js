@@ -548,6 +548,8 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
   };
   /** これ未満だと仮想化しないが、フル描画は重いので低めに保つ */
   const CARD_GRID_VIRTUAL_MIN = 36;
+  /** カード検索一覧に並べる上限（既定ソートは新着順なので「最新 N 件」） */
+  const CATALOG_GRID_DISPLAY_CAP = 100;
   /** 登録デッキ一覧の「行の集合」が前回フル描画と同じか判定する（枚数だけの変更なら一覧は差分更新） */
   let lastDeckListActiveNosSig = "";
   let catalogFilterCacheKey = "";
@@ -2881,19 +2883,34 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
       "</div></div>";
   }
 
-  function updateCardHitCountFromFiltered(filtered) {
+  /**
+   * @param {typeof cards} matchList 絞り込み後の全件
+   * @param {typeof cards} [displayList] 実際に並べる配列（省略時は matchList）
+   */
+  function updateCardHitCountFromFiltered(matchList, displayList) {
     const hit = el("card-hit-count");
     if (!hit) return;
+    const matched = Array.isArray(matchList) ? matchList : [];
+    const shown = Array.isArray(displayList) ? displayList : matched;
     let line = "";
     let sumReg = 0;
     const regKinds = Object.keys(deckMap).filter(function (no) {
       return (deckMap[no] || 0) > 0;
     }).length;
     for (const no of Object.keys(deckMap)) sumReg += deckMap[no] || 0;
-    if (filtered.length === cards.length) {
+    if (shown.length < matched.length) {
+      line =
+        "最新 " +
+        shown.length +
+        " 件を表示（一致 " +
+        matched.length +
+        " / 全 " +
+        cards.length +
+        " 種）";
+    } else if (matched.length === cards.length) {
       line = "全 " + cards.length + " 種";
     } else {
-      line = "表示 " + filtered.length + " / 全 " + cards.length + " 種";
+      line = "表示 " + matched.length + " / 全 " + cards.length + " 種";
     }
     if (regKinds > 0) {
       line += " · 登録 " + regKinds + " 種／" + sumReg + " 枚";
@@ -2906,6 +2923,36 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
       line = line + " · サンプル " + rl.length + " 件";
     }
     hit.textContent = line;
+  }
+
+  /** 検索・商品など何らかの絞り込み中か（このとき一覧の 100 件上限は外す） */
+  function catalogHasActiveNarrowing() {
+    if (String(searchText || "").trim()) return true;
+    if (filterProduct) return true;
+    if (filterSeries) return true;
+    if (filterUnit) return true;
+    if (filterFavoritesOnly) return true;
+    if (!filterTypes[T_MEMBER] || !filterTypes[T_LIVE]) return true;
+    const bx = readBhFilterExtras();
+    if (bx.nonBh || bx.noteLive || bx.drawYell) return true;
+    if (readBhSlotFilters().size > 0) return true;
+    if (readHeartSlotFilters().size > 0) return true;
+    if (
+      Object.keys(filterCosts).some(function (k) {
+        return !filterCosts[k];
+      })
+    ) {
+      return true;
+    }
+    return false;
+  }
+
+  /** @param {typeof cards} filtered */
+  function catalogGridDisplayList(filtered) {
+    if (!filtered || !filtered.length) return filtered || [];
+    if (catalogHasActiveNarrowing()) return filtered;
+    if (filtered.length <= CATALOG_GRID_DISPLAY_CAP) return filtered;
+    return filtered.slice(0, CATALOG_GRID_DISPLAY_CAP);
   }
 
   function syncThumbFavOnWrap(wrap, cardNo) {
@@ -2965,9 +3012,10 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
     }
 
     /** @type {typeof cards} */
-    const filtered = computeFilteredCardListForGrid();
-    const layoutSig = "cat0|sam0|pub0";
-    updateCardHitCountFromFiltered(filtered);
+    const matched = computeFilteredCardListForGrid();
+    const filtered = catalogGridDisplayList(matched);
+    const layoutSig = "cat0|sam0|pub0|cap" + CATALOG_GRID_DISPLAY_CAP;
+    updateCardHitCountFromFiltered(matched, filtered);
     const scrollEl = el("card-grid-scroll");
     const topSp = el("card-grid-top-spacer");
     const botSp = el("card-grid-bottom-spacer");
@@ -3515,8 +3563,9 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
     } else {
       scheduleRenderDeckList();
     }
-    const filtered = computeFilteredCardListForGrid();
-    updateCardHitCountFromFiltered(filtered);
+    const matched = computeFilteredCardListForGrid();
+    const filtered = catalogGridDisplayList(matched);
+    updateCardHitCountFromFiltered(matched, filtered);
     scheduleDeckSummaryDebounced();
     const newSig = filtered
       .map(function (c) {
@@ -3537,8 +3586,9 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
     persistDeckState();
     renderCounts();
     scheduleRenderDeckList();
-    const filtered = computeFilteredCardListForGrid();
-    updateCardHitCountFromFiltered(filtered);
+    const matched = computeFilteredCardListForGrid();
+    const filtered = catalogGridDisplayList(matched);
+    updateCardHitCountFromFiltered(matched, filtered);
     scheduleDeckSummaryDebounced();
     const newSig = filtered
       .map(function (c) {

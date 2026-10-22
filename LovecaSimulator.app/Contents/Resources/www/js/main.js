@@ -34,9 +34,12 @@ import { initDeckBrowsePage } from "./deckBrowsePage.js";
 import { initBingoDerby } from "./bingoDerby.js";
 import { initWeakestConference, openWeakestConference } from "./weakestConference.js";
 import { initTierListMaker, openTierListMaker } from "./tierListMaker.js";
+import { initPageVisibilityPause } from "./pageVisibility.js";
 import { showAppView, showDeckBuilderView, showDeckBrowseView, showBingoView } from "./viewNav.js";
 import { prefetchGameStatusArtBundledEarly } from "./gameStatusIcons.js";
 import { showToast } from "./ui.js";
+
+initPageVisibilityPause();
 
 /** ソロ開始の非同期マウントが古いクリックで上書きされないようにする */
 let soloPlayStartSeq = 0;

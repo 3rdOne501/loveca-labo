@@ -9,6 +9,7 @@ import { openCardCatalogDialog } from "./cardCatalogDialog.js";
 import { showToast } from "./ui.js";
 import { getCurrentCloudUser, onCloudUserChange, signInWithGoogle } from "./cloudAuth.js";
 import { showDeckBuilderView, showWeakestView } from "./viewNav.js";
+import { isPageVisible, onPageVisibilityChange } from "./pageVisibility.js";
 import {
   WEAKEST_MAX_CATEGORY_LEN,
   WEAKEST_MAX_COMMENT_LEN,
@@ -54,6 +55,8 @@ const state = {
   unsubEntries: null,
   /** @type {number|null} */
   presenceTimer: null,
+  /** タブ非表示で Firestore 購読を外している（code は保持） */
+  syncPaused: false,
   wired: false,
 };
 
@@ -159,13 +162,21 @@ function categoryFilterLabel(category) {
 
 /* ---------- ルーム接続 ---------- */
 
-function detachRoom() {
+function stopPresenceTimer() {
+  if (state.presenceTimer != null) {
+    clearInterval(state.presenceTimer);
+    state.presenceTimer = null;
+  }
+}
+
+function unbindRoomWatchers() {
   if (state.unsubRoom) {
     try {
       state.unsubRoom();
     } catch (_) {
       /* noop */
     }
+    state.unsubRoom = null;
   }
   if (state.unsubEntries) {
     try {
@@ -173,22 +184,24 @@ function detachRoom() {
     } catch (_) {
       /* noop */
     }
+    state.unsubEntries = null;
   }
-  if (state.presenceTimer != null) {
-    clearInterval(state.presenceTimer);
-  }
-  state.unsubRoom = null;
-  state.unsubEntries = null;
-  state.presenceTimer = null;
-  state.code = "";
-  state.room = null;
-  state.entries = [];
-  state.activeCategoryId = "";
 }
 
-/** @param {string} code */
-function attachRoom(code) {
-  state.code = code;
+function startPresenceTimer() {
+  stopPresenceTimer();
+  if (!state.code || !isPageVisible()) return;
+  const code = state.code;
+  state.presenceTimer = window.setInterval(function () {
+    if (!state.code || !isPageVisible()) return;
+    touchWeakestPresence(code);
+    renderMembers();
+  }, PRESENCE_INTERVAL_MS);
+}
+
+function bindRoomWatchers() {
+  if (!state.code || state.unsubRoom || state.unsubEntries) return;
+  const code = state.code;
   state.unsubRoom = watchWeakestRoom(
     code,
     function (room) {
@@ -220,10 +233,45 @@ function attachRoom(code) {
       showToast(errorMessage(err));
     },
   );
-  state.presenceTimer = window.setInterval(function () {
+}
+
+function pauseRoomSyncForHidden() {
+  if (!state.code || state.syncPaused) return;
+  state.syncPaused = true;
+  stopPresenceTimer();
+  unbindRoomWatchers();
+}
+
+function resumeRoomSyncFromHidden() {
+  if (!state.code || !state.syncPaused) return;
+  state.syncPaused = false;
+  bindRoomWatchers();
+  startPresenceTimer();
+  touchWeakestPresence(state.code);
+  renderMembers();
+}
+
+function detachRoom() {
+  stopPresenceTimer();
+  unbindRoomWatchers();
+  state.syncPaused = false;
+  state.code = "";
+  state.room = null;
+  state.entries = [];
+  state.activeCategoryId = "";
+}
+
+/** @param {string} code */
+function attachRoom(code) {
+  state.code = code;
+  state.syncPaused = false;
+  if (isPageVisible()) {
+    bindRoomWatchers();
+    startPresenceTimer();
     touchWeakestPresence(code);
-    renderMembers();
-  }, PRESENCE_INTERVAL_MS);
+  } else {
+    state.syncPaused = true;
+  }
 }
 
 /** @param {string} rawCode @param {{ silent?: boolean }} [opts] */
@@ -964,6 +1012,12 @@ export function initWeakestConference() {
 
   wireLobby();
   wireRoom();
+
+  onPageVisibilityChange(function (visible) {
+    if (!state.code) return;
+    if (visible) resumeRoomSyncFromHidden();
+    else pauseRoomSyncForHidden();
+  });
 
   onCloudUserChange(function () {
     renderAll();

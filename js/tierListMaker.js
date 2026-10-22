@@ -10,6 +10,7 @@ import { showToast } from "./ui.js";
 import { getCurrentCloudUser, onCloudUserChange, signInWithGoogle } from "./cloudAuth.js";
 import { showDeckBuilderView, showTierListView } from "./viewNav.js";
 import { getMemberCharacterById, listMemberCharacterRoster } from "./memberCharacterIcons.js";
+import { isPageVisible, onPageVisibilityChange } from "./pageVisibility.js";
 import {
   TIERLIST_KIND_CHARACTER,
   TIERLIST_MAX_TIER_LABEL_LEN,
@@ -57,6 +58,8 @@ const state = {
   unsubEntries: null,
   /** @type {number|null} */
   presenceTimer: null,
+  /** タブ非表示で Firestore 購読を外している（code は保持） */
+  syncPaused: false,
   wired: false,
 };
 
@@ -173,7 +176,14 @@ function pushRecent(item) {
   }
 }
 
-function detachRoom() {
+function stopPresenceTimer() {
+  if (state.presenceTimer != null) {
+    clearInterval(state.presenceTimer);
+    state.presenceTimer = null;
+  }
+}
+
+function unbindRoomWatchers() {
   if (state.unsubRoom) {
     try {
       state.unsubRoom();
@@ -190,21 +200,21 @@ function detachRoom() {
     }
     state.unsubEntries = null;
   }
-  if (state.presenceTimer != null) {
-    clearInterval(state.presenceTimer);
-    state.presenceTimer = null;
-  }
-  state.code = "";
-  state.room = null;
-  state.entries = [];
-  state.selectedCardNo = "";
 }
 
-function attachRoom(code) {
-  detachRoom();
-  state.code = normalizeTierListRoomCode(code);
+function startPresenceTimer() {
+  stopPresenceTimer();
+  if (!state.code || !isPageVisible()) return;
+  state.presenceTimer = setInterval(function () {
+    if (state.code && isPageVisible()) touchTierListPresence(state.code);
+  }, PRESENCE_INTERVAL_MS);
+}
+
+function bindRoomWatchers() {
+  if (!state.code || state.unsubRoom || state.unsubEntries) return;
+  const code = state.code;
   state.unsubRoom = watchTierListRoom(
-    state.code,
+    code,
     function (room) {
       if (!room) {
         showToast("ルームが終了したか、見つかりません");
@@ -220,7 +230,7 @@ function attachRoom(code) {
     },
   );
   state.unsubEntries = watchTierListEntries(
-    state.code,
+    code,
     function (entries) {
       state.entries = Array.isArray(entries) ? entries : [];
       renderBoard();
@@ -230,10 +240,44 @@ function attachRoom(code) {
       showToast("カード一覧の同期に失敗しました");
     },
   );
-  state.presenceTimer = setInterval(function () {
-    if (state.code) touchTierListPresence(state.code);
-  }, PRESENCE_INTERVAL_MS);
+}
+
+function pauseRoomSyncForHidden() {
+  if (!state.code || state.syncPaused) return;
+  state.syncPaused = true;
+  stopPresenceTimer();
+  unbindRoomWatchers();
+}
+
+function resumeRoomSyncFromHidden() {
+  if (!state.code || !state.syncPaused) return;
+  state.syncPaused = false;
+  bindRoomWatchers();
+  startPresenceTimer();
   touchTierListPresence(state.code);
+}
+
+function detachRoom() {
+  stopPresenceTimer();
+  unbindRoomWatchers();
+  state.syncPaused = false;
+  state.code = "";
+  state.room = null;
+  state.entries = [];
+  state.selectedCardNo = "";
+}
+
+function attachRoom(code) {
+  detachRoom();
+  state.code = normalizeTierListRoomCode(code);
+  state.syncPaused = false;
+  if (isPageVisible()) {
+    bindRoomWatchers();
+    startPresenceTimer();
+    touchTierListPresence(state.code);
+  } else {
+    state.syncPaused = true;
+  }
   setLocationHashCode(state.code);
   renderAll();
 }
@@ -1025,6 +1069,11 @@ export function initTierListMaker() {
   state.wired = true;
   wireLobby();
   wireRoom();
+  onPageVisibilityChange(function (visible) {
+    if (!state.code) return;
+    if (visible) resumeRoomSyncFromHidden();
+    else pauseRoomSyncForHidden();
+  });
   onCloudUserChange(function () {
     renderAll();
     const code = codeFromHash();

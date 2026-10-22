@@ -7504,6 +7504,19 @@ body.play-mode .deck-pile {
   flex-wrap: wrap;
   margin: 0 0 0.35rem;
 }
+.card-hit-count {
+  margin: 0;
+  font-size: 0.78rem;
+  flex: 1 1 auto;
+  min-width: 10rem;
+  align-self: center;
+}
+/* タブ非表示時: 無限アニメ等の GPU 負荷を止める（pageVisibility.js） */
+html.ll-page-hidden *,
+html.ll-page-hidden *::before,
+html.ll-page-hidden *::after {
+  animation-play-state: paused !important;
+}
 .card-panel-search-field {
   flex: 1 1 12rem;
   min-width: 8rem;
