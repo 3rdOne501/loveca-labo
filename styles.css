@@ -15525,9 +15525,9 @@ body.tourney-deck-view-open {
 }
 .tierlist-card--char-face,
 .tierlist-pick-card--char-face {
-  width: 3.6rem;
-  min-width: 3.6rem;
-  max-width: 3.6rem;
+  width: 4.5rem;
+  min-width: 4.5rem;
+  max-width: 4.5rem;
   align-items: center;
   justify-content: flex-start;
 }
@@ -15547,8 +15547,8 @@ body.tourney-deck-view-open {
 }
 .tierlist-card--char-face .tierlist-char-icon,
 .tierlist-pick-card--char-face .tierlist-char-icon {
-  width: 44px;
-  height: 44px;
+  width: 58px;
+  height: 58px;
   margin: 0 auto;
 }
 .tierlist-pick-card--char-face .tierlist-char__name {
