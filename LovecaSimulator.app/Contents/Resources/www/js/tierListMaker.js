@@ -122,9 +122,12 @@ const state = {
   /** カードルーム: 麻雀キャラ顔で表示 */
   showCharFaces: (function loadShowCharFaces() {
     try {
-      return localStorage.getItem(STORAGE_SHOW_CHAR_FACES) === "1";
+      const v = localStorage.getItem(STORAGE_SHOW_CHAR_FACES);
+      /* 未設定は ON（カード表・キャラ表ともメンバーアイコンを既定表示） */
+      if (v == null) return true;
+      return v === "1";
     } catch (_) {
-      return false;
+      return true;
     }
   })(),
   /** @type {number|null} */
@@ -169,9 +172,14 @@ function persistShowCharFaces() {
   }
 }
 
-/** カードルームかつキャラ顔表示オン */
+/** メンバーアイコン（キャラ顔）表示オン。カード表・キャラ表の両方で使う */
+function useCharFaces() {
+  return !!state.showCharFaces;
+}
+
+/** @deprecated use useCharFaces */
 function useCardCharFaces() {
-  return !isCharacterRoom() && !!state.showCharFaces;
+  return useCharFaces();
 }
 
 /**
@@ -767,15 +775,17 @@ function charChipHtml(entry) {
   const name = (ch && ch.label) || id;
   const shortName = shortChipLabel(name, 5);
   const selected = state.selectedCardNo === id ? " is-selected" : "";
+  const faceOn = useCharFaces();
   return (
     '<button type="button" class="tierlist-card tierlist-char' +
+    (faceOn ? " tierlist-card--char-face" : "") +
     selected +
     '" data-char-id="' +
     escapeHtml(id) +
     '" title="' +
     escapeHtml(name) +
     '" draggable="true">' +
-    memberIconHtml(ch && ch.href, name) +
+    (faceOn ? memberIconHtml(ch && ch.href, name) : "") +
     '<span class="tierlist-char__name">' +
     escapeHtml(shortName) +
     "</span></button>"
@@ -808,14 +818,18 @@ function createTierChipElement(entry, charMode) {
     const ch = getMemberCharacterById(id);
     const name = (ch && ch.label) || id;
     const selected = state.selectedCardNo === id;
+    const faceOn = useCharFaces();
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "tierlist-card tierlist-char" + (selected ? " is-selected" : "");
+    btn.className =
+      "tierlist-card tierlist-char" +
+      (faceOn ? " tierlist-card--char-face" : "") +
+      (selected ? " is-selected" : "");
     btn.dataset.charId = id;
     btn.title = name;
     btn.draggable = true;
     btn.innerHTML =
-      memberIconHtml(ch && ch.href, name) +
+      (faceOn ? memberIconHtml(ch && ch.href, name) : "") +
       '<span class="tierlist-char__name">' +
       escapeHtml(shortChipLabel(name, 5)) +
       "</span>";
@@ -846,9 +860,9 @@ function renderRoomToolbar() {
   }
   const faceLabel = el("tierlist-face-toggle");
   const faceChk = /** @type {HTMLInputElement|null} */ (el("tierlist-show-char-faces"));
-  const inCardRoom = !!state.room && !isCharacterRoom();
-  if (faceLabel) faceLabel.hidden = !inCardRoom;
-  if (faceChk && inCardRoom) faceChk.checked = !!state.showCharFaces;
+  const inRoom = !!state.room;
+  if (faceLabel) faceLabel.hidden = !inRoom;
+  if (faceChk && inRoom) faceChk.checked = !!state.showCharFaces;
 }
 
 function renderBoard() {
