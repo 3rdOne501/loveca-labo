@@ -3,7 +3,14 @@
  * 通信は tierListRoomSync.js（Firestore）に閉じ込め、ここは画面と操作だけを扱う。
  */
 import { T_LIVE, T_MEMBER } from "./config.js";
-import { catalogThumbImgHtml, getAllCards, getCard, uniqueProducts } from "./cards.js";
+import {
+  catalogCardImageUrl,
+  catalogThumbImgHtml,
+  getAllCards,
+  getCard,
+  prefetchCatalogListThumbnails,
+  uniqueProducts,
+} from "./cards.js";
 import { catalogCardSchoolLabels } from "./cardGroups.js";
 import { openCardCatalogDialog } from "./cardCatalogDialog.js";
 import { showToast } from "./ui.js";
@@ -36,12 +43,51 @@ import {
 } from "./tierListRoomSync.js";
 
 const STORAGE_RECENT = "llocg.tierlist.recentRooms";
+const STORAGE_PICKER_FILTERS = "llocg.tierlist.pickerFilters";
 const RECENT_MAX = 6;
 const PRESENCE_INTERVAL_MS = 30000;
 const PRESENCE_STALE_MS = 90000;
 const SCHOOL_OPTIONS = ["μ's", "Aqours", "虹ヶ咲", "Liella!", "蓮ノ空"];
 const TYPE_OPTIONS = [T_MEMBER, T_LIVE];
 const PICKER_CAP = 400;
+const PICKER_THUMB_PREFETCH = 48;
+const PICKER_THUMB_EAGER = 24;
+
+/** @returns {{ type: string, school: string, product: string, q: string }} */
+function loadPickerFilters() {
+  try {
+    const raw = localStorage.getItem(STORAGE_PICKER_FILTERS);
+    const o = raw ? JSON.parse(raw) : null;
+    if (!o || typeof o !== "object") {
+      return { type: "", school: "", product: "", q: "" };
+    }
+    return {
+      type: String(o.type || ""),
+      school: String(o.school || ""),
+      product: String(o.product || ""),
+      q: String(o.q || ""),
+    };
+  } catch (_) {
+    return { type: "", school: "", product: "", q: "" };
+  }
+}
+
+/** @param {{ type?: string, school?: string, product?: string, q?: string }} filters */
+function savePickerFilters(filters) {
+  try {
+    localStorage.setItem(
+      STORAGE_PICKER_FILTERS,
+      JSON.stringify({
+        type: String((filters && filters.type) || ""),
+        school: String((filters && filters.school) || ""),
+        product: String((filters && filters.product) || ""),
+        q: String((filters && filters.q) || ""),
+      }),
+    );
+  } catch (_) {
+    /* noop */
+  }
+}
 
 const state = {
   /** @type {string} */
@@ -98,10 +144,24 @@ function selectedEntry() {
   );
 }
 
-/** @param {string} url */
-function thumbHtml(url, alt) {
+/** @param {string} url @param {string} [alt] @param {{ eager?: boolean } | undefined} [opts] */
+function thumbHtml(url, alt, opts) {
   if (!url) return '<div class="tierlist-thumb-fallback">?</div>';
-  return catalogThumbImgHtml(url, "deck-builder-card-thumb tierlist-thumb-img", { alt: alt || "" });
+  const o = opts != null && typeof opts === "object" ? opts : {};
+  return catalogThumbImgHtml(url, "deck-builder-card-thumb tierlist-thumb-img", {
+    alt: alt || "",
+    eager: o.eager === true,
+  });
+}
+
+function syncBoardSelectionOnly() {
+  const board = el("tierlist-board");
+  if (!board) return;
+  const sel = state.selectedCardNo || "";
+  board.querySelectorAll(".tierlist-card[data-card-no], .tierlist-char[data-char-id]").forEach(function (btn) {
+    const id = btn.getAttribute("data-card-no") || btn.getAttribute("data-char-id") || "";
+    btn.classList.toggle("is-selected", !!sel && id === sel);
+  });
 }
 
 function avatarHtml(name, photoURL, extraClass) {
@@ -449,7 +509,7 @@ function charChipHtml(entry) {
 function cardChipHtml(entry) {
   const card = getCard(entry.cardNo);
   const name = (card && (card.name || card.card_name)) || entry.cardNo;
-  const img = card && (card.img || card.image_url || card.imageUrl || card.image);
+  const img = card ? catalogCardImageUrl(card) : "";
   const selected = state.selectedCardNo === entry.cardNo ? " is-selected" : "";
   return (
     '<button type="button" class="tierlist-card' +
@@ -462,6 +522,37 @@ function cardChipHtml(entry) {
     thumbHtml(img || "", name) +
     "</button>"
   );
+}
+
+/** @param {import('./tierListRoomSync.js').TierListEntryDoc} entry @param {boolean} charMode */
+function createTierChipElement(entry, charMode) {
+  if (charMode) {
+    const id = entry.charId || tierListEntryItemId(entry);
+    const ch = getMemberCharacterById(id);
+    const name = (ch && ch.label) || id;
+    const selected = state.selectedCardNo === id;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "tierlist-card tierlist-char" + (selected ? " is-selected" : "");
+    btn.dataset.charId = id;
+    btn.title = name;
+    btn.draggable = true;
+    btn.innerHTML =
+      memberIconHtml(ch && ch.href, name) + '<span class="tierlist-char__name">' + escapeHtml(name) + "</span>";
+    return btn;
+  }
+  const card = getCard(entry.cardNo);
+  const name = (card && (card.name || card.card_name)) || entry.cardNo;
+  const img = card ? catalogCardImageUrl(card) : "";
+  const selected = state.selectedCardNo === entry.cardNo;
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "tierlist-card" + (selected ? " is-selected" : "");
+  btn.dataset.cardNo = entry.cardNo;
+  btn.title = name;
+  btn.draggable = true;
+  btn.innerHTML = thumbHtml(img || "", name);
+  return btn;
 }
 
 function entryChipHtml(entry) {
@@ -477,7 +568,10 @@ function renderRoomToolbar() {
 function renderBoard() {
   const board = el("tierlist-board");
   if (!board || !state.room) {
-    if (board) board.innerHTML = "";
+    if (board) {
+      board.innerHTML = "";
+      delete board.dataset.tierShellSig;
+    }
     return;
   }
   const charMode = isCharacterRoom();
@@ -485,45 +579,96 @@ function renderBoard() {
   const emptyPool = charMode ? "キャラを追加して配置" : "カードを追加して配置";
   const tiers = tierListSortedTiers(state.room);
   const host = isTierListHost(state.room, getTierListMyUid());
-  let html = tiers
-    .map(function (tier) {
-      const cards = entriesInTier(tier.id);
-      return (
-        '<div class="tierlist-row" data-tier-id="' +
-        escapeHtml(tier.id) +
-        '">' +
-        '<div class="tierlist-row__label" style="background:' +
-        escapeHtml(tier.color || "#888") +
-        '">' +
-        '<span class="tierlist-row__label-text">' +
-        escapeHtml(tier.label || tier.id) +
-        "</span>" +
-        (host
-          ? '<button type="button" class="tierlist-row__edit" data-edit-tier="' +
-            escapeHtml(tier.id) +
-            '" title="ティア名を変更">✎</button>'
-          : "") +
-        "</div>" +
-        '<div class="tierlist-row__cards" data-drop-tier="' +
-        escapeHtml(tier.id) +
-        '">' +
-        (cards.length ? cards.map(entryChipHtml).join("") : '<span class="tierlist-row__empty muted">' + emptyTier + "</span>") +
-        "</div></div>"
-      );
-    })
-    .join("");
-  const pool = entriesInTier(TIERLIST_POOL_ID);
-  html +=
-    '<div class="tierlist-row tierlist-row--pool" data-tier-id="' +
-    TIERLIST_POOL_ID +
-    '">' +
-    '<div class="tierlist-row__label tierlist-row__label--pool"><span class="tierlist-row__label-text">未配置</span></div>' +
-    '<div class="tierlist-row__cards" data-drop-tier="' +
-    TIERLIST_POOL_ID +
-    '">' +
-    (pool.length ? pool.map(entryChipHtml).join("") : '<span class="tierlist-row__empty muted">' + emptyPool + "</span>") +
-    "</div></div>";
-  board.innerHTML = html;
+  const shellSig =
+    (charMode ? "c" : "k") +
+    "|" +
+    (host ? "h" : "g") +
+    "|" +
+    tiers
+      .map(function (tier) {
+        return tier.id + ":" + String(tier.label || "") + ":" + String(tier.color || "");
+      })
+      .join(";") +
+    "|pool";
+
+  /** @type {Map<string, HTMLElement>} */
+  const chipPool = new Map();
+  board.querySelectorAll(".tierlist-card[data-card-no], .tierlist-char[data-char-id]").forEach(function (btn) {
+    const id = btn.getAttribute("data-card-no") || btn.getAttribute("data-char-id") || "";
+    if (id) chipPool.set(id, btn);
+  });
+
+  if (board.dataset.tierShellSig !== shellSig) {
+    let html = tiers
+      .map(function (tier) {
+        return (
+          '<div class="tierlist-row" data-tier-id="' +
+          escapeHtml(tier.id) +
+          '">' +
+          '<div class="tierlist-row__label" style="background:' +
+          escapeHtml(tier.color || "#888") +
+          '">' +
+          '<span class="tierlist-row__label-text">' +
+          escapeHtml(tier.label || tier.id) +
+          "</span>" +
+          (host
+            ? '<button type="button" class="tierlist-row__edit" data-edit-tier="' +
+              escapeHtml(tier.id) +
+              '" title="ティア名を変更">✎</button>'
+            : "") +
+          "</div>" +
+          '<div class="tierlist-row__cards" data-drop-tier="' +
+          escapeHtml(tier.id) +
+          '"></div></div>'
+        );
+      })
+      .join("");
+    html +=
+      '<div class="tierlist-row tierlist-row--pool" data-tier-id="' +
+      TIERLIST_POOL_ID +
+      '">' +
+      '<div class="tierlist-row__label tierlist-row__label--pool"><span class="tierlist-row__label-text">未配置</span></div>' +
+      '<div class="tierlist-row__cards" data-drop-tier="' +
+      TIERLIST_POOL_ID +
+      '"></div></div>';
+    board.innerHTML = html;
+    board.dataset.tierShellSig = shellSig;
+    chipPool.clear();
+  }
+
+  function placeEntries(tierId, entries, emptyText) {
+    const container = board.querySelector('.tierlist-row__cards[data-drop-tier="' + escapeHtml(tierId) + '"]');
+    if (!container) return;
+    container.querySelectorAll(":scope > .tierlist-card, :scope > .tierlist-char").forEach(function (btn) {
+      btn.remove();
+    });
+    const emptyEl = container.querySelector(":scope > .tierlist-row__empty");
+    if (emptyEl) emptyEl.remove();
+    if (!entries.length) {
+      container.innerHTML = '<span class="tierlist-row__empty muted">' + escapeHtml(emptyText) + "</span>";
+      return;
+    }
+    entries.forEach(function (entry) {
+      const id = tierListEntryItemId(entry);
+      let btn = chipPool.get(id);
+      if (btn) {
+        chipPool.delete(id);
+        btn.classList.toggle("is-selected", state.selectedCardNo === id);
+      } else {
+        btn = createTierChipElement(entry, charMode);
+      }
+      container.appendChild(btn);
+    });
+  }
+
+  tiers.forEach(function (tier) {
+    placeEntries(tier.id, entriesInTier(tier.id), emptyTier);
+  });
+  placeEntries(TIERLIST_POOL_ID, entriesInTier(TIERLIST_POOL_ID), emptyPool);
+  chipPool.forEach(function (btn) {
+    btn.remove();
+  });
+
   const summary = el("tierlist-summary");
   if (summary) {
     const unit = charMode ? "キャラ" : "枚";
@@ -613,6 +758,9 @@ function openCardPicker() {
       return e.cardNo;
     }),
   );
+  /** @type {Set<string>} */
+  const selected = new Set();
+  const saved = loadPickerFilters();
   const overlay = document.createElement("div");
   overlay.className = "tierlist-picker-overlay";
   overlay.innerHTML =
@@ -620,6 +768,7 @@ function openCardPicker() {
     '<div class="tierlist-picker__head">' +
     "<h2>カードを追加</h2>" +
     '<button type="button" class="btn sm secondary tierlist-picker__close">閉じる</button></div>' +
+    '<p class="hint muted tierlist-picker__lead">クリックで複数選択できます。絞り込みは次回も保持されます。</p>' +
     '<div class="tierlist-picker__filters">' +
     '<label class="field"><span>種類</span><select id="tierlist-pick-type"><option value="">すべて</option>' +
     TYPE_OPTIONS.map(function (t) {
@@ -641,18 +790,59 @@ function openCardPicker() {
     '<label class="field tierlist-picker__search"><span>検索</span><input type="search" id="tierlist-pick-q" placeholder="名前・番号" /></label>' +
     "</div>" +
     '<div class="tierlist-picker__grid" id="tierlist-pick-grid"></div>' +
-    '<p class="hint muted" id="tierlist-pick-hint"></p></div>';
+    '<div class="tierlist-picker__foot">' +
+    '<p class="hint muted" id="tierlist-pick-hint"></p>' +
+    '<div class="tierlist-picker__foot-actions">' +
+    '<button type="button" class="btn sm secondary" id="tierlist-pick-clear-sel" hidden>選択解除</button>' +
+    '<button type="button" class="btn primary" id="tierlist-pick-add" disabled>選択したカードを追加</button>' +
+    "</div></div></div>";
   document.body.appendChild(overlay);
 
+  const typeEl = /** @type {HTMLSelectElement} */ (overlay.querySelector("#tierlist-pick-type"));
+  const schoolEl = /** @type {HTMLSelectElement} */ (overlay.querySelector("#tierlist-pick-school"));
+  const productEl = /** @type {HTMLSelectElement} */ (overlay.querySelector("#tierlist-pick-product"));
+  const qEl = /** @type {HTMLInputElement} */ (overlay.querySelector("#tierlist-pick-q"));
+  if (typeEl && saved.type) typeEl.value = saved.type;
+  if (schoolEl && saved.school) schoolEl.value = saved.school;
+  if (productEl) {
+    const opt = Array.from(productEl.options).some(function (o) {
+      return o.value === saved.product;
+    });
+    if (opt) productEl.value = saved.product;
+  }
+  if (qEl) qEl.value = saved.q || "";
+
   function close() {
+    persistFiltersFromUi();
     overlay.remove();
   }
 
+  function persistFiltersFromUi() {
+    savePickerFilters({
+      type: typeEl ? typeEl.value : "",
+      school: schoolEl ? schoolEl.value : "",
+      product: productEl ? productEl.value : "",
+      q: qEl ? qEl.value : "",
+    });
+  }
+
+  function syncFooter() {
+    const n = selected.size;
+    const addBtn = /** @type {HTMLButtonElement|null} */ (overlay.querySelector("#tierlist-pick-add"));
+    const clearBtn = /** @type {HTMLButtonElement|null} */ (overlay.querySelector("#tierlist-pick-clear-sel"));
+    if (addBtn) {
+      addBtn.disabled = n === 0;
+      addBtn.textContent = n ? "選択した " + n + " 枚を追加" : "選択したカードを追加";
+    }
+    if (clearBtn) clearBtn.hidden = n === 0;
+  }
+
   function renderGrid() {
-    const type = /** @type {HTMLSelectElement} */ (overlay.querySelector("#tierlist-pick-type")).value;
-    const school = /** @type {HTMLSelectElement} */ (overlay.querySelector("#tierlist-pick-school")).value;
-    const product = /** @type {HTMLSelectElement} */ (overlay.querySelector("#tierlist-pick-product")).value;
-    const q = String(/** @type {HTMLInputElement} */ (overlay.querySelector("#tierlist-pick-q")).value || "")
+    persistFiltersFromUi();
+    const type = typeEl ? typeEl.value : "";
+    const school = schoolEl ? schoolEl.value : "";
+    const product = productEl ? productEl.value : "";
+    const q = String((qEl && qEl.value) || "")
       .trim()
       .toLowerCase();
     const all = getAllCards() || [];
@@ -677,30 +867,65 @@ function openCardPicker() {
     const grid = overlay.querySelector("#tierlist-pick-grid");
     const hint = overlay.querySelector("#tierlist-pick-hint");
     if (hint) {
+      const selPart = selected.size ? " · 選択 " + selected.size + " 枚" : "";
       hint.textContent =
-        matched.length >= PICKER_CAP
+        (matched.length >= PICKER_CAP
           ? "先頭 " + PICKER_CAP + " 件のみ表示。検索で絞ってください。"
-          : matched.length + " 件";
+          : matched.length + " 件") + selPart;
     }
     if (grid) {
-      grid.innerHTML = matched
-        .map(function (c) {
+      const pool = new Map(
+        [...grid.children].map(function (b) {
+          return [String(b.getAttribute("data-card-no") || ""), b];
+        }),
+      );
+      matched.forEach(function (c, idx) {
+        const no = String(c.card_no);
+        const isOn = selected.has(no);
+        let btn = pool.get(no);
+        pool.delete(no);
+        if (!btn) {
           const name = c.name || c.card_name || c.card_no;
-          const img = c.img || c.image_url || c.imageUrl || c.image;
-          return (
-            '<button type="button" class="tierlist-pick-card" data-card-no="' +
-            escapeHtml(c.card_no) +
-            '" title="' +
-            escapeHtml(name) +
-            '">' +
-            thumbHtml(img || "", name) +
+          const img = catalogCardImageUrl(c);
+          btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "tierlist-pick-card" + (isOn ? " is-selected" : "");
+          btn.dataset.cardNo = no;
+          btn.setAttribute("aria-pressed", isOn ? "true" : "false");
+          btn.title = name;
+          btn.innerHTML =
+            thumbHtml(img || "", name, { eager: idx < PICKER_THUMB_EAGER }) +
             '<span class="tierlist-pick-card__name">' +
             escapeHtml(name) +
-            "</span></button>"
-          );
-        })
-        .join("");
+            "</span>";
+        } else {
+          btn.classList.toggle("is-selected", isOn);
+          btn.setAttribute("aria-pressed", isOn ? "true" : "false");
+        }
+        grid.appendChild(btn);
+      });
+      pool.forEach(function (b) {
+        b.remove();
+      });
+      prefetchCatalogListThumbnails(
+        matched.slice(0, PICKER_THUMB_PREFETCH).map(function (c) {
+          return catalogCardImageUrl(c);
+        }),
+        { limit: PICKER_THUMB_PREFETCH, eagerCount: PICKER_THUMB_EAGER },
+      );
     }
+    syncFooter();
+  }
+
+  function syncPickerSelectionOnly() {
+    const grid = overlay.querySelector("#tierlist-pick-grid");
+    if (!grid) return;
+    grid.querySelectorAll(".tierlist-pick-card[data-card-no]").forEach(function (btn) {
+      const no = btn.getAttribute("data-card-no") || "";
+      const isOn = selected.has(no);
+      btn.classList.toggle("is-selected", isOn);
+      btn.setAttribute("aria-pressed", isOn ? "true" : "false");
+    });
   }
 
   overlay.querySelector(".tierlist-picker__close")?.addEventListener("click", close);
@@ -711,19 +936,57 @@ function openCardPicker() {
     overlay.querySelector("#" + id)?.addEventListener("input", renderGrid);
     overlay.querySelector("#" + id)?.addEventListener("change", renderGrid);
   });
-  overlay.querySelector("#tierlist-pick-grid")?.addEventListener("click", async function (ev) {
+  overlay.querySelector("#tierlist-pick-grid")?.addEventListener("click", function (ev) {
     const btn = /** @type {HTMLElement} */ (ev.target).closest("[data-card-no]");
     if (!btn) return;
     const cardNo = btn.getAttribute("data-card-no") || "";
     if (!cardNo) return;
+    if (selected.has(cardNo)) selected.delete(cardNo);
+    else selected.add(cardNo);
+    btn.classList.toggle("is-selected", selected.has(cardNo));
+    btn.setAttribute("aria-pressed", selected.has(cardNo) ? "true" : "false");
+    syncFooter();
+    const hint = overlay.querySelector("#tierlist-pick-hint");
+    if (hint) {
+      const base = String(hint.textContent || "").replace(/\s*·\s*選択\s+\d+\s*枚/, "");
+      hint.textContent = selected.size ? base + " · 選択 " + selected.size + " 枚" : base;
+    }
+  });
+  overlay.querySelector("#tierlist-pick-clear-sel")?.addEventListener("click", function () {
+    selected.clear();
+    syncPickerSelectionOnly();
+    syncFooter();
+    const hint = overlay.querySelector("#tierlist-pick-hint");
+    if (hint) {
+      hint.textContent = String(hint.textContent || "").replace(/\s*·\s*選択\s+\d+\s*枚/, "");
+    }
+  });
+  overlay.querySelector("#tierlist-pick-add")?.addEventListener("click", async function () {
+    if (!state.code || !selected.size) return;
+    const nos = Array.from(selected);
+    const addBtn = /** @type {HTMLButtonElement|null} */ (overlay.querySelector("#tierlist-pick-add"));
+    if (addBtn) addBtn.disabled = true;
+    let ok = 0;
+    let lastNo = "";
     try {
-      await placeTierListCard(state.code, { cardNo: cardNo, tierId: TIERLIST_POOL_ID });
-      state.selectedCardNo = cardNo;
-      showToast("未配置に追加しました。ティアへ移動できます");
+      for (let i = 0; i < nos.length; i++) {
+        const cardNo = nos[i];
+        if (!cardNo || placed.has(cardNo)) continue;
+        await placeTierListCard(state.code, { cardNo: cardNo, tierId: TIERLIST_POOL_ID });
+        placed.add(cardNo);
+        ok++;
+        lastNo = cardNo;
+      }
+      if (lastNo) state.selectedCardNo = lastNo;
+      showToast(ok ? ok + " 枚を未配置に追加しました" : "追加できるカードがありません");
       close();
       renderAll();
     } catch (err) {
       showToast(errorMessage(err));
+      selected.forEach(function (no) {
+        if (placed.has(no)) selected.delete(no);
+      });
+      renderGrid();
     }
   });
   renderGrid();
@@ -956,7 +1219,7 @@ function wireRoom() {
     if (charBtn) {
       const id = charBtn.getAttribute("data-char-id") || "";
       state.selectedCardNo = state.selectedCardNo === id ? "" : id;
-      renderBoard();
+      syncBoardSelectionOnly();
       renderMoveBar();
       return;
     }
@@ -969,7 +1232,7 @@ function wireRoom() {
         return;
       }
       state.selectedCardNo = state.selectedCardNo === no ? "" : no;
-      renderBoard();
+      syncBoardSelectionOnly();
       renderMoveBar();
     }
   });

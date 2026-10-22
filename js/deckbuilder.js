@@ -48,6 +48,7 @@ import {
   getAllCards,
   getCard,
   getCardCatalogSnapshot,
+  catalogCardImageUrl,
   catalogListThumbnailUrl,
   catalogThumbImgHtml,
   uniqueCosts,
@@ -3209,7 +3210,7 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
     div.innerHTML =
       rolesHtml +
       qtyBadge +
-      `<span class="thumb-type">${escapeHtml(tlab)}</span>${builderCatalogThumbImgHtml(card.img, "deck-builder-card-thumb", {
+      `<span class="thumb-type">${escapeHtml(tlab)}</span>${builderCatalogThumbImgHtml(catalogCardImageUrl(card), "deck-builder-card-thumb", {
         eager: deckView || cardGridVirtual.active,
       })}<span class="thumb-cap">${escapeHtml(card.name)}${thumbExtraHtml(card)}</span>`;
     const fav = document.createElement("button");
@@ -5655,15 +5656,15 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
 
     nos.forEach(function (no, idx) {
       var c = getCard(no);
+      var face = c ? catalogCardImageUrl(c) : "";
       var btn = document.createElement("button");
       btn.type = "button";
       btn.className = "sample-thumb-pick-card";
       btn.setAttribute("aria-label", (c && c.name ? c.name : no) + " をサムネイルにする");
       btn.dataset.cardNo = String(no);
-      btn.innerHTML =
-        c && c.img
-          ? builderCatalogThumbImgHtml(c.img, "deck-builder-card-thumb", { eager: idx < 24, hiQuality: true })
-          : '<div class="sample-recipe-thumb-fallback" aria-hidden="true">?</div>';
+      btn.innerHTML = face
+        ? builderCatalogThumbImgHtml(face, "deck-builder-card-thumb", { eager: idx < 24 })
+        : '<div class="sample-recipe-thumb-fallback" aria-hidden="true">?</div>';
       btn.addEventListener("click", function () {
         onPicked(String(no));
         closeOverlay();

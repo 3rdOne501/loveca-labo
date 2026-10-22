@@ -392,6 +392,49 @@ export function catalogCardNosShareIdentity(cardNoA, cardNoB) {
 }
 
 /**
+ * カードオブジェクトから一覧用の元画像 URL（wsrv 前）を返す。ローカル `img` を公式 `image_url` より優先。
+ * @param {unknown} card
+ * @returns {string}
+ */
+export function catalogCardImageUrl(card) {
+  if (!card || typeof card !== "object") return "";
+  const c = /** @type {Record<string, unknown>} */ (card);
+  const local = c.img || c.image || c.imageUrl;
+  if (local != null && String(local).trim()) return String(local).trim();
+  const official = c.image_url;
+  if (official != null && String(official).trim()) return String(official).trim();
+  return "";
+}
+
+/**
+ * 一覧サムネ（wsrv 標準サイズ）を先読みする。
+ * @param {Iterable<string>} originalUrls
+ * @param {{ limit?: number, eagerCount?: number } | undefined} opts
+ */
+export function prefetchCatalogListThumbnails(originalUrls, opts) {
+  const o = opts != null && typeof opts === "object" ? opts : {};
+  const limit = o.limit != null ? Math.max(0, Math.floor(Number(o.limit) || 0)) : 48;
+  const eagerCount = o.eagerCount != null ? Math.max(0, Math.floor(Number(o.eagerCount) || 0)) : 36;
+  let n = 0;
+  for (const raw of originalUrls) {
+    if (limit > 0 && n >= limit) break;
+    const url = String(raw || "").trim();
+    if (!url) continue;
+    const thumb = catalogListThumbnailUrl(url);
+    if (!thumb || thumb === url) continue;
+    try {
+      const im = new Image();
+      im.decoding = "async";
+      if ("fetchPriority" in im) im.fetchPriority = n < eagerCount ? "high" : "low";
+      im.src = thumb;
+    } catch (_) {
+      /* noop */
+    }
+    n++;
+  }
+}
+
+/**
  * メインデッキに含まれるカード画像を、一覧表示より先にブラウザキャッシュへ載せる。
  * @param {Record<string, number>} deckMap
  * @param {(no: string) => unknown} getCardFn
@@ -403,9 +446,11 @@ export function prefetchDeckCardImagesFromMap(deckMap, getCardFn) {
     const n = deckMap[k];
     if (!(Number(n) > 0)) continue;
     const c = getCardFn(k);
-    if (!c || typeof c !== "object" || !c.img) continue;
-    urls.add(String(c.img));
-    const thumb = catalogListThumbnailUrl(c.img);
+    if (!c || typeof c !== "object") continue;
+    const face = catalogCardImageUrl(c);
+    if (!face) continue;
+    urls.add(face);
+    const thumb = catalogListThumbnailUrl(face);
     if (thumb && thumb !== c.img) urls.add(thumb);
   }
   for (const u of urls) {

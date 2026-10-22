@@ -15393,6 +15393,11 @@ body.tourney-deck-view-open {
 .tierlist-pick-card:hover {
   border-color: rgba(255, 140, 190, 0.55);
 }
+.tierlist-pick-card.is-selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(255, 90, 154, 0.55);
+  background: rgba(255, 90, 154, 0.12);
+}
 .tierlist-pick-card__name {
   font-size: 0.68rem;
   line-height: 1.25;
@@ -15400,6 +15405,28 @@ body.tourney-deck-view-open {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+.tierlist-picker__lead {
+  margin: 0;
+  font-size: 0.82rem;
+}
+.tierlist-picker__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+  position: sticky;
+  bottom: 0;
+  padding-top: 0.35rem;
+  background: linear-gradient(180deg, transparent, var(--panel) 28%);
+}
+.tierlist-picker__foot .hint { margin: 0; }
+.tierlist-picker__foot-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-left: auto;
 }
 .tierlist-room-kind {
   font-size: 0.85rem;
