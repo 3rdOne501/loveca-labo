@@ -95,10 +95,13 @@ function fs() {
 }
 
 async function requireUser() {
-  try {
-    await ensureGoogleSession();
-  } catch (_) {
-    /* ignore */
+  /* 既に Google セッションがあるときは復元待ちしない（DnD 毎の遅延防止） */
+  if (!isGoogleCloudUser()) {
+    try {
+      await ensureGoogleSession();
+    } catch (_) {
+      /* ignore */
+    }
   }
   if (!isGoogleCloudUser()) {
     throw new Error("Google ログインが必要です。一度ログアウトしてから Google でログインし直してください。");

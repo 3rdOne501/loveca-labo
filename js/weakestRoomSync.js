@@ -98,10 +98,12 @@ function fs() {
 }
 
 async function requireUser() {
-  try {
-    await ensureGoogleSession();
-  } catch (_) {
-    /* ignore */
+  if (!isGoogleCloudUser()) {
+    try {
+      await ensureGoogleSession();
+    } catch (_) {
+      /* ignore */
+    }
   }
   if (!isGoogleCloudUser()) {
     throw new Error("Google ログインが必要です。一度ログアウトしてから Google でログインし直してください。");

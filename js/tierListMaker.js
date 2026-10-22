@@ -63,6 +63,8 @@ const PRESENCE_STALE_MS = 90000;
 const SCHOOL_OPTIONS = ["μ's", "Aqours", "虹ヶ咲", "Liella!", "蓮ノ空"];
 const TYPE_OPTIONS = [T_MEMBER, T_LIVE];
 const PICKER_CAP = 400;
+/** キャラ顔モードはアイコン解決が重いので表示件数を抑える */
+const PICKER_CAP_FACE = 120;
 const PICKER_THUMB_PREFETCH = 48;
 const PICKER_THUMB_EAGER = 24;
 
@@ -122,12 +124,10 @@ const state = {
   /** カードルーム: 麻雀キャラ顔で表示 */
   showCharFaces: (function loadShowCharFaces() {
     try {
-      const v = localStorage.getItem(STORAGE_SHOW_CHAR_FACES);
-      /* 未設定は ON（カード表・キャラ表ともメンバーアイコンを既定表示） */
-      if (v == null) return true;
-      return v === "1";
+      /* 未設定は OFF。カード表で ON だとピッカー数百枚分のアイコン解決が重い */
+      return localStorage.getItem(STORAGE_SHOW_CHAR_FACES) === "1";
     } catch (_) {
-      return true;
+      return false;
     }
   })(),
   /** @type {number|null} */
@@ -172,8 +172,12 @@ function persistShowCharFaces() {
   }
 }
 
-/** メンバーアイコン（キャラ顔）表示オン。カード表・キャラ表の両方で使う */
+/**
+ * メンバーアイコン表示。
+ * キャラ表は常にアイコン（枚数が少ない）。カード表のみトグル（既定 OFF）。
+ */
 function useCharFaces() {
+  if (isCharacterRoom()) return true;
   return !!state.showCharFaces;
 }
 
@@ -860,9 +864,10 @@ function renderRoomToolbar() {
   }
   const faceLabel = el("tierlist-face-toggle");
   const faceChk = /** @type {HTMLInputElement|null} */ (el("tierlist-show-char-faces"));
-  const inRoom = !!state.room;
-  if (faceLabel) faceLabel.hidden = !inRoom;
-  if (faceChk && inRoom) faceChk.checked = !!state.showCharFaces;
+  /* カード表のみ表示（キャラ表は常時メンバーアイコン） */
+  const showToggle = !!state.room && !isCharacterRoom();
+  if (faceLabel) faceLabel.hidden = !showToggle;
+  if (faceChk && showToggle) faceChk.checked = !!state.showCharFaces;
 }
 
 function renderBoard() {
@@ -1202,7 +1207,8 @@ function openCardPicker() {
         if (hay.indexOf(q) < 0) continue;
       }
       matched.push(c);
-      if (matched.length >= PICKER_CAP) break;
+      const cap = useCharFaces() ? PICKER_CAP_FACE : PICKER_CAP;
+      if (matched.length >= cap) break;
     }
     return matched;
   }
@@ -1213,11 +1219,12 @@ function openCardPicker() {
     lastMatched = matched;
     const grid = overlay.querySelector("#tierlist-pick-grid");
     const hint = overlay.querySelector("#tierlist-pick-hint");
+    const cap = useCharFaces() ? PICKER_CAP_FACE : PICKER_CAP;
     if (hint) {
       const selPart = selected.size ? " · 選択 " + selected.size + " 枚" : "";
       hint.textContent =
-        (matched.length >= PICKER_CAP
-          ? "先頭 " + PICKER_CAP + " 件のみ表示。検索で絞ってください。"
+        (matched.length >= cap
+          ? "先頭 " + cap + " 件のみ表示。検索で絞ってください。"
           : matched.length + " 件") + selPart;
     }
     if (grid) {
