@@ -201,10 +201,11 @@ function cardVisualInnerHtml(card, name, opts) {
   if (useCardCharFaces()) {
     const icons = resolveCardCharacterIcons(card);
     if (icons.length === 1) {
+      const label = icons[0].label || name;
       return (
-        memberIconHtml(icons[0].href, icons[0].label || name) +
+        memberIconHtml(icons[0].href, label) +
         '<span class="tierlist-char__name">' +
-        escapeHtml(icons[0].label || name) +
+        escapeHtml(shortChipLabel(label, 5)) +
         "</span>"
       );
     }
@@ -217,7 +218,7 @@ function cardVisualInnerHtml(card, name, opts) {
           })
           .join("") +
         '</span><span class="tierlist-char__name">' +
-        escapeHtml(name) +
+        escapeHtml(shortChipLabel(name, 5)) +
         "</span>"
       );
     }
@@ -620,10 +621,96 @@ function memberIconHtml(href, alt) {
   );
 }
 
+/** チップ下の短い表示名（長いとアイコンが中央からずれる） */
+function shortChipLabel(name, maxChars) {
+  const s = String(name || "").trim();
+  const max = Number.isFinite(maxChars) ? Number(maxChars) : 5;
+  if (s.length <= max) return s;
+  return s.slice(0, Math.max(1, max - 1)) + "…";
+}
+
+function chipDomId(btn) {
+  if (!btn) return "";
+  return btn.getAttribute("data-card-no") || btn.getAttribute("data-char-id") || "";
+}
+
+/**
+ * ドロップ位置の直前に差し込む対象 ID。null なら末尾。
+ * 折り返し行を考慮し、ポインタの左右／上下で挿入位置を決める。
+ * @param {HTMLElement} container
+ * @param {number} clientX
+ * @param {number} clientY
+ * @param {string} draggedId
+ */
+function resolveDropBeforeId(container, clientX, clientY, draggedId) {
+  const chips = Array.from(container.querySelectorAll(".tierlist-card")).filter(function (btn) {
+    return chipDomId(btn) && chipDomId(btn) !== draggedId;
+  });
+  chips.sort(function (a, b) {
+    const ra = a.getBoundingClientRect();
+    const rb = b.getBoundingClientRect();
+    if (Math.abs(ra.top - rb.top) > 10) return ra.top - rb.top;
+    return ra.left - rb.left;
+  });
+  for (let i = 0; i < chips.length; i++) {
+    const r = chips[i].getBoundingClientRect();
+    if (clientY < r.top + 6) return chipDomId(chips[i]);
+    if (clientY <= r.bottom + 6 && clientX < r.left + r.width * 0.5) return chipDomId(chips[i]);
+  }
+  return null;
+}
+
+/** ローカル entries の tier / order を先に更新して見た目を即反映 */
+function applyLocalEntryPlacement(itemId, tierId, orderInTier) {
+  const entry = state.entries.find(function (e) {
+    return tierListEntryItemId(e) === itemId;
+  });
+  if (!entry) return;
+  entry.tierId = tierId;
+  entry.orderInTier = orderInTier;
+}
+
+/**
+ * @param {string} tierId
+ * @param {string|null} beforeId
+ * @param {string} draggedId
+ */
+function computeOrderInTier(tierId, beforeId, draggedId) {
+  const list = entriesInTier(tierId).filter(function (e) {
+    return tierListEntryItemId(e) !== draggedId;
+  });
+  if (!list.length) return Date.now();
+  if (!beforeId) {
+    const last = list[list.length - 1];
+    return (Number(last.orderInTier) || 0) + 1000;
+  }
+  const idx = list.findIndex(function (e) {
+    return tierListEntryItemId(e) === beforeId;
+  });
+  if (idx < 0) {
+    const last = list[list.length - 1];
+    return (Number(last.orderInTier) || 0) + 1000;
+  }
+  const afterO = Number(list[idx].orderInTier) || 0;
+  if (idx === 0) return afterO - 1000;
+  const beforeO = Number(list[idx - 1].orderInTier) || 0;
+  if (beforeO < afterO) return (beforeO + afterO) / 2;
+  return beforeO + 1;
+}
+
+function clearBoardDropIndicators() {
+  const board = el("tierlist-board");
+  if (!board) return;
+  board.querySelectorAll(".is-dragover, .is-drop-before").forEach(function (node) {
+    node.classList.remove("is-dragover", "is-drop-before");
+  });
+}
+
 function charChipHtml(entry) {
   const id = entry.charId || tierListEntryItemId(entry);
   const ch = getMemberCharacterById(id);
   const name = (ch && ch.label) || id;
+  const shortName = shortChipLabel(name, 5);
   const selected = state.selectedCardNo === id ? " is-selected" : "";
   return (
     '<button type="button" class="tierlist-card tierlist-char' +
@@ -635,7 +722,7 @@ function charChipHtml(entry) {
     '" draggable="true">' +
     memberIconHtml(ch && ch.href, name) +
     '<span class="tierlist-char__name">' +
-    escapeHtml(name) +
+    escapeHtml(shortName) +
     "</span></button>"
   );
 }
@@ -673,7 +760,10 @@ function createTierChipElement(entry, charMode) {
     btn.title = name;
     btn.draggable = true;
     btn.innerHTML =
-      memberIconHtml(ch && ch.href, name) + '<span class="tierlist-char__name">' + escapeHtml(name) + "</span>";
+      memberIconHtml(ch && ch.href, name) +
+      '<span class="tierlist-char__name">' +
+      escapeHtml(shortChipLabel(name, 5)) +
+      "</span>";
     return btn;
   }
   const card = getCard(entry.cardNo);
@@ -730,7 +820,7 @@ function renderBoard() {
     "|" +
     tiers
       .map(function (tier) {
-        return tier.id + ":" + String(tier.label || "") + ":" + String(tier.color || "");
+        return tier.id + ":" + String(tier.color || "");
       })
       .join(";") +
     "|pool";
@@ -742,7 +832,11 @@ function renderBoard() {
     if (id) chipPool.set(id, btn);
   });
 
-  if (board.dataset.tierShellSig !== shellSig) {
+  const editingTitle =
+    document.activeElement &&
+    /** @type {HTMLElement} */ (document.activeElement).classList.contains("tierlist-row__title-input");
+
+  if (board.dataset.tierShellSig !== shellSig && !editingTitle) {
     let html = tiers
       .map(function (tier) {
         return (
@@ -752,14 +846,15 @@ function renderBoard() {
           '<div class="tierlist-row__label" style="background:' +
           escapeHtml(tier.color || "#888") +
           '">' +
-          '<span class="tierlist-row__label-text">' +
+          '<input type="text" class="tierlist-row__title-input" data-tier-title="' +
+          escapeHtml(tier.id) +
+          '" maxlength="' +
+          TIERLIST_MAX_TIER_LABEL_LEN +
+          '" value="' +
           escapeHtml(tier.label || tier.id) +
-          "</span>" +
-          (host
-            ? '<button type="button" class="tierlist-row__edit" data-edit-tier="' +
-              escapeHtml(tier.id) +
-              '" title="ティア名を変更">✎</button>'
-            : "") +
+          '" aria-label="ランク名" ' +
+          (host ? "" : "readonly ") +
+          "/>" +
           "</div>" +
           '<div class="tierlist-row__cards" data-drop-tier="' +
           escapeHtml(tier.id) +
@@ -778,6 +873,16 @@ function renderBoard() {
     board.innerHTML = html;
     board.dataset.tierShellSig = shellSig;
     chipPool.clear();
+  } else {
+    tiers.forEach(function (tier) {
+      const inp = /** @type {HTMLInputElement|null} */ (
+        board.querySelector('input.tierlist-row__title-input[data-tier-title="' + tier.id + '"]')
+      );
+      if (!inp || document.activeElement === inp) return;
+      const next = String(tier.label || tier.id);
+      if (inp.value !== next) inp.value = next;
+      inp.readOnly = !host;
+    });
   }
 
   function placeEntries(tierId, entries, emptyText) {
@@ -1235,7 +1340,7 @@ function openCharacterPicker() {
             '">' +
             memberIconHtml(c.href, c.label) +
             '<span class="tierlist-pick-char__name">' +
-            escapeHtml(c.label) +
+            escapeHtml(shortChipLabel(c.label, 5)) +
             "</span></button>"
           );
         })
@@ -1397,20 +1502,7 @@ function wireRoom() {
   const board = el("tierlist-board");
   board?.addEventListener("click", async function (ev) {
     const target = /** @type {HTMLElement} */ (ev.target);
-    const editBtn = target.closest("[data-edit-tier]");
-    if (editBtn) {
-      const tierId = editBtn.getAttribute("data-edit-tier") || "";
-      const tier = state.room && state.room.tiers && state.room.tiers[tierId];
-      if (!tier) return;
-      const next = window.prompt("ティア名", tier.label || tier.id);
-      if (next == null) return;
-      try {
-        await updateTierListTier(state.code, tierId, { label: next });
-      } catch (err) {
-        showToast(errorMessage(err));
-      }
-      return;
-    }
+    if (target.closest(".tierlist-row__title-input")) return;
     const charBtn = target.closest(".tierlist-char[data-char-id]");
     if (charBtn) {
       const id = charBtn.getAttribute("data-char-id") || "";
@@ -1433,13 +1525,53 @@ function wireRoom() {
     }
   });
 
+  async function commitTierTitleInput(inp) {
+    if (!inp || !state.code || !state.room) return;
+    if (!isTierListHost(state.room, getTierListMyUid())) return;
+    const tierId = inp.getAttribute("data-tier-title") || "";
+    const tier = state.room.tiers && state.room.tiers[tierId];
+    if (!tier) return;
+    const next = String(inp.value || "").trim().slice(0, TIERLIST_MAX_TIER_LABEL_LEN);
+    if (!next) {
+      inp.value = tier.label || tier.id;
+      return;
+    }
+    if (next === String(tier.label || "")) return;
+    try {
+      await updateTierListTier(state.code, tierId, { label: next });
+    } catch (err) {
+      showToast(errorMessage(err));
+      inp.value = tier.label || tier.id;
+    }
+  }
+
+  board?.addEventListener("keydown", function (ev) {
+    const inp = /** @type {HTMLElement} */ (ev.target).closest(".tierlist-row__title-input");
+    if (!inp || ev.key !== "Enter") return;
+    ev.preventDefault();
+    /** @type {HTMLInputElement} */ (inp).blur();
+  });
+  board?.addEventListener("change", function (ev) {
+    const inp = /** @type {HTMLElement} */ (ev.target).closest(".tierlist-row__title-input");
+    if (inp) commitTierTitleInput(/** @type {HTMLInputElement} */ (inp));
+  });
+  board?.addEventListener("blur", function (ev) {
+    const inp = /** @type {HTMLElement} */ (ev.target).closest(".tierlist-row__title-input");
+    if (inp) commitTierTitleInput(/** @type {HTMLInputElement} */ (inp));
+  }, true);
+
   board?.addEventListener("dragstart", function (ev) {
+    if (/** @type {HTMLElement} */ (ev.target).closest(".tierlist-row__title-input")) {
+      ev.preventDefault();
+      return;
+    }
     const charBtn = /** @type {HTMLElement} */ (ev.target).closest(".tierlist-char[data-char-id]");
     if (charBtn && ev.dataTransfer) {
       const id = charBtn.getAttribute("data-char-id") || "";
       state.selectedCardNo = id;
       ev.dataTransfer.setData("text/plain", "char:" + id);
       ev.dataTransfer.effectAllowed = "move";
+      charBtn.classList.add("is-dragging");
       return;
     }
     const cardBtn = /** @type {HTMLElement} */ (ev.target).closest(".tierlist-card[data-card-no]");
@@ -1448,35 +1580,64 @@ function wireRoom() {
     state.selectedCardNo = no;
     ev.dataTransfer.setData("text/plain", no);
     ev.dataTransfer.effectAllowed = "move";
+    cardBtn.classList.add("is-dragging");
+  });
+  board?.addEventListener("dragend", function () {
+    clearBoardDropIndicators();
+    board.querySelectorAll(".is-dragging").forEach(function (node) {
+      node.classList.remove("is-dragging");
+    });
   });
   board?.addEventListener("dragover", function (ev) {
     const drop = /** @type {HTMLElement} */ (ev.target).closest("[data-drop-tier]");
     if (!drop) return;
     ev.preventDefault();
+    if (ev.dataTransfer) ev.dataTransfer.dropEffect = "move";
     drop.classList.add("is-dragover");
+    const draggedId = String(state.selectedCardNo || "");
+    board.querySelectorAll(".tierlist-card.is-drop-before").forEach(function (node) {
+      node.classList.remove("is-drop-before");
+    });
+    const beforeId = resolveDropBeforeId(drop, ev.clientX, ev.clientY, draggedId);
+    if (beforeId) {
+      drop.querySelectorAll(".tierlist-card").forEach(function (chip) {
+        if (chipDomId(chip) === beforeId) chip.classList.add("is-drop-before");
+      });
+    }
   });
   board?.addEventListener("dragleave", function (ev) {
     const drop = /** @type {HTMLElement} */ (ev.target).closest("[data-drop-tier]");
-    if (drop) drop.classList.remove("is-dragover");
+    if (!drop) return;
+    const related = /** @type {Node|null} */ (ev.relatedTarget);
+    if (related && drop.contains(related)) return;
+    drop.classList.remove("is-dragover");
+    drop.querySelectorAll(".is-drop-before").forEach(function (node) {
+      node.classList.remove("is-drop-before");
+    });
   });
   board?.addEventListener("drop", async function (ev) {
     const drop = /** @type {HTMLElement} */ (ev.target).closest("[data-drop-tier]");
     if (!drop || !ev.dataTransfer) return;
     ev.preventDefault();
-    drop.classList.remove("is-dragover");
+    clearBoardDropIndicators();
     let raw = ev.dataTransfer.getData("text/plain") || state.selectedCardNo;
     const tierId = drop.getAttribute("data-drop-tier") || "";
     if (!raw || !tierId || !state.code) return;
+    const isChar = isCharacterRoom() || String(raw).indexOf("char:") === 0;
+    const itemId = isChar ? String(raw).replace(/^char:/, "") : String(raw);
+    if (!itemId) return;
+    const beforeId = resolveDropBeforeId(drop, ev.clientX, ev.clientY, itemId);
+    const orderInTier = computeOrderInTier(tierId, beforeId, itemId);
+    applyLocalEntryPlacement(itemId, tierId, orderInTier);
+    state.selectedCardNo = itemId;
+    renderBoard();
+    renderMoveBar();
     try {
-      if (isCharacterRoom() || String(raw).indexOf("char:") === 0) {
-        const charId = String(raw).replace(/^char:/, "");
-        await placeTierListCard(state.code, { charId: charId, tierId: tierId });
-        state.selectedCardNo = charId;
+      if (isChar) {
+        await placeTierListCard(state.code, { charId: itemId, tierId: tierId, orderInTier: orderInTier });
       } else {
-        await placeTierListCard(state.code, { cardNo: raw, tierId: tierId });
-        state.selectedCardNo = raw;
+        await placeTierListCard(state.code, { cardNo: itemId, tierId: tierId, orderInTier: orderInTier });
       }
-      renderMoveBar();
     } catch (err) {
       showToast(errorMessage(err));
     }
