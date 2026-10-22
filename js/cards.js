@@ -265,13 +265,11 @@ export function catalogCardImageMirrorUrl(originalUrl) {
     const folder = m[1];
     const file = m[2];
     if (!folder || !file) return null;
-    /* jsDelivr は ! を含むファイル名を %21 にする必要がある */
-    return (
-      "https://cdn.jsdelivr.net/gh/wlt233/llocg_db@master/img/cards/" +
-      encodeURIComponent(folder) +
-      "/" +
-      encodeURIComponent(file)
-    );
+    /* jsDelivr は ! を %21 にする必要がある（encodeURIComponent は ! を残す） */
+    const enc = function (s) {
+      return encodeURIComponent(s).replace(/!/g, "%21");
+    };
+    return "https://cdn.jsdelivr.net/gh/wlt233/llocg_db@master/img/cards/" + enc(folder) + "/" + enc(file);
   } catch (_) {
     return null;
   }
