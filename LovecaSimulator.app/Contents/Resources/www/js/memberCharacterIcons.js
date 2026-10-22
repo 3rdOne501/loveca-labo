@@ -6,6 +6,7 @@
 import memberManifest from "../data/member-character-icons.json" with { type: "json" };
 import groupManifest from "../data/enter-fx-group-logos.json" with { type: "json" };
 import { catalogCardSeriesLines, seriesLineToSchoolLabel } from "./cardGroups.js";
+import { catalogCardImageUrl, catalogListThumbnailUrl, getCard } from "./cards.js";
 
 export const MEMBER_CHARACTER_ICON_ART_DIR = String(
   memberManifest.artDir || "assets/game-icons/member-icons/",
@@ -84,6 +85,12 @@ const NAME_ALIASES = /** @type {Record<string, string>} */ ({
   優木せつ菜: "setsuna",
   黒澤ダイヤ: "dia",
   米女メイ: "mei",
+  綺羅ツバサ: "tsubasa",
+  ツバサ: "tsubasa",
+  優木あんじゅ: "anju",
+  あんじゅ: "anju",
+  統堂英玲奈: "erena",
+  英玲奈: "erena",
 });
 
 Object.entries(NAME_ALIASES).forEach(function ([alias, id]) {
@@ -94,22 +101,44 @@ Object.entries(NAME_ALIASES).forEach(function ([alias, id]) {
 });
 
 /**
+ * モチーフファイルがあればそれ、なければ fallbackCardNo のカード画像。
+ * @param {{ file?: string, fallbackCardNo?: string } | null | undefined} entry
+ */
+function resolveRosterEntryHref(entry) {
+  if (!entry) return "";
+  var file = String(entry.file || "").trim();
+  if (file) return artifactImageSrc(memberCharacterIconHref(file));
+  var no = String(entry.fallbackCardNo || "").trim();
+  if (!no) return "";
+  var card = getCard(no);
+  if (!card) return "";
+  var face = catalogCardImageUrl(card) || card.img || card.image_url || "";
+  if (!face) return "";
+  return catalogListThumbnailUrl(face) || face;
+}
+
+function rosterEntryHasArt(entry) {
+  return !!(entry && entry.id && (String(entry.file || "").trim() || String(entry.fallbackCardNo || "").trim()));
+}
+
+/**
  * ドンジャラ／モチーフアイコンと同じロスター一覧（ティアリスト用）。
  * @returns {{ id: string, label: string, series: string, file: string, href: string }[]}
  */
 export function listMemberCharacterRoster() {
   return (memberManifest.roster || [])
-    .filter(function (entry) {
-      return entry && entry.id && entry.file;
-    })
+    .filter(rosterEntryHasArt)
     .map(function (entry) {
       return {
         id: String(entry.id),
         label: String(entry.label || entry.id),
         series: String(entry.series || ""),
-        file: String(entry.file),
-        href: artifactImageSrc(memberCharacterIconHref(entry.file)),
+        file: String(entry.file || ""),
+        href: resolveRosterEntryHref(entry),
       };
+    })
+    .filter(function (entry) {
+      return !!entry.href;
     });
 }
 
@@ -123,13 +152,15 @@ export function getMemberCharacterById(charId) {
   var found = (memberManifest.roster || []).find(function (r) {
     return r && r.id === id;
   });
-  if (!found) return null;
+  if (!found || !rosterEntryHasArt(found)) return null;
+  var href = resolveRosterEntryHref(found);
+  if (!href) return null;
   return {
     id: String(found.id),
     label: String(found.label || found.id),
     series: String(found.series || ""),
     file: String(found.file || ""),
-    href: artifactImageSrc(memberCharacterIconHref(found.file)),
+    href: href,
   };
 }
 
@@ -143,13 +174,15 @@ export function resolveMemberCharacterIcon(partName) {
   var norm = normalizeCharacterKey(raw);
   var direct = rosterByNorm.get(norm);
   if (direct) {
+    var hrefDirect = resolveRosterEntryHref(direct);
+    if (!hrefDirect) return null;
     return {
       id: direct.id,
       label: direct.label,
-      href: artifactImageSrc(memberCharacterIconHref(direct.file)),
+      href: hrefDirect,
     };
   }
-  /** @type {{ entry: { id: string, label: string, file: string }, score: number } | null} */
+  /** @type {{ entry: { id: string, label: string, file: string, fallbackCardNo?: string }, score: number } | null} */
   var best = null;
   (memberManifest.roster || []).forEach(function (entry) {
     var key = normalizeCharacterKey(entry.label);
@@ -162,10 +195,12 @@ export function resolveMemberCharacterIcon(partName) {
     if (!best || score > best.score) best = { entry: entry, score: score };
   });
   if (!best) return null;
+  var hrefBest = resolveRosterEntryHref(best.entry);
+  if (!hrefBest) return null;
   return {
     id: best.entry.id,
     label: best.entry.label,
-    href: artifactImageSrc(memberCharacterIconHref(best.entry.file)),
+    href: hrefBest,
   };
 }
 

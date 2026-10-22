@@ -199,7 +199,9 @@ function resolveCardCharacterIcons(card) {
  */
 function cardVisualInnerHtml(card, name, opts) {
   if (useCardCharFaces()) {
-    const icons = resolveCardCharacterIcons(card);
+    const icons = resolveCardCharacterIcons(card).filter(function (ic) {
+      return ic && ic.href;
+    });
     if (icons.length === 1) {
       const label = icons[0].label || name;
       return (
@@ -218,6 +220,16 @@ function cardVisualInnerHtml(card, name, opts) {
           })
           .join("") +
         '</span><span class="tierlist-char__name">' +
+        escapeHtml(shortChipLabel(name, 5)) +
+        "</span>"
+      );
+    }
+    /* キャラアイコンが無い場合はカード画像をアイコン代わりに */
+    const face = card ? catalogCardImageUrl(card) : "";
+    if (face) {
+      return (
+        thumbHtml(face, name, opts) +
+        '<span class="tierlist-char__name">' +
         escapeHtml(shortChipLabel(name, 5)) +
         "</span>"
       );

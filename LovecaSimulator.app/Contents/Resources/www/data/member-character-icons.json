@@ -1,5 +1,5 @@
 {
-  "v": 4,
+  "v": 5,
   "kind": "icon-you-member-motif",
   "source": "アイコンよう/",
   "artDir": "assets/game-icons/member-icons/",
@@ -402,6 +402,30 @@
       "series": "hasunosora",
       "file": "izumi.png",
       "sourceUrl": "アイコンよう/"
+    },
+    {
+      "id": "tsubasa",
+      "label": "綺羅ツバサ",
+      "series": "arise",
+      "file": "",
+      "fallbackCardNo": "PL!-bp5-111-R",
+      "sourceUrl": "card-fallback"
+    },
+    {
+      "id": "anju",
+      "label": "優木あんじゅ",
+      "series": "arise",
+      "file": "",
+      "fallbackCardNo": "PL!-bp5-222-R",
+      "sourceUrl": "card-fallback"
+    },
+    {
+      "id": "erena",
+      "label": "統堂英玲奈",
+      "series": "arise",
+      "file": "",
+      "fallbackCardNo": "PL!-bp5-333-R",
+      "sourceUrl": "card-fallback"
     }
   ]
 }
