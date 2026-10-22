@@ -250,8 +250,36 @@ export function catalogListThumbnailUrl(originalUrl, opts) {
 }
 
 /**
- * &lt;img&gt; に wsrv サムネを載せ、失敗時は標準サイズ → 公式 URL へフォールバックする。
- * 公式ホストが 503 のときでも、デッキ一覧で温まった wsrv キャッシュを再利用できる。
+ * 公式 cardlist URL → コミュニティミラー（llocg_db）。公式 / wsrv が 503 のときの退避先。
+ * @param {string} originalUrl
+ * @returns {string | null}
+ */
+export function catalogCardImageMirrorUrl(originalUrl) {
+  if (!originalUrl || typeof originalUrl !== "string") return null;
+  if (originalUrl.startsWith("data:") || originalUrl.includes("wsrv.nl")) return null;
+  try {
+    const u = new URL(originalUrl, typeof location !== "undefined" ? location.href : "https://local.invalid/");
+    if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+    const m = String(u.pathname || "").match(/\/images\/cardlist\/([^/]+)\/([^/]+)$/i);
+    if (!m) return null;
+    const folder = m[1];
+    const file = m[2];
+    if (!folder || !file) return null;
+    /* jsDelivr は ! を含むファイル名を %21 にする必要がある */
+    return (
+      "https://cdn.jsdelivr.net/gh/wlt233/llocg_db@master/img/cards/" +
+      encodeURIComponent(folder) +
+      "/" +
+      encodeURIComponent(file)
+    );
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
+ * &lt;img&gt; に wsrv サムネを載せ、失敗時は標準サイズ → ミラー → 公式 URL へフォールバックする。
+ * 公式ホストが 503 のときでも、wsrv キャッシュまたは llocg_db ミラーで表示できる。
  * @param {HTMLImageElement} img
  * @param {string} originalUrl
  * @param {{ hi?: boolean, play?: boolean, playLightweight?: boolean, playPile?: boolean, playLive?: boolean } | undefined} thumbOpts
@@ -262,9 +290,13 @@ export function applyCatalogThumbToImg(img, originalUrl, thumbOpts) {
     img.src = originalUrl;
     return;
   }
-  const primary = catalogListThumbnailUrl(originalUrl, thumbOpts);
-  const std = catalogListThumbnailUrl(originalUrl);
+  const mirror = catalogCardImageMirrorUrl(originalUrl) || "";
+  /* wsrv の取得元はミラー優先（公式 503 時に wsrv も一緒に落ちるため） */
+  const thumbSource = mirror || originalUrl;
+  const primary = catalogListThumbnailUrl(thumbSource, thumbOpts);
+  const std = catalogListThumbnailUrl(thumbSource);
   img.setAttribute("data-std-src", std);
+  img.setAttribute("data-mirror-src", mirror);
   img.setAttribute("data-full-src", originalUrl);
   try {
     img.referrerPolicy = "no-referrer";
@@ -275,6 +307,7 @@ export function applyCatalogThumbToImg(img, originalUrl, thumbOpts) {
   img.src = primary;
   img.onerror = function () {
     const s = img.getAttribute("data-std-src") || "";
+    const mir = img.getAttribute("data-mirror-src") || "";
     const f = img.getAttribute("data-full-src") || "";
     const step = Number(img.getAttribute("data-thumb-fb") || "0");
     if (step < 1 && s && primary !== s) {
@@ -282,8 +315,13 @@ export function applyCatalogThumbToImg(img, originalUrl, thumbOpts) {
       img.src = s;
       return;
     }
-    if (step < 2 && f) {
+    if (step < 2 && mir) {
       img.setAttribute("data-thumb-fb", "2");
+      img.src = mir;
+      return;
+    }
+    if (step < 3 && f) {
+      img.setAttribute("data-thumb-fb", "3");
       img.src = f;
       return;
     }
@@ -300,7 +338,7 @@ function escapeAttrForThumb(s) {
 
 /**
  * 一覧・会議・ビンゴ共通のサムネ &lt;img&gt; HTML。
- * 公式ホストが 503 等で落ちることがあるため、wsrv.nl 縮小を src にし、失敗時だけ公式 URL へ戻す。
+ * 公式ホストが 503 等で落ちることがあるため、wsrv.nl 縮小を src にし、失敗時はミラー → 公式へ戻す。
  * @param {string} originalUrl
  * @param {string} [className]
  * @param {{ hi?: boolean, eager?: boolean, alt?: string, hiQuality?: boolean } | undefined} opts
@@ -311,10 +349,12 @@ export function catalogThumbImgHtml(originalUrl, className, opts) {
   if (!url) return "";
   const o = opts != null && typeof opts === "object" ? opts : {};
   // 公式ホストが 503 のとき、未キャッシュの hi 指定は wsrv も落ちやすい。
-  // 一覧は標準サイズを主にし、hi 失敗時は標準 wsrv → 公式の順でフォールバックする。
+  // 一覧は標準サイズを主にし、hi 失敗時は標準 wsrv → ミラー → 公式の順でフォールバックする。
   const wantHi = o.hi === true || o.hiQuality === true;
-  const primary = catalogListThumbnailUrl(url, wantHi ? { hi: true } : undefined);
-  const std = catalogListThumbnailUrl(url);
+  const mirror = catalogCardImageMirrorUrl(url) || "";
+  const thumbSource = mirror || url;
+  const primary = catalogListThumbnailUrl(thumbSource, wantHi ? { hi: true } : undefined);
+  const std = catalogListThumbnailUrl(thumbSource);
   const cls = className || "deck-builder-card-thumb";
   const eager = o.eager === true;
   const alt = o.alt != null ? String(o.alt) : "";
@@ -325,6 +365,8 @@ export function catalogThumbImgHtml(originalUrl, className, opts) {
     escapeAttrForThumb(primary) +
     '" data-std-src="' +
     escapeAttrForThumb(std) +
+    '" data-mirror-src="' +
+    escapeAttrForThumb(mirror) +
     '" data-full-src="' +
     escapeAttrForThumb(url) +
     '" alt="' +
@@ -334,7 +376,7 @@ export function catalogThumbImgHtml(originalUrl, className, opts) {
     '" fetchpriority="' +
     (eager ? "auto" : "low") +
     '" decoding="async" referrerpolicy="no-referrer" draggable="false" ' +
-    'onerror="var s=this.dataset.stdSrc,f=this.dataset.fullSrc;if(s&amp;&amp;this.src!==s){this.src=s;return;}if(f&amp;&amp;this.src!==f){this.src=f;return;}this.onerror=null;" />'
+    'onerror="var s=this.dataset.stdSrc,m=this.dataset.mirrorSrc,f=this.dataset.fullSrc;if(s&amp;&amp;this.src!==s){this.src=s;return;}if(m&amp;&amp;this.src!==m){this.src=m;return;}if(f&amp;&amp;this.src!==f){this.src=f;return;}this.onerror=null;" />'
   );
 }
 
