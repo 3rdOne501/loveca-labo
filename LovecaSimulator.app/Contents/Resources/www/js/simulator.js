@@ -32,6 +32,7 @@ import {
   getAllCards,
   getCard,
   catalogListThumbnailUrl,
+  applyCatalogThumbToImg,
   effectiveMainDeckCategory,
   bladeHeartSlotsOnCard,
   printedHeartSlotsOnCard,
@@ -2164,17 +2165,29 @@ export function mountSimulator(
     renderPassLiveBundleFp = "";
   }
 
-  function playZoneFaceImgUrl(faceUrl, opts) {
-    if (!faceUrl || typeof faceUrl !== "string") return faceUrl;
+  /**
+   * プレイ盤面の表面 URL 用オプション（公式ホスト 503 時は wsrv キャッシュ頼み）。
+   * @returns {{ playLive?: boolean, playPile?: boolean, playLightweight?: boolean, play?: boolean } | null}
+   */
+  function playZoneFaceThumbOpts(faceUrl, opts) {
+    if (!faceUrl || typeof faceUrl !== "string") return null;
     opts = opts || {};
-    if (opts.hideFaceBehindBack || opts.deckFaceHidden) return faceUrl;
-    /* ライブカードは常に公式画像（サムネの cover 切り抜き・縮小を避ける） */
-    if (opts.cardType === T_LIVE) return faceUrl;
-    if (!isLightweightPlayMode()) return faceUrl;
+    if (opts.hideFaceBehindBack || opts.deckFaceHidden) return null;
+    if (opts.cardType === T_LIVE) return { playLive: true };
     if (opts.thumbPile) {
-      return catalogListThumbnailUrl(faceUrl, { playPile: true, playLightweight: true });
+      return isLightweightPlayMode()
+        ? { playPile: true, playLightweight: true }
+        : { playPile: true };
     }
-    return catalogListThumbnailUrl(faceUrl, { play: true, playLightweight: true });
+    /* 通常プレイは一覧と同じ標準 wsrv（公式 503 時にキャッシュ命中しやすい）。軽量時のみ更に縮小 */
+    if (isLightweightPlayMode()) return { play: true, playLightweight: true };
+    return {};
+  }
+
+  function playZoneFaceImgUrl(faceUrl, opts) {
+    const thumbOpts = playZoneFaceThumbOpts(faceUrl, opts);
+    if (!thumbOpts) return faceUrl;
+    return catalogListThumbnailUrl(faceUrl, thumbOpts);
   }
 
   function monteCarloLiveSuccessSamples() {
@@ -37645,8 +37658,14 @@ export function mountSimulator(
         img.src = CARD_BACK_DRAG_DATA_URI;
         img.alt = "（山札一覧・表面非表示／ダブルクリックで拡大）";
       } else {
-        img.src = playZoneFaceImgUrl(c.img, opts);
         img.alt = c.name || "";
+        var thumbOpts = playZoneFaceThumbOpts(c.img, opts);
+        if (thumbOpts) {
+          img.setAttribute("data-ll-real-face-src", c.img);
+          applyCatalogThumbToImg(img, c.img, thumbOpts);
+        } else {
+          img.src = c.img;
+        }
       }
       img.title = String(c.card_no ? c.card_no + " · " + c.name : c.name || "");
       img.draggable = false;

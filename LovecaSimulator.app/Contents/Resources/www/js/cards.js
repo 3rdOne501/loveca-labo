@@ -181,13 +181,14 @@ export function setCardsJsonUrlOverride(urlOrEmpty) {
 /**
  * デッキ構築のカード一覧サムネ用に軽量 URL を返す（一覧は wsrv.nl 経由の縮小 JPEG、拡大プレビューは元 URL）。
  * @param {string} originalUrl
- * @param {{ hi?: boolean, poster?: boolean, pie?: boolean } | undefined} opts `hi` で一覧より高解像、`poster` で書き出し用、`pie` で円グラフ塗りつぶし用
+ * @param {{ hi?: boolean, poster?: boolean, pie?: boolean, play?: boolean, playLightweight?: boolean, playPile?: boolean, playLive?: boolean } | undefined} opts
  * @returns {string}
  */
 export function catalogListThumbnailUrl(originalUrl, opts) {
   const o = opts != null && typeof opts === "object" ? opts : {};
   const hi = o.hi === true;
   const playLw = o.playLightweight === true;
+  const playLive = o.playLive === true;
   const play = o.play === true || playLw;
   const playPile = o.playPile === true;
   if (!originalUrl || typeof originalUrl !== "string") return originalUrl;
@@ -198,7 +199,14 @@ export function catalogListThumbnailUrl(originalUrl, opts) {
     let w = 96;
     let h = 136;
     let q = 52;
-    if (playLw) {
+    let fit = "cover";
+    if (playLive) {
+      /* ライブは cover 切り抜きを避け、公式ダウン時も wsrv キャッシュで見えるようにする */
+      w = 320;
+      h = 320;
+      q = 72;
+      fit = "inside";
+    } else if (playLw) {
       w = 80;
       h = 112;
       q = 44;
@@ -230,13 +238,57 @@ export function catalogListThumbnailUrl(originalUrl, opts) {
       w +
       "&h=" +
       h +
-      "&fit=cover&q=" +
+      "&fit=" +
+      fit +
+      "&q=" +
       q +
       "&output=jpg&n=-1"
     );
   } catch (_) {
     return originalUrl;
   }
+}
+
+/**
+ * &lt;img&gt; に wsrv サムネを載せ、失敗時は標準サイズ → 公式 URL へフォールバックする。
+ * 公式ホストが 503 のときでも、デッキ一覧で温まった wsrv キャッシュを再利用できる。
+ * @param {HTMLImageElement} img
+ * @param {string} originalUrl
+ * @param {{ hi?: boolean, play?: boolean, playLightweight?: boolean, playPile?: boolean, playLive?: boolean } | undefined} thumbOpts
+ */
+export function applyCatalogThumbToImg(img, originalUrl, thumbOpts) {
+  if (!img || !originalUrl || typeof originalUrl !== "string") return;
+  if (originalUrl.startsWith("data:")) {
+    img.src = originalUrl;
+    return;
+  }
+  const primary = catalogListThumbnailUrl(originalUrl, thumbOpts);
+  const std = catalogListThumbnailUrl(originalUrl);
+  img.setAttribute("data-std-src", std);
+  img.setAttribute("data-full-src", originalUrl);
+  try {
+    img.referrerPolicy = "no-referrer";
+  } catch (_) {
+    /* noop */
+  }
+  img.removeAttribute("data-thumb-fb");
+  img.src = primary;
+  img.onerror = function () {
+    const s = img.getAttribute("data-std-src") || "";
+    const f = img.getAttribute("data-full-src") || "";
+    const step = Number(img.getAttribute("data-thumb-fb") || "0");
+    if (step < 1 && s && primary !== s) {
+      img.setAttribute("data-thumb-fb", "1");
+      img.src = s;
+      return;
+    }
+    if (step < 2 && f) {
+      img.setAttribute("data-thumb-fb", "2");
+      img.src = f;
+      return;
+    }
+    img.onerror = null;
+  };
 }
 
 function escapeAttrForThumb(s) {
