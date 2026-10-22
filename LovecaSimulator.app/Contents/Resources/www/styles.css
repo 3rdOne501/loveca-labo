@@ -15644,6 +15644,20 @@ body.tourney-deck-view-open {
 .tierlist-pick-char:hover {
   border-color: rgba(255, 140, 190, 0.55);
 }
+.tierlist-picker--char-cards .tierlist-pick-card__no {
+  font-size: 0.58rem;
+  line-height: 1.2;
+  opacity: 0.75;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tierlist-char-cards-empty {
+  grid-column: 1 / -1;
+  padding: 1rem;
+  text-align: center;
+}
 .tierlist-pick-char__name {
   font-size: 0.65rem;
   line-height: 1.2;

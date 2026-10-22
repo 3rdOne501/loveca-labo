@@ -21,7 +21,11 @@ import {
   signInWithGoogle,
 } from "./cloudAuth.js";
 import { showDeckBuilderView, showTierListView } from "./viewNav.js";
-import { getMemberCharacterById, listMemberCharacterRoster } from "./memberCharacterIcons.js";
+import {
+  getMemberCharacterById,
+  listMemberCharacterRoster,
+  resolveMemberCharacterIcon,
+} from "./memberCharacterIcons.js";
 import { isPageVisible, onPageVisibilityChange } from "./pageVisibility.js";
 import {
   TIERLIST_KIND_CHARACTER,
@@ -195,6 +199,117 @@ function useDonjaraFaceArt() {
 /** @param {string} charId */
 function resolveCharChip(charId) {
   return getMemberCharacterById(charId, { face: useDonjaraFaceArt() });
+}
+
+/**
+ * キャラ名に紐づくカード一覧（メンバー・ライブ。複数名義含む）。
+ * @param {string} charId
+ * @returns {object[]}
+ */
+function cardsForCharacterId(charId) {
+  const ch = getMemberCharacterById(charId);
+  if (!ch) return [];
+  const label = String(ch.label || "").replace(/\s+/g, "").trim();
+  if (!label) return [];
+  const all = getAllCards() || [];
+  /** @type {object[]} */
+  const out = [];
+  for (let i = 0; i < all.length; i++) {
+    const c = all[i];
+    if (!c || !c.card_no) continue;
+    const name = String(c.name || c.card_name || "").trim();
+    if (!name) continue;
+    const parts = name.indexOf("&") >= 0 ? name.split("&") : [name];
+    let hit = false;
+    for (let pi = 0; pi < parts.length; pi++) {
+      const part = String(parts[pi] || "").trim();
+      if (!part) continue;
+      if (part.replace(/\s+/g, "") === label) {
+        hit = true;
+        break;
+      }
+      const icon = resolveMemberCharacterIcon(part);
+      if (icon && icon.id === charId) {
+        hit = true;
+        break;
+      }
+    }
+    if (hit) out.push(c);
+  }
+  out.sort(function (a, b) {
+    return String(b.card_no || "").localeCompare(String(a.card_no || ""));
+  });
+  return out;
+}
+
+/**
+ * @param {string} charId
+ */
+function openCharacterNamedCardList(charId) {
+  const ch = resolveCharChip(charId) || getMemberCharacterById(charId);
+  const name = (ch && ch.label) || charId;
+  const cards = cardsForCharacterId(charId);
+  const overlay = document.createElement("div");
+  overlay.className = "tierlist-picker-overlay";
+  const gridHtml = cards.length
+    ? cards
+        .map(function (c, idx) {
+          const cname = c.name || c.card_name || c.card_no;
+          return (
+            '<button type="button" class="tierlist-pick-card" data-card-no="' +
+            escapeHtml(c.card_no) +
+            '" title="' +
+            escapeHtml(cname) +
+            '">' +
+            cardVisualInnerHtml(c, cname, { eager: idx < PICKER_THUMB_EAGER }) +
+            '<span class="tierlist-pick-card__name">' +
+            escapeHtml(cname) +
+            "</span>" +
+            '<span class="tierlist-pick-card__no muted">' +
+            escapeHtml(c.card_no) +
+            "</span></button>"
+          );
+        })
+        .join("")
+    : '<p class="hint muted tierlist-char-cards-empty">該当するカードがありません</p>';
+  overlay.innerHTML =
+    '<div class="tierlist-picker tierlist-picker--char-cards" role="dialog" aria-label="' +
+    escapeHtml(name) +
+    ' のカード">' +
+    '<div class="tierlist-picker__head">' +
+    "<h2>" +
+    escapeHtml(name) +
+    " のカード</h2>" +
+    '<button type="button" class="btn sm secondary tierlist-picker__close">閉じる</button></div>' +
+    '<p class="hint muted" id="tierlist-char-cards-hint">' +
+    cards.length +
+    " 件</p>" +
+    '<div class="tierlist-picker__grid" id="tierlist-char-cards-grid">' +
+    gridHtml +
+    "</div></div>";
+  document.body.appendChild(overlay);
+  function close() {
+    overlay.remove();
+  }
+  overlay.querySelector(".tierlist-picker__close")?.addEventListener("click", close);
+  overlay.addEventListener("click", function (ev) {
+    if (ev.target === overlay) close();
+  });
+  overlay.querySelector("#tierlist-char-cards-grid")?.addEventListener("click", function (ev) {
+    const btn = /** @type {HTMLElement} */ (ev.target).closest("[data-card-no]");
+    if (!btn) return;
+    const no = btn.getAttribute("data-card-no") || "";
+    const card = getCard(no);
+    if (card) openCardCatalogDialog(card);
+  });
+  if (cards.length) {
+    prefetchCatalogListThumbnails(
+      cards.slice(0, PICKER_THUMB_PREFETCH).map(function (c) {
+        return catalogCardImageUrl(c);
+      }),
+      { limit: PICKER_THUMB_PREFETCH, eagerCount: PICKER_THUMB_EAGER },
+    );
+  }
 }
 
 /**
@@ -1621,9 +1736,10 @@ function wireRoom() {
     const charBtn = target.closest(".tierlist-char[data-char-id]");
     if (charBtn) {
       const id = charBtn.getAttribute("data-char-id") || "";
-      state.selectedCardNo = state.selectedCardNo === id ? "" : id;
+      state.selectedCardNo = id;
       syncBoardSelectionOnly();
       renderMoveBar();
+      openCharacterNamedCardList(id);
       return;
     }
     const cardBtn = target.closest(".tierlist-card[data-card-no]");
