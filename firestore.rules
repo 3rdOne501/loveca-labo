@@ -111,6 +111,19 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/tierListRooms/$(roomId)).data.hostUid == request.auth.uid;
     }
 
+    /* 配置の移動で触ってよいフィールド以外（本人・カード/キャラ識別）は不変 */
+    function tierListEntryIdentityUnchanged() {
+      return request.resource.data.byUid == resource.data.byUid
+        && request.resource.data.get('cardNo', '') == resource.data.get('cardNo', '')
+        && request.resource.data.get('charId', '') == resource.data.get('charId', '')
+        && request.resource.data.get('id', '') == resource.data.get('id', '')
+        && request.resource.data.get('kind', '') == resource.data.get('kind', '')
+        && request.resource.data.get('v', 0) == resource.data.get('v', 0)
+        && request.resource.data.get('placedAt', '') == resource.data.get('placedAt', '')
+        && request.resource.data.get('byName', '') == resource.data.get('byName', '')
+        && request.resource.data.get('byPhotoURL', null) == resource.data.get('byPhotoURL', null);
+    }
+
     match /tierListRooms/{roomId} {
       allow read: if isGoogleSignedIn();
 
@@ -120,7 +133,8 @@ service cloud.firestore {
 
       allow update: if isGoogleSignedIn()
         && request.resource.data.hostUid == resource.data.hostUid
-        && request.resource.data.code == resource.data.code;
+        && request.resource.data.code == resource.data.code
+        && request.resource.data.code == roomId;
 
       allow delete: if isGoogleSignedIn()
         && resource.data.hostUid == request.auth.uid;
@@ -131,11 +145,9 @@ service cloud.firestore {
         allow create: if isGoogleSignedIn()
           && request.resource.data.byUid == request.auth.uid;
 
-        /* 全員がティア移動・並べ替えできる。作成者や cardNo/charId は変えない */
+        /* 全員がティア移動・並べ替えできる。識別フィールドは変えない */
         allow update: if isGoogleSignedIn()
-          && request.resource.data.byUid == resource.data.byUid
-          && !request.resource.data.diff(resource.data).affectedKeys()
-              .hasAny(['byUid', 'cardNo', 'charId', 'id', 'kind', 'v', 'placedAt', 'byName', 'byPhotoURL']);
+          && tierListEntryIdentityUnchanged();
 
         allow delete: if isGoogleSignedIn()
           && (resource.data.byUid == request.auth.uid || isTierListRoomHost(roomId));

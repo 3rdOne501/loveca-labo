@@ -5,7 +5,12 @@
  * 票は entries/{id} の votes マップに uid をキーにして書くため、
  * 同時投票でもドット記法の更新どうしがぶつからない（カウンタ加算のレースも起きない）。
  */
-import { getCloudFirestore, getCurrentCloudUser } from "./cloudAuth.js";
+import {
+  ensureGoogleSession,
+  getCloudFirestore,
+  getCurrentCloudUser,
+  isGoogleCloudUser,
+} from "./cloudAuth.js";
 import { getPlayerDisplayName } from "./playerProfile.js";
 
 const COLLECTION = "weakestRooms";
@@ -92,7 +97,15 @@ function fs() {
   return x;
 }
 
-function requireUser() {
+async function requireUser() {
+  try {
+    await ensureGoogleSession();
+  } catch (_) {
+    /* ignore */
+  }
+  if (!isGoogleCloudUser()) {
+    throw new Error("Google ログインが必要です。一度ログアウトしてから Google でログインし直してください。");
+  }
   const u = getCurrentCloudUser();
   if (!u || !u.uid) throw new Error("Google ログインが必要です。");
   return u;
@@ -142,8 +155,8 @@ function formatWeakestFirestoreError(err) {
   const code = err && err.code ? String(err.code) : "";
   if (code === "permission-denied") {
     return (
-      "Firestore の権限がありません。Firebase コンソール → Firestore → ルール に " +
-      "weakestRooms のルールを追加してください（リポジトリの firestore.rules を参照）。"
+      "書き込みが拒否されました。Google で再ログインしてから、もう一度お試しください。" +
+      "（ゲストログインやログイン復元前の操作では拒否されます）"
     );
   }
   if (code === "unavailable" || code === "failed-precondition") {
@@ -210,7 +223,7 @@ export function isWeakestHost(room, uid) {
  * @returns {Promise<{ code: string, room: WeakestRoomDoc }>}
  */
 export async function createWeakestRoom(title) {
-  const user = requireUser();
+  const user = await requireUser();
   const { api } = fs();
   const name = myName(user);
   const now = nowIso();
@@ -255,7 +268,7 @@ export async function createWeakestRoom(title) {
  * @returns {Promise<{ code: string, room: WeakestRoomDoc }>}
  */
 export async function joinWeakestRoom(rawCode) {
-  const user = requireUser();
+  const user = await requireUser();
   const code = normalizeWeakestRoomCode(rawCode);
   if (code.length !== ROOM_CODE_LEN) {
     throw new Error("ルームコードは英数字" + ROOM_CODE_LEN + "文字です。");
@@ -347,7 +360,7 @@ export function watchWeakestEntries(code, onChange, onError) {
  * @returns {Promise<WeakestCategory>}
  */
 export async function addWeakestCategory(code, input) {
-  const user = requireUser();
+  const user = await requireUser();
   const { api } = fs();
   const ref = roomRef(code);
   const snap = await api.getDoc(ref);
@@ -392,7 +405,7 @@ export async function addWeakestCategory(code, input) {
  * @param {string} categoryId
  */
 export async function removeWeakestCategory(code, categoryId) {
-  const user = requireUser();
+  const user = await requireUser();
   const { api } = fs();
   const ref = roomRef(code);
   const snap = await api.getDoc(ref);
@@ -423,7 +436,7 @@ export async function removeWeakestCategory(code, categoryId) {
  * @param {string} name
  */
 export async function renameWeakestCategory(code, categoryId, name) {
-  const user = requireUser();
+  const user = await requireUser();
   const { api } = fs();
   const ref = roomRef(code);
   const snap = await api.getDoc(ref);
@@ -449,7 +462,7 @@ export async function renameWeakestCategory(code, categoryId, name) {
  * @returns {Promise<WeakestEntryDoc>}
  */
 export async function nominateWeakestCard(code, input) {
-  const user = requireUser();
+  const user = await requireUser();
   const { api } = fs();
   const cardNo = String((input && input.cardNo) || "").trim();
   const categoryId = String((input && input.categoryId) || "").trim();
@@ -501,7 +514,7 @@ export async function nominateWeakestCard(code, input) {
  * @param {string} entryId
  */
 export async function removeWeakestEntry(code, entryId) {
-  requireUser();
+  await requireUser();
   const { api } = fs();
   try {
     await api.deleteDoc(entryRef(code, entryId));
@@ -518,7 +531,7 @@ export async function removeWeakestEntry(code, entryId) {
  * @returns {Promise<boolean>} 投票後に自分の票が入っているか
  */
 export async function toggleWeakestVote(code, entryId, opts) {
-  const user = requireUser();
+  const user = await requireUser();
   const { api } = fs();
   const ref = entryRef(code, entryId);
   let snap;
@@ -557,7 +570,7 @@ export async function toggleWeakestVote(code, entryId, opts) {
  * @param {string} comment
  */
 export async function setWeakestVoteComment(code, entryId, comment) {
-  const user = requireUser();
+  const user = await requireUser();
   const { api } = fs();
   try {
     await api.updateDoc(entryRef(code, entryId), {
@@ -597,7 +610,7 @@ export async function leaveWeakestRoom(code) {
 
 /** ホストのみ。会議を終了してルームごと削除する。 @param {string} code */
 export async function closeWeakestRoom(code) {
-  const user = requireUser();
+  const user = await requireUser();
   const { api } = fs();
   const ref = roomRef(code);
   const snap = await api.getDoc(ref);

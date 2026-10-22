@@ -14,7 +14,12 @@ import {
 import { catalogCardSchoolLabels } from "./cardGroups.js";
 import { openCardCatalogDialog } from "./cardCatalogDialog.js";
 import { showToast } from "./ui.js";
-import { getCurrentCloudUser, onCloudUserChange, signInWithGoogle } from "./cloudAuth.js";
+import {
+  getCurrentCloudUser,
+  isGoogleCloudUser,
+  onCloudUserChange,
+  signInWithGoogle,
+} from "./cloudAuth.js";
 import { showDeckBuilderView, showTierListView } from "./viewNav.js";
 import {
   getMemberCharacterById,
@@ -260,8 +265,7 @@ function errorMessage(err) {
 }
 
 function signedIn() {
-  const u = getCurrentCloudUser();
-  return !!(u && u.uid);
+  return isGoogleCloudUser();
 }
 
 function isCharacterRoom() {

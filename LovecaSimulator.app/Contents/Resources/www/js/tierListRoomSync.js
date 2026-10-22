@@ -2,7 +2,12 @@
  * ラブカ ティアリストメーカーのルーム同期（Firestore）。
  * Google ログイン（cloudAuth）必須。参加者全員がカードの配置・移動できる。
  */
-import { getCloudFirestore, getCurrentCloudUser } from "./cloudAuth.js";
+import {
+  ensureGoogleSession,
+  getCloudFirestore,
+  getCurrentCloudUser,
+  isGoogleCloudUser,
+} from "./cloudAuth.js";
 import { getPlayerDisplayName } from "./playerProfile.js";
 
 const COLLECTION = "tierListRooms";
@@ -89,7 +94,15 @@ function fs() {
   return x;
 }
 
-function requireUser() {
+async function requireUser() {
+  try {
+    await ensureGoogleSession();
+  } catch (_) {
+    /* ignore */
+  }
+  if (!isGoogleCloudUser()) {
+    throw new Error("Google ログインが必要です。一度ログアウトしてから Google でログインし直してください。");
+  }
   const u = getCurrentCloudUser();
   if (!u || !u.uid) throw new Error("Google ログインが必要です。");
   return u;
@@ -167,8 +180,8 @@ function formatTierListFirestoreError(err) {
   const code = err && err.code ? String(err.code) : "";
   if (code === "permission-denied") {
     return (
-      "Firestore の権限がありません。Firebase コンソール → Firestore → ルール に " +
-      "tierListRooms のルールを追加してください（リポジトリの firestore.rules を参照）。"
+      "書き込みが拒否されました。Google で再ログインしてから、もう一度お試しください。" +
+      "（ゲストログインやログイン復元前の操作では拒否されます）"
     );
   }
   if (code === "unavailable" || code === "failed-precondition") {
@@ -227,7 +240,7 @@ export function isValidTierListTierId(room, tierId) {
  * @returns {Promise<{ code: string, room: TierListRoomDoc }>}
  */
 export async function createTierListRoom(title, opts) {
-  const user = requireUser();
+  const user = await requireUser();
   const { api } = fs();
   const name = myName(user);
   const now = nowIso();
@@ -281,7 +294,7 @@ export async function createTierListRoom(title, opts) {
  * @returns {Promise<{ code: string, room: TierListRoomDoc }>}
  */
 export async function joinTierListRoom(rawCode) {
-  const user = requireUser();
+  const user = await requireUser();
   const code = normalizeTierListRoomCode(rawCode);
   if (code.length !== ROOM_CODE_LEN) {
     throw new Error("ルームコードは英数字" + ROOM_CODE_LEN + "文字です。");
@@ -371,7 +384,7 @@ export function watchTierListEntries(code, onChange, onError) {
  * @param {string} title
  */
 export async function setTierListTitle(code, title) {
-  const user = requireUser();
+  const user = await requireUser();
   const { api } = fs();
   const ref = roomRef(code);
   const snap = await api.getDoc(ref);
@@ -421,7 +434,7 @@ function resolveTierInsertIndex(current, pos) {
  * @returns {Promise<TierListTier>}
  */
 export async function addTierListTier(code, input) {
-  const user = requireUser();
+  const user = await requireUser();
   const { api } = fs();
   const ref = roomRef(code);
   const snap = await api.getDoc(ref);
@@ -467,7 +480,7 @@ export async function addTierListTier(code, input) {
  * @param {string[]} orderedTierIds
  */
 export async function reorderTierListTiers(code, orderedTierIds) {
-  const user = requireUser();
+  const user = await requireUser();
   const { api } = fs();
   const ref = roomRef(code);
   const snap = await api.getDoc(ref);
@@ -512,7 +525,7 @@ export async function reorderTierListTiers(code, orderedTierIds) {
  * @param {{ label?: string, color?: string }} patch
  */
 export async function updateTierListTier(code, tierId, patch) {
-  const user = requireUser();
+  const user = await requireUser();
   const { api } = fs();
   const ref = roomRef(code);
   const snap = await api.getDoc(ref);
@@ -544,7 +557,7 @@ export async function updateTierListTier(code, tierId, patch) {
  * @param {string} tierId
  */
 export async function removeTierListTier(code, tierId) {
-  const user = requireUser();
+  const user = await requireUser();
   const { api } = fs();
   const ref = roomRef(code);
   const snap = await api.getDoc(ref);
@@ -589,7 +602,7 @@ export async function removeTierListTier(code, tierId) {
  * @returns {Promise<TierListEntryDoc>}
  */
 export async function placeTierListCard(code, input) {
-  const user = requireUser();
+  const user = await requireUser();
   const { api } = fs();
   const tierId = String((input && input.tierId) || "").trim();
   const roomSnap = await api.getDoc(roomRef(code));
@@ -695,7 +708,7 @@ export async function reorderTierListCard(code, input) {
  * @param {string} itemId cardNo または charId
  */
 export async function removeTierListCard(code, itemId) {
-  const user = requireUser();
+  const user = await requireUser();
   const { api } = fs();
   const roomSnap = await api.getDoc(roomRef(code));
   const room = roomSnap.exists() ? /** @type {TierListRoomDoc} */ (roomSnap.data()) : null;
@@ -756,7 +769,7 @@ export async function leaveTierListRoom(code) {
 
 /** @param {string} code */
 export async function closeTierListRoom(code) {
-  const user = requireUser();
+  const user = await requireUser();
   const { api } = fs();
   const ref = roomRef(code);
   const snap = await api.getDoc(ref);

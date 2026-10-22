@@ -7,7 +7,12 @@ import { catalogThumbImgHtml, getAllCards, getCard, uniqueProducts } from "./car
 import { catalogCardSchoolLabels } from "./cardGroups.js";
 import { openCardCatalogDialog } from "./cardCatalogDialog.js";
 import { showToast } from "./ui.js";
-import { getCurrentCloudUser, onCloudUserChange, signInWithGoogle } from "./cloudAuth.js";
+import {
+  getCurrentCloudUser,
+  isGoogleCloudUser,
+  onCloudUserChange,
+  signInWithGoogle,
+} from "./cloudAuth.js";
 import { showDeckBuilderView, showWeakestView } from "./viewNav.js";
 import { isPageVisible, onPageVisibilityChange } from "./pageVisibility.js";
 import {
@@ -80,8 +85,7 @@ function errorMessage(err) {
 }
 
 function signedIn() {
-  const u = getCurrentCloudUser();
-  return !!(u && u.uid);
+  return isGoogleCloudUser();
 }
 
 /** @param {string} url */
