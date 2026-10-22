@@ -11,6 +11,8 @@ import { catalogCardImageUrl, catalogListThumbnailUrl, getCard } from "./cards.j
 export const MEMBER_CHARACTER_ICON_ART_DIR = String(
   memberManifest.artDir || "assets/game-icons/member-icons/",
 );
+/** ドンジャラと同じ四角・顔面アップ（キャラティア「キャラの顔で表示」用） */
+export const MEMBER_CHARACTER_FACE_ART_DIR = "assets/game-icons/member-face-icons/";
 export const ENTER_FX_GROUP_LOGO_ART_DIR = String(
   groupManifest.artDir || "assets/game-icons/group-logos/",
 );
@@ -27,6 +29,11 @@ function normalizeCharacterKey(s) {
 
 function memberCharacterIconHref(fileName) {
   var seg = MEMBER_CHARACTER_ICON_ART_DIR.replace(/\/+$/, "") + "/";
+  return seg + String(fileName || "");
+}
+
+function memberCharacterFaceHref(fileName) {
+  var seg = MEMBER_CHARACTER_FACE_ART_DIR.replace(/\/+$/, "") + "/";
   return seg + String(fileName || "");
 }
 
@@ -106,11 +113,16 @@ Object.entries(NAME_ALIASES).forEach(function ([alias, id]) {
 /**
  * モチーフファイルがあればそれ、なければ fallbackCardNo のカード画像。
  * @param {{ file?: string, fallbackCardNo?: string } | null | undefined} entry
+ * @param {{ face?: boolean } | null | undefined} [opts] face=true でドンジャラ顔面アップ
  */
-function resolveRosterEntryHref(entry) {
+function resolveRosterEntryHref(entry, opts) {
   if (!entry) return "";
   var file = String(entry.file || "").trim();
-  if (file) return artifactImageSrc(memberCharacterIconHref(file));
+  var wantFace = !!(opts && opts.face);
+  if (file) {
+    if (wantFace) return artifactImageSrc(memberCharacterFaceHref(file));
+    return artifactImageSrc(memberCharacterIconHref(file));
+  }
   var no = String(entry.fallbackCardNo || "").trim();
   if (!no) return "";
   var card = getCard(no);
@@ -126,9 +138,10 @@ function rosterEntryHasArt(entry) {
 
 /**
  * ドンジャラ／モチーフアイコンと同じロスター一覧（ティアリスト用）。
+ * @param {{ face?: boolean } | null | undefined} [opts]
  * @returns {{ id: string, label: string, series: string, file: string, href: string }[]}
  */
-export function listMemberCharacterRoster() {
+export function listMemberCharacterRoster(opts) {
   return (memberManifest.roster || [])
     .filter(rosterEntryHasArt)
     .map(function (entry) {
@@ -137,7 +150,7 @@ export function listMemberCharacterRoster() {
         label: String(entry.label || entry.id),
         series: String(entry.series || ""),
         file: String(entry.file || ""),
-        href: resolveRosterEntryHref(entry),
+        href: resolveRosterEntryHref(entry, opts),
       };
     })
     .filter(function (entry) {
@@ -147,16 +160,17 @@ export function listMemberCharacterRoster() {
 
 /**
  * @param {string} charId
+ * @param {{ face?: boolean } | null | undefined} [opts]
  * @returns {{ id: string, label: string, series: string, file: string, href: string } | null}
  */
-export function getMemberCharacterById(charId) {
+export function getMemberCharacterById(charId, opts) {
   var id = String(charId || "").trim();
   if (!id) return null;
   var found = (memberManifest.roster || []).find(function (r) {
     return r && r.id === id;
   });
   if (!found || !rosterEntryHasArt(found)) return null;
-  var href = resolveRosterEntryHref(found);
+  var href = resolveRosterEntryHref(found, opts);
   if (!href) return null;
   return {
     id: String(found.id),

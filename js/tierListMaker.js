@@ -21,12 +21,7 @@ import {
   signInWithGoogle,
 } from "./cloudAuth.js";
 import { showDeckBuilderView, showTierListView } from "./viewNav.js";
-import {
-  getMemberCharacterById,
-  listMemberCharacterRoster,
-  resolveMemberCharacterIcon,
-  resolveMemberCharacterIconsFromCatalog,
-} from "./memberCharacterIcons.js";
+import { getMemberCharacterById, listMemberCharacterRoster } from "./memberCharacterIcons.js";
 import { isPageVisible, onPageVisibilityChange } from "./pageVisibility.js";
 import {
   TIERLIST_KIND_CHARACTER,
@@ -55,7 +50,7 @@ import {
 
 const STORAGE_RECENT = "llocg.tierlist.recentRooms";
 const STORAGE_PICKER_FILTERS = "llocg.tierlist.pickerFilters";
-/** カードティアで麻雀／ドンジャラと同じキャラ顔アイコンを使う */
+/** キャラティア: ドンジャラ四角顔面に切り替える */
 const STORAGE_SHOW_CHAR_FACES = "llocg.tierlist.showCharFaces";
 const RECENT_MAX = 6;
 const PRESENCE_INTERVAL_MS = 30000;
@@ -63,8 +58,6 @@ const PRESENCE_STALE_MS = 90000;
 const SCHOOL_OPTIONS = ["μ's", "Aqours", "虹ヶ咲", "Liella!", "蓮ノ空"];
 const TYPE_OPTIONS = [T_MEMBER, T_LIVE];
 const PICKER_CAP = 400;
-/** キャラ顔モードはアイコン解決が重いので表示件数を抑える */
-const PICKER_CAP_FACE = 120;
 const PICKER_THUMB_PREFETCH = 48;
 const PICKER_THUMB_EAGER = 24;
 
@@ -192,43 +185,16 @@ function persistShowCharFaces() {
 }
 
 /**
- * メンバーアイコン表示。
- * キャラ表は常にアイコン（枚数が少ない）。カード表のみトグル（既定 OFF）。
+ * キャラ表のみ: ON でドンジャラ四角顔面、OFF で発光モチーフアイコン。
+ * カード表では使わない。
  */
-function useCharFaces() {
-  if (isCharacterRoom()) return true;
-  return !!state.showCharFaces;
+function useDonjaraFaceArt() {
+  return isCharacterRoom() && !!state.showCharFaces;
 }
 
-/** @deprecated use useCharFaces */
-function useCardCharFaces() {
-  return useCharFaces();
-}
-
-/**
- * カードから麻雀キャラ顔を解決（メンバー優先、ライブ等は名前から推定）。
- * @param {object|null|undefined} card
- * @returns {Array<{ id: string, label: string, href: string }>}
- */
-function resolveCardCharacterIcons(card) {
-  if (!card) return [];
-  const fromCat = resolveMemberCharacterIconsFromCatalog(card);
-  if (fromCat.length) return fromCat;
-  const raw = String(card.name || card.card_name || "").trim();
-  if (!raw) return [];
-  const parts = raw.indexOf("&") >= 0 ? raw.split("&") : [raw];
-  /** @type {Record<string, true>} */
-  const seen = {};
-  /** @type {Array<{ id: string, label: string, href: string }>} */
-  const out = [];
-  for (let i = 0; i < parts.length; i++) {
-    const icon = resolveMemberCharacterIcon(String(parts[i] || "").trim());
-    if (!icon || seen[icon.id]) continue;
-    seen[icon.id] = true;
-    out.push(icon);
-    if (out.length >= 3) break;
-  }
-  return out;
+/** @param {string} charId */
+function resolveCharChip(charId) {
+  return getMemberCharacterById(charId, { face: useDonjaraFaceArt() });
 }
 
 /**
@@ -237,43 +203,6 @@ function resolveCardCharacterIcons(card) {
  * @param {{ eager?: boolean } | undefined} [opts]
  */
 function cardVisualInnerHtml(card, name, opts) {
-  if (useCardCharFaces()) {
-    const icons = resolveCardCharacterIcons(card).filter(function (ic) {
-      return ic && ic.href;
-    });
-    if (icons.length === 1) {
-      const label = icons[0].label || name;
-      return (
-        memberIconHtml(icons[0].href, label) +
-        '<span class="tierlist-char__name">' +
-        escapeHtml(shortChipLabel(label, 5)) +
-        "</span>"
-      );
-    }
-    if (icons.length > 1) {
-      return (
-        '<span class="tierlist-card-faces">' +
-        icons
-          .map(function (ic) {
-            return memberIconHtml(ic.href, ic.label);
-          })
-          .join("") +
-        '</span><span class="tierlist-char__name">' +
-        escapeHtml(shortChipLabel(name, 5)) +
-        "</span>"
-      );
-    }
-    /* キャラアイコンが無い場合はカード画像をアイコン代わりに */
-    const face = card ? catalogCardImageUrl(card) : "";
-    if (face) {
-      return (
-        thumbHtml(face, name, opts) +
-        '<span class="tierlist-char__name">' +
-        escapeHtml(shortChipLabel(name, 5)) +
-        "</span>"
-      );
-    }
-  }
   const img = card ? catalogCardImageUrl(card) : "";
   return thumbHtml(img || "", name, opts);
 }
@@ -691,10 +620,13 @@ function entriesInTier(tierId) {
     });
 }
 
-function memberIconHtml(href, alt) {
-  if (!href) return '<div class="tierlist-char-icon tierlist-char-icon--fallback">?</div>';
+function memberIconHtml(href, alt, extraClass) {
+  const cls = "tierlist-char-icon" + (extraClass ? " " + extraClass : "");
+  if (!href) return '<div class="' + cls + ' tierlist-char-icon--fallback">?</div>';
   return (
-    '<img class="tierlist-char-icon" src="' +
+    '<img class="' +
+    cls +
+    '" src="' +
     escapeHtml(href) +
     '" alt="' +
     escapeHtml(alt || "") +
@@ -823,26 +755,35 @@ function resolveTierRowDropBeforeId(board, clientY, draggedId) {
   return null;
 }
 
+function charChipInnerHtml(ch, name) {
+  const faceOn = useDonjaraFaceArt();
+  return (
+    memberIconHtml(ch && ch.href, name, faceOn ? "tierlist-char-icon--face" : "") +
+    '<span class="tierlist-char__name">' +
+    escapeHtml(shortChipLabel(name, 5)) +
+    "</span>"
+  );
+}
+
 function charChipHtml(entry) {
   const id = entry.charId || tierListEntryItemId(entry);
-  const ch = getMemberCharacterById(id);
+  const ch = resolveCharChip(id);
   const name = (ch && ch.label) || id;
-  const shortName = shortChipLabel(name, 5);
   const selected = state.selectedCardNo === id ? " is-selected" : "";
-  const faceOn = useCharFaces();
+  const faceOn = useDonjaraFaceArt();
   return (
-    '<button type="button" class="tierlist-card tierlist-char' +
-    (faceOn ? " tierlist-card--char-face" : "") +
+    '<button type="button" class="tierlist-card tierlist-char tierlist-card--char-face' +
+    (faceOn ? " tierlist-card--donjara-face" : "") +
     selected +
     '" data-char-id="' +
     escapeHtml(id) +
+    '" data-face-mode="' +
+    (faceOn ? "1" : "0") +
     '" title="' +
     escapeHtml(name) +
     '" draggable="true">' +
-    (faceOn ? memberIconHtml(ch && ch.href, name) : "") +
-    '<span class="tierlist-char__name">' +
-    escapeHtml(shortName) +
-    "</span></button>"
+    charChipInnerHtml(ch, name) +
+    "</button>"
   );
 }
 
@@ -850,10 +791,8 @@ function cardChipHtml(entry) {
   const card = getCard(entry.cardNo);
   const name = (card && (card.name || card.card_name)) || entry.cardNo;
   const selected = state.selectedCardNo === entry.cardNo ? " is-selected" : "";
-  const faceCls = useCardCharFaces() ? " tierlist-card--char-face" : "";
   return (
     '<button type="button" class="tierlist-card' +
-    faceCls +
     selected +
     '" data-card-no="' +
     escapeHtml(entry.cardNo) +
@@ -869,55 +808,50 @@ function cardChipHtml(entry) {
 function createTierChipElement(entry, charMode) {
   if (charMode) {
     const id = entry.charId || tierListEntryItemId(entry);
-    const ch = getMemberCharacterById(id);
+    const ch = resolveCharChip(id);
     const name = (ch && ch.label) || id;
     const selected = state.selectedCardNo === id;
-    const faceOn = useCharFaces();
+    const faceOn = useDonjaraFaceArt();
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className =
-      "tierlist-card tierlist-char" +
-      (faceOn ? " tierlist-card--char-face" : "") +
+      "tierlist-card tierlist-char tierlist-card--char-face" +
+      (faceOn ? " tierlist-card--donjara-face" : "") +
       (selected ? " is-selected" : "");
     btn.dataset.charId = id;
+    btn.dataset.faceMode = faceOn ? "1" : "0";
     btn.title = name;
     btn.draggable = true;
-    btn.innerHTML =
-      (faceOn ? memberIconHtml(ch && ch.href, name) : "") +
-      '<span class="tierlist-char__name">' +
-      escapeHtml(shortChipLabel(name, 5)) +
-      "</span>";
+    btn.innerHTML = charChipInnerHtml(ch, name);
     return btn;
   }
   const card = getCard(entry.cardNo);
   const name = (card && (card.name || card.card_name)) || entry.cardNo;
   const selected = state.selectedCardNo === entry.cardNo;
-  const faceOn = useCardCharFaces();
   const btn = document.createElement("button");
   btn.type = "button";
-  btn.className = "tierlist-card" + (faceOn ? " tierlist-card--char-face" : "") + (selected ? " is-selected" : "");
+  btn.className = "tierlist-card" + (selected ? " is-selected" : "");
   btn.dataset.cardNo = entry.cardNo;
-  btn.dataset.faceMode = faceOn ? "1" : "0";
   btn.title = name;
   btn.draggable = true;
   btn.innerHTML = cardVisualInnerHtml(card, name);
   return btn;
 }
 
-/** 顔トグル時: 行シェルは維持し、チップ中身だけ差し替え */
+/** キャラ表の顔トグル: モチーフ⇔ドンジャラ顔面をチップ単位で差し替え */
 function refreshBoardChipFaces() {
   const board = el("tierlist-board");
-  if (!board || !state.room || isCharacterRoom()) return;
-  const faceMode = useCharFaces();
-  const want = faceMode ? "1" : "0";
-  board.querySelectorAll(".tierlist-card[data-card-no]").forEach(function (btn) {
-    const no = btn.getAttribute("data-card-no") || "";
-    const card = getCard(no);
-    const name = (card && (card.name || card.card_name)) || no;
-    btn.classList.toggle("tierlist-card--char-face", faceMode);
+  if (!board || !state.room || !isCharacterRoom()) return;
+  const faceOn = useDonjaraFaceArt();
+  const want = faceOn ? "1" : "0";
+  board.querySelectorAll(".tierlist-char[data-char-id]").forEach(function (btn) {
+    const id = btn.getAttribute("data-char-id") || "";
+    const ch = resolveCharChip(id);
+    const name = (ch && ch.label) || id;
+    btn.classList.toggle("tierlist-card--donjara-face", faceOn);
     if (btn.dataset.faceMode === want) return;
     btn.dataset.faceMode = want;
-    btn.innerHTML = cardVisualInnerHtml(card, name);
+    btn.innerHTML = charChipInnerHtml(ch, name);
   });
 }
 
@@ -932,8 +866,8 @@ function renderRoomToolbar() {
   }
   const faceLabel = el("tierlist-face-toggle");
   const faceChk = /** @type {HTMLInputElement|null} */ (el("tierlist-show-char-faces"));
-  /* カード表のみ表示（キャラ表は常時メンバーアイコン） */
-  const showToggle = !!state.room && !isCharacterRoom();
+  /* キャラ表のみ（カード表では使わない） */
+  const showToggle = !!state.room && isCharacterRoom();
   if (faceLabel) faceLabel.hidden = !showToggle;
   if (faceChk && showToggle) faceChk.checked = !!state.showCharFaces;
 }
@@ -948,12 +882,11 @@ function renderBoard() {
     return;
   }
   const charMode = isCharacterRoom();
-  const faceMode = useCardCharFaces();
   const emptyTier = charMode ? "キャラを配置" : "カードを配置";
   const emptyPool = charMode ? "キャラを追加して配置" : "カードを追加して配置";
   const tiers = tierListSortedTiers(state.room);
   const host = isTierListHost(state.room, getTierListMyUid());
-  /* faceMode は shellSig に入れない（トグルで全行 remount しない） */
+  /* 顔トグルは shellSig に入れない（チップ差し替えのみ） */
   const shellSig =
     (charMode ? "c" : "k") +
     "|" +
@@ -1057,19 +990,19 @@ function renderBoard() {
     }
     if (emptyEl) emptyEl.remove();
     /** 外して付け直さず、順序どおり appendChild で移動する（点滅防止） */
-    const faceWant = useCharFaces() ? "1" : "0";
+    const faceWant = useDonjaraFaceArt() ? "1" : "0";
     entries.forEach(function (entry) {
       const id = tierListEntryItemId(entry);
       let btn = chipPool.get(id);
       if (btn) {
         chipPool.delete(id);
         btn.classList.toggle("is-selected", state.selectedCardNo === id);
-        if (!charMode && btn.dataset.faceMode !== faceWant) {
-          const card = getCard(entry.cardNo);
-          const name = (card && (card.name || card.card_name)) || entry.cardNo;
+        if (charMode && btn.dataset.faceMode !== faceWant) {
+          const ch = resolveCharChip(id);
+          const name = (ch && ch.label) || id;
           btn.dataset.faceMode = faceWant;
-          btn.classList.toggle("tierlist-card--char-face", faceWant === "1");
-          btn.innerHTML = cardVisualInnerHtml(card, name);
+          btn.classList.toggle("tierlist-card--donjara-face", faceWant === "1");
+          btn.innerHTML = charChipInnerHtml(ch, name);
         }
       } else {
         btn = createTierChipElement(entry, charMode);
@@ -1282,8 +1215,7 @@ function openCardPicker() {
         if (hay.indexOf(q) < 0) continue;
       }
       matched.push(c);
-      const cap = useCharFaces() ? PICKER_CAP_FACE : PICKER_CAP;
-      if (matched.length >= cap) break;
+      if (matched.length >= PICKER_CAP) break;
     }
     return matched;
   }
@@ -1294,12 +1226,11 @@ function openCardPicker() {
     lastMatched = matched;
     const grid = overlay.querySelector("#tierlist-pick-grid");
     const hint = overlay.querySelector("#tierlist-pick-hint");
-    const cap = useCharFaces() ? PICKER_CAP_FACE : PICKER_CAP;
     if (hint) {
       const selPart = selected.size ? " · 選択 " + selected.size + " 枚" : "";
       hint.textContent =
-        (matched.length >= cap
-          ? "先頭 " + cap + " 件のみ表示。検索で絞ってください。"
+        (matched.length >= PICKER_CAP
+          ? "先頭 " + PICKER_CAP + " 件のみ表示。検索で絞ってください。"
           : matched.length + " 件") + selPart;
     }
     if (grid) {
@@ -1314,7 +1245,6 @@ function openCardPicker() {
         let btn = pool.get(no);
         pool.delete(no);
         const name = c.name || c.card_name || c.card_no;
-        const faceOn = useCardCharFaces();
         if (!btn) {
           btn = document.createElement("button");
           btn.type = "button";
@@ -1322,31 +1252,23 @@ function openCardPicker() {
           btn.title = name;
           btn.innerHTML =
             cardVisualInnerHtml(c, name, { eager: idx < PICKER_THUMB_EAGER }) +
-            (faceOn ? "" : '<span class="tierlist-pick-card__name">' + escapeHtml(name) + "</span>");
-        } else if (btn.dataset.faceMode !== (faceOn ? "1" : "0")) {
-          btn.innerHTML =
-            cardVisualInnerHtml(c, name, { eager: idx < PICKER_THUMB_EAGER }) +
-            (faceOn ? "" : '<span class="tierlist-pick-card__name">' + escapeHtml(name) + "</span>");
+            '<span class="tierlist-pick-card__name">' +
+            escapeHtml(name) +
+            "</span>";
         }
-        btn.dataset.faceMode = faceOn ? "1" : "0";
-        btn.className =
-          "tierlist-pick-card" +
-          (faceOn ? " tierlist-pick-card--char-face" : "") +
-          (isOn ? " is-selected" : "");
+        btn.className = "tierlist-pick-card" + (isOn ? " is-selected" : "");
         btn.setAttribute("aria-pressed", isOn ? "true" : "false");
         grid.appendChild(btn);
       });
       pool.forEach(function (b) {
         b.remove();
       });
-      if (!useCardCharFaces()) {
-        prefetchCatalogListThumbnails(
-          matched.slice(0, PICKER_THUMB_PREFETCH).map(function (c) {
-            return catalogCardImageUrl(c);
-          }),
-          { limit: PICKER_THUMB_PREFETCH, eagerCount: PICKER_THUMB_EAGER },
-        );
-      }
+      prefetchCatalogListThumbnails(
+        matched.slice(0, PICKER_THUMB_PREFETCH).map(function (c) {
+          return catalogCardImageUrl(c);
+        }),
+        { limit: PICKER_THUMB_PREFETCH, eagerCount: PICKER_THUMB_EAGER },
+      );
     }
     syncFooter();
   }
@@ -1476,7 +1398,8 @@ function openCharacterPicker() {
     const q = String(/** @type {HTMLInputElement} */ (overlay.querySelector("#tierlist-pick-char-q")).value || "")
       .trim()
       .toLowerCase();
-    const roster = listMemberCharacterRoster();
+    const faceOn = useDonjaraFaceArt();
+    const roster = listMemberCharacterRoster({ face: faceOn });
     const matched = [];
     for (let i = 0; i < roster.length; i++) {
       const c = roster[i];
@@ -1495,12 +1418,14 @@ function openCharacterPicker() {
       grid.innerHTML = matched
         .map(function (c) {
           return (
-            '<button type="button" class="tierlist-pick-char" data-char-id="' +
+            '<button type="button" class="tierlist-pick-char' +
+            (faceOn ? " tierlist-pick-char--donjara-face" : "") +
+            '" data-char-id="' +
             escapeHtml(c.id) +
             '" title="' +
             escapeHtml(c.label) +
             '">' +
-            memberIconHtml(c.href, c.label) +
+            memberIconHtml(c.href, c.label, faceOn ? "tierlist-char-icon--face" : "") +
             '<span class="tierlist-pick-char__name">' +
             escapeHtml(shortChipLabel(c.label, 5)) +
             "</span></button>"
