@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-17",
+  "generated": "2026-10-22",
   "trigger": "jidou",
   "total": 144,
   "automated": 132,
@@ -121,7 +121,7 @@
     },
     {
       "card_no": "PL!-pb2-021-N",
-      "name": "南ことり",
+      "name": "南 ことり",
       "template": "jidou_manual",
       "automated": false,
       "eventKind": null,
@@ -625,7 +625,7 @@
     },
     {
       "card_no": "PL!HS-bp5-014-N",
-      "name": "安養寺 姫芽",
+      "name": "安養寺姫芽",
       "template": "jidou_area_move_grant_jouji",
       "automated": true,
       "eventKind": "area_move",
@@ -1141,7 +1141,7 @@
       "template": "jidou_manual",
       "automated": false,
       "eventKind": null,
-      "effect": "[ターン3回]自分か相手のステージにいるメンバーがウェイト状態になるたび、ライブ終了時まで、を得る。"
+      "effect": "自分か相手のステージにいるメンバーがウェイト状態になるたび、ライブ終了時まで、を得る。"
     },
     {
       "card_no": "PL!-PR-025-PR",

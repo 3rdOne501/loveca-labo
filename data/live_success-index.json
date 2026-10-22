@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-17",
+  "generated": "2026-10-22",
   "trigger": "live_success",
   "total": 132,
   "byTemplate": {
@@ -373,7 +373,7 @@
     },
     {
       "card_no": "PL!-bp6-003-P",
-      "name": "南ことり",
+      "name": "南 ことり",
       "template": "live_success_enter_under_member",
       "automated": true,
       "optional": true,
@@ -382,30 +382,30 @@
     },
     {
       "card_no": "PL!-bp6-003-P＋",
-      "name": "南ことり",
+      "name": "南 ことり",
       "template": "live_success_enter_under_member",
       "automated": true,
       "optional": true,
       "perTurn": 0,
-      "effect": "このメンバーの下にあるコスト2以下の『μ's』のメンバーカードを1枚、メンバーのいないエリアに登場させてもよい。"
+      "effect": "このメンバーの下にあるコスト2以下の『μ's』のメンバーカードを2枚、メンバーのいないエリアに登場させてもよい。"
     },
     {
       "card_no": "PL!-bp6-003-R＋",
-      "name": "南ことり",
+      "name": "南 ことり",
       "template": "live_success_enter_under_member",
       "automated": true,
       "optional": true,
       "perTurn": 0,
-      "effect": "このメンバーの下にあるコスト2以下の『μ's』のメンバーカードを1枚、メンバーのいないエリアに登場させてもよい。"
+      "effect": "このメンバーの下にあるコスト2以下の『μ's』のメンバーカードを3枚、メンバーのいないエリアに登場させてもよい。"
     },
     {
       "card_no": "PL!-bp6-003-SEC",
-      "name": "南ことり",
+      "name": "南 ことり",
       "template": "live_success_enter_under_member",
       "automated": true,
       "optional": true,
       "perTurn": 0,
-      "effect": "このメンバーの下にあるコスト2以下の『μ's』のメンバーカードを1枚、メンバーのいないエリアに登場させてもよい。"
+      "effect": "このメンバーの下にあるコスト2以下の『μ's』のメンバーカードを4枚、メンバーのいないエリアに登場させてもよい。"
     },
     {
       "card_no": "PL!-bp6-007-P",
@@ -499,7 +499,7 @@
     },
     {
       "card_no": "PL!HS-bp6-005-P＋",
-      "name": "徒町 小鈴",
+      "name": "徒町小鈴",
       "template": "yell_resolution_pick_hand",
       "automated": true,
       "optional": false,
@@ -508,7 +508,7 @@
     },
     {
       "card_no": "PL!HS-bp6-005-P",
-      "name": "徒町 小鈴",
+      "name": "徒町小鈴",
       "template": "yell_resolution_pick_hand",
       "automated": true,
       "optional": false,
@@ -517,7 +517,7 @@
     },
     {
       "card_no": "PL!HS-bp6-005-SEC",
-      "name": "徒町 小鈴",
+      "name": "徒町小鈴",
       "template": "yell_resolution_pick_hand",
       "automated": true,
       "optional": false,
@@ -526,7 +526,7 @@
     },
     {
       "card_no": "PL!HS-bp6-005-R＋",
-      "name": "徒町 小鈴",
+      "name": "徒町小鈴",
       "template": "yell_resolution_pick_hand",
       "automated": true,
       "optional": false,
@@ -535,7 +535,7 @@
     },
     {
       "card_no": "PL!HS-bp6-006-P＋",
-      "name": "安養寺 姫芽",
+      "name": "安養寺姫芽",
       "template": "live_success_wait_skip_next_activate",
       "automated": true,
       "optional": false,
@@ -544,7 +544,7 @@
     },
     {
       "card_no": "PL!HS-bp6-006-R＋",
-      "name": "安養寺 姫芽",
+      "name": "安養寺姫芽",
       "template": "live_success_wait_skip_next_activate",
       "automated": true,
       "optional": false,
@@ -553,7 +553,7 @@
     },
     {
       "card_no": "PL!HS-bp6-006-P",
-      "name": "安養寺 姫芽",
+      "name": "安養寺姫芽",
       "template": "live_success_wait_skip_next_activate",
       "automated": true,
       "optional": false,
@@ -562,7 +562,7 @@
     },
     {
       "card_no": "PL!HS-bp6-006-SEC",
-      "name": "安養寺 姫芽",
+      "name": "安養寺姫芽",
       "template": "live_success_wait_skip_next_activate",
       "automated": true,
       "optional": false,

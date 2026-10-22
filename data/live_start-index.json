@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-17",
+  "generated": "2026-10-22",
   "trigger": "live_start",
   "total": 374,
   "byTemplate": {
@@ -93,7 +93,7 @@
     },
     {
       "card_no": "PL!-pb2-003-PP",
-      "name": "南ことり",
+      "name": "南 ことり",
       "template": "grant_jouji_session",
       "automated": true,
       "optional": false,
@@ -102,7 +102,7 @@
     },
     {
       "card_no": "PL!-pb2-003-R",
-      "name": "南ことり",
+      "name": "南 ことり",
       "template": "grant_jouji_session",
       "automated": true,
       "optional": false,
@@ -746,7 +746,7 @@
       "automated": true,
       "optional": false,
       "perTurn": 0,
-      "effect": "自分のライブカード置き場に『µ's』のカードがある場合、ライブ終了時まで、自分のステージにいるすべての『μ's』のメンバーはを得る。"
+      "effect": "自分のライブカード置き場に『μ's』のカードがある場合、ライブ終了時まで、自分のステージにいるすべての『μ's』のメンバーはを得る。"
     },
     {
       "card_no": "PL!-bp6-001-P＋",
@@ -755,7 +755,7 @@
       "automated": true,
       "optional": false,
       "perTurn": 0,
-      "effect": "自分のライブカード置き場に『µ's』のカードがある場合、ライブ終了時まで、自分のステージにいるすべての『μ's』のメンバーはを得る。"
+      "effect": "自分のライブカード置き場に『μ's』のカードがある場合、ライブ終了時まで、自分のステージにいるすべての『μ's』のメンバーはを得る。"
     },
     {
       "card_no": "PL!-bp6-001-SEC",
@@ -764,7 +764,7 @@
       "automated": true,
       "optional": false,
       "perTurn": 0,
-      "effect": "自分のライブカード置き場に『µ's』のカードがある場合、ライブ終了時まで、自分のステージにいるすべての『μ's』のメンバーはを得る。"
+      "effect": "自分のライブカード置き場に『μ's』のカードがある場合、ライブ終了時まで、自分のステージにいるすべての『μ's』のメンバーはを得る。"
     },
     {
       "card_no": "PL!-bp6-001-R＋",
@@ -773,11 +773,11 @@
       "automated": true,
       "optional": false,
       "perTurn": 0,
-      "effect": "自分のライブカード置き場に『µ's』のカードがある場合、ライブ終了時まで、自分のステージにいるすべての『μ's』のメンバーはを得る。"
+      "effect": "自分のライブカード置き場に『μ's』のカードがある場合、ライブ終了時まで、自分のステージにいるすべての『μ's』のメンバーはを得る。"
     },
     {
       "card_no": "PL!-bp6-003-P",
-      "name": "南ことり",
+      "name": "南 ことり",
       "template": "live_start_hand_reveal_under_heart_grant",
       "automated": true,
       "optional": true,
@@ -786,7 +786,7 @@
     },
     {
       "card_no": "PL!-bp6-003-P＋",
-      "name": "南ことり",
+      "name": "南 ことり",
       "template": "live_start_hand_reveal_under_heart_grant",
       "automated": true,
       "optional": true,
@@ -795,7 +795,7 @@
     },
     {
       "card_no": "PL!-bp6-003-R＋",
-      "name": "南ことり",
+      "name": "南 ことり",
       "template": "live_start_hand_reveal_under_heart_grant",
       "automated": true,
       "optional": true,
@@ -804,7 +804,7 @@
     },
     {
       "card_no": "PL!-bp6-003-SEC",
-      "name": "南ことり",
+      "name": "南 ことり",
       "template": "live_start_hand_reveal_under_heart_grant",
       "automated": true,
       "optional": true,
@@ -831,7 +831,7 @@
     },
     {
       "card_no": "PL!HS-bp6-004-P",
-      "name": "百生 吟子",
+      "name": "百生吟子",
       "template": "live_start_opp_wait_max_cost",
       "automated": true,
       "optional": false,
@@ -840,7 +840,7 @@
     },
     {
       "card_no": "PL!HS-bp6-004-P",
-      "name": "百生 吟子",
+      "name": "百生吟子",
       "template": "live_start_optional_hand_discard_named_followup_blade",
       "automated": true,
       "optional": true,
@@ -849,7 +849,7 @@
     },
     {
       "card_no": "PL!HS-bp6-004-R",
-      "name": "百生 吟子",
+      "name": "百生吟子",
       "template": "live_start_opp_wait_max_cost",
       "automated": true,
       "optional": false,
@@ -858,7 +858,7 @@
     },
     {
       "card_no": "PL!HS-bp6-004-R",
-      "name": "百生 吟子",
+      "name": "百生吟子",
       "template": "live_start_optional_hand_discard_named_followup_blade",
       "automated": true,
       "optional": true,
@@ -867,7 +867,7 @@
     },
     {
       "card_no": "PL!HS-bp6-005-P＋",
-      "name": "徒町 小鈴",
+      "name": "徒町小鈴",
       "template": "live_start_hand_discard_cost_boost_grant_if",
       "automated": true,
       "optional": true,
@@ -876,7 +876,7 @@
     },
     {
       "card_no": "PL!HS-bp6-005-P",
-      "name": "徒町 小鈴",
+      "name": "徒町小鈴",
       "template": "live_start_hand_discard_cost_boost_grant_if",
       "automated": true,
       "optional": true,
@@ -885,7 +885,7 @@
     },
     {
       "card_no": "PL!HS-bp6-005-SEC",
-      "name": "徒町 小鈴",
+      "name": "徒町小鈴",
       "template": "live_start_hand_discard_cost_boost_grant_if",
       "automated": true,
       "optional": true,
@@ -894,7 +894,7 @@
     },
     {
       "card_no": "PL!HS-bp6-005-R＋",
-      "name": "徒町 小鈴",
+      "name": "徒町小鈴",
       "template": "live_start_hand_discard_cost_boost_grant_if",
       "automated": true,
       "optional": true,
@@ -939,7 +939,7 @@
     },
     {
       "card_no": "PL!HS-bp6-013-R",
-      "name": "徒町 小鈴",
+      "name": "徒町小鈴",
       "template": "live_start_opp_wait_exclude_unit",
       "automated": true,
       "optional": false,
@@ -1092,7 +1092,7 @@
     },
     {
       "card_no": "PL!HS-cl1-005-CL",
-      "name": "徒町 小鈴",
+      "name": "徒町小鈴",
       "template": "optional_energy_blade_until_live_end",
       "automated": true,
       "optional": true,
@@ -1321,7 +1321,7 @@
     },
     {
       "card_no": "PL!HS-bp5-005-P",
-      "name": "徒町 小鈴",
+      "name": "徒町小鈴",
       "template": "live_start_dollcostra_cost_set_grant_if",
       "automated": true,
       "optional": true,
@@ -1330,7 +1330,7 @@
     },
     {
       "card_no": "PL!HS-bp5-005-R",
-      "name": "徒町 小鈴",
+      "name": "徒町小鈴",
       "template": "live_start_dollcostra_cost_set_grant_if",
       "automated": true,
       "optional": true,
@@ -1339,7 +1339,7 @@
     },
     {
       "card_no": "PL!HS-bp5-006-AR",
-      "name": "安養寺 姫芽",
+      "name": "安養寺姫芽",
       "template": "live_start_hand_discard_same_group_grant",
       "automated": true,
       "optional": true,
@@ -1348,7 +1348,7 @@
     },
     {
       "card_no": "PL!HS-bp5-006-P",
-      "name": "安養寺 姫芽",
+      "name": "安養寺姫芽",
       "template": "live_start_hand_discard_same_group_grant",
       "automated": true,
       "optional": true,
@@ -1357,7 +1357,7 @@
     },
     {
       "card_no": "PL!HS-bp5-005-AR",
-      "name": "徒町 小鈴",
+      "name": "徒町小鈴",
       "template": "live_start_dollcostra_cost_set_grant_if",
       "automated": true,
       "optional": true,
@@ -1366,7 +1366,7 @@
     },
     {
       "card_no": "PL!HS-bp5-006-R",
-      "name": "安養寺 姫芽",
+      "name": "安養寺姫芽",
       "template": "live_start_hand_discard_same_group_grant",
       "automated": true,
       "optional": true,
@@ -1375,7 +1375,7 @@
     },
     {
       "card_no": "PL!HS-bp5-013-N",
-      "name": "徒町 小鈴",
+      "name": "徒町小鈴",
       "template": "live_start_deck_top_if_all_members_grant",
       "automated": true,
       "optional": false,
@@ -1712,7 +1712,7 @@
     },
     {
       "card_no": "PL!HS-sd1-006-SD",
-      "name": "安養寺 姫芽",
+      "name": "安養寺姫芽",
       "template": "optional_energy_blade_until_live_end",
       "automated": true,
       "optional": true,
@@ -1829,7 +1829,7 @@
     },
     {
       "card_no": "PL!-bp4-005-P＋",
-      "name": "星空凛",
+      "name": "星空 凛",
       "template": "live_start_position_change",
       "automated": true,
       "optional": false,
@@ -1856,7 +1856,7 @@
     },
     {
       "card_no": "PL!-bp4-005-SEC",
-      "name": "星空凛",
+      "name": "星空 凛",
       "template": "live_start_position_change",
       "automated": true,
       "optional": false,
@@ -2369,7 +2369,7 @@
     },
     {
       "card_no": "PL!-bp3-012-N",
-      "name": "南ことり",
+      "name": "南 ことり",
       "template": "heart_color_pick_grant",
       "automated": true,
       "optional": false,
@@ -2801,7 +2801,7 @@
     },
     {
       "card_no": "PL!HS-bp2-007-P",
-      "name": "百生 吟子",
+      "name": "百生吟子",
       "template": "grant_jouji_session",
       "automated": true,
       "optional": true,
@@ -2810,7 +2810,7 @@
     },
     {
       "card_no": "PL!HS-bp2-007-P＋",
-      "name": "百生 吟子",
+      "name": "百生吟子",
       "template": "grant_jouji_session",
       "automated": true,
       "optional": true,
@@ -2819,7 +2819,7 @@
     },
     {
       "card_no": "PL!HS-bp2-007-SEC",
-      "name": "百生 吟子",
+      "name": "百生吟子",
       "template": "grant_jouji_session",
       "automated": true,
       "optional": true,
@@ -2828,7 +2828,7 @@
     },
     {
       "card_no": "PL!HS-bp2-007-R＋",
-      "name": "百生 吟子",
+      "name": "百生吟子",
       "template": "grant_jouji_session",
       "automated": true,
       "optional": true,
@@ -3314,7 +3314,7 @@
     },
     {
       "card_no": "PL!HS-PR-020-PR",
-      "name": "徒町 小鈴",
+      "name": "徒町小鈴",
       "template": "live_start_optional_energy_waiting_reorder_deck_top",
       "automated": true,
       "optional": true,

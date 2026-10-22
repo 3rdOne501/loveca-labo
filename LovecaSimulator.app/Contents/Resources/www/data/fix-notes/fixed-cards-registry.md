@@ -16,6 +16,36 @@
 
 ---
 
+## 0o. ステージ→控え室の退場自動（D&D 直送）（2026-10-18）
+
+| カード番号 | 名前 | 根因 | 対応 | 横展開 |
+|-----------|------|------|------|--------|
+| PL!N-bp7-014-N | 中須かすみ | 分類・ハンドラは済みだが、ステージから控え室へ D&D 直送した退場で `leave_stage` 自動が発火せず、起動経路の `removeStageMemberToWaiting` も同様 | `fireJidouAfterMembersLeftStageFromSnap` をドロップ後に実行。`removeStageMemberToWaiting` / 登場時追い出し / バトン normalize から退場自動を一本化（二重発火を normalize 側から除去） | 同型 `jidou_leave_stage_recover_no_cost` は 1 枚のみ。退場自動全般（退場時控え室回収・退場時5枚見る・退場時手札捨て回収 等）に配線横展開 |
+
+Discord: messageId 1561097025481744465（.n1ssh1）
+
+---
+
+## 0n. 自動・バトン退場コスト閾値でエネルギー2枚アクティブ（2026-10-15）
+
+| カード番号 | 名前 | 根因 | 対応 | 横展開 |
+|-----------|------|------|------|--------|
+| PL!-pb2-009-R | 矢澤にこ | 「ステージから控え室＋バトンタッチしていた＋コストN以上」型が `classifyJidouAutoSegment` 未対応で `jidou_manual`。既存 `jidou_baton_leave_activate_energy` は「バトンタッチして控え室に置かれた」文言のみ | BH なしの退場バトン＋エネルギーアクティブ型を `jidou_baton_leave_activate_energy`（`leave_stage_baton`・`filters.minCost`/`seriesTag`）に分類。実行は既存ハンドラ | 2枚（PL!-pb2-009-R / PL!-pb2-009-PP・同型全文一致） |
+
+Discord: messageId 1559942285272031313（yahhonn） / 1560234930905026631（kanon_sibuya717_59145・再報告・同一根因）
+
+---
+
+## 0m. 登場・控え室ライブを山札上からN枚目へ（2026-10-11）
+
+| カード番号 | 名前 | 根因 | 対応 | 横展開 |
+|-----------|------|------|------|--------|
+| PL!N-bp5-021-N | 天王寺璃奈 | `toujou_optional_wait_to_deck_top` の分類 regex が「デッキの一番上**から4枚目**」も山札**天**扱いにし、実行も常に `unshift` していた | 「一番上からN枚目」を `deckRelocateTo: nth_from_top` + `deckRelocateIndex` で分類。実行は FAQ 通り枚数不足時は山札下、それ以外は splice 差し込み。控え室ピックは `filters`（ライブ）適用 | 代表 PL!N-bp5-021-N のみ（同型カード 0 件）。共通 `toujou_optional_wait_to_deck_top` ハンドラ（`PL!N-bp4-021-N` 等・山札天は従来通り） |
+
+Discord: messageId 1558517081329369139（.n1ssh1）
+
+---
+
 ## 0l. ステージ間バトン normalize と下置きメンバー（2026-10-02）
 
 | カード番号 | 名前 | 根因 | 対応 | 横展開 |

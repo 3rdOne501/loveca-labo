@@ -1,11 +1,11 @@
 {
-  "generated": "2026-10-17",
+  "generated": "2026-10-22",
   "trigger": "toujyou",
-  "total": 635,
+  "total": 636,
   "byTemplate": {
     "grant_jouji_session": 16,
     "toujou_deck_top_liella_live_pick": 4,
-    "deck_top_pick_recover": 117,
+    "deck_top_pick_recover": 118,
     "toujou_success_live_hand_reveal_swap": 3,
     "guided_manual": 4,
     "draw_from_deck": 38,
@@ -1225,7 +1225,7 @@
     },
     {
       "card_no": "PL!HS-bp6-004-P",
-      "name": "百生 吟子",
+      "name": "百生吟子",
       "template": "optional_self_wait_opp_stage",
       "automated": true,
       "optional": false,
@@ -1234,7 +1234,7 @@
     },
     {
       "card_no": "PL!HS-bp6-004-R",
-      "name": "百生 吟子",
+      "name": "百生吟子",
       "template": "optional_self_wait_opp_stage",
       "automated": true,
       "optional": false,
@@ -1269,7 +1269,7 @@
     },
     {
       "card_no": "PL!HS-bp6-012-R",
-      "name": "百生 吟子",
+      "name": "百生吟子",
       "template": "activate_energy",
       "automated": true,
       "optional": false,
@@ -1278,7 +1278,7 @@
     },
     {
       "card_no": "PL!HS-bp6-013-R",
-      "name": "徒町 小鈴",
+      "name": "徒町小鈴",
       "template": "optional_self_wait_opp_stage",
       "automated": true,
       "optional": false,
@@ -1296,7 +1296,7 @@
     },
     {
       "card_no": "PL!HS-bp6-020-N",
-      "name": "百生 吟子",
+      "name": "百生吟子",
       "template": "draw_then_hand_discard",
       "automated": true,
       "optional": false,
@@ -1305,7 +1305,7 @@
     },
     {
       "card_no": "PL!HS-bp6-022-N",
-      "name": "安養寺 姫芽",
+      "name": "安養寺姫芽",
       "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
@@ -1476,7 +1476,7 @@
     },
     {
       "card_no": "PL!HS-cl1-004-CL",
-      "name": "百生 吟子",
+      "name": "百生吟子",
       "template": "ability_pick_one",
       "automated": true,
       "optional": false,
@@ -1485,7 +1485,7 @@
     },
     {
       "card_no": "PL!HS-cl1-006-CL",
-      "name": "安養寺 姫芽",
+      "name": "安養寺姫芽",
       "template": "grant_jouji_session",
       "automated": true,
       "optional": false,
@@ -1727,7 +1727,7 @@
     },
     {
       "card_no": "PL!-bp5-005-AR",
-      "name": "星空凛",
+      "name": "星空 凛",
       "template": "energy_deck_to_active",
       "automated": true,
       "optional": false,
@@ -1736,7 +1736,7 @@
     },
     {
       "card_no": "PL!-bp5-005-P",
-      "name": "星空凛",
+      "name": "星空 凛",
       "template": "energy_deck_to_active",
       "automated": true,
       "optional": false,
@@ -1745,7 +1745,7 @@
     },
     {
       "card_no": "PL!-bp5-005-R",
-      "name": "星空凛",
+      "name": "星空 凛",
       "template": "energy_deck_to_active",
       "automated": true,
       "optional": false,
@@ -1790,7 +1790,7 @@
     },
     {
       "card_no": "PL!-bp5-014-N",
-      "name": "星空凛",
+      "name": "星空 凛",
       "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
@@ -1952,7 +1952,7 @@
     },
     {
       "card_no": "PL!HS-PR-019-RM",
-      "name": "百生 吟子",
+      "name": "百生吟子",
       "template": "toujou_deck_top_wait_if_all_heart",
       "automated": true,
       "optional": false,
@@ -1961,7 +1961,7 @@
     },
     {
       "card_no": "PL!HS-PR-021-RM",
-      "name": "安養寺 姫芽",
+      "name": "安養寺姫芽",
       "template": "toujou_deck_top_wait_if_all_heart",
       "automated": true,
       "optional": false,
@@ -2424,7 +2424,7 @@
     },
     {
       "card_no": "PL!HS-sd1-006-SD",
-      "name": "安養寺 姫芽",
+      "name": "安養寺姫芽",
       "template": "toujou_named_stage_activate_recover_wait",
       "automated": true,
       "optional": false,
@@ -2460,7 +2460,7 @@
     },
     {
       "card_no": "PL!HS-sd1-014-SD",
-      "name": "安養寺 姫芽",
+      "name": "安養寺姫芽",
       "template": "toujou_wait_pick_hand",
       "automated": true,
       "optional": true,
@@ -2856,7 +2856,7 @@
     },
     {
       "card_no": "PL!-bp4-005-P＋",
-      "name": "星空凛",
+      "name": "星空 凛",
       "template": "toujou_wait_pick_hand",
       "automated": true,
       "optional": false,
@@ -2883,7 +2883,7 @@
     },
     {
       "card_no": "PL!-bp4-005-SEC",
-      "name": "星空凛",
+      "name": "星空 凛",
       "template": "toujou_wait_pick_hand",
       "automated": true,
       "optional": false,
@@ -3323,7 +3323,7 @@
     },
     {
       "card_no": "PL!-pb1-003-P＋",
-      "name": "南ことり",
+      "name": "南 ことり",
       "template": "activate_energy",
       "automated": true,
       "optional": true,
@@ -3332,7 +3332,7 @@
     },
     {
       "card_no": "PL!-pb1-003-R",
-      "name": "南ことり",
+      "name": "南 ことり",
       "template": "activate_energy",
       "automated": true,
       "optional": true,
@@ -3475,7 +3475,7 @@
     },
     {
       "card_no": "PL!-pb1-012-P＋",
-      "name": "南ことり",
+      "name": "南 ことり",
       "template": "activate_stage_members_up_to",
       "automated": true,
       "optional": false,
@@ -3484,7 +3484,7 @@
     },
     {
       "card_no": "PL!-pb1-012-R",
-      "name": "南ことり",
+      "name": "南 ことり",
       "template": "activate_stage_members_up_to",
       "automated": true,
       "optional": false,
@@ -3583,7 +3583,7 @@
     },
     {
       "card_no": "PL!-bp3-003-R",
-      "name": "南ことり",
+      "name": "南 ことり",
       "template": "toujou_wait_pick_hand",
       "automated": true,
       "optional": true,
@@ -3592,7 +3592,7 @@
     },
     {
       "card_no": "PL!-bp3-003-P",
-      "name": "南ことり",
+      "name": "南 ことり",
       "template": "toujou_wait_pick_hand",
       "automated": true,
       "optional": true,
@@ -4186,7 +4186,7 @@
     },
     {
       "card_no": "PL!HS-bp2-007-P",
-      "name": "百生 吟子",
+      "name": "百生吟子",
       "template": "toujou_wait_pick_hand",
       "automated": true,
       "optional": false,
@@ -4195,7 +4195,7 @@
     },
     {
       "card_no": "PL!HS-bp2-007-P＋",
-      "name": "百生 吟子",
+      "name": "百生吟子",
       "template": "toujou_wait_pick_hand",
       "automated": true,
       "optional": false,
@@ -4204,7 +4204,7 @@
     },
     {
       "card_no": "PL!HS-bp2-007-SEC",
-      "name": "百生 吟子",
+      "name": "百生吟子",
       "template": "toujou_wait_pick_hand",
       "automated": true,
       "optional": false,
@@ -4213,7 +4213,7 @@
     },
     {
       "card_no": "PL!HS-bp2-008-P",
-      "name": "徒町 小鈴",
+      "name": "徒町小鈴",
       "template": "grant_jouji_session",
       "automated": true,
       "optional": false,
@@ -4222,7 +4222,7 @@
     },
     {
       "card_no": "PL!HS-bp2-009-P",
-      "name": "安養寺 姫芽",
+      "name": "安養寺姫芽",
       "template": "toujou_baton_series_heart_grant",
       "automated": true,
       "optional": true,
@@ -4231,7 +4231,7 @@
     },
     {
       "card_no": "PL!HS-bp2-007-R＋",
-      "name": "百生 吟子",
+      "name": "百生吟子",
       "template": "toujou_wait_pick_hand",
       "automated": true,
       "optional": false,
@@ -4240,7 +4240,7 @@
     },
     {
       "card_no": "PL!HS-bp2-008-R",
-      "name": "徒町 小鈴",
+      "name": "徒町小鈴",
       "template": "grant_jouji_session",
       "automated": true,
       "optional": false,
@@ -4249,7 +4249,7 @@
     },
     {
       "card_no": "PL!HS-bp2-009-R",
-      "name": "安養寺 姫芽",
+      "name": "安養寺姫芽",
       "template": "toujou_baton_series_heart_grant",
       "automated": true,
       "optional": true,
@@ -4285,7 +4285,7 @@
     },
     {
       "card_no": "PL!HS-bp2-016-N",
-      "name": "百生 吟子",
+      "name": "百生吟子",
       "template": "deck_top_look_reorder",
       "automated": true,
       "optional": false,
@@ -4294,7 +4294,7 @@
     },
     {
       "card_no": "PL!HS-bp2-018-N",
-      "name": "安養寺 姫芽",
+      "name": "安養寺姫芽",
       "template": "toujou_main_phase_live_from_waiting",
       "automated": true,
       "optional": true,
@@ -4303,7 +4303,7 @@
     },
     {
       "card_no": "PL!HS-bp2-017-N",
-      "name": "徒町 小鈴",
+      "name": "徒町小鈴",
       "template": "draw_from_deck",
       "automated": true,
       "optional": false,
@@ -4771,7 +4771,7 @@
     },
     {
       "card_no": "PL!HS-bp1-008-P",
-      "name": "徒町 小鈴",
+      "name": "徒町小鈴",
       "template": "toujou_deck_top_wait_if_all_members",
       "automated": true,
       "optional": false,
@@ -4780,7 +4780,7 @@
     },
     {
       "card_no": "PL!HS-bp1-008-R",
-      "name": "徒町 小鈴",
+      "name": "徒町小鈴",
       "template": "toujou_deck_top_wait_if_all_members",
       "automated": true,
       "optional": false,
@@ -4798,7 +4798,7 @@
     },
     {
       "card_no": "PL!HS-bp1-009-P",
-      "name": "安養寺 姫芽",
+      "name": "安養寺姫芽",
       "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
@@ -4807,7 +4807,7 @@
     },
     {
       "card_no": "PL!HS-bp1-009-R",
-      "name": "安養寺 姫芽",
+      "name": "安養寺姫芽",
       "template": "deck_top_pick_recover",
       "automated": true,
       "optional": true,
@@ -5481,7 +5481,7 @@
     },
     {
       "card_no": "PL!HS-PR-019-PR",
-      "name": "百生 吟子",
+      "name": "百生吟子",
       "template": "toujou_deck_top_wait_if_all_heart",
       "automated": true,
       "optional": false,
@@ -5490,7 +5490,7 @@
     },
     {
       "card_no": "PL!HS-PR-021-PR",
-      "name": "安養寺 姫芽",
+      "name": "安養寺姫芽",
       "template": "toujou_deck_top_wait_if_all_heart",
       "automated": true,
       "optional": false,
@@ -5874,6 +5874,15 @@
       "optional": false,
       "perTurn": 0,
       "effect": "自分のデッキの上から、10から自分の手札の枚数を引いた数に等しい枚数のカードを見る。その中から2枚まで手札に加える。残りを控え室に置く。"
+    },
+    {
+      "card_no": "PL!HS-bp5-008-PR",
+      "name": "桂城 泉",
+      "template": "deck_top_pick_recover",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "このメンバーをウェイトにし、手札を1枚控え室に置いてもよい：自分のデッキの上からカードを5枚見る。その中からコスト9以上の『蓮ノ空』のメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
     }
   ]
 }

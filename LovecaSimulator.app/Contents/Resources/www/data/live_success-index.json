@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-07",
+  "generated": "2026-10-22",
   "trigger": "live_success",
   "total": 132,
   "byTemplate": {
@@ -120,15 +120,6 @@
       "effect": "自分の控え室にある『虹ヶ咲』のカード1枚をデッキの一番上に置いてもよい。"
     },
     {
-      "card_no": "PL!SP-bp7-006-P",
-      "name": "桜小路きな子",
-      "template": "grant_jouji_session",
-      "automated": true,
-      "optional": false,
-      "perTurn": 0,
-      "effect": "このターン、自分のエネルギーがエネルギー置き場からエネルギーデッキに置かれていた場合、ライブの合計スコアを＋１する。"
-    },
-    {
       "card_no": "PL!SP-bp7-006-P＋",
       "name": "桜小路きな子",
       "template": "grant_jouji_session",
@@ -138,7 +129,7 @@
       "effect": "このターン、自分のエネルギーがエネルギー置き場からエネルギーデッキに置かれていた場合、ライブの合計スコアを＋１する。"
     },
     {
-      "card_no": "PL!SP-bp7-006-R＋",
+      "card_no": "PL!SP-bp7-006-P",
       "name": "桜小路きな子",
       "template": "grant_jouji_session",
       "automated": true,
@@ -156,26 +147,17 @@
       "effect": "このターン、自分のエネルギーがエネルギー置き場からエネルギーデッキに置かれていた場合、ライブの合計スコアを＋１する。"
     },
     {
-      "card_no": "PL!SP-bp7-007-P",
-      "name": "米女メイ",
-      "template": "energy_deck_to_wait",
+      "card_no": "PL!SP-bp7-006-R＋",
+      "name": "桜小路きな子",
+      "template": "grant_jouji_session",
       "automated": true,
       "optional": false,
       "perTurn": 0,
-      "effect": "自分のエネルギーデッキから、エネルギーカードを2枚ウェイト状態で置く。それらのエネルギーカードは、次のターンのアクティブフェイズにアクティブしない。"
+      "effect": "このターン、自分のエネルギーがエネルギー置き場からエネルギーデッキに置かれていた場合、ライブの合計スコアを＋１する。"
     },
     {
       "card_no": "PL!SP-bp7-007-P",
       "name": "米女メイ",
-      "template": "activate_energy",
-      "automated": true,
-      "optional": false,
-      "perTurn": 0,
-      "effect": "自分のエネルギーが相手より多い場合、エネルギーを6枚アクティブにする。"
-    },
-    {
-      "card_no": "PL!SP-bp7-007-SEC",
-      "name": "米女メイ",
       "template": "energy_deck_to_wait",
       "automated": true,
       "optional": false,
@@ -183,25 +165,7 @@
       "effect": "自分のエネルギーデッキから、エネルギーカードを2枚ウェイト状態で置く。それらのエネルギーカードは、次のターンのアクティブフェイズにアクティブしない。"
     },
     {
-      "card_no": "PL!SP-bp7-007-SEC",
-      "name": "米女メイ",
-      "template": "activate_energy",
-      "automated": true,
-      "optional": false,
-      "perTurn": 0,
-      "effect": "自分のエネルギーが相手より多い場合、エネルギーを6枚アクティブにする。"
-    },
-    {
-      "card_no": "PL!SP-bp7-007-R＋",
-      "name": "米女メイ",
-      "template": "energy_deck_to_wait",
-      "automated": true,
-      "optional": false,
-      "perTurn": 0,
-      "effect": "自分のエネルギーデッキから、エネルギーカードを2枚ウェイト状態で置く。それらのエネルギーカードは、次のターンのアクティブフェイズにアクティブしない。"
-    },
-    {
-      "card_no": "PL!SP-bp7-007-R＋",
+      "card_no": "PL!SP-bp7-007-P",
       "name": "米女メイ",
       "template": "activate_energy",
       "automated": true,
@@ -228,13 +192,40 @@
       "effect": "自分のエネルギーが相手より多い場合、エネルギーを6枚アクティブにする。"
     },
     {
-      "card_no": "PL!N-sd2-007-P",
-      "name": "優木せつ菜",
-      "template": "draw_then_conditional_extra_draw",
+      "card_no": "PL!SP-bp7-007-R＋",
+      "name": "米女メイ",
+      "template": "energy_deck_to_wait",
       "automated": true,
       "optional": false,
       "perTurn": 0,
-      "effect": "カードを1枚引く。このターン、相手もライブを成功している場合、さらにカードを1枚引き、手札を1枚控え室に置く。"
+      "effect": "自分のエネルギーデッキから、エネルギーカードを2枚ウェイト状態で置く。それらのエネルギーカードは、次のターンのアクティブフェイズにアクティブしない。"
+    },
+    {
+      "card_no": "PL!SP-bp7-007-R＋",
+      "name": "米女メイ",
+      "template": "activate_energy",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のエネルギーが相手より多い場合、エネルギーを6枚アクティブにする。"
+    },
+    {
+      "card_no": "PL!SP-bp7-007-SEC",
+      "name": "米女メイ",
+      "template": "energy_deck_to_wait",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のエネルギーデッキから、エネルギーカードを2枚ウェイト状態で置く。それらのエネルギーカードは、次のターンのアクティブフェイズにアクティブしない。"
+    },
+    {
+      "card_no": "PL!SP-bp7-007-SEC",
+      "name": "米女メイ",
+      "template": "activate_energy",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のエネルギーが相手より多い場合、エネルギーを6枚アクティブにする。"
     },
     {
       "card_no": "PL!N-sd2-007-SD2",
@@ -246,7 +237,16 @@
       "effect": "カードを1枚引く。このターン、相手もライブを成功している場合、さらにカードを1枚引き、手札を1枚控え室に置く。"
     },
     {
-      "card_no": "PL!SP-pb2-003-R",
+      "card_no": "PL!N-sd2-007-P",
+      "name": "優木せつ菜",
+      "template": "draw_then_conditional_extra_draw",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "カードを1枚引く。このターン、相手もライブを成功している場合、さらにカードを1枚引き、手札を1枚控え室に置く。"
+    },
+    {
+      "card_no": "PL!SP-pb2-003-PP",
       "name": "嵐 千砂都",
       "template": "live_success_liella_effect_moved_score",
       "automated": true,
@@ -255,7 +255,7 @@
       "effect": "このターン、自分の『Liella!』のカードの効果によってこのメンバーがエリアを移動していた場合、ライブの合計スコアを＋１する。"
     },
     {
-      "card_no": "PL!SP-pb2-003-PP",
+      "card_no": "PL!SP-pb2-003-R",
       "name": "嵐 千砂都",
       "template": "live_success_liella_effect_moved_score",
       "automated": true,
@@ -354,6 +354,15 @@
       "effect": "エールにより公開された自分のカードの中に、ブレードハートを持たない『μ's』のメンバーカードがある場合、カードを1枚引き、手札を1枚控え室に置く。"
     },
     {
+      "card_no": "PL!-bp6-001-SEC",
+      "name": "高坂穂乃果",
+      "template": "draw_then_hand_discard",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "エールにより公開された自分のカードの中に、ブレードハートを持たない『μ's』のメンバーカードがある場合、カードを1枚引き、手札を1枚控え室に置く。"
+    },
+    {
       "card_no": "PL!-bp6-001-R＋",
       "name": "高坂穂乃果",
       "template": "draw_then_hand_discard",
@@ -364,60 +373,42 @@
     },
     {
       "card_no": "PL!-bp6-003-P",
-      "name": "南ことり",
+      "name": "南 ことり",
       "template": "live_success_enter_under_member",
       "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "このメンバーの下にあるコスト2以下の『μ's』のメンバーカードを1枚、メンバーのいないエリアに登場させてもよい。"
-    },
-    {
-      "card_no": "PL!-bp6-001-SEC",
-      "name": "高坂穂乃果",
-      "template": "draw_then_hand_discard",
-      "automated": true,
-      "optional": false,
-      "perTurn": 0,
-      "effect": "エールにより公開された自分のカードの中に、ブレードハートを持たない『μ's』のメンバーカードがある場合、カードを1枚引き、手札を1枚控え室に置く。"
     },
     {
       "card_no": "PL!-bp6-003-P＋",
-      "name": "南ことり",
+      "name": "南 ことり",
       "template": "live_success_enter_under_member",
       "automated": true,
       "optional": true,
       "perTurn": 0,
-      "effect": "このメンバーの下にあるコスト2以下の『μ's』のメンバーカードを1枚、メンバーのいないエリアに登場させてもよい。"
+      "effect": "このメンバーの下にあるコスト2以下の『μ's』のメンバーカードを2枚、メンバーのいないエリアに登場させてもよい。"
     },
     {
       "card_no": "PL!-bp6-003-R＋",
-      "name": "南ことり",
+      "name": "南 ことり",
       "template": "live_success_enter_under_member",
       "automated": true,
       "optional": true,
       "perTurn": 0,
-      "effect": "このメンバーの下にあるコスト2以下の『μ's』のメンバーカードを1枚、メンバーのいないエリアに登場させてもよい。"
+      "effect": "このメンバーの下にあるコスト2以下の『μ's』のメンバーカードを3枚、メンバーのいないエリアに登場させてもよい。"
     },
     {
       "card_no": "PL!-bp6-003-SEC",
-      "name": "南ことり",
+      "name": "南 ことり",
       "template": "live_success_enter_under_member",
       "automated": true,
       "optional": true,
       "perTurn": 0,
-      "effect": "このメンバーの下にあるコスト2以下の『μ's』のメンバーカードを1枚、メンバーのいないエリアに登場させてもよい。"
+      "effect": "このメンバーの下にあるコスト2以下の『μ's』のメンバーカードを4枚、メンバーのいないエリアに登場させてもよい。"
     },
     {
       "card_no": "PL!-bp6-007-P",
-      "name": "東條 希",
-      "template": "deck_top_reveal_hand_score_grant",
-      "automated": true,
-      "optional": false,
-      "perTurn": 0,
-      "effect": "自分のデッキの一番上のカードを公開し、手札に加える。それがブレードハートを持たないメンバーカードの場合、ライブの合計スコアを＋１する。"
-    },
-    {
-      "card_no": "PL!-bp6-007-P＋",
       "name": "東條 希",
       "template": "deck_top_reveal_hand_score_grant",
       "automated": true,
@@ -436,6 +427,15 @@
     },
     {
       "card_no": "PL!-bp6-007-SEC",
+      "name": "東條 希",
+      "template": "deck_top_reveal_hand_score_grant",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のデッキの一番上のカードを公開し、手札に加える。それがブレードハートを持たないメンバーカードの場合、ライブの合計スコアを＋１する。"
+    },
+    {
+      "card_no": "PL!-bp6-007-P＋",
       "name": "東條 希",
       "template": "deck_top_reveal_hand_score_grant",
       "automated": true,
@@ -480,15 +480,6 @@
       "effect": "エールにより公開された自分のカードの中から、カードを1枚デッキの一番上に置いてもよい。"
     },
     {
-      "card_no": "PL!HS-bp6-001-R＋",
-      "name": "日野下花帆",
-      "template": "yell_resolution_pick_deck_top",
-      "automated": true,
-      "optional": true,
-      "perTurn": 0,
-      "effect": "エールにより公開された自分のカードの中から、カードを1枚デッキの一番上に置いてもよい。"
-    },
-    {
       "card_no": "PL!HS-bp6-001-SEC",
       "name": "日野下花帆",
       "template": "yell_resolution_pick_deck_top",
@@ -498,17 +489,17 @@
       "effect": "エールにより公開された自分のカードの中から、カードを1枚デッキの一番上に置いてもよい。"
     },
     {
-      "card_no": "PL!HS-bp6-005-P",
-      "name": "徒町 小鈴",
-      "template": "yell_resolution_pick_hand",
+      "card_no": "PL!HS-bp6-001-R＋",
+      "name": "日野下花帆",
+      "template": "yell_resolution_pick_deck_top",
       "automated": true,
-      "optional": false,
+      "optional": true,
       "perTurn": 0,
-      "effect": "エールにより公開された自分のカードの中から、『DOLLCHESTRA』のメンバーカードを1枚手札に加える。"
+      "effect": "エールにより公開された自分のカードの中から、カードを1枚デッキの一番上に置いてもよい。"
     },
     {
       "card_no": "PL!HS-bp6-005-P＋",
-      "name": "徒町 小鈴",
+      "name": "徒町小鈴",
       "template": "yell_resolution_pick_hand",
       "automated": true,
       "optional": false,
@@ -516,8 +507,8 @@
       "effect": "エールにより公開された自分のカードの中から、『DOLLCHESTRA』のメンバーカードを1枚手札に加える。"
     },
     {
-      "card_no": "PL!HS-bp6-005-R＋",
-      "name": "徒町 小鈴",
+      "card_no": "PL!HS-bp6-005-P",
+      "name": "徒町小鈴",
       "template": "yell_resolution_pick_hand",
       "automated": true,
       "optional": false,
@@ -526,7 +517,7 @@
     },
     {
       "card_no": "PL!HS-bp6-005-SEC",
-      "name": "徒町 小鈴",
+      "name": "徒町小鈴",
       "template": "yell_resolution_pick_hand",
       "automated": true,
       "optional": false,
@@ -534,26 +525,17 @@
       "effect": "エールにより公開された自分のカードの中から、『DOLLCHESTRA』のメンバーカードを1枚手札に加える。"
     },
     {
-      "card_no": "PL!HS-bp6-006-P",
-      "name": "安養寺 姫芽",
-      "template": "live_success_wait_skip_next_activate",
+      "card_no": "PL!HS-bp6-005-R＋",
+      "name": "徒町小鈴",
+      "template": "yell_resolution_pick_hand",
       "automated": true,
       "optional": false,
       "perTurn": 0,
-      "effect": "このメンバーをウェイトにし、次のターンのアクティブフェイズにアクティブしない。"
+      "effect": "エールにより公開された自分のカードの中から、『DOLLCHESTRA』のメンバーカードを1枚手札に加える。"
     },
     {
       "card_no": "PL!HS-bp6-006-P＋",
-      "name": "安養寺 姫芽",
-      "template": "live_success_wait_skip_next_activate",
-      "automated": true,
-      "optional": false,
-      "perTurn": 0,
-      "effect": "このメンバーをウェイトにし、次のターンのアクティブフェイズにアクティブしない。"
-    },
-    {
-      "card_no": "PL!HS-bp6-006-SEC",
-      "name": "安養寺 姫芽",
+      "name": "安養寺姫芽",
       "template": "live_success_wait_skip_next_activate",
       "automated": true,
       "optional": false,
@@ -562,7 +544,25 @@
     },
     {
       "card_no": "PL!HS-bp6-006-R＋",
-      "name": "安養寺 姫芽",
+      "name": "安養寺姫芽",
+      "template": "live_success_wait_skip_next_activate",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "このメンバーをウェイトにし、次のターンのアクティブフェイズにアクティブしない。"
+    },
+    {
+      "card_no": "PL!HS-bp6-006-P",
+      "name": "安養寺姫芽",
+      "template": "live_success_wait_skip_next_activate",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "このメンバーをウェイトにし、次のターンのアクティブフェイズにアクティブしない。"
+    },
+    {
+      "card_no": "PL!HS-bp6-006-SEC",
+      "name": "安養寺姫芽",
       "template": "live_success_wait_skip_next_activate",
       "automated": true,
       "optional": false,
@@ -651,7 +651,7 @@
       "effect": "自分のライブカード置き場に『DOLLCHESTRA』のカードがある場合、カードを1枚引く。"
     },
     {
-      "card_no": "PL!-bp5-001-AR",
+      "card_no": "PL!-bp5-001-P",
       "name": "高坂穂乃果",
       "template": "deck_top_count_live_score_plus",
       "automated": true,
@@ -660,7 +660,7 @@
       "effect": "手札を1枚控え室に置いてもよい：自分のデッキの上から、自分のライブの合計スコアに2を足した数に等しい枚数見る。その中からカードを1枚手札に加える。残りを控え室に置く。"
     },
     {
-      "card_no": "PL!-bp5-001-P",
+      "card_no": "PL!-bp5-001-AR",
       "name": "高坂穂乃果",
       "template": "deck_top_count_live_score_plus",
       "automated": true,
@@ -732,7 +732,7 @@
       "effect": "自分が余剰ハートを1つ以上持っている場合、カードを2枚引き、手札を1枚控え室に置く。"
     },
     {
-      "card_no": "PL!N-bp5-007-R＋",
+      "card_no": "PL!N-bp5-007-SEC",
       "name": "優木せつ菜",
       "template": "draw_then_hand_discard",
       "automated": true,
@@ -741,7 +741,7 @@
       "effect": "自分が余剰ハートを1つ以上持っている場合、カードを2枚引き、手札を1枚控え室に置く。"
     },
     {
-      "card_no": "PL!N-bp5-007-SEC",
+      "card_no": "PL!N-bp5-007-R＋",
       "name": "優木せつ菜",
       "template": "draw_then_hand_discard",
       "automated": true,
@@ -840,7 +840,7 @@
       "effect": "自分のデッキの上からカードを4枚見る。その中からハートにを2つ以上持つメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
     },
     {
-      "card_no": "PL!S-bp5-007-R",
+      "card_no": "PL!S-bp5-007-P",
       "name": "国木田花丸",
       "template": "deck_top_pick_recover",
       "automated": true,
@@ -849,7 +849,7 @@
       "effect": "自分のデッキの上からカードを4枚見る。その中からハートにを2つ以上持つメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
     },
     {
-      "card_no": "PL!S-bp5-007-P",
+      "card_no": "PL!S-bp5-007-R",
       "name": "国木田花丸",
       "template": "deck_top_pick_recover",
       "automated": true,
@@ -930,7 +930,7 @@
       "effect": "ライブの合計スコアが相手より高い場合、カードを1枚引く。"
     },
     {
-      "card_no": "PL!N-bp4-007-P＋",
+      "card_no": "PL!N-bp4-007-P",
       "name": "優木せつ菜",
       "template": "both_players_energy_deck_wait",
       "automated": true,
@@ -939,7 +939,7 @@
       "effect": "自分と相手はそれぞれ、自身のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。"
     },
     {
-      "card_no": "PL!N-bp4-007-P",
+      "card_no": "PL!N-bp4-007-P＋",
       "name": "優木せつ菜",
       "template": "both_players_energy_deck_wait",
       "automated": true,
@@ -975,15 +975,6 @@
       "effect": "自分のデッキの上からカードを5枚控え室に置く。その後、自分の控え室にカード名の異なる『虹ヶ咲』のライブカードが3枚以上ある場合、自分の控え室から『虹ヶ咲』のライブカードを1枚手札に加える。"
     },
     {
-      "card_no": "PL!N-bp4-011-P＋",
-      "name": "ミア・テイラー",
-      "template": "live_success_deck_wait_pick_live",
-      "automated": true,
-      "optional": false,
-      "perTurn": 0,
-      "effect": "自分のデッキの上からカードを5枚控え室に置く。その後、自分の控え室にカード名の異なる『虹ヶ咲』のライブカードが3枚以上ある場合、自分の控え室から『虹ヶ咲』のライブカードを1枚手札に加える。"
-    },
-    {
       "card_no": "PL!N-bp4-011-R＋",
       "name": "ミア・テイラー",
       "template": "live_success_deck_wait_pick_live",
@@ -994,6 +985,15 @@
     },
     {
       "card_no": "PL!N-bp4-011-SEC",
+      "name": "ミア・テイラー",
+      "template": "live_success_deck_wait_pick_live",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のデッキの上からカードを5枚控え室に置く。その後、自分の控え室にカード名の異なる『虹ヶ咲』のライブカードが3枚以上ある場合、自分の控え室から『虹ヶ咲』のライブカードを1枚手札に加える。"
+    },
+    {
+      "card_no": "PL!N-bp4-011-P＋",
       "name": "ミア・テイラー",
       "template": "live_success_deck_wait_pick_live",
       "automated": true,
@@ -1092,25 +1092,16 @@
       "effect": "エールにより公開された自分のカードの中にライブカードが1枚以上あるとき、自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。"
     },
     {
-      "card_no": "PL!SP-bp2-009-P",
-      "name": "鬼塚夏美",
-      "template": "draw_then_hand_discard",
-      "automated": true,
-      "optional": false,
-      "perTurn": 0,
-      "effect": "カードを2枚引き、手札を1枚控え室に置く。"
-    },
-    {
-      "card_no": "PL!SP-bp2-009-P＋",
-      "name": "鬼塚夏美",
-      "template": "draw_then_hand_discard",
-      "automated": true,
-      "optional": false,
-      "perTurn": 0,
-      "effect": "カードを2枚引き、手札を1枚控え室に置く。"
-    },
-    {
       "card_no": "PL!SP-bp2-009-R＋",
+      "name": "鬼塚夏美",
+      "template": "draw_then_hand_discard",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "カードを2枚引き、手札を1枚控え室に置く。"
+    },
+    {
+      "card_no": "PL!SP-bp2-009-P",
       "name": "鬼塚夏美",
       "template": "draw_then_hand_discard",
       "automated": true,
@@ -1128,7 +1119,16 @@
       "effect": "カードを2枚引き、手札を1枚控え室に置く。"
     },
     {
-      "card_no": "PL!SP-pb1-001-R",
+      "card_no": "PL!SP-bp2-009-P＋",
+      "name": "鬼塚夏美",
+      "template": "draw_then_hand_discard",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "カードを2枚引き、手札を1枚控え室に置く。"
+    },
+    {
+      "card_no": "PL!SP-pb1-001-P＋",
       "name": "澁谷かのん",
       "template": "optional_energy_live_score_plus",
       "automated": true,
@@ -1137,7 +1137,7 @@
       "effect": "支払ってもよい：ライブの合計スコアを＋１する。"
     },
     {
-      "card_no": "PL!SP-pb1-001-P＋",
+      "card_no": "PL!SP-pb1-001-R",
       "name": "澁谷かのん",
       "template": "optional_energy_live_score_plus",
       "automated": true,
