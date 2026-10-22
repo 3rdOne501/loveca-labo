@@ -1,0 +1,209 @@
+/**
+ * 能力テンプレートの実行メタデータ（分類器・検証スクリプト・simulator で共有）。
+ */
+
+/** 控え室→デッキ下で移動枚数に比例する付与（executeAbilityBody） */
+export const WAITING_TO_DECK_BOTTOM_PER_TEMPLATES = [
+  "waiting_to_deck_bottom_blade_per",
+  "waiting_to_deck_bottom_blade_if_moved_no_bh",
+  "waiting_to_deck_bottom_activate_per",
+];
+
+/** runClassifiedCardAbility の payAbilityCost をスキップし、handler 側でコスト処理する template */
+export const TEMPLATE_HANDLES_OWN_COST = [
+  "kidou_hand_cost_wait_pick_hand",
+  "kidou_hand_discard_activate_wait_opp_bonus",
+  "kidou_hand_discard_trigger_ability",
+  "kidou_energy_or_activate_member",
+  "kidou_energy_deck_pick_live",
+  "kidou_stage_wait_pick_hand",
+  "live_start_pay_or_hand_discard",
+  "live_start_mandatory_energy_deck_unless_hand_discard",
+  "optional_energy_live_score_plus",
+  "optional_energy_card_score_plus_per_unit",
+  "deck_reveal_until_live",
+  "kidou_hand_discard_wait_live_score_pay",
+  "kidou_hand_reveal_to_under",
+  "kidou_heart_color_deck_reveal_pick",
+  "kidou_self_wait_hand_enter_energy",
+  "kidou_wait_shuffle_deck_bottom_activate",
+  "kidou_self_to_wait_opp_wait",
+  "toujou_hand_discard_draw_plus",
+  "toujou_optional_self_wait_recover",
+  "toujou_wait_enter_cost_sum",
+  "toujou_optional_all_members_relocate",
+  "toujou_optional_wait_to_deck_top",
+  "toujou_optional_energy_under",
+  "toujou_hand_discard_wait_heart_dual_pick",
+  "toujou_bibi_wait_opp_active_wait",
+  "live_start_optional_energy_waiting_reorder_deck_top",
+  "toujou_main_phase_live_from_waiting",
+  "ability_sequence",
+  "toujou_multi_wait_draw_per_count",
+  "live_start_waiting_deck_bottom_tiered",
+  "toujou_self_wait_draw_then_conditional_discard",
+  "live_start_mill_loop_blade_grant",
+  "kidou_mill_waiting_under_copy_printed_hearts",
+  "deck_mill_conditional_pick_one",
+  "live_start_pay_or_discard_conditional_grant_members",
+  "live_start_dollcostra_cost_set_grant_if",
+  "live_start_hand_discard_cost_boost_grant_if",
+  "live_start_hand_discard_activate_wait_grant",
+  "live_start_hand_named_discard_grant_jouji",
+  "live_start_hand_discard_same_unit_grant",
+  "live_start_hand_discard_same_group_grant",
+  "live_start_hand_discard_group_member_grant",
+  "live_start_hand_discard_optional_blade_per",
+  "live_start_hand_discard_optional_blade_pick_equal",
+  "live_start_hand_discard_series_member_blade_grant",
+  "live_start_optional_wait_members_score_per",
+  "heart_color_pick_grant",
+  "heart_color_pick_replace",
+  "live_start_hand_reveal_under_heart_grant",
+  "kidou_discard_self_draw_grant",
+  "live_start_optional_energy_under_return_grant",
+  "live_start_optional_shuffle_all_waiting_grant",
+  "live_start_optional_waiting_shuffle_deck_bottom_grant",
+  "live_success_under_energy_to_area_score",
+  "live_success_optional_energy_recover_waiting",
+  "optional_energy_blade_until_live_end",
+];
+
+/**
+ * 解決ボタン押下時、コスト支払いダイアログを挟まず固定Eを自動ウェイトしてよい template。
+ * 「E支払ってもよい：」のみ（手札捨て・ウェイト等の択一コストなし、可変Eなし）。
+ */
+export const TEMPLATE_OPTIONAL_ENERGY_ONLY_AUTO_PAY = [
+  "optional_energy_blade_until_live_end",
+  "optional_energy_live_score_plus",
+  "live_success_optional_energy_recover_waiting",
+  "grant_jouji_session",
+];
+
+/** @param {import('./abilityEffects.js').ClassifiedAbility | null | undefined} cl */
+export function classifiedAbilityIsOptionalEnergyOnlyCost(cl) {
+  if (!cl || !cl.costEnergy || !cl.hasOptionalCost) return false;
+  if (cl.costEnergyVariable) return false;
+  if (TEMPLATE_OPTIONAL_ENERGY_ONLY_AUTO_PAY.indexOf(cl.template) < 0) return false;
+  if (
+    cl.costEnergyToDeck ||
+    cl.costHandDiscardAll ||
+    (cl.costHandDiscardPickType && cl.handDiscardToWaiting) ||
+    cl.costEnergyUnderSelf ||
+    cl.costSelfWait ||
+    cl.costPickMemberWait ||
+    cl.costMandatoryWaitOtherMember ||
+    (cl.handDiscardToWaiting && cl.handDiscardToWaiting > 0) ||
+    cl.costOrAlt ||
+    cl.handDiscardExact ||
+    cl.handDiscardSeriesTag
+  ) {
+    return false;
+  }
+  return true;
+}
+
+/** 成功ライブ置き場への移動など executeAbilityBody 外（placement 経路）で処理する template */
+export const ABILITY_PLACEMENT_RUNTIME_TEMPLATES = ["jouji_success_live_waiting_substitute"];
+
+/** 相手盤面操作を委譲する simulator ヘルパー（audit-dual-mode-gaps が参照） */
+export const OPPONENT_DUAL_DELEGATE_HELPERS = [
+  "openSoloOpponentMemberWaitPickDialog",
+  "openSoloOpponentMemberWaitPickMultiDialog",
+  "openOppWaitPickFromPool",
+  "mutateInactiveOpponentBoard",
+  "readInactiveOpponentBoard",
+  "readFromTargetPlayerBoard",
+  "runOnTargetPlayerBoard",
+  "runOpponentHandDiscardLoop",
+  "runOpponentHandTrimThenDraw",
+  "openPickSelfOrOpponentDialog",
+  "listOpponentHandForDecision",
+  "moveOpponentHandCardToWaiting",
+  "openOpponentPlayerChoiceDialog",
+  "openOpponentOptionalHandDiscardDialog",
+  "soloOpponentStageMemberCandidates",
+  "listInactiveOpponentMemberCandidates",
+  "runAbilityChoiceTextsSequential",
+  "executeAbilityChoiceText",
+  "countBothPlayersStageMembers",
+  "countOpponentSuccessLiveCards",
+  "ownSeriesCostSumHigherThanOpponent",
+  "opponentStageMemberCosts",
+  "opponentLiveScoreEstimate",
+  "ownLiveScoreEstimate",
+  "listOpponentStageMembersExcludingName",
+  "eachOpponentStageColumnMemberInsts",
+  "stripOpponentBonusHeartsAndCount",
+  "runPb1018WaitEnterFlow",
+  "grantBladesToAllOpponentStageMembers",
+  "openOpponentAnswerChoiceDialog",
+  "opponentDecisionLeadPrefix",
+  "listOpponentHandForDecision",
+  "listInactiveOpponentMemberCandidates",
+  "setLiveSessionBlockSuccessLivePlacement",
+  "rotateStageAreasClockwiseForPlayer",
+  "syncJoujiPassiveEffectsAll",
+];
+
+/** executeAbilityBody 内で手動ガイド／常時トラックのみ（自動解決の対象外） */
+export const TEMPLATES_META_IN_EXECUTE_BODY = ["guided_manual", "passive_track"];
+
+/** 自動効果だが executeAbilityBody ではなく fireJidouAuto 経路で処理 */
+export const JIDOU_AUTO_TEMPLATES = [
+  "jidou_leave_stage_activate_one",
+  "jidou_leave_stage_hand_pick_recover",
+  "jidou_leave_stage_deck_look_pick",
+  "jidou_leave_stage_draw_discard",
+  "jidou_enter_or_baton_draw",
+  "jidou_area_move_grant_jouji",
+  "jidou_center_member_move_choice",
+  "jidou_area_move_draw",
+  "jidou_area_move_energy_wait",
+  "jidou_area_move_wait_pick_hand",
+  "jidou_area_move_opp_wait",
+  "jidou_yell_grant_jouji",
+  "jidou_yell_distinct_bh_tier_grant",
+  "jidou_yell_grant_jouji_nobh_members",
+  "jidou_yell_grant_jouji_no_bh",
+  "jidou_yell_grant_heart",
+  "jidou_yell_grant_heart_per_live_capped",
+  "jidou_yell_draw",
+  "jidou_leave_stage_position_change",
+  "jidou_stage_entry_draw_until",
+  "jidou_on_cost_enter_draw",
+  "jidou_on_cost_enter_energy_wait",
+  "jidou_area_move_activate_energy",
+  "jidou_move_or_energy_draw_grant",
+  "jidou_card_to_waiting_pick_hand",
+  "jidou_live_zone_to_waiting_deck",
+  "jidou_yell_retry_no_live",
+  "jidou_yell_retry_low_bh",
+  "jidou_yell_discard_nobh_series_extra_yell",
+  "jidou_yell_discard_nobh_series_multi_extra_yell",
+  "jidou_waiting_to_hand_place_named_live",
+  "jidou_live_placed_grant_stage_member",
+  "jidou_center_muse_ability_position_change",
+  "jidou_center_muse_ability_score_if_moved",
+  "jidou_opp_wait_draw",
+  "jidou_series_enter_pay_energy",
+  "jidou_hand_to_waiting_grant",
+  "jidou_series_enter_grant",
+  "jidou_series_enter_opp_wait",
+  "jidou_self_active_to_wait_draw_discard",
+  "jidou_energy_placed_grant",
+  "jidou_baton_leave_activate_energy",
+  "jidou_leave_baton_partner_bh_threshold_energy",
+  "jidou_leave_stage_hand_grant_member",
+  "jidou_leave_stage_recover_no_cost",
+  "jidou_member_live_start_grant_all_heart",
+  "jidou_member_live_success_draw",
+  "jidou_live_success_or_area_move_wait_under",
+  "jidou_yell_optional_hand_live_extra_yell",
+  "jidou_series_member_to_center_blade_grant",
+];
+
+/** @param {string} template */
+export function templateHandlesOwnCost(template) {
+  return TEMPLATE_HANDLES_OWN_COST.indexOf(template) >= 0;
+}

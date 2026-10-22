@@ -1,0 +1,98 @@
+/**
+ * 軽量プレイモード（body.llocg-lightweight）と常時の演出抑制。
+ * styles.css の後に読み込む。
+ */
+
+/* 無限ループアニメーションを止める */
+body.llocg-lightweight .effect-dialog-resume-chip--on-card,
+body.llocg-lightweight .deck-start-game-glow,
+body.llocg-lightweight #btn-draw-resolution,
+body.llocg-lightweight #btn-res-draw-one,
+body.llocg-lightweight .flow-hint--live-turn-start #btn-live-turn-primary,
+body.llocg-lightweight .flow-hint--live-to-area #btn-live-turn-primary,
+body.llocg-lightweight .flow-hint--live-begin #btn-live-turn-begin,
+body.llocg-lightweight .flow-hint--turn-start #btn-turn-start,
+body.llocg-lightweight .flow-hint--mulligan-execute #btn-mulligan-execute,
+body.llocg-lightweight .card-item--bp1002-waiting-top-glow::before,
+body.llocg-lightweight .live-score-center-bar--ok .live-score-center-bar__num {
+  animation: none !important;
+}
+
+body.llocg-lightweight .app-boot-overlay,
+body.llocg-lightweight .app-dialog::backdrop,
+body.llocg-lightweight .toast-stack,
+body.llocg-lightweight .zone-block--deck-builder .panel,
+body.llocg-lightweight .play-chrome-mobile-drawer {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* カードの多層グロー・フィルタを枠線のみに */
+body.llocg-lightweight .card-item[class*="glow"] .card-img,
+body.llocg-lightweight .card-item--draw-yell-glow,
+body.llocg-lightweight .card-item--score-yell-glow,
+body.llocg-lightweight .card-item--nonbh-yell-glow,
+body.llocg-lightweight .card-item--play-kidou-glow .card-img,
+body.llocg-lightweight .card-item--play-toujou-glow .card-img,
+body.llocg-lightweight .card-item--play-live-start-glow .card-img,
+body.llocg-lightweight .card-item--play-live-success-glow .card-img,
+body.llocg-lightweight .card-item--hand-playable-glow .card-img,
+body.llocg-lightweight .card-item--stage-veteran-glow .card-img,
+body.llocg-lightweight .card-item--success-live-always-glow .card-img,
+body.llocg-lightweight .card-item--live-venue-boost .card-img {
+  filter: none !important;
+  box-shadow: none !important;
+}
+
+body.llocg-lightweight .card-item--play-kidou-glow,
+body.llocg-lightweight .card-item--play-toujou-glow,
+body.llocg-lightweight .card-item--play-live-start-glow,
+body.llocg-lightweight .card-item--play-live-success-glow,
+body.llocg-lightweight .card-item--hand-playable-glow {
+  outline: 2px solid rgba(255, 200, 120, 0.75);
+  outline-offset: 1px;
+}
+
+/* スコア帯の段階グロー */
+body.llocg-lightweight .live-score-center-bar__num[class*="live-score-num--tier"],
+body.llocg-lightweight .live-score-center-bar__num.live-score-num--glow-14plus,
+body.llocg-lightweight .live-score-center-bar__num.live-score-num--ge22 {
+  text-shadow: none !important;
+}
+
+/* フラッシュ・ビーム・ターンスプラッシュ */
+body.llocg-lightweight .card-flash-plus-one,
+body.llocg-lightweight .card-yell-float-icon-wrap,
+body.llocg-lightweight .draw-yell-beam-overlay,
+body.llocg-lightweight .turn-phase-splash-overlay {
+  display: none !important;
+}
+
+/* 配信マスク: blur を外して明るさのみ */
+body.play-mode.llocg-lightweight.hide-hand-stream .zone-hand .card-img,
+body.play-mode.llocg-lightweight.hide-hand-stream .zone-preview .card-img {
+  filter: brightness(var(--stream-mask-strength, 0.85)) !important;
+}
+
+body.llocg-lightweight #btn-play-lightweight.btn-play-lightweight-on,
+body.llocg-lightweight #btn-play-lightweight[aria-pressed="true"] {
+  background: linear-gradient(180deg, rgba(48, 88, 72, 0.95), rgba(32, 60, 48, 0.98));
+  border-color: rgba(160, 255, 200, 0.65);
+  color: #e8fff4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deck-start-game-glow,
+  #btn-draw-resolution,
+  .card-item--bp1002-waiting-top-glow::before {
+    animation: none !important;
+  }
+  .card-item[class*="glow"] .card-img {
+    filter: none !important;
+    box-shadow: none !important;
+  }
+  .draw-yell-beam-overlay,
+  .turn-phase-splash-overlay {
+    display: none !important;
+  }
+}
