@@ -158,6 +158,7 @@ body::before {
 #view-deck-browse.view,
 #view-bingo.view,
 #view-weakest.view,
+#view-tierlist.view,
 #view-tournament.view {
   position: relative;
   z-index: 1;
@@ -168,6 +169,7 @@ body::before {
 #view-deck-browse.view[hidden],
 #view-bingo.view[hidden],
 #view-weakest.view[hidden],
+#view-tierlist.view[hidden],
 #view-tournament.view[hidden] {
   display: none !important;
 }
@@ -175,6 +177,7 @@ body::before {
 #view-deck-browse.view:not([hidden]),
 #view-bingo.view:not([hidden]),
 #view-weakest.view:not([hidden]),
+#view-tierlist.view:not([hidden]),
 #view-tournament.view:not([hidden]) {
   display: flex;
   flex-direction: column;
@@ -15070,5 +15073,318 @@ body.tourney-board-open .page-zoom-control {
   font-size: 0.82rem;
 }
 body.tourney-deck-view-open {
+  overflow: hidden;
+}
+
+/* --- ラブカ ティアリストメーカー --- */
+.tierlist-bar__room[hidden],
+.tierlist-members[hidden],
+.tierlist-signin-notice[hidden],
+.tierlist-lobby-panels[hidden],
+.tierlist-host-tools[hidden],
+.tierlist-move-bar[hidden],
+.tierlist-room[hidden],
+.tierlist-lobby[hidden],
+.tierlist-recent-panel[hidden] {
+  display: none !important;
+}
+.tierlist-bar {
+  flex-shrink: 0;
+  padding: 0.75rem 1rem 0.5rem;
+  border-bottom: 1px solid rgba(255, 140, 190, 0.18);
+  background: rgba(8, 4, 14, 0.55);
+}
+.tierlist-bar__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.75rem;
+}
+.tierlist-bar__title {
+  margin: 0;
+  font-size: 1.15rem;
+  min-width: 8rem;
+}
+.tierlist-bar__spacer { flex: 1 1 auto; }
+.tierlist-bar__room {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.tierlist-room-title {
+  font-weight: 700;
+  color: var(--accent);
+}
+.tierlist-room-code-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.tierlist-room-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1.05rem;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+}
+.tierlist-room-code-hint {
+  font-size: 0.72rem;
+  opacity: 0.7;
+}
+.tierlist-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 0.75rem 1rem 1.5rem;
+}
+.tierlist-lead { margin: 0 0 0.9rem; }
+.tierlist-signin-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 1rem;
+  border: 1px solid rgba(255, 140, 190, 0.22);
+  border-radius: var(--radius);
+  background: var(--panel);
+  max-width: 32rem;
+}
+.tierlist-signin-notice p { margin: 0; }
+.tierlist-lobby-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 0.85rem;
+  align-items: start;
+}
+.tierlist-lobby-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1rem;
+}
+.tierlist-lobby-panel .hint { margin: 0; }
+.tierlist-recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.tierlist-recent-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 0.6rem;
+  text-align: left;
+}
+.tierlist-recent-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+}
+.tierlist-members {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.28rem;
+  align-items: center;
+}
+.tierlist-avatar {
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+.tierlist-avatar--letter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 140, 190, 0.25);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.tierlist-member.is-stale { opacity: 0.35; }
+.tierlist-member.is-host .tierlist-avatar {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.tierlist-room-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.75rem;
+  margin-bottom: 0.65rem;
+}
+.tierlist-host-tools {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+.tierlist-move-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.65rem;
+  margin-bottom: 0.65rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 140, 190, 0.28);
+  background: rgba(30, 12, 28, 0.72);
+}
+.tierlist-move-bar__dest {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+.tierlist-board {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: rgba(6, 4, 12, 0.55);
+}
+.tierlist-row {
+  display: flex;
+  min-height: 4.6rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.tierlist-row:last-child { border-bottom: none; }
+.tierlist-row__label {
+  flex: 0 0 4.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  color: #1a1020;
+  font-weight: 800;
+  font-size: 1.15rem;
+  letter-spacing: 0.04em;
+  position: relative;
+}
+.tierlist-row__label--pool {
+  background: #5a5a72;
+  color: #f2f2ff;
+  font-size: 0.85rem;
+}
+.tierlist-row__edit {
+  position: absolute;
+  right: 0.15rem;
+  bottom: 0.15rem;
+  border: none;
+  background: rgba(0, 0, 0, 0.25);
+  color: inherit;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.7rem;
+  padding: 0.05rem 0.25rem;
+}
+.tierlist-row__cards {
+  flex: 1 1 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 0.28rem;
+  padding: 0.35rem;
+  min-height: 4.6rem;
+  background: rgba(0, 0, 0, 0.18);
+}
+.tierlist-row__cards.is-dragover {
+  outline: 2px dashed rgba(255, 140, 190, 0.65);
+  outline-offset: -3px;
+  background: rgba(255, 90, 154, 0.12);
+}
+.tierlist-row__empty {
+  align-self: center;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.82rem;
+}
+.tierlist-card {
+  appearance: none;
+  border: 2px solid transparent;
+  background: transparent;
+  padding: 0;
+  border-radius: 6px;
+  cursor: grab;
+  width: 3.1rem;
+}
+.tierlist-card.is-selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(255, 90, 154, 0.55);
+}
+.tierlist-thumb-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 4px;
+}
+.tierlist-thumb-fallback {
+  width: 3.1rem;
+  height: 4.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+}
+.tierlist-picker-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  background: rgba(0, 0, 0, 0.62);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.tierlist-picker {
+  width: min(960px, 100%);
+  max-height: min(88vh, 860px);
+  overflow: auto;
+  background: var(--panel);
+  border: 1px solid rgba(255, 140, 190, 0.28);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+.tierlist-picker__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.tierlist-picker__head h2 { margin: 0; font-size: 1.1rem; }
+.tierlist-picker__filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.5rem;
+}
+.tierlist-picker__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+  gap: 0.45rem;
+}
+.tierlist-pick-card {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 8px;
+  padding: 0.3rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: inherit;
+}
+.tierlist-pick-card:hover {
+  border-color: rgba(255, 140, 190, 0.55);
+}
+.tierlist-pick-card__name {
+  font-size: 0.68rem;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
 }

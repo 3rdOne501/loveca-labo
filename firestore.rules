@@ -105,6 +105,42 @@ service cloud.firestore {
       }
     }
 
+    /* ラブカ ティアリストメーカー: ルームコードを知っている Google ログインユーザーが参加・配置できる */
+    function isTierListRoomHost(roomId) {
+      return isSignedIn()
+        && get(/databases/$(database)/documents/tierListRooms/$(roomId)).data.hostUid == request.auth.uid;
+    }
+
+    match /tierListRooms/{roomId} {
+      allow read: if isGoogleSignedIn();
+
+      allow create: if isGoogleSignedIn()
+        && request.resource.data.hostUid == request.auth.uid
+        && request.resource.data.code == roomId;
+
+      allow update: if isGoogleSignedIn()
+        && request.resource.data.hostUid == resource.data.hostUid
+        && request.resource.data.code == resource.data.code;
+
+      allow delete: if isGoogleSignedIn()
+        && resource.data.hostUid == request.auth.uid;
+
+      match /entries/{entryId} {
+        allow read: if isGoogleSignedIn();
+
+        allow create: if isGoogleSignedIn()
+          && request.resource.data.byUid == request.auth.uid;
+
+        /* 全員がティア移動できる。cardNo / byUid は変更させない */
+        allow update: if isGoogleSignedIn()
+          && request.resource.data.cardNo == resource.data.cardNo
+          && request.resource.data.byUid == resource.data.byUid;
+
+        allow delete: if isGoogleSignedIn()
+          && (resource.data.byUid == request.auth.uid || isTierListRoomHost(roomId));
+      }
+    }
+
     /* コミュニティ投稿デッキ: 閲覧は誰でも、投稿/削除は Google ログインの本人のみ */
     match /publicDecks/{deckId} {
       allow read: if true;

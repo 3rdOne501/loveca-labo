@@ -2,7 +2,7 @@
  * 全画面ビュー切り替え（デッキ編集 / プレイ / デッキ一覧 / ビンゴ / 最弱カード会議 / トーナメント）。
  */
 
-/** @typedef {'deck'|'game'|'deck-browse'|'bingo'|'weakest'|'tournament'} AppViewId */
+/** @typedef {'deck'|'game'|'deck-browse'|'bingo'|'weakest'|'tierlist'|'tournament'} AppViewId */
 
 const VIEW_IDS = {
   deck: "view-deck",
@@ -10,6 +10,7 @@ const VIEW_IDS = {
   "deck-browse": "view-deck-browse",
   bingo: "view-bingo",
   weakest: "view-weakest",
+  tierlist: "view-tierlist",
   tournament: "view-tournament",
 };
 
@@ -47,6 +48,7 @@ export function showAppView(viewId, opts) {
   document.body.classList.toggle("deck-browse-mode", viewId === "deck-browse");
   document.body.classList.toggle("bingo-mode", viewId === "bingo");
   document.body.classList.toggle("weakest-mode", viewId === "weakest");
+  document.body.classList.toggle("tierlist-mode", viewId === "tierlist");
   document.body.classList.toggle("tournament-mode", viewId === "tournament");
   if (viewId === "deck-browse" && opts.deckBrowseMode) {
     document.body.dataset.deckBrowseMode = String(opts.deckBrowseMode);
@@ -79,6 +81,10 @@ export function showBingoView() {
 
 export function showWeakestView() {
   showAppView("weakest");
+}
+
+export function showTierListView() {
+  showAppView("tierlist");
 }
 
 export function showTournamentView() {

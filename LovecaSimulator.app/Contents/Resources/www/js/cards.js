@@ -1,7 +1,9 @@
 import {
+  CARDS_ABILITY_JSON_BUNDLED_PATH,
   CARDS_JSON_BUNDLED_PATH,
   CARDS_JSON_REMOTE_URLS,
   CARDS_JSON_URL,
+  CARDS_UI_JSON_BUNDLED_PATH,
   STORAGE_CARDS_JSON_OVERRIDE,
   T_MEMBER,
   T_LIVE,
@@ -27,6 +29,11 @@ let list = [];
 /** 正規化キー → カタログ上の実キー（全角／結合文字などの表記ゆれで getCard が外れないようにする） */
 let catalogKeyByNormalized = new Map();
 
+/** 能力オーバーレイのマージ状態（UI カタログ起動後に遅延ロード） */
+let abilityPayloadReady = false;
+/** @type {Promise<void>|null} */
+let abilityPayloadPromise = null;
+
 /** @param {unknown} s */
 export function normalizeCardCatalogLookupKey(s) {
   return String(s == null ? "" : s)
@@ -42,34 +49,126 @@ export function getEffectiveCardsJsonUrl() {
   return CARDS_JSON_URL;
 }
 
-/** @returns {string[]} 取得を試す URL（上書き → 同梱 data → CDN） */
+/** @param {string} relPath */
+function bundledUrl(relPath) {
+  try {
+    if (typeof document !== "undefined" && document.baseURI) {
+      return new URL(relPath, document.baseURI).href;
+    }
+  } catch (_) {
+    /* noop */
+  }
+  return null;
+}
+
+/** @returns {string[]} 取得を試す URL（上書き → 同梱 UI → 同梱フル → CDN） */
 export function getCardsJsonLoadUrls() {
   /** @type {string[]} */
   const urls = [];
   const o = localStorage.getItem(STORAGE_CARDS_JSON_OVERRIDE);
   if (o != null && String(o).trim() !== "") urls.push(String(o).trim());
 
-  /** @type {string|null} */
-  let bundled = null;
-  try {
-    if (typeof document !== "undefined" && document.baseURI) {
-      bundled = new URL(CARDS_JSON_BUNDLED_PATH, document.baseURI).href;
-    }
-  } catch (_) {
-    /* noop */
-  }
+  // 同梱の軽量 UI カタログを最優先（起動ペイロード削減）。欠ける場合のみフルへフォールバック。
+  const bundledUi = bundledUrl(CARDS_UI_JSON_BUNDLED_PATH);
+  if (bundledUi && urls.indexOf(bundledUi) < 0) urls.push(bundledUi);
 
-  // 同梱 JSON を常に最優先（GitHub Pages 含む）。
-  // 旧挙動は CDN ピン（DUO 未収録）を先に読み、Pages でスーパースター!!DUO が消えて見えた。
-  if (bundled && urls.indexOf(bundled) < 0) {
-    urls.push(bundled);
-  }
+  const bundledFull = bundledUrl(CARDS_JSON_BUNDLED_PATH);
+  if (bundledFull && urls.indexOf(bundledFull) < 0) urls.push(bundledFull);
 
   for (const remote of CARDS_JSON_REMOTE_URLS) {
     if (remote && urls.indexOf(remote) < 0) urls.push(remote);
   }
 
   return urls;
+}
+
+/** @returns {string[]} */
+function getCardsAbilityJsonLoadUrls() {
+  /** @type {string[]} */
+  const urls = [];
+  const bundled = bundledUrl(CARDS_ABILITY_JSON_BUNDLED_PATH);
+  if (bundled) urls.push(bundled);
+  return urls;
+}
+
+/** カタログに能力文が既に載っているか（フル cards.json / CDN を読んだ場合） */
+function catalogLooksAbilityComplete(raw) {
+  if (!raw || typeof raw !== "object") return false;
+  let checked = 0;
+  let withAbility = 0;
+  for (const k of Object.keys(raw)) {
+    if (String(k).startsWith("_")) continue;
+    const c = raw[k];
+    checked++;
+    if (c && typeof c.ability === "string" && c.ability.trim()) withAbility++;
+    if (checked >= 60) break;
+  }
+  return withAbility >= 8;
+}
+
+export function isCardAbilityPayloadReady() {
+  return abilityPayloadReady;
+}
+
+/**
+ * 能力テキストをカタログへマージする（未ロードなら取得）。プレイ開始・詳細表示前に待つ。
+ * @returns {Promise<void>}
+ */
+export function ensureCardAbilityPayloadLoaded() {
+  if (abilityPayloadReady) return Promise.resolve();
+  if (abilityPayloadPromise) return abilityPayloadPromise;
+  abilityPayloadPromise = (async function () {
+    if (catalogLooksAbilityComplete(catalog)) {
+      abilityPayloadReady = true;
+      return;
+    }
+    const urls = getCardsAbilityJsonLoadUrls();
+    if (!urls.length) {
+      console.warn("[cards] ability overlay URL がありません");
+      abilityPayloadReady = true;
+      return;
+    }
+    /** @type {Error|null} */
+    let lastErr = null;
+    for (const url of urls) {
+      try {
+        const res = await fetch(url, { cache: "default" });
+        if (!res.ok) throw new Error("ability " + res.status);
+        const json = await res.json();
+        if (!json || typeof json !== "object") throw new Error("ability format");
+        let merged = 0;
+        for (const k of Object.keys(json)) {
+          if (String(k).startsWith("_")) continue;
+          const ab = json[k];
+          const text = typeof ab === "string" ? ab : ab && typeof ab.ability === "string" ? ab.ability : "";
+          if (!text) continue;
+          const card = catalog[k] || (catalogKeyByNormalized.has(normalizeCardCatalogLookupKey(k))
+            ? catalog[catalogKeyByNormalized.get(normalizeCardCatalogLookupKey(k))]
+            : null);
+          if (!card) continue;
+          card.ability = text;
+          merged++;
+        }
+        normalizeRareListVariantsInCatalog(catalog);
+        abilityPayloadReady = true;
+        if (typeof window !== "undefined") {
+          try {
+            window.dispatchEvent(
+              new CustomEvent("llocg:card-ability-ready", { detail: { merged: merged } }),
+            );
+          } catch (_) {
+            /* noop */
+          }
+        }
+        return;
+      } catch (err) {
+        lastErr = err instanceof Error ? err : new Error(String(err));
+      }
+    }
+    console.warn("[cards] ability overlay の取得に失敗:", lastErr);
+    abilityPayloadReady = true;
+  })();
+  return abilityPayloadPromise;
 }
 
 /** 空文字で上書き解除（画面からは呼ばない。コンソール・手動復旧用に残す） */
@@ -342,6 +441,12 @@ export async function loadCardDatabase(statusEl) {
       );
     }
     ingestCardCatalogJson(json);
+    abilityPayloadReady = catalogLooksAbilityComplete(json);
+    abilityPayloadPromise = null;
+    if (!abilityPayloadReady) {
+      // 起動は UI カタログだけで完了させ、能力は背面でマージする
+      void ensureCardAbilityPayloadLoaded();
+    }
     if (detail) detail.textContent = "";
     return list;
   }

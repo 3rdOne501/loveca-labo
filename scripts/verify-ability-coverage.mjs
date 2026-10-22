@@ -106,6 +106,8 @@ function main() {
 
   execSync("node scripts/verify-weakest-room-sim.mjs", { cwd: ROOT, stdio: "inherit" });
 
+  execSync("node scripts/verify-tierlist-room-sim.mjs", { cwd: ROOT, stdio: "inherit" });
+
   execSync("node scripts/verify-play-checklist.mjs", { cwd: ROOT, stdio: "inherit" });
 
   execSync("node scripts/verify-deck-pick-hand-patterns.mjs", { cwd: ROOT, stdio: "inherit" });

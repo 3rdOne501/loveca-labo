@@ -136,8 +136,10 @@ fi
 if [[ -s "${DEST}" ]] && cmp -s "${TMP}" "${DEST}"; then
   rm -f "${TMP}"
   echo "変更なし: ${DEST}（${BASELINE} 枚・ソース: ${chosen_url}）"
+  node "${ROOT}/scripts/build-cards-ui-split.mjs"
   exit 0
 fi
 
 mv "${TMP}" "${DEST}"
 echo "書き込み: ${DEST}（ソース: ${chosen_url}）"
+node "${ROOT}/scripts/build-cards-ui-split.mjs"

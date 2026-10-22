@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Loveca Labo" />
-    <meta name="loveca-build" content="2026092242" />
+    <meta name="loveca-build" content="2026092245" />
     <title>Loveca Labo</title>
     <!-- 万一以前のバージョンの Service Worker が登録された端末で取り残しが起きた場合に備え、
          先頭で SW 登録を一括解除する。SW 自体は本サイトでは使っていない。 -->
@@ -51,7 +51,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,700;1,9..40,500&family=M+PLUS+Rounded+1c:wght@500;700;800&family=Noto+Sans+JP:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=2026092242" />
+    <link rel="stylesheet" href="styles.css?v=2026092245" />
     <link rel="stylesheet" href="styles-perf.css?v=2026051910" />
   </head>
   <body>
@@ -309,6 +309,14 @@ python3 -m http.server 8080</pre>
             title="みんなで最弱カードを挙げて投票する会議室"
           >
             最弱カード会議
+          </button>
+          <button
+            type="button"
+            class="btn sm secondary cloud-auth-bingo-btn"
+            id="btn-tierlist-maker"
+            title="みんなでリアルタイムにカードをティア分けする"
+          >
+            ティアリスト
           </button>
           <button
             type="button"
@@ -783,6 +791,80 @@ python3 -m http.server 8080</pre>
           <p class="muted weakest-empty" id="weakest-empty" hidden>
             まだカードが挙がっていません。「カードを追加」から最弱候補を挙げてください。
           </p>
+        </section>
+      </div>
+    </div>
+
+    <div id="view-tierlist" class="view" hidden>
+      <header class="tierlist-bar">
+        <div class="tierlist-bar__row">
+          <button type="button" class="btn primary" id="btn-tierlist-back">デッキ編集に戻る</button>
+          <h1 class="tierlist-bar__title">ラブカ ティアリスト</h1>
+          <div class="tierlist-bar__room" id="tierlist-room-meta" hidden>
+            <span class="tierlist-room-title" id="tierlist-room-title"></span>
+            <button type="button" class="btn sm secondary tierlist-room-code-btn" id="btn-tierlist-copy-link" title="招待リンクをコピー">
+              <span class="tierlist-room-code" id="tierlist-room-code"></span>
+              <span class="tierlist-room-code-hint">リンクをコピー</span>
+            </button>
+          </div>
+          <div class="tierlist-bar__spacer"></div>
+          <div class="tierlist-members" id="tierlist-members" hidden aria-label="参加者"></div>
+          <button type="button" class="btn sm secondary" id="btn-tierlist-leave" hidden>退室</button>
+          <button type="button" class="btn sm danger" id="btn-tierlist-close" hidden>ルームを終了</button>
+        </div>
+      </header>
+      <div class="tierlist-body">
+        <section class="tierlist-lobby" id="tierlist-lobby">
+          <p class="hint tierlist-lead">
+            みんなで同じルームに入り、カードリストからカードを追加して S〜D などのティアに並べるメーカーです。配置はリアルタイムで同期されます。
+          </p>
+          <div class="tierlist-signin-notice" id="tierlist-signin-notice" hidden>
+            <p class="muted">参加には Google ログインが必要です。</p>
+            <button type="button" class="btn primary" id="btn-tierlist-signin">Google でログイン</button>
+          </div>
+          <div class="tierlist-lobby-panels" id="tierlist-lobby-panels">
+            <section class="panel tierlist-lobby-panel">
+              <h2 class="panel-h2-plain">ルームを作る</h2>
+              <label class="field">
+                <span>タイトル</span>
+                <input type="text" id="tierlist-create-title" maxlength="40" placeholder="ラブカ ティアリスト" />
+              </label>
+              <button type="button" class="btn primary" id="btn-tierlist-create">ルームを作る</button>
+              <p class="hint muted">作成後に表示されるルームコードを共有すると、みんなが同じリストを編集できます。</p>
+            </section>
+            <section class="panel tierlist-lobby-panel">
+              <h2 class="panel-h2-plain">コードで参加</h2>
+              <label class="field">
+                <span>ルームコード（英数字5文字）</span>
+                <input
+                  type="text"
+                  id="tierlist-join-code"
+                  maxlength="5"
+                  autocapitalize="characters"
+                  autocomplete="off"
+                  spellcheck="false"
+                  placeholder="ABCDE"
+                />
+              </label>
+              <button type="button" class="btn primary" id="btn-tierlist-join">参加する</button>
+            </section>
+            <section class="panel tierlist-lobby-panel" id="tierlist-recent-panel" hidden>
+              <h2 class="panel-h2-plain">最近のルーム</h2>
+              <div class="tierlist-recent-list" id="tierlist-recent-list"></div>
+            </section>
+          </div>
+        </section>
+        <section class="tierlist-room" id="tierlist-room" hidden>
+          <div class="tierlist-room-toolbar">
+            <button type="button" class="btn primary" id="btn-tierlist-add-card">カードを追加</button>
+            <span class="hint muted tierlist-summary" id="tierlist-summary"></span>
+            <div class="tierlist-host-tools" id="tierlist-host-tools" hidden>
+              <button type="button" class="btn sm secondary" id="btn-tierlist-add-tier">ティア追加</button>
+              <button type="button" class="btn sm secondary" id="btn-tierlist-del-tier">ティア削除</button>
+            </div>
+          </div>
+          <div class="tierlist-move-bar" id="tierlist-move-bar" hidden></div>
+          <div class="tierlist-board" id="tierlist-board" aria-label="ティアボード"></div>
         </section>
       </div>
     </div>
@@ -2847,7 +2929,7 @@ python3 -m http.server 8080</pre>
     <script>
       (function () {
         var buildMeta = document.querySelector('meta[name="loveca-build"]');
-        var build = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "2026092242";
+        var build = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "2026092245";
         var moduleNames = [
           "abilityEffects.js",
           "bladeHeart.js",
@@ -2880,6 +2962,8 @@ python3 -m http.server 8080</pre>
           "versusBoardSync.js",
           "versusMatch.js",
           "versusMode.js",
+          "tierListMaker.js",
+          "tierListRoomSync.js",
           "weakestConference.js",
           "weakestRoomSync.js",
         ];
@@ -2900,7 +2984,7 @@ python3 -m http.server 8080</pre>
     </script>
     <script type="module">
       var buildMeta = document.querySelector('meta[name="loveca-build"]');
-      var build = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "2026092242";
+      var build = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "2026092245";
       try {
         await import("./js/main.js?v=" + build);
       } catch (err) {

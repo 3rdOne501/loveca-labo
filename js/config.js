@@ -46,8 +46,12 @@ export const CARDS_JSON_REMOTE_URLS = [
   "https://raw.githubusercontent.com/wlt233/llocg_db/master/json/cards.json",
 ];
 
-/** 同一オリジンの正本（`data/cards.json`）。GitHub Pages / ローカルとも最優先で読む。 */
+/** 同一オリジンの正本（`data/cards.json`）。検証スクリプト・フォールバック用フルカタログ。 */
 export const CARDS_JSON_BUNDLED_PATH = "data/cards.json";
+/** 起動用の軽量カタログ（ability / faq / _img なし）。ブラウザはこちらを最優先で読む。 */
+export const CARDS_UI_JSON_BUNDLED_PATH = "data/cards-ui.json";
+/** 能力テキストの遅延マージ用（card_no → ability 文字列）。 */
+export const CARDS_ABILITY_JSON_BUNDLED_PATH = "data/cards-ability.json";
 
 export const STORAGE_DECK = "llocg_deck";
 
@@ -133,7 +137,7 @@ export const HISTORY_MAX_STEPS = 35;
 export const DECK_EXPORT_VERSION = 1;
 
 /** index.html の main.js クエリと揃える（JS モジュールのブラウザキャッシュ対策） */
-export const APP_MODULE_CACHE_BUST = "2026092242";
+export const APP_MODULE_CACHE_BUST = "2026092245";
 
 /** 禁止制限ダービー ビンゴカードの localStorage キー */
 export const STORAGE_BINGO_DERBY = "llocg_bingo_derby_v1";

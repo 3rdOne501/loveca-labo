@@ -524,6 +524,9 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
   let filterSeries = "";
   let filterUnit = "";
   let deckGridFlushRaf = 0;
+  /** 検索文字入力の全件 filter 連打を抑える（キー入力ごとではなく短時間まとめて描画） */
+  let searchGridDebounceTimer = 0;
+  const SEARCH_GRID_DEBOUNCE_MS = 150;
   let cardGridVirtualRaf = 0;
   let cardGridVirtualMeasureGuard = 0;
   let cardGridVirtualScrollIdleTimer = 0;
@@ -3730,7 +3733,11 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
   el("search-text")?.addEventListener("input", (e) => {
     searchText = e.target.value;
     schedulePersistDeckBuilderUiState();
-    renderCardGrid();
+    if (searchGridDebounceTimer) clearTimeout(searchGridDebounceTimer);
+    searchGridDebounceTimer = setTimeout(function () {
+      searchGridDebounceTimer = 0;
+      scheduleRenderCardGrid();
+    }, SEARCH_GRID_DEBOUNCE_MS);
   });
   el("filter-show-member")?.addEventListener("change", () => {
     syncFilterTypesFromCheckboxes();
@@ -5979,6 +5986,10 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
   wirePeekListRoleEditorOnce();
   wireDeckPeekInlineStatusCloseOnce();
   /* 特殊ハートのユーザー上書きが変わったらカードグリッドとデッキ集計を再描画 */
+  window.addEventListener("llocg:card-ability-ready", function () {
+    invalidateCatalogFilterCache();
+    if (searchText && String(searchText).trim()) scheduleRenderCardGrid();
+  });
   window.addEventListener("llocg:specialBhOverrideChanged", function () {
     try { scheduleRenderCardGrid(); } catch (_) { /* noop */ }
     try { renderCounts(); } catch (_) { /* noop */ }

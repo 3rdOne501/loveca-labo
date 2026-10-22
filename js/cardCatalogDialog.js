@@ -692,6 +692,29 @@ export function openCardIllustrationZoom(card, options) {
 export function openCardCatalogDialog(c, options) {
   var dlg = document.getElementById("dlg-card-catalog");
   if (!dlg) return;
+  var cardNo = c && c.card_no ? String(c.card_no) : "";
+  function paint(card) {
+    openCardCatalogDialogPaint(card || c, options);
+  }
+  paint(c);
+  try {
+    import("./cards.js").then(function (mod) {
+      if (!mod || typeof mod.ensureCardAbilityPayloadLoaded !== "function") return;
+      mod.ensureCardAbilityPayloadLoaded().then(function () {
+        var latest = cardNo && typeof mod.getCard === "function" ? mod.getCard(cardNo) : null;
+        if (!latest) return;
+        if (!dlg.open && !dlg.hasAttribute("open")) return;
+        paint(latest);
+      });
+    });
+  } catch (_) {
+    /* noop */
+  }
+}
+
+function openCardCatalogDialogPaint(c, options) {
+  var dlg = document.getElementById("dlg-card-catalog");
+  if (!dlg) return;
   var targets = {
     title: document.getElementById("dlg-card-catalog-title"),
     subtitle: document.getElementById("dlg-card-catalog-subtitle"),

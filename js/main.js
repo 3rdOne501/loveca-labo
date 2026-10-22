@@ -1,4 +1,9 @@
-import { loadCardDatabase, prefetchDeckCardImagesFromMap, getCard } from "./cards.js";
+import {
+  loadCardDatabase,
+  prefetchDeckCardImagesFromMap,
+  getCard,
+  ensureCardAbilityPayloadLoaded,
+} from "./cards.js";
 import {
   STORAGE_PLAY_RESUME,
   STORAGE_DECK_PICK_SELECTED,
@@ -28,6 +33,7 @@ import { initPublishedSampleRecipes, isSampleDevMode } from "./sampleDeckRecipes
 import { initDeckBrowsePage } from "./deckBrowsePage.js";
 import { initBingoDerby } from "./bingoDerby.js";
 import { initWeakestConference, openWeakestConference } from "./weakestConference.js";
+import { initTierListMaker, openTierListMaker } from "./tierListMaker.js";
 import { showAppView, showDeckBuilderView, showDeckBrowseView, showBingoView } from "./viewNav.js";
 import { prefetchGameStatusArtBundledEarly } from "./gameStatusIcons.js";
 import { showToast } from "./ui.js";
@@ -42,9 +48,14 @@ let simulatorModulePromise = null;
 let simulatorModuleCache = null;
 function loadSimulatorModule() {
   if (!simulatorModulePromise) {
-    simulatorModulePromise = import("./simulator.js?v=" + APP_MODULE_CACHE_BUST).then(function (m) {
-      simulatorModuleCache = m;
-      return m;
+    simulatorModulePromise = Promise.all([
+      ensureCardAbilityPayloadLoaded().catch(function (err) {
+        console.warn("[ll-ocg-tools] ability payload load failed:", err);
+      }),
+      import("./simulator.js?v=" + APP_MODULE_CACHE_BUST),
+    ]).then(function (pair) {
+      simulatorModuleCache = pair[1];
+      return pair[1];
     });
   }
   return simulatorModulePromise;
@@ -776,6 +787,24 @@ function wireWeakestConferenceButton() {
   });
 }
 
+function wireTierListMakerButton() {
+  var btn = document.getElementById("btn-tierlist-maker");
+  if (!btn || btn.dataset.wired === "1") return;
+  btn.dataset.wired = "1";
+  btn.addEventListener("click", function () {
+    try {
+      if (!document.getElementById("view-tierlist")) {
+        showToast("ティアリストを読み込めません。ページを再読込（Cmd+Shift+R）してください。");
+        return;
+      }
+      openTierListMaker();
+    } catch (err) {
+      console.warn("[tierlist] open failed:", err);
+      showToast("ティアリストを開けませんでした");
+    }
+  });
+}
+
 function loadTournamentModule() {
   return import("./tournament.js?v=" + APP_MODULE_CACHE_BUST);
 }
@@ -934,12 +963,18 @@ function startApp(viewDeck, viewGame, statusEl) {
     }
     wireBingoDerbyButton();
     wireWeakestConferenceButton();
+    wireTierListMakerButton();
     wireTournamentButton();
-    /* 招待リンク（#weakest=CODE）で来たときに会議画面を出せるよう、初期ビュー確定後に呼ぶ */
+    /* 招待リンク（#weakest=CODE / #tierlist=CODE）で来たときに画面を出せるよう、初期ビュー確定後に呼ぶ */
     try {
       initWeakestConference();
     } catch (err) {
       console.warn("[weakest] init failed:", err);
+    }
+    try {
+      initTierListMaker();
+    } catch (err) {
+      console.warn("[tierlist] init failed:", err);
     }
     import("./tournament.js?v=" + APP_MODULE_CACHE_BUST)
       .then(function (m) {
