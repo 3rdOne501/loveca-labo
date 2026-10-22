@@ -388,8 +388,36 @@ export async function setTierListTitle(code, title) {
 }
 
 /**
+ * @param {TierListTier[]} current
+ * @param {{ beforeTierId?: string, afterTierId?: string, insertIndex?: number }|null|undefined} pos
+ * @returns {number}
+ */
+function resolveTierInsertIndex(current, pos) {
+  const len = current.length;
+  if (!pos) return len;
+  if (Number.isFinite(Number(pos.insertIndex))) {
+    return Math.max(0, Math.min(len, Math.floor(Number(pos.insertIndex))));
+  }
+  const beforeId = String((pos && pos.beforeTierId) || "").trim();
+  if (beforeId) {
+    const i = current.findIndex(function (t) {
+      return t.id === beforeId;
+    });
+    if (i >= 0) return i;
+  }
+  const afterId = String((pos && pos.afterTierId) || "").trim();
+  if (afterId) {
+    const i = current.findIndex(function (t) {
+      return t.id === afterId;
+    });
+    if (i >= 0) return i + 1;
+  }
+  return len;
+}
+
+/**
  * @param {string} code
- * @param {{ label: string, color?: string }} input
+ * @param {{ label: string, color?: string, beforeTierId?: string, afterTierId?: string, insertIndex?: number }} input
  * @returns {Promise<TierListTier>}
  */
 export async function addTierListTier(code, input) {
@@ -408,22 +436,74 @@ export async function addTierListTier(code, input) {
   if (!label) throw new Error("ティア名を入力してください。");
   const id = "T_" + Math.random().toString(36).slice(2, 10);
   const color = String((input && input.color) || "#9fd3ff").trim() || "#9fd3ff";
+  const insertAt = resolveTierInsertIndex(current, input);
   /** @type {TierListTier} */
   const tier = {
     id: id,
     label: label,
-    order: current.length ? Number(current[current.length - 1].order || 0) + 1 : 0,
+    order: insertAt,
     color: color.slice(0, 24),
   };
+  /** @type {Record<string, unknown>} */
+  const updates = {
+    ["tiers." + id]: tier,
+    updatedAt: nowIso(),
+  };
+  /* 挿入位置以降の order をずらして連番を保つ */
+  for (let i = insertAt; i < current.length; i++) {
+    updates["tiers." + current[i].id + ".order"] = i + 1;
+  }
   try {
-    await api.updateDoc(ref, {
-      ["tiers." + id]: tier,
-      updatedAt: nowIso(),
-    });
+    await api.updateDoc(ref, updates);
   } catch (err) {
     throw new Error(formatTierListFirestoreError(err));
   }
   return tier;
+}
+
+/**
+ * ホストのみ。ティア行の並び替え（order を 0..n-1 で書き直す）。
+ * @param {string} code
+ * @param {string[]} orderedTierIds
+ */
+export async function reorderTierListTiers(code, orderedTierIds) {
+  const user = requireUser();
+  const { api } = fs();
+  const ref = roomRef(code);
+  const snap = await api.getDoc(ref);
+  if (!snap.exists()) throw new Error("ルームが見つかりません。");
+  const room = /** @type {TierListRoomDoc} */ (snap.data());
+  if (room.hostUid !== user.uid) throw new Error("ティアの並び替えは作成者のみできます。");
+  const current = tierListSortedTiers(room);
+  const ids = (Array.isArray(orderedTierIds) ? orderedTierIds : [])
+    .map(function (id) {
+      return String(id || "").trim();
+    })
+    .filter(Boolean);
+  if (ids.length !== current.length) throw new Error("ティアの並びが不正です。");
+  const curSet = new Set(
+    current.map(function (t) {
+      return t.id;
+    }),
+  );
+  for (let i = 0; i < ids.length; i++) {
+    if (!curSet.has(ids[i])) throw new Error("不明なティアがあります。");
+  }
+  if (new Set(ids).size !== ids.length) throw new Error("ティアの並びが不正です。");
+  /** @type {Record<string, unknown>} */
+  const updates = { updatedAt: nowIso() };
+  let changed = false;
+  ids.forEach(function (id, i) {
+    const prev = room.tiers && room.tiers[id] ? Number(room.tiers[id].order) : NaN;
+    if (prev !== i) changed = true;
+    updates["tiers." + id + ".order"] = i;
+  });
+  if (!changed) return;
+  try {
+    await api.updateDoc(ref, updates);
+  } catch (err) {
+    throw new Error(formatTierListFirestoreError(err));
+  }
 }
 
 /**

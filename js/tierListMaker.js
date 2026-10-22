@@ -38,6 +38,7 @@ import {
   placeTierListCard,
   removeTierListCard,
   removeTierListTier,
+  reorderTierListTiers,
   tierListEntryItemId,
   tierListRoomKind,
   tierListSortedTiers,
@@ -125,6 +126,8 @@ const state = {
   boardRenderTimer: null,
   /** @type {string} */
   lastRoomShellSig: "",
+  /** @type {string} ティア行 DnD 中の tierId */
+  draggingTierId: "",
   wired: false,
 };
 
@@ -713,9 +716,45 @@ function computeOrderInTier(tierId, beforeId, draggedId) {
 function clearBoardDropIndicators() {
   const board = el("tierlist-board");
   if (!board) return;
-  board.querySelectorAll(".is-dragover, .is-drop-before").forEach(function (node) {
-    node.classList.remove("is-dragover", "is-drop-before");
+  board
+    .querySelectorAll(".is-dragover, .is-drop-before, .is-tier-drop-before, .is-tier-drop-after, .is-tier-dragging")
+    .forEach(function (node) {
+      node.classList.remove(
+        "is-dragover",
+        "is-drop-before",
+        "is-tier-drop-before",
+        "is-tier-drop-after",
+        "is-tier-dragging",
+      );
+    });
+}
+
+/** @param {string[]} orderedIds */
+function applyLocalTierOrder(orderedIds) {
+  if (!state.room || !state.room.tiers) return;
+  orderedIds.forEach(function (id, i) {
+    if (state.room.tiers[id]) state.room.tiers[id].order = i;
   });
+}
+
+/**
+ * ティア行 DnD の挿入位置（before する対象 ID。null なら末尾＝プール直前）。
+ * @param {HTMLElement} board
+ * @param {number} clientY
+ * @param {string} draggedId
+ * @returns {string|null}
+ */
+function resolveTierRowDropBeforeId(board, clientY, draggedId) {
+  const rows = Array.from(board.querySelectorAll(".tierlist-row[data-tier-id]")).filter(function (row) {
+    const id = row.getAttribute("data-tier-id") || "";
+    return id && id !== TIERLIST_POOL_ID && id !== draggedId;
+  });
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i].getBoundingClientRect();
+    const mid = r.top + r.height * 0.5;
+    if (clientY < mid) return rows[i].getAttribute("data-tier-id") || null;
+  }
+  return null;
 }
 
 function charChipHtml(entry) {
@@ -858,6 +897,9 @@ function renderBoard() {
           '<div class="tierlist-row__label" style="background:' +
           escapeHtml(tier.color || "#888") +
           '">' +
+          (host
+            ? '<span class="tierlist-row__grip" draggable="true" title="ドラッグで並び替え" aria-label="並び替え">⠿</span>'
+            : "") +
           '<input type="text" class="tierlist-row__title-input" data-tier-title="' +
           escapeHtml(tier.id) +
           '" maxlength="' +
@@ -1476,11 +1518,32 @@ function wireRoom() {
     renderBoard();
   });
   el("btn-tierlist-add-tier")?.addEventListener("click", async function () {
-    if (!state.code) return;
+    if (!state.code || !state.room) return;
     const label = window.prompt("新しいティア名", "E");
     if (label == null) return;
+    const tiers = tierListSortedTiers(state.room);
+    const lines = tiers
+      .map(function (t, i) {
+        return i + 1 + ": 「" + (t.label || t.id) + "」の上";
+      })
+      .join("\n");
+    const endNum = tiers.length + 1;
+    const posRaw = window.prompt(
+      "挿入位置の番号を入力\n" + lines + (lines ? "\n" : "") + endNum + ": 一番下",
+      String(endNum),
+    );
+    if (posRaw == null) return;
+    const pos = Number(posRaw);
+    if (!Number.isFinite(pos) || pos < 1 || pos > endNum) {
+      showToast("位置の番号が不正です");
+      return;
+    }
+    const insertIndex = Math.floor(pos) - 1;
     try {
-      await addTierListTier(state.code, { label: label.slice(0, TIERLIST_MAX_TIER_LABEL_LEN) });
+      await addTierListTier(state.code, {
+        label: label.slice(0, TIERLIST_MAX_TIER_LABEL_LEN),
+        insertIndex: insertIndex,
+      });
     } catch (err) {
       showToast(errorMessage(err));
     }
@@ -1577,8 +1640,27 @@ function wireRoom() {
       ev.preventDefault();
       return;
     }
+    const grip = /** @type {HTMLElement} */ (ev.target).closest(".tierlist-row__grip");
+    if (grip && ev.dataTransfer) {
+      if (!state.room || !isTierListHost(state.room, getTierListMyUid())) {
+        ev.preventDefault();
+        return;
+      }
+      const row = grip.closest(".tierlist-row[data-tier-id]");
+      const tierId = (row && row.getAttribute("data-tier-id")) || "";
+      if (!tierId || tierId === TIERLIST_POOL_ID) {
+        ev.preventDefault();
+        return;
+      }
+      state.draggingTierId = tierId;
+      ev.dataTransfer.setData("text/plain", "tierrow:" + tierId);
+      ev.dataTransfer.effectAllowed = "move";
+      if (row) row.classList.add("is-tier-dragging");
+      return;
+    }
     const charBtn = /** @type {HTMLElement} */ (ev.target).closest(".tierlist-char[data-char-id]");
     if (charBtn && ev.dataTransfer) {
+      state.draggingTierId = "";
       const id = charBtn.getAttribute("data-char-id") || "";
       state.selectedCardNo = id;
       ev.dataTransfer.setData("text/plain", "char:" + id);
@@ -1588,6 +1670,7 @@ function wireRoom() {
     }
     const cardBtn = /** @type {HTMLElement} */ (ev.target).closest(".tierlist-card[data-card-no]");
     if (!cardBtn || !ev.dataTransfer) return;
+    state.draggingTierId = "";
     const no = cardBtn.getAttribute("data-card-no") || "";
     state.selectedCardNo = no;
     ev.dataTransfer.setData("text/plain", no);
@@ -1595,12 +1678,34 @@ function wireRoom() {
     cardBtn.classList.add("is-dragging");
   });
   board?.addEventListener("dragend", function () {
+    state.draggingTierId = "";
     clearBoardDropIndicators();
     board.querySelectorAll(".is-dragging").forEach(function (node) {
       node.classList.remove("is-dragging");
     });
   });
   board?.addEventListener("dragover", function (ev) {
+    if (state.draggingTierId) {
+      const row = /** @type {HTMLElement} */ (ev.target).closest(".tierlist-row[data-tier-id]");
+      if (!row || !board.contains(row)) return;
+      ev.preventDefault();
+      if (ev.dataTransfer) ev.dataTransfer.dropEffect = "move";
+      board.querySelectorAll(".is-tier-drop-before, .is-tier-drop-after").forEach(function (node) {
+        node.classList.remove("is-tier-drop-before", "is-tier-drop-after");
+      });
+      const beforeId = resolveTierRowDropBeforeId(board, ev.clientY, state.draggingTierId);
+      if (beforeId) {
+        const target = board.querySelector('.tierlist-row[data-tier-id="' + beforeId + '"]');
+        if (target) target.classList.add("is-tier-drop-before");
+      } else {
+        const last = Array.from(board.querySelectorAll(".tierlist-row[data-tier-id]")).filter(function (r) {
+          const id = r.getAttribute("data-tier-id") || "";
+          return id && id !== TIERLIST_POOL_ID && id !== state.draggingTierId;
+        }).pop();
+        if (last) last.classList.add("is-tier-drop-after");
+      }
+      return;
+    }
     const drop = /** @type {HTMLElement} */ (ev.target).closest("[data-drop-tier]");
     if (!drop) return;
     ev.preventDefault();
@@ -1618,6 +1723,7 @@ function wireRoom() {
     }
   });
   board?.addEventListener("dragleave", function (ev) {
+    if (state.draggingTierId) return;
     const drop = /** @type {HTMLElement} */ (ev.target).closest("[data-drop-tier]");
     if (!drop) return;
     const related = /** @type {Node|null} */ (ev.relatedTarget);
@@ -1628,15 +1734,48 @@ function wireRoom() {
     });
   });
   board?.addEventListener("drop", async function (ev) {
+    if (!ev.dataTransfer || !state.code || !state.room) return;
+    const raw = ev.dataTransfer.getData("text/plain") || "";
+    const tierDragId =
+      state.draggingTierId ||
+      (String(raw).indexOf("tierrow:") === 0 ? String(raw).replace(/^tierrow:/, "") : "");
+    if (tierDragId) {
+      ev.preventDefault();
+      clearBoardDropIndicators();
+      state.draggingTierId = "";
+      if (!isTierListHost(state.room, getTierListMyUid())) return;
+      const beforeId = resolveTierRowDropBeforeId(board, ev.clientY, tierDragId);
+      const ids = tierListSortedTiers(state.room)
+        .map(function (t) {
+          return t.id;
+        })
+        .filter(function (id) {
+          return id !== tierDragId;
+        });
+      let insertAt = ids.length;
+      if (beforeId) {
+        const i = ids.indexOf(beforeId);
+        if (i >= 0) insertAt = i;
+      }
+      ids.splice(insertAt, 0, tierDragId);
+      applyLocalTierOrder(ids);
+      renderBoard();
+      try {
+        await reorderTierListTiers(state.code, ids);
+      } catch (err) {
+        showToast(errorMessage(err));
+      }
+      return;
+    }
     const drop = /** @type {HTMLElement} */ (ev.target).closest("[data-drop-tier]");
-    if (!drop || !ev.dataTransfer) return;
+    if (!drop) return;
     ev.preventDefault();
     clearBoardDropIndicators();
-    let raw = ev.dataTransfer.getData("text/plain") || state.selectedCardNo;
+    const payload = raw || state.selectedCardNo;
     const tierId = drop.getAttribute("data-drop-tier") || "";
-    if (!raw || !tierId || !state.code) return;
-    const isChar = isCharacterRoom() || String(raw).indexOf("char:") === 0;
-    const itemId = isChar ? String(raw).replace(/^char:/, "") : String(raw);
+    if (!payload || !tierId) return;
+    const isChar = isCharacterRoom() || String(payload).indexOf("char:") === 0;
+    const itemId = isChar ? String(payload).replace(/^char:/, "") : String(payload);
     if (!itemId) return;
     const beforeId = resolveDropBeforeId(drop, ev.clientX, ev.clientY, itemId);
     const orderInTier = computeOrderInTier(tierId, beforeId, itemId);
