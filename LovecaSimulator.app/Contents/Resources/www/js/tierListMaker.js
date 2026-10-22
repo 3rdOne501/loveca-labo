@@ -134,6 +134,8 @@ const state = {
   boardRenderTimer: null,
   /** @type {string} */
   lastRoomShellSig: "",
+  /** @type {string} 参加者の身元（uid/name/photo）。在席時刻は含めない */
+  lastMembersIdentitySig: "",
   /** @type {string} ティア行 DnD 中の tierId */
   draggingTierId: "",
   wired: false,
@@ -152,6 +154,23 @@ function roomShellSig(room) {
         return t.id + ":" + String(t.label || "") + ":" + String(t.color || "") + ":" + String(t.order || "");
       })
       .join(";")
+  );
+}
+
+/** 入退室・表示名変更のみ。lastSeenAt は除外（在席 ping で DOM を壊さない） */
+function membersIdentitySig(room) {
+  if (!room) return "";
+  const members = room.members || {};
+  return (
+    Object.keys(members)
+      .sort()
+      .map(function (uid) {
+        const m = members[uid] || {};
+        return uid + ":" + String(m.name || "") + ":" + String(m.photoURL || "");
+      })
+      .join("|") +
+    "|h:" +
+    String(room.hostUid || "")
   );
 }
 
@@ -431,14 +450,21 @@ function bindRoomWatchers() {
         return;
       }
       const prevShell = state.lastRoomShellSig;
+      const prevMembersId = state.lastMembersIdentitySig;
       state.room = room;
       const nextShell = roomShellSig(room);
+      const nextMembersId = membersIdentitySig(room);
       state.lastRoomShellSig = nextShell;
+      state.lastMembersIdentitySig = nextMembersId;
       pushRecent({ code: state.code, title: room.title || "" });
       renderLobby();
       renderRoomHeader();
       renderRoomToolbar();
-      renderMembers();
+      if (prevMembersId !== nextMembersId) {
+        renderMembers();
+      } else {
+        syncMemberStaleFlags();
+      }
       renderHostTools();
       /* 在席更新だけではボードを触らない（点滅防止）。ティア構成が変わったときだけ再描画 */
       if (prevShell !== nextShell) {
@@ -490,6 +516,7 @@ function detachRoom() {
   state.entries = [];
   state.selectedCardNo = "";
   state.lastRoomShellSig = "";
+  state.lastMembersIdentitySig = "";
 }
 
 function attachRoom(code) {
@@ -497,6 +524,7 @@ function attachRoom(code) {
   state.code = normalizeTierListRoomCode(code);
   state.syncPaused = false;
   state.lastRoomShellSig = "";
+  state.lastMembersIdentitySig = "";
   if (isPageVisible()) {
     bindRoomWatchers();
     startPresenceTimer();
@@ -619,6 +647,8 @@ function renderMembers() {
         '<span class="tierlist-member' +
         (stale ? " is-stale" : "") +
         (isHost ? " is-host" : "") +
+        '" data-member-uid="' +
+        escapeHtml(uid) +
         '" title="' +
         escapeHtml((m && m.name) || "") +
         (isHost ? "（ホスト）" : "") +
@@ -629,6 +659,26 @@ function renderMembers() {
       );
     })
     .join("");
+}
+
+/** 在席 ping 時はアバターを作り直さず stale だけ更新 */
+function syncMemberStaleFlags() {
+  const host = el("tierlist-members");
+  if (!host || !state.room) return;
+  const now = Date.now();
+  const members = state.room.members || {};
+  host.querySelectorAll(".tierlist-member[data-member-uid]").forEach(function (node) {
+    const uid = node.getAttribute("data-member-uid") || "";
+    const m = members[uid];
+    if (!m) return;
+    const last = m.lastSeenAt ? Date.parse(m.lastSeenAt) : 0;
+    const stale = !last || now - last > PRESENCE_STALE_MS;
+    const isHost = state.room.hostUid === uid;
+    node.classList.toggle("is-stale", stale);
+    node.classList.toggle("is-host", isHost);
+    node.title =
+      String(m.name || "") + (isHost ? "（ホスト）" : "") + (stale ? "・離席気味" : "");
+  });
 }
 
 function entriesInTier(tierId) {
@@ -842,15 +892,33 @@ function createTierChipElement(entry, charMode) {
   const card = getCard(entry.cardNo);
   const name = (card && (card.name || card.card_name)) || entry.cardNo;
   const selected = state.selectedCardNo === entry.cardNo;
+  const faceOn = useCardCharFaces();
   const btn = document.createElement("button");
   btn.type = "button";
-  btn.className =
-    "tierlist-card" + (useCardCharFaces() ? " tierlist-card--char-face" : "") + (selected ? " is-selected" : "");
+  btn.className = "tierlist-card" + (faceOn ? " tierlist-card--char-face" : "") + (selected ? " is-selected" : "");
   btn.dataset.cardNo = entry.cardNo;
+  btn.dataset.faceMode = faceOn ? "1" : "0";
   btn.title = name;
   btn.draggable = true;
   btn.innerHTML = cardVisualInnerHtml(card, name);
   return btn;
+}
+
+/** 顔トグル時: 行シェルは維持し、チップ中身だけ差し替え */
+function refreshBoardChipFaces() {
+  const board = el("tierlist-board");
+  if (!board || !state.room || isCharacterRoom()) return;
+  const faceMode = useCharFaces();
+  const want = faceMode ? "1" : "0";
+  board.querySelectorAll(".tierlist-card[data-card-no]").forEach(function (btn) {
+    const no = btn.getAttribute("data-card-no") || "";
+    const card = getCard(no);
+    const name = (card && (card.name || card.card_name)) || no;
+    btn.classList.toggle("tierlist-card--char-face", faceMode);
+    if (btn.dataset.faceMode === want) return;
+    btn.dataset.faceMode = want;
+    btn.innerHTML = cardVisualInnerHtml(card, name);
+  });
 }
 
 function entryChipHtml(entry) {
@@ -885,10 +953,9 @@ function renderBoard() {
   const emptyPool = charMode ? "キャラを追加して配置" : "カードを追加して配置";
   const tiers = tierListSortedTiers(state.room);
   const host = isTierListHost(state.room, getTierListMyUid());
+  /* faceMode は shellSig に入れない（トグルで全行 remount しない） */
   const shellSig =
     (charMode ? "c" : "k") +
-    "|f" +
-    (faceMode ? "1" : "0") +
     "|" +
     (host ? "h" : "g") +
     "|" +
@@ -990,12 +1057,20 @@ function renderBoard() {
     }
     if (emptyEl) emptyEl.remove();
     /** 外して付け直さず、順序どおり appendChild で移動する（点滅防止） */
+    const faceWant = useCharFaces() ? "1" : "0";
     entries.forEach(function (entry) {
       const id = tierListEntryItemId(entry);
       let btn = chipPool.get(id);
       if (btn) {
         chipPool.delete(id);
         btn.classList.toggle("is-selected", state.selectedCardNo === id);
+        if (!charMode && btn.dataset.faceMode !== faceWant) {
+          const card = getCard(entry.cardNo);
+          const name = (card && (card.name || card.card_name)) || entry.cardNo;
+          btn.dataset.faceMode = faceWant;
+          btn.classList.toggle("tierlist-card--char-face", faceWant === "1");
+          btn.innerHTML = cardVisualInnerHtml(card, name);
+        }
       } else {
         btn = createTierChipElement(entry, charMode);
       }
@@ -1291,9 +1366,17 @@ function openCardPicker() {
   overlay.addEventListener("click", function (ev) {
     if (ev.target === overlay) close();
   });
+  let pickRenderTimer = null;
+  function schedulePickRender() {
+    if (pickRenderTimer != null) clearTimeout(pickRenderTimer);
+    pickRenderTimer = setTimeout(function () {
+      pickRenderTimer = null;
+      renderGrid();
+    }, 180);
+  }
   ["tierlist-pick-type", "tierlist-pick-school", "tierlist-pick-product", "tierlist-pick-q"].forEach(function (id) {
-    overlay.querySelector("#" + id)?.addEventListener("input", renderGrid);
-    overlay.querySelector("#" + id)?.addEventListener("change", renderGrid);
+    overlay.querySelector("#" + id)?.addEventListener("input", schedulePickRender);
+    overlay.querySelector("#" + id)?.addEventListener("change", schedulePickRender);
   });
   overlay.querySelector("#tierlist-pick-grid")?.addEventListener("click", function (ev) {
     const btn = /** @type {HTMLElement} */ (ev.target).closest("[data-card-no]");
@@ -1431,7 +1514,14 @@ function openCharacterPicker() {
   overlay.addEventListener("click", function (ev) {
     if (ev.target === overlay) close();
   });
-  overlay.querySelector("#tierlist-pick-char-q")?.addEventListener("input", renderGrid);
+  let charPickTimer = null;
+  overlay.querySelector("#tierlist-pick-char-q")?.addEventListener("input", function () {
+    if (charPickTimer != null) clearTimeout(charPickTimer);
+    charPickTimer = setTimeout(function () {
+      charPickTimer = null;
+      renderGrid();
+    }, 180);
+  });
   overlay.querySelector("#tierlist-pick-char-grid")?.addEventListener("click", async function (ev) {
     const btn = /** @type {HTMLElement} */ (ev.target).closest("[data-char-id]");
     if (!btn) return;
@@ -1540,7 +1630,7 @@ function wireRoom() {
     state.showCharFaces = !!(/** @type {HTMLInputElement} */ (ev.target).checked);
     persistShowCharFaces();
     renderRoomToolbar();
-    renderBoard();
+    refreshBoardChipFaces();
   });
   el("btn-tierlist-add-tier")?.addEventListener("click", async function () {
     if (!state.code || !state.room) return;
