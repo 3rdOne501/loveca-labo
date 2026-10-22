@@ -261,6 +261,52 @@ await tl.closeTierListRoom(CODE);
 eq(lastRoom, null, "G: ルーム削除");
 eq(lastEntries.length, 0, "G: entries も削除");
 
+/* H. キャラティア */
+actAs("A");
+const charCreated = await tl.createTierListRoom("キャラランキング", { kind: tl.TIERLIST_KIND_CHARACTER });
+const CHAR_CODE = charCreated.code;
+eq(charCreated.room.kind, tl.TIERLIST_KIND_CHARACTER, "H: ルーム kind=character");
+eq(tl.tierListRoomKind(charCreated.room), tl.TIERLIST_KIND_CHARACTER, "H: tierListRoomKind");
+
+let charRoom = charCreated.room;
+let charEntries = [];
+const unsubCharRoom = tl.watchTierListRoom(CHAR_CODE, function (room) {
+  charRoom = room;
+});
+const unsubCharEntries = tl.watchTierListEntries(CHAR_CODE, function (entries) {
+  charEntries = entries;
+});
+
+actAs("B");
+await throws(
+  () => tl.placeTierListCard(CHAR_CODE, { cardNo: "PL!-bp1-001", tierId: "S" }),
+  "H: キャラルームにカードのみは不可",
+);
+
+actAs("A");
+const placedChar = await tl.placeTierListCard(CHAR_CODE, { charId: "honoka", tierId: tl.TIERLIST_POOL_ID });
+eq(placedChar.charId, "honoka", "H: charId を記録");
+eq(placedChar.kind, tl.TIERLIST_KIND_CHARACTER, "H: entry kind=character");
+eq(placedChar.tierId, tl.TIERLIST_POOL_ID, "H: 未配置に追加");
+
+actAs("B");
+await tl.placeTierListCard(CHAR_CODE, { charId: "honoka", tierId: "S" });
+const honokaEntry = charEntries.find(function (e) {
+  return e.charId === "honoka";
+});
+eq(honokaEntry && honokaEntry.tierId, "S", "H: 他ユーザーがキャラを移動");
+eq(honokaEntry && honokaEntry.byUid, USERS.A.uid, "H: byUid は追加者のまま");
+
+actAs("A");
+await tl.placeTierListCard(CHAR_CODE, { charId: "eli", tierId: "A" });
+eq(charEntries.length, 2, "H: 2 キャラ配置");
+
+actAs("A");
+await tl.closeTierListRoom(CHAR_CODE);
+eq(charRoom, null, "H: キャラルーム終了");
+unsubCharRoom();
+unsubCharEntries();
+
 unsubRoom();
 unsubEntries();
 __setTestCloudFirestore(null);

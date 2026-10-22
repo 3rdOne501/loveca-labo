@@ -94,6 +94,46 @@ Object.entries(NAME_ALIASES).forEach(function ([alias, id]) {
 });
 
 /**
+ * ドンジャラ／モチーフアイコンと同じロスター一覧（ティアリスト用）。
+ * @returns {{ id: string, label: string, series: string, file: string, href: string }[]}
+ */
+export function listMemberCharacterRoster() {
+  return (memberManifest.roster || [])
+    .filter(function (entry) {
+      return entry && entry.id && entry.file;
+    })
+    .map(function (entry) {
+      return {
+        id: String(entry.id),
+        label: String(entry.label || entry.id),
+        series: String(entry.series || ""),
+        file: String(entry.file),
+        href: artifactImageSrc(memberCharacterIconHref(entry.file)),
+      };
+    });
+}
+
+/**
+ * @param {string} charId
+ * @returns {{ id: string, label: string, series: string, file: string, href: string } | null}
+ */
+export function getMemberCharacterById(charId) {
+  var id = String(charId || "").trim();
+  if (!id) return null;
+  var found = (memberManifest.roster || []).find(function (r) {
+    return r && r.id === id;
+  });
+  if (!found) return null;
+  return {
+    id: String(found.id),
+    label: String(found.label || found.id),
+    series: String(found.series || ""),
+    file: String(found.file || ""),
+    href: artifactImageSrc(memberCharacterIconHref(found.file)),
+  };
+}
+
+/**
  * @param {string} partName カード名の1人分（「&」分割後）
  * @returns {{ id: string, label: string, href: string } | null}
  */

@@ -1,0 +1,162 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /** 匿名（ゲスト）を除く Google ログイン */
+    function isGoogleSignedIn() {
+      return isSignedIn()
+        && request.auth.token.firebase.sign_in_provider == 'google.com';
+    }
+
+    function isPublicDeckPayloadValid() {
+      return request.resource.data.keys().hasAll([
+          'v', 'name', 'note', 'deck', 'keyCardNos', 'keyCard2Nos', 'keyCard3Nos',
+          'middleCardNos', 'thumbnailCardNo', 'ownerUid', 'ownerName', 'ownerPhotoURL',
+          'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.v is int
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 40
+        && request.resource.data.note is string
+        && request.resource.data.note.size() <= 400
+        && request.resource.data.deck is map
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.createdAt is string
+        && request.resource.data.updatedAt is string;
+    }
+
+    match /users/{userId}/state/{docId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    match /versusMatches/{roomId} {
+      /* ホスト・ゲスト、または空き席があるルーム（参加前の getDoc 用） */
+      allow read: if isSignedIn()
+        && (
+          resource.data.hostUid == request.auth.uid
+          || resource.data.guestUid == request.auth.uid
+          || (
+            resource.data.guestUid == null
+            && resource.data.status in ["waiting", "lobby"]
+          )
+        );
+
+      allow create: if isSignedIn()
+        && request.resource.data.hostUid == request.auth.uid;
+
+      /* ホスト／既参加ゲストの更新、または初回参加（guestUid を自分にセット） */
+      allow update: if isSignedIn()
+        && (
+          resource.data.hostUid == request.auth.uid
+          || resource.data.guestUid == request.auth.uid
+          || (
+            resource.data.guestUid == null
+            && request.resource.data.guestUid == request.auth.uid
+            && request.resource.data.hostUid == resource.data.hostUid
+            && resource.data.status in ["waiting", "lobby"]
+          )
+        );
+
+      allow delete: if isSignedIn()
+        && resource.data.hostUid == request.auth.uid;
+    }
+
+    /* ラブカ最弱カード会議: ルームコードを知っている Google ログインユーザーが参加できる */
+    function isWeakestRoomHost(roomId) {
+      return isSignedIn()
+        && get(/databases/$(database)/documents/weakestRooms/$(roomId)).data.hostUid == request.auth.uid;
+    }
+
+    match /weakestRooms/{roomId} {
+      /* コード自体が合言葉なので、ログイン済みなら読める */
+      allow read: if isGoogleSignedIn();
+
+      allow create: if isGoogleSignedIn()
+        && request.resource.data.hostUid == request.auth.uid
+        && request.resource.data.code == roomId;
+
+      /* 参加・在席更新・部門編集。ホストの乗っ取りとコード書き換えだけは禁止 */
+      allow update: if isGoogleSignedIn()
+        && request.resource.data.hostUid == resource.data.hostUid
+        && request.resource.data.code == resource.data.code;
+
+      allow delete: if isGoogleSignedIn()
+        && resource.data.hostUid == request.auth.uid;
+
+      /* 推薦されたカード。投票は votes マップの自分のキーのみを書く */
+      match /entries/{entryId} {
+        allow read: if isGoogleSignedIn();
+
+        allow create: if isGoogleSignedIn()
+          && request.resource.data.byUid == request.auth.uid;
+
+        /* 投票トグル用。カード・部門・推薦者は変更させない */
+        allow update: if isGoogleSignedIn()
+          && request.resource.data.cardNo == resource.data.cardNo
+          && request.resource.data.categoryId == resource.data.categoryId
+          && request.resource.data.byUid == resource.data.byUid;
+
+        allow delete: if isGoogleSignedIn()
+          && (resource.data.byUid == request.auth.uid || isWeakestRoomHost(roomId));
+      }
+    }
+
+    /* ラブカ ティアリストメーカー: ルームコードを知っている Google ログインユーザーが参加・配置できる */
+    function isTierListRoomHost(roomId) {
+      return isSignedIn()
+        && get(/databases/$(database)/documents/tierListRooms/$(roomId)).data.hostUid == request.auth.uid;
+    }
+
+    match /tierListRooms/{roomId} {
+      allow read: if isGoogleSignedIn();
+
+      allow create: if isGoogleSignedIn()
+        && request.resource.data.hostUid == request.auth.uid
+        && request.resource.data.code == roomId;
+
+      allow update: if isGoogleSignedIn()
+        && request.resource.data.hostUid == resource.data.hostUid
+        && request.resource.data.code == resource.data.code;
+
+      allow delete: if isGoogleSignedIn()
+        && resource.data.hostUid == request.auth.uid;
+
+      match /entries/{entryId} {
+        allow read: if isGoogleSignedIn();
+
+        allow create: if isGoogleSignedIn()
+          && request.resource.data.byUid == request.auth.uid;
+
+        /* 全員がティア移動できる。作成者・アイテム ID（cardNo / charId）は変更させない */
+        allow update: if isGoogleSignedIn()
+          && request.resource.data.byUid == resource.data.byUid
+          && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['tierId', 'orderInTier', 'movedAt', 'movedByUid', 'movedByName']);
+
+        allow delete: if isGoogleSignedIn()
+          && (resource.data.byUid == request.auth.uid || isTierListRoomHost(roomId));
+      }
+    }
+
+    /* コミュニティ投稿デッキ: 閲覧は誰でも、投稿/削除は Google ログインの本人のみ */
+    match /publicDecks/{deckId} {
+      allow read: if true;
+
+      allow create: if isGoogleSignedIn()
+        && isPublicDeckPayloadValid();
+
+      allow update: if isGoogleSignedIn()
+        && resource.data.ownerUid == request.auth.uid
+        && isPublicDeckPayloadValid()
+        && request.resource.data.ownerUid == resource.data.ownerUid
+        && request.resource.data.createdAt == resource.data.createdAt;
+
+      allow delete: if isGoogleSignedIn()
+        && resource.data.ownerUid == request.auth.uid;
+    }
+  }
+}

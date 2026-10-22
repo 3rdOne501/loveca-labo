@@ -9,7 +9,9 @@ import { openCardCatalogDialog } from "./cardCatalogDialog.js";
 import { showToast } from "./ui.js";
 import { getCurrentCloudUser, onCloudUserChange, signInWithGoogle } from "./cloudAuth.js";
 import { showDeckBuilderView, showTierListView } from "./viewNav.js";
+import { getMemberCharacterById, listMemberCharacterRoster } from "./memberCharacterIcons.js";
 import {
+  TIERLIST_KIND_CHARACTER,
   TIERLIST_MAX_TIER_LABEL_LEN,
   TIERLIST_POOL_ID,
   addTierListTier,
@@ -23,6 +25,8 @@ import {
   placeTierListCard,
   removeTierListCard,
   removeTierListTier,
+  tierListEntryItemId,
+  tierListRoomKind,
   tierListSortedTiers,
   touchTierListPresence,
   updateTierListTier,
@@ -45,7 +49,7 @@ const state = {
   room: null,
   /** @type {import('./tierListRoomSync.js').TierListEntryDoc[]} */
   entries: [],
-  /** @type {string} */
+  /** @type {string} 選択中の cardNo または charId */
   selectedCardNo: "",
   /** @type {(() => void)|null} */
   unsubRoom: null,
@@ -76,6 +80,19 @@ function errorMessage(err) {
 function signedIn() {
   const u = getCurrentCloudUser();
   return !!(u && u.uid);
+}
+
+function isCharacterRoom() {
+  return tierListRoomKind(state.room) === TIERLIST_KIND_CHARACTER;
+}
+
+function selectedEntry() {
+  if (!state.selectedCardNo) return null;
+  return (
+    state.entries.find(function (e) {
+      return tierListEntryItemId(e) === state.selectedCardNo;
+    }) || null
+  );
 }
 
 /** @param {string} url */
@@ -249,6 +266,7 @@ async function enterRoom(rawCode) {
 function renderAll() {
   renderLobby();
   renderRoomHeader();
+  renderRoomToolbar();
   renderMembers();
   renderBoard();
   renderMoveBar();
@@ -297,6 +315,11 @@ function renderRoomHeader() {
   const inRoom = !!state.code && !!state.room;
   if (meta) meta.hidden = !inRoom;
   if (titleEl) titleEl.textContent = inRoom ? state.room.title || "ティアリスト" : "";
+  const kindEl = el("tierlist-room-kind");
+  if (kindEl) {
+    kindEl.hidden = !inRoom || !isCharacterRoom();
+    kindEl.textContent = inRoom && isCharacterRoom() ? "キャラティア" : "";
+  }
   if (codeEl) codeEl.textContent = inRoom ? state.code : "";
   if (leaveBtn) leaveBtn.hidden = !inRoom;
   if (closeBtn) {
@@ -348,6 +371,37 @@ function entriesInTier(tierId) {
     });
 }
 
+function memberIconHtml(href, alt) {
+  if (!href) return '<div class="tierlist-char-icon tierlist-char-icon--fallback">?</div>';
+  return (
+    '<img class="tierlist-char-icon" src="' +
+    escapeHtml(href) +
+    '" alt="' +
+    escapeHtml(alt || "") +
+    '" loading="lazy" />'
+  );
+}
+
+function charChipHtml(entry) {
+  const id = entry.charId || tierListEntryItemId(entry);
+  const ch = getMemberCharacterById(id);
+  const name = (ch && ch.label) || id;
+  const selected = state.selectedCardNo === id ? " is-selected" : "";
+  return (
+    '<button type="button" class="tierlist-card tierlist-char' +
+    selected +
+    '" data-char-id="' +
+    escapeHtml(id) +
+    '" title="' +
+    escapeHtml(name) +
+    '" draggable="true">' +
+    memberIconHtml(ch && ch.href, name) +
+    '<span class="tierlist-char__name">' +
+    escapeHtml(name) +
+    "</span></button>"
+  );
+}
+
 function cardChipHtml(entry) {
   const card = getCard(entry.cardNo);
   const name = (card && (card.name || card.card_name)) || entry.cardNo;
@@ -366,12 +420,25 @@ function cardChipHtml(entry) {
   );
 }
 
+function entryChipHtml(entry) {
+  return isCharacterRoom() ? charChipHtml(entry) : cardChipHtml(entry);
+}
+
+function renderRoomToolbar() {
+  const addBtn = el("btn-tierlist-add-card");
+  if (!addBtn || !state.room) return;
+  addBtn.textContent = isCharacterRoom() ? "キャラを追加" : "カードを追加";
+}
+
 function renderBoard() {
   const board = el("tierlist-board");
   if (!board || !state.room) {
     if (board) board.innerHTML = "";
     return;
   }
+  const charMode = isCharacterRoom();
+  const emptyTier = charMode ? "キャラを配置" : "カードを配置";
+  const emptyPool = charMode ? "キャラを追加して配置" : "カードを追加して配置";
   const tiers = tierListSortedTiers(state.room);
   const host = isTierListHost(state.room, getTierListMyUid());
   let html = tiers
@@ -396,7 +463,7 @@ function renderBoard() {
         '<div class="tierlist-row__cards" data-drop-tier="' +
         escapeHtml(tier.id) +
         '">' +
-        (cards.length ? cards.map(cardChipHtml).join("") : '<span class="tierlist-row__empty muted">カードを配置</span>') +
+        (cards.length ? cards.map(entryChipHtml).join("") : '<span class="tierlist-row__empty muted">' + emptyTier + "</span>") +
         "</div></div>"
       );
     })
@@ -410,18 +477,21 @@ function renderBoard() {
     '<div class="tierlist-row__cards" data-drop-tier="' +
     TIERLIST_POOL_ID +
     '">' +
-    (pool.length ? pool.map(cardChipHtml).join("") : '<span class="tierlist-row__empty muted">カードを追加して配置</span>') +
+    (pool.length ? pool.map(entryChipHtml).join("") : '<span class="tierlist-row__empty muted">' + emptyPool + "</span>") +
     "</div></div>";
   board.innerHTML = html;
   const summary = el("tierlist-summary");
   if (summary) {
+    const unit = charMode ? "キャラ" : "枚";
     summary.textContent =
-      "配置 " + state.entries.filter(function (e) {
+      "配置 " +
+      state.entries.filter(function (e) {
         return e.tierId !== TIERLIST_POOL_ID;
       }).length +
       " / 全体 " +
       state.entries.length +
-      " 枚";
+      " " +
+      unit;
   }
 }
 
@@ -433,13 +503,17 @@ function renderMoveBar() {
     bar.innerHTML = "";
     return;
   }
-  const card = getCard(state.selectedCardNo);
-  const name = (card && (card.name || card.card_name)) || state.selectedCardNo;
+  let name = state.selectedCardNo;
+  if (isCharacterRoom()) {
+    const ch = getMemberCharacterById(state.selectedCardNo);
+    name = (ch && ch.label) || state.selectedCardNo;
+  } else {
+    const card = getCard(state.selectedCardNo);
+    name = (card && (card.name || card.card_name)) || state.selectedCardNo;
+  }
   const tiers = tierListSortedTiers(state.room);
   const myUid = getTierListMyUid();
-  const entry = state.entries.find(function (e) {
-    return e.cardNo === state.selectedCardNo;
-  });
+  const entry = selectedEntry();
   const canRemove = entry && (entry.byUid === myUid || isTierListHost(state.room, myUid));
   bar.hidden = false;
   bar.innerHTML =
@@ -478,7 +552,11 @@ function renderHostTools() {
 async function moveSelectedTo(tierId) {
   if (!state.code || !state.selectedCardNo) return;
   try {
-    await placeTierListCard(state.code, { cardNo: state.selectedCardNo, tierId: tierId });
+    if (isCharacterRoom()) {
+      await placeTierListCard(state.code, { charId: state.selectedCardNo, tierId: tierId });
+    } else {
+      await placeTierListCard(state.code, { cardNo: state.selectedCardNo, tierId: tierId });
+    }
   } catch (err) {
     showToast(errorMessage(err));
   }
@@ -607,6 +685,90 @@ function openCardPicker() {
   renderGrid();
 }
 
+function openCharacterPicker() {
+  if (!state.code) return;
+  const placed = new Set(
+    state.entries.map(function (e) {
+      return tierListEntryItemId(e);
+    }),
+  );
+  const overlay = document.createElement("div");
+  overlay.className = "tierlist-picker-overlay";
+  overlay.innerHTML =
+    '<div class="tierlist-picker tierlist-picker--character" role="dialog" aria-label="キャラを追加">' +
+    '<div class="tierlist-picker__head">' +
+    "<h2>キャラを追加</h2>" +
+    '<button type="button" class="btn sm secondary tierlist-picker__close">閉じる</button></div>' +
+    '<label class="field tierlist-picker__search"><span>検索</span><input type="search" id="tierlist-pick-char-q" placeholder="名前" /></label>' +
+    '<div class="tierlist-picker__grid tierlist-char-picker-grid" id="tierlist-pick-char-grid"></div>' +
+    '<p class="hint muted" id="tierlist-pick-char-hint"></p></div>';
+  document.body.appendChild(overlay);
+
+  function close() {
+    overlay.remove();
+  }
+
+  function renderGrid() {
+    const q = String(/** @type {HTMLInputElement} */ (overlay.querySelector("#tierlist-pick-char-q")).value || "")
+      .trim()
+      .toLowerCase();
+    const roster = listMemberCharacterRoster();
+    const matched = [];
+    for (let i = 0; i < roster.length; i++) {
+      const c = roster[i];
+      if (!c || !c.id) continue;
+      if (placed.has(c.id)) continue;
+      if (q) {
+        const hay = String(c.label + " " + c.id + " " + c.series).toLowerCase();
+        if (hay.indexOf(q) < 0) continue;
+      }
+      matched.push(c);
+    }
+    const grid = overlay.querySelector("#tierlist-pick-char-grid");
+    const hint = overlay.querySelector("#tierlist-pick-char-hint");
+    if (hint) hint.textContent = matched.length + " キャラ";
+    if (grid) {
+      grid.innerHTML = matched
+        .map(function (c) {
+          return (
+            '<button type="button" class="tierlist-pick-char" data-char-id="' +
+            escapeHtml(c.id) +
+            '" title="' +
+            escapeHtml(c.label) +
+            '">' +
+            memberIconHtml(c.href, c.label) +
+            '<span class="tierlist-pick-char__name">' +
+            escapeHtml(c.label) +
+            "</span></button>"
+          );
+        })
+        .join("");
+    }
+  }
+
+  overlay.querySelector(".tierlist-picker__close")?.addEventListener("click", close);
+  overlay.addEventListener("click", function (ev) {
+    if (ev.target === overlay) close();
+  });
+  overlay.querySelector("#tierlist-pick-char-q")?.addEventListener("input", renderGrid);
+  overlay.querySelector("#tierlist-pick-char-grid")?.addEventListener("click", async function (ev) {
+    const btn = /** @type {HTMLElement} */ (ev.target).closest("[data-char-id]");
+    if (!btn) return;
+    const charId = btn.getAttribute("data-char-id") || "";
+    if (!charId) return;
+    try {
+      await placeTierListCard(state.code, { charId: charId, tierId: TIERLIST_POOL_ID });
+      state.selectedCardNo = charId;
+      showToast("未配置に追加しました。ティアへ移動できます");
+      close();
+      renderAll();
+    } catch (err) {
+      showToast(errorMessage(err));
+    }
+  });
+  renderGrid();
+}
+
 function wireLobby() {
   el("btn-tierlist-signin")?.addEventListener("click", async function () {
     try {
@@ -624,7 +786,12 @@ function wireLobby() {
     if (btn) btn.disabled = true;
     try {
       const title = /** @type {HTMLInputElement} */ (el("tierlist-create-title"))?.value || "";
-      const { code } = await createTierListRoom(title);
+      const kindInput = /** @type {HTMLInputElement|null} */ (
+        document.querySelector('input[name="tierlist-create-kind"]:checked')
+      );
+      const kind =
+        kindInput && kindInput.value === TIERLIST_KIND_CHARACTER ? TIERLIST_KIND_CHARACTER : "card";
+      const { code } = await createTierListRoom(title, { kind: kind });
       attachRoom(code);
       showToast("ルームを作成しました");
     } catch (err) {
@@ -685,7 +852,8 @@ function wireRoom() {
     }
   });
   el("btn-tierlist-add-card")?.addEventListener("click", function () {
-    openCardPicker();
+    if (isCharacterRoom()) openCharacterPicker();
+    else openCardPicker();
   });
   el("btn-tierlist-add-tier")?.addEventListener("click", async function () {
     if (!state.code) return;
@@ -714,7 +882,8 @@ function wireRoom() {
       showToast("番号が不正です");
       return;
     }
-    if (!window.confirm("「" + (tiers[idx].label || tiers[idx].id) + "」を削除し、カードを未配置へ移しますか？")) return;
+    const itemLabel = isCharacterRoom() ? "キャラ" : "カード";
+    if (!window.confirm("「" + (tiers[idx].label || tiers[idx].id) + "」を削除し、" + itemLabel + "を未配置へ移しますか？")) return;
     try {
       await removeTierListTier(state.code, tiers[idx].id);
     } catch (err) {
@@ -739,6 +908,14 @@ function wireRoom() {
       }
       return;
     }
+    const charBtn = target.closest(".tierlist-char[data-char-id]");
+    if (charBtn) {
+      const id = charBtn.getAttribute("data-char-id") || "";
+      state.selectedCardNo = state.selectedCardNo === id ? "" : id;
+      renderBoard();
+      renderMoveBar();
+      return;
+    }
     const cardBtn = target.closest(".tierlist-card[data-card-no]");
     if (cardBtn) {
       const no = cardBtn.getAttribute("data-card-no") || "";
@@ -754,6 +931,14 @@ function wireRoom() {
   });
 
   board?.addEventListener("dragstart", function (ev) {
+    const charBtn = /** @type {HTMLElement} */ (ev.target).closest(".tierlist-char[data-char-id]");
+    if (charBtn && ev.dataTransfer) {
+      const id = charBtn.getAttribute("data-char-id") || "";
+      state.selectedCardNo = id;
+      ev.dataTransfer.setData("text/plain", "char:" + id);
+      ev.dataTransfer.effectAllowed = "move";
+      return;
+    }
     const cardBtn = /** @type {HTMLElement} */ (ev.target).closest(".tierlist-card[data-card-no]");
     if (!cardBtn || !ev.dataTransfer) return;
     const no = cardBtn.getAttribute("data-card-no") || "";
@@ -776,12 +961,18 @@ function wireRoom() {
     if (!drop || !ev.dataTransfer) return;
     ev.preventDefault();
     drop.classList.remove("is-dragover");
-    const cardNo = ev.dataTransfer.getData("text/plain") || state.selectedCardNo;
+    let raw = ev.dataTransfer.getData("text/plain") || state.selectedCardNo;
     const tierId = drop.getAttribute("data-drop-tier") || "";
-    if (!cardNo || !tierId || !state.code) return;
+    if (!raw || !tierId || !state.code) return;
     try {
-      await placeTierListCard(state.code, { cardNo: cardNo, tierId: tierId });
-      state.selectedCardNo = cardNo;
+      if (isCharacterRoom() || String(raw).indexOf("char:") === 0) {
+        const charId = String(raw).replace(/^char:/, "");
+        await placeTierListCard(state.code, { charId: charId, tierId: tierId });
+        state.selectedCardNo = charId;
+      } else {
+        await placeTierListCard(state.code, { cardNo: raw, tierId: tierId });
+        state.selectedCardNo = raw;
+      }
       renderMoveBar();
     } catch (err) {
       showToast(errorMessage(err));
@@ -803,7 +994,8 @@ function wireRoom() {
     }
     if (target.closest("#btn-tierlist-remove-selected")) {
       if (!state.code || !state.selectedCardNo) return;
-      if (!window.confirm("このカードをリストから外しますか？")) return;
+      const rmLabel = isCharacterRoom() ? "キャラ" : "カード";
+      if (!window.confirm("この" + rmLabel + "をリストから外しますか？")) return;
       try {
         await removeTierListCard(state.code, state.selectedCardNo);
         state.selectedCardNo = "";

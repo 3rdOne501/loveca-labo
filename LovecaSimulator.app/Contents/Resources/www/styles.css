@@ -15388,3 +15388,85 @@ body.tourney-deck-view-open {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+.tierlist-room-kind {
+  font-size: 0.85rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 0.35rem;
+  background: rgba(255, 140, 190, 0.12);
+}
+.tierlist-create-kind {
+  margin: 0.65rem 0 0.85rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.45rem;
+}
+.tierlist-create-kind__legend {
+  font-size: 0.82rem;
+  padding: 0 0.25rem;
+}
+.tierlist-create-kind__opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-right: 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.tierlist-char {
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  min-width: 3.5rem;
+  max-width: 4.5rem;
+  padding: 0.25rem 0.35rem;
+}
+.tierlist-char-icon {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  display: block;
+}
+.tierlist-char-icon--fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 0.35rem;
+  font-size: 1rem;
+}
+.tierlist-char__name {
+  font-size: 0.62rem;
+  line-height: 1.2;
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tierlist-char-picker-grid {
+  grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr));
+}
+.tierlist-pick-char {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.35rem 0.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.45rem;
+  background: rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  color: inherit;
+}
+.tierlist-pick-char:hover {
+  border-color: rgba(255, 140, 190, 0.55);
+}
+.tierlist-pick-char__name {
+  font-size: 0.65rem;
+  line-height: 1.2;
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

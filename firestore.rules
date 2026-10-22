@@ -131,10 +131,11 @@ service cloud.firestore {
         allow create: if isGoogleSignedIn()
           && request.resource.data.byUid == request.auth.uid;
 
-        /* 全員がティア移動できる。cardNo / byUid は変更させない */
+        /* 全員がティア移動できる。作成者・アイテム ID（cardNo / charId）は変更させない */
         allow update: if isGoogleSignedIn()
-          && request.resource.data.cardNo == resource.data.cardNo
-          && request.resource.data.byUid == resource.data.byUid;
+          && request.resource.data.byUid == resource.data.byUid
+          && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['tierId', 'orderInTier', 'movedAt', 'movedByUid', 'movedByName']);
 
         allow delete: if isGoogleSignedIn()
           && (resource.data.byUid == request.auth.uid || isTierListRoomHost(roomId));

@@ -16,6 +16,9 @@ export const TIERLIST_MAX_TIER_LABEL_LEN = 16;
 export const TIERLIST_MAX_TIERS = 10;
 /** 未配置プール。tiers マップには入れず、クライアントと entries.tierId だけで扱う */
 export const TIERLIST_POOL_ID = "pool";
+/** ルーム種別: カード表 / キャラ表（ドンジャラと同じメンバーアイコン） */
+export const TIERLIST_KIND_CARD = "card";
+export const TIERLIST_KIND_CHARACTER = "character";
 
 export const TIERLIST_DEFAULT_TIERS = [
   { id: "S", label: "S", order: 0, color: "#ff7f7f" },
@@ -46,6 +49,7 @@ export const TIERLIST_DEFAULT_TIERS = [
  * @property {number} v
  * @property {string} code
  * @property {string} title
+ * @property {'card'|'character'} [kind]
  * @property {'open'|'closed'} status
  * @property {string} hostUid
  * @property {string|null} hostName
@@ -61,7 +65,9 @@ export const TIERLIST_DEFAULT_TIERS = [
  * @typedef {Object} TierListEntryDoc
  * @property {string} id
  * @property {number} v
- * @property {string} cardNo
+ * @property {'card'|'character'} [kind]
+ * @property {string} [cardNo]
+ * @property {string} [charId]
  * @property {string} tierId
  * @property {number} orderInTier
  * @property {string} byUid
@@ -126,6 +132,27 @@ export function sanitizeCardNo(cardNo) {
   return String(cardNo || "")
     .trim()
     .replace(/\//g, "_");
+}
+
+/** @param {string} charId */
+export function sanitizeCharId(charId) {
+  return String(charId || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]/g, "");
+}
+
+/** @param {TierListRoomDoc|null|undefined} room */
+export function tierListRoomKind(room) {
+  return room && room.kind === TIERLIST_KIND_CHARACTER ? TIERLIST_KIND_CHARACTER : TIERLIST_KIND_CARD;
+}
+
+/** @param {TierListEntryDoc|null|undefined} entry */
+export function tierListEntryItemId(entry) {
+  if (!entry) return "";
+  if (entry.charId) return String(entry.charId);
+  if (entry.cardNo) return String(entry.cardNo);
+  return String(entry.id || "");
 }
 
 function randomRoomCode() {
@@ -196,13 +223,16 @@ export function isValidTierListTierId(room, tierId) {
 
 /**
  * @param {string} title
+ * @param {{ kind?: 'card'|'character' }} [opts]
  * @returns {Promise<{ code: string, room: TierListRoomDoc }>}
  */
-export async function createTierListRoom(title) {
+export async function createTierListRoom(title, opts) {
   const user = requireUser();
   const { api } = fs();
   const name = myName(user);
   const now = nowIso();
+  const kind =
+    opts && opts.kind === TIERLIST_KIND_CHARACTER ? TIERLIST_KIND_CHARACTER : TIERLIST_KIND_CARD;
   /** @type {Record<string, TierListTier>} */
   const tiers = {};
   TIERLIST_DEFAULT_TIERS.forEach(function (t) {
@@ -217,11 +247,13 @@ export async function createTierListRoom(title) {
     } catch (err) {
       throw new Error(formatTierListFirestoreError(err));
     }
+    const defaultTitle = kind === TIERLIST_KIND_CHARACTER ? "ラブカ キャラティアリスト" : "ラブカ ティアリスト";
     /** @type {TierListRoomDoc} */
     const doc = {
       v: 1,
       code: code,
-      title: trimText(title, TIERLIST_MAX_TITLE_LEN) || "ラブカ ティアリスト",
+      title: trimText(title, TIERLIST_MAX_TITLE_LEN) || defaultTitle,
+      kind: kind,
       status: "open",
       hostUid: user.uid,
       hostName: name,
@@ -471,22 +503,28 @@ export async function removeTierListTier(code, tierId) {
 }
 
 /**
- * カードを配置または移動する。全員可。
+ * カードまたはキャラを配置・移動する。全員可。
  * @param {string} code
- * @param {{ cardNo: string, tierId: string, orderInTier?: number }} input
+ * @param {{ cardNo?: string, charId?: string, tierId: string, orderInTier?: number }} input
  * @returns {Promise<TierListEntryDoc>}
  */
 export async function placeTierListCard(code, input) {
   const user = requireUser();
   const { api } = fs();
-  const cardNo = String((input && input.cardNo) || "").trim();
   const tierId = String((input && input.tierId) || "").trim();
-  if (!cardNo) throw new Error("カードを指定してください。");
   const roomSnap = await api.getDoc(roomRef(code));
   if (!roomSnap.exists()) throw new Error("ルームが見つかりません。");
   const room = /** @type {TierListRoomDoc} */ (roomSnap.data());
   if (!isValidTierListTierId(room, tierId)) throw new Error("行き先のティアが不正です。");
-  const id = sanitizeCardNo(cardNo);
+  const kind = tierListRoomKind(room);
+  const cardNo = String((input && input.cardNo) || "").trim();
+  const charId = sanitizeCharId((input && input.charId) || "");
+  if (kind === TIERLIST_KIND_CHARACTER) {
+    if (!charId) throw new Error("キャラを指定してください。");
+  } else if (!cardNo) {
+    throw new Error("カードを指定してください。");
+  }
+  const id = kind === TIERLIST_KIND_CHARACTER ? charId : sanitizeCardNo(cardNo);
   const ref = entryRef(code, id);
   const now = nowIso();
   const name = myName(user);
@@ -522,20 +560,38 @@ export async function placeTierListCard(code, input) {
     });
   }
   /** @type {TierListEntryDoc} */
-  const doc = {
-    id: id,
-    v: 1,
-    cardNo: cardNo,
-    tierId: tierId,
-    orderInTier: orderInTier,
-    byUid: user.uid,
-    byName: name,
-    byPhotoURL: user.photoURL || null,
-    placedAt: now,
-    movedAt: now,
-    movedByUid: user.uid,
-    movedByName: name,
-  };
+  const doc =
+    kind === TIERLIST_KIND_CHARACTER
+      ? {
+          id: id,
+          v: 1,
+          kind: TIERLIST_KIND_CHARACTER,
+          charId: charId,
+          tierId: tierId,
+          orderInTier: orderInTier,
+          byUid: user.uid,
+          byName: name,
+          byPhotoURL: user.photoURL || null,
+          placedAt: now,
+          movedAt: now,
+          movedByUid: user.uid,
+          movedByName: name,
+        }
+      : {
+          id: id,
+          v: 1,
+          kind: TIERLIST_KIND_CARD,
+          cardNo: cardNo,
+          tierId: tierId,
+          orderInTier: orderInTier,
+          byUid: user.uid,
+          byName: name,
+          byPhotoURL: user.photoURL || null,
+          placedAt: now,
+          movedAt: now,
+          movedByUid: user.uid,
+          movedByName: name,
+        };
   try {
     await api.setDoc(ref, doc);
   } catch (err) {
@@ -556,12 +612,17 @@ export async function reorderTierListCard(code, input) {
 /**
  * 追加者またはホストのみ削除可。
  * @param {string} code
- * @param {string} cardNo
+ * @param {string} itemId cardNo または charId
  */
-export async function removeTierListCard(code, cardNo) {
+export async function removeTierListCard(code, itemId) {
   const user = requireUser();
   const { api } = fs();
-  const id = sanitizeCardNo(cardNo);
+  const roomSnap = await api.getDoc(roomRef(code));
+  const room = roomSnap.exists() ? /** @type {TierListRoomDoc} */ (roomSnap.data()) : null;
+  const kind = tierListRoomKind(room);
+  const id =
+    kind === TIERLIST_KIND_CHARACTER ? sanitizeCharId(itemId) : sanitizeCardNo(itemId);
+  if (!id) throw new Error(kind === TIERLIST_KIND_CHARACTER ? "キャラを指定してください。" : "カードを指定してください。");
   const ref = entryRef(code, id);
   let snap;
   try {
@@ -571,10 +632,12 @@ export async function removeTierListCard(code, cardNo) {
   }
   if (!snap.exists()) return;
   const data = /** @type {TierListEntryDoc} */ (snap.data());
-  const roomSnap = await api.getDoc(roomRef(code));
-  const room = roomSnap.exists() ? /** @type {TierListRoomDoc} */ (roomSnap.data()) : null;
   if (data.byUid !== user.uid && !(room && room.hostUid === user.uid)) {
-    throw new Error("カードの削除は追加者または作成者のみできます。");
+    throw new Error(
+      kind === TIERLIST_KIND_CHARACTER
+        ? "キャラの削除は追加者または作成者のみできます。"
+        : "カードの削除は追加者または作成者のみできます。",
+    );
   }
   try {
     await api.deleteDoc(ref);
