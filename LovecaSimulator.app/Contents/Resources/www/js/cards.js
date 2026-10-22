@@ -239,6 +239,53 @@ export function catalogListThumbnailUrl(originalUrl, opts) {
   }
 }
 
+function escapeAttrForThumb(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;");
+}
+
+/**
+ * 一覧・会議・ビンゴ共通のサムネ &lt;img&gt; HTML。
+ * 公式ホストが 503 等で落ちることがあるため、wsrv.nl 縮小を src にし、失敗時だけ公式 URL へ戻す。
+ * @param {string} originalUrl
+ * @param {string} [className]
+ * @param {{ hi?: boolean, eager?: boolean, alt?: string, hiQuality?: boolean } | undefined} opts
+ * @returns {string}
+ */
+export function catalogThumbImgHtml(originalUrl, className, opts) {
+  const url = String(originalUrl || "").trim();
+  if (!url) return "";
+  const o = opts != null && typeof opts === "object" ? opts : {};
+  // 公式ホストが 503 のとき、未キャッシュの hi 指定は wsrv も落ちやすい。
+  // 一覧は標準サイズを主にし、hi 失敗時は標準 wsrv → 公式の順でフォールバックする。
+  const wantHi = o.hi === true || o.hiQuality === true;
+  const primary = catalogListThumbnailUrl(url, wantHi ? { hi: true } : undefined);
+  const std = catalogListThumbnailUrl(url);
+  const cls = className || "deck-builder-card-thumb";
+  const eager = o.eager === true;
+  const alt = o.alt != null ? String(o.alt) : "";
+  return (
+    '<img class="' +
+    escapeAttrForThumb(cls) +
+    '" src="' +
+    escapeAttrForThumb(primary) +
+    '" data-std-src="' +
+    escapeAttrForThumb(std) +
+    '" data-full-src="' +
+    escapeAttrForThumb(url) +
+    '" alt="' +
+    escapeAttrForThumb(alt) +
+    '" loading="' +
+    (eager ? "eager" : "lazy") +
+    '" fetchpriority="' +
+    (eager ? "auto" : "low") +
+    '" decoding="async" referrerpolicy="no-referrer" draggable="false" ' +
+    'onerror="var s=this.dataset.stdSrc,f=this.dataset.fullSrc;if(s&amp;&amp;this.src!==s){this.src=s;return;}if(f&amp;&amp;this.src!==f){this.src=f;return;}this.onerror=null;" />'
+  );
+}
+
 /**
  * 渡辺 曜＆鬼塚夏美＆大沢瑠璃乃（LL-bp2-001-R＋系）: 手札にいる間、印刷コストが 20 から「自身以外の手札枚数」ぶん減る扱い。
  * @param {string} cardNo

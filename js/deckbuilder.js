@@ -49,6 +49,7 @@ import {
   getCard,
   getCardCatalogSnapshot,
   catalogListThumbnailUrl,
+  catalogThumbImgHtml,
   uniqueCosts,
   uniqueProducts,
   uniqueSeries,
@@ -1808,30 +1809,7 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
   }
 
   function builderCatalogThumbImgHtml(url, className, imgOpts) {
-    if (!url) return "";
-    imgOpts = imgOpts || {};
-    // 公式 img を優先表示。wsrv 縮小は任意の高速化で、失敗時は公式へ戻す。
-    const low = catalogListThumbnailUrl(url, imgOpts.hiQuality ? { hi: true } : undefined);
-    const cls = className || "deck-builder-card-thumb";
-    const eager = imgOpts.eager === true;
-    const primary = url;
-    const fallback = low && low !== url ? low : "";
-    return (
-      '<img class="' +
-      escapeAttr(cls) +
-      '" src="' +
-      escapeAttr(primary) +
-      '" data-full-src="' +
-      escapeAttr(url) +
-      (fallback
-        ? '" data-low-src="' + escapeAttr(fallback)
-        : "") +
-      '" alt="" loading="' +
-      (eager ? "eager" : "lazy") +
-      '" fetchpriority="' +
-      (eager ? "auto" : "low") +
-      '" decoding="async" onerror="this.onerror=null;this.src=this.dataset.fullSrc||this.src" />'
-    );
+    return catalogThumbImgHtml(url, className || "deck-builder-card-thumb", imgOpts);
   }
 
   function renderCounts() {

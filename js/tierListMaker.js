@@ -3,7 +3,7 @@
  * 通信は tierListRoomSync.js（Firestore）に閉じ込め、ここは画面と操作だけを扱う。
  */
 import { T_LIVE, T_MEMBER } from "./config.js";
-import { getAllCards, getCard, uniqueProducts } from "./cards.js";
+import { catalogThumbImgHtml, getAllCards, getCard, uniqueProducts } from "./cards.js";
 import { catalogCardSchoolLabels } from "./cardGroups.js";
 import { openCardCatalogDialog } from "./cardCatalogDialog.js";
 import { showToast } from "./ui.js";
@@ -81,16 +81,7 @@ function signedIn() {
 /** @param {string} url */
 function thumbHtml(url, alt) {
   if (!url) return '<div class="tierlist-thumb-fallback">?</div>';
-  // 公式 img を優先（wsrv 障害でサムネが全滅しないようにする）
-  return (
-    '<img class="deck-builder-card-thumb tierlist-thumb-img" loading="lazy" decoding="async" alt="' +
-    escapeHtml(alt || "") +
-    '" src="' +
-    escapeHtml(url) +
-    '" data-full-src="' +
-    escapeHtml(url) +
-    '" onerror="this.onerror=null;this.src=this.dataset.fullSrc||this.src" />'
-  );
+  return catalogThumbImgHtml(url, "deck-builder-card-thumb tierlist-thumb-img", { alt: alt || "" });
 }
 
 function avatarHtml(name, photoURL, extraClass) {

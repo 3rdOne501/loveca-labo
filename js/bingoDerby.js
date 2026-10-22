@@ -2,7 +2,7 @@
  * 禁止制限ダービー用ビンゴ（3×3 / 5×5）。
  * 大穴は枠外。各カードに制限ポイント 0〜5。ドラッグで移動・入れ替え。
  */
-import { getAllCards, getCard, catalogListThumbnailUrl } from "./cards.js";
+import { getAllCards, getCard, catalogListThumbnailUrl, catalogThumbImgHtml } from "./cards.js";
 import { STORAGE_BINGO_DERBY, T_ENERGY } from "./config.js";
 import { showToast } from "./ui.js";
 import { showAppView, showDeckBuilderView } from "./viewNav.js";
@@ -139,16 +139,9 @@ function escapeAttr(s) {
 }
 
 function thumbImgHtml(url, className) {
-  const thumb = catalogListThumbnailUrl(url, { hi: true });
-  return (
-    '<img class="' +
-    escapeAttr(className) +
-    '" src="' +
-    escapeAttr(thumb) +
-    '" data-full-src="' +
-    escapeAttr(url || "") +
-    '" alt="" loading="lazy" decoding="async" draggable="false" />'
-  );
+  if (!url) return "";
+  // 標準 wsrv サイズ（公式 503 時でもキャッシュ命中しやすい）
+  return catalogThumbImgHtml(url, className);
 }
 
 /** @param {BingoSlot} slot @returns {string} */
@@ -492,7 +485,7 @@ function loadImageForCanvas(url) {
       };
       img2.src = url;
     };
-    img.src = catalogListThumbnailUrl(url, { hi: true });
+    img.src = catalogListThumbnailUrl(url);
   });
 }
 
