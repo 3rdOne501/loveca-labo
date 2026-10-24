@@ -1,14 +1,14 @@
 {
-  "generated": "2026-10-22",
+  "generated": "2026-10-24",
   "trigger": "live_start",
-  "total": 374,
+  "total": 377,
   "byTemplate": {
-    "grant_jouji_session": 89,
+    "grant_jouji_session": 90,
     "optional_self_wait_opp_stage": 20,
     "activate_stage_members_up_to": 5,
     "live_start_opp_wait_max_cost": 5,
     "heart_color_pick_grant": 30,
-    "deck_peek_relocate": 4,
+    "deck_peek_relocate": 5,
     "deck_top_look_reorder": 8,
     "deck_mill_conditional_grant": 3,
     "waiting_to_deck_bottom_blade_per": 4,
@@ -69,7 +69,7 @@
     "live_start_optional_energy_blade_per_live_frame": 4,
     "live_start_hand_discard_same_unit_grant": 2,
     "live_start_optional_energy_waiting_reorder_deck_top": 2,
-    "guided_manual": 2,
+    "guided_manual": 3,
     "live_start_opp_wait_if_stage_hearts": 1
   },
   "cards": [
@@ -3458,6 +3458,33 @@
       "optional": false,
       "perTurn": 0,
       "effect": "自分の控え室にあるカードが9枚以下の場合、自分の控え室にあるライブカードを3枚まで選び、自分のデッキの上に好きな順番で置く。"
+    },
+    {
+      "card_no": "PL!S-cl1-005-CL",
+      "name": "渡辺 曜",
+      "template": "deck_peek_relocate",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分のデッキの一番上のカードを見る。それをデッキの一番下に置いてもよい。"
+    },
+    {
+      "card_no": "PL!S-cl1-006-CL",
+      "name": "津島善子",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札を1枚デッキの一番下に置いてもよい：ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!S-cl1-007-CL",
+      "name": "国木田花丸",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札を1枚控え室に置いてもよい：ライブ終了時まで、自分のエールは、デッキの上から行う代わりにデッキの下から行う。"
     }
   ]
 }

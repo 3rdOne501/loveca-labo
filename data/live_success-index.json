@@ -1,7 +1,7 @@
 {
-  "generated": "2026-10-22",
+  "generated": "2026-10-24",
   "trigger": "live_success",
-  "total": 132,
+  "total": 133,
   "byTemplate": {
     "live_success_recover_from_waiting": 1,
     "energy_deck_under_member": 4,
@@ -34,7 +34,7 @@
     "yell_resolution_pick_self_score": 2,
     "yell_resolution_energy_wait": 2,
     "optional_energy_live_score_plus": 3,
-    "guided_manual": 1,
+    "guided_manual": 2,
     "yell_resolution_count_energy_wait": 1
   },
   "cards": [
@@ -1225,6 +1225,15 @@
       "optional": false,
       "perTurn": 0,
       "effect": "エールにより公開された自分のカードの中に『Liella!』のカードが7枚以上ある場合、自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。"
+    },
+    {
+      "card_no": "PL!S-cl1-002-CL",
+      "name": "桜内梨子",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "エールにより公開された自分のカードの中から、『Aqours』のカードを3枚まで、好きな順番でデッキの下に置く。"
     }
   ]
 }

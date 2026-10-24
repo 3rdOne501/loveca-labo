@@ -1,11 +1,11 @@
 {
-  "generated": "2026-10-22",
+  "generated": "2026-10-24",
   "trigger": "jidou",
-  "total": 144,
+  "total": 145,
   "automated": 132,
-  "guided_manual": 12,
+  "guided_manual": 13,
   "byTemplate": {
-    "jidou_manual": 12,
+    "jidou_manual": 13,
     "jidou_baton_leave_activate_energy": 7,
     "jidou_energy_under_placed_energy_wait": 2,
     "jidou_self_deck_to_waiting_discard_recover": 4,
@@ -1206,6 +1206,14 @@
       "automated": true,
       "eventKind": "yell",
       "effect": "自分がエールしたとき、エールにより公開された自分のカードの中に、を持つ『Liella!』のライブカードが1枚以上ある場合、ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!S-cl1-004-CL",
+      "name": "黒澤ダイヤ",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "[センター]自分がエールしたとき、エールにより公開された自分のカードの中にライブカードが2枚以上ある場合、相手のステージにいる元々持つハートの数が4つ以下のメンバー1人をウェイトにする。"
     }
   ]
 }

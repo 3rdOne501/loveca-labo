@@ -1,7 +1,7 @@
 {
-  "generated": "2026-10-22",
+  "generated": "2026-10-24",
   "trigger": "toujyou",
-  "total": 636,
+  "total": 637,
   "byTemplate": {
     "grant_jouji_session": 16,
     "toujou_deck_top_liella_live_pick": 4,
@@ -12,7 +12,7 @@
     "optional_self_wait_opp_stage": 38,
     "toujou_wait_pick_hand": 74,
     "ability_pick_one": 22,
-    "deck_top_to_waiting": 8,
+    "deck_top_to_waiting": 9,
     "waiting_to_deck_bottom_activate_per": 2,
     "energy_deck_under_member": 1,
     "deck_mill_conditional_grant": 2,
@@ -5883,6 +5883,15 @@
       "optional": false,
       "perTurn": 0,
       "effect": "このメンバーをウェイトにし、手札を1枚控え室に置いてもよい：自分のデッキの上からカードを5枚見る。その中からコスト9以上の『蓮ノ空』のメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
+    },
+    {
+      "card_no": "PL!S-cl1-001-CL",
+      "name": "高海千歌",
+      "template": "deck_top_to_waiting",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のデッキの上からカードを5枚控え室に置く。"
     }
   ]
 }

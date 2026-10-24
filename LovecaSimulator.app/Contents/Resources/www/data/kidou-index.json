@@ -1,12 +1,12 @@
 {
-  "generated": "2026-10-22",
+  "generated": "2026-10-24",
   "trigger": "kidou",
-  "total": 307,
+  "total": 310,
   "byTemplate": {
     "guided_manual": 2,
     "ability_sequence": 8,
     "kidou_hand_cost_wait_pick_hand": 25,
-    "kidou_stage_wait_pick_hand": 72,
+    "kidou_stage_wait_pick_hand": 74,
     "deck_top_pick_recover": 3,
     "kidou_mill_waiting_under_copy_printed_hearts": 4,
     "kidou_energy_under_opp_wait_by_under": 2,
@@ -16,7 +16,7 @@
     "draw_then_hand_discard": 11,
     "kidou_self_and_other_resolve_toujou": 4,
     "deck_mill_conditional_grant": 1,
-    "draw_from_deck": 18,
+    "draw_from_deck": 19,
     "live_start_position_change": 9,
     "kidou_wait_pick_hand": 20,
     "kidou_heart_color_deck_reveal_pick": 4,
@@ -2849,6 +2849,33 @@
       "optional": false,
       "perTurn": 1,
       "effect": "このメンバーをウェイトにし、手札を1枚控え室に置く：カードを1枚引く。"
+    },
+    {
+      "card_no": "PL!S-cl1-003-CL",
+      "name": "松浦果南",
+      "template": "kidou_stage_wait_pick_hand",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "このメンバーをステージから控え室に置く：自分の控え室から『Aqours』のカードを1枚手札に加える。"
+    },
+    {
+      "card_no": "PL!S-cl1-008-CL",
+      "name": "小原鞠莉",
+      "template": "draw_from_deck",
+      "automated": true,
+      "optional": false,
+      "perTurn": 1,
+      "effect": "このメンバーをウェイトにし、手札を1枚控え室に置く：カードを1枚引く。"
+    },
+    {
+      "card_no": "PL!S-cl1-009-CL",
+      "name": "黒澤ルビィ",
+      "template": "kidou_stage_wait_pick_hand",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "このメンバーをステージから控え室に置く：自分の控え室からメンバーカードを1枚手札に加える。"
     }
   ]
 }

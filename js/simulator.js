@@ -37648,14 +37648,24 @@ export function mountSimulator(
     }
 
     if (c.img) {
-      const img = document.createElement("img");
+      const img = opts.reusableImage || document.createElement("img");
+      // Refresh listeners against current card state without replacing the image itself.
+      if (img._llCardClickController) img._llCardClickController.abort();
+      const imageClickController = new AbortController();
+      img._llCardClickController = imageClickController;
+      img.style.cursor = "";
+      img.removeAttribute("data-ll-real-face-src");
       if (opts.hideFaceBehindBack) {
         img.setAttribute("data-ll-real-face-src", c.img);
-        img.src = CARD_BACK_DRAG_DATA_URI;
+        img.removeAttribute("data-thumb-request");
+        img.onerror = null;
+        if (img.getAttribute("src") !== CARD_BACK_DRAG_DATA_URI) img.src = CARD_BACK_DRAG_DATA_URI;
         img.alt = "（ライブ置き場・表面非表示）";
       } else if (opts.deckFaceHidden) {
         img.setAttribute("data-ll-real-face-src", c.img);
-        img.src = CARD_BACK_DRAG_DATA_URI;
+        img.removeAttribute("data-thumb-request");
+        img.onerror = null;
+        if (img.getAttribute("src") !== CARD_BACK_DRAG_DATA_URI) img.src = CARD_BACK_DRAG_DATA_URI;
         img.alt = "（山札一覧・表面非表示／ダブルクリックで拡大）";
       } else {
         img.alt = c.name || "";
@@ -37664,7 +37674,9 @@ export function mountSimulator(
           img.setAttribute("data-ll-real-face-src", c.img);
           applyCatalogThumbToImg(img, c.img, thumbOpts);
         } else {
-          img.src = c.img;
+          img.removeAttribute("data-thumb-request");
+          img.onerror = null;
+          if (img.getAttribute("src") !== c.img) img.src = c.img;
         }
       }
       img.title = String(c.card_no ? c.card_no + " · " + c.name : c.name || "");
@@ -37689,20 +37701,20 @@ export function mountSimulator(
             e.preventDefault();
             openCardCatalogDetail(c);
           },
-          true,
+          { capture: true, signal: imageClickController.signal },
         );
       } else if (typeof opts.onRotate === "function") {
         img.addEventListener("click", (e) => {
           e.stopPropagation();
           opts.onRotate();
-        });
+        }, { signal: imageClickController.signal });
       } else if (opts.zoomClick) {
         img.style.cursor = "zoom-in";
         img.addEventListener("click", function (e) {
           e.stopPropagation();
           e.preventDefault();
           openCardZoomFromImg(img);
-        });
+        }, { signal: imageClickController.signal });
       }
       var artWrap = document.createElement("div");
       artWrap.className = "card-art-wrap";
@@ -38132,6 +38144,12 @@ export function mountSimulator(
     const isDeckZone = zoneId === "zone-deck";
     const isWaitingZone = zoneId === "zone-waiting";
 
+    // Reuse artwork by instance ID, including rotated/face-down and hand-row changes.
+    const previousImages = new Map();
+    el.querySelectorAll(".card-item[data-id]").forEach(function (node) {
+      const img = node.querySelector("img.card-img");
+      if (img) previousImages.set(node.dataset.id, img);
+    });
     el.innerHTML = "";
     var handMultiRow =
       zoneId === "zone-hand" &&
@@ -38259,6 +38277,7 @@ export function mountSimulator(
 
       var playGlow = computePlayCardGlowOpts(c, zoneId);
       const cardOpts = {
+        reusableImage: previousImages.get(String(c.id)),
         onRotate: onRotate || undefined,
         zoomClick: zoomClick,
         forceLiveHorizontal: !!(liveSlotFaceDown && (c.type === T_LIVE || c.type === T_MEMBER)),

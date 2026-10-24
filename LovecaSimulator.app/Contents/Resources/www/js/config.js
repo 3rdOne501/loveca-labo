@@ -137,7 +137,7 @@ export const HISTORY_MAX_STEPS = 35;
 export const DECK_EXPORT_VERSION = 1;
 
 /** index.html の main.js クエリと揃える（JS モジュールのブラウザキャッシュ対策） */
-export const APP_MODULE_CACHE_BUST = "2026092248";
+export const APP_MODULE_CACHE_BUST = "2026102301";
 
 /** 禁止制限ダービー ビンゴカードの localStorage キー */
 export const STORAGE_BINGO_DERBY = "llocg_bingo_derby_v1";

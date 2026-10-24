@@ -194,7 +194,7 @@ export function catalogListThumbnailUrl(originalUrl, opts) {
   if (!originalUrl || typeof originalUrl !== "string") return originalUrl;
   if (originalUrl.startsWith("data:") || originalUrl.includes("wsrv.nl")) return originalUrl;
   try {
-    const u = new URL(originalUrl, typeof location !== "undefined" ? location.href : "https://local.invalid/");
+    const u = new URL(catalogCardImageMirrorUrl(originalUrl) || originalUrl, typeof location !== "undefined" ? location.href : "https://local.invalid/");
     if (u.protocol !== "http:" && u.protocol !== "https:") return originalUrl;
     let w = 96;
     let h = 136;
@@ -284,7 +284,11 @@ export function catalogCardImageMirrorUrl(originalUrl) {
  */
 export function applyCatalogThumbToImg(img, originalUrl, thumbOpts) {
   if (!img || !originalUrl || typeof originalUrl !== "string") return;
+  const requestKey = originalUrl + "|" + catalogListThumbnailUrl(originalUrl, thumbOpts);
+  if (img.getAttribute("data-thumb-request") === requestKey) return;
+  img.setAttribute("data-thumb-request", requestKey);
   if (originalUrl.startsWith("data:")) {
+    img.onerror = null;
     img.src = originalUrl;
     return;
   }
@@ -302,7 +306,6 @@ export function applyCatalogThumbToImg(img, originalUrl, thumbOpts) {
     /* noop */
   }
   img.removeAttribute("data-thumb-fb");
-  img.src = primary;
   img.onerror = function () {
     const s = img.getAttribute("data-std-src") || "";
     const mir = img.getAttribute("data-mirror-src") || "";
@@ -325,6 +328,7 @@ export function applyCatalogThumbToImg(img, originalUrl, thumbOpts) {
     }
     img.onerror = null;
   };
+  img.src = primary;
 }
 
 function escapeAttrForThumb(s) {
@@ -374,7 +378,7 @@ export function catalogThumbImgHtml(originalUrl, className, opts) {
     '" fetchpriority="' +
     (eager ? "auto" : "low") +
     '" decoding="async" referrerpolicy="no-referrer" draggable="false" ' +
-    'onerror="var s=this.dataset.stdSrc,m=this.dataset.mirrorSrc,f=this.dataset.fullSrc;if(s&amp;&amp;this.src!==s){this.src=s;return;}if(m&amp;&amp;this.src!==m){this.src=m;return;}if(f&amp;&amp;this.src!==f){this.src=f;return;}this.onerror=null;" />'
+    'onerror="var s=this.dataset.stdSrc,m=this.dataset.mirrorSrc,f=this.dataset.fullSrc,n=Number(this.dataset.thumbFb||0);if(n&lt;1&amp;&amp;s&amp;&amp;this.getAttribute(\'src\')!==s){this.dataset.thumbFb=1;this.src=s;return;}if(n&lt;2&amp;&amp;m&amp;&amp;this.getAttribute(\'src\')!==m){this.dataset.thumbFb=2;this.src=m;return;}if(n&lt;3&amp;&amp;f&amp;&amp;this.getAttribute(\'src\')!==f){this.dataset.thumbFb=3;this.src=f;return;}this.onerror=null;" />'
   );
 }
 
@@ -498,63 +502,74 @@ export function catalogCardImageUrl(card) {
   return "";
 }
 
+const thumbnailPrefetchQueue = [];
+const thumbnailPrefetchSeen = new Set();
+let thumbnailPrefetchActive = 0;
+
+/** Visible images take priority; speculative requests are deduplicated and bounded. */
+function pumpThumbnailPrefetchQueue() {
+  while (thumbnailPrefetchActive < 4 && thumbnailPrefetchQueue.length) {
+    const url = thumbnailPrefetchQueue.shift();
+    thumbnailPrefetchActive++;
+    let timer;
+    let done = false;
+    const im = new Image();
+    function finish(ok) {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      im.onload = im.onerror = null;
+      if (!ok) {
+        thumbnailPrefetchSeen.delete(url);
+        im.removeAttribute("src");
+      }
+      thumbnailPrefetchActive--;
+      pumpThumbnailPrefetchQueue();
+    }
+    im.decoding = "async";
+    im.referrerPolicy = "no-referrer";
+    im.fetchPriority = "low";
+    im.onload = function () { finish(true); };
+    im.onerror = function () { finish(false); };
+    timer = setTimeout(function () { finish(false); }, 15000);
+    im.src = url;
+  }
+}
+
 /**
- * 一覧サムネ（wsrv 標準サイズ）を先読みする。
+ * 表示と同じ標準サムネを低優先度・最大4並列で先読みする。
  * @param {Iterable<string>} originalUrls
- * @param {{ limit?: number, eagerCount?: number } | undefined} opts
+ * @param {{ limit?: number, eagerCount?: number } | undefined} opts eagerCount is retained for callers; all requests are low priority.
  */
 export function prefetchCatalogListThumbnails(originalUrls, opts) {
   const o = opts != null && typeof opts === "object" ? opts : {};
   const limit = o.limit != null ? Math.max(0, Math.floor(Number(o.limit) || 0)) : 48;
-  const eagerCount = o.eagerCount != null ? Math.max(0, Math.floor(Number(o.eagerCount) || 0)) : 36;
   let n = 0;
   for (const raw of originalUrls) {
     if (limit > 0 && n >= limit) break;
     const url = String(raw || "").trim();
     if (!url) continue;
-    const thumb = catalogListThumbnailUrl(url);
-    if (!thumb || thumb === url) continue;
-    try {
-      const im = new Image();
-      im.decoding = "async";
-      if ("fetchPriority" in im) im.fetchPriority = n < eagerCount ? "high" : "low";
-      im.src = thumb;
-    } catch (_) {
-      /* noop */
-    }
     n++;
+    const thumb = catalogListThumbnailUrl(url);
+    if (!thumb || thumb === url || thumbnailPrefetchSeen.has(thumb)) continue;
+    // Keep a bounded session cache and queue, even when filters change repeatedly.
+    if (thumbnailPrefetchSeen.size >= 512 || thumbnailPrefetchQueue.length >= 96) continue;
+    thumbnailPrefetchSeen.add(thumb);
+    thumbnailPrefetchQueue.push(thumb);
   }
+  pumpThumbnailPrefetchQueue();
 }
 
-/**
- * メインデッキに含まれるカード画像を、一覧表示より先にブラウザキャッシュへ載せる。
- * @param {Record<string, number>} deckMap
- * @param {(no: string) => unknown} getCardFn
- */
+/** Preload the same standard thumbnails used on the board, without full-size originals. */
 export function prefetchDeckCardImagesFromMap(deckMap, getCardFn) {
   if (!deckMap || typeof deckMap !== "object") return;
   const urls = new Set();
   for (const k of Object.keys(deckMap)) {
-    const n = deckMap[k];
-    if (!(Number(n) > 0)) continue;
-    const c = getCardFn(k);
-    if (!c || typeof c !== "object") continue;
-    const face = catalogCardImageUrl(c);
-    if (!face) continue;
-    urls.add(face);
-    const thumb = catalogListThumbnailUrl(face);
-    if (thumb && thumb !== c.img) urls.add(thumb);
+    if (!(Number(deckMap[k]) > 0)) continue;
+    const face = catalogCardImageUrl(getCardFn(k));
+    if (face) urls.add(face);
   }
-  for (const u of urls) {
-    try {
-      const im = new Image();
-      im.decoding = "async";
-      if ("fetchPriority" in im) im.fetchPriority = "high";
-      im.src = u;
-    } catch (_) {
-      /* noop */
-    }
-  }
+  prefetchCatalogListThumbnails(urls, { limit: 60 });
 }
 
 /** @param {unknown} raw */
