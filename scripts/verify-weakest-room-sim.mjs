@@ -24,7 +24,7 @@ import path from "node:path";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-const { __setTestCloudFirestore } = await import(path.join(ROOT, "js/cloudAuth.js"));
+const { __setTestCloudFirestore, isGoogleCloudUser } = await import(path.join(ROOT, "js/cloudAuth.js"));
 const wr = await import(path.join(ROOT, "js/weakestRoomSync.js"));
 
 /* ------------------------------------------------------------------ *
@@ -184,7 +184,13 @@ const USERS = {
 };
 
 function actAs(who) {
-  __setTestCloudFirestore({ db: {}, api: mock.api, user: USERS[who] });
+  const user = USERS[who];
+  __setTestCloudFirestore({ db: {}, api: mock.api, user });
+  if (isGoogleCloudUser()) throw new Error("cached user without auth must not pass Google gate");
+  __setTestCloudFirestore({ db: {}, api: mock.api, user, auth: { currentUser: { ...user, isAnonymous: true } } });
+  if (isGoogleCloudUser()) throw new Error("anonymous user must not pass Google gate");
+  __setTestCloudFirestore({ db: {}, api: mock.api, user, auth: { currentUser: { ...user, isAnonymous: false, providerData: [{ providerId: "google.com" }] } } });
+  if (!isGoogleCloudUser()) throw new Error("explicit mock Google auth must pass");
 }
 
 /* --- A. 作成・参加 --- */

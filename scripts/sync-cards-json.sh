@@ -133,6 +133,8 @@ if [[ "${ok}" -ne 1 ]]; then
   exit 1
 fi
 
+node "${ROOT}/scripts/normalize-card-units.mjs" "${TMP}"
+
 if [[ -s "${DEST}" ]] && cmp -s "${TMP}" "${DEST}"; then
   rm -f "${TMP}"
   echo "変更なし: ${DEST}（${BASELINE} 枚・ソース: ${chosen_url}）"

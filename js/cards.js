@@ -1,3 +1,4 @@
+import { canonicalizeUnitName } from "./cardGroups.js";
 import {
   CARDS_ABILITY_JSON_BUNDLED_PATH,
   CARDS_JSON_BUNDLED_PATH,
@@ -584,6 +585,9 @@ function countCatalogCardKeys(raw) {
 
 function ingestCardCatalogJson(raw) {
   catalog = raw;
+  for (const card of Object.values(catalog)) {
+    if (card && typeof card === "object" && card.unit) card.unit = canonicalizeUnitName(card.unit);
+  }
   catalogKeyByNormalized = new Map();
   for (const k of Object.keys(catalog)) {
     if (k.startsWith("_")) continue;
@@ -1253,7 +1257,7 @@ export function cardMatchesSeriesFilter(seriesStr, selected) {
 export function uniqueUnits(cards) {
   const s = new Set();
   cards.forEach((c) => {
-    if (c.unit) s.add(c.unit);
+    if (c.unit) s.add(canonicalizeUnitName(c.unit));
   });
   return [...s].sort();
 }
@@ -1410,7 +1414,7 @@ export function filterCards(cards, opts) {
     if (opts.types[T_LIVE] === false && c.type === T_LIVE) return false;
     if (opts.product && c.product !== opts.product) return false;
     if (opts.series && !cardMatchesSeriesFilter(c.series, opts.series)) return false;
-    if (opts.unit && c.unit !== opts.unit) return false;
+    if (opts.unit && canonicalizeUnitName(c.unit) !== canonicalizeUnitName(opts.unit)) return false;
     /* コストに何かしら「外した」チェックがあるとき、ライブはコストを持たないので一覧に出さない */
     if (opts.narrowCostExcludeLive && c.type === T_LIVE) return false;
     /* ライブカードは JSON 上コストが無く score 等のみのため、コスト絞り込みはメンバーだけに適用 */

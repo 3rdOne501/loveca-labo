@@ -395,6 +395,19 @@ Discord: messageId 1553782413912702978（ms_yw_330_kanana）
 
 | パターン | 件数目安 | テンプレート / 修正 |
 |---------|---------|-------------------|
+| 手札枚数に応じる山札見→2枚まで手札→残り控え室 | 2レアリティ | `deck_top_pick_recover` + `deckTopCountFromHandLimit`（手札10枚以上で0枚） |
+| 控え室メンバーN枚を自身の下 | 2レアリティ | `toujou_waiting_members_under_self`（グループ、固定枚数、対象不足時） |
+| 相手の元々のハート上限ウェイト | 006の4契機＋033の2契機 | `optional_self_wait_opp_stage`（コスト99とハート上限を独立、006の複合任意コストを修正） |
+| ウェイト起因の自動能力 | 6レアリティ | 効果元／所有者／コストを区別し、人数分イベント・回数制限・選択の直列処理を追加 |
+| バトン相手のコスト9以上→ライブ終了までブレード2 | 3カード | `jidou_leave_baton_min_cost_blade`（登場した相手に付与） |
+| 同ターンの所属グループ効果によるアクティブ化人数 | 3カード | ID履歴を共有し、必要ハート減少と `live_start_group_activated_blade_per` を処理 |
+| 正面へのウェイト登場／異名2人ウェイトでコスト減少／所属限定成功ライブ換算 | 5セグメント | `opponent_front_enter_wait` / `play_cost_reduce_wait_distinct` / `success_count_for_group` |
+| 同グループN人バトン→ライブ回収→コスト合計条件付きスコア | 2レアリティ | `toujou_multi_baton_recover_score`（μ's pb2-000、退場前スナップショット・固定回収・ライブ終了まで） |
+| 手札コスト→エールのデッキ下置換 | 1 | `live_start_yell_from_bottom`（007、ライブ終了・Undo／復元対応） |
+| 成功ライブの各同名→控え室からデッキ上 | 1 | `success_live_names_waiting_to_deck_top`（012、名前ごとの上限と自由順序） |
+| 特殊ハート3種→デッキ下・センターブレード | 1 | `waiting_live_categories_to_bottom_grant`（010、各種類1枚まで） |
+| BHなし控え室→シャッフルデッキ下・比例ハート | 1 | `waiting_no_bh_bottom_heart_per`（013、2枚ごとheart05×2） |
+| エール公開ライブ枚数→相手の元々ハート上限ウェイト | 1 | `jidou_yell_opp_wait_printed_hearts`（004、センター・ターン1回） |
 | 山札見る→手札→残り控え室（N枚まで・各グループ1枚） | 29+3 | `classifyDeckTopPickToHandPatch`（`deckTopPickMax` / `deckTopPickDistinctGroup`） |
 | 登場 or 手札 | 2 | `deck_top_pick_enter_or_hand`（PL!SP-pb2-001-R/PP） |
 | 手札・同ユニット名N枚→常時付与 | 複数 | `live_start_hand_discard_same_unit_grant` |
@@ -884,6 +897,16 @@ verify-ability-coverage OK / verify-ability-handlers OK / verify-ability-runtime
 
 ---
 
+## 46. Aqours クリアポケット16枚とユニット表記統一（2026-11-03）
+
+- 対象: PL!S-cl1-001–016。メンバー9／ライブ4／能力なしエネルギー3。
+- 新規未対応002・004・007・012と、誤分類／コスト欠落006・010・011・013の計8枚を修正。
+- 番号分岐は追加せず、能力文からテンプレート・条件・移動枚数・ハート付与数を抽出。
+- 共通横展開: エール回収候補の領域制限、順序付き複数枚のデッキ下移動（既存PL!S-bp2-021-Lを含む）。
+- みらくらぱーく！のユニット表記45枚を正規化（計106枚）。取込・表示・フィルタ・同一グループ比較を統一。
+- 専用検証: verify-aqours-cl1 / audit-aqours-cl1-text。詳しいカード文要約・既存失敗はdocs/aqours-cl1-verification-list.md。
+- 全体回帰は変更前後とも58件中51成功／7失敗。閾値変更なし。ブラウザ実操作検証は未実施。
+
 ## 更新履歴
 
 | 日付 | 内容 |
@@ -954,3 +977,24 @@ verify-ability-coverage OK / verify-ability-handlers OK / verify-ability-runtime
 | 2026-06-30 | Aqours bp5: 005 `grantToEnteredMembersThisTurn`、verify/audit ライブ節 |
 | 2026-06-30 | μ's bp5 ライブ: 024 `parseAbilityBulletChoices` / `executeAbilityChoiceText`、`audit-common-patterns.mjs`、p2 smoke 窓拡張 |
 | 2026-06-30 | μ's bp5 メンバー（PL!-bp5）: `abilityComposition` 任意コスト→必須ステップ誤継承修正（横展開5枚）、`blade_if_self_wait` heartFlat、`toujou_wait_pick_hand` live_start/LS 前提 |
+
+
+## 2026-11-03 — μ's DUOの複合バトン能力を限定修正
+
+- `PL!-pb2-000-R` / `PL!-pb2-000-DUO`（星空 凛&小泉花陽）の登場能力を、単純な常時付与から `toujou_multi_baton_recover_score` に分離。
+- μ'sの2人という条件→控え室のμ'sライブ1枚回収→コスト合計15のときのみスコア＋1を解決。対象なしでも独立した追加処理は行う。
+- 同型全文検索で上記2枚を確認。別効果のLiella! bp4-004（4レアリティ）は統合しない。商品全体の監修完了とはしない。
+- `verify-muse-duo-baton.mjs` 16シナリオ＋必須選択ダイアログ検証、監査37ケース、既存の山札選択／Aqours cl1／実行ハンドラ検証を通過。
+- 詳細: `docs/muse-duo-baton-verification-list.md`。全体の既存失敗と監査指摘は `docs/HANDOFF.md`。
+
+
+## 2026-11-03 — 未対応32セグメントの実装
+
+- 監査の未対応32セグメント（レアリティを含む）を本文から分類し、実ハンドラ・発動イベントへ接続。番号分岐は追加しない。
+- 相手ウェイトの元々ハート上限、複合任意コスト、下置き固定枚数、可変山札確認、成功ライブ条件のエール追加、エール色変更、条件付き山札上回収を修正。
+- ウェイト起因の自動能力、所属／名前／センター条件付き自動効果、控え室登場ドロー、バトン退場付与、常時のプレイコスト減少・正面のウェイト登場・成功ライブ換算を実装。
+- アクティブ化履歴の同型検索でpb2-010 R/P＋の人数比例ブレードの欠落も確認し同時修正。pb2-033の元々ハート上限も横展開修正。
+- 既存のLiella! bp1-024（名前空白）、Liella! bp4-023（複数能力保持）、虹bp4-025（アイコン表記）、虹bp5-005（汎用分岐が条件を先取り）を修正し全体検証を回復。
+- 索引のguided_manual／jidou_manual／常時未分類は0。監査の疑いは28セグメント残る。分類済みを完全動作保証とはしない。
+- `verify-pending-abilities.mjs`: 32分類・40実処理／境界値検証通過。監査37ケース、既存DUO、全体回帰も通過。
+- 対象・同型一覧: `docs/pending-ability-verification-list.md`。各商品全体の監修完了ではない。

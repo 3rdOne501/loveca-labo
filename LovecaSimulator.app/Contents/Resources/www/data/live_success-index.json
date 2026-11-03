@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-31",
+  "generated": "2026-11-03",
   "trigger": "live_success",
   "total": 133,
   "byTemplate": {
@@ -34,8 +34,9 @@
     "yell_resolution_pick_self_score": 2,
     "yell_resolution_energy_wait": 2,
     "optional_energy_live_score_plus": 3,
-    "guided_manual": 2,
-    "yell_resolution_count_energy_wait": 1
+    "optional_self_wait_opp_stage": 1,
+    "yell_resolution_count_energy_wait": 1,
+    "yell_resolution_pick_deck_bottom": 1
   },
   "cards": [
     {
@@ -1175,8 +1176,8 @@
     {
       "card_no": "PL!HS-PR-038-PR",
       "name": "セラス 柳田 リリエンフェルト",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "optional_self_wait_opp_stage",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "相手のステージにいるコスト4以下のメンバー1人をウェイトにする。それは次のターンのアクティブフェイズにアクティブにならない。"
@@ -1229,8 +1230,8 @@
     {
       "card_no": "PL!S-cl1-002-CL",
       "name": "桜内梨子",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "yell_resolution_pick_deck_bottom",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "エールにより公開された自分のカードの中から、『Aqours』のカードを3枚まで、好きな順番でデッキの下に置く。"

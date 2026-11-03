@@ -1,3 +1,4 @@
+import { canonicalizeUnitName } from "./cardGroups.js";
 import {
   DECK_EXPORT_VERSION,
   DEFAULT_STARTER_DECK_MAP,
@@ -667,7 +668,7 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
       if (typeof o.searchText === "string") searchText = o.searchText;
       if (typeof o.filterProduct === "string") filterProduct = o.filterProduct;
       if (typeof o.filterSeries === "string") filterSeries = o.filterSeries;
-      if (typeof o.filterUnit === "string") filterUnit = o.filterUnit;
+      if (typeof o.filterUnit === "string") filterUnit = canonicalizeUnitName(o.filterUnit);
       if (o.filterTypes && typeof o.filterTypes === "object") {
         if (typeof o.filterTypes[T_MEMBER] === "boolean") filterTypes[T_MEMBER] = o.filterTypes[T_MEMBER];
         if (typeof o.filterTypes[T_LIVE] === "boolean") filterTypes[T_LIVE] = o.filterTypes[T_LIVE];

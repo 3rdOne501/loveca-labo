@@ -102,6 +102,12 @@ export function canonicalizeDisplayPunctuation(s) {
   return String(s == null ? "" : s).replace(/!/g, "！").replace(/\?/g, "？");
 }
 
+/** DB・検索・保存済みフィルタで共通のユニット表記。 */
+export function canonicalizeUnitName(value) {
+  const unit = String(value == null ? "" : value).trim();
+  return /^みらくらぱーく[!！]?$/.test(unit) ? "みらくらぱーく！" : unit;
+}
+
 /** 能力文『…』の μ/µ ゆれを正規化（BP06 等で micro sign が使われる） */
 export function normalizeQuotedSeriesTag(tag) {
   return String(tag == null ? "" : tag)
@@ -169,7 +175,7 @@ export function cardGroupRuleForTag(tag) {
 export function catalogCardGroupKey(cat) {
   if (!cat) return "";
   var unit = cat.unit != null ? String(cat.unit).trim() : "";
-  if (unit) return unit;
+  if (unit) return canonicalizeUnitName(unit);
   var school = catalogCardSchoolLabel(cat);
   if (school) return school;
   var series = cat.series != null ? String(cat.series).trim() : "";

@@ -23,6 +23,9 @@ let deps = null;
  */
 let swapActiveSnap = null;
 
+/** True only inside a synchronous opponent-board read/mutation. */
+export function isOpponentBoardSwapped() { return swapActiveSnap != null; }
+
 /** @param {OpponentBoardDeps} d */
 export function initOpponentBoardApi(d) {
   deps = d;

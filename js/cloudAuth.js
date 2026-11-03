@@ -580,9 +580,11 @@ export function getCloudFirestore() {
  * テスト専用フック（scripts/verify-versus-online-sim.mjs）。
  * Firebase 実接続なしで versusMatch.js の Firestore 経路を Node 上で駆動するための注入口。
  * 本番コードからは呼ばれない（window/実 Firebase 経路とは独立）。
- * @param {{ db: any, api: any, user: { uid: string, displayName?: string }|null }|null} inject
+ * @param {{ db: any, api: any, auth?: any, user: { uid: string, displayName?: string }|null }|null} inject
  */
 export function __setTestCloudFirestore(inject) {
+  // 模擬認証も明示注入する。キャッシュユーザーだけでGoogle限定ゲートを通さない。
+  _auth = inject?.auth || null;
   if (!inject) {
     _db = null;
     _firestoreApi = null;

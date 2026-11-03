@@ -7,7 +7,7 @@
 - **デュアル未対応の疑い（高リスクのみ）**: [dual-mode-gap-audit.json](./dual-mode-gap-audit.json)（`node scripts/audit-dual-mode-gaps.mjs`）
 - **手動プレイ確認**: [play-verification-list.md](./play-verification-list.md)
 
-生成: 2026-08-10 — **300** 能力セグメント / **250** 枚
+生成: 2026-11-03 — **333** 能力セグメント / **275** 枚
 
 ## dualStatus（実装状況の目安）
 
@@ -24,25 +24,25 @@
 
 ## 相互作用種別（kinds）
 
-- `read_compare` (110): 相手状態の参照・比較（前提条件）
+- `read_compare` (120): 相手状態の参照・比較（前提条件）
 - `pick_self_or_opponent` (2): 自分か相手の盤面を選んで解決
-- `mutate_opponent_stage` (159): 相手ステージ（ウェイト・アクティブ・退場等）
+- `mutate_opponent_stage` (188): 相手ステージ（ウェイト・アクティブ・退場等）
 - `mutate_opponent_hand` (5): 相手手札（捨て・公開・加える等）
-- `mutate_opponent_waiting` (9): 相手控え室
+- `mutate_opponent_waiting` (13): 相手控え室
 - `mutate_opponent_deck` (39): 相手山札
 - `mutate_opponent_live` (21): 相手ライブ置き場
 - `mutate_opponent_energy` (11): 相手エネルギー
-- `mutate_opponent_success_live` (21): 相手成功ライブ置き場
+- `mutate_opponent_success_live` (23): 相手成功ライブ置き場
 - `both_players` (19): 自分と相手はそれぞれ（同時処理）
-- `opponent_choice` (45): 相手の選択・任意行動
-- `passive_opponent` (55): 常時（相手状態を参照）
+- `opponent_choice` (46): 相手の選択・任意行動
+- `passive_opponent` (57): 常時（相手状態を参照）
 - `guided_manual` (0): 手動ガイド（相手参照あり）
 
 ## dualStatus 集計
 
-- `dual_ok`: 243
-- `passive_track`: 55
-- `dual_gap`: 2
+- `dual_ok`: 271
+- `passive_track`: 57
+- `dual_gap`: 5
 
 ## セット別一覧
 
@@ -58,7 +58,7 @@
 | PL!SP-bp2-011-R | 鬼塚冬毬 | toujyou | `toujou_wait_pick_opp_live` | mutate_opponent_live, mutate_opponent_stage, opponent_choice | `dual_ok` |
 | PL!SP-bp2-023-L | Go!! リスタート | live_start | `live_card_score_plus` | read_compare | `dual_ok` |
 | PL!SP-bp2-023-SRL | Go!! リスタート | live_start | `live_card_score_plus` | read_compare | `dual_ok` |
-| PL!SP-bp2-024-L | ビタミンSUMMER！ | live_success | `live_card_score_plus` | read_compare | `dual_ok` |
+| PL!SP-bp2-024-L | ビタミンSUMMER! | live_success | `live_card_score_plus` | read_compare | `dual_ok` |
 | PL!SP-bp2-024-SECL | ビタミンSUMMER! | live_success | `live_card_score_plus` | read_compare | `dual_ok` |
 | PL!SP-bp2-024-SRL | ビタミンSUMMER! | live_success | `live_card_score_plus` | read_compare | `dual_ok` |
 
@@ -98,7 +98,7 @@
 | PL!S-bp3-017-N | 小原鞠莉 | live_start | `optional_self_wait_opp_stage` | mutate_opponent_stage | `dual_ok` |
 | PL!S-bp3-024-L | Deep Resonance | live_start | `ability_pick_one` | mutate_opponent_stage | `dual_ok` |
 
-### PL!-bp3 (6)
+### PL!-bp3 (9)
 
 | ID | 名前 | タイミング | template | kinds | dualStatus |
 |----|------|------------|----------|-------|------------|
@@ -107,7 +107,10 @@
 | PL!-bp3-002-R | 絢瀬絵里 | toujyou | `optional_self_wait_opp_stage` | mutate_opponent_stage | `dual_ok` |
 | PL!-bp3-002-R | 絢瀬絵里 | jouji | `passive_track` | mutate_opponent_stage, passive_opponent | `passive_track` |
 | PL!-bp3-022-L | ユメノトビラ | live_start | `live_start_deck_reveal_both_stage_members_score` | mutate_opponent_stage, read_compare | `dual_ok` |
+| PL!-bp3-022-SECL | ユメノトビラ | live_start | `live_start_deck_reveal_both_stage_members_score` | mutate_opponent_stage, read_compare | `dual_ok` |
+| PL!-bp3-022-SRL | ユメノトビラ | live_start | `live_start_deck_reveal_both_stage_members_score` | mutate_opponent_stage, read_compare | `dual_ok` |
 | PL!-bp3-026-L | Oh,Love&Peace! | live_success | `live_card_score_plus` | mutate_opponent_stage, read_compare | `dual_ok` |
+| PL!-bp3-026-SRL | Oh,Love&Peace! | live_success | `live_card_score_plus` | mutate_opponent_stage, read_compare | `dual_ok` |
 
 ### PL!N-bp4 (32)
 
@@ -184,7 +187,7 @@
 | PL!-bp4-009-R | 矢澤にこ | toujyou | `toujou_opp_active_wait` | mutate_opponent_stage, opponent_choice | `dual_ok` |
 | PL!-bp4-018-N | 矢澤にこ | jouji | `passive_track` | passive_opponent, read_compare | `passive_track` |
 
-### PL!-bp5 (14)
+### PL!-bp5 (15)
 
 | ID | 名前 | タイミング | template | kinds | dualStatus |
 |----|------|------------|----------|-------|------------|
@@ -197,6 +200,7 @@
 | PL!-bp5-007-R | 東條 希 | toujyou | `toujou_baton_both_trim_hand_draw` | both_players, opponent_choice | `dual_ok` |
 | PL!-bp5-013-N | 園田海未 | toujyou | `optional_self_wait_opp_stage` | mutate_opponent_stage | `dual_ok` |
 | PL!-bp5-021-L | SUNNY DAY SONG | live_start | `live_start_sunny_day_song_tiered` | opponent_choice | `dual_ok` |
+| PL!-bp5-021-SRL | SUNNY DAY SONG | live_start | `live_start_sunny_day_song_tiered` | opponent_choice | `dual_ok` |
 | PL!-bp5-024-L | Private Wars | live_start | `ability_pick_one` | mutate_opponent_stage | `dual_ok` |
 | PL!-bp5-111-P＋ | 綺羅ツバサ | kidou | `kidou_hand_discard_activate_wait_opp_bonus` | mutate_opponent_hand, mutate_opponent_stage | `dual_ok` |
 | PL!-bp5-111-R | 綺羅ツバサ | kidou | `kidou_hand_discard_activate_wait_opp_bonus` | mutate_opponent_hand, mutate_opponent_stage | `dual_ok` |
@@ -209,7 +213,7 @@
 |----|------|------------|----------|-------|------------|
 | PL!-bp6-010-N | 高坂穂乃果 | kidou | `kidou_self_to_wait_opp_wait` | mutate_opponent_stage | `dual_ok` |
 
-### PL!-pb1 (21)
+### PL!-pb1 (22)
 
 | ID | 名前 | タイミング | template | kinds | dualStatus |
 |----|------|------------|----------|-------|------------|
@@ -234,8 +238,36 @@
 | PL!-pb1-018-P＋ | 矢澤にこ | toujyou | `toujou_both_wait_to_empty_stage` | both_players, opponent_choice | `dual_ok` |
 | PL!-pb1-018-R | 矢澤にこ | toujyou | `toujou_both_wait_to_empty_stage` | both_players, opponent_choice | `dual_ok` |
 | PL!-pb1-030-L | Cutie Panther | live_start | `live_start_need_heart_reduce_fixed` | mutate_opponent_stage, read_compare | `dual_ok` |
+| PL!-pb1-030-SRL | Cutie Panther | live_start | `live_start_need_heart_reduce_fixed` | mutate_opponent_stage, read_compare | `dual_ok` |
 
-### PL!-PR (8)
+### PL!-pb2 (22)
+
+| ID | 名前 | タイミング | template | kinds | dualStatus |
+|----|------|------------|----------|-------|------------|
+| PL!-pb2-003-PP | 南 ことり | live_start | `grant_jouji_session` | mutate_opponent_stage, read_compare | `dual_ok` |
+| PL!-pb2-003-R | 南 ことり | live_start | `grant_jouji_session` | mutate_opponent_stage, read_compare | `dual_ok` |
+| PL!-pb2-006-PP | 西木野真姫 | kidou | `optional_self_wait_opp_stage` | mutate_opponent_stage | `dual_ok` |
+| PL!-pb2-006-PP | 西木野真姫 | live_start | `optional_self_wait_opp_stage` | mutate_opponent_stage | `dual_ok` |
+| PL!-pb2-006-R | 西木野真姫 | kidou | `optional_self_wait_opp_stage` | mutate_opponent_stage | `dual_ok` |
+| PL!-pb2-006-R | 西木野真姫 | live_start | `optional_self_wait_opp_stage` | mutate_opponent_stage | `dual_ok` |
+| PL!-pb2-011-P＋ | 絢瀬絵里 | jidou | `jidou_opp_wait_under_group` | mutate_opponent_stage, mutate_opponent_waiting | `dual_ok` |
+| PL!-pb2-011-R | 絢瀬絵里 | jidou | `jidou_opp_wait_under_group` | mutate_opponent_stage, mutate_opponent_waiting | `dual_ok` |
+| PL!-pb2-015-P＋ | 西木野真姫 | jidou | `jidou_opp_wait_group_activate_choice` | mutate_opponent_stage, mutate_opponent_waiting | `dual_ok` |
+| PL!-pb2-015-R | 西木野真姫 | jidou | `jidou_opp_wait_group_activate_choice` | mutate_opponent_stage, mutate_opponent_waiting | `dual_ok` |
+| PL!-pb2-018-P＋ | 矢澤にこ | toujyou | `draw_from_deck` | mutate_opponent_stage, read_compare | `dual_ok` |
+| PL!-pb2-018-P＋ | 矢澤にこ | toujyou | `optional_self_wait_opp_stage` | mutate_opponent_stage | `dual_ok` |
+| PL!-pb2-018-P＋ | 矢澤にこ | live_start | `optional_self_wait_opp_stage` | mutate_opponent_stage | `dual_ok` |
+| PL!-pb2-018-R | 矢澤にこ | toujyou | `draw_from_deck` | mutate_opponent_stage, read_compare | `dual_ok` |
+| PL!-pb2-018-R | 矢澤にこ | toujyou | `optional_self_wait_opp_stage` | mutate_opponent_stage | `dual_ok` |
+| PL!-pb2-018-R | 矢澤にこ | live_start | `optional_self_wait_opp_stage` | mutate_opponent_stage | `dual_ok` |
+| PL!-pb2-024-N | 西木野真姫 | live_start | `live_start_opp_wait_max_cost` | mutate_opponent_stage | `dual_ok` |
+| PL!-pb2-029-N | 絢瀬絵里 | toujyou | `optional_self_wait_opp_stage` | mutate_opponent_stage | `dual_ok` |
+| PL!-pb2-029-N | 絢瀬絵里 | live_start | `optional_self_wait_opp_stage` | mutate_opponent_stage | `dual_ok` |
+| PL!-pb2-033-N | 西木野真姫 | toujyou | `optional_self_wait_opp_stage` | mutate_opponent_stage | `dual_ok` |
+| PL!-pb2-033-N | 西木野真姫 | live_start | `optional_self_wait_opp_stage` | mutate_opponent_stage | `dual_ok` |
+| PL!-pb2-042-L | PSYCHIC FIRE | jidou | `jidou_yell_named_center_opp_wait` | mutate_opponent_stage | `dual_gap` |
+
+### PL!-PR (10)
 
 | ID | 名前 | タイミング | template | kinds | dualStatus |
 |----|------|------------|----------|-------|------------|
@@ -247,6 +279,8 @@
 | PL!-PR-009-PR | 矢澤にこ | toujyou | `optional_self_wait_opp_stage` | mutate_opponent_stage | `dual_ok` |
 | PL!-PR-009-PR | 矢澤にこ | live_start | `optional_self_wait_opp_stage` | mutate_opponent_stage | `dual_ok` |
 | PL!-PR-014-PR | 園田海未 | toujyou | `toujou_opp_hand_reveal_no_live_draw` | mutate_opponent_hand, mutate_opponent_live, read_compare | `dual_ok` |
+| PL!-PR-023-PR | 絢瀬絵里 | jidou | `jidou_any_member_wait_blade` | mutate_opponent_stage, read_compare | `dual_ok` |
+| PL!-PR-024-PR | 絢瀬絵里 | jouji | `passive_track` | mutate_opponent_success_live, passive_opponent | `passive_track` |
 
 ### PL!HS-bp1 (1)
 
@@ -265,24 +299,24 @@
 
 | ID | 名前 | タイミング | template | kinds | dualStatus |
 |----|------|------------|----------|-------|------------|
-| PL!HS-bp6-004-P | 百生 吟子 | toujyou | `optional_self_wait_opp_stage` | mutate_opponent_stage | `dual_ok` |
-| PL!HS-bp6-004-P | 百生 吟子 | live_start | `live_start_opp_wait_max_cost` | mutate_opponent_stage | `dual_ok` |
-| PL!HS-bp6-004-R | 百生 吟子 | toujyou | `optional_self_wait_opp_stage` | mutate_opponent_stage | `dual_ok` |
-| PL!HS-bp6-004-R | 百生 吟子 | live_start | `live_start_opp_wait_max_cost` | mutate_opponent_stage | `dual_ok` |
-| PL!HS-bp6-005-P | 徒町 小鈴 | live_start | `live_start_hand_discard_cost_boost_grant_if` | mutate_opponent_stage, read_compare | `dual_ok` |
-| PL!HS-bp6-005-P＋ | 徒町 小鈴 | live_start | `live_start_hand_discard_cost_boost_grant_if` | mutate_opponent_stage, read_compare | `dual_ok` |
-| PL!HS-bp6-005-R＋ | 徒町 小鈴 | live_start | `live_start_hand_discard_cost_boost_grant_if` | mutate_opponent_stage, read_compare | `dual_ok` |
-| PL!HS-bp6-005-SEC | 徒町 小鈴 | live_start | `live_start_hand_discard_cost_boost_grant_if` | mutate_opponent_stage, read_compare | `dual_ok` |
+| PL!HS-bp6-004-P | 百生吟子 | toujyou | `optional_self_wait_opp_stage` | mutate_opponent_stage | `dual_ok` |
+| PL!HS-bp6-004-P | 百生吟子 | live_start | `live_start_opp_wait_max_cost` | mutate_opponent_stage | `dual_ok` |
+| PL!HS-bp6-004-R | 百生吟子 | toujyou | `optional_self_wait_opp_stage` | mutate_opponent_stage | `dual_ok` |
+| PL!HS-bp6-004-R | 百生吟子 | live_start | `live_start_opp_wait_max_cost` | mutate_opponent_stage | `dual_ok` |
+| PL!HS-bp6-005-P | 徒町小鈴 | live_start | `live_start_hand_discard_cost_boost_grant_if` | mutate_opponent_stage, read_compare | `dual_ok` |
+| PL!HS-bp6-005-P＋ | 徒町小鈴 | live_start | `live_start_hand_discard_cost_boost_grant_if` | mutate_opponent_stage, read_compare | `dual_ok` |
+| PL!HS-bp6-005-R＋ | 徒町小鈴 | live_start | `live_start_hand_discard_cost_boost_grant_if` | mutate_opponent_stage, read_compare | `dual_ok` |
+| PL!HS-bp6-005-SEC | 徒町小鈴 | live_start | `live_start_hand_discard_cost_boost_grant_if` | mutate_opponent_stage, read_compare | `dual_ok` |
 | PL!HS-bp6-007-P | セラス 柳田 リリエンフェルト | jidou | `jidou_series_enter_opp_wait` | mutate_opponent_waiting, opponent_choice | `dual_ok` |
 | PL!HS-bp6-007-R | セラス 柳田 リリエンフェルト | jidou | `jidou_series_enter_opp_wait` | mutate_opponent_waiting, opponent_choice | `dual_ok` |
-| PL!HS-bp6-013-R | 徒町 小鈴 | toujyou | `optional_self_wait_opp_stage` | mutate_opponent_stage | `dual_ok` |
-| PL!HS-bp6-013-R | 徒町 小鈴 | live_start | `live_start_opp_wait_exclude_unit` | mutate_opponent_stage | `dual_ok` |
+| PL!HS-bp6-013-R | 徒町小鈴 | toujyou | `optional_self_wait_opp_stage` | mutate_opponent_stage | `dual_ok` |
+| PL!HS-bp6-013-R | 徒町小鈴 | live_start | `live_start_opp_wait_exclude_unit` | mutate_opponent_stage | `dual_ok` |
 
 ### PL!HS-cl1 (2)
 
 | ID | 名前 | タイミング | template | kinds | dualStatus |
 |----|------|------------|----------|-------|------------|
-| PL!HS-cl1-004-CL | 百生 吟子 | toujyou | `ability_pick_one` | mutate_opponent_stage | `dual_ok` |
+| PL!HS-cl1-004-CL | 百生吟子 | toujyou | `ability_pick_one` | mutate_opponent_stage | `dual_ok` |
 | PL!HS-cl1-012-CL | Edelied | live_success | `yell_resolution_pick_hand` | mutate_opponent_live, read_compare | `dual_ok` |
 
 ### PL!HS-pb1 (16)
@@ -306,11 +340,12 @@
 | PL!HS-pb1-014-R | 安養寺姫芽 | toujyou | `toujou_opp_front_position_change` | mutate_opponent_stage | `dual_ok` |
 | PL!HS-pb1-014-R | 安養寺姫芽 | jouji | `passive_track` | passive_opponent, read_compare | `passive_track` |
 
-### PL!HS-PR (1)
+### PL!HS-PR (2)
 
 | ID | 名前 | タイミング | template | kinds | dualStatus |
 |----|------|------------|----------|-------|------------|
 | PL!HS-PR-035-PR | 百生吟子 | toujyou | `optional_self_wait_opp_stage` | mutate_opponent_deck, mutate_opponent_stage, mutate_opponent_waiting | `dual_ok` |
+| PL!HS-PR-038-PR | セラス 柳田 リリエンフェルト | live_success | `optional_self_wait_opp_stage` | mutate_opponent_stage | `dual_ok` |
 
 ### PL!N-bp1 (2)
 
@@ -352,20 +387,21 @@
 | PL!N-bp7-009-R | 天王寺璃奈 | toujyou | `deck_top_to_waiting` | both_players, mutate_opponent_deck, opponent_choice | `dual_ok` |
 | PL!N-bp7-027-L | オードリー | live_success | `live_card_score_plus` | mutate_opponent_stage, read_compare | `dual_ok` |
 
-### PL!N-PR (3)
+### PL!N-PR (4)
 
 | ID | 名前 | タイミング | template | kinds | dualStatus |
 |----|------|------------|----------|-------|------------|
 | PL!N-PR-022-PR | エマ・ヴェルデ | toujyou | `toujou_opp_emma_punch_answer` | mutate_opponent_stage | `dual_ok` |
 | PL!N-PR-024-PR | 桜坂しずく | jouji | `passive_track` | mutate_opponent_success_live, passive_opponent | `passive_track` |
 | PL!N-PR-027-PR | 朝香果林 | jouji | `passive_track` | mutate_opponent_stage, passive_opponent | `passive_track` |
+| PL!N-PR-034-PR | 三船栞子 | jouji | `passive_track` | mutate_opponent_success_live, passive_opponent | `passive_track` |
 
 ### PL!N-sd2 (6)
 
 | ID | 名前 | タイミング | template | kinds | dualStatus |
 |----|------|------------|----------|-------|------------|
-| PL!N-sd2-007-P | 優木せつ菜 | live_success | `draw_then_hand_discard` | read_compare | `dual_ok` |
-| PL!N-sd2-007-SD2 | 優木せつ菜 | live_success | `draw_then_hand_discard` | read_compare | `dual_ok` |
+| PL!N-sd2-007-P | 優木せつ菜 | live_success | `draw_then_conditional_extra_draw` | read_compare | `dual_gap` |
+| PL!N-sd2-007-SD2 | 優木せつ菜 | live_success | `draw_then_conditional_extra_draw` | read_compare | `dual_gap` |
 | PL!N-sd2-013-SD2 | 上原歩夢 | toujyou | `optional_self_wait_opp_stage` | mutate_opponent_stage | `dual_ok` |
 | PL!N-sd2-013-SD2 | 上原歩夢 | live_start | `optional_self_wait_opp_stage` | mutate_opponent_stage | `dual_ok` |
 | PL!N-sd2-019-SD2 | 優木せつ菜 | live_start | `live_start_opp_wait_max_cost` | mutate_opponent_stage | `dual_ok` |
@@ -421,6 +457,12 @@
 | PL!S-bp7-023-L | 夜空はなんでも知ってるの？ | live_start | `live_start_optional_energy_to_deck_opp_adv_score` | mutate_opponent_deck, mutate_opponent_energy, mutate_opponent_live, read_compare | `dual_ok` |
 | PL!S-bp7-025-L | Guilty Night, Guilty Kiss! | live_success | `live_success_pick_options` | mutate_opponent_stage | `dual_ok` |
 
+### PL!S-cl1 (1)
+
+| ID | 名前 | タイミング | template | kinds | dualStatus |
+|----|------|------------|----------|-------|------------|
+| PL!S-cl1-004-CL | 黒澤ダイヤ | jidou | `jidou_yell_opp_wait_printed_hearts` | mutate_opponent_stage | `dual_ok` |
+
 ### PL!S-pb1 (17)
 
 | ID | 名前 | タイミング | template | kinds | dualStatus |
@@ -443,7 +485,7 @@
 | PL!S-pb1-022-L | 逃走迷走メビウスループ | live_success | `live_success_tie_block_success_live` | mutate_opponent_live, opponent_choice, read_compare | `dual_ok` |
 | PL!S-pb1-022-L＋ | 逃走迷走メビウスループ | live_success | `live_success_tie_block_success_live` | mutate_opponent_live, opponent_choice, read_compare | `dual_ok` |
 
-### PL!S-PR (6)
+### PL!S-PR (7)
 
 | ID | 名前 | タイミング | template | kinds | dualStatus |
 |----|------|------------|----------|-------|------------|
@@ -453,6 +495,7 @@
 | PL!S-PR-039-PR | 渡辺 曜 | jouji | `passive_track` | mutate_opponent_success_live, passive_opponent | `passive_track` |
 | PL!S-PR-041-PR | 黒澤ルビィ | toujyou | `live_start_pick_player_waiting_deck_bottom` | mutate_opponent_deck, read_compare | `dual_ok` |
 | PL!S-PR-042-PR | 小原鞠莉 | jouji | `passive_track` | mutate_opponent_stage, passive_opponent | `passive_track` |
+| PL!S-PR-046-PR | 渡辺 曜 | live_success | `draw_from_deck` | read_compare | `dual_ok` |
 
 ### PL!SP-bp1 (2)
 

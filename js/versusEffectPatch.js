@@ -114,7 +114,9 @@ export function applyVersusEffectPatch(board, payload, hooks) {
         if (m && String(m.id) === String(pid)) found = m;
       });
       if (found && found.lcWait !== true) {
-        waitMember(found);
+        const waited = waitMember(found);
+        if (waited === false) return;
+        if (payload.skipNextActivate) found._skipAutoActivateUntilTurn = (Number(board.turnCount) || 0) + 1;
         applied++;
       }
     });

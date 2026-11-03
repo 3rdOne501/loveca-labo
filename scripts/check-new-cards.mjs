@@ -264,7 +264,7 @@ function printHuman(result, byProduct, needsWork) {
     }
     if (needsWork.length > 40) console.log(`  … ほか ${needsWork.length - 40} 枚`);
   } else if (result.added) {
-    console.log("\n新規カードはすべて既存テンプレートで分類できています。");
+    console.log("\n新規カードはすべて既存テンプレートで分類できています。実装の正しさは別途 npm run audit:abilities で監査してください。");
   }
 }
 
@@ -299,7 +299,7 @@ function renderMarkdown(result, byProduct, needsWork) {
     }
     lines.push("");
   } else if (result.added) {
-    lines.push("## 要ハンドラ対応", "", "なし（新規カードはすべて既存テンプレートで分類済み）", "");
+    lines.push("## 要ハンドラ対応", "", "なし（分類済みは実装の正しさを保証しません。npm run audit:abilities で処理要素を監査してください）", "");
   }
   if (result.removedIds.length) {
     lines.push("## 削除されたカード", "", result.removedIds.join(", "), "");

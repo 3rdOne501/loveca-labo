@@ -1,3 +1,4 @@
+import { classifyCompletionJidou, COMPLETION_JIDOU_TEMPLATES } from "./abilityCompletion.js";
 /**
  * メンバーカードの「自動」能力（jidou）の分類。
  * イベント駆動の実行は simulator.js の fireJidouAutoForMember が担当する。
@@ -26,6 +27,7 @@ function parsePerTurnLimitFromRaw(segRaw, p) {
   var raw = String(segRaw || "");
   if (/turn1\.png|ターン1回|ターン１回/.test(raw + p)) return 1;
   if (/turn2\.png|ターン2回|ターン２回/.test(raw + p)) return 2;
+  if (/turn3\.png|ターン3回|ターン３回/.test(raw + p)) return 3;
   return parsePerTurnLimit(p);
 }
 
@@ -69,7 +71,12 @@ export function classifyJidouAutoSegment(segRaw) {
   var p = normalizeFwDigits(segmentPlainText(segRaw));
   if (!p) return { template: "jidou_manual" };
   var perTurn = parsePerTurnLimitFromRaw(segRaw, p);
+  var completion = classifyCompletionJidou(segRaw, perTurn);
+  if (completion) return completion;
 
+  if (/自分がエールしたとき/.test(p) && /ライブカードが([0-9]+)枚以上/.test(p) && /相手のステージ.*元々持つハートの数が([0-9]+)つ以下.*ウェイト/.test(p)) {
+    return { template: "jidou_yell_opp_wait_printed_hearts", eventKind: "yell", perTurnLimit: perTurn, requiresCenter: /\[センター\]/.test(p), minYellLiveCards: Number(p.match(/ライブカードが([0-9]+)枚以上/)[1]), maxPrintedHearts: Number(p.match(/元々持つハートの数が([0-9]+)つ以下/)[1]) };
+  }
   if (/ステージから控え室に置かれたとき/.test(p) && /メンバー1人をアクティブ/.test(p)) {
     return { template: "jidou_leave_stage_activate_one", eventKind: "leave_stage", perTurnLimit: perTurn };
   }
@@ -748,6 +755,7 @@ function parseMaxCost(p) {
 
 /** @param {string} template */
 export function jidouEffectIsAutomated(template) {
+  if (COMPLETION_JIDOU_TEMPLATES.includes(template)) return true;
   return (
     template === "jidou_leave_stage_activate_one" ||
     template === "jidou_leave_stage_hand_pick_recover" ||
@@ -767,6 +775,7 @@ export function jidouEffectIsAutomated(template) {
     template === "jidou_yell_grant_jouji_no_bh" ||
     template === "jidou_yell_grant_heart" ||
     template === "jidou_yell_grant_heart_per_live_capped" ||
+    template === "jidou_yell_opp_wait_printed_hearts" ||
     template === "jidou_yell_draw" ||
     template === "jidou_leave_stage_position_change" ||
     template === "jidou_stage_entry_draw_until" ||

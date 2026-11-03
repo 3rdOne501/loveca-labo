@@ -1,0 +1,184 @@
+{
+  "version": 1,
+  "description": "人が確認する静的監査用の処理契約。分類器から自動生成しない。trueは該当処理の存在のみを表し、数値保証ではない。未登録の処理は必ず要確認とする。",
+  "templates": {
+    "deck_top_to_waiting": {
+      "capabilities": {
+        "effect.mill": {
+          "field": "deckTopCount"
+        }
+      }
+    },
+    "draw_from_deck": {
+      "capabilities": {
+        "effect.draw": {
+          "field": "deckDrawCount"
+        }
+      }
+    },
+    "deck_peek_relocate": {
+      "capabilities": {
+        "effect.peek": true,
+        "effect.deck_top_to_bottom": true
+      }
+    },
+    "kidou_stage_wait_pick_hand": {
+      "capabilities": {
+        "cost.self_to_waiting": true,
+        "effect.waiting_to_hand": {
+          "value": 1
+        }
+      }
+    },
+    "toujou_wait_pick_hand": {
+      "capabilities": {
+        "effect.waiting_to_hand": {
+          "field": "waitingPickMax",
+          "default": 1
+        }
+      }
+    },
+    "deck_top_pick_recover": {
+      "capabilities": {
+        "effect.peek": true,
+        "effect.deck_to_hand": {
+          "field": "deckTopPickMax",
+          "default": 1
+        }
+      }
+    },
+    "yell_resolution_pick_hand": {
+      "capabilities": {
+        "effect.yell_to_hand": {
+          "field": "handPickMax",
+          "default": 1
+        },
+        "condition.shared_stage_color": {
+          "flag": "requiresStageSharedHeartColor"
+        },
+        "condition.stage_group_count": {
+          "field": "preconditionFilters.minStageSeriesMembers",
+          "groupField": "preconditionFilters.minStageSeriesMembersTag"
+        }
+      }
+    },
+    "yell_resolution_pick_deck_bottom": {
+      "capabilities": {
+        "effect.yell_to_bottom": {
+          "field": "deckPickMax",
+          "default": 1
+        },
+        "effect.choose_order": true
+      }
+    },
+    "grant_jouji_session": {
+      "capabilities": {
+        "effect.grant_blade": {
+          "field": "bladeGain"
+        },
+        "effect.grant_heart": {
+          "heartGrant": true
+        },
+        "effect.score": true,
+        "effect.draw": {
+          "field": "deckDrawCount"
+        },
+        "duration.live_end": true
+      }
+    },
+    "optional_self_wait_opp_stage": {
+      "capabilities": {
+        "effect.opponent_wait": true,
+        "condition.original_heart_limit": {
+          "field": "oppWaitMaxPrintedHearts"
+        }
+      }
+    },
+    "live_start_yell_from_bottom": {
+      "capabilities": {
+        "effect.yell_from_bottom": true,
+        "duration.live_end": true
+      }
+    },
+    "success_live_names_waiting_to_deck_top": {
+      "capabilities": {
+        "effect.waiting_to_top": true,
+        "effect.choose_order": true,
+        "condition.each_success_name": true
+      }
+    },
+    "waiting_live_categories_to_bottom_grant": {
+      "capabilities": {
+        "effect.waiting_to_bottom": true,
+        "effect.choose_order": true,
+        "effect.grant_blade": {
+          "value": 1
+        },
+        "condition.category_selection": {
+          "field": "categories",
+          "value": [
+            "score",
+            "all",
+            "double_colorless"
+          ]
+        },
+        "condition.center_target": true,
+        "condition.per_moved_card": {
+          "value": 1
+        },
+        "duration.live_end": true
+      }
+    },
+    "waiting_no_bh_bottom_heart_per": {
+      "capabilities": {
+        "effect.waiting_to_bottom": {
+          "field": "waitingToDeckCount"
+        },
+        "effect.shuffle_selected": true,
+        "effect.grant_heart": {
+          "heartGrant": true
+        },
+        "condition.no_blade_heart": true,
+        "condition.per_moved_card": {
+          "field": "movedPerHeartGrant"
+        },
+        "duration.live_end": true
+      }
+    },
+    "jidou_yell_opp_wait_printed_hearts": {
+      "capabilities": {
+        "effect.opponent_wait": true,
+        "condition.original_heart_limit": {
+          "field": "maxPrintedHearts"
+        },
+        "condition.center_source": {
+          "flag": "requiresCenter"
+        },
+        "condition.yell_live_count": {
+          "field": "minYellLiveCards"
+        },
+        "limit.per_turn": {
+          "field": "perTurnLimit"
+        }
+      }
+    },
+    "toujou_multi_baton_recover_score": {
+      "capabilities": {
+        "effect.waiting_to_hand": {
+          "field": "waitingPickMax"
+        },
+        "condition.baton_two": {
+          "field": "batonCount",
+          "groupField": "batonSeriesTag"
+        },
+        "condition.baton_cost_sum": {
+          "field": "batonCostSum"
+        },
+        "effect.score": {
+          "field": "liveScoreGrant"
+        },
+        "duration.live_end": true
+      }
+    }
+  }
+}

@@ -1,13 +1,14 @@
 {
-  "generated": "2026-10-31",
+  "generated": "2026-11-03",
   "trigger": "toujyou",
   "total": 637,
   "byTemplate": {
-    "grant_jouji_session": 16,
+    "toujou_multi_baton_recover_score": 2,
+    "grant_jouji_session": 14,
     "toujou_deck_top_liella_live_pick": 4,
-    "deck_top_pick_recover": 118,
+    "deck_top_pick_recover": 120,
     "toujou_success_live_hand_reveal_swap": 3,
-    "guided_manual": 4,
+    "toujou_waiting_members_under_self": 2,
     "draw_from_deck": 38,
     "optional_self_wait_opp_stage": 38,
     "toujou_wait_pick_hand": 74,
@@ -103,7 +104,7 @@
     {
       "card_no": "PL!-pb2-000-R",
       "name": "星空 凛&小泉花陽",
-      "template": "grant_jouji_session",
+      "template": "toujou_multi_baton_recover_score",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -112,7 +113,7 @@
     {
       "card_no": "PL!-pb2-000-DUO",
       "name": "星空 凛&小泉花陽",
-      "template": "grant_jouji_session",
+      "template": "toujou_multi_baton_recover_score",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -193,8 +194,8 @@
     {
       "card_no": "PL!-pb2-017-P＋",
       "name": "小泉花陽",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "toujou_waiting_members_under_self",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "自分の控え室にある『Printemps』のメンバーカード4枚をこのメンバーの下に置く。"
@@ -202,8 +203,8 @@
     {
       "card_no": "PL!-pb2-017-R",
       "name": "小泉花陽",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "toujou_waiting_members_under_self",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "自分の控え室にある『Printemps』のメンバーカード4枚をこのメンバーの下に置く。"
@@ -5536,8 +5537,8 @@
     {
       "card_no": "PL!HS-PR-039-PR",
       "name": "百生吟子",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "deck_top_pick_recover",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "自分のデッキの上から、10から自分の手札の枚数を引いた数に等しい枚数のカードを見る。その中から2枚まで手札に加える。残りを控え室に置く。"
@@ -5869,8 +5870,8 @@
     {
       "card_no": "PL!SP-PR-028-PR",
       "name": "米女メイ",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "deck_top_pick_recover",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "自分のデッキの上から、10から自分の手札の枚数を引いた数に等しい枚数のカードを見る。その中から2枚まで手札に加える。残りを控え室に置く。"

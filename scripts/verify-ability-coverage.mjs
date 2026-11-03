@@ -38,6 +38,8 @@ function loadIndex(name) {
 }
 
 function main() {
+  execSync("node scripts/verify-ability-semantics.mjs", { cwd: ROOT, stdio: "inherit" });
+  execSync("node scripts/audit-ability-semantics.mjs", { cwd: ROOT, stdio: "inherit" });
   execSync("node scripts/build-ability-index.mjs", { cwd: ROOT, stdio: "pipe" });
 
   /** @type {string[]} */
@@ -94,117 +96,128 @@ function main() {
     );
   }
 
-  execSync("node scripts/verify-ability-handlers.mjs", { cwd: ROOT, stdio: "inherit" });
+  function check(command, options) {
+    try { execSync(command, options); }
+    catch (err) {
+      errors.push(`${command}: ${err.signal ? `signal ${err.signal}` : `exit ${err.status ?? "unknown"}`}`);
+    }
+  }
+  check("node scripts/verify-pending-abilities.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-muse-duo-baton.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-aqours-cl1.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-ability-runtime.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/verify-p2-ability-smoke.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-ability-handlers.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/verify-dual-mode-smoke.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-p2-ability-smoke.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/verify-versus-online-static.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-dual-mode-smoke.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/verify-versus-online-sim.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-versus-online-static.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/verify-weakest-room-sim.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-versus-online-sim.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/verify-tierlist-room-sim.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-weakest-room-sim.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/verify-play-checklist.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-tierlist-room-sim.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/verify-deck-pick-hand-patterns.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-play-checklist.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/verify-niji-bp1.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-deck-pick-hand-patterns.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/audit-niji-bp1-text.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-niji-bp1.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/verify-liella-bp1.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/audit-niji-bp1-text.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/audit-liella-bp1-text.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-liella-bp1.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/verify-hasunosora-bp1.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/audit-liella-bp1-text.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/audit-hasunosora-bp1-text.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-hasunosora-bp1.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/verify-hasunosora-pb1.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/audit-hasunosora-bp1-text.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/audit-hasunosora-pb1-text.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-hasunosora-pb1.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/verify-hasunosora-bp2.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/audit-hasunosora-pb1-text.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/audit-hasunosora-bp2-text.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-hasunosora-bp2.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/verify-liella-bp2.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/audit-hasunosora-bp2-text.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/audit-liella-bp2-text.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-liella-bp2.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/verify-liella-pb2.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/audit-liella-bp2-text.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/audit-liella-pb2-text.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-liella-pb2.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/verify-aqours-bp2.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/audit-liella-pb2-text.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/audit-aqours-bp2-text.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-aqours-bp2.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/verify-niji-bp3.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/audit-aqours-bp2-text.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/audit-niji-bp3-text.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-niji-bp3.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/verify-aqours-bp3.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/audit-niji-bp3-text.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/audit-aqours-bp3-text.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-aqours-bp3.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/verify-muse-bp3.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/audit-aqours-bp3-text.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/audit-muse-bp3-text.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-muse-bp3.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/verify-niji-bp4.mjs", { cwd: ROOT, stdio: "inherit" });
-  execSync("node scripts/verify-liella-bp4.mjs", { cwd: ROOT, stdio: "inherit" });
-  execSync("node scripts/verify-mus-bp4.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/audit-muse-bp3-text.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/audit-niji-bp4-text.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-niji-bp4.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-liella-bp4.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-mus-bp4.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/verify-ll-anniversary-member.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/audit-niji-bp4-text.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/audit-ll-anniversary-member-text.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-ll-anniversary-member.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/verify-muse-bp5.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/audit-ll-anniversary-member-text.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/audit-muse-bp5-text.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-muse-bp5.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/verify-aqours-bp5.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/audit-muse-bp5-text.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/audit-aqours-bp5-text.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-aqours-bp5.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/verify-aqours-bp7.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/audit-aqours-bp5-text.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/audit-aqours-bp7-text.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-aqours-bp7.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/verify-niji-bp7.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/audit-aqours-bp7-text.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/audit-niji-bp7-text.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-niji-bp7.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/verify-liella-bp7.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/audit-niji-bp7-text.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/audit-liella-bp7-text.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-liella-bp7.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/verify-niji-sd2.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/audit-liella-bp7-text.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/audit-niji-sd2-text.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-niji-sd2.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/verify-niji-bp5.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/audit-niji-sd2-text.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/audit-niji-bp5-text.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-niji-bp5.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/verify-liella-bp5.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/audit-niji-bp5-text.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/audit-liella-bp5-text.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-liella-bp5.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/verify-hasunosora-bp5.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/audit-liella-bp5-text.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/audit-hasunosora-bp5-text.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-hasunosora-bp5.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node scripts/audit-verification-list-notes.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/audit-hasunosora-bp5-text.mjs", { cwd: ROOT, stdio: "inherit" });
 
-  execSync("node --check js/abilityEffects.js js/joujiEffects.js js/jidouAutoEffects.js js/abilityRuntimeMeta.js js/simulator.js js/versusEffectPatch.js", {
+  check("node scripts/audit-verification-list-notes.mjs", { cwd: ROOT, stdio: "inherit" });
+
+  check("node --check js/abilityEffects.js js/joujiEffects.js js/jidouAutoEffects.js js/abilityRuntimeMeta.js js/simulator.js js/versusEffectPatch.js", {
     cwd: ROOT,
     stdio: "inherit",
   });

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { canonicalizeUnitName } from "../js/cardGroups.js";
 /**
  * data/cards.json（正本・検証用フル）から、起動用の軽量 UI カタログと能力オーバーレイを生成する。
  *
@@ -72,6 +73,7 @@ for (const key of Object.keys(raw)) {
   for (const f of UI_KEEP) {
     if (card[f] !== undefined) slim[f] = card[f];
   }
+  if (slim.unit) slim.unit = canonicalizeUnitName(slim.unit);
   if (!slim.card_no) slim.card_no = key;
   ui[key] = slim;
   const ab = card.ability;

@@ -1,0 +1,11 @@
+---
+description: GPTとCursorで作業状態・検証・未完了事項を必ずファイル共有する
+alwaysApply: true
+---
+
+# 共通引き継ぎ
+
+リポジトリ直下の `AGENTS.md` を共通ルールの正本とする。
+作業開始時に `docs/HANDOFF.md` を読み、調査・実装・検証・方針変更を行った各作業の終了前に必ず更新する。
+`docs/WORKLOG.md` に履歴を追記し、重要な判断をチャットだけに残さない。
+能力の監査手順と限界は `docs/ability-semantic-audit-guide.md` を参照する。

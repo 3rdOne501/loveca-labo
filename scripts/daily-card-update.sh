@@ -78,6 +78,20 @@ let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{
 
 log "カード総数 ${TOTAL} / 新規 ${ADDED} / 削除 ${REMOVED} / 能力変更 ${CHANGED}"
 
+# 分類器・ハンドラだけが変わる場合もあるため、データ差分0でも毎回監査する。
+log "カード文と処理要素の静的監査..."
+if node scripts/audit-ability-semantics.mjs --check >>"${LOG_FILE}" 2>&1; then
+  log "処理要素監査: 未対応／不一致の疑いなし（実プレイ保証ではありません）"
+else
+  audit_status=$?
+  if [[ "${audit_status}" -eq 1 ]]; then
+    log "WARN: 未対応または不一致の疑いがあります。docs/ability-semantic-audit.md を確認してください"
+  else
+    log "ERROR: 処理要素監査自体が失敗しました（exit ${audit_status}）。前の監査結果を最新として扱わないでください"
+    exit 2
+  fi
+fi
+
 if [[ "${ADDED}" == "0" && "${REMOVED}" == "0" && "${CHANGED}" == "0" ]]; then
   log "更新なし。終了します。"
   exit 0

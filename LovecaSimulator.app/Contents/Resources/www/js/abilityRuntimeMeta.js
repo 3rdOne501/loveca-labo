@@ -1,3 +1,4 @@
+import { COMPLETION_JIDOU_TEMPLATES } from "./abilityCompletion.js";
 /**
  * 能力テンプレートの実行メタデータ（分類器・検証スクリプト・simulator で共有）。
  */
@@ -151,6 +152,15 @@ export const TEMPLATES_META_IN_EXECUTE_BODY = ["guided_manual", "passive_track"]
 
 /** 自動効果だが executeAbilityBody ではなく fireJidouAuto 経路で処理 */
 export const JIDOU_AUTO_TEMPLATES = [
+  ...COMPLETION_JIDOU_TEMPLATES,
+  "jidou_energy_under_placed_energy_wait",
+  "jidou_self_deck_to_waiting_discard_recover",
+  "jidou_leave_baton_partner_energy_under",
+  "jidou_own_member_wait_discard_activate",
+  "jidou_leave_baton_self_under_partner",
+  "jidou_enter_or_energy_returned_energy_wait",
+  "jidou_self_wait_area_move_activate",
+  "jidou_yell_opp_wait_printed_hearts",
   "jidou_leave_stage_activate_one",
   "jidou_leave_stage_hand_pick_recover",
   "jidou_leave_stage_deck_look_pick",

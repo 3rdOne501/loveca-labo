@@ -1,3 +1,4 @@
+import { classifyCompletionJouji } from "./abilityCompletion.js";
 /**
  * メンバーカードの印刷「常時」能力の分類と盤面評価。
  * 付与常時（ライブ開始時の「…を得る」内の {{jyouji}}）は isNativeJoujiSegment で除外する。
@@ -278,6 +279,9 @@ export function classifyJoujiSegment(segRaw) {
     stageAreas: areas.length ? areas : undefined,
     requiresStageOnly: /ステージにいる/.test(p) && !/ライブエリア/.test(p),
   };
+  var completion = classifyCompletionJouji(segRaw);
+  if (completion) return Object.assign({}, base, completion);
+
 
   if (
     /ステージのエリアすべてに『/.test(p) &&
@@ -1528,6 +1532,8 @@ function conditionMet(rule, inst, card, ctx) {
 export function evaluateMemberJouji(card, inst, ctx, extraSegmentRaws) {
   var acc = emptyJoujiEval();
   if (!card || !inst) return acc;
+  var priorCount = ctx.ownSuccessLiveCount;
+  ctx = Object.assign({}, ctx, { ownSuccessLiveCount: function () { return priorCount(card); } });
   var raws = listNativeJoujiSegmentRaws(card).slice();
   if (extraSegmentRaws && extraSegmentRaws.length) raws = raws.concat(extraSegmentRaws);
   for (var i = 0; i < raws.length; i++) {
@@ -1751,7 +1757,7 @@ export function cardPlayCostOptionJouji(card) {
     if (
       rule &&
       (rule.kind === "play_cost_reduce_shuffle_waiting_members" ||
-        rule.kind === "play_cost_set_named_hand_discard")
+        rule.kind === "play_cost_set_named_hand_discard" || rule.kind === "play_cost_reduce_wait_distinct")
     ) {
       return rule;
     }

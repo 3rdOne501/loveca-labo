@@ -1,9 +1,9 @@
 {
-  "generated": "2026-10-31",
+  "generated": "2026-11-03",
   "trigger": "kidou",
   "total": 310,
   "byTemplate": {
-    "guided_manual": 2,
+    "optional_self_wait_opp_stage": 2,
     "ability_sequence": 8,
     "kidou_hand_cost_wait_pick_hand": 25,
     "kidou_stage_wait_pick_hand": 74,
@@ -58,8 +58,8 @@
     {
       "card_no": "PL!-pb2-006-R",
       "name": "西木野真姫",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "optional_self_wait_opp_stage",
+      "automated": true,
       "optional": false,
       "perTurn": 1,
       "effect": "このメンバーをウェイトにし、手札を1枚控え室に置く：相手のステージにいる元々持つハートの数が1つ以下のメンバー1人をウェイトにする。"
@@ -67,8 +67,8 @@
     {
       "card_no": "PL!-pb2-006-PP",
       "name": "西木野真姫",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "optional_self_wait_opp_stage",
+      "automated": true,
       "optional": false,
       "perTurn": 1,
       "effect": "このメンバーをウェイトにし、手札を1枚控え室に置く：相手のステージにいる元々持つハートの数が1つ以下のメンバー1人をウェイトにする。"
