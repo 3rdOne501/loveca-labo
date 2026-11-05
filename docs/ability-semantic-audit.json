@@ -165443,7 +165443,7 @@
       ]
     }
   ],
-  "generated_at": "2026-11-03T06:26:56.511Z",
+  "generated_at": "2026-11-05T08:10:10.848Z",
   "inputs": [
     "data/cards.json",
     "data/ability-semantic-contracts.json",
@@ -165461,7 +165461,7 @@
     "js/simulator.js"
   ],
   "input_sha256": {
-    "data/cards.json": "bee7365a3e53359b5714191f20cc51b369e30ea855dc6b80ce986be7da596a59",
+    "data/cards.json": "b43be9f744b64f613551503ab47d0ab2c831986788adce489332db8be4acd38a",
     "data/ability-semantic-contracts.json": "e2ef6d56dad7a5e08693ef40aee3bf739bc0d9c5e0572cbd857cbc4889e46907",
     "js/abilityEffects.js": "cd960c86d687e584d423bfe44d5d9b653048f8d82305dddb4d0e924b77de52d4",
     "js/abilityCompletion.js": "5a3337a1f502c33b89a3fe82443f9a979c0e7bc85333ca463e8bf52cc3e39485",
