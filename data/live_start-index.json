@@ -1,9 +1,9 @@
 {
-  "generated": "2026-11-03",
+  "generated": "2026-11-09",
   "trigger": "live_start",
-  "total": 377,
+  "total": 379,
   "byTemplate": {
-    "grant_jouji_session": 88,
+    "grant_jouji_session": 90,
     "optional_self_wait_opp_stage": 20,
     "live_start_group_activated_blade_per": 2,
     "activate_stage_members_up_to": 5,
@@ -3487,6 +3487,24 @@
       "optional": true,
       "perTurn": 0,
       "effect": "手札を1枚控え室に置いてもよい：ライブ終了時まで、自分のエールは、デッキの上から行う代わりにデッキの下から行う。"
+    },
+    {
+      "card_no": "PL!HS-PR-043-PR",
+      "name": "桂城 泉",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "控え室にあるメンバーカード2枚を好きな順番でデッキの下に置いてもよい：これによりデッキの下に置いたメンバーカードが持つハートの総数が12以上の場合、ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!N-PR-037-PR",
+      "name": "近江彼方",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "控え室にあるメンバーカード2枚を好きな順番でデッキの下に置いてもよい：これによりデッキの下に置いたメンバーカードが持つハートの総数が12以上の場合、ライブ終了時まで、を得る。"
     }
   ]
 }

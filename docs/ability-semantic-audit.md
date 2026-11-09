@@ -1,20 +1,45 @@
 # カード能力・処理要素の静的照合レポート
 
-生成: 2026-11-05T08:10:10.848Z
-対象: full_catalog / 2700枚・2169能力セグメント
+生成: 2026-11-09T08:10:20.252Z
+対象: full_catalog / 2709枚・2177能力セグメント
 
 静的な既知ルールの照合のみ。checked_known_rulesも実プレイの正しさを保証しない。未知の文言・未登録契約は要確認。過去の修正履歴による除外なし。
 
 | 状態 | セグメント数 |
 |---|---:|
-| unimplemented | 0 |
+| unimplemented | 4 |
 | suspect | 28 |
-| needs_review | 1842 |
-| checked_known_rules | 299 |
+| needs_review | 1845 |
+| checked_known_rules | 300 |
 
 ## 指摘一覧（同じ能力文・分類・指摘はレアリティ違いをまとめる）
 
 疑いは実装不良の確定ではない。カード文と実ハンドラを読んで確認し、修正後に再監査する。
+
+### PL!N-PR-038-PR 天王寺璃奈 — unimplemented
+
+- 同型: PL!N-PR-038-PR, PL!SP-PR-034-PR
+- 発動: jidou / 分類: jidou_manual
+- カード文: このメンバーがステージから控え室に置かれたとき、このメンバーがコスト11以下のメンバーとバトンタッチしていた場合、ライブ終了時まで、そのバトンタッチで登場したメンバーは{{icon_blade.png\|ブレード}}{{icon_blade.png\|ブレード}}を得る。
+
+| 指摘 | 処理要素 | 根拠の文言 |
+|---|---|---|
+| unimplemented: 分類未対応／手動処理。過去に修正したカードでも除外しない。 | classification | このメンバーがステージから控え室に置かれたとき、このメンバーがコスト11以下のメンバーとバトンタッチしていた場合、ライブ終了時まで、そのバトンタッチで登場したメンバーはブレードブレードを得る。 |
+| requirement_not_verified: カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。 | effect.grant_blade | ブレードブレードを得る |
+| requirement_not_verified: カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。 | duration.live_end | ライブ終了時まで |
+| requirement_not_verified: カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。 | condition.other | このメンバーがステージから控え室に置かれたとき、このメンバーがコスト11以下のメンバーとバトンタッチしていた場合、ライブ終了時まで、そのバトンタッチで登場したメンバーはブレードブレードを得る。 |
+
+### PL!N-PR-039-PR ミア・テイラー — unimplemented
+
+- 同型: PL!N-PR-039-PR, PL!SP-PR-035-PR
+- 発動: live_success / 分類: guided_manual
+- カード文: エールにより公開された相手のカードの枚数が12枚以上ある場合、ライブの合計スコアを＋１する。
+
+| 指摘 | 処理要素 | 根拠の文言 |
+|---|---|---|
+| unimplemented: 分類未対応／手動処理。過去に修正したカードでも除外しない。 | classification | エールにより公開された相手のカードの枚数が12枚以上ある場合、ライブの合計スコアを+1する。 |
+| requirement_not_verified: カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。 | effect.score | ライブの合計スコアを+1する |
+| requirement_not_verified: カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。 | condition.other | エールにより公開された相手のカードの枚数が12枚以上ある場合、ライブの合計スコアを+1する。 |
 
 ### PL!-pb1-006-P＋ 西木野真姫 — suspect
 
@@ -215,10 +240,10 @@
 | blade_conditional | 105 | 99 | PL!-bp4-020-SRL, PL!-pb2-004-PP, PL!-pb2-004-R, PL!-pb2-011-P＋ |
 | draw_then_hand_discard | 84 | 84 | PL!N-bp7-023-N, PL!SP-bp7-026-L, PL!SP-bp4-026-SRL, PL!SP-pb2-036-N |
 | live_card_score_plus | 74 | 74 | PL!-bp3-019-SRL, PL!-bp3-025-SRL, PL!-bp3-024-SRL, PL!-bp3-026-SRL |
-| grant_jouji_session | 62 | 62 | PL!-pb2-005-PP, PL!-pb2-005-R, PL!N-bp7-024-N, PL!S-bp2-023-SECL |
+| grant_jouji_session | 64 | 64 | PL!-pb2-005-PP, PL!-pb2-005-R, PL!N-bp7-024-N, PL!S-bp2-023-SECL |
 | draw_from_deck | 44 | 44 | PL!-pb1-032-SRL, PL!-pb2-018-P＋, PL!-pb2-018-R, PL!N-bp7-013-N |
+| toujou_wait_pick_hand | 37 | 37 | PL!N-bp7-002-P, PL!N-bp7-002-R, PL!S-bp7-007-P, PL!S-bp7-007-P＋ |
 | heart_color_pick_grant | 36 | 36 | PL!-bp3-024-SRL, PL!N-bp7-012-P, PL!N-bp7-012-R, PL!N-bp7-016-N |
-| toujou_wait_pick_hand | 36 | 36 | PL!N-bp7-002-P, PL!N-bp7-002-R, PL!S-bp7-007-P, PL!S-bp7-007-P＋ |
 | deck_top_look_reorder | 35 | 35 | PL!-sd1-019-SRL, PL!N-bp7-006-P, PL!N-bp7-006-P＋, PL!N-bp7-006-R＋ |
 | activate_energy | 34 | 34 | PL!SP-bp7-007-P, PL!SP-bp7-007-P＋, PL!SP-bp7-007-R＋, PL!SP-bp7-007-SEC |
 | optional_energy_blade_until_live_end | 32 | 32 | PL!N-sd2-004-SD2, PL!N-sd2-008-SD2, PL!SP-pb2-040-N, PL!HS-cl1-005-CL |

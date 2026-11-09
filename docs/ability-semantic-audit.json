@@ -3,17 +3,17 @@
   "contract_version": 1,
   "scope": "full_catalog",
   "summary": {
-    "cards": 2700,
-    "without_ability": 1034,
-    "segments": 2169,
+    "cards": 2709,
+    "without_ability": 1035,
+    "segments": 2177,
     "statuses": {
-      "unimplemented": 0,
+      "unimplemented": 4,
       "suspect": 28,
-      "needs_review": 1842,
-      "checked_known_rules": 299
+      "needs_review": 1845,
+      "checked_known_rules": 300
     },
     "issues": {
-      "requirement_not_verified": 2682,
+      "requirement_not_verified": 2695,
       "template_contract_missing": 1547,
       "followup_needs_review": 1493,
       "body_not_understood": 581,
@@ -21,7 +21,8 @@
       "missing_processing_contract": 10,
       "contract_mismatch": 22,
       "amount_not_verified": 15,
-      "repeated_action_needs_review": 20
+      "repeated_action_needs_review": 20,
+      "unimplemented": 4
     }
   },
   "limitation": "静的な既知ルールの照合のみ。checked_known_rulesも実プレイの正しさを保証しない。未知の文言・未登録契約は要確認。過去の修正履歴による除外なし。",
@@ -165441,9 +165442,578 @@
           "message": "後続処理は順序・条件を含めて確認する。単一の分類結果だけで完了扱いにしない。"
         }
       ]
+    },
+    {
+      "card_no": "PL!-PR-027-PR",
+      "name": "星空 凛",
+      "type": "メンバー",
+      "trigger": "toujyou",
+      "segment_index": 0,
+      "template": "toujou_wait_pick_hand",
+      "status": "needs_review",
+      "fingerprint": "5b079aed4848fad9433f",
+      "text": "自分の成功ライブカード置き場にあるカードのスコアの合計が１１以上の場合、自分の控え室からカードを1枚手札に加える。",
+      "cost": "",
+      "requirements": [
+        {
+          "kind": "effect.waiting_to_hand",
+          "evidence": "控え室からカードを1枚手札に加え",
+          "amount": 1,
+          "status": "matched"
+        },
+        {
+          "kind": "condition.success_live_context",
+          "evidence": "自分の成功ライブカード置き場にあるカードのスコアの合計が11以上の場合、自分の控え室からカードを1枚手札に加える。",
+          "status": "unverified"
+        }
+      ],
+      "classification": {
+        "trigger": "toujyou",
+        "template": "toujou_wait_pick_hand",
+        "optional": false,
+        "filters": {
+          "pickType": null,
+          "maxCost": null,
+          "minCost": null,
+          "seriesTag": null,
+          "minSuccessLiveCount": null,
+          "minNeedHeartSlot": null,
+          "minNeedHeartValue": null,
+          "minTotalNeedHeart": null,
+          "minSuccessLiveScoreSum": 11
+        },
+        "deckTopCount": null,
+        "handDiscardToWaiting": null,
+        "deckDrawCount": null,
+        "requiresOnStage": true,
+        "requiresInWaiting": false,
+        "perTurnLimit": 0,
+        "hasOptionalCost": false,
+        "costEnergy": false,
+        "costEnergyCount": 0,
+        "costSelfWait": false,
+        "costPickMemberWait": false,
+        "costMandatoryWaitOtherMember": false,
+        "costOrAlt": false,
+        "bladeGain": 0
+      },
+      "issues": [
+        {
+          "code": "requirement_not_verified",
+          "severity": "review",
+          "kind": "condition.success_live_context",
+          "evidence": "自分の成功ライブカード置き場にあるカードのスコアの合計が11以上の場合、自分の控え室からカードを1枚手札に加える。",
+          "message": "カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。"
+        }
+      ]
+    },
+    {
+      "card_no": "PL!HS-PR-043-PR",
+      "name": "桂城 泉",
+      "type": "メンバー",
+      "trigger": "live_start",
+      "segment_index": 0,
+      "template": "grant_jouji_session",
+      "status": "needs_review",
+      "fingerprint": "2c60317d963b48828f1e",
+      "text": "控え室にあるメンバーカード2枚を好きな順番でデッキの下に置いてもよい：これによりデッキの下に置いたメンバーカードが持つハートの総数が12以上の場合、ライブ終了時まで、{{icon_blade.png|ブレード}}{{icon_blade.png|ブレード}}{{icon_blade.png|ブレード}}を得る。",
+      "cost": "控え室にあるメンバーカード2枚を好きな順番でデッキの下に置いてもよい",
+      "requirements": [
+        {
+          "kind": "cost.optional",
+          "evidence": "控え室にあるメンバーカード2枚を好きな順番でデッキの下に置いてもよい",
+          "status": "matched"
+        },
+        {
+          "kind": "effect.grant_blade",
+          "evidence": "ブレードブレードブレードを得る",
+          "amount": 3,
+          "status": "matched"
+        },
+        {
+          "kind": "duration.live_end",
+          "evidence": "ライブ終了時まで",
+          "status": "matched"
+        },
+        {
+          "kind": "condition.other",
+          "evidence": "これによりデッキの下に置いたメンバーカードが持つハートの総数が12以上の場合、ライブ終了時まで、ブレードブレードブレードを得る。",
+          "status": "unverified"
+        }
+      ],
+      "classification": {
+        "trigger": "live_start",
+        "template": "grant_jouji_session",
+        "optional": true,
+        "filters": {
+          "pickType": "メンバー",
+          "maxCost": null,
+          "minCost": null,
+          "seriesTag": null,
+          "minSuccessLiveCount": null,
+          "minNeedHeartSlot": null,
+          "minNeedHeartValue": null,
+          "minTotalNeedHeart": null
+        },
+        "deckTopCount": null,
+        "handDiscardToWaiting": null,
+        "deckDrawCount": null,
+        "requiresOnStage": true,
+        "requiresInWaiting": false,
+        "perTurnLimit": 0,
+        "hasOptionalCost": true,
+        "costEnergy": false,
+        "costEnergyCount": 0,
+        "costSelfWait": false,
+        "costPickMemberWait": false,
+        "costMandatoryWaitOtherMember": false,
+        "costOrAlt": false,
+        "bladeGain": 3,
+        "liveScoreGrant": 0,
+        "cardScoreGrant": 0,
+        "grantToMovedMembersThisTurn": false
+      },
+      "issues": [
+        {
+          "code": "requirement_not_verified",
+          "severity": "review",
+          "kind": "condition.other",
+          "evidence": "これによりデッキの下に置いたメンバーカードが持つハートの総数が12以上の場合、ライブ終了時まで、ブレードブレードブレードを得る。",
+          "message": "カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。"
+        }
+      ]
+    },
+    {
+      "card_no": "PL!N-PR-037-PR",
+      "name": "近江彼方",
+      "type": "メンバー",
+      "trigger": "live_start",
+      "segment_index": 0,
+      "template": "grant_jouji_session",
+      "status": "needs_review",
+      "fingerprint": "4c2d198630b7d2ca471d",
+      "text": "控え室にあるメンバーカード2枚を好きな順番でデッキの下に置いてもよい：これによりデッキの下に置いたメンバーカードが持つハートの総数が12以上の場合、ライブ終了時まで、{{icon_blade.png|ブレード}}{{icon_blade.png|ブレード}}{{icon_blade.png|ブレード}}を得る。",
+      "cost": "控え室にあるメンバーカード2枚を好きな順番でデッキの下に置いてもよい",
+      "requirements": [
+        {
+          "kind": "cost.optional",
+          "evidence": "控え室にあるメンバーカード2枚を好きな順番でデッキの下に置いてもよい",
+          "status": "matched"
+        },
+        {
+          "kind": "effect.grant_blade",
+          "evidence": "ブレードブレードブレードを得る",
+          "amount": 3,
+          "status": "matched"
+        },
+        {
+          "kind": "duration.live_end",
+          "evidence": "ライブ終了時まで",
+          "status": "matched"
+        },
+        {
+          "kind": "condition.other",
+          "evidence": "これによりデッキの下に置いたメンバーカードが持つハートの総数が12以上の場合、ライブ終了時まで、ブレードブレードブレードを得る。",
+          "status": "unverified"
+        }
+      ],
+      "classification": {
+        "trigger": "live_start",
+        "template": "grant_jouji_session",
+        "optional": true,
+        "filters": {
+          "pickType": "メンバー",
+          "maxCost": null,
+          "minCost": null,
+          "seriesTag": null,
+          "minSuccessLiveCount": null,
+          "minNeedHeartSlot": null,
+          "minNeedHeartValue": null,
+          "minTotalNeedHeart": null
+        },
+        "deckTopCount": null,
+        "handDiscardToWaiting": null,
+        "deckDrawCount": null,
+        "requiresOnStage": true,
+        "requiresInWaiting": false,
+        "perTurnLimit": 0,
+        "hasOptionalCost": true,
+        "costEnergy": false,
+        "costEnergyCount": 0,
+        "costSelfWait": false,
+        "costPickMemberWait": false,
+        "costMandatoryWaitOtherMember": false,
+        "costOrAlt": false,
+        "bladeGain": 3,
+        "liveScoreGrant": 0,
+        "cardScoreGrant": 0,
+        "grantToMovedMembersThisTurn": false
+      },
+      "issues": [
+        {
+          "code": "requirement_not_verified",
+          "severity": "review",
+          "kind": "condition.other",
+          "evidence": "これによりデッキの下に置いたメンバーカードが持つハートの総数が12以上の場合、ライブ終了時まで、ブレードブレードブレードを得る。",
+          "message": "カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。"
+        }
+      ]
+    },
+    {
+      "card_no": "PL!N-PR-038-PR",
+      "name": "天王寺璃奈",
+      "type": "メンバー",
+      "trigger": "jidou",
+      "segment_index": 0,
+      "template": "jidou_manual",
+      "status": "unimplemented",
+      "fingerprint": "bd03b220b3b69f18fc86",
+      "text": "このメンバーがステージから控え室に置かれたとき、このメンバーがコスト11以下のメンバーとバトンタッチしていた場合、ライブ終了時まで、そのバトンタッチで登場したメンバーは{{icon_blade.png|ブレード}}{{icon_blade.png|ブレード}}を得る。",
+      "cost": "",
+      "requirements": [
+        {
+          "kind": "effect.grant_blade",
+          "evidence": "ブレードブレードを得る",
+          "amount": 2,
+          "status": "unverified"
+        },
+        {
+          "kind": "duration.live_end",
+          "evidence": "ライブ終了時まで",
+          "status": "unverified"
+        },
+        {
+          "kind": "condition.other",
+          "evidence": "このメンバーがステージから控え室に置かれたとき、このメンバーがコスト11以下のメンバーとバトンタッチしていた場合、ライブ終了時まで、そのバトンタッチで登場したメンバーはブレードブレードを得る。",
+          "status": "unverified"
+        }
+      ],
+      "classification": {
+        "template": "jidou_manual"
+      },
+      "issues": [
+        {
+          "code": "unimplemented",
+          "severity": "error",
+          "kind": "classification",
+          "evidence": "このメンバーがステージから控え室に置かれたとき、このメンバーがコスト11以下のメンバーとバトンタッチしていた場合、ライブ終了時まで、そのバトンタッチで登場したメンバーはブレードブレードを得る。",
+          "message": "分類未対応／手動処理。過去に修正したカードでも除外しない。"
+        },
+        {
+          "code": "requirement_not_verified",
+          "severity": "review",
+          "kind": "effect.grant_blade",
+          "evidence": "ブレードブレードを得る",
+          "message": "カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。"
+        },
+        {
+          "code": "requirement_not_verified",
+          "severity": "review",
+          "kind": "duration.live_end",
+          "evidence": "ライブ終了時まで",
+          "message": "カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。"
+        },
+        {
+          "code": "requirement_not_verified",
+          "severity": "review",
+          "kind": "condition.other",
+          "evidence": "このメンバーがステージから控え室に置かれたとき、このメンバーがコスト11以下のメンバーとバトンタッチしていた場合、ライブ終了時まで、そのバトンタッチで登場したメンバーはブレードブレードを得る。",
+          "message": "カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。"
+        }
+      ]
+    },
+    {
+      "card_no": "PL!N-PR-039-PR",
+      "name": "ミア・テイラー",
+      "type": "メンバー",
+      "trigger": "live_success",
+      "segment_index": 0,
+      "template": "guided_manual",
+      "status": "unimplemented",
+      "fingerprint": "236d12b24506f0ef8692",
+      "text": "エールにより公開された相手のカードの枚数が12枚以上ある場合、ライブの合計スコアを＋１する。",
+      "cost": "",
+      "requirements": [
+        {
+          "kind": "effect.score",
+          "evidence": "ライブの合計スコアを+1する",
+          "amount": 1,
+          "status": "unverified"
+        },
+        {
+          "kind": "condition.other",
+          "evidence": "エールにより公開された相手のカードの枚数が12枚以上ある場合、ライブの合計スコアを+1する。",
+          "status": "unverified"
+        }
+      ],
+      "classification": {
+        "trigger": "live_success",
+        "template": "guided_manual",
+        "optional": false,
+        "filters": {
+          "pickType": null,
+          "maxCost": null,
+          "minCost": null,
+          "seriesTag": null,
+          "minSuccessLiveCount": null,
+          "minNeedHeartSlot": null,
+          "minNeedHeartValue": null,
+          "minTotalNeedHeart": null
+        },
+        "deckTopCount": null,
+        "handDiscardToWaiting": null,
+        "deckDrawCount": null,
+        "requiresOnStage": false,
+        "requiresInWaiting": false,
+        "perTurnLimit": 0,
+        "hasOptionalCost": false,
+        "costEnergy": false,
+        "costEnergyCount": 0,
+        "costSelfWait": false,
+        "costPickMemberWait": false,
+        "costMandatoryWaitOtherMember": false,
+        "costOrAlt": false,
+        "bladeGain": 0
+      },
+      "issues": [
+        {
+          "code": "unimplemented",
+          "severity": "error",
+          "kind": "classification",
+          "evidence": "エールにより公開された相手のカードの枚数が12枚以上ある場合、ライブの合計スコアを+1する。",
+          "message": "分類未対応／手動処理。過去に修正したカードでも除外しない。"
+        },
+        {
+          "code": "requirement_not_verified",
+          "severity": "review",
+          "kind": "effect.score",
+          "evidence": "ライブの合計スコアを+1する",
+          "message": "カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。"
+        },
+        {
+          "code": "requirement_not_verified",
+          "severity": "review",
+          "kind": "condition.other",
+          "evidence": "エールにより公開された相手のカードの枚数が12枚以上ある場合、ライブの合計スコアを+1する。",
+          "message": "カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。"
+        }
+      ]
+    },
+    {
+      "card_no": "PL!SP-PR-033-PR",
+      "name": "嵐 千砂都",
+      "type": "メンバー",
+      "trigger": "live_success",
+      "segment_index": 0,
+      "template": "yell_resolution_pick_hand",
+      "status": "checked_known_rules",
+      "fingerprint": "ef6d5aa0ae443286ac0e",
+      "text": "手札を1枚控え室に置いてもよい：エールにより公開された自分のカードの中から、このメンバーが持つ{{icon_blade.png|ブレード}}の数以下の{{icon_blade.png|ブレード}}を持つ『Liella!』のメンバーカード1枚を手札に加えてもよい。",
+      "cost": "手札を1枚控え室に置いてもよい",
+      "requirements": [
+        {
+          "kind": "cost.hand_to_waiting",
+          "evidence": "手札を1枚控え室に置",
+          "amount": 1,
+          "status": "matched"
+        },
+        {
+          "kind": "cost.optional",
+          "evidence": "手札を1枚控え室に置いてもよい",
+          "status": "matched"
+        },
+        {
+          "kind": "effect.yell_to_hand",
+          "evidence": "エールにより公開された自分のカードの中から、このメンバーが持つブレードの数以下のブレードを持つ『Liella!』のメンバーカード1枚を手札に加え",
+          "amount": 1,
+          "status": "matched"
+        }
+      ],
+      "classification": {
+        "trigger": "live_success",
+        "template": "yell_resolution_pick_hand",
+        "optional": true,
+        "filters": {
+          "pickType": null,
+          "maxCost": null,
+          "minCost": null,
+          "seriesTag": "Liella!",
+          "minSuccessLiveCount": null,
+          "minNeedHeartSlot": null,
+          "minNeedHeartValue": null,
+          "minTotalNeedHeart": null
+        },
+        "deckTopCount": null,
+        "handDiscardToWaiting": 1,
+        "deckDrawCount": null,
+        "requiresOnStage": false,
+        "requiresInWaiting": false,
+        "perTurnLimit": 0,
+        "hasOptionalCost": true,
+        "costEnergy": false,
+        "costEnergyCount": 0,
+        "costSelfWait": false,
+        "costPickMemberWait": false,
+        "costMandatoryWaitOtherMember": false,
+        "costOrAlt": false,
+        "bladeGain": 0,
+        "preconditionFilters": {
+          "pickType": null,
+          "maxCost": null,
+          "minCost": null,
+          "seriesTag": null,
+          "minSuccessLiveCount": null,
+          "minNeedHeartSlot": null,
+          "minNeedHeartValue": null,
+          "minTotalNeedHeart": null
+        },
+        "handPickMax": 1,
+        "requiresStageSharedHeartColor": false
+      },
+      "issues": []
+    },
+    {
+      "card_no": "PL!SP-PR-034-PR",
+      "name": "葉月 恋",
+      "type": "メンバー",
+      "trigger": "jidou",
+      "segment_index": 0,
+      "template": "jidou_manual",
+      "status": "unimplemented",
+      "fingerprint": "4c7206da3a970bfba0dd",
+      "text": "このメンバーがステージから控え室に置かれたとき、このメンバーがコスト11以下のメンバーとバトンタッチしていた場合、ライブ終了時まで、そのバトンタッチで登場したメンバーは{{icon_blade.png|ブレード}}{{icon_blade.png|ブレード}}を得る。",
+      "cost": "",
+      "requirements": [
+        {
+          "kind": "effect.grant_blade",
+          "evidence": "ブレードブレードを得る",
+          "amount": 2,
+          "status": "unverified"
+        },
+        {
+          "kind": "duration.live_end",
+          "evidence": "ライブ終了時まで",
+          "status": "unverified"
+        },
+        {
+          "kind": "condition.other",
+          "evidence": "このメンバーがステージから控え室に置かれたとき、このメンバーがコスト11以下のメンバーとバトンタッチしていた場合、ライブ終了時まで、そのバトンタッチで登場したメンバーはブレードブレードを得る。",
+          "status": "unverified"
+        }
+      ],
+      "classification": {
+        "template": "jidou_manual"
+      },
+      "issues": [
+        {
+          "code": "unimplemented",
+          "severity": "error",
+          "kind": "classification",
+          "evidence": "このメンバーがステージから控え室に置かれたとき、このメンバーがコスト11以下のメンバーとバトンタッチしていた場合、ライブ終了時まで、そのバトンタッチで登場したメンバーはブレードブレードを得る。",
+          "message": "分類未対応／手動処理。過去に修正したカードでも除外しない。"
+        },
+        {
+          "code": "requirement_not_verified",
+          "severity": "review",
+          "kind": "effect.grant_blade",
+          "evidence": "ブレードブレードを得る",
+          "message": "カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。"
+        },
+        {
+          "code": "requirement_not_verified",
+          "severity": "review",
+          "kind": "duration.live_end",
+          "evidence": "ライブ終了時まで",
+          "message": "カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。"
+        },
+        {
+          "code": "requirement_not_verified",
+          "severity": "review",
+          "kind": "condition.other",
+          "evidence": "このメンバーがステージから控え室に置かれたとき、このメンバーがコスト11以下のメンバーとバトンタッチしていた場合、ライブ終了時まで、そのバトンタッチで登場したメンバーはブレードブレードを得る。",
+          "message": "カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。"
+        }
+      ]
+    },
+    {
+      "card_no": "PL!SP-PR-035-PR",
+      "name": "鬼塚冬毬",
+      "type": "メンバー",
+      "trigger": "live_success",
+      "segment_index": 0,
+      "template": "guided_manual",
+      "status": "unimplemented",
+      "fingerprint": "65da85b54cb7141292df",
+      "text": "エールにより公開された相手のカードの枚数が12枚以上ある場合、ライブの合計スコアを＋１する。",
+      "cost": "",
+      "requirements": [
+        {
+          "kind": "effect.score",
+          "evidence": "ライブの合計スコアを+1する",
+          "amount": 1,
+          "status": "unverified"
+        },
+        {
+          "kind": "condition.other",
+          "evidence": "エールにより公開された相手のカードの枚数が12枚以上ある場合、ライブの合計スコアを+1する。",
+          "status": "unverified"
+        }
+      ],
+      "classification": {
+        "trigger": "live_success",
+        "template": "guided_manual",
+        "optional": false,
+        "filters": {
+          "pickType": null,
+          "maxCost": null,
+          "minCost": null,
+          "seriesTag": null,
+          "minSuccessLiveCount": null,
+          "minNeedHeartSlot": null,
+          "minNeedHeartValue": null,
+          "minTotalNeedHeart": null
+        },
+        "deckTopCount": null,
+        "handDiscardToWaiting": null,
+        "deckDrawCount": null,
+        "requiresOnStage": false,
+        "requiresInWaiting": false,
+        "perTurnLimit": 0,
+        "hasOptionalCost": false,
+        "costEnergy": false,
+        "costEnergyCount": 0,
+        "costSelfWait": false,
+        "costPickMemberWait": false,
+        "costMandatoryWaitOtherMember": false,
+        "costOrAlt": false,
+        "bladeGain": 0
+      },
+      "issues": [
+        {
+          "code": "unimplemented",
+          "severity": "error",
+          "kind": "classification",
+          "evidence": "エールにより公開された相手のカードの枚数が12枚以上ある場合、ライブの合計スコアを+1する。",
+          "message": "分類未対応／手動処理。過去に修正したカードでも除外しない。"
+        },
+        {
+          "code": "requirement_not_verified",
+          "severity": "review",
+          "kind": "effect.score",
+          "evidence": "ライブの合計スコアを+1する",
+          "message": "カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。"
+        },
+        {
+          "code": "requirement_not_verified",
+          "severity": "review",
+          "kind": "condition.other",
+          "evidence": "エールにより公開された相手のカードの枚数が12枚以上ある場合、ライブの合計スコアを+1する。",
+          "message": "カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。"
+        }
+      ]
     }
   ],
-  "generated_at": "2026-11-05T08:10:10.848Z",
+  "generated_at": "2026-11-09T08:10:20.252Z",
   "inputs": [
     "data/cards.json",
     "data/ability-semantic-contracts.json",
@@ -165461,7 +166031,7 @@
     "js/simulator.js"
   ],
   "input_sha256": {
-    "data/cards.json": "b43be9f744b64f613551503ab47d0ab2c831986788adce489332db8be4acd38a",
+    "data/cards.json": "713b75793074ba5a10176b0f1c0f60e5cc0a42994b2128de9b3ae9b6ca78daf8",
     "data/ability-semantic-contracts.json": "e2ef6d56dad7a5e08693ef40aee3bf739bc0d9c5e0572cbd857cbc4889e46907",
     "js/abilityEffects.js": "cd960c86d687e584d423bfe44d5d9b653048f8d82305dddb4d0e924b77de52d4",
     "js/abilityCompletion.js": "5a3337a1f502c33b89a3fe82443f9a979c0e7bc85333ca463e8bf52cc3e39485",

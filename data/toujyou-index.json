@@ -1,7 +1,7 @@
 {
-  "generated": "2026-11-03",
+  "generated": "2026-11-09",
   "trigger": "toujyou",
-  "total": 637,
+  "total": 638,
   "byTemplate": {
     "toujou_multi_baton_recover_score": 2,
     "grant_jouji_session": 14,
@@ -11,7 +11,7 @@
     "toujou_waiting_members_under_self": 2,
     "draw_from_deck": 38,
     "optional_self_wait_opp_stage": 38,
-    "toujou_wait_pick_hand": 74,
+    "toujou_wait_pick_hand": 75,
     "ability_pick_one": 22,
     "deck_top_to_waiting": 9,
     "waiting_to_deck_bottom_activate_per": 2,
@@ -5893,6 +5893,15 @@
       "optional": false,
       "perTurn": 0,
       "effect": "自分のデッキの上からカードを5枚控え室に置く。"
+    },
+    {
+      "card_no": "PL!-PR-027-PR",
+      "name": "星空 凛",
+      "template": "toujou_wait_pick_hand",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分の成功ライブカード置き場にあるカードのスコアの合計が１１以上の場合、自分の控え室からカードを1枚手札に加える。"
     }
   ]
 }

@@ -1,7 +1,7 @@
 {
-  "generated": "2026-11-03",
+  "generated": "2026-11-09",
   "trigger": "live_success",
-  "total": 133,
+  "total": 136,
   "byTemplate": {
     "live_success_recover_from_waiting": 1,
     "energy_deck_under_member": 4,
@@ -20,7 +20,7 @@
     "deck_top_reveal_hand_score_grant": 4,
     "deck_top_look_reorder": 1,
     "yell_resolution_pick_deck_top": 4,
-    "yell_resolution_pick_hand": 13,
+    "yell_resolution_pick_hand": 14,
     "live_success_wait_skip_next_activate": 4,
     "yell_reveal_series_live_score_plus": 4,
     "deck_top_count_live_score_plus": 4,
@@ -36,7 +36,8 @@
     "optional_energy_live_score_plus": 3,
     "optional_self_wait_opp_stage": 1,
     "yell_resolution_count_energy_wait": 1,
-    "yell_resolution_pick_deck_bottom": 1
+    "yell_resolution_pick_deck_bottom": 1,
+    "guided_manual": 2
   },
   "cards": [
     {
@@ -1235,6 +1236,33 @@
       "optional": false,
       "perTurn": 0,
       "effect": "エールにより公開された自分のカードの中から、『Aqours』のカードを3枚まで、好きな順番でデッキの下に置く。"
+    },
+    {
+      "card_no": "PL!N-PR-039-PR",
+      "name": "ミア・テイラー",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "エールにより公開された相手のカードの枚数が12枚以上ある場合、ライブの合計スコアを＋１する。"
+    },
+    {
+      "card_no": "PL!SP-PR-033-PR",
+      "name": "嵐 千砂都",
+      "template": "yell_resolution_pick_hand",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札を1枚控え室に置いてもよい：エールにより公開された自分のカードの中から、このメンバーが持つの数以下のを持つ『Liella!』のメンバーカード1枚を手札に加えてもよい。"
+    },
+    {
+      "card_no": "PL!SP-PR-035-PR",
+      "name": "鬼塚冬毬",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "エールにより公開された相手のカードの枚数が12枚以上ある場合、ライブの合計スコアを＋１する。"
     }
   ]
 }

@@ -1,9 +1,9 @@
 {
-  "generated": "2026-11-03",
+  "generated": "2026-11-09",
   "trigger": "jidou",
-  "total": 145,
+  "total": 147,
   "automated": 145,
-  "guided_manual": 0,
+  "guided_manual": 2,
   "byTemplate": {
     "jidou_yell_score_group_extra": 2,
     "jidou_baton_leave_activate_energy": 3,
@@ -60,7 +60,8 @@
     "jidou_yell_grant_jouji": 3,
     "jidou_enter_or_baton_draw": 1,
     "jidou_waiting_entry_draw": 1,
-    "jidou_yell_opp_wait_printed_hearts": 1
+    "jidou_yell_opp_wait_printed_hearts": 1,
+    "jidou_manual": 2
   },
   "cards": [
     {
@@ -1222,6 +1223,22 @@
       "automated": true,
       "eventKind": "yell",
       "effect": "[センター]自分がエールしたとき、エールにより公開された自分のカードの中にライブカードが2枚以上ある場合、相手のステージにいる元々持つハートの数が4つ以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "card_no": "PL!N-PR-038-PR",
+      "name": "天王寺璃奈",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "このメンバーがステージから控え室に置かれたとき、このメンバーがコスト11以下のメンバーとバトンタッチしていた場合、ライブ終了時まで、そのバトンタッチで登場したメンバーはを得る。"
+    },
+    {
+      "card_no": "PL!SP-PR-034-PR",
+      "name": "葉月 恋",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "このメンバーがステージから控え室に置かれたとき、このメンバーがコスト11以下のメンバーとバトンタッチしていた場合、ライブ終了時まで、そのバトンタッチで登場したメンバーはを得る。"
     }
   ]
 }
