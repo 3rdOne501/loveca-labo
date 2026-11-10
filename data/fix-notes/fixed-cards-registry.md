@@ -22,7 +22,7 @@
 |-----------|------|------|------|--------|
 | PL!S-PR-044-PR | 高海千歌 | 8枚未満で山札ミル→「これにより」ピックの連鎖が分類されず、控え室拾いが登場時点の全カード対象のままだった | 控え室枚数上限まで山札ミル（`waitingFillTargetCount`）＋ thereby 限定ピック（`pickFromTherebyMilledToWaiting`）で `ability_sequence` 化。シミュレータで直前ミルIDだけ候補にする | 同型 3 枚（PL!HS-PR-036-PR / PL!N-PR-032-PR / PL!S-PR-044-PR） |
 
-Discord: messageId 1569370999537799409（n0_chaba）
+Discord: messageId 1569586907539574815（n0_chaba）。従前 1569370999537799409
 
 ---
 

@@ -31769,6 +31769,7 @@ export function mountSimulator(
       openDeckTopCardsRevealDialog(revealedNw, function (proceed) {
         if (!proceed) {
           if (revealedNw.length) state.deck.unshift.apply(state.deck, revealedNw.slice().reverse());
+          state._lastAbilityMilledToWaitingIds = [];
           if (cl.optional || cl.hasOptionalCost) showToast("スキップしました");
           finishResolved();
           return;
