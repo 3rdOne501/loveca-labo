@@ -5119,6 +5119,19 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
       }
       return twT(relocatePatch);
     }
+    var waitBelowFillTjM = p.match(/控え室にあるカードの枚数が([０-９\d]+)枚未満/);
+    if (
+      waitBelowFillTjM &&
+      /その差に等しい枚数/.test(p) &&
+      /デッキの上から/.test(p) &&
+      /控え室に置/.test(p)
+    ) {
+      return twT({
+        template: "deck_top_to_waiting",
+        waitingFillTargetCount: Number(normalizeFwDigits(waitBelowFillTjM[1])) || 8,
+        requiresOnStage: true,
+      });
+    }
     var waitToDeckNthM = p.match(/控え室.*(?:カード|ライブカード)1枚.*デッキの一番上から([０-９\d]+)枚目/);
     if (waitToDeckNthM && /もよい/.test(p)) {
       var waitDeckNthFilters = parseAbilityPickFilters(p);
@@ -6022,19 +6035,6 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
           handDiscardToWaiting: /手札を1枚控え室に置/.test(p) ? 1 : null,
         }),
       );
-    }
-    var waitBelowFillM = p.match(/控え室にあるカードの枚数が([０-９\d]+)枚未満/);
-    if (
-      waitBelowFillM &&
-      /その差に等しい枚数/.test(p) &&
-      /デッキの上から/.test(p) &&
-      /控え室に置/.test(p)
-    ) {
-      return twT({
-        template: "deck_top_to_waiting",
-        waitingFillTargetCount: Number(normalizeFwDigits(waitBelowFillM[1])) || 8,
-        requiresOnStage: true,
-      });
     }
     var td = parseDeckTopCount(p);
     if (td != null && p.includes("控え室")) {

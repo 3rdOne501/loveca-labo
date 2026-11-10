@@ -403,7 +403,7 @@
       "name": "高海千歌",
       "template": "ability_sequence",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "手札を1枚控え室に置いてもよい：自分の控え室からコスト10以上のメンバーカードを1枚手札に加える。これにより「桜内梨子」か「渡辺 曜」を手札に加えた場合、ライブ終了時まで、を得る。",
       "steps": [
@@ -425,7 +425,7 @@
       "name": "高海千歌",
       "template": "ability_sequence",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "手札を1枚控え室に置いてもよい：自分の控え室からコスト10以上のメンバーカードを1枚手札に加える。これにより「桜内梨子」か「渡辺 曜」を手札に加えた場合、ライブ終了時まで、を得る。",
       "steps": [
@@ -942,7 +942,7 @@
       "name": "唐 可可",
       "template": "ability_sequence",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "手札の『KALEIDOSCORE』のカードを1枚控え室に置いてもよい：自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。これにより控え室に置いたカードがブレードハートを持たない場合、カードを1枚引く。",
       "steps": [
@@ -964,7 +964,7 @@
       "name": "唐 可可",
       "template": "ability_sequence",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "手札の『KALEIDOSCORE』のカードを1枚控え室に置いてもよい：自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。これにより控え室に置いたカードがブレードハートを持たない場合、カードを1枚引く。",
       "steps": [
@@ -1525,7 +1525,7 @@
       "name": "百生吟子",
       "template": "ability_sequence",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "手札を1枚控え室に置いてもよい：自分のデッキの上からカードを3枚控え室に置く。その後、自分の控え室から『スリーズブーケ』のライブカードを1枚手札に加える。",
       "steps": [
@@ -1538,7 +1538,7 @@
       "name": "百生吟子",
       "template": "ability_sequence",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "手札を1枚控え室に置いてもよい：自分のデッキの上からカードを3枚控え室に置く。その後、自分の控え室から『スリーズブーケ』のライブカードを1枚手札に加える。",
       "steps": [
@@ -2073,7 +2073,7 @@
       "name": "天王寺璃奈",
       "template": "ability_sequence",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "自分のデッキの上からカードを2枚控え室に置く。その後、自分の控え室からライブカード1枚を自分のデッキの一番上から4枚目に置いてもよい。",
       "steps": [
@@ -2977,7 +2977,7 @@
       "name": "近江彼方",
       "template": "ability_sequence",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "支払ってもよい：自分の手札からコスト4以下の『虹ヶ咲』のメンバーカードを1枚ステージに登場させる。これにより登場したメンバーがブレードハートを持つ場合、このメンバーをウェイトにする。",
       "steps": [
@@ -3017,7 +3017,7 @@
       "name": "近江彼方",
       "template": "ability_sequence",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "支払ってもよい：自分の手札からコスト4以下の『虹ヶ咲』のメンバーカードを1枚ステージに登場させる。これにより登場したメンバーがブレードハートを持つ場合、このメンバーをウェイトにする。",
       "steps": [
@@ -4955,7 +4955,7 @@
       "name": "天王寺璃奈",
       "template": "ability_sequence",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "手札を1枚控え室に置いてもよい：自分のデッキの上からカードを2枚控え室に置く。その後、自分の控え室からメンバーカードを1枚手札に加える。",
       "steps": [
@@ -4968,7 +4968,7 @@
       "name": "天王寺璃奈",
       "template": "ability_sequence",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "手札を1枚控え室に置いてもよい：自分のデッキの上からカードを2枚控え室に置く。その後、自分の控え室からメンバーカードを1枚手札に加える。",
       "steps": [
@@ -5530,7 +5530,7 @@
       "name": "大沢瑠璃乃",
       "template": "ability_sequence",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "自分の控え室にあるカードの枚数が8枚未満の場合、自分のデッキの上からカードをその差に等しい枚数控え室に置く。その後、これにより控え室に置いたカードの中から、ライブカード1枚をデッキの一番上に置いてもよい。",
       "steps": [
@@ -5678,7 +5678,7 @@
       "name": "優木せつ菜",
       "template": "ability_sequence",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "自分の控え室にあるカードの枚数が8枚未満の場合、自分のデッキの上からカードをその差に等しい枚数控え室に置く。その後、これにより控え室に置いたカードの中から、ライブカード1枚をデッキの一番上に置いてもよい。",
       "steps": [
@@ -5799,7 +5799,7 @@
       "name": "高海千歌",
       "template": "ability_sequence",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "自分の控え室にあるカードの枚数が8枚未満の場合、その差に等しい枚数分自分のデッキの上からカードを控え室に置く。その後、これにより控え室に置いたカードの中から、ライブカード1枚をデッキの一番上に置いてもよい。",
       "steps": [

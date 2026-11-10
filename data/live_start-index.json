@@ -1268,7 +1268,7 @@
       "name": "高坂穂乃果",
       "template": "ability_sequence",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "手札を1枚控え室に置いてもよい：自分のデッキの上からカードを3枚控え室に置く。その後、自分の控え室から『A-RISE』のメンバーカードを1枚手札に加える。",
       "steps": [
@@ -1695,7 +1695,7 @@
       "name": "村野さやか",
       "template": "ability_sequence",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "手札を2枚控え室に置いてもよい：自分のデッキの上からカードを5枚見る。その中からメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。これにより『蓮ノ空』のカードを手札に加えた場合、ライブ終了時まで、を得る。",
       "steps": [
@@ -3400,7 +3400,7 @@
       "name": "米女メイ",
       "template": "ability_sequence",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "手札を1枚控え室に置いてもよい：ライブ終了時まで、を得る。これによりライブカードを控え室に置いた場合、さらにカードを1枚引く。",
       "steps": [
@@ -3413,7 +3413,7 @@
       "name": "鬼塚夏美",
       "template": "ability_sequence",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "手札を1枚控え室に置いてもよい：ライブ終了時まで、を得る。これによりライブカードを控え室に置いた場合、さらにカードを1枚引く。",
       "steps": [
@@ -3426,7 +3426,7 @@
       "name": "ウィーン・マルガレーテ",
       "template": "ability_sequence",
       "automated": true,
-      "optional": true,
+      "optional": false,
       "perTurn": 0,
       "effect": "手札を1枚控え室に置いてもよい：ライブ終了時まで、を得る。これによりライブカードを控え室に置いた場合、さらにカードを1枚引く。",
       "steps": [

@@ -8,9 +8,9 @@
     "segments": 2177,
     "statuses": {
       "unimplemented": 4,
-      "suspect": 28,
-      "needs_review": 1845,
-      "checked_known_rules": 300
+      "suspect": 38,
+      "needs_review": 1840,
+      "checked_known_rules": 295
     },
     "issues": {
       "requirement_not_verified": 2695,
@@ -19,7 +19,7 @@
       "body_not_understood": 581,
       "text_not_understood": 177,
       "missing_processing_contract": 10,
-      "contract_mismatch": 22,
+      "contract_mismatch": 37,
       "amount_not_verified": 15,
       "repeated_action_needs_review": 20,
       "unimplemented": 4
@@ -14523,7 +14523,7 @@
       "trigger": "toujyou",
       "segment_index": 0,
       "template": "ability_sequence",
-      "status": "needs_review",
+      "status": "suspect",
       "fingerprint": "53d39b36c40e7de6fab1",
       "text": "手札を1枚控え室に置いてもよい：自分の控え室からコスト10以上のメンバーカードを1枚手札に加える。これにより「桜内梨子」か「渡辺 曜」を手札に加えた場合、ライブ終了時まで、{{icon_blade.png|ブレード}}{{icon_blade.png|ブレード}}を得る。",
       "cost": "手札を1枚控え室に置いてもよい",
@@ -14537,7 +14537,10 @@
         {
           "kind": "cost.optional",
           "evidence": "手札を1枚控え室に置いてもよい",
-          "status": "matched"
+          "status": "mismatch",
+          "evaluations": [
+            "missing_flag"
+          ]
         },
         {
           "kind": "effect.waiting_to_hand",
@@ -14565,7 +14568,7 @@
       "classification": {
         "trigger": "toujyou",
         "template": "ability_sequence",
-        "optional": true,
+        "optional": false,
         "filters": {
           "pickType": "メンバー",
           "maxCost": null,
@@ -14582,7 +14585,7 @@
         "requiresOnStage": true,
         "requiresInWaiting": false,
         "perTurnLimit": 0,
-        "hasOptionalCost": true,
+        "hasOptionalCost": false,
         "costEnergy": false,
         "costEnergyCount": 0,
         "costSelfWait": false,
@@ -14658,6 +14661,13 @@
         ]
       },
       "issues": [
+        {
+          "code": "contract_mismatch",
+          "severity": "suspect",
+          "kind": "cost.optional",
+          "evidence": "手札を1枚控え室に置いてもよい",
+          "message": "分類結果がカード文の要求と一致しない: missing_flag"
+        },
         {
           "code": "requirement_not_verified",
           "severity": "review",
@@ -14739,7 +14749,7 @@
       "trigger": "toujyou",
       "segment_index": 0,
       "template": "ability_sequence",
-      "status": "needs_review",
+      "status": "suspect",
       "fingerprint": "59eb666f940f658dd7ee",
       "text": "手札を1枚控え室に置いてもよい：自分の控え室からコスト10以上のメンバーカードを1枚手札に加える。これにより「桜内梨子」か「渡辺 曜」を手札に加えた場合、ライブ終了時まで、{{icon_blade.png|ブレード}}{{icon_blade.png|ブレード}}を得る。",
       "cost": "手札を1枚控え室に置いてもよい",
@@ -14753,7 +14763,10 @@
         {
           "kind": "cost.optional",
           "evidence": "手札を1枚控え室に置いてもよい",
-          "status": "matched"
+          "status": "mismatch",
+          "evaluations": [
+            "missing_flag"
+          ]
         },
         {
           "kind": "effect.waiting_to_hand",
@@ -14781,7 +14794,7 @@
       "classification": {
         "trigger": "toujyou",
         "template": "ability_sequence",
-        "optional": true,
+        "optional": false,
         "filters": {
           "pickType": "メンバー",
           "maxCost": null,
@@ -14798,7 +14811,7 @@
         "requiresOnStage": true,
         "requiresInWaiting": false,
         "perTurnLimit": 0,
-        "hasOptionalCost": true,
+        "hasOptionalCost": false,
         "costEnergy": false,
         "costEnergyCount": 0,
         "costSelfWait": false,
@@ -14874,6 +14887,13 @@
         ]
       },
       "issues": [
+        {
+          "code": "contract_mismatch",
+          "severity": "suspect",
+          "kind": "cost.optional",
+          "evidence": "手札を1枚控え室に置いてもよい",
+          "message": "分類結果がカード文の要求と一致しない: missing_flag"
+        },
         {
           "code": "requirement_not_verified",
           "severity": "review",
@@ -33440,7 +33460,10 @@
         {
           "kind": "cost.optional",
           "evidence": "手札の『KALEIDOSCORE』のカードを1枚控え室に置いてもよい",
-          "status": "matched"
+          "status": "mismatch",
+          "evaluations": [
+            "missing_flag"
+          ]
         },
         {
           "kind": "effect.draw",
@@ -33457,7 +33480,7 @@
       "classification": {
         "trigger": "toujyou",
         "template": "ability_sequence",
-        "optional": true,
+        "optional": false,
         "filters": {
           "pickType": null,
           "maxCost": null,
@@ -33474,7 +33497,7 @@
         "requiresOnStage": true,
         "requiresInWaiting": false,
         "perTurnLimit": 0,
-        "hasOptionalCost": true,
+        "hasOptionalCost": false,
         "costEnergy": false,
         "costEnergyCount": 0,
         "costSelfWait": false,
@@ -33554,6 +33577,13 @@
           "kind": "cost.hand_to_waiting",
           "evidence": "手札の『KALEIDOSCORE』のカードを1枚控え室に置",
           "message": "分類結果がカード文の要求と一致しない: missing_field"
+        },
+        {
+          "code": "contract_mismatch",
+          "severity": "suspect",
+          "kind": "cost.optional",
+          "evidence": "手札の『KALEIDOSCORE』のカードを1枚控え室に置いてもよい",
+          "message": "分類結果がカード文の要求と一致しない: missing_flag"
         },
         {
           "code": "requirement_not_verified",
@@ -33696,7 +33726,10 @@
         {
           "kind": "cost.optional",
           "evidence": "手札の『KALEIDOSCORE』のカードを1枚控え室に置いてもよい",
-          "status": "matched"
+          "status": "mismatch",
+          "evaluations": [
+            "missing_flag"
+          ]
         },
         {
           "kind": "effect.draw",
@@ -33713,7 +33746,7 @@
       "classification": {
         "trigger": "toujyou",
         "template": "ability_sequence",
-        "optional": true,
+        "optional": false,
         "filters": {
           "pickType": null,
           "maxCost": null,
@@ -33730,7 +33763,7 @@
         "requiresOnStage": true,
         "requiresInWaiting": false,
         "perTurnLimit": 0,
-        "hasOptionalCost": true,
+        "hasOptionalCost": false,
         "costEnergy": false,
         "costEnergyCount": 0,
         "costSelfWait": false,
@@ -33810,6 +33843,13 @@
           "kind": "cost.hand_to_waiting",
           "evidence": "手札の『KALEIDOSCORE』のカードを1枚控え室に置",
           "message": "分類結果がカード文の要求と一致しない: missing_field"
+        },
+        {
+          "code": "contract_mismatch",
+          "severity": "suspect",
+          "kind": "cost.optional",
+          "evidence": "手札の『KALEIDOSCORE』のカードを1枚控え室に置いてもよい",
+          "message": "分類結果がカード文の要求と一致しない: missing_flag"
         },
         {
           "code": "requirement_not_verified",
@@ -54443,7 +54483,7 @@
       "trigger": "toujyou",
       "segment_index": 0,
       "template": "ability_sequence",
-      "status": "checked_known_rules",
+      "status": "suspect",
       "fingerprint": "e3de185c9ede450bf74f",
       "text": "{{icon_energy.png|E}}手札を1枚控え室に置いてもよい：自分のデッキの上からカードを3枚控え室に置く。その後、自分の控え室から『スリーズブーケ』のライブカードを1枚手札に加える。",
       "cost": "E手札を1枚控え室に置いてもよい",
@@ -54457,7 +54497,10 @@
         {
           "kind": "cost.optional",
           "evidence": "E手札を1枚控え室に置いてもよい",
-          "status": "matched"
+          "status": "mismatch",
+          "evaluations": [
+            "missing_flag"
+          ]
         },
         {
           "kind": "effect.mill",
@@ -54475,7 +54518,7 @@
       "classification": {
         "trigger": "toujyou",
         "template": "ability_sequence",
-        "optional": true,
+        "optional": false,
         "filters": {
           "pickType": "ライブ",
           "maxCost": null,
@@ -54492,7 +54535,7 @@
         "requiresOnStage": true,
         "requiresInWaiting": false,
         "perTurnLimit": 0,
-        "hasOptionalCost": true,
+        "hasOptionalCost": false,
         "costEnergy": true,
         "costEnergyCount": 1,
         "costSelfWait": false,
@@ -54562,7 +54605,15 @@
           }
         ]
       },
-      "issues": []
+      "issues": [
+        {
+          "code": "contract_mismatch",
+          "severity": "suspect",
+          "kind": "cost.optional",
+          "evidence": "E手札を1枚控え室に置いてもよい",
+          "message": "分類結果がカード文の要求と一致しない: missing_flag"
+        }
+      ]
     },
     {
       "card_no": "PL!HS-pb1-004-P＋",
@@ -54571,7 +54622,7 @@
       "trigger": "toujyou",
       "segment_index": 0,
       "template": "ability_sequence",
-      "status": "checked_known_rules",
+      "status": "suspect",
       "fingerprint": "d73447007173c4243671",
       "text": "{{icon_energy.png|E}}手札を1枚控え室に置いてもよい：自分のデッキの上からカードを3枚控え室に置く。その後、自分の控え室から『スリーズブーケ』のライブカードを1枚手札に加える。",
       "cost": "E手札を1枚控え室に置いてもよい",
@@ -54585,7 +54636,10 @@
         {
           "kind": "cost.optional",
           "evidence": "E手札を1枚控え室に置いてもよい",
-          "status": "matched"
+          "status": "mismatch",
+          "evaluations": [
+            "missing_flag"
+          ]
         },
         {
           "kind": "effect.mill",
@@ -54603,7 +54657,7 @@
       "classification": {
         "trigger": "toujyou",
         "template": "ability_sequence",
-        "optional": true,
+        "optional": false,
         "filters": {
           "pickType": "ライブ",
           "maxCost": null,
@@ -54620,7 +54674,7 @@
         "requiresOnStage": true,
         "requiresInWaiting": false,
         "perTurnLimit": 0,
-        "hasOptionalCost": true,
+        "hasOptionalCost": false,
         "costEnergy": true,
         "costEnergyCount": 1,
         "costSelfWait": false,
@@ -54690,7 +54744,15 @@
           }
         ]
       },
-      "issues": []
+      "issues": [
+        {
+          "code": "contract_mismatch",
+          "severity": "suspect",
+          "kind": "cost.optional",
+          "evidence": "E手札を1枚控え室に置いてもよい",
+          "message": "分類結果がカード文の要求と一致しない: missing_flag"
+        }
+      ]
     },
     {
       "card_no": "PL!HS-pb1-005-P＋",
@@ -61771,7 +61833,7 @@
       "trigger": "live_start",
       "segment_index": 0,
       "template": "ability_sequence",
-      "status": "checked_known_rules",
+      "status": "suspect",
       "fingerprint": "2349a90a983880c10fde",
       "text": "手札を1枚控え室に置いてもよい：自分のデッキの上からカードを3枚控え室に置く。その後、自分の控え室から『A-RISE』のメンバーカードを1枚手札に加える。",
       "cost": "手札を1枚控え室に置いてもよい",
@@ -61785,7 +61847,10 @@
         {
           "kind": "cost.optional",
           "evidence": "手札を1枚控え室に置いてもよい",
-          "status": "matched"
+          "status": "mismatch",
+          "evaluations": [
+            "missing_flag"
+          ]
         },
         {
           "kind": "effect.mill",
@@ -61803,7 +61868,7 @@
       "classification": {
         "trigger": "live_start",
         "template": "ability_sequence",
-        "optional": true,
+        "optional": false,
         "filters": {
           "pickType": "メンバー",
           "maxCost": null,
@@ -61820,7 +61885,7 @@
         "requiresOnStage": true,
         "requiresInWaiting": false,
         "perTurnLimit": 0,
-        "hasOptionalCost": true,
+        "hasOptionalCost": false,
         "costEnergy": false,
         "costEnergyCount": 0,
         "costSelfWait": false,
@@ -61889,7 +61954,15 @@
           }
         ]
       },
-      "issues": []
+      "issues": [
+        {
+          "code": "contract_mismatch",
+          "severity": "suspect",
+          "kind": "cost.optional",
+          "evidence": "手札を1枚控え室に置いてもよい",
+          "message": "分類結果がカード文の要求と一致しない: missing_flag"
+        }
+      ]
     },
     {
       "card_no": "PL!-bp5-009-AR",
@@ -73152,7 +73225,7 @@
       "classification": {
         "trigger": "toujyou",
         "template": "ability_sequence",
-        "optional": true,
+        "optional": false,
         "filters": {
           "pickType": "ライブ",
           "maxCost": null,
@@ -73169,7 +73242,7 @@
         "requiresOnStage": true,
         "requiresInWaiting": false,
         "perTurnLimit": 0,
-        "hasOptionalCost": true,
+        "hasOptionalCost": false,
         "costEnergy": false,
         "costEnergyCount": 0,
         "costSelfWait": false,
@@ -84875,7 +84948,7 @@
       "trigger": "live_start",
       "segment_index": 0,
       "template": "ability_sequence",
-      "status": "needs_review",
+      "status": "suspect",
       "fingerprint": "a4f01f444e949754ecad",
       "text": "手札を2枚控え室に置いてもよい：自分のデッキの上からカードを5枚見る。その中からメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。これにより『蓮ノ空』のカードを手札に加えた場合、ライブ終了時まで、{{heart_05.png|heart05}}{{icon_blade.png|ブレード}}を得る。",
       "cost": "手札を2枚控え室に置いてもよい",
@@ -84889,7 +84962,10 @@
         {
           "kind": "cost.optional",
           "evidence": "手札を2枚控え室に置いてもよい",
-          "status": "matched"
+          "status": "mismatch",
+          "evaluations": [
+            "missing_flag"
+          ]
         },
         {
           "kind": "effect.peek",
@@ -84922,7 +84998,7 @@
       "classification": {
         "trigger": "live_start",
         "template": "ability_sequence",
-        "optional": true,
+        "optional": false,
         "filters": {
           "pickType": "メンバー",
           "maxCost": null,
@@ -84939,7 +85015,7 @@
         "requiresOnStage": true,
         "requiresInWaiting": false,
         "perTurnLimit": 0,
-        "hasOptionalCost": true,
+        "hasOptionalCost": false,
         "costEnergy": false,
         "costEnergyCount": 0,
         "costSelfWait": false,
@@ -85018,6 +85094,13 @@
         ]
       },
       "issues": [
+        {
+          "code": "contract_mismatch",
+          "severity": "suspect",
+          "kind": "cost.optional",
+          "evidence": "手札を2枚控え室に置いてもよい",
+          "message": "分類結果がカード文の要求と一致しない: missing_flag"
+        },
         {
           "code": "requirement_not_verified",
           "severity": "review",
@@ -97335,7 +97418,7 @@
       "trigger": "toujyou",
       "segment_index": 0,
       "template": "ability_sequence",
-      "status": "needs_review",
+      "status": "suspect",
       "fingerprint": "5d0dfec696c869cffd0d",
       "text": "{{icon_energy.png|E}}{{icon_energy.png|E}}支払ってもよい：自分の手札からコスト4以下の『虹ヶ咲』のメンバーカードを1枚ステージに登場させる。これにより登場したメンバーがブレードハートを持つ場合、このメンバーをウェイトにする。",
       "cost": "EE支払ってもよい",
@@ -97343,7 +97426,10 @@
         {
           "kind": "cost.optional",
           "evidence": "EE支払ってもよい",
-          "status": "matched"
+          "status": "mismatch",
+          "evaluations": [
+            "missing_flag"
+          ]
         },
         {
           "kind": "condition.other",
@@ -97354,7 +97440,7 @@
       "classification": {
         "trigger": "toujyou",
         "template": "ability_sequence",
-        "optional": true,
+        "optional": false,
         "filters": {
           "pickType": "メンバー",
           "maxCost": 4,
@@ -97371,7 +97457,7 @@
         "requiresOnStage": true,
         "requiresInWaiting": false,
         "perTurnLimit": 0,
-        "hasOptionalCost": true,
+        "hasOptionalCost": false,
         "costEnergy": true,
         "costEnergyCount": 2,
         "costSelfWait": false,
@@ -97427,6 +97513,13 @@
         ]
       },
       "issues": [
+        {
+          "code": "contract_mismatch",
+          "severity": "suspect",
+          "kind": "cost.optional",
+          "evidence": "EE支払ってもよい",
+          "message": "分類結果がカード文の要求と一致しない: missing_flag"
+        },
         {
           "code": "requirement_not_verified",
           "severity": "review",
@@ -98062,7 +98155,7 @@
       "trigger": "toujyou",
       "segment_index": 0,
       "template": "ability_sequence",
-      "status": "needs_review",
+      "status": "suspect",
       "fingerprint": "70bedeee74b0e4a7790a",
       "text": "{{icon_energy.png|E}}{{icon_energy.png|E}}支払ってもよい：自分の手札からコスト4以下の『虹ヶ咲』のメンバーカードを1枚ステージに登場させる。これにより登場したメンバーがブレードハートを持つ場合、このメンバーをウェイトにする。",
       "cost": "EE支払ってもよい",
@@ -98070,7 +98163,10 @@
         {
           "kind": "cost.optional",
           "evidence": "EE支払ってもよい",
-          "status": "matched"
+          "status": "mismatch",
+          "evaluations": [
+            "missing_flag"
+          ]
         },
         {
           "kind": "condition.other",
@@ -98081,7 +98177,7 @@
       "classification": {
         "trigger": "toujyou",
         "template": "ability_sequence",
-        "optional": true,
+        "optional": false,
         "filters": {
           "pickType": "メンバー",
           "maxCost": 4,
@@ -98098,7 +98194,7 @@
         "requiresOnStage": true,
         "requiresInWaiting": false,
         "perTurnLimit": 0,
-        "hasOptionalCost": true,
+        "hasOptionalCost": false,
         "costEnergy": true,
         "costEnergyCount": 2,
         "costSelfWait": false,
@@ -98154,6 +98250,13 @@
         ]
       },
       "issues": [
+        {
+          "code": "contract_mismatch",
+          "severity": "suspect",
+          "kind": "cost.optional",
+          "evidence": "EE支払ってもよい",
+          "message": "分類結果がカード文の要求と一致しない: missing_flag"
+        },
         {
           "code": "requirement_not_verified",
           "severity": "review",
@@ -147266,7 +147369,7 @@
       "trigger": "toujyou",
       "segment_index": 0,
       "template": "ability_sequence",
-      "status": "checked_known_rules",
+      "status": "suspect",
       "fingerprint": "96ecaaed9b3b0f7f703e",
       "text": "手札を1枚控え室に置いてもよい：自分のデッキの上からカードを2枚控え室に置く。その後、自分の控え室からメンバーカードを1枚手札に加える。",
       "cost": "手札を1枚控え室に置いてもよい",
@@ -147280,7 +147383,10 @@
         {
           "kind": "cost.optional",
           "evidence": "手札を1枚控え室に置いてもよい",
-          "status": "matched"
+          "status": "mismatch",
+          "evaluations": [
+            "missing_flag"
+          ]
         },
         {
           "kind": "effect.mill",
@@ -147298,7 +147404,7 @@
       "classification": {
         "trigger": "toujyou",
         "template": "ability_sequence",
-        "optional": true,
+        "optional": false,
         "filters": {
           "pickType": "メンバー",
           "maxCost": null,
@@ -147315,7 +147421,7 @@
         "requiresOnStage": true,
         "requiresInWaiting": false,
         "perTurnLimit": 0,
-        "hasOptionalCost": true,
+        "hasOptionalCost": false,
         "costEnergy": false,
         "costEnergyCount": 0,
         "costSelfWait": false,
@@ -147385,7 +147491,15 @@
           }
         ]
       },
-      "issues": []
+      "issues": [
+        {
+          "code": "contract_mismatch",
+          "severity": "suspect",
+          "kind": "cost.optional",
+          "evidence": "手札を1枚控え室に置いてもよい",
+          "message": "分類結果がカード文の要求と一致しない: missing_flag"
+        }
+      ]
     },
     {
       "card_no": "PL!N-bp1-009-R",
@@ -147394,7 +147508,7 @@
       "trigger": "toujyou",
       "segment_index": 0,
       "template": "ability_sequence",
-      "status": "checked_known_rules",
+      "status": "suspect",
       "fingerprint": "7e0a54954e920ca68804",
       "text": "手札を1枚控え室に置いてもよい：自分のデッキの上からカードを2枚控え室に置く。その後、自分の控え室からメンバーカードを1枚手札に加える。",
       "cost": "手札を1枚控え室に置いてもよい",
@@ -147408,7 +147522,10 @@
         {
           "kind": "cost.optional",
           "evidence": "手札を1枚控え室に置いてもよい",
-          "status": "matched"
+          "status": "mismatch",
+          "evaluations": [
+            "missing_flag"
+          ]
         },
         {
           "kind": "effect.mill",
@@ -147426,7 +147543,7 @@
       "classification": {
         "trigger": "toujyou",
         "template": "ability_sequence",
-        "optional": true,
+        "optional": false,
         "filters": {
           "pickType": "メンバー",
           "maxCost": null,
@@ -147443,7 +147560,7 @@
         "requiresOnStage": true,
         "requiresInWaiting": false,
         "perTurnLimit": 0,
-        "hasOptionalCost": true,
+        "hasOptionalCost": false,
         "costEnergy": false,
         "costEnergyCount": 0,
         "costSelfWait": false,
@@ -147513,7 +147630,15 @@
           }
         ]
       },
-      "issues": []
+      "issues": [
+        {
+          "code": "contract_mismatch",
+          "severity": "suspect",
+          "kind": "cost.optional",
+          "evidence": "手札を1枚控え室に置いてもよい",
+          "message": "分類結果がカード文の要求と一致しない: missing_flag"
+        }
+      ]
     },
     {
       "card_no": "PL!N-bp1-010-P",
@@ -157807,7 +157932,7 @@
       "classification": {
         "trigger": "toujyou",
         "template": "ability_sequence",
-        "optional": true,
+        "optional": false,
         "filters": {
           "pickType": "ライブ",
           "maxCost": null,
@@ -157824,7 +157949,7 @@
         "requiresOnStage": true,
         "requiresInWaiting": false,
         "perTurnLimit": 0,
-        "hasOptionalCost": true,
+        "hasOptionalCost": false,
         "costEnergy": false,
         "costEnergyCount": 0,
         "costSelfWait": false,
@@ -157832,7 +157957,7 @@
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
         "bladeGain": 0,
-        "pickFromTherebyMilledToWaiting": true,
+        "waitingFillTargetCount": 8,
         "steps": [
           {
             "trigger": "toujyou",
@@ -160207,7 +160332,7 @@
       "classification": {
         "trigger": "toujyou",
         "template": "ability_sequence",
-        "optional": true,
+        "optional": false,
         "filters": {
           "pickType": "ライブ",
           "maxCost": null,
@@ -160224,7 +160349,7 @@
         "requiresOnStage": true,
         "requiresInWaiting": false,
         "perTurnLimit": 0,
-        "hasOptionalCost": true,
+        "hasOptionalCost": false,
         "costEnergy": false,
         "costEnergyCount": 0,
         "costSelfWait": false,
@@ -160232,7 +160357,7 @@
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
         "bladeGain": 0,
-        "pickFromTherebyMilledToWaiting": true,
+        "waitingFillTargetCount": 8,
         "steps": [
           {
             "trigger": "toujyou",
@@ -162378,7 +162503,7 @@
       "classification": {
         "trigger": "toujyou",
         "template": "ability_sequence",
-        "optional": true,
+        "optional": false,
         "filters": {
           "pickType": "ライブ",
           "maxCost": null,
@@ -162395,7 +162520,7 @@
         "requiresOnStage": true,
         "requiresInWaiting": false,
         "perTurnLimit": 0,
-        "hasOptionalCost": true,
+        "hasOptionalCost": false,
         "costEnergy": false,
         "costEnergyCount": 0,
         "costSelfWait": false,
@@ -162403,7 +162528,7 @@
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
         "bladeGain": 0,
-        "pickFromTherebyMilledToWaiting": true,
+        "waitingFillTargetCount": 8,
         "steps": [
           {
             "trigger": "toujyou",
@@ -163252,7 +163377,10 @@
         {
           "kind": "cost.optional",
           "evidence": "手札を1枚控え室に置いてもよい",
-          "status": "matched"
+          "status": "mismatch",
+          "evaluations": [
+            "missing_flag"
+          ]
         },
         {
           "kind": "effect.draw",
@@ -163283,7 +163411,7 @@
       "classification": {
         "trigger": "live_start",
         "template": "ability_sequence",
-        "optional": true,
+        "optional": false,
         "filters": {
           "pickType": null,
           "maxCost": null,
@@ -163300,7 +163428,7 @@
         "requiresOnStage": true,
         "requiresInWaiting": false,
         "perTurnLimit": 0,
-        "hasOptionalCost": true,
+        "hasOptionalCost": false,
         "costEnergy": false,
         "costEnergyCount": 0,
         "costSelfWait": false,
@@ -163362,6 +163490,13 @@
         ]
       },
       "issues": [
+        {
+          "code": "contract_mismatch",
+          "severity": "suspect",
+          "kind": "cost.optional",
+          "evidence": "手札を1枚控え室に置いてもよい",
+          "message": "分類結果がカード文の要求と一致しない: missing_flag"
+        },
         {
           "code": "contract_mismatch",
           "severity": "suspect",
@@ -163541,7 +163676,10 @@
         {
           "kind": "cost.optional",
           "evidence": "手札を1枚控え室に置いてもよい",
-          "status": "matched"
+          "status": "mismatch",
+          "evaluations": [
+            "missing_flag"
+          ]
         },
         {
           "kind": "effect.draw",
@@ -163572,7 +163710,7 @@
       "classification": {
         "trigger": "live_start",
         "template": "ability_sequence",
-        "optional": true,
+        "optional": false,
         "filters": {
           "pickType": null,
           "maxCost": null,
@@ -163589,7 +163727,7 @@
         "requiresOnStage": true,
         "requiresInWaiting": false,
         "perTurnLimit": 0,
-        "hasOptionalCost": true,
+        "hasOptionalCost": false,
         "costEnergy": false,
         "costEnergyCount": 0,
         "costSelfWait": false,
@@ -163654,6 +163792,13 @@
         {
           "code": "contract_mismatch",
           "severity": "suspect",
+          "kind": "cost.optional",
+          "evidence": "手札を1枚控え室に置いてもよい",
+          "message": "分類結果がカード文の要求と一致しない: missing_flag"
+        },
+        {
+          "code": "contract_mismatch",
+          "severity": "suspect",
           "kind": "effect.draw",
           "evidence": "カードを1枚引",
           "message": "分類結果がカード文の要求と一致しない: missing_field"
@@ -163702,7 +163847,10 @@
         {
           "kind": "cost.optional",
           "evidence": "手札を1枚控え室に置いてもよい",
-          "status": "matched"
+          "status": "mismatch",
+          "evaluations": [
+            "missing_flag"
+          ]
         },
         {
           "kind": "effect.draw",
@@ -163733,7 +163881,7 @@
       "classification": {
         "trigger": "live_start",
         "template": "ability_sequence",
-        "optional": true,
+        "optional": false,
         "filters": {
           "pickType": null,
           "maxCost": null,
@@ -163750,7 +163898,7 @@
         "requiresOnStage": true,
         "requiresInWaiting": false,
         "perTurnLimit": 0,
-        "hasOptionalCost": true,
+        "hasOptionalCost": false,
         "costEnergy": false,
         "costEnergyCount": 0,
         "costSelfWait": false,
@@ -163812,6 +163960,13 @@
         ]
       },
       "issues": [
+        {
+          "code": "contract_mismatch",
+          "severity": "suspect",
+          "kind": "cost.optional",
+          "evidence": "手札を1枚控え室に置いてもよい",
+          "message": "分類結果がカード文の要求と一致しない: missing_flag"
+        },
         {
           "code": "contract_mismatch",
           "severity": "suspect",
@@ -166205,7 +166360,7 @@
       ]
     }
   ],
-  "generated_at": "2026-11-10T05:39:23.430Z",
+  "generated_at": "2026-11-10T05:46:49.360Z",
   "inputs": [
     "data/cards.json",
     "data/ability-semantic-contracts.json",
@@ -166225,13 +166380,13 @@
   "input_sha256": {
     "data/cards.json": "713b75793074ba5a10176b0f1c0f60e5cc0a42994b2128de9b3ae9b6ca78daf8",
     "data/ability-semantic-contracts.json": "e2ef6d56dad7a5e08693ef40aee3bf739bc0d9c5e0572cbd857cbc4889e46907",
-    "js/abilityEffects.js": "03eed974767d250be89c29ddae3f8c68acd3cc544432bb76297e8c957c8d4253",
+    "js/abilityEffects.js": "88289f76518f75a9f4adc148a1012da890d6ab1a08826de1833f952b0ec749db",
     "js/abilityCompletion.js": "5a3337a1f502c33b89a3fe82443f9a979c0e7bc85333ca463e8bf52cc3e39485",
     "js/versusEffectPatch.js": "51221f037a06bd7520ee48117fc6c4f6aa1e0e062f41c420ea75c696fda371f0",
     "js/opponentBoard.js": "83917668269fa3acae7e0e0efcc5b96d38f37e046b9d35dd67693e688bc115d0",
     "js/jidouAutoEffects.js": "39e0e94dc8d7a52a97b6820f276b95fc0bcba4498df643058c303c3f2776b25f",
     "js/joujiEffects.js": "ddff1b0ede586f6fde9e35453316eb0727f1e93970ef7d6f19d2d2ab1c1b5450",
-    "js/abilityComposition.js": "3ac431efd99343afa438abaaada0b9c545ae0049a4c09193ecaca29ffe00ffc0",
+    "js/abilityComposition.js": "7e4271275ffcb21f7adc879e7ef2bae973b64860a5875e82263b63d3d44537fd",
     "js/abilityRuntimeMeta.js": "64e670faf4edd378186ccfb618930b6ae8aa5e9218455e0b4ec237fbb0d2a776",
     "js/cardGroups.js": "c5e5b2834a7ce7548ef2fbd67b8999d27cca2fe788dd5520ef15664758b0085d",
     "scripts/lib/ability-semantic-audit.mjs": "eb2c284106eb6739aed5f2c25f8233f9abaedd02481d939e2be5d020910d2410",

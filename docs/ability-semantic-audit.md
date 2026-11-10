@@ -1,6 +1,6 @@
 # カード能力・処理要素の静的照合レポート
 
-生成: 2026-11-10T05:39:23.430Z
+生成: 2026-11-10T05:46:49.360Z
 対象: full_catalog / 2709枚・2177能力セグメント
 
 静的な既知ルールの照合のみ。checked_known_rulesも実プレイの正しさを保証しない。未知の文言・未登録契約は要確認。過去の修正履歴による除外なし。
@@ -8,9 +8,9 @@
 | 状態 | セグメント数 |
 |---|---:|
 | unimplemented | 4 |
-| suspect | 28 |
-| needs_review | 1845 |
-| checked_known_rules | 300 |
+| suspect | 38 |
+| needs_review | 1840 |
+| checked_known_rules | 295 |
 
 ## 指摘一覧（同じ能力文・分類・指摘はレアリティ違いをまとめる）
 
@@ -40,6 +40,16 @@
 | unimplemented: 分類未対応／手動処理。過去に修正したカードでも除外しない。 | classification | エールにより公開された相手のカードの枚数が12枚以上ある場合、ライブの合計スコアを+1する。 |
 | requirement_not_verified: カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。 | effect.score | ライブの合計スコアを+1する |
 | requirement_not_verified: カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。 | condition.other | エールにより公開された相手のカードの枚数が12枚以上ある場合、ライブの合計スコアを+1する。 |
+
+### PL!-bp5-010-N 高坂穂乃果 — suspect
+
+- 同型: PL!-bp5-010-N
+- 発動: live_start / 分類: ability_sequence
+- カード文: 手札を1枚控え室に置いてもよい：自分のデッキの上からカードを3枚控え室に置く。その後、自分の控え室から『A-RISE』のメンバーカードを1枚手札に加える。
+
+| 指摘 | 処理要素 | 根拠の文言 |
+|---|---|---|
+| contract_mismatch: 分類結果がカード文の要求と一致しない: missing_flag | cost.optional | 手札を1枚控え室に置いてもよい |
 
 ### PL!-pb1-006-P＋ 西木野真姫 — suspect
 
@@ -142,6 +152,16 @@
 | contract_mismatch: 分類結果がカード文の要求と一致しない: missing_field | cost.hand_to_waiting | 手札の『DOLLCHESTRA』のカードを1枚控え室に置 |
 | requirement_not_verified: カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。 | duration.live_end | ライブ終了時まで |
 
+### PL!HS-pb1-004-R 百生吟子 — suspect
+
+- 同型: PL!HS-pb1-004-R, PL!HS-pb1-004-P＋
+- 発動: toujyou / 分類: ability_sequence
+- カード文: {{icon_energy.png\|E}}手札を1枚控え室に置いてもよい：自分のデッキの上からカードを3枚控え室に置く。その後、自分の控え室から『スリーズブーケ』のライブカードを1枚手札に加える。
+
+| 指摘 | 処理要素 | 根拠の文言 |
+|---|---|---|
+| contract_mismatch: 分類結果がカード文の要求と一致しない: missing_flag | cost.optional | E手札を1枚控え室に置いてもよい |
+
 ### PL!HS-PR-035-PR 百生吟子 — suspect
 
 - 同型: PL!HS-PR-035-PR
@@ -153,6 +173,43 @@
 | missing_processing_contract: カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。 | effect.waiting_to_bottom | 控え室にあるメンバーカードを3枚選び、相手のデッキの下に好きな順番で置 |
 | missing_processing_contract: カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。 | effect.choose_order | 好きな順番 |
 | requirement_not_verified: カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。 | condition.other | 相手の控え室にあるメンバーカードを3枚選び、相手のデッキの下に好きな順番で置いてもよい。そうした場合、相手のステージにいる元々持つブレードの数が3つ以下のメンバー1人をウェイトにする。 |
+
+### PL!HS-sd1-002-SD 村野さやか — suspect
+
+- 同型: PL!HS-sd1-002-SD
+- 発動: live_start / 分類: ability_sequence
+- カード文: 手札を2枚控え室に置いてもよい：自分のデッキの上からカードを5枚見る。その中からメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。これにより『蓮ノ空』のカードを手札に加えた場合、ライブ終了時まで、{{heart_05.png\|heart05}}{{icon_blade.png\|ブレード}}を得る。
+
+| 指摘 | 処理要素 | 根拠の文言 |
+|---|---|---|
+| contract_mismatch: 分類結果がカード文の要求と一致しない: missing_flag | cost.optional | 手札を2枚控え室に置いてもよい |
+| requirement_not_verified: カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。 | condition.other | 自分のデッキの上からカードを5枚見る。その中からメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。これにより『蓮ノ空』のカードを手札に加えた場合、ライブ終了時まで、heart05ブレードを得る。 |
+| followup_needs_review: 後続処理は順序・条件を含めて確認する。単一の分類結果だけで完了扱いにしない。 | text.followup | 残りを控え室に置く |
+
+### PL!N-bp1-009-P 天王寺璃奈 — suspect
+
+- 同型: PL!N-bp1-009-P, PL!N-bp1-009-R
+- 発動: toujyou / 分類: ability_sequence
+- カード文: 手札を1枚控え室に置いてもよい：自分のデッキの上からカードを2枚控え室に置く。その後、自分の控え室からメンバーカードを1枚手札に加える。
+
+| 指摘 | 処理要素 | 根拠の文言 |
+|---|---|---|
+| contract_mismatch: 分類結果がカード文の要求と一致しない: missing_flag | cost.optional | 手札を1枚控え室に置いてもよい |
+
+### PL!N-bp4-006-R 近江彼方 — suspect
+
+- 同型: PL!N-bp4-006-R, PL!N-bp4-006-P
+- 発動: toujyou / 分類: ability_sequence
+- カード文: {{icon_energy.png\|E}}{{icon_energy.png\|E}}支払ってもよい：自分の手札からコスト4以下の『虹ヶ咲』のメンバーカードを1枚ステージに登場させる。これにより登場したメンバーがブレードハートを持つ場合、このメンバーをウェイトにする。
+
+| 指摘 | 処理要素 | 根拠の文言 |
+|---|---|---|
+| contract_mismatch: 分類結果がカード文の要求と一致しない: missing_flag | cost.optional | EE支払ってもよい |
+| requirement_not_verified: カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。 | condition.other | 自分の手札からコスト4以下の『虹ヶ咲』のメンバーカードを1枚ステージに登場させる。これにより登場したメンバーがブレードハートを持つ場合、このメンバーをウェイトにする。 |
+| template_contract_missing: 未登録テンプレート。対応済みとは判定しない。 | contract | EE支払ってもよい:自分の手札からコスト4以下の『虹ヶ咲』のメンバーカードを1枚ステージに登場させる。これにより登場したメンバーがブレードハートを持つ場合、このメンバーをウェイトにする。 |
+| body_not_understood: コストや条件だけが読めても、効果本文を確認できなければ合格にしない。 | text.body | 自分の手札からコスト4以下の『虹ヶ咲』のメンバーカードを1枚ステージに登場させる。これにより登場したメンバーがブレードハートを持つ場合、このメンバーをウェイトにする。 |
+| followup_needs_review: 後続処理は順序・条件を含めて確認する。単一の分類結果だけで完了扱いにしない。 | text.followup | 自分の手札からコスト4以下の『虹ヶ咲』のメンバーカードを1枚ステージに登場させる |
+| followup_needs_review: 後続処理は順序・条件を含めて確認する。単一の分類結果だけで完了扱いにしない。 | text.followup | これにより登場したメンバーがブレードハートを持つ場合、このメンバーをウェイトにする |
 
 ### PL!N-PR-036-PR 桜坂しずく — suspect
 
@@ -178,6 +235,17 @@
 |---|---|---|
 | missing_processing_contract: カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。 | effect.waiting_to_top | 控え室にあるメンバーカード1枚をデッキの一番上に置 |
 | requirement_not_verified: カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。 | condition.other | 自分の控え室にあるメンバーカード1枚をデッキの一番上に置いてもよい。そうした場合、ライブ終了時まで、自分のステージにいるメンバー1人は、ブレードを得る。 |
+
+### PL!S-bp7-001-P 高海千歌 — suspect
+
+- 同型: PL!S-bp7-001-P, PL!S-bp7-001-R
+- 発動: toujyou / 分類: ability_sequence
+- カード文: 手札を1枚控え室に置いてもよい：自分の控え室からコスト10以上のメンバーカードを1枚手札に加える。これにより「桜内梨子」か「渡辺 曜」を手札に加えた場合、ライブ終了時まで、{{icon_blade.png\|ブレード}}{{icon_blade.png\|ブレード}}を得る。
+
+| 指摘 | 処理要素 | 根拠の文言 |
+|---|---|---|
+| contract_mismatch: 分類結果がカード文の要求と一致しない: missing_flag | cost.optional | 手札を1枚控え室に置いてもよい |
+| requirement_not_verified: カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。 | condition.other | 自分の控え室からコスト10以上のメンバーカードを1枚手札に加える。これにより「桜内梨子」か「渡辺曜」を手札に加えた場合、ライブ終了時まで、ブレードブレードを得る。 |
 
 ### PL!SP-bp5-005-AR 葉月 恋 — suspect
 
@@ -213,6 +281,7 @@
 | 指摘 | 処理要素 | 根拠の文言 |
 |---|---|---|
 | contract_mismatch: 分類結果がカード文の要求と一致しない: missing_field | cost.hand_to_waiting | 手札の『KALEIDOSCORE』のカードを1枚控え室に置 |
+| contract_mismatch: 分類結果がカード文の要求と一致しない: missing_flag | cost.optional | 手札の『KALEIDOSCORE』のカードを1枚控え室に置いてもよい |
 | requirement_not_verified: カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。 | condition.no_blade_heart | ブレードハートを持たない |
 | template_contract_missing: 未登録テンプレート。対応済みとは判定しない。 | contract | 手札の『KALEIDOSCORE』のカードを1枚控え室に置いてもよい:自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。これにより控え室に置いたカードがブレードハートを持たない場合、カードを1枚引く。 |
 | followup_needs_review: 後続処理は順序・条件を含めて確認する。単一の分類結果だけで完了扱いにしない。 | text.followup | 自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く |
@@ -225,6 +294,7 @@
 
 | 指摘 | 処理要素 | 根拠の文言 |
 |---|---|---|
+| contract_mismatch: 分類結果がカード文の要求と一致しない: missing_flag | cost.optional | 手札を1枚控え室に置いてもよい |
 | contract_mismatch: 分類結果がカード文の要求と一致しない: missing_field | effect.draw | カードを1枚引 |
 | requirement_not_verified: カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。 | condition.other | ライブ終了時まで、ブレードを得る。これによりライブカードを控え室に置いた場合、さらにカードを1枚引く。 |
 | template_contract_missing: 未登録テンプレート。対応済みとは判定しない。 | contract | 手札を1枚控え室に置いてもよい:ライブ終了時まで、ブレードを得る。これによりライブカードを控え室に置いた場合、さらにカードを1枚引く。 |
@@ -253,9 +323,9 @@
 | kidou_hand_cost_wait_pick_hand | 25 | 25 | PL!-pb2-012-P＋, PL!-pb2-012-R, PL!SP-sd2-006-SD2, PL!-bp5-009-R |
 | live_score_plus | 25 | 25 | PL!-pb2-038-L, PL!SP-bp7-003-P＋, PL!SP-bp7-003-P, PL!SP-bp7-003-R＋ |
 | kidou_wait_pick_hand | 20 | 20 | PL!N-sd2-001-SD2, PL!-bp3-008-P, PL!-bp3-008-R＋, PL!-bp3-008-SEC |
-| ability_sequence | 17 | 17 | PL!-pb2-007-PP, PL!-pb2-007-R, PL!S-bp7-001-P, PL!S-bp7-001-R |
 | live_start_need_heart_reduce_fixed | 13 | 13 | PL!-bp3-023-SRL, PL!-pb1-030-SRL, PL!S-bp7-020-L, PL!S-bp7-020-SECL |
 | optional_self_wait_opp_stage | 13 | 9 | PL!-pb2-029-N, PL!N-sd2-013-SD2, PL!S-bp6-001-P, PL!S-bp6-001-R |
+| ability_sequence | 12 | 12 | PL!-pb2-007-PP, PL!-pb2-007-R, PL!SP-bp7-003-P＋, PL!SP-bp7-003-P |
 | activate_stage_members_up_to | 11 | 11 | PL!-pb2-016-P＋, PL!-pb2-017-P＋, PL!-pb2-017-R, PL!-pb2-016-R |
 | toujou_hand_stage_enter | 11 | 11 | PL!N-pb1-013-P＋, PL!N-pb1-013-R, PL!N-pb1-015-P＋, PL!N-pb1-015-R |
 | jidou_area_move_grant_jouji | 10 | 10 | PL!SP-bp7-014-N, PL!SP-sd2-002-SD2, PL!SP-sd2-002-P, PL!SP-sd2-012-SD2 |

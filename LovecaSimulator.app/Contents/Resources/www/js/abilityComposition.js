@@ -189,11 +189,14 @@ export function applyAbilityComposition(card, trigger, segRaw, primary, classify
     usable = stripStepCostsWhenParentPaid(usable, primary);
     if (usable.length === 1) return Object.assign({}, primary, usable[0]);
     if (usable.length < 2) return primary;
+    var allStepsOptional = usable.every(function (st) {
+      return st && (st.optional === true || st.hasOptionalCost === true);
+    });
     return Object.assign({}, primary, {
       template: "ability_sequence",
       steps: usable,
-      optional: primary.optional,
-      hasOptionalCost: primary.hasOptionalCost,
+      optional: allStepsOptional ? !!primary.optional : false,
+      hasOptionalCost: allStepsOptional ? !!primary.hasOptionalCost : false,
       trigger: primary.trigger,
     });
   }
@@ -280,6 +283,21 @@ export function applyAbilityComposition(card, trigger, segRaw, primary, classify
   if (/合計が(\d+)の場合/.test(plain) && /合計が(\d+)の場合.*合計が(\d+)の場合/.test(plain)) {
     var tiered = classifyWaitingReorderTiered(card, trigger, segRaw, classifyFn);
     if (tiered) return tiered;
+  }
+
+  if (
+    /控え室にあるカードの枚数が[０-９\d]+枚未満/.test(plain) &&
+    /その差に等しい枚数/.test(plain) &&
+    /これにより控え室に置いた/.test(plain) &&
+    /デッキの一番上に置いてもよい/.test(plain)
+  ) {
+    var waitFillClauses = splitAbilitySegmentClauses(segRaw);
+    if (waitFillClauses.length >= 2) {
+      return seq([
+        classifyFn(card, trigger, waitFillClauses[0], { skipCompose: true }),
+        classifyFn(card, trigger, waitFillClauses[1], { skipCompose: true }),
+      ]);
+    }
   }
 
   var clauses = splitAbilitySegmentClauses(segRaw);
