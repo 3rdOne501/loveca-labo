@@ -1,6 +1,6 @@
 # カード能力・処理要素の静的照合レポート
 
-生成: 2026-11-09T08:10:20.252Z
+生成: 2026-11-10T00:10:26.867Z
 対象: full_catalog / 2709枚・2177能力セグメント
 
 静的な既知ルールの照合のみ。checked_known_rulesも実プレイの正しさを保証しない。未知の文言・未登録契約は要確認。過去の修正履歴による除外なし。
@@ -253,7 +253,7 @@
 | kidou_hand_cost_wait_pick_hand | 25 | 25 | PL!-pb2-012-P＋, PL!-pb2-012-R, PL!SP-sd2-006-SD2, PL!-bp5-009-R |
 | live_score_plus | 25 | 25 | PL!-pb2-038-L, PL!SP-bp7-003-P＋, PL!SP-bp7-003-P, PL!SP-bp7-003-R＋ |
 | kidou_wait_pick_hand | 20 | 20 | PL!N-sd2-001-SD2, PL!-bp3-008-P, PL!-bp3-008-R＋, PL!-bp3-008-SEC |
-| ability_sequence | 14 | 14 | PL!-pb2-007-PP, PL!-pb2-007-R, PL!S-bp7-001-P, PL!S-bp7-001-R |
+| ability_sequence | 17 | 17 | PL!-pb2-007-PP, PL!-pb2-007-R, PL!S-bp7-001-P, PL!S-bp7-001-R |
 | live_start_need_heart_reduce_fixed | 13 | 13 | PL!-bp3-023-SRL, PL!-pb1-030-SRL, PL!S-bp7-020-L, PL!S-bp7-020-SECL |
 | optional_self_wait_opp_stage | 13 | 9 | PL!-pb2-029-N, PL!N-sd2-013-SD2, PL!S-bp6-001-P, PL!S-bp6-001-R |
 | activate_stage_members_up_to | 11 | 11 | PL!-pb2-016-P＋, PL!-pb2-017-P＋, PL!-pb2-017-R, PL!-pb2-016-R |
@@ -338,7 +338,6 @@
 | success_live_waiting_swap | 4 | 4 | PL!N-bp4-010-P＋, PL!N-bp4-010-R＋, PL!N-bp4-010-P, PL!N-bp4-010-SEC |
 | live_start_pick_live_frame_match_success_live_grant | 4 | 4 | PL!N-bp4-010-P＋, PL!N-bp4-010-R＋, PL!N-bp4-010-P, PL!N-bp4-010-SEC |
 | live_success_deck_wait_pick_live | 4 | 4 | PL!N-bp4-011-P, PL!N-bp4-011-R＋, PL!N-bp4-011-SEC, PL!N-bp4-011-P＋ |
-| toujou_optional_wait_to_deck_top | 4 | 4 | PL!N-bp4-021-N, PL!HS-PR-036-PR, PL!N-PR-032-PR, PL!S-PR-044-PR |
 | toujou_liella_double_baton_center | 4 | 4 | PL!SP-bp4-004-P, PL!SP-bp4-004-P＋, PL!SP-bp4-004-R＋, PL!SP-bp4-004-SEC |
 | toujou_bibi_wait_opp_active_wait | 4 | 2 | PL!-pb1-015-P＋, PL!-pb1-015-R |
 | live_start_activate_all_stage_members | 4 | 4 | PL!-bp3-001-P, PL!-bp3-001-R, PL!-bp3-005-P, PL!-bp3-005-R |
@@ -593,6 +592,7 @@
 | live_start_series_activation_score | 1 | 1 | PL!N-pb1-037-L |
 | live_start_stellar_stream_grant | 1 | 1 | PL!N-pb1-039-L |
 | jidou_self_active_to_wait_draw_discard | 1 | 1 | PL!N-bp4-018-N |
+| toujou_optional_wait_to_deck_top | 1 | 1 | PL!N-bp4-021-N |
 | jidou_waiting_to_hand_place_named_live | 1 | 1 | PL!N-bp4-026-L |
 | jidou_live_placed_grant_stage_member | 1 | 1 | PL!N-bp4-026-L |
 | live_start_score_plus_per_named_success_live | 1 | 1 | PL!N-bp4-027-L |

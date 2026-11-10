@@ -73179,6 +73179,7 @@
         "bladeGain": 0,
         "deckRelocateTo": "nth_from_top",
         "deckRelocateIndex": 4,
+        "pickFromTherebyMilledToWaiting": false,
         "steps": [
           {
             "trigger": "toujyou",
@@ -73239,7 +73240,8 @@
             "costOrAlt": false,
             "bladeGain": 0,
             "deckRelocateTo": "nth_from_top",
-            "deckRelocateIndex": 4
+            "deckRelocateIndex": 4,
+            "pickFromTherebyMilledToWaiting": false
           }
         ]
       },
@@ -100787,7 +100789,8 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
-        "bladeGain": 0
+        "bladeGain": 0,
+        "pickFromTherebyMilledToWaiting": false
       },
       "issues": [
         {
@@ -157789,7 +157792,7 @@
       "type": "メンバー",
       "trigger": "toujyou",
       "segment_index": 0,
-      "template": "toujou_optional_wait_to_deck_top",
+      "template": "ability_sequence",
       "status": "needs_review",
       "fingerprint": "92580a5117796f3532d6",
       "text": "自分の控え室にあるカードの枚数が8枚未満の場合、自分のデッキの上からカードをその差に等しい枚数控え室に置く。その後、これにより控え室に置いたカードの中から、ライブカード1枚をデッキの一番上に置いてもよい。",
@@ -157803,10 +157806,10 @@
       ],
       "classification": {
         "trigger": "toujyou",
-        "template": "toujou_optional_wait_to_deck_top",
+        "template": "ability_sequence",
         "optional": true,
         "filters": {
-          "pickType": null,
+          "pickType": "ライブ",
           "maxCost": null,
           "minCost": null,
           "seriesTag": null,
@@ -157828,7 +157831,70 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
-        "bladeGain": 0
+        "bladeGain": 0,
+        "pickFromTherebyMilledToWaiting": true,
+        "steps": [
+          {
+            "trigger": "toujyou",
+            "template": "deck_top_to_waiting",
+            "optional": false,
+            "filters": {
+              "pickType": null,
+              "maxCost": null,
+              "minCost": null,
+              "seriesTag": null,
+              "minSuccessLiveCount": null,
+              "minNeedHeartSlot": null,
+              "minNeedHeartValue": null,
+              "minTotalNeedHeart": null
+            },
+            "deckTopCount": null,
+            "handDiscardToWaiting": null,
+            "deckDrawCount": null,
+            "requiresOnStage": true,
+            "requiresInWaiting": false,
+            "perTurnLimit": 0,
+            "hasOptionalCost": false,
+            "costEnergy": false,
+            "costEnergyCount": 0,
+            "costSelfWait": false,
+            "costPickMemberWait": false,
+            "costMandatoryWaitOtherMember": false,
+            "costOrAlt": false,
+            "bladeGain": 0,
+            "waitingFillTargetCount": 8
+          },
+          {
+            "trigger": "toujyou",
+            "template": "toujou_optional_wait_to_deck_top",
+            "optional": true,
+            "filters": {
+              "pickType": "ライブ",
+              "maxCost": null,
+              "minCost": null,
+              "seriesTag": null,
+              "minSuccessLiveCount": null,
+              "minNeedHeartSlot": null,
+              "minNeedHeartValue": null,
+              "minTotalNeedHeart": null
+            },
+            "deckTopCount": null,
+            "handDiscardToWaiting": null,
+            "deckDrawCount": null,
+            "requiresOnStage": true,
+            "requiresInWaiting": false,
+            "perTurnLimit": 0,
+            "hasOptionalCost": true,
+            "costEnergy": false,
+            "costEnergyCount": 0,
+            "costSelfWait": false,
+            "costPickMemberWait": false,
+            "costMandatoryWaitOtherMember": false,
+            "costOrAlt": false,
+            "bladeGain": 0,
+            "pickFromTherebyMilledToWaiting": true
+          }
+        ]
       },
       "issues": [
         {
@@ -160126,7 +160192,7 @@
       "type": "メンバー",
       "trigger": "toujyou",
       "segment_index": 0,
-      "template": "toujou_optional_wait_to_deck_top",
+      "template": "ability_sequence",
       "status": "needs_review",
       "fingerprint": "aeecd4ea0fe0e4aac7dd",
       "text": "自分の控え室にあるカードの枚数が8枚未満の場合、自分のデッキの上からカードをその差に等しい枚数控え室に置く。その後、これにより控え室に置いたカードの中から、ライブカード1枚をデッキの一番上に置いてもよい。",
@@ -160140,10 +160206,10 @@
       ],
       "classification": {
         "trigger": "toujyou",
-        "template": "toujou_optional_wait_to_deck_top",
+        "template": "ability_sequence",
         "optional": true,
         "filters": {
-          "pickType": null,
+          "pickType": "ライブ",
           "maxCost": null,
           "minCost": null,
           "seriesTag": null,
@@ -160165,7 +160231,70 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
-        "bladeGain": 0
+        "bladeGain": 0,
+        "pickFromTherebyMilledToWaiting": true,
+        "steps": [
+          {
+            "trigger": "toujyou",
+            "template": "deck_top_to_waiting",
+            "optional": false,
+            "filters": {
+              "pickType": null,
+              "maxCost": null,
+              "minCost": null,
+              "seriesTag": null,
+              "minSuccessLiveCount": null,
+              "minNeedHeartSlot": null,
+              "minNeedHeartValue": null,
+              "minTotalNeedHeart": null
+            },
+            "deckTopCount": null,
+            "handDiscardToWaiting": null,
+            "deckDrawCount": null,
+            "requiresOnStage": true,
+            "requiresInWaiting": false,
+            "perTurnLimit": 0,
+            "hasOptionalCost": false,
+            "costEnergy": false,
+            "costEnergyCount": 0,
+            "costSelfWait": false,
+            "costPickMemberWait": false,
+            "costMandatoryWaitOtherMember": false,
+            "costOrAlt": false,
+            "bladeGain": 0,
+            "waitingFillTargetCount": 8
+          },
+          {
+            "trigger": "toujyou",
+            "template": "toujou_optional_wait_to_deck_top",
+            "optional": true,
+            "filters": {
+              "pickType": "ライブ",
+              "maxCost": null,
+              "minCost": null,
+              "seriesTag": null,
+              "minSuccessLiveCount": null,
+              "minNeedHeartSlot": null,
+              "minNeedHeartValue": null,
+              "minTotalNeedHeart": null
+            },
+            "deckTopCount": null,
+            "handDiscardToWaiting": null,
+            "deckDrawCount": null,
+            "requiresOnStage": true,
+            "requiresInWaiting": false,
+            "perTurnLimit": 0,
+            "hasOptionalCost": true,
+            "costEnergy": false,
+            "costEnergyCount": 0,
+            "costSelfWait": false,
+            "costPickMemberWait": false,
+            "costMandatoryWaitOtherMember": false,
+            "costOrAlt": false,
+            "bladeGain": 0,
+            "pickFromTherebyMilledToWaiting": true
+          }
+        ]
       },
       "issues": [
         {
@@ -162234,7 +162363,7 @@
       "type": "メンバー",
       "trigger": "toujyou",
       "segment_index": 0,
-      "template": "toujou_optional_wait_to_deck_top",
+      "template": "ability_sequence",
       "status": "needs_review",
       "fingerprint": "97f25ecb1e58751876b9",
       "text": "自分の控え室にあるカードの枚数が8枚未満の場合、その差に等しい枚数分自分のデッキの上からカードを控え室に置く。その後、これにより控え室に置いたカードの中から、ライブカード1枚をデッキの一番上に置いてもよい。",
@@ -162248,10 +162377,10 @@
       ],
       "classification": {
         "trigger": "toujyou",
-        "template": "toujou_optional_wait_to_deck_top",
+        "template": "ability_sequence",
         "optional": true,
         "filters": {
-          "pickType": null,
+          "pickType": "ライブ",
           "maxCost": null,
           "minCost": null,
           "seriesTag": null,
@@ -162273,7 +162402,70 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
-        "bladeGain": 0
+        "bladeGain": 0,
+        "pickFromTherebyMilledToWaiting": true,
+        "steps": [
+          {
+            "trigger": "toujyou",
+            "template": "deck_top_to_waiting",
+            "optional": false,
+            "filters": {
+              "pickType": null,
+              "maxCost": null,
+              "minCost": null,
+              "seriesTag": null,
+              "minSuccessLiveCount": null,
+              "minNeedHeartSlot": null,
+              "minNeedHeartValue": null,
+              "minTotalNeedHeart": null
+            },
+            "deckTopCount": null,
+            "handDiscardToWaiting": null,
+            "deckDrawCount": null,
+            "requiresOnStage": true,
+            "requiresInWaiting": false,
+            "perTurnLimit": 0,
+            "hasOptionalCost": false,
+            "costEnergy": false,
+            "costEnergyCount": 0,
+            "costSelfWait": false,
+            "costPickMemberWait": false,
+            "costMandatoryWaitOtherMember": false,
+            "costOrAlt": false,
+            "bladeGain": 0,
+            "waitingFillTargetCount": 8
+          },
+          {
+            "trigger": "toujyou",
+            "template": "toujou_optional_wait_to_deck_top",
+            "optional": true,
+            "filters": {
+              "pickType": "ライブ",
+              "maxCost": null,
+              "minCost": null,
+              "seriesTag": null,
+              "minSuccessLiveCount": null,
+              "minNeedHeartSlot": null,
+              "minNeedHeartValue": null,
+              "minTotalNeedHeart": null
+            },
+            "deckTopCount": null,
+            "handDiscardToWaiting": null,
+            "deckDrawCount": null,
+            "requiresOnStage": true,
+            "requiresInWaiting": false,
+            "perTurnLimit": 0,
+            "hasOptionalCost": true,
+            "costEnergy": false,
+            "costEnergyCount": 0,
+            "costSelfWait": false,
+            "costPickMemberWait": false,
+            "costMandatoryWaitOtherMember": false,
+            "costOrAlt": false,
+            "bladeGain": 0,
+            "pickFromTherebyMilledToWaiting": true
+          }
+        ]
       },
       "issues": [
         {
@@ -166013,7 +166205,7 @@
       ]
     }
   ],
-  "generated_at": "2026-11-09T08:10:20.252Z",
+  "generated_at": "2026-11-10T00:10:26.867Z",
   "inputs": [
     "data/cards.json",
     "data/ability-semantic-contracts.json",
@@ -166033,7 +166225,7 @@
   "input_sha256": {
     "data/cards.json": "713b75793074ba5a10176b0f1c0f60e5cc0a42994b2128de9b3ae9b6ca78daf8",
     "data/ability-semantic-contracts.json": "e2ef6d56dad7a5e08693ef40aee3bf739bc0d9c5e0572cbd857cbc4889e46907",
-    "js/abilityEffects.js": "cd960c86d687e584d423bfe44d5d9b653048f8d82305dddb4d0e924b77de52d4",
+    "js/abilityEffects.js": "03eed974767d250be89c29ddae3f8c68acd3cc544432bb76297e8c957c8d4253",
     "js/abilityCompletion.js": "5a3337a1f502c33b89a3fe82443f9a979c0e7bc85333ca463e8bf52cc3e39485",
     "js/versusEffectPatch.js": "51221f037a06bd7520ee48117fc6c4f6aa1e0e062f41c420ea75c696fda371f0",
     "js/opponentBoard.js": "83917668269fa3acae7e0e0efcc5b96d38f37e046b9d35dd67693e688bc115d0",
@@ -166044,6 +166236,6 @@
     "js/cardGroups.js": "c5e5b2834a7ce7548ef2fbd67b8999d27cca2fe788dd5520ef15664758b0085d",
     "scripts/lib/ability-semantic-audit.mjs": "eb2c284106eb6739aed5f2c25f8233f9abaedd02481d939e2be5d020910d2410",
     "scripts/audit-ability-semantics.mjs": "1b0dce666a89323385e4845c5d581efcdc2f4797c89b37a4e642264c45ff1b7b",
-    "js/simulator.js": "8efb0e637774ab21641639826bb45afc85e4eac92ee63edc0cb97f5696cc001f"
+    "js/simulator.js": "ccc4193f597cc54b5de236a037a78e02f37bc6bf65c20b0a20944573d5b5ea81"
   }
 }

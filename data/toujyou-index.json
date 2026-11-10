@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-09",
+  "generated": "2026-11-10",
   "trigger": "toujyou",
   "total": 638,
   "byTemplate": {
@@ -17,7 +17,7 @@
     "waiting_to_deck_bottom_activate_per": 2,
     "energy_deck_under_member": 1,
     "deck_mill_conditional_grant": 2,
-    "ability_sequence": 15,
+    "ability_sequence": 18,
     "deck_peek_relocate": 5,
     "toujou_baton_both_keep_hand_shuffle_deck_bottom_draw": 2,
     "waiting_member_under_stage": 4,
@@ -63,7 +63,7 @@
     "toujou_opp_active_wait": 2,
     "toujou_both_wait_pick_live_hand": 4,
     "success_live_waiting_swap": 4,
-    "toujou_optional_wait_to_deck_top": 4,
+    "toujou_optional_wait_to_deck_top": 1,
     "toujou_liella_double_baton_center": 4,
     "toujou_success_live_score_tiered": 2,
     "toujou_multi_wait_draw_per_count": 2,
@@ -5528,11 +5528,15 @@
     {
       "card_no": "PL!HS-PR-036-PR",
       "name": "大沢瑠璃乃",
-      "template": "toujou_optional_wait_to_deck_top",
+      "template": "ability_sequence",
       "automated": true,
       "optional": true,
       "perTurn": 0,
-      "effect": "自分の控え室にあるカードの枚数が8枚未満の場合、自分のデッキの上からカードをその差に等しい枚数控え室に置く。その後、これにより控え室に置いたカードの中から、ライブカード1枚をデッキの一番上に置いてもよい。"
+      "effect": "自分の控え室にあるカードの枚数が8枚未満の場合、自分のデッキの上からカードをその差に等しい枚数控え室に置く。その後、これにより控え室に置いたカードの中から、ライブカード1枚をデッキの一番上に置いてもよい。",
+      "steps": [
+        "deck_top_to_waiting",
+        "toujou_optional_wait_to_deck_top"
+      ]
     },
     {
       "card_no": "PL!HS-PR-039-PR",
@@ -5672,11 +5676,15 @@
     {
       "card_no": "PL!N-PR-032-PR",
       "name": "優木せつ菜",
-      "template": "toujou_optional_wait_to_deck_top",
+      "template": "ability_sequence",
       "automated": true,
       "optional": true,
       "perTurn": 0,
-      "effect": "自分の控え室にあるカードの枚数が8枚未満の場合、自分のデッキの上からカードをその差に等しい枚数控え室に置く。その後、これにより控え室に置いたカードの中から、ライブカード1枚をデッキの一番上に置いてもよい。"
+      "effect": "自分の控え室にあるカードの枚数が8枚未満の場合、自分のデッキの上からカードをその差に等しい枚数控え室に置く。その後、これにより控え室に置いたカードの中から、ライブカード1枚をデッキの一番上に置いてもよい。",
+      "steps": [
+        "deck_top_to_waiting",
+        "toujou_optional_wait_to_deck_top"
+      ]
     },
     {
       "card_no": "PL!N-sd1-013-PRproteinbar",
@@ -5789,11 +5797,15 @@
     {
       "card_no": "PL!S-PR-044-PR",
       "name": "高海千歌",
-      "template": "toujou_optional_wait_to_deck_top",
+      "template": "ability_sequence",
       "automated": true,
       "optional": true,
       "perTurn": 0,
-      "effect": "自分の控え室にあるカードの枚数が8枚未満の場合、その差に等しい枚数分自分のデッキの上からカードを控え室に置く。その後、これにより控え室に置いたカードの中から、ライブカード1枚をデッキの一番上に置いてもよい。"
+      "effect": "自分の控え室にあるカードの枚数が8枚未満の場合、その差に等しい枚数分自分のデッキの上からカードを控え室に置く。その後、これにより控え室に置いたカードの中から、ライブカード1枚をデッキの一番上に置いてもよい。",
+      "steps": [
+        "deck_top_to_waiting",
+        "toujou_optional_wait_to_deck_top"
+      ]
     },
     {
       "card_no": "PL!S-PR-045-PR",

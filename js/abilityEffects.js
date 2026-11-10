@@ -501,6 +501,8 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  * @property {number | null} [bladeGainPerMoved] 控え室→デッキ下で1枚につき付与するブレード
  * @property {number | null} [energyActivePerMoved] 控え室→デッキ下で1枚につきアクティブにするエネルギー
  * @property {boolean} [millBothPlayers] deck_top_to_waiting: 相手も同数を山札上から控え室へ
+ * @property {number | null} [waitingFillTargetCount] deck_top_to_waiting: 控え室がこの枚数未満なら差枚分だけ山札上をミル
+ * @property {boolean} [pickFromTherebyMilledToWaiting] 直前に効果で控え室へ送ったカードのみから拾う
  * @property {string | null} [handDiscardSeriesTag] 手札捨て対象のシリーズタグ
  * @property {number | null} [handDiscardNoBladeHeartMax] BHなし手札メンバーを最大N枚まで捨てる任意コスト
  * @property {boolean} [recoverCountMatchesDiscarded] 捨てた枚数と同数を控え室から回収
@@ -3164,7 +3166,7 @@ export function parseAbilityPickFilters(p, segRaw) {
   ) {
     f.pickType = T_MEMBER;
   } else if (
-    /控え室(?:から|にある)[^。；：]*?ライブカード|手札のライブカード|ライブカードを1枚手札|ライブカードを[^。；：]*?手札に加|『[^』]+』のライブカード|のライブカードを/.test(
+    /控え室(?:から|にある)[^。；：]*?ライブカード|置いたカードの中から[^。；：]*?ライブカード|手札のライブカード|ライブカードを1枚手札|ライブカードを[^。；：]*?手札に加|『[^』]+』のライブカード|のライブカードを/.test(
       p,
     )
   ) {
@@ -5119,6 +5121,8 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
     }
     var waitToDeckNthM = p.match(/控え室.*(?:カード|ライブカード)1枚.*デッキの一番上から([０-９\d]+)枚目/);
     if (waitToDeckNthM && /もよい/.test(p)) {
+      var waitDeckNthFilters = parseAbilityPickFilters(p);
+      if (!waitDeckNthFilters.pickType && /ライブカード/.test(p)) waitDeckNthFilters.pickType = T_LIVE;
       return twT({
         template: "toujou_optional_wait_to_deck_top",
         deckRelocateTo: "nth_from_top",
@@ -5126,16 +5130,20 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
         optional: true,
         hasOptionalCost: true,
         requiresOnStage: true,
-        filters: parseAbilityPickFilters(p),
+        filters: waitDeckNthFilters,
+        pickFromTherebyMilledToWaiting: /これにより控え室に置いた/.test(p),
       });
     }
     if (/控え室.*(?:カード|ライブカード).*デッキの一番上に置/.test(p) && /もよい/.test(p)) {
+      var waitDeckTopFilters = parseAbilityPickFilters(p);
+      if (!waitDeckTopFilters.pickType && /ライブカード/.test(p)) waitDeckTopFilters.pickType = T_LIVE;
       return twT({
         template: "toujou_optional_wait_to_deck_top",
         optional: true,
         hasOptionalCost: true,
         requiresOnStage: true,
-        filters: parseAbilityPickFilters(p),
+        filters: waitDeckTopFilters,
+        pickFromTherebyMilledToWaiting: /これにより控え室に置いた/.test(p),
       });
     }
     if (/エネルギー置き場.*下に置/.test(p) && /もよい/.test(p)) {
@@ -6014,6 +6022,19 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
           handDiscardToWaiting: /手札を1枚控え室に置/.test(p) ? 1 : null,
         }),
       );
+    }
+    var waitBelowFillM = p.match(/控え室にあるカードの枚数が([０-９\d]+)枚未満/);
+    if (
+      waitBelowFillM &&
+      /その差に等しい枚数/.test(p) &&
+      /デッキの上から/.test(p) &&
+      /控え室に置/.test(p)
+    ) {
+      return twT({
+        template: "deck_top_to_waiting",
+        waitingFillTargetCount: Number(normalizeFwDigits(waitBelowFillM[1])) || 8,
+        requiresOnStage: true,
+      });
     }
     var td = parseDeckTopCount(p);
     if (td != null && p.includes("控え室")) {

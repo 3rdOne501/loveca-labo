@@ -31737,7 +31737,24 @@ export function mountSimulator(
         return;
       }
       var topNw = cl.deckTopCount || 3;
-      if (state.deck.length < topNw) {
+      var waitFillTarget =
+        cl.waitingFillTargetCount != null
+          ? Math.max(1, Math.floor(Number(cl.waitingFillTargetCount) || 8))
+          : null;
+      if (waitFillTarget != null) {
+        var waitBeforeFill = state.waitingRoom.length;
+        if (waitBeforeFill >= waitFillTarget) {
+          state._lastAbilityMilledToWaitingIds = [];
+          finishResolved();
+          return;
+        }
+        topNw = Math.min(waitFillTarget - waitBeforeFill, state.deck.length);
+        if (topNw <= 0) {
+          state._lastAbilityMilledToWaitingIds = [];
+          finishResolved();
+          return;
+        }
+      } else if (state.deck.length < topNw) {
         if (cl.optional || cl.hasOptionalCost) {
           showToast("山札が足りないためスキップしました");
           finishResolved();
@@ -31752,11 +31769,19 @@ export function mountSimulator(
       openDeckTopCardsRevealDialog(revealedNw, function (proceed) {
         if (!proceed) {
           if (revealedNw.length) state.deck.unshift.apply(state.deck, revealedNw.slice().reverse());
+          state._lastAbilityMilledToWaitingIds = [];
           if (cl.optional || cl.hasOptionalCost) showToast("スキップしました");
           finishResolved();
           return;
         }
         state.waitingRoom.push.apply(state.waitingRoom, revealedNw);
+        state._lastAbilityMilledToWaitingIds = revealedNw
+          .filter(function (c) {
+            return c && c.id != null;
+          })
+          .map(function (c) {
+            return String(c.id);
+          });
         function finishDeckTopWait(toastMsg) {
           showToast(toastMsg);
           try {
@@ -35044,6 +35069,21 @@ export function mountSimulator(
 
     if (cl.template === "toujou_optional_wait_to_deck_top") {
       var wTop = waitingPickCandidates(cl.filters || {}, null);
+      if (cl.pickFromTherebyMilledToWaiting) {
+        var therebyMilled = state._lastAbilityMilledToWaitingIds;
+        if (!therebyMilled || !therebyMilled.length) {
+          finishResolved();
+          return;
+        }
+        var therebySet = {};
+        therebyMilled.forEach(function (mid) {
+          therebySet[String(mid)] = true;
+        });
+        wTop = wTop.filter(function (c) {
+          return c && therebySet[String(c.id)];
+        });
+        delete state._lastAbilityMilledToWaitingIds;
+      }
       if (!wTop.length) {
         finishResolved();
         return;
