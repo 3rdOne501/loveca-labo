@@ -1,9 +1,9 @@
 {
-  "generated": "2026-11-09",
+  "generated": "2026-11-12",
   "trigger": "jidou",
-  "total": 147,
-  "automated": 145,
-  "guided_manual": 2,
+  "total": 161,
+  "automated": 150,
+  "guided_manual": 11,
   "byTemplate": {
     "jidou_yell_score_group_extra": 2,
     "jidou_baton_leave_activate_energy": 3,
@@ -13,7 +13,7 @@
     "jidou_energy_under_placed_energy_wait": 2,
     "jidou_self_deck_to_waiting_discard_recover": 4,
     "jidou_leave_stage_recover_no_cost": 1,
-    "jidou_leave_baton_partner_energy_under": 1,
+    "jidou_leave_baton_partner_energy_under": 2,
     "jidou_own_member_wait_discard_activate": 2,
     "jidou_leave_baton_self_under_partner": 2,
     "jidou_enter_or_energy_returned_energy_wait": 4,
@@ -26,7 +26,7 @@
     "jidou_series_member_to_center_blade_grant": 2,
     "jidou_area_move_activate_energy": 3,
     "jidou_series_enter_opp_wait": 2,
-    "jidou_leave_stage_hand_pick_recover": 3,
+    "jidou_leave_stage_hand_pick_recover": 7,
     "jidou_leave_stage_hand_grant_member": 1,
     "jidou_leave_stage_draw_discard": 2,
     "jidou_live_zone_to_waiting_deck": 4,
@@ -61,7 +61,7 @@
     "jidou_enter_or_baton_draw": 1,
     "jidou_waiting_entry_draw": 1,
     "jidou_yell_opp_wait_printed_hearts": 1,
-    "jidou_manual": 2
+    "jidou_manual": 11
   },
   "cards": [
     {
@@ -1239,6 +1239,118 @@
       "automated": false,
       "eventKind": null,
       "effect": "このメンバーがステージから控え室に置かれたとき、このメンバーがコスト11以下のメンバーとバトンタッチしていた場合、ライブ終了時まで、そのバトンタッチで登場したメンバーはを得る。"
+    },
+    {
+      "card_no": "PL!-bp8-002-P",
+      "name": "絢瀬絵里",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "このメンバーがステージから控え室に置かれたとき、このカードをデッキの一番下に置いてもよい。そうしたとき、相手のステージにいる元々持つハートの数が4つ以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "card_no": "PL!-bp8-002-R",
+      "name": "絢瀬絵里",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "このメンバーがステージから控え室に置かれたとき、このカードをデッキの一番下に置いてもよい。そうしたとき、相手のステージにいる元々持つハートの数が4つ以下のメンバー1人をウェイトにする。"
+    },
+    {
+      "card_no": "PL!-bp8-005-P",
+      "name": "星空 凛",
+      "template": "jidou_leave_stage_hand_pick_recover",
+      "automated": true,
+      "eventKind": "leave_stage",
+      "effect": "このメンバーがステージから控え室に置かれたとき、このカードをデッキの一番下に置いてもよい。そうしたとき、自分の控え室から必要ハートにを含むライブカードを1枚手札に加え、手札を1枚控え室に置く。"
+    },
+    {
+      "card_no": "PL!-bp8-005-P＋",
+      "name": "星空 凛",
+      "template": "jidou_leave_stage_hand_pick_recover",
+      "automated": true,
+      "eventKind": "leave_stage",
+      "effect": "このメンバーがステージから控え室に置かれたとき、このカードをデッキの一番下に置いてもよい。そうしたとき、自分の控え室から必要ハートにを含むライブカードを1枚手札に加え、手札を1枚控え室に置く。"
+    },
+    {
+      "card_no": "PL!-bp8-005-R＋",
+      "name": "星空 凛",
+      "template": "jidou_leave_stage_hand_pick_recover",
+      "automated": true,
+      "eventKind": "leave_stage",
+      "effect": "このメンバーがステージから控え室に置かれたとき、このカードをデッキの一番下に置いてもよい。そうしたとき、自分の控え室から必要ハートにを含むライブカードを1枚手札に加え、手札を1枚控え室に置く。"
+    },
+    {
+      "card_no": "PL!-bp8-005-SEC",
+      "name": "星空 凛",
+      "template": "jidou_leave_stage_hand_pick_recover",
+      "automated": true,
+      "eventKind": "leave_stage",
+      "effect": "このメンバーがステージから控え室に置かれたとき、このカードをデッキの一番下に置いてもよい。そうしたとき、自分の控え室から必要ハートにを含むライブカードを1枚手札に加え、手札を1枚控え室に置く。"
+    },
+    {
+      "card_no": "PL!HS-bp8-001-P",
+      "name": "日野下花帆",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "自分の控え室にあるカードがデッキに置かれたとき、ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!HS-bp8-001-R",
+      "name": "日野下花帆",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "自分の控え室にあるカードがデッキに置かれたとき、ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!HS-bp8-005-P",
+      "name": "徒町小鈴",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "自分のステージにほかの『DOLLCHESTRA』のメンバーがいないとき、このメンバーを控え室に置く。"
+    },
+    {
+      "card_no": "PL!HS-bp8-005-R",
+      "name": "徒町小鈴",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "自分のステージにほかの『DOLLCHESTRA』のメンバーがいないとき、このメンバーを控え室に置く。"
+    },
+    {
+      "card_no": "PL!HS-bp8-014-N",
+      "name": "安養寺姫芽",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "このメンバーがステージから控え室に置かれたとき、手札を2枚控え室に置く。"
+    },
+    {
+      "card_no": "PL!N-bp8-011-P",
+      "name": "ミア・テイラー",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "自分のデッキがリフレッシュしたとき、カードを2枚引き、手札を1枚控え室に置く。"
+    },
+    {
+      "card_no": "PL!N-bp8-011-R",
+      "name": "ミア・テイラー",
+      "template": "jidou_manual",
+      "automated": false,
+      "eventKind": null,
+      "effect": "自分のデッキがリフレッシュしたとき、カードを2枚引き、手札を1枚控え室に置く。"
+    },
+    {
+      "card_no": "PL!N-bp8-024-N",
+      "name": "鐘 嵐珠",
+      "template": "jidou_leave_baton_partner_energy_under",
+      "automated": true,
+      "eventKind": "leave_stage_baton",
+      "effect": "このメンバーがステージから控え室に置かれたとき、このメンバーが『虹ヶ咲』のメンバーとバトンタッチしていた場合、自分のエネルギーデッキから、エネルギーカード1枚をこのバトンタッチで登場したメンバーの下に置く。"
     }
   ]
 }

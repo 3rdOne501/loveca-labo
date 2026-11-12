@@ -1,33 +1,33 @@
 {
-  "generated": "2026-11-10",
+  "generated": "2026-11-12",
   "trigger": "toujyou",
-  "total": 638,
+  "total": 669,
   "byTemplate": {
     "toujou_multi_baton_recover_score": 2,
-    "grant_jouji_session": 14,
+    "grant_jouji_session": 16,
     "toujou_deck_top_liella_live_pick": 4,
-    "deck_top_pick_recover": 120,
+    "deck_top_pick_recover": 127,
     "toujou_success_live_hand_reveal_swap": 3,
     "toujou_waiting_members_under_self": 2,
-    "draw_from_deck": 38,
-    "optional_self_wait_opp_stage": 38,
-    "toujou_wait_pick_hand": 75,
-    "ability_pick_one": 22,
-    "deck_top_to_waiting": 9,
+    "draw_from_deck": 44,
+    "optional_self_wait_opp_stage": 39,
+    "toujou_wait_pick_hand": 76,
+    "ability_pick_one": 24,
+    "deck_top_to_waiting": 10,
     "waiting_to_deck_bottom_activate_per": 2,
     "energy_deck_under_member": 1,
     "deck_mill_conditional_grant": 2,
-    "ability_sequence": 18,
+    "ability_sequence": 19,
     "deck_peek_relocate": 5,
     "toujou_baton_both_keep_hand_shuffle_deck_bottom_draw": 2,
     "waiting_member_under_stage": 4,
-    "deck_top_look_reorder": 18,
+    "deck_top_look_reorder": 19,
     "toujou_optional_all_members_relocate": 5,
     "live_start_pick_player_waiting_deck_bottom": 2,
     "pick_stage_member_to_center": 1,
     "waiting_pick_to_deck": 1,
     "energy_deck_to_wait": 15,
-    "activate_energy": 17,
+    "activate_energy": 19,
     "toujou_baton_discarded_series_per_card": 2,
     "deck_top_pick_enter_or_hand": 2,
     "toujou_baton_discarded_under": 2,
@@ -63,7 +63,7 @@
     "toujou_opp_active_wait": 2,
     "toujou_both_wait_pick_live_hand": 4,
     "success_live_waiting_swap": 4,
-    "toujou_optional_wait_to_deck_top": 1,
+    "toujou_optional_wait_to_deck_top": 2,
     "toujou_liella_double_baton_center": 4,
     "toujou_success_live_score_tiered": 2,
     "toujou_multi_wait_draw_per_count": 2,
@@ -98,7 +98,8 @@
     "toujou_opp_hand_reveal_no_live_draw": 1,
     "draw_until_hand_size": 2,
     "toujou_opp_emma_punch_answer": 1,
-    "toujou_wait_to_member_under": 1
+    "toujou_wait_to_member_under": 1,
+    "guided_manual": 6
   },
   "cards": [
     {
@@ -5914,6 +5915,289 @@
       "optional": false,
       "perTurn": 0,
       "effect": "自分の成功ライブカード置き場にあるカードのスコアの合計が１１以上の場合、自分の控え室からカードを1枚手札に加える。"
+    },
+    {
+      "card_no": "LL-bp8-001-R＋",
+      "name": "矢澤にこ&宮下 愛&セラス 柳田 リリエンフェルト",
+      "template": "deck_top_to_waiting",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分のデッキの上からカードを6枚見る。その中からメンバーカードを1枚公開し、このメンバーの下に置いてもよい。残りを控え室に置く。"
+    },
+    {
+      "card_no": "PL!-bp8-007-P",
+      "name": "東條 希",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のデッキの上からカードを4枚控え室に置く。それらの中に『μ's』のライブカードがある場合、ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!-bp8-007-R",
+      "name": "東條 希",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のデッキの上からカードを4枚控え室に置く。それらの中に『μ's』のライブカードがある場合、ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!-bp8-014-N",
+      "name": "星空 凛",
+      "template": "draw_from_deck",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "控え室にあるブレードハートを持たない『μ's』のメンバーカード2枚を好きな順番でデッキの下に置いてもよい：カードを1枚引く。"
+    },
+    {
+      "card_no": "PL!-bp8-017-N",
+      "name": "小泉花陽",
+      "template": "deck_top_pick_recover",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札のブレードハートを持たないメンバーカードを1枚公開してもよい：これにより公開したカードを自分のデッキの一番下に置く。その後、自分のデッキの上からカードを5枚見る。その中から『μ's』のカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
+    },
+    {
+      "card_no": "PL!HS-bp8-001-P",
+      "name": "日野下花帆",
+      "template": "activate_energy",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のデッキの上からカードを3枚控え室に置く。それらがすべて『スリーズブーケ』のカードの場合、エネルギーを2枚アクティブにする。"
+    },
+    {
+      "card_no": "PL!HS-bp8-001-R",
+      "name": "日野下花帆",
+      "template": "activate_energy",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のデッキの上からカードを3枚控え室に置く。それらがすべて『スリーズブーケ』のカードの場合、エネルギーを2枚アクティブにする。"
+    },
+    {
+      "card_no": "PL!HS-bp8-003-P",
+      "name": "大沢瑠璃乃",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分と相手はそれぞれ自身の手札の枚数が6枚になるまで手札を控え室に置く。"
+    },
+    {
+      "card_no": "PL!HS-bp8-003-R",
+      "name": "大沢瑠璃乃",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分と相手はそれぞれ自身の手札の枚数が6枚になるまで手札を控え室に置く。"
+    },
+    {
+      "card_no": "PL!HS-bp8-004-P",
+      "name": "百生吟子",
+      "template": "draw_from_deck",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "カードを1枚引く。「日野下花帆」とバトンタッチして登場した場合、さらにカードを1枚引く。"
+    },
+    {
+      "card_no": "PL!HS-bp8-004-P＋",
+      "name": "百生吟子",
+      "template": "draw_from_deck",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "カードを1枚引く。「日野下花帆」とバトンタッチして登場した場合、さらにカードを1枚引く。"
+    },
+    {
+      "card_no": "PL!HS-bp8-004-R＋",
+      "name": "百生吟子",
+      "template": "draw_from_deck",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "カードを1枚引く。「日野下花帆」とバトンタッチして登場した場合、さらにカードを1枚引く。"
+    },
+    {
+      "card_no": "PL!HS-bp8-004-SEC",
+      "name": "百生吟子",
+      "template": "draw_from_deck",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "カードを1枚引く。「日野下花帆」とバトンタッチして登場した場合、さらにカードを1枚引く。"
+    },
+    {
+      "card_no": "PL!HS-bp8-006-P",
+      "name": "安養寺姫芽",
+      "template": "ability_pick_one",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札の『蓮ノ空』のカードを1枚控え室に置いてもよい：以下から1つを選ぶ。 ・かかかのうち、1つを選ぶ。ライブ終了時まで、選んだハートを1つ得る。 ・自分のデッキの上からカードを3枚見る。その中から好きな枚数を好きな順番でデッキの上に置き、残りを控え室に置く。"
+    },
+    {
+      "card_no": "PL!HS-bp8-006-R",
+      "name": "安養寺姫芽",
+      "template": "ability_pick_one",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札の『蓮ノ空』のカードを1枚控え室に置いてもよい：以下から1つを選ぶ。 ・かかかのうち、1つを選ぶ。ライブ終了時まで、選んだハートを1つ得る。 ・自分のデッキの上からカードを3枚見る。その中から好きな枚数を好きな順番でデッキの上に置き、残りを控え室に置く。"
+    },
+    {
+      "card_no": "PL!HS-bp8-007-P",
+      "name": "セラス 柳田 リリエンフェルト",
+      "template": "deck_top_pick_recover",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分のデッキの上からカードを5枚見る。その中から必要ハートにを含むライブカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
+    },
+    {
+      "card_no": "PL!HS-bp8-007-P＋",
+      "name": "セラス 柳田 リリエンフェルト",
+      "template": "deck_top_pick_recover",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分のデッキの上からカードを5枚見る。その中から必要ハートにを含むライブカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
+    },
+    {
+      "card_no": "PL!HS-bp8-007-R＋",
+      "name": "セラス 柳田 リリエンフェルト",
+      "template": "deck_top_pick_recover",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分のデッキの上からカードを5枚見る。その中から必要ハートにを含むライブカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
+    },
+    {
+      "card_no": "PL!HS-bp8-007-SEC",
+      "name": "セラス 柳田 リリエンフェルト",
+      "template": "deck_top_pick_recover",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分のデッキの上からカードを5枚見る。その中から必要ハートにを含むライブカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
+    },
+    {
+      "card_no": "PL!HS-bp8-009-N",
+      "name": "日野下花帆",
+      "template": "toujou_optional_wait_to_deck_top",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分の控え室からコスト9以下のメンバーカード1枚をデッキの一番上に置いてもよい。"
+    },
+    {
+      "card_no": "PL!HS-bp8-011-N",
+      "name": "大沢瑠璃乃",
+      "template": "toujou_wait_pick_hand",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "このメンバーよりコストが低いメンバーからバトンタッチして登場した場合、自分の控え室から『みらくらぱーく！』のライブカード1枚を手札に加える。"
+    },
+    {
+      "card_no": "PL!HS-bp8-012-N",
+      "name": "百生吟子",
+      "template": "ability_sequence",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分の控え室にあるすべてのメンバーカードをシャッフルし、デッキの下に置く。これにより『スリーズブーケ』のメンバーカードが3枚以上デッキの下に置かれた場合、ライブ終了時まで、を得る。",
+      "steps": [
+        "waiting_pick_to_deck",
+        "grant_jouji_session"
+      ]
+    },
+    {
+      "card_no": "PL!HS-bp8-014-N",
+      "name": "安養寺姫芽",
+      "template": "draw_from_deck",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のステージにほかの『蓮ノ空』のメンバーがいる場合、カードを1枚引く。"
+    },
+    {
+      "card_no": "PL!HS-bp8-015-N",
+      "name": "セラス 柳田 リリエンフェルト",
+      "template": "deck_top_look_reorder",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "このメンバーをウェイトにしてもよい：自分のデッキの上からカードを2枚見る。その中から好きな枚数を好きな順番でデッキの上に置き、残りを控え室に置く。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "card_no": "PL!N-bp8-001-P",
+      "name": "上原歩夢",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "このメンバーと自分のステージにいるほかの『虹ヶ咲』のメンバー1人の下に、自分のエネルギー置き場にあるエネルギーをそれぞれ1枚まで置く。"
+    },
+    {
+      "card_no": "PL!N-bp8-001-P＋",
+      "name": "上原歩夢",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "このメンバーと自分のステージにいるほかの『虹ヶ咲』のメンバー1人の下に、自分のエネルギー置き場にあるエネルギーをそれぞれ1枚まで置く。"
+    },
+    {
+      "card_no": "PL!N-bp8-001-R＋",
+      "name": "上原歩夢",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "このメンバーと自分のステージにいるほかの『虹ヶ咲』のメンバー1人の下に、自分のエネルギー置き場にあるエネルギーをそれぞれ1枚まで置く。"
+    },
+    {
+      "card_no": "PL!N-bp8-001-SEC",
+      "name": "上原歩夢",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "このメンバーと自分のステージにいるほかの『虹ヶ咲』のメンバー1人の下に、自分のエネルギー置き場にあるエネルギーをそれぞれ1枚まで置く。"
+    },
+    {
+      "card_no": "PL!N-bp8-006-P",
+      "name": "近江彼方",
+      "template": "deck_top_pick_recover",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札を1枚控え室に置いてもよい：自分のデッキの上からカードを5枚見る。その中から『虹ヶ咲』のメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
+    },
+    {
+      "card_no": "PL!N-bp8-006-R",
+      "name": "近江彼方",
+      "template": "deck_top_pick_recover",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札を1枚控え室に置いてもよい：自分のデッキの上からカードを5枚見る。その中から『虹ヶ咲』のメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
+    },
+    {
+      "card_no": "PL!N-bp8-016-N",
+      "name": "朝香果林",
+      "template": "optional_self_wait_opp_stage",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "相手のステージにいる元々持つの数が2つ以下のメンバー1人をウェイトにする。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
     }
   ]
 }

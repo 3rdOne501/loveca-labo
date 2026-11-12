@@ -1,13 +1,13 @@
 {
-  "generated": "2026-11-09",
+  "generated": "2026-11-12",
   "trigger": "kidou",
-  "total": 310,
+  "total": 350,
   "byTemplate": {
     "optional_self_wait_opp_stage": 2,
     "ability_sequence": 8,
-    "kidou_hand_cost_wait_pick_hand": 25,
-    "kidou_stage_wait_pick_hand": 74,
-    "deck_top_pick_recover": 3,
+    "kidou_hand_cost_wait_pick_hand": 30,
+    "kidou_stage_wait_pick_hand": 75,
+    "deck_top_pick_recover": 7,
     "kidou_mill_waiting_under_copy_printed_hearts": 4,
     "kidou_energy_under_opp_wait_by_under": 2,
     "deck_top_look_reorder": 4,
@@ -16,18 +16,18 @@
     "draw_then_hand_discard": 11,
     "kidou_self_and_other_resolve_toujou": 4,
     "deck_mill_conditional_grant": 1,
-    "draw_from_deck": 19,
+    "draw_from_deck": 23,
     "live_start_position_change": 9,
-    "kidou_wait_pick_hand": 20,
+    "kidou_wait_pick_hand": 22,
     "kidou_heart_color_deck_reveal_pick": 4,
     "kidou_self_wait_activate_other": 2,
     "kidou_self_to_wait_opp_wait": 1,
     "kidou_waiting_to_empty_stage": 5,
     "kidou_discard_self_draw_grant": 3,
     "kidou_self_wait_stage_member_swap_recover": 6,
-    "kidou_self_to_wait_recover": 5,
+    "kidou_self_to_wait_recover": 9,
     "energy_deck_to_wait": 6,
-    "grant_jouji_session": 9,
+    "grant_jouji_session": 15,
     "kidou_hand_reveal_to_under": 2,
     "kidou_hand_discard_series_branch": 4,
     "kidou_opp_wait_group_discount_energy": 4,
@@ -38,7 +38,7 @@
     "kidou_wait_or_hand_for_energy": 4,
     "kidou_deck_top_wait_position_change": 3,
     "kidou_energy_deck_pick_live": 2,
-    "kidou_energy_under_pick_waiting_hand": 2,
+    "kidou_energy_under_pick_waiting_hand": 6,
     "kidou_energy_or_activate_member": 2,
     "deck_reveal_until_pick": 2,
     "kidou_hand_reveal_grant_if_live": 2,
@@ -52,7 +52,8 @@
     "kidou_hand_discard_trigger_ability": 4,
     "kidou_wait_to_stage": 4,
     "kidou_reveal_hand_cost_threshold": 4,
-    "kidou_reveal_all_hand_deck_top_live": 3
+    "kidou_reveal_all_hand_deck_top_live": 3,
+    "guided_manual": 10
   },
   "cards": [
     {
@@ -2876,6 +2877,366 @@
       "optional": false,
       "perTurn": 0,
       "effect": "このメンバーをステージから控え室に置く：自分の控え室からメンバーカードを1枚手札に加える。"
+    },
+    {
+      "card_no": "PL!-bp8-003-P",
+      "name": "南ことり",
+      "template": "deck_top_pick_recover",
+      "automated": true,
+      "optional": false,
+      "perTurn": 1,
+      "effect": "このメンバーをウェイトにし、手札を1枚控え室に置く：自分のデッキの上からカードを2枚見る。その中から1枚を手札に加え、残りを控え室に置く。"
+    },
+    {
+      "card_no": "PL!-bp8-003-P＋",
+      "name": "南ことり",
+      "template": "deck_top_pick_recover",
+      "automated": true,
+      "optional": false,
+      "perTurn": 1,
+      "effect": "このメンバーをウェイトにし、手札を1枚控え室に置く：自分のデッキの上からカードを2枚見る。その中から1枚を手札に加え、残りを控え室に置く。"
+    },
+    {
+      "card_no": "PL!-bp8-003-R＋",
+      "name": "南ことり",
+      "template": "deck_top_pick_recover",
+      "automated": true,
+      "optional": false,
+      "perTurn": 1,
+      "effect": "このメンバーをウェイトにし、手札を1枚控え室に置く：自分のデッキの上からカードを2枚見る。その中から1枚を手札に加え、残りを控え室に置く。"
+    },
+    {
+      "card_no": "PL!-bp8-003-SEC",
+      "name": "南ことり",
+      "template": "deck_top_pick_recover",
+      "automated": true,
+      "optional": false,
+      "perTurn": 1,
+      "effect": "このメンバーをウェイトにし、手札を1枚控え室に置く：自分のデッキの上からカードを2枚見る。その中から1枚を手札に加え、残りを控え室に置く。"
+    },
+    {
+      "card_no": "PL!-bp8-004-P",
+      "name": "園田海未",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 1,
+      "effect": "控え室にあるブレードハートを持たない『μ's』のメンバーカード2枚を好きな順番でデッキの下に置く：ライブ終了時まで、このメンバーのコストを＋２する。"
+    },
+    {
+      "card_no": "PL!-bp8-004-R",
+      "name": "園田海未",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 1,
+      "effect": "控え室にあるブレードハートを持たない『μ's』のメンバーカード2枚を好きな順番でデッキの下に置く：ライブ終了時まで、このメンバーのコストを＋２する。"
+    },
+    {
+      "card_no": "PL!-bp8-006-P",
+      "name": "西木野真姫",
+      "template": "kidou_wait_pick_hand",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "このカードを控え室からデッキの一番下に置く：自分の控え室から『μ's』のライブカードを1枚手札に加える。この能力は、このカードが控え室にある場合のみ起動できる。"
+    },
+    {
+      "card_no": "PL!-bp8-006-R",
+      "name": "西木野真姫",
+      "template": "kidou_wait_pick_hand",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "このカードを控え室からデッキの一番下に置く：自分の控え室から『μ's』のライブカードを1枚手札に加える。この能力は、このカードが控え室にある場合のみ起動できる。"
+    },
+    {
+      "card_no": "PL!-bp8-009-P",
+      "name": "矢澤にこ",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 2,
+      "effect": "：自分の手札からメンバーカード1枚をこのメンバーの下に置く。"
+    },
+    {
+      "card_no": "PL!-bp8-009-P＋",
+      "name": "矢澤にこ",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 2,
+      "effect": "：自分の手札からメンバーカード1枚をこのメンバーの下に置く。"
+    },
+    {
+      "card_no": "PL!-bp8-009-R＋",
+      "name": "矢澤にこ",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 2,
+      "effect": "：自分の手札からメンバーカード1枚をこのメンバーの下に置く。"
+    },
+    {
+      "card_no": "PL!-bp8-009-SEC",
+      "name": "矢澤にこ",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 2,
+      "effect": "：自分の手札からメンバーカード1枚をこのメンバーの下に置く。"
+    },
+    {
+      "card_no": "PL!-bp8-010-N",
+      "name": "高坂穂乃果",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 1,
+      "effect": "このメンバーをウェイトにする：自分の控え室にあるカードを2枚まで好きな順番でデッキの下に置く。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "card_no": "PL!-bp8-012-N",
+      "name": "南ことり",
+      "template": "kidou_hand_cost_wait_pick_hand",
+      "automated": true,
+      "optional": false,
+      "perTurn": 1,
+      "effect": "このメンバーをウェイトにし、手札を2枚控え室に置く：自分の控え室から『μ's』のライブカードを1枚手札に加える。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
+    },
+    {
+      "card_no": "PL!HS-bp8-004-P",
+      "name": "百生吟子",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": false,
+      "perTurn": 1,
+      "effect": "手札を1枚控え室に置く：これにより控え室に置いたカードがコスト13以下の『蓮ノ空』のメンバーカードの場合、ライブ終了時まで、このメンバーは、そのカードが持つ能力1つを得る。その能力をコストを支払わずに発動させる。"
+    },
+    {
+      "card_no": "PL!HS-bp8-004-P＋",
+      "name": "百生吟子",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": false,
+      "perTurn": 1,
+      "effect": "手札を1枚控え室に置く：これにより控え室に置いたカードがコスト13以下の『蓮ノ空』のメンバーカードの場合、ライブ終了時まで、このメンバーは、そのカードが持つ能力1つを得る。その能力をコストを支払わずに発動させる。"
+    },
+    {
+      "card_no": "PL!HS-bp8-004-R＋",
+      "name": "百生吟子",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": false,
+      "perTurn": 1,
+      "effect": "手札を1枚控え室に置く：これにより控え室に置いたカードがコスト13以下の『蓮ノ空』のメンバーカードの場合、ライブ終了時まで、このメンバーは、そのカードが持つ能力1つを得る。その能力をコストを支払わずに発動させる。"
+    },
+    {
+      "card_no": "PL!HS-bp8-004-SEC",
+      "name": "百生吟子",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": false,
+      "perTurn": 1,
+      "effect": "手札を1枚控え室に置く：これにより控え室に置いたカードがコスト13以下の『蓮ノ空』のメンバーカードの場合、ライブ終了時まで、このメンバーは、そのカードが持つ能力1つを得る。その能力をコストを支払わずに発動させる。"
+    },
+    {
+      "card_no": "PL!HS-bp8-008-P",
+      "name": "桂城 泉",
+      "template": "kidou_self_to_wait_recover",
+      "automated": true,
+      "optional": false,
+      "perTurn": 1,
+      "effect": "手札を1枚控え室に置く：自分のステージにいるこのメンバー以外の『Edel Note』のメンバー1人を控え室に置く。そうしたとき、自分の控え室から、これによりステージから控え室に置いたメンバーカードを1枚、そのメンバーがいたエリアに登場させる。"
+    },
+    {
+      "card_no": "PL!HS-bp8-008-P＋",
+      "name": "桂城 泉",
+      "template": "kidou_self_to_wait_recover",
+      "automated": true,
+      "optional": false,
+      "perTurn": 1,
+      "effect": "手札を1枚控え室に置く：自分のステージにいるこのメンバー以外の『Edel Note』のメンバー1人を控え室に置く。そうしたとき、自分の控え室から、これによりステージから控え室に置いたメンバーカードを1枚、そのメンバーがいたエリアに登場させる。"
+    },
+    {
+      "card_no": "PL!HS-bp8-008-R＋",
+      "name": "桂城 泉",
+      "template": "kidou_self_to_wait_recover",
+      "automated": true,
+      "optional": false,
+      "perTurn": 1,
+      "effect": "手札を1枚控え室に置く：自分のステージにいるこのメンバー以外の『Edel Note』のメンバー1人を控え室に置く。そうしたとき、自分の控え室から、これによりステージから控え室に置いたメンバーカードを1枚、そのメンバーがいたエリアに登場させる。"
+    },
+    {
+      "card_no": "PL!HS-bp8-008-SEC",
+      "name": "桂城 泉",
+      "template": "kidou_self_to_wait_recover",
+      "automated": true,
+      "optional": false,
+      "perTurn": 1,
+      "effect": "手札を1枚控え室に置く：自分のステージにいるこのメンバー以外の『Edel Note』のメンバー1人を控え室に置く。そうしたとき、自分の控え室から、これによりステージから控え室に置いたメンバーカードを1枚、そのメンバーがいたエリアに登場させる。"
+    },
+    {
+      "card_no": "PL!N-bp8-002-P",
+      "name": "中須かすみ",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "このカードを控え室からデッキの一番下に置く：ライブ終了時まで、自分のステージにいる『虹ヶ咲』のメンバー1人は、を得る。この能力は、このカードが控え室にある場合のみ起動できる。"
+    },
+    {
+      "card_no": "PL!N-bp8-002-R",
+      "name": "中須かすみ",
+      "template": "grant_jouji_session",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "このカードを控え室からデッキの一番下に置く：ライブ終了時まで、自分のステージにいる『虹ヶ咲』のメンバー1人は、を得る。この能力は、このカードが控え室にある場合のみ起動できる。"
+    },
+    {
+      "card_no": "PL!N-bp8-004-P",
+      "name": "朝香果林",
+      "template": "kidou_hand_cost_wait_pick_hand",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "このカードを手札から控え室に置く：自分の控え室からブレードハートを持つメンバーカードを1枚手札に加える。この能力は、このカードが手札にある場合のみ起動できる。"
+    },
+    {
+      "card_no": "PL!N-bp8-004-P＋",
+      "name": "朝香果林",
+      "template": "kidou_hand_cost_wait_pick_hand",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "このカードを手札から控え室に置く：自分の控え室からブレードハートを持つメンバーカードを1枚手札に加える。この能力は、このカードが手札にある場合のみ起動できる。"
+    },
+    {
+      "card_no": "PL!N-bp8-004-R＋",
+      "name": "朝香果林",
+      "template": "kidou_hand_cost_wait_pick_hand",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "このカードを手札から控え室に置く：自分の控え室からブレードハートを持つメンバーカードを1枚手札に加える。この能力は、このカードが手札にある場合のみ起動できる。"
+    },
+    {
+      "card_no": "PL!N-bp8-004-SEC",
+      "name": "朝香果林",
+      "template": "kidou_hand_cost_wait_pick_hand",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "このカードを手札から控え室に置く：自分の控え室からブレードハートを持つメンバーカードを1枚手札に加える。この能力は、このカードが手札にある場合のみ起動できる。"
+    },
+    {
+      "card_no": "PL!N-bp8-005-P",
+      "name": "宮下 愛",
+      "template": "kidou_energy_under_pick_waiting_hand",
+      "automated": true,
+      "optional": false,
+      "perTurn": 1,
+      "effect": "エネルギー置き場にあるエネルギー1枚をこのメンバーの下に置く：自分の控え室から『虹ヶ咲』のメンバーカード1枚を手札に加える。"
+    },
+    {
+      "card_no": "PL!N-bp8-005-P＋",
+      "name": "宮下 愛",
+      "template": "kidou_energy_under_pick_waiting_hand",
+      "automated": true,
+      "optional": false,
+      "perTurn": 1,
+      "effect": "エネルギー置き場にあるエネルギー1枚をこのメンバーの下に置く：自分の控え室から『虹ヶ咲』のメンバーカード1枚を手札に加える。"
+    },
+    {
+      "card_no": "PL!N-bp8-005-R＋",
+      "name": "宮下 愛",
+      "template": "kidou_energy_under_pick_waiting_hand",
+      "automated": true,
+      "optional": false,
+      "perTurn": 1,
+      "effect": "エネルギー置き場にあるエネルギー1枚をこのメンバーの下に置く：自分の控え室から『虹ヶ咲』のメンバーカード1枚を手札に加える。"
+    },
+    {
+      "card_no": "PL!N-bp8-005-SEC",
+      "name": "宮下 愛",
+      "template": "kidou_energy_under_pick_waiting_hand",
+      "automated": true,
+      "optional": false,
+      "perTurn": 1,
+      "effect": "エネルギー置き場にあるエネルギー1枚をこのメンバーの下に置く：自分の控え室から『虹ヶ咲』のメンバーカード1枚を手札に加える。"
+    },
+    {
+      "card_no": "PL!N-bp8-008-P",
+      "name": "エマ・ヴェルデ",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "このカードを手札から公開する：このカードをデッキの一番下に置く。その後、自分のステージに『虹ヶ咲』のメンバーがいる場合、相手のステージにいるコスト2以下のメンバー1人をウェイトにする。この能力は、このカードが手札にある場合のみ起動できる。"
+    },
+    {
+      "card_no": "PL!N-bp8-008-R",
+      "name": "エマ・ヴェルデ",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "このカードを手札から公開する：このカードをデッキの一番下に置く。その後、自分のステージに『虹ヶ咲』のメンバーがいる場合、相手のステージにいるコスト2以下のメンバー1人をウェイトにする。この能力は、このカードが手札にある場合のみ起動できる。"
+    },
+    {
+      "card_no": "PL!N-bp8-009-P",
+      "name": "天王寺璃奈",
+      "template": "draw_from_deck",
+      "automated": true,
+      "optional": false,
+      "perTurn": 1,
+      "effect": "手札を1枚デッキの一番下に置く：カードを2枚引く。"
+    },
+    {
+      "card_no": "PL!N-bp8-009-P＋",
+      "name": "天王寺璃奈",
+      "template": "draw_from_deck",
+      "automated": true,
+      "optional": false,
+      "perTurn": 1,
+      "effect": "手札を1枚デッキの一番下に置く：カードを2枚引く。"
+    },
+    {
+      "card_no": "PL!N-bp8-009-R＋",
+      "name": "天王寺璃奈",
+      "template": "draw_from_deck",
+      "automated": true,
+      "optional": false,
+      "perTurn": 1,
+      "effect": "手札を1枚デッキの一番下に置く：カードを2枚引く。"
+    },
+    {
+      "card_no": "PL!N-bp8-009-SEC",
+      "name": "天王寺璃奈",
+      "template": "draw_from_deck",
+      "automated": true,
+      "optional": false,
+      "perTurn": 1,
+      "effect": "手札を1枚デッキの一番下に置く：カードを2枚引く。"
+    },
+    {
+      "card_no": "PL!N-bp8-017-N",
+      "name": "宮下 愛",
+      "template": "kidou_stage_wait_pick_hand",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "このメンバーをステージから控え室に置く：自分の控え室からライブカードを1枚手札に加える。"
+    },
+    {
+      "card_no": "PL!N-bp8-021-N",
+      "name": "天王寺璃奈",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 1,
+      "effect": "手札を2枚控え室に置く：自分のライブカード置き場にカードがない場合、自分の控え室から『虹ヶ咲』のライブカードを1枚、表向きでライブカード置き場に置く。次のライブカードセットフェイズで自分がライブカード置き場に置けるカード枚数の上限が1枚減る。"
     }
   ]
 }

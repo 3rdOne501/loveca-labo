@@ -1,7 +1,7 @@
 {
-  "generated": "2026-11-10",
+  "generated": "2026-11-12",
   "trigger": "live_success",
-  "total": 136,
+  "total": 153,
   "byTemplate": {
     "live_success_recover_from_waiting": 1,
     "energy_deck_under_member": 4,
@@ -11,23 +11,23 @@
     "activate_energy": 4,
     "draw_then_conditional_extra_draw": 3,
     "live_success_liella_effect_moved_score": 2,
-    "draw_from_deck": 13,
+    "draw_from_deck": 15,
     "live_success_optional_energy_recover_waiting": 2,
     "live_success_yell_nobh_series_score_capped": 2,
     "live_success_pick_options": 2,
-    "draw_then_hand_discard": 17,
+    "draw_then_hand_discard": 22,
     "live_success_enter_under_member": 4,
     "deck_top_reveal_hand_score_grant": 4,
     "deck_top_look_reorder": 1,
     "yell_resolution_pick_deck_top": 4,
-    "yell_resolution_pick_hand": 14,
+    "yell_resolution_pick_hand": 16,
     "live_success_wait_skip_next_activate": 4,
     "yell_reveal_series_live_score_plus": 4,
     "deck_top_count_live_score_plus": 4,
     "live_success_self_wait_if_others": 3,
     "surplus_heart_score_modifier": 3,
     "live_score_higher_energy_wait": 4,
-    "deck_top_pick_recover": 3,
+    "deck_top_pick_recover": 5,
     "energy_less_than_opponent_wait": 2,
     "both_players_energy_deck_wait": 4,
     "live_success_deck_wait_pick_live": 4,
@@ -37,7 +37,9 @@
     "optional_self_wait_opp_stage": 1,
     "yell_resolution_count_energy_wait": 1,
     "yell_resolution_pick_deck_bottom": 1,
-    "guided_manual": 2
+    "guided_manual": 5,
+    "deck_top_peek_optional_wait": 1,
+    "deck_top_to_waiting": 2
   },
   "cards": [
     {
@@ -1263,6 +1265,159 @@
       "optional": false,
       "perTurn": 0,
       "effect": "エールにより公開された相手のカードの枚数が12枚以上ある場合、ライブの合計スコアを＋１する。"
+    },
+    {
+      "card_no": "LL-bp8-001-R＋",
+      "name": "矢澤にこ&宮下 愛&セラス 柳田 リリエンフェルト",
+      "template": "deck_top_peek_optional_wait",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分のデッキの上からカードを6枚見る。その中からメンバーカードを1枚公開し、このメンバーの下に置いてもよい。残りを控え室に置く。"
+    },
+    {
+      "card_no": "PL!-bp8-008-P",
+      "name": "小泉花陽",
+      "template": "yell_resolution_pick_hand",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札を1枚控え室に置いてもよい：エールにより公開された自分のカードの中から『μ's』のカードを1枚手札に加える。"
+    },
+    {
+      "card_no": "PL!-bp8-008-R",
+      "name": "小泉花陽",
+      "template": "yell_resolution_pick_hand",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札を1枚控え室に置いてもよい：エールにより公開された自分のカードの中から『μ's』のカードを1枚手札に加える。"
+    },
+    {
+      "card_no": "PL!-bp8-015-N",
+      "name": "西木野真姫",
+      "template": "draw_then_hand_discard",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "カードを1枚引き、手札を1枚控え室に置く。"
+    },
+    {
+      "card_no": "PL!HS-bp8-016-N",
+      "name": "桂城 泉",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "手札を2枚控え室に置いてもよい：自分の控え室からスコア3以下の『蓮ノ空』のライブカードを1枚手札に加える。"
+    },
+    {
+      "card_no": "PL!N-bp8-001-P",
+      "name": "上原歩夢",
+      "template": "draw_then_hand_discard",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分のステージにいるメンバー1人の下にあるエネルギーカード1枚を、自分のエネルギー置き場にウェイト状態で置いてもよい。そうしたとき、カードを1枚引き、手札を1枚控え室に置く。"
+    },
+    {
+      "card_no": "PL!N-bp8-001-P＋",
+      "name": "上原歩夢",
+      "template": "draw_then_hand_discard",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分のステージにいるメンバー1人の下にあるエネルギーカード1枚を、自分のエネルギー置き場にウェイト状態で置いてもよい。そうしたとき、カードを1枚引き、手札を1枚控え室に置く。"
+    },
+    {
+      "card_no": "PL!N-bp8-001-R＋",
+      "name": "上原歩夢",
+      "template": "draw_then_hand_discard",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分のステージにいるメンバー1人の下にあるエネルギーカード1枚を、自分のエネルギー置き場にウェイト状態で置いてもよい。そうしたとき、カードを1枚引き、手札を1枚控え室に置く。"
+    },
+    {
+      "card_no": "PL!N-bp8-001-SEC",
+      "name": "上原歩夢",
+      "template": "draw_then_hand_discard",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分のステージにいるメンバー1人の下にあるエネルギーカード1枚を、自分のエネルギー置き場にウェイト状態で置いてもよい。そうしたとき、カードを1枚引き、手札を1枚控え室に置く。"
+    },
+    {
+      "card_no": "PL!N-bp8-003-P",
+      "name": "桜坂しずく",
+      "template": "deck_top_pick_recover",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分のデッキの上からカードを5枚見る。その中からブレードハートを持たない『虹ヶ咲』のメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
+    },
+    {
+      "card_no": "PL!N-bp8-003-R",
+      "name": "桜坂しずく",
+      "template": "deck_top_pick_recover",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分のデッキの上からカードを5枚見る。その中からブレードハートを持たない『虹ヶ咲』のメンバーカードを1枚公開して手札に加えてもよい。残りを控え室に置く。"
+    },
+    {
+      "card_no": "PL!N-bp8-010-P",
+      "name": "三船栞子",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "エールにより公開された自分のカードの中にブレードハートを持たない『虹ヶ咲』のメンバーカードが3枚以上ある場合、ライブの合計スコアを＋１する。"
+    },
+    {
+      "card_no": "PL!N-bp8-010-R",
+      "name": "三船栞子",
+      "template": "guided_manual",
+      "automated": false,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "エールにより公開された自分のカードの中にブレードハートを持たない『虹ヶ咲』のメンバーカードが3枚以上ある場合、ライブの合計スコアを＋１する。"
+    },
+    {
+      "card_no": "PL!N-bp8-011-P",
+      "name": "ミア・テイラー",
+      "template": "deck_top_to_waiting",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分のデッキの上からカードを5枚控え室に置いてもよい。"
+    },
+    {
+      "card_no": "PL!N-bp8-011-R",
+      "name": "ミア・テイラー",
+      "template": "deck_top_to_waiting",
+      "automated": true,
+      "optional": true,
+      "perTurn": 0,
+      "effect": "自分のデッキの上からカードを5枚控え室に置いてもよい。"
+    },
+    {
+      "card_no": "PL!N-bp8-012-P",
+      "name": "鐘 嵐珠",
+      "template": "draw_from_deck",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "カードを1枚引く。"
+    },
+    {
+      "card_no": "PL!N-bp8-012-R",
+      "name": "鐘 嵐珠",
+      "template": "draw_from_deck",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "カードを1枚引く。"
     }
   ]
 }

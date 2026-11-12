@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-10T05:47:01.719Z",
+  "generated": "2026-11-12T08:17:10.342Z",
   "sample_size": 50,
   "cards": [
     {
@@ -1085,15 +1085,21 @@
       ]
     },
     {
-      "card_no": "PL!-pb2-000-R",
-      "name": "星空 凛&小泉花陽",
+      "card_no": "PL!-bp8-004-P",
+      "name": "園田海未",
       "entries": [
         {
-          "trigger": "toujyou",
-          "template": "toujou_multi_baton_recover_score",
+          "trigger": "kidou",
+          "template": "guided_manual",
           "filters": {
-            "pickType": "ライブ",
-            "seriesTag": "μ's"
+            "pickType": "メンバー",
+            "maxCost": null,
+            "minCost": null,
+            "seriesTag": "μ's",
+            "minSuccessLiveCount": null,
+            "minNeedHeartSlot": null,
+            "minNeedHeartValue": null,
+            "minTotalNeedHeart": null
           }
         }
       ]
