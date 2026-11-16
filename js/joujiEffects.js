@@ -1074,6 +1074,43 @@ function evaluateJoujiRule(rule, inst, card, ctx) {
     case "baton_series_only":
     case "mirror_under_card_live_success":
     case "mirror_under_card_kidou":
+    case "mirror_under_card_kidou_live_start":
+    case "mirror_under_card_named":
+    case "stage_series_grant_quoted":
+    case "success_live_score_total_plus":
+    case "cannot_play_without_series":
+    case "lock_kidou_while_named_active":
+    case "immune_opp_wait_while_named":
+    case "hand_cost_plus_per_energy_deck":
+      return out;
+    case "per_distinct_cost_under_cost_heart_blade": {
+      var underCosts = {};
+      var underMembers = typeof ctx.memberUnderMembers === "function" ? ctx.memberUnderMembers(inst) : [];
+      underMembers.forEach(function (u) {
+        if (u) underCosts[String(ctx.memberPrintedCost(u))] = true;
+      });
+      var distinctN = Object.keys(underCosts).length;
+      out.stageCostDelta = (rule.stageCostPlusPerUnit || 0) * distinctN;
+      out.bladeBonus = (rule.bladePerUnit || 0) * distinctN;
+      Object.keys(rule.heartPerUnit || {}).forEach(function (k) {
+        out.heartSlots[Number(k)] = (rule.heartPerUnit[k] || 0) * distinctN;
+      });
+      return out;
+    }
+    case "blade_per_self_cost": {
+      var selfCost = typeof ctx.memberCurrentCost === "function" ? ctx.memberCurrentCost(inst) : ctx.memberPrintedCost(inst);
+      out.bladeBonus = (rule.bladePerUnit || 1) * Math.floor(selfCost / Math.max(1, rule.costUnit || 1));
+      return out;
+    }
+    case "blade_per_hand_below":
+      out.bladeBonus = Math.max(0, (rule.handBelow || 0) - ctx.ownHandCount());
+      return out;
+    case "heart_grant_own_series_and_opponent_all":
+      if (rule.seriesTag && ctx.memberMatchesSeries(inst, rule.seriesTag)) {
+        Object.keys(rule.grantHeartSlots || {}).forEach(function (k) {
+          out.heartSlots[Number(k)] = rule.grantHeartSlots[k] || 0;
+        });
+      }
       return out;
     case "opponent_cannot_activate":
       return out;
@@ -1793,9 +1830,21 @@ export function memberHasMirrorUnderKidouJouji(card) {
   var raws = listNativeJoujiSegmentRaws(card);
   for (var i = 0; i < raws.length; i++) {
     var rule = classifyJoujiSegment(raws[i]);
-    if (rule && rule.kind === "mirror_under_card_kidou") return true;
+    if (rule && (rule.kind === "mirror_under_card_kidou" || (rule.mirrorTriggers && rule.mirrorTriggers.indexOf("kidou") >= 0))) return true;
   }
   return false;
+}
+
+/** @param {*} card @param {string} kind @returns {JoujiRule[]} */
+export function listMemberJoujiRulesOfKind(card, kind) {
+  if (!card) return [];
+  var out = [];
+  var raws = listNativeJoujiSegmentRaws(card);
+  for (var i = 0; i < raws.length; i++) {
+    var rule = classifyJoujiSegment(raws[i]);
+    if (rule && rule.kind === kind) out.push(rule);
+  }
+  return out;
 }
 
 /** @param {*} inst @param {JoujiBoardContext} ctx */

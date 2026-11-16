@@ -1,4 +1,4 @@
-import { COMPLETION_JIDOU_TEMPLATES } from "./abilityCompletion.js";
+import { COMPLETION_JIDOU_TEMPLATES, COMPLETION_OWN_COST_TEMPLATES } from "./abilityCompletion.js";
 /**
  * 能力テンプレートの実行メタデータ（分類器・検証スクリプト・simulator で共有）。
  */
@@ -12,6 +12,8 @@ export const WAITING_TO_DECK_BOTTOM_PER_TEMPLATES = [
 
 /** runClassifiedCardAbility の payAbilityCost をスキップし、handler 側でコスト処理する template */
 export const TEMPLATE_HANDLES_OWN_COST = [
+  ...COMPLETION_OWN_COST_TEMPLATES,
+  ...COMPLETION_OWN_COST_TEMPLATES,
   "kidou_hand_cost_wait_pick_hand",
   "kidou_hand_discard_activate_wait_opp_bonus",
   "kidou_hand_discard_trigger_ability",

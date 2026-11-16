@@ -105,6 +105,7 @@ function main() {
   check("node scripts/verify-pending-abilities.mjs", { cwd: ROOT, stdio: "inherit" });
   check("node scripts/verify-muse-duo-baton.mjs", { cwd: ROOT, stdio: "inherit" });
   check("node scripts/verify-aqours-cl1.mjs", { cwd: ROOT, stdio: "inherit" });
+  check("node scripts/verify-bp8-abilities.mjs", { cwd: ROOT, stdio: "inherit" });
   check("node scripts/verify-ability-runtime.mjs", { cwd: ROOT, stdio: "inherit" });
 
   check("node scripts/verify-ability-handlers.mjs", { cwd: ROOT, stdio: "inherit" });

@@ -14,6 +14,7 @@
     "test:ability-audit": "node scripts/verify-ability-semantics.mjs",
     "test:abilities": "node scripts/verify-ability-coverage.mjs",
     "test:muse-duo-baton": "node scripts/verify-muse-duo-baton.mjs",
-    "test:pending-abilities": "node scripts/verify-pending-abilities.mjs"
+    "test:pending-abilities": "node scripts/verify-pending-abilities.mjs",
+    "test:bp8-abilities": "node scripts/verify-bp8-abilities.mjs"
   }
 }

@@ -4,7 +4,8 @@
 
 ## 現在の依頼と判断
 
-- 最新依頼（2026-11-12）: bp8「ブースターパック まじかる♡とり～と」の未対応能力探索。実装はせず、cards.json 構造・分類器／ハンドラ類似テンプレ・33代表パターンの再利用可否を調査して報告。
+- 最新依頼（2026-11-12・日次自動化）: bp8「まじかる♡とり～と」の未対応能力を文言駆動の分類器＋最小実ハンドラで実装し、`docs/card-update-report.md` の68 IDの未カバーセグメントを0にする。**コミット・push・公開なし**、オンライン／対戦コード（`js/versusEffectPatch.js`・online*）は変更しない、カード番号分岐なし。結果は下の「bp8 まじかる♡とり～と — 実装（2026-11-12）」。
+- 同日の前依頼: bp8 の未対応能力探索（実装なし）。結果は「bp8 — 探索結果」節に保持。
 - 前依頼の「未対応32セグメント修正／案①説明」成果は保持。監査の「要確認」を対応済みと混同しない。
 - 案②の盤面シナリオ生成、案③の外部AIレビューは実装しない。
 - カード文から抽出する要求と、実装が扱う処理契約を独立させる。契約を分類結果から自動生成すると同じ誤りを正解扱いするため禁止。
@@ -25,7 +26,7 @@
 ## 最新の監査集計（この範囲だけスクリプトが更新）
 
 <!-- semantic-audit:start -->
-最新監査: 2026-11-12T08:16:53.837Z。対象2881枚／2379セグメント。未対応75／不一致の疑い47／要確認1945／既知ルール照合312。
+最新監査: 2026-11-16T18:13:23.215Z。対象2881枚／2378セグメント。未対応0／不一致の疑い45／要確認2021／既知ルール照合312。
 結果: [Markdown](./ability-semantic-audit.md) / [JSON](./ability-semantic-audit.json)。実プレイ保証ではない。
 <!-- semantic-audit:end -->
 
@@ -82,6 +83,32 @@
 - 未コミットの前作業が多数ある。これらを戻したり、今回の成果だけに見せるために消したりしない。
 - 公開サイトへのpush・デプロイは依頼されていない。公開済みと報告しない。
 
+## bp8 まじかる♡とり～と — 実装（2026-11-12／再適用 2026-11-16）
+
+- 消失対策: コミット禁止のため、差分を `/cursor/stores/self/artifacts/bp8-magical-treat-2026-11-12/SOURCE.patch` と `extract-and-replay.mjs`（`git apply`）に保存。復元元は cloud transcript `bc-328ec174` + `bc-7018433f`（search_replace 時系列 + `run_terminal_cmd` の simulator 編集）。
+- 変更ファイル: `js/abilityCompletion.js`（新パターン分類、`COMPLETION_OWN_COST_TEMPLATES`）、`js/abilityEffects.js`（「能力と」インライン参照の分割修正、連続能力の `stepsPayOwnCost`）、`js/abilityRuntimeMeta.js`（自前コスト登録）、`js/joujiEffects.js`（常時新種の評価・`listMemberJoujiRulesOfKind`）、`js/simulator.js`（`executeCompletionActiveMore`、`executeCompletionJidou` 追加分、各種イベント接続とゲート）、新規 `scripts/verify-bp8-abilities.mjs`（`npm run test:bp8-abilities`、`verify-ability-coverage` に組込み）、`package.json`、`data/fix-notes/fixed-cards-registry.md` §0q、索引・監査レポート・分類スナップショット（スクリプト生成）。`js/jidouAutoEffects.js` は変更なし。
+- simulator の主な追加: 下置きカードの起動＋ライブ開始ミラー（`live_start_mirror_<ID>`）、ライブ中コスト増減 `_liveSessionCostDelta`、手札コスト＝エネルギーデッキ残数分増、バトン減少+1付与、プレイ不可／起動封鎖／相手効果ウェイト耐性、成功ライブ合計参照、自動イベント（控え室→デッキ・リフレッシュ・ステージ状態・成功ライブ置き場配置・エール公開カード移動・控え室由来ライブ配置）。自動は効果解決／ダイアログ中は遅延して直列実行。
+- 連続能力（`ability_sequence`）は各ステップが自分のコストを払う（HS-bp8-019 の任意E1、HS-bp8-020 の2段目）。強制の手札調整・手札捨ては1回だけ選び直し、その後は自動で控え室へ。
+- 実行・結果:
+  - `/tmp` の68 ID分類プローブ: **68 ID・未カバー0**（guided_manual／jidou_manual／未分類／常時null なし）。全カード分類スナップショット差分で bp8 以外の変化は PL!SP-bp4-023 のフラグ項目のみ（動作同一）。
+  - `node scripts/build-ability-index.mjs`: guided_manual **28→2**、jidou_manual **11→2**、常時未分類 **20→0**。残り4件は非bp8の PL!N-PR-039-PR / PL!SP-PR-035-PR（成功・相手エール12枚以上）と PL!N-PR-038-PR / PL!SP-PR-034-PR（自動・バトン退場付与）で今回範囲外・既存。live_start が404→403 なのは LL-bp8-001 の誤分割解消による。
+  - `node scripts/verify-ability-coverage.mjs`: 終了1。失敗は **既存2件のみ**（HEAD のワークツリーでも同一）: `jidou manual 2 exceeds max 0`（HEAD では11）、`verify-muse-bp5.mjs`（`PL!-bp5-010-N live_start parent optional cost`、出力はHEADと完全一致）。途中で自分の変更起因の失敗（ハンドラ検出・VM 抜き出し・toast→return）を出したが修正済み。
+  - `npm run audit:abilities`: 2881枚／2378セグメント、**未対応75→4／疑い47→45／要確認1945→2017**／既知ルール照合312。要確認の増加は未対応70件・疑い2件が要確認へ移ったもの（悪化した記録0）。新テンプレの契約は未登録＝要確認であり、対応済みではない。
+  - `npm run test:ability-audit` 37ケース、`test:pending-abilities`、`test:muse-duo-baton`、`test:bp8-abilities`（12件、意図的な改変で失敗することを確認）すべて通過。
+  - ヘッドレス Chrome で `index.html` 読込と `js/simulator.js` の動的 import がエラーなし（HEAD と同じ）。**ブラウザ実操作・実プレイは未実施**。
+- Mac アプリ同期: 変更JS 5本・能力索引・修正レジストリを `cp` で `LovecaSimulator.app/Contents/Resources/www/` へ同期（パッケージスクリプトは不使用）。ビルド識別子 `2026110303` は据え置き（ブラウザのキャッシュで旧JSが残る可能性あり）。
+- 残課題（カードID・理由）:
+  - PL!-bp8-023 ほか: `b_heart08`（新ブレードハート種）の意味が未定義。エール公開カードへの付与は記録して成功時判定にのみ使い、他のブレードハート判定・ハート数には反映しない。
+  - PL!N-bp8-005: 常時「相手のステージのメンバー全員が heart02 を得る」は相手側未実装（自分の『虹ヶ咲』のみ）。
+  - PL!HS-bp8-012（レポート外の bp8）: 2段目「『スリーズブーケ』が3枚以上デッキの下に置かれた場合」の条件を判定していない（既存の連続能力合成のまま）。監査でも疑い。
+  - PL!HS-bp8-001 / PL!HS-bp8-005 / PL!-bp8-021 など: 相手盤を表示中（デュアル盤面切替中）はステージ状態・成功ライブ配置の自動判定をスキップする。
+  - PL!HS-bp8-001: 控え室→デッキ移動の差分検知は、`runClassifiedCardAbility` 経由の自分の能力とリフレッシュのみ。自動能力内部や手動操作の移動では発火しない。
+  - LL-bp8-001: ミラーした起動能力は下置きカードのインスタンスで実行する（既存 `mirror_under_card_kidou` と同じ扱い）。
+  - PL!N-bp8-021: 「上限1枚減る」は置けたかどうかに関係なく適用する解釈。
+  - PL!-bp8-025: デュアル盤面の相手メンバー比較はスナップショット値（相手の付与効果・常時を完全には再計算しない）。
+  - 既存の監査疑い（今回不変）: PL!-bp8-007、PL!HS-bp8-006、PL!HS-bp8-022、PL!N-bp8-023（いずれもレポート68 ID外）。
+  - 新テンプレの意味契約（`data/ability-semantic-contracts.json`）は未登録。人手監修で追加する。
+
 ## bp8 まじかる♡とり～と — 探索結果（2026-11-12・実装なし）
 
 - 商品カード: `data/cards.json` に `-bp8-` キー **169**（エネルギー含む）。未対応一覧は `docs/card-update-report.md`（代表能力付き約68枚、レア差含む）。
@@ -93,7 +120,7 @@
 
 ## 次の作業
 
-1. bp8 を商品単位で着手するなら: 代表33パターンから再利用優先で分類器→ハンドラ→`abilityRuntimeMeta`→`fixed-cards-registry`→`verify-*-bp8` を作成（card-fix-workflow に従う）。
-2. 残る疑いセグメントをカード本文と実ハンドラで再現して確認する。
+1. bp8: 上記「残課題」を処理（b_heart08 の意味確定、N-bp8-005 相手側付与、HS-bp8-012 の枚数条件）。ブラウザで代表カード（LL-bp8-001、HS-bp8-003、N-bp8-005、PL!-bp8-021）を実操作して確認する。必要ならビルド識別子を更新する。
+2. 残る疑いセグメントをカード本文と実ハンドラで再現して確認する。既存失敗 `verify-muse-bp5`（PL!-bp5-010-N）と非bp8 PR 4枚の手動分類も未処理。
 3. 新設テンプレートの契約登録は人手監修のみ。要確認を減らすだけの一括true指定は禁止。
 4. ブラウザ実操作・実オンライン対戦は自動試験と混同しない。

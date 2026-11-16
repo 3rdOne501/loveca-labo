@@ -16,6 +16,27 @@
 
 ---
 
+## 0q. bp8 まじかる♡とり～と 未対応能力の一括自動化（2026-11-12）
+
+対象: `docs/card-update-report.md` の bp8 68 ID（レア差含む）。分類はすべて文言駆動（カード番号分岐なし）。分類器は `js/abilityCompletion.js`（`classifyCompletionActiveMore` / `classifyCompletionJidouMore` / `classifyCompletionJouji`）、実処理は `js/simulator.js`（`executeCompletionActiveMore`、`executeCompletionJidou` 末尾、常時は `js/joujiEffects.js` と simulator のコスト・プレイ可否・起動可否ゲート）。検証は **コード**のみ（実プレイ未確認）。
+
+| 代表カード | 型（テンプレート） | 根因 | 対応 | 横展開（全カード走査） |
+|-----------|------------------|------|------|------------------------|
+| LL-bp8-001-R＋ | 常時 `mirror_under_card_kidou_live_start`、登場/ライブ成功 `deck_top_peek_under_optional` | 「〜の起動能力と…能力」の「能力と」が分割トリガー扱いされ1文が裂けていた | `isInlineTriggerTypeReference` に「能力(と/や/、)」を追加。下置き名指定カードの起動＋ライブ開始をミラー（ライブ開始は `live_start_mirror_<下置きID>` で解決管理） | 分割修正で live_start 404→403 セグメント。既存非bp8の分類変化なし |
+| PL!-bp8-002 | 自動 `jidou_leave_optional_deck_bottom_opp_wait` | 未分類 | 退場時、任意で自身をデッキ下→相手の元々ハート4以下を1人ウェイト | bp8のみ1枚 |
+| PL!-bp8-003 | 常時 `stage_series_grant_quoted` | 未分類 | 『μ's』への付与＝バトン時コスト減少+1（`batonReduceBonusFromGrantedJouji`、支払い経路のバトン元も対象） | bp8のみ |
+| PL!-bp8-004 / -010 | 起動 `waiting_to_deck_bottom_cost_boost` / `waiting_to_deck_bottom_ordered` | guided_manual | 順番指定でデッキ下へ。コスト上昇は `_liveSessionCostDelta`（ライブ終了で消去） | bp8のみ |
+| PL!-bp8-009 | 起動 `kidou_hand_member_under`、常時 `per_distinct_cost_under_cost_heart_blade` | guided_manual／常時null | 手札メンバーを下置き、下置きの異なるコスト数でコスト・ハート・ブレード | bp8のみ |
+| PL!-bp8-013 / PL!-bp8-021 / PL!-bp8-023 / PL!-bp8-025 | 常時 `success_live_score_total_plus`、自動 `jidou_success_placed_effect`、ライブ開始 `live_start_yell_grant_heart_filtered`＋成功 `yell_reveal_blade_heart_key_score_plus`、`live_start_named_triple_most_score` | 未分類 | 成功ライブ合計参照、成功ライブ置き場配置時の効果（効果文を再分類して実行）、エール公開条件メンバーへのハート付与と成功時の個数判定、指名1人のハート・ブレード・コストを自他ステージ全員と順に比較 | blade-heart判定は bp8 2枚 |
+| PL!HS-bp8-001〜008 | `deck_mill_all_series_activate_energy`、自動 `jidou_waiting_to_deck_blade`、`live_start_cost_boost_activate_draw`、常時 `blade_per_self_cost` / `blade_per_hand_below`、`toujou_both_trim_hand_to`、常時 `cannot_play_without_series` + 自動 `jidou_alone_series_to_waiting`、常時 `lock_kidou_while_named_active` / `immune_opp_wait_while_named`、起動 `kidou_member_to_waiting_reenter` | guided/jidou_manual・常時null | 控え室→デッキ移動の検知（リフレッシュ・効果差分）、手札6枚化は強制（1回選び直し後は自動）、プレイ不可・起動封鎖・相手効果ウェイト耐性ゲート | `toujou_both_trim_hand_to` は PL!-bp5-007 と非競合（既存テンプレ維持） |
+| PL!HS-bp8-014 / -016〜-021 | 自動 `jidou_leave_stage_hand_discard`、成功 `live_success_recover_from_waiting`（スコア上限）、`live_start_return_boost_other_live`、自動 `jidou_yell_moved_score_plus`、`waiting_all_shuffle_deck_bottom`、`live_start_wait_members_need_reduce` / `live_start_series_cost_boost_sum_score`、`live_start_bounce_enter_same_cost` | 同上 | 連続能力はステップ毎のコスト支払い（`stepsPayOwnCost`）。手札コストのみの回収に限定し PL!SP-pb2-007（エネルギーコスト）を奪わない | 回収テンプレは既存5枚（非bp8）も同テンプレ、分類変化なし |
+| PL!N-bp8-001 / -005 / -008〜-011 | `toujou_energy_under_self_and_other`、`live_success_energy_under_to_area_draw_discard`、常時 `hand_cost_plus_per_energy_deck` / `heart_grant_own_series_and_opponent_all`、`kidou_hand_reveal_deck_bottom_opp_wait`、`live_start_bottom_mill_swap_live`、`yell_reveal_nobh_series_total_score_plus`、自動 `jidou_refresh_draw_discard` | 同上 | 手札コスト＝エネルギーデッキ残数分増（`memberFlooredPrintedCost` 手札分岐）、手札公開起動、リフレッシュ時自動 | bp8のみ |
+| PL!N-bp8-021 / -028〜-030 | `kidou_live_from_waiting_if_empty`、`deck_mill_heart_color_need_reduce`、成功 `live_success_surplus_heart_score_plus`（`surplusHeartSlot`）、`deck_mill_check_score_plus` + 自動 `jidou_waiting_to_live_need_reduce` | 同上 | ライブセット上限ペナルティは既存 `liveSetLimitPenaltyPending` へ。控え室由来のライブ配置のみ `fromWaiting` で必要ハート減 | 余剰ハートテンプレは PL!S-bp5-020 と共用、分岐追加のみ |
+
+検証（2026-11-12）: 68 ID 未カバー0、`build-ability-index` guided_manual 28→2・jidou_manual 11→2（残りは非bp8 PR 4枚、既存）、`scripts/verify-bp8-abilities.mjs` 12件、監査 未対応75→4。
+
+---
+
 ## 0p. 登場・控え室8枚未満ミル後にライブを山札天へ（2026-11-10）
 
 | カード番号 | 名前 | 根因 | 対応 | 横展開 |

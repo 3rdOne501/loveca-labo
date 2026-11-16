@@ -1,9 +1,9 @@
 {
-  "generated": "2026-11-12",
+  "generated": "2026-11-16",
   "trigger": "live_success",
   "total": 153,
   "byTemplate": {
-    "live_success_recover_from_waiting": 1,
+    "live_success_recover_from_waiting": 2,
     "energy_deck_under_member": 4,
     "waiting_pick_to_deck": 4,
     "grant_jouji_session": 4,
@@ -15,7 +15,7 @@
     "live_success_optional_energy_recover_waiting": 2,
     "live_success_yell_nobh_series_score_capped": 2,
     "live_success_pick_options": 2,
-    "draw_then_hand_discard": 22,
+    "draw_then_hand_discard": 18,
     "live_success_enter_under_member": 4,
     "deck_top_reveal_hand_score_grant": 4,
     "deck_top_look_reorder": 1,
@@ -37,8 +37,10 @@
     "optional_self_wait_opp_stage": 1,
     "yell_resolution_count_energy_wait": 1,
     "yell_resolution_pick_deck_bottom": 1,
-    "guided_manual": 5,
-    "deck_top_peek_optional_wait": 1,
+    "live_success_opp_yell_count_score": 2,
+    "deck_top_peek_under_optional": 1,
+    "live_success_energy_under_to_area_draw_discard": 4,
+    "yell_reveal_nobh_series_total_score_plus": 2,
     "deck_top_to_waiting": 2
   },
   "cards": [
@@ -1242,8 +1244,8 @@
     {
       "card_no": "PL!N-PR-039-PR",
       "name": "ミア・テイラー",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "live_success_opp_yell_count_score",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "エールにより公開された相手のカードの枚数が12枚以上ある場合、ライブの合計スコアを＋１する。"
@@ -1260,8 +1262,8 @@
     {
       "card_no": "PL!SP-PR-035-PR",
       "name": "鬼塚冬毬",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "live_success_opp_yell_count_score",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "エールにより公開された相手のカードの枚数が12枚以上ある場合、ライブの合計スコアを＋１する。"
@@ -1269,7 +1271,7 @@
     {
       "card_no": "LL-bp8-001-R＋",
       "name": "矢澤にこ&宮下 愛&セラス 柳田 リリエンフェルト",
-      "template": "deck_top_peek_optional_wait",
+      "template": "deck_top_peek_under_optional",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -1305,8 +1307,8 @@
     {
       "card_no": "PL!HS-bp8-016-N",
       "name": "桂城 泉",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "live_success_recover_from_waiting",
+      "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "手札を2枚控え室に置いてもよい：自分の控え室からスコア3以下の『蓮ノ空』のライブカードを1枚手札に加える。"
@@ -1314,7 +1316,7 @@
     {
       "card_no": "PL!N-bp8-001-P",
       "name": "上原歩夢",
-      "template": "draw_then_hand_discard",
+      "template": "live_success_energy_under_to_area_draw_discard",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -1323,7 +1325,7 @@
     {
       "card_no": "PL!N-bp8-001-P＋",
       "name": "上原歩夢",
-      "template": "draw_then_hand_discard",
+      "template": "live_success_energy_under_to_area_draw_discard",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -1332,7 +1334,7 @@
     {
       "card_no": "PL!N-bp8-001-R＋",
       "name": "上原歩夢",
-      "template": "draw_then_hand_discard",
+      "template": "live_success_energy_under_to_area_draw_discard",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -1341,7 +1343,7 @@
     {
       "card_no": "PL!N-bp8-001-SEC",
       "name": "上原歩夢",
-      "template": "draw_then_hand_discard",
+      "template": "live_success_energy_under_to_area_draw_discard",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -1368,8 +1370,8 @@
     {
       "card_no": "PL!N-bp8-010-P",
       "name": "三船栞子",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "yell_reveal_nobh_series_total_score_plus",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "エールにより公開された自分のカードの中にブレードハートを持たない『虹ヶ咲』のメンバーカードが3枚以上ある場合、ライブの合計スコアを＋１する。"
@@ -1377,8 +1379,8 @@
     {
       "card_no": "PL!N-bp8-010-R",
       "name": "三船栞子",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "yell_reveal_nobh_series_total_score_plus",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "エールにより公開された自分のカードの中にブレードハートを持たない『虹ヶ咲』のメンバーカードが3枚以上ある場合、ライブの合計スコアを＋１する。"

@@ -2,6 +2,23 @@
 
 日付は日本時間。最新の作業状態は [HANDOFF.md](./HANDOFF.md) を参照する。
 
+## 2026-11-16 — bp8 まじかる♡とり～と再適用（transcript 復元）
+
+- artifacts 空・HEAD worktree に実装なし。`batch-fetch-details` で取得した transcript（`bc-328ec174` / `bc-7018433f` / `bc-481e4324`）から search_replace 時系列 + child の `run_terminal_cmd` simulator 編集を再生。
+- durable: `/cursor/stores/self/artifacts/bp8-magical-treat-2026-11-12/SOURCE.patch`（約161KB）+ `extract-and-replay.mjs`（`git apply`）。
+- 検証: `build-ability-index` guided_manual=0 jidou_manual=0／`test:bp8-abilities` 12 OK／`verify-ability-runtime` OK。`verify-ability-coverage` は既存 `verify-muse-bp5` のみ失敗。
+- app `cp` 同期。コミット・push なし（Cloud Agent の push は別途）。
+
+## 2026-11-12 — bp8 まじかる♡とり～と未対応能力の実装（日次自動化）
+
+- 依頼: レポート68 IDの未カバーセグメント0。文言駆動のみ（カード番号分岐なし）、オンライン／対戦コード不変更、コミット・push なし。
+- 分類: `abilityCompletion.js` に起動/登場/ライブ開始/成功25テンプレ・自動8テンプレ・常時11種を追加。「能力と」のインライン参照で LL-bp8-001 が裂ける不具合を `abilityEffects.js` で修正。回収パターンは手札コスト限定にして PL!SP-pb2-007 を奪わない。連続能力はステップ毎にコスト支払い。
+- 実処理: `simulator.js` に `executeCompletionActiveMore` と自動ハンドラ8種、イベント接続（控え室→デッキ、リフレッシュ、ステージ状態、成功ライブ配置、エール公開カード移動、控え室由来ライブ配置）、ライブ中コスト増減、手札コスト増、バトン減少付与、プレイ不可・起動封鎖・ウェイト耐性ゲート、下置きミラーのライブ開始。
+- 途中で既存検証を壊した点（ハンドラ検出領域外への配置、VM の単関数抜き出しで未定義参照、コスト不払い時に finish しない経路）を修正。コスト不払い時は既存慣例どおり finish。
+- 検証: 68 ID 未カバー0／索引 guided_manual 28→2・jidou_manual 11→2（残り非bp8 PR 4枚）／`verify-ability-coverage` は HEAD と同じ既存2失敗のみ／監査 未対応75→4・疑い47→45・要確認1945→2017（悪化0）／`test:ability-audit`・`test:pending-abilities`・`test:muse-duo-baton`・新規 `test:bp8-abilities` 通過／ヘッドレス Chrome で読込・import エラーなし。実プレイ未確認。
+- 記録: `fixed-cards-registry.md` §0q、HANDOFF の bp8 実装節（残課題: b_heart08 意味、N-bp8-005 相手側付与、HS-bp8-012 枚数条件ほか）。
+- Mac アプリへ変更JS・索引・修正レジストリを `cp` 同期。ビルド識別子据え置き。公開・コミット・pushなし。
+
 ## 2026-11-12 — bp8 まじかる♡とり～と未対応能力の探索（実装なし）
 
 - 依頼: 未対応 bp8 能力の実装前調査（cards.json 構造、類似テンプレ、分類器拡張点、simulator ハンドラ、registry 形式、verify 有無、33パターン対応表）。

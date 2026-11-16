@@ -1,7 +1,7 @@
 {
-  "generated": "2026-11-12",
+  "generated": "2026-11-16",
   "trigger": "live_start",
-  "total": 404,
+  "total": 403,
   "byTemplate": {
     "grant_jouji_session": 93,
     "optional_self_wait_opp_stage": 21,
@@ -73,9 +73,10 @@
     "waiting_live_to_top_if_small": 2,
     "live_start_opp_wait_if_stage_hearts": 1,
     "live_start_yell_from_bottom": 1,
-    "guided_manual": 7,
     "live_start_yell_blade_remap_slot": 4,
-    "toujou_wait_pick_hand": 1
+    "live_start_cost_boost_activate_draw": 2,
+    "toujou_wait_pick_hand": 1,
+    "live_start_bottom_mill_swap_live": 4
   },
   "cards": [
     {
@@ -3510,15 +3511,6 @@
       "effect": "控え室にあるメンバーカード2枚を好きな順番でデッキの下に置いてもよい：これによりデッキの下に置いたメンバーカードが持つハートの総数が12以上の場合、ライブ終了時まで、を得る。"
     },
     {
-      "card_no": "LL-bp8-001-R＋",
-      "name": "矢澤にこ&宮下 愛&セラス 柳田 リリエンフェルト",
-      "template": "guided_manual",
-      "automated": false,
-      "optional": false,
-      "perTurn": 0,
-      "effect": "能力をすべて得る。"
-    },
-    {
       "card_no": "PL!-bp8-005-P",
       "name": "星空 凛",
       "template": "live_start_yell_blade_remap_slot",
@@ -3575,8 +3567,8 @@
     {
       "card_no": "PL!HS-bp8-002-P",
       "name": "村野さやか",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "live_start_cost_boost_activate_draw",
+      "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "手札を1枚控え室に置いてもよい：ライブ終了時まで、このメンバーのコストを＋５する。その後、このメンバーのコストが２０以上の場合、このメンバーをアクティブにし、カードを1枚引く。"
@@ -3584,8 +3576,8 @@
     {
       "card_no": "PL!HS-bp8-002-R",
       "name": "村野さやか",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "live_start_cost_boost_activate_draw",
+      "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "手札を1枚控え室に置いてもよい：ライブ終了時まで、このメンバーのコストを＋５する。その後、このメンバーのコストが２０以上の場合、このメンバーをアクティブにし、カードを1枚引く。"
@@ -3665,8 +3657,8 @@
     {
       "card_no": "PL!N-bp8-009-P",
       "name": "天王寺璃奈",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "live_start_bottom_mill_swap_live",
+      "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "デッキの一番下のカードを控え室に置いてもよい：これにより控え室に置いたカードがライブカードの場合、自分のライブカード置き場にあるスコア２以下の『虹ヶ咲』のライブカード1枚をデッキの一番上に置く。そうしたとき、自分の控え室からライブカード1枚を表向きでライブカード置き場に置く。"
@@ -3674,8 +3666,8 @@
     {
       "card_no": "PL!N-bp8-009-P＋",
       "name": "天王寺璃奈",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "live_start_bottom_mill_swap_live",
+      "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "デッキの一番下のカードを控え室に置いてもよい：これにより控え室に置いたカードがライブカードの場合、自分のライブカード置き場にあるスコア２以下の『虹ヶ咲』のライブカード1枚をデッキの一番上に置く。そうしたとき、自分の控え室からライブカード1枚を表向きでライブカード置き場に置く。"
@@ -3683,8 +3675,8 @@
     {
       "card_no": "PL!N-bp8-009-R＋",
       "name": "天王寺璃奈",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "live_start_bottom_mill_swap_live",
+      "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "デッキの一番下のカードを控え室に置いてもよい：これにより控え室に置いたカードがライブカードの場合、自分のライブカード置き場にあるスコア２以下の『虹ヶ咲』のライブカード1枚をデッキの一番上に置く。そうしたとき、自分の控え室からライブカード1枚を表向きでライブカード置き場に置く。"
@@ -3692,8 +3684,8 @@
     {
       "card_no": "PL!N-bp8-009-SEC",
       "name": "天王寺璃奈",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "live_start_bottom_mill_swap_live",
+      "automated": true,
       "optional": true,
       "perTurn": 0,
       "effect": "デッキの一番下のカードを控え室に置いてもよい：これにより控え室に置いたカードがライブカードの場合、自分のライブカード置き場にあるスコア２以下の『虹ヶ咲』のライブカード1枚をデッキの一番上に置く。そうしたとき、自分の控え室からライブカード1枚を表向きでライブカード置き場に置く。"

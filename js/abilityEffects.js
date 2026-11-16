@@ -715,6 +715,8 @@ function isInlineTriggerTypeReference(raw, tokenStart, tokenEnd) {
   if (/の$/.test(beforePlain)) return true;
   if (/能力も$/.test(beforePlain)) return true;
   if (/が持つ$/.test(beforePlain)) return true;
+  // 「…が持つ{{kidou}}能力と{{live_start}}能力をすべて得る」— 2つ目以降の能力種別ラベル（LL-bp8-001 等）
+  if (/能力(?:と|や|、)$/.test(beforePlain)) return true;
   if (/から$/.test(beforePlain)) return true;
   if (/[（(]$/.test(beforePlain)) return true;
   return false;
@@ -4239,7 +4241,8 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
   if (completion) {
     var completionRaws = completionTrigger === "live_start" ? listNativeLiveStartSegmentRaws(card) : completionTrigger === "toujyou" ? listNativeToujouSegmentRaws(card) : [];
     if (!segmentRawOverride && completionRaws.length > 1) {
-      return withTrigger(completionTrigger, { template: "ability_sequence", steps: completionRaws.map(function (raw) { return classifyCardAbility(card, completionTrigger, raw, { skipCompose: true }); }) });
+      // 独立セグメントの列: コストは各段が持つ（1段目のコストで2段目以降を止めない）
+      return withTrigger(completionTrigger, { template: "ability_sequence", stepsPayOwnCost: true, optional: false, hasOptionalCost: false, costEnergy: false, costEnergyCount: 0, costSelfWait: false, costPickMemberWait: false, costMandatoryWaitOtherMember: false, costHandDiscardOptional: false, costHandDiscardAll: false, handDiscardToWaiting: null, requiresOnStage: false, steps: completionRaws.map(function (raw) { return classifyCardAbility(card, completionTrigger, raw, { skipCompose: true }); }) });
     }
     return withTrigger(completionTrigger, completion);
   }

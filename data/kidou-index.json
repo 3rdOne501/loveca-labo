@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-12",
+  "generated": "2026-11-16",
   "trigger": "kidou",
   "total": 350,
   "byTemplate": {
@@ -25,7 +25,7 @@
     "kidou_waiting_to_empty_stage": 5,
     "kidou_discard_self_draw_grant": 3,
     "kidou_self_wait_stage_member_swap_recover": 6,
-    "kidou_self_to_wait_recover": 9,
+    "kidou_self_to_wait_recover": 5,
     "energy_deck_to_wait": 6,
     "grant_jouji_session": 15,
     "kidou_hand_reveal_to_under": 2,
@@ -53,7 +53,12 @@
     "kidou_wait_to_stage": 4,
     "kidou_reveal_hand_cost_threshold": 4,
     "kidou_reveal_all_hand_deck_top_live": 3,
-    "guided_manual": 10
+    "waiting_to_deck_bottom_cost_boost": 2,
+    "kidou_hand_member_under": 4,
+    "waiting_to_deck_bottom_ordered": 1,
+    "kidou_member_to_waiting_reenter": 4,
+    "kidou_hand_reveal_deck_bottom_opp_wait": 2,
+    "kidou_live_from_waiting_if_empty": 1
   },
   "cards": [
     {
@@ -2917,8 +2922,8 @@
     {
       "card_no": "PL!-bp8-004-P",
       "name": "園田海未",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "waiting_to_deck_bottom_cost_boost",
+      "automated": true,
       "optional": false,
       "perTurn": 1,
       "effect": "控え室にあるブレードハートを持たない『μ's』のメンバーカード2枚を好きな順番でデッキの下に置く：ライブ終了時まで、このメンバーのコストを＋２する。"
@@ -2926,8 +2931,8 @@
     {
       "card_no": "PL!-bp8-004-R",
       "name": "園田海未",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "waiting_to_deck_bottom_cost_boost",
+      "automated": true,
       "optional": false,
       "perTurn": 1,
       "effect": "控え室にあるブレードハートを持たない『μ's』のメンバーカード2枚を好きな順番でデッキの下に置く：ライブ終了時まで、このメンバーのコストを＋２する。"
@@ -2953,8 +2958,8 @@
     {
       "card_no": "PL!-bp8-009-P",
       "name": "矢澤にこ",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "kidou_hand_member_under",
+      "automated": true,
       "optional": false,
       "perTurn": 2,
       "effect": "：自分の手札からメンバーカード1枚をこのメンバーの下に置く。"
@@ -2962,8 +2967,8 @@
     {
       "card_no": "PL!-bp8-009-P＋",
       "name": "矢澤にこ",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "kidou_hand_member_under",
+      "automated": true,
       "optional": false,
       "perTurn": 2,
       "effect": "：自分の手札からメンバーカード1枚をこのメンバーの下に置く。"
@@ -2971,8 +2976,8 @@
     {
       "card_no": "PL!-bp8-009-R＋",
       "name": "矢澤にこ",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "kidou_hand_member_under",
+      "automated": true,
       "optional": false,
       "perTurn": 2,
       "effect": "：自分の手札からメンバーカード1枚をこのメンバーの下に置く。"
@@ -2980,8 +2985,8 @@
     {
       "card_no": "PL!-bp8-009-SEC",
       "name": "矢澤にこ",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "kidou_hand_member_under",
+      "automated": true,
       "optional": false,
       "perTurn": 2,
       "effect": "：自分の手札からメンバーカード1枚をこのメンバーの下に置く。"
@@ -2989,8 +2994,8 @@
     {
       "card_no": "PL!-bp8-010-N",
       "name": "高坂穂乃果",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "waiting_to_deck_bottom_ordered",
+      "automated": true,
       "optional": false,
       "perTurn": 1,
       "effect": "このメンバーをウェイトにする：自分の控え室にあるカードを2枚まで好きな順番でデッキの下に置く。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
@@ -3043,7 +3048,7 @@
     {
       "card_no": "PL!HS-bp8-008-P",
       "name": "桂城 泉",
-      "template": "kidou_self_to_wait_recover",
+      "template": "kidou_member_to_waiting_reenter",
       "automated": true,
       "optional": false,
       "perTurn": 1,
@@ -3052,7 +3057,7 @@
     {
       "card_no": "PL!HS-bp8-008-P＋",
       "name": "桂城 泉",
-      "template": "kidou_self_to_wait_recover",
+      "template": "kidou_member_to_waiting_reenter",
       "automated": true,
       "optional": false,
       "perTurn": 1,
@@ -3061,7 +3066,7 @@
     {
       "card_no": "PL!HS-bp8-008-R＋",
       "name": "桂城 泉",
-      "template": "kidou_self_to_wait_recover",
+      "template": "kidou_member_to_waiting_reenter",
       "automated": true,
       "optional": false,
       "perTurn": 1,
@@ -3070,7 +3075,7 @@
     {
       "card_no": "PL!HS-bp8-008-SEC",
       "name": "桂城 泉",
-      "template": "kidou_self_to_wait_recover",
+      "template": "kidou_member_to_waiting_reenter",
       "automated": true,
       "optional": false,
       "perTurn": 1,
@@ -3169,8 +3174,8 @@
     {
       "card_no": "PL!N-bp8-008-P",
       "name": "エマ・ヴェルデ",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "kidou_hand_reveal_deck_bottom_opp_wait",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "このカードを手札から公開する：このカードをデッキの一番下に置く。その後、自分のステージに『虹ヶ咲』のメンバーがいる場合、相手のステージにいるコスト2以下のメンバー1人をウェイトにする。この能力は、このカードが手札にある場合のみ起動できる。"
@@ -3178,8 +3183,8 @@
     {
       "card_no": "PL!N-bp8-008-R",
       "name": "エマ・ヴェルデ",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "kidou_hand_reveal_deck_bottom_opp_wait",
+      "automated": true,
       "optional": false,
       "perTurn": 0,
       "effect": "このカードを手札から公開する：このカードをデッキの一番下に置く。その後、自分のステージに『虹ヶ咲』のメンバーがいる場合、相手のステージにいるコスト2以下のメンバー1人をウェイトにする。この能力は、このカードが手札にある場合のみ起動できる。"
@@ -3232,8 +3237,8 @@
     {
       "card_no": "PL!N-bp8-021-N",
       "name": "天王寺璃奈",
-      "template": "guided_manual",
-      "automated": false,
+      "template": "kidou_live_from_waiting_if_empty",
+      "automated": true,
       "optional": false,
       "perTurn": 1,
       "effect": "手札を2枚控え室に置く：自分のライブカード置き場にカードがない場合、自分の控え室から『虹ヶ咲』のライブカードを1枚、表向きでライブカード置き場に置く。次のライブカードセットフェイズで自分がライブカード置き場に置けるカード枚数の上限が1枚減る。"
