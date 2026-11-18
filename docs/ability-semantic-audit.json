@@ -30983,8 +30983,7 @@
           "minSuccessLiveCount": null,
           "minNeedHeartSlot": null,
           "minNeedHeartValue": null,
-          "minTotalNeedHeart": null,
-          "requiresNoBladeHeart": true
+          "minTotalNeedHeart": null
         },
         "deckTopCount": null,
         "handDiscardToWaiting": 1,
@@ -31197,8 +31196,7 @@
           "minSuccessLiveCount": null,
           "minNeedHeartSlot": null,
           "minNeedHeartValue": null,
-          "minTotalNeedHeart": null,
-          "requiresNoBladeHeart": true
+          "minTotalNeedHeart": null
         },
         "deckTopCount": null,
         "handDiscardToWaiting": 1,
@@ -180932,7 +180930,7 @@
       ]
     }
   ],
-  "generated_at": "2026-11-18T12:22:39.840Z",
+  "generated_at": "2026-11-18T12:40:31.307Z",
   "inputs": [
     "data/cards.json",
     "data/ability-semantic-contracts.json",
@@ -180952,7 +180950,7 @@
   "input_sha256": {
     "data/cards.json": "5aa366e061aa8e27b94d7f1e154779157e0b10fe59acf12083becb7064bbccfe",
     "data/ability-semantic-contracts.json": "e2ef6d56dad7a5e08693ef40aee3bf739bc0d9c5e0572cbd857cbc4889e46907",
-    "js/abilityEffects.js": "83520a6eccb7e9278e43558a809566bd851b696ec72755b6bd16fb4c944538cd",
+    "js/abilityEffects.js": "5b28152049a76bc960886932b47f7ac1c4543a28300216a5b64a8272ecb7fcaf",
     "js/abilityCompletion.js": "5a3337a1f502c33b89a3fe82443f9a979c0e7bc85333ca463e8bf52cc3e39485",
     "js/versusEffectPatch.js": "51221f037a06bd7520ee48117fc6c4f6aa1e0e062f41c420ea75c696fda371f0",
     "js/opponentBoard.js": "83917668269fa3acae7e0e0efcc5b96d38f37e046b9d35dd67693e688bc115d0",
@@ -180963,6 +180961,6 @@
     "js/cardGroups.js": "c5e5b2834a7ce7548ef2fbd67b8999d27cca2fe788dd5520ef15664758b0085d",
     "scripts/lib/ability-semantic-audit.mjs": "eb2c284106eb6739aed5f2c25f8233f9abaedd02481d939e2be5d020910d2410",
     "scripts/audit-ability-semantics.mjs": "1b0dce666a89323385e4845c5d581efcdc2f4797c89b37a4e642264c45ff1b7b",
-    "js/simulator.js": "517aae263de0dc9246e058b2327496753c620802a00f5dcff2f046ceace8c530"
+    "js/simulator.js": "1b6fb92d5c16ede7c2205491f3a715597af5053f992e0066b3eb7d1aeaa4740c"
   }
 }

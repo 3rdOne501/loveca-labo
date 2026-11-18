@@ -18219,6 +18219,38 @@ export function mountSimulator(
       return;
     }
     if (
+      kind === "kidou" &&
+      mandatory &&
+      cl.handDiscardToWaiting &&
+      cl.handDiscardToWaiting > 0 &&
+      !cl.costHandDiscardOptional &&
+      !handlesOwnCost
+    ) {
+      var seriesHandCost = cl.handDiscardSeriesTag;
+      var needHandCost = Number(cl.handDiscardToWaiting);
+      var handCostEligible = (state.hand || []).filter(function (c) {
+        if (!c) return false;
+        if (cl.costHandDiscardPickType && mergedCatalogCard(c).type !== cl.costHandDiscardPickType) {
+          return false;
+        }
+        if (seriesHandCost && !catalogCardMatchesGroupTag(mergedCatalogCard(c), seriesHandCost)) {
+          return false;
+        }
+        return true;
+      });
+      if (handCostEligible.length < needHandCost) {
+        showToast(
+          seriesHandCost
+            ? "手札に『" + seriesHandCost + "』のカードが " + needHandCost + " 枚ないため起動できません"
+            : "手札が " + needHandCost + " 枚ないため起動できません",
+        );
+        markEffectFizzleVisual(inst);
+        renderSynchronouslyOnce();
+        if (onComplete) onComplete();
+        return;
+      }
+    }
+    if (
       !handlesOwnCost &&
       (cl.costEnergy ||
         cl.costSelfWait ||
@@ -18410,6 +18442,9 @@ export function mountSimulator(
     cap.className = "dlg-pick-kidou-waiting__label";
     cap.textContent = spec.label;
     tile.appendChild(cap);
+    tile.addEventListener("click", function () {
+      inp.checked = true;
+    });
     parent.appendChild(tile);
     return tile;
   }
@@ -18717,7 +18752,11 @@ export function mountSimulator(
             inputType: handCostPickType,
             label: lab,
             imgSrc: hmc.img || c.img || "",
-            checked: handCostPickType === "radio" && hci === 0 && handCostPool.length === 1,
+            checked:
+              handCostPickType === "radio" &&
+              hci === 0 &&
+              handCostPool.length >= 1 &&
+              !cl.costOrAlt,
           });
         });
         if (!handCostPool.length) {
@@ -21279,6 +21318,48 @@ export function mountSimulator(
       else gainBladesUntilEnd(inst, selfBladeN);
       render();
       onDone();
+      return;
+    }
+    if (
+      /このメンバー以外/.test(t) &&
+      /ライブ終了時まで/.test(t) &&
+      /を得る/.test(t) &&
+      !/ブレード/.test(t) &&
+      /heart0?6/i.test(t)
+    ) {
+      var heartGrantSeriesM = t.match(/『([^』]+)』/);
+      var heartGrantSeries = heartGrantSeriesM ? heartGrantSeriesM[1] : null;
+      var heartGrantSlot = 6;
+      var heartGrantCount = Math.max(1, (t.match(/heart0?6/gi) || []).length);
+      var heartGrantPool = eachStageColumnMemberInsts().filter(function (m) {
+        if (!m || m._soloOpponentProxy === true) return false;
+        if (inst && String(m.id) === String(inst.id)) return false;
+        if (heartGrantSeries && !catalogCardMatchesGroupTag(mergedCatalogCard(m), heartGrantSeries)) {
+          return false;
+        }
+        return true;
+      });
+      if (!heartGrantPool.length) {
+        showToast("ハートを与える対象メンバーがステージにいません");
+        onDone();
+        return;
+      }
+      pushHistoryBefore("ability-choice-stage-heart-grant");
+      openPickFromWaitingDialog(
+        heartGrantPool,
+        "ライブ終了時までハートを得るメンバー1人を選びます。",
+        function (pid) {
+          if (pid) {
+            var heartTarget = findCardInstById(pid);
+            if (heartTarget) grantHeartSlotUntilLiveEnd(heartTarget, heartGrantSlot, heartGrantCount);
+          }
+          try {
+            syncJoujiPassiveEffectsAll();
+          } catch (_) {}
+          render();
+          onDone();
+        },
+      );
       return;
     }
     if (/このメンバー以外/.test(t) && /ライブ終了時まで/.test(t) && (/ブレード/.test(t) || /を得る/.test(t))) {

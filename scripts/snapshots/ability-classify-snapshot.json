@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-18T12:22:41.521Z",
+  "generated": "2026-11-18T12:40:32.974Z",
   "sample_size": 50,
   "cards": [
     {
@@ -323,8 +323,7 @@
             "minSuccessLiveCount": null,
             "minNeedHeartSlot": null,
             "minNeedHeartValue": null,
-            "minTotalNeedHeart": null,
-            "requiresNoBladeHeart": true
+            "minTotalNeedHeart": null
           }
         }
       ]

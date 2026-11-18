@@ -3260,7 +3260,12 @@ export function parseAbilityPickFilters(p, segRaw) {
       p.indexOf("：") >= 0 &&
       /ブレードハートを持たない/.test(p.split("：")[0]) &&
       !/ブレードハートを持たない/.test(p.split("：").slice(1).join("："));
-    if (!bhCostOnly) f.requiresNoBladeHeart = true;
+    /* 「これにより控え室に置いた…代わりに選ぶ」は捨て札後の選択数変更で、候補のBHなし指定ではない */
+    var discardBoostPick =
+      /これにより控え室に置いた/.test(p) &&
+      /代わりに/.test(p) &&
+      /選ぶ/.test(p);
+    if (!bhCostOnly && !discardBoostPick) f.requiresNoBladeHeart = true;
   }
   if (
     /ブレードハートを持たない/.test(p) &&
@@ -4533,6 +4538,10 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
         kdPickPatch.choiceBoostIfNonBhMemberCost = true;
         kdPickPatch.choiceBoostMin = Number(normalizeFwDigits(discBoostKdM[1])) || 1;
         kdPickPatch.choiceBoostMax = Math.max(kdChoicesEarly.length, 2);
+        if (kdPickPatch.filters && kdPickPatch.filters.requiresNoBladeHeart) {
+          kdPickPatch.filters = Object.assign({}, kdPickPatch.filters);
+          delete kdPickPatch.filters.requiresNoBladeHeart;
+        }
       }
       return kidouT(kdPickPatch);
     }
