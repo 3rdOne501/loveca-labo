@@ -41,6 +41,12 @@
 |------|-----|------|----------------|------|
 | [x] | LL-bp7-001-R＋ | 花丸&せつ菜&千砂都 | play_cost_set_named_hand_discard / toujou_wait_pick_hand / live_success_recover_from_waiting | 常時: 3名各1枚手札捨て任意でコスト10。登場: 控え室ライブ1枚手札。成功: 控え室メンバー1枚手札 |
 
+## LL-bp8（001）まじかる♡とり～と
+
+| 状態 | ID | 名前 | 主テンプレート | 備考 |
+|------|-----|------|----------------|------|
+| [ ] | LL-bp8-001-R＋ | 矢澤にこ&宮下 愛&セラス 柳田 リリエンフェルト | deck_top_to_waiting + deck_top_peek_optional_wait + jouji:unclassified + guided_manual | 未対応あり。詳細は [magical-treat-verification-list.md](./magical-treat-verification-list.md) |
+
 ## 2026-08-10 修正（LL-bp7 初回監修）
 
 | ID | 内容 |

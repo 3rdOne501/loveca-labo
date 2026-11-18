@@ -2,6 +2,14 @@
 
 シミュレータのカード文通り実装を、商品単位で進めるための一覧。**詳細は各 `*-verification-list.md` を正**とする。
 
+## 最新追加商品の初回診断（2026-11-18）
+
+| 商品 | メンバー | ライブ | エネルギー | 詳細 |
+|------|----------|--------|------------|------|
+| ブースターパック まじかる♡とり～と（bp8） | ⬜ μ's / 虹ヶ咲 / 蓮ノ空 / LL-bp8 | ⬜ | 能力なし | [検証リスト](./magical-treat-verification-list.md) |
+
+2026-11-12 取り込み 172 枚。分類スナップショットを追加。代表 83（メンバー・ライブ）のうち既存テンプレ 50 / 未対応あり 33。商品の監修完了ではない。全体回帰では `PENDING_PRODUCT_CARD_NO` で bp8 を未監修として除外。
+
 ## 最新追加商品の初回監修（2026-11-03）
 
 | 商品 | メンバー | ライブ | エネルギー | 詳細 |
@@ -34,9 +42,9 @@
 
 | 区分 | 完全修復 ✅ | 一部済 🔄 | 未着手 ⬜ |
 |------|------------|----------|----------|
-| ブースター bp（行単位） | **13** | **6** | **49** |
+| ブースター bp（行単位） | **13** | **6** | **55** |
 | プレミアム pb（行単位） | **11** | 0 | **0** |
-| アニバーサリー（12 区分） | **10**⭕️ + **1**✅ | 0 | **1**（#11 エネルギー対象外） |
+| アニバーサリー（13 区分） | **10**⭕️ + **1**✅ | 0 | **2**（#11 エネルギー対象外 / #13 LL-bp8 診断済・未監修） |
 | スタートデッキ（10 区分） | **6**⭕️ | 0 | **4** |
 | PR | **6**⭕️ | 0 | 0 |
 
@@ -48,7 +56,7 @@
 
 ---
 
-## 1. ブースターパック（bp1–bp7）
+## 1. ブースターパック（bp1–bp8）
 
 各スクール × 各弾。**メンバー**と**ライブ**を別行で管理（計 7 弾 × 5 スクール × 2 = 最大 70 行、実在分のみ記載）。
 
@@ -65,6 +73,7 @@
 | bp5 | ⭕️ | ⭕️ | [muse-bp5-verification-list.md](./muse-bp5-verification-list.md) **2026-06-30 メンバー3回監修**（002/222 optional フラグ） |
 | bp6 | ⭕️ | ⭕️ | [muse-bp6-verification-list.md](./muse-bp6-verification-list.md) **2026-06-28 ライブ2回監修**（020 FAQ255 / 021任意確認） |
 | bp7 | — | — | MELLOWMOMENT に `PL!-bp7` なし（クロス `LL-bp7` はアニバ §3 で管理） |
+| bp8 | ⬜ | ⬜ | [magical-treat-verification-list.md](./magical-treat-verification-list.md) **2026-11-18 初回診断**（未対応あり。監修前） |
 
 ### Aqours（`PL!S-bp*` / クロス `LL-bp*`）
 
@@ -77,6 +86,7 @@
 | bp5 | ⭕️ | ⭕️ | [aqours-bp5-verification-list.md](./aqours-bp5-verification-list.md) **2026-06-30 2回監修完了**（007 heart04×2、006必須ウェイト） |
 | bp6 | ⭕️ | ⭕️ | [aqours-bp6-verification-list.md](./aqours-bp6-verification-list.md) **2026-06-28 ライブ2回監修完了**（023 他） |
 | bp7 | ✅ | ✅ | [aqours-bp7-verification-list.md](./aqours-bp7-verification-list.md) **2026-08-10 メンバー+ライブ初回監修**（020/022/025 等） |
+| bp8 | — | — | まじかる♡とり～とに `PL!S-bp8` なし |
 
 ### 虹ヶ咲（`PL!N-bp*` / クロス `LL-bp*`）
 
@@ -89,6 +99,7 @@
 | bp5 | ⭕️ | ⭕️ | [niji-bp5-verification-list.md](./niji-bp5-verification-list.md) **2026-06-30 メンバー3回監修**（011 2択前提 / 014 E2） |
 | bp6 | — | — | 実カード未発売 |
 | bp7 | ✅ | ✅ | [niji-bp7-verification-list.md](./niji-bp7-verification-list.md) **2026-08-10 メンバー+ライブ初回監修**（020/025–029 等） |
+| bp8 | ⬜ | ⬜ | [magical-treat-verification-list.md](./magical-treat-verification-list.md) **2026-11-18 初回診断**（未対応あり。監修前） |
 
 ### Liella!（`PL!SP-bp*` / クロス `LL-bp*`）
 
@@ -101,6 +112,7 @@
 | bp5 | ⭕️ | ⭕️ | [liella-bp5-verification-list.md](./liella-bp5-verification-list.md) **2026-06-30 2回監修完了**（005 ミル比例ブレード、015 センター限定、009/023 他） |
 | bp6 | — | — | 実カード未発売 |
 | bp7 | ✅ | ✅ | [liella-bp7-verification-list.md](./liella-bp7-verification-list.md) **2026-08-10 メンバー+ライブ初回監修**（024/028 等） |
+| bp8 | — | — | まじかる♡とり～とに `PL!SP-bp8` なし |
 
 ### 蓮ノ空（`PL!HS-bp*`）
 
@@ -113,6 +125,7 @@
 | bp5 | ⭕️ | ⭕️ | [hasunosora-bp5-verification-list.md](./hasunosora-bp5-verification-list.md) **2026-06-30 2回監修完了**（001 ミル条件ブレード、003 同グループメンバー付与、005/022 他） |
 | bp6 | ⭕️ | ⭕️ | [hasunosora-bp6-verification-list.md](./hasunosora-bp6-verification-list.md) **2026-06-30 2回監修完了**（013 登場時 DOLLCHESTRA 除外） |
 | bp7 | — | — | MELLOWMOMENT に `PL!HS-bp7` なし |
+| bp8 | ⬜ | ⬜ | [magical-treat-verification-list.md](./magical-treat-verification-list.md) **2026-11-18 初回診断**（未対応あり。監修前） |
 
 ---
 
@@ -150,8 +163,9 @@
 | 10 | LL-PR | ライブ | ⭕️ | [ll-pr-verification-list.md](./ll-pr-verification-list.md) **2026-06-30 2回監修**（004 愛♡スクリ～ム！） |
 | 11 | LL-PR | エネルギー | — | 能力なし PR（検証対象外） |
 | 12 | LL-bp7 クロス | メンバー | ✅ | [ll-anniversary-member-verification-list.md](./ll-anniversary-member-verification-list.md) **2026-08-10 初回監修**（花丸&せつ菜&千砂都・修正なし） |
+| 13 | LL-bp8 クロス | メンバー | ⬜ | [magical-treat-verification-list.md](./magical-treat-verification-list.md) **2026-11-18 初回診断**（にこ&愛&セラス・未対応あり） |
 
-> #11 LL-PR エネルギーは能力なし。#1–10 は **2026-06-30 2回監修完了**。#12 LL-bp7 は **2026-08-10 初回監修**。
+> #11 LL-PR エネルギーは能力なし。#1–10 は **2026-06-30 2回監修完了**。#12 LL-bp7 は **2026-08-10 初回監修**。#13 LL-bp8 は **2026-11-18 初回診断**。
 
 ---
 
@@ -204,9 +218,9 @@
 
 ---
 
-## 6. 推奨作業順（2026-08-10）
+## 6. 推奨作業順（2026-11-18）
 
-1. **収録済み商品の初回監修は一通り完了**（虹ヶ咲 sd2 cheer ✅✅、bp7 各校 ✅）
+1. **まじかる♡とり～と（bp8）初回監修** — 診断済・未対応 33 代表。詳細 [magical-treat-verification-list.md](./magical-treat-verification-list.md)
 2. **2回監修（✅→⭕️）** — 例: 虹ヶ咲 sd2 cheer / bp7 各校
 3. **Aqours bp4** / **虹 bp2** / **Liella bp3** 等 — `cards.json` 未収録。追加後に verify/audit 新設
 
@@ -262,6 +276,8 @@ node scripts/verify-hasunosora-sd1.mjs
 node scripts/verify-liella-sd2.mjs
 node scripts/verify-niji-sd2.mjs
 node scripts/audit-niji-sd2-text.mjs
+node scripts/verify-magical-treat.mjs
+node scripts/audit-magical-treat-text.mjs
 
 # 全文監査（例）
 node scripts/audit-niji-bp1-text.mjs
@@ -287,6 +303,7 @@ node scripts/verify-ability-coverage.mjs
 
 | 日付 | 内容 |
 |------|------|
+| 2026-11-18 | **まじかる♡とり～と（bp8）初回診断**: 検証リスト・分類回帰・全文監査を追加。代表83のうち既存テンプレ50 / 未対応33。監修前。`PENDING_PRODUCT_CARD_NO` で bp8 を除外 |
 | 2026-08-10 | **虹ヶ咲 sd2 cheer ライブ初回監修**: 025–027 精査。026 条件ブレード誤算→heart02×2＋ブレード≥4対象を修正。verify/audit OK。✅✅ |
 | 2026-08-10 | **虹ヶ咲 sd2 cheer メンバー初回監修**: 001–024 精査。003手札コスト条件／005ハート×2／006付与先自分／007相手成功条件ドローを修正。verify/audit OK。✅ |
 | 2026-08-10 | **LL-bp7 クロス初回監修**: `LL-bp7-001-R＋` 精査。指名捨てコスト10／控え室ライブ・メンバー回収は既存テンプレでOK。修正なし。verify+audit OK。✅ |

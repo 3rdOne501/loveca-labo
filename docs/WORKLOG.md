@@ -2,6 +2,13 @@
 
 日付は日本時間。最新の作業状態は [HANDOFF.md](./HANDOFF.md) を参照する。
 
+## 2026-11-18 — まじかる♡とり～と（bp8）初回診断
+
+- 依頼「あと診断追加して。まじかるとりーと」に対応。効果実装は変更していない。
+- 172 枚を分類スナップショット化。代表 83（メンバー・ライブ）のうち既存テンプレ 50 / 未対応あり 33。エネルギー 31 枚は能力なし。
+- 追加: `docs/magical-treat-verification-list.md`、`scripts/verify-magical-treat.mjs`（105 ケース）、`scripts/audit-magical-treat-text.mjs`（既知未対応 68 レアリティのみ許可）。
+- この診断は下の 2026-11-12 実装より前の分類に基づく。実装後の未対応件数としては使わない。
+
 ## 2026-11-16 — bp8 まじかる♡とり～と再適用（transcript 復元）
 
 - artifacts 空・HEAD worktree に実装なし。`batch-fetch-details` で取得した transcript（`bc-328ec174` / `bc-7018433f` / `bc-481e4324`）から search_replace 時系列 + child の `run_terminal_cmd` simulator 編集を再生。

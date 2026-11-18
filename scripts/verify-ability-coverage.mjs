@@ -26,7 +26,13 @@ const THRESHOLDS = {
  * 「既存商品の退行を検知する」というこのゲートの目的を守るために母数から外す。
  * 商品の監修が終わったらこの配列から削除し、除外 0 件に戻すこと。
  */
-const PENDING_PRODUCT_CARD_NO = [];
+const PENDING_PRODUCT_CARD_NO = [
+  /^PL!-bp8-/,
+  /^PL!N-bp8-/,
+  /^PL!HS-bp8-/,
+  /^LL-bp8-/,
+  /^LL!-bp8-/,
+];
 
 function isPendingProduct(cardNo) {
   const s = String(cardNo || "");
@@ -215,6 +221,10 @@ function main() {
   check("node scripts/verify-hasunosora-bp5.mjs", { cwd: ROOT, stdio: "inherit" });
 
   check("node scripts/audit-hasunosora-bp5-text.mjs", { cwd: ROOT, stdio: "inherit" });
+
+  check("node scripts/verify-magical-treat.mjs", { cwd: ROOT, stdio: "inherit" });
+
+  check("node scripts/audit-magical-treat-text.mjs", { cwd: ROOT, stdio: "inherit" });
 
   check("node scripts/audit-verification-list-notes.mjs", { cwd: ROOT, stdio: "inherit" });
 
