@@ -1,6 +1,6 @@
 # カード能力・処理要素の静的照合レポート
 
-生成: 2026-11-18T08:10:17.167Z
+生成: 2026-11-18T11:58:31.183Z
 対象: full_catalog / 2895枚・2381能力セグメント
 
 静的な既知ルールの照合のみ。checked_known_rulesも実プレイの正しさを保証しない。未知の文言・未登録契約は要確認。過去の修正履歴による除外なし。
@@ -8,9 +8,9 @@
 | 状態 | セグメント数 |
 |---|---:|
 | unimplemented | 75 |
-| suspect | 47 |
-| needs_review | 1947 |
-| checked_known_rules | 312 |
+| suspect | 40 |
+| needs_review | 1952 |
+| checked_known_rules | 314 |
 
 ## 指摘一覧（同じ能力文・分類・指摘はレアリティ違いをまとめる）
 
@@ -600,16 +600,6 @@
 | contract_mismatch: 分類結果がカード文の要求と一致しない: amount_mismatch | effect.grant_blade | ブレードブレードを得る |
 | requirement_not_verified: カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。 | condition.center_target | 自分のセンターエリアにいる |
 
-### PL!-pb2-031-N 園田海未 — suspect
-
-- 同型: PL!-pb2-031-N
-- 発動: live_start / 分類: grant_jouji_session
-- カード文: 手札の『μ's』のカードを1枚控え室に置いてもよい：ライブ終了時まで、{{heart_06.png\|heart06}}を得る。
-
-| 指摘 | 処理要素 | 根拠の文言 |
-|---|---|---|
-| contract_mismatch: 分類結果がカード文の要求と一致しない: missing_field | cost.hand_to_waiting | 手札の『μ's』のカードを1枚控え室に置 |
-
 ### PL!HS-bp6-009-R 日野下花帆 — suspect
 
 - 同型: PL!HS-bp6-009-R
@@ -620,34 +610,6 @@
 |---|---|---|
 | missing_processing_contract: カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。 | effect.mill | デッキの上からカードを4枚控え室に置 |
 | requirement_not_verified: カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。 | condition.other | 自分のデッキの上からカードを4枚控え室に置く。それらがすべて『蓮ノ空』のカードの場合、ライブ終了時まで、ブレードを得る。 |
-
-### PL!HS-bp6-010-R 村野さやか — suspect
-
-- 同型: PL!HS-bp6-010-R
-- 発動: live_start / 分類: draw_from_deck
-- カード文: 手札の『DOLLCHESTRA』のカードを1枚控え室に置いてもよい：カードを1枚引き、ライブ終了時まで、自分のステージにいる『DOLLCHESTRA』のメンバー1人のコストを＋５する。
-
-| 指摘 | 処理要素 | 根拠の文言 |
-|---|---|---|
-| contract_mismatch: 分類結果がカード文の要求と一致しない: missing_field | cost.hand_to_waiting | 手札の『DOLLCHESTRA』のカードを1枚控え室に置 |
-| requirement_not_verified: カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。 | duration.live_end | ライブ終了時まで |
-
-### PL!HS-bp8-006-P 安養寺姫芽 — suspect
-
-- 同型: PL!HS-bp8-006-P, PL!HS-bp8-006-R
-- 発動: toujyou / 分類: ability_pick_one
-- カード文: 手札の『蓮ノ空』のカードを1枚控え室に置いてもよい：以下から1つを選ぶ。 ・{{heart_01.png\|heart01}}か{{heart_04.png\|heart04}}か{{heart_05.png\|heart05}}か{{heart_06.png\|heart06}}のうち、1つを選ぶ。ライブ終了時まで、選んだハートを1つ得る。 ・自分のデッキの上からカードを3枚見る。その中から好きな枚数を好きな順番でデッキの上に置き、残りを控え室に置く。
-
-| 指摘 | 処理要素 | 根拠の文言 |
-|---|---|---|
-| contract_mismatch: 分類結果がカード文の要求と一致しない: missing_field | cost.hand_to_waiting | 手札の『蓮ノ空』のカードを1枚控え室に置 |
-| requirement_not_verified: カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。 | effect.peek | デッキの上からカードを3枚見る |
-| requirement_not_verified: カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。 | effect.choose_order | 好きな順番 |
-| requirement_not_verified: カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。 | duration.live_end | ライブ終了時まで |
-| template_contract_missing: 未登録テンプレート。対応済みとは判定しない。 | contract | 手札の『蓮ノ空』のカードを1枚控え室に置いてもよい:以下から1つを選ぶ。・heart01かheart04かheart05かheart06のうち、1つを選ぶ。ライブ終了時まで、選んだハートを1つ得る。・自分のデッキの上からカードを3枚見る。その中から好きな枚数を好きな順番でデッキの上に置き、残りを控え室に置く。 |
-| followup_needs_review: 後続処理は順序・条件を含めて確認する。単一の分類結果だけで完了扱いにしない。 | text.followup | 以下から1つを選ぶ |
-| followup_needs_review: 後続処理は順序・条件を含めて確認する。単一の分類結果だけで完了扱いにしない。 | text.followup | ・heart01かheart04かheart05かheart06のうち、1つを選ぶ |
-| followup_needs_review: 後続処理は順序・条件を含めて確認する。単一の分類結果だけで完了扱いにしない。 | text.followup | ライブ終了時まで、選んだハートを1つ得る |
 
 ### PL!HS-bp8-012-N 百生吟子 — suspect
 
@@ -730,16 +692,6 @@
 | followup_needs_review: 後続処理は順序・条件を含めて確認する。単一の分類結果だけで完了扱いにしない。 | text.followup | 自分の手札からコスト4以下の『虹ヶ咲』のメンバーカードを1枚ステージに登場させる |
 | followup_needs_review: 後続処理は順序・条件を含めて確認する。単一の分類結果だけで完了扱いにしない。 | text.followup | これにより登場したメンバーがブレードハートを持つ場合、このメンバーをウェイトにする |
 
-### PL!N-bp8-023-N ミア・テイラー — suspect
-
-- 同型: PL!N-bp8-023-N
-- 発動: live_start / 分類: grant_jouji_session
-- カード文: 手札の『虹ヶ咲』のカードを1枚控え室に置いてもよい：ライブ終了時まで、{{heart_03.png\|heart03}}を得る。
-
-| 指摘 | 処理要素 | 根拠の文言 |
-|---|---|---|
-| contract_mismatch: 分類結果がカード文の要求と一致しない: missing_field | cost.hand_to_waiting | 手札の『虹ヶ咲』のカードを1枚控え室に置 |
-
 ### PL!N-bp8-030-L Stay — suspect
 
 - 同型: PL!N-bp8-030-L
@@ -797,21 +749,6 @@
 |---|---|---|
 | contract_mismatch: 分類結果がカード文の要求と一致しない: amount_mismatch | effect.grant_blade | ブレードを得る |
 
-### PL!SP-pb2-002-R 唐 可可 — suspect
-
-- 同型: PL!SP-pb2-002-R, PL!SP-pb2-002-PP
-- 発動: kidou / 分類: ability_sequence
-- カード文: {{turn1.png\|ターン1回}}手札の『Liella!』のカードを1枚控え室に置く：以下から1つを選ぶ。これにより控え室に置いたカードがブレードハートを持たないメンバーカードの場合、代わりに1つ以上を選ぶ。 ・自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。 ・ライブ終了時まで、自分のステージにいるこのメンバー以外の『Liella!』のメンバー1人は、{{heart_06.png\|heart06}}{{heart_06.png\|heart06}}を得る。
-
-| 指摘 | 処理要素 | 根拠の文言 |
-|---|---|---|
-| contract_mismatch: 分類結果がカード文の要求と一致しない: missing_field | cost.hand_to_waiting | 手札の『Liella!』のカードを1枚控え室に置 |
-| requirement_not_verified: カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。 | condition.no_blade_heart | ブレードハートを持たない |
-| template_contract_missing: 未登録テンプレート。対応済みとは判定しない。 | contract | ターン1回手札の『Liella!』のカードを1枚控え室に置く:以下から1つを選ぶ。これにより控え室に置いたカードがブレードハートを持たないメンバーカードの場合、代わりに1つ以上を選ぶ。・自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。・ライブ終了時まで、自分のステージにいるこのメンバー以外の『Liella!』のメンバー1人は、heart06heart06を得る。 |
-| followup_needs_review: 後続処理は順序・条件を含めて確認する。単一の分類結果だけで完了扱いにしない。 | text.followup | 以下から1つを選ぶ |
-| followup_needs_review: 後続処理は順序・条件を含めて確認する。単一の分類結果だけで完了扱いにしない。 | text.followup | これにより控え室に置いたカードがブレードハートを持たないメンバーカードの場合、代わりに1つ以上を選ぶ |
-| followup_needs_review: 後続処理は順序・条件を含めて確認する。単一の分類結果だけで完了扱いにしない。 | text.followup | ・自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く |
-
 ### PL!SP-pb2-013-P＋ 唐 可可 — suspect
 
 - 同型: PL!SP-pb2-013-P＋, PL!SP-pb2-013-R
@@ -820,7 +757,6 @@
 
 | 指摘 | 処理要素 | 根拠の文言 |
 |---|---|---|
-| contract_mismatch: 分類結果がカード文の要求と一致しない: missing_field | cost.hand_to_waiting | 手札の『KALEIDOSCORE』のカードを1枚控え室に置 |
 | contract_mismatch: 分類結果がカード文の要求と一致しない: missing_flag | cost.optional | 手札の『KALEIDOSCORE』のカードを1枚控え室に置いてもよい |
 | requirement_not_verified: カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。 | condition.no_blade_heart | ブレードハートを持たない |
 | template_contract_missing: 未登録テンプレート。対応済みとは判定しない。 | contract | 手札の『KALEIDOSCORE』のカードを1枚控え室に置いてもよい:自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。これにより控え室に置いたカードがブレードハートを持たない場合、カードを1枚引く。 |
@@ -851,21 +787,21 @@
 | draw_then_hand_discard | 90 | 90 | PL!N-bp7-023-N, PL!SP-bp7-026-L, PL!SP-bp4-026-SRL, PL!SP-pb2-036-N |
 | live_card_score_plus | 86 | 86 | PL!-bp3-019-SRL, PL!-bp3-025-SRL, PL!-bp3-024-SRL, PL!-bp3-026-SRL |
 | grant_jouji_session | 75 | 75 | PL!-pb2-005-PP, PL!-pb2-005-R, PL!N-bp7-024-N, PL!S-bp2-023-SECL |
-| draw_from_deck | 49 | 49 | PL!-pb1-032-SRL, PL!-pb2-018-P＋, PL!-pb2-018-R, PL!N-bp7-013-N |
+| draw_from_deck | 50 | 50 | PL!-pb1-032-SRL, PL!-pb2-018-P＋, PL!-pb2-018-R, PL!N-bp7-013-N |
 | heart_color_pick_grant | 43 | 43 | PL!-bp3-024-SRL, PL!N-bp7-012-P, PL!N-bp7-012-R, PL!N-bp7-016-N |
 | toujou_wait_pick_hand | 39 | 39 | PL!N-bp7-002-P, PL!N-bp7-002-R, PL!S-bp7-007-P, PL!S-bp7-007-P＋ |
 | deck_top_look_reorder | 36 | 36 | PL!-sd1-019-SRL, PL!N-bp7-006-P, PL!N-bp7-006-P＋, PL!N-bp7-006-R＋ |
 | activate_energy | 36 | 36 | PL!SP-bp7-007-P, PL!SP-bp7-007-P＋, PL!SP-bp7-007-R＋, PL!SP-bp7-007-SEC |
 | optional_energy_blade_until_live_end | 33 | 33 | PL!N-sd2-004-SD2, PL!N-sd2-008-SD2, PL!SP-pb2-040-N, PL!HS-cl1-005-CL |
+| ability_pick_one | 32 | 28 | PL!N-bp7-005-P, PL!N-bp7-005-R, PL!S-bp7-003-P, PL!S-bp7-003-R＋ |
 | live_start_position_change | 30 | 30 | PL!-bp4-020-SRL, PL!SP-bp7-022-N, PL!SP-pb2-011-PP, PL!SP-pb2-011-R |
 | kidou_hand_cost_wait_pick_hand | 30 | 30 | PL!-pb2-012-P＋, PL!-pb2-012-R, PL!SP-sd2-006-SD2, PL!-bp5-009-R |
-| ability_pick_one | 30 | 26 | PL!N-bp7-005-P, PL!N-bp7-005-R, PL!S-bp7-003-P, PL!S-bp7-003-R＋ |
 | energy_deck_to_wait | 30 | 30 | PL!SP-bp7-007-P, PL!SP-bp7-007-P＋, PL!SP-bp7-007-R＋, PL!SP-bp7-007-SEC |
 | live_score_plus | 25 | 25 | PL!-pb2-038-L, PL!SP-bp7-003-P＋, PL!SP-bp7-003-P, PL!SP-bp7-003-R＋ |
 | kidou_wait_pick_hand | 22 | 22 | PL!N-sd2-001-SD2, PL!-bp3-008-P, PL!-bp3-008-R＋, PL!-bp3-008-SEC |
+| ability_sequence | 14 | 14 | PL!-pb2-007-PP, PL!-pb2-007-R, PL!SP-bp7-003-P＋, PL!SP-bp7-003-P |
 | optional_self_wait_opp_stage | 14 | 10 | PL!-pb2-029-N, PL!N-sd2-013-SD2, PL!S-bp6-001-P, PL!S-bp6-001-R |
 | live_start_need_heart_reduce_fixed | 13 | 13 | PL!-bp3-023-SRL, PL!-pb1-030-SRL, PL!S-bp7-020-L, PL!S-bp7-020-SECL |
-| ability_sequence | 12 | 12 | PL!-pb2-007-PP, PL!-pb2-007-R, PL!SP-bp7-003-P＋, PL!SP-bp7-003-P |
 | activate_stage_members_up_to | 11 | 11 | PL!-pb2-016-P＋, PL!-pb2-017-P＋, PL!-pb2-017-R, PL!-pb2-016-R |
 | toujou_hand_stage_enter | 11 | 11 | PL!N-pb1-013-P＋, PL!N-pb1-013-R, PL!N-pb1-015-P＋, PL!N-pb1-015-R |
 | jidou_area_move_grant_jouji | 10 | 10 | PL!SP-bp7-014-N, PL!SP-sd2-002-SD2, PL!SP-sd2-002-P, PL!SP-sd2-012-SD2 |

@@ -928,6 +928,8 @@ function parseHandDiscardCostFromCostPart(costPart) {
   if (!costPart) return null;
   if (/手札をすべて控え室/.test(costPart)) return null;
   if (/手札のライブカードを1枚控え室/.test(costPart)) return 1;
+  var seriesM = costPart.match(/手札の『[^』]+』のカードを([０-９\d]+)枚控え室に置(く|いてもよい)/);
+  if (seriesM) return Number(normalizeFwDigits(seriesM[1])) || 1;
   var m = costPart.match(/手札を(\d+)枚控え室に置/);
   if (m) return Number(m[1]) || null;
   if (/手札を1枚控え室に置/.test(costPart)) return 1;
@@ -4184,6 +4186,10 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
     /ウェイトにするか/.test(costPart) ||
     (/手札.*控え室/.test(costPart) && /か/.test(costPart) && base.costSelfWait);
   base.handDiscardToWaiting = parseHandDiscardCostFromCostPart(costPart);
+  var handSeriesCostTagM = costPart.match(/手札の『([^』]+)』のカードを[０-９\d]+枚控え室に置(く|いてもよい)/);
+  if (handSeriesCostTagM) {
+    base.handDiscardSeriesTag = normalizeQuotedSeriesTag(handSeriesCostTagM[1]);
+  }
   if (/手札をすべて控え室/.test(costPart)) {
     base.costHandDiscardAll = true;
   }

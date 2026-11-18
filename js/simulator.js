@@ -18612,7 +18612,10 @@ export function mountSimulator(
         '<p class="dlg-cost-payment-or-hint muted">コストは<strong>どちらか一方</strong>を選んで支払ってください。</p>';
     }
     if (cl.handDiscardToWaiting && cl.handDiscardToWaiting > 0 && !cl.costHandDiscardOptional) {
-      html += '<div class="dlg-cost-payment-row">手札を ' + cl.handDiscardToWaiting + (cl.costHandToDeckBottom ? " 枚デッキの一番下へ置く</div>" : " 枚控え室へ置く</div>");
+      var handCostRowText = cl.handDiscardSeriesTag
+        ? "手札の『" + cl.handDiscardSeriesTag + "』のカードを " + cl.handDiscardToWaiting + " 枚控え室へ置く"
+        : "手札を " + cl.handDiscardToWaiting + (cl.costHandToDeckBottom ? " 枚デッキの一番下へ置く" : " 枚控え室へ置く");
+      html += '<div class="dlg-cost-payment-row">' + handCostRowText + "</div>";
       html += '<div id="cost-pay-hand-grid" class="dlg-pick-kidou-waiting__grid dlg-cost-payment-hand-grid"></div>';
     }
     if (cl.costHandDiscardOptional && cl.handDiscardToWaiting) {
@@ -18696,6 +18699,11 @@ export function mountSimulator(
         if (cl.costHandDiscardPickType) {
           handCostPool = handCostPool.filter(function (c) {
             return c && mergedCatalogCard(c).type === cl.costHandDiscardPickType;
+          });
+        }
+        if (cl.handDiscardSeriesTag) {
+          handCostPool = handCostPool.filter(function (c) {
+            return c && catalogCardMatchesGroupTag(mergedCatalogCard(c), cl.handDiscardSeriesTag);
           });
         }
         handCostPool.forEach(function (c) {

@@ -16,6 +16,16 @@
 
 ---
 
+## 0r. 起動・シリーズ指定手札コスト（必須）（2026-11-18）
+
+| カード番号 | 名前 | 根因 | 対応 | 横展開 |
+|-----------|------|------|------|--------|
+| PL!SP-pb2-002-R | 唐 可可 | コスト節「手札の『Liella!』のカードを1枚控え室に置く」が手札捨て枚数に読めず、複合起動の外側で支払いダイアログが出なかった | コスト読み取りにシリーズ指定手札捨てを追加。コスト支払いUIで該当グループの手札だけ選べるよう整備 | 同型 2 枚（PL!SP-pb2-002-R / PL!SP-pb2-002-PP） |
+
+Discord: messageId 1572558809220513823（ms_yw_330_kanana）
+
+---
+
 ## 0q. bp8 まじかる♡とり～と 未対応能力の一括自動化（2026-11-12）
 
 対象: `docs/card-update-report.md` の bp8 68 ID（レア差含む）。分類はすべて文言駆動（カード番号分岐なし）。分類器は `js/abilityCompletion.js`（`classifyCompletionActiveMore` / `classifyCompletionJidouMore` / `classifyCompletionJouji`）、実処理は `js/simulator.js`（`executeCompletionActiveMore`、`executeCompletionJidou` 末尾、常時は `js/joujiEffects.js` と simulator のコスト・プレイ可否・起動可否ゲート）。検証は **コード**のみ（実プレイ未確認）。

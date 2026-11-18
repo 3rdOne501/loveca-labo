@@ -8,9 +8,9 @@
     "segments": 2381,
     "statuses": {
       "unimplemented": 75,
-      "suspect": 47,
-      "needs_review": 1947,
-      "checked_known_rules": 312
+      "suspect": 40,
+      "needs_review": 1952,
+      "checked_known_rules": 314
     },
     "issues": {
       "requirement_not_verified": 2885,
@@ -19,7 +19,7 @@
       "body_not_understood": 661,
       "text_not_understood": 201,
       "missing_processing_contract": 15,
-      "contract_mismatch": 47,
+      "contract_mismatch": 38,
       "amount_not_verified": 17,
       "repeated_action_needs_review": 24,
       "unimplemented": 75
@@ -7352,7 +7352,7 @@
       "trigger": "live_start",
       "segment_index": 0,
       "template": "grant_jouji_session",
-      "status": "suspect",
+      "status": "checked_known_rules",
       "fingerprint": "8807c22d4b82ab610db7",
       "text": "手札の『μ's』のカードを1枚控え室に置いてもよい：ライブ終了時まで、{{heart_06.png|heart06}}を得る。",
       "cost": "手札の『μ's』のカードを1枚控え室に置いてもよい",
@@ -7361,10 +7361,7 @@
           "kind": "cost.hand_to_waiting",
           "evidence": "手札の『μ's』のカードを1枚控え室に置",
           "amount": 1,
-          "status": "mismatch",
-          "evaluations": [
-            "missing_field"
-          ]
+          "status": "matched"
         },
         {
           "kind": "cost.optional",
@@ -7401,7 +7398,7 @@
           "minTotalNeedHeart": null
         },
         "deckTopCount": null,
-        "handDiscardToWaiting": null,
+        "handDiscardToWaiting": 1,
         "deckDrawCount": null,
         "requiresOnStage": true,
         "requiresInWaiting": false,
@@ -7413,21 +7410,14 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
+        "handDiscardSeriesTag": "μ's",
         "bladeGain": 0,
         "liveScoreGrant": 0,
         "cardScoreGrant": 0,
         "grantToMovedMembersThisTurn": false,
         "requiredHeartSlot": 6
       },
-      "issues": [
-        {
-          "code": "contract_mismatch",
-          "severity": "suspect",
-          "kind": "cost.hand_to_waiting",
-          "evidence": "手札の『μ's』のカードを1枚控え室に置",
-          "message": "分類結果がカード文の要求と一致しない: missing_field"
-        }
-      ]
+      "issues": []
     },
     {
       "card_no": "PL!-pb2-037-L",
@@ -30945,7 +30935,7 @@
       "trigger": "kidou",
       "segment_index": 0,
       "template": "ability_sequence",
-      "status": "suspect",
+      "status": "needs_review",
       "fingerprint": "e7895a15c34ec7f9a4bc",
       "text": "{{turn1.png|ターン1回}}手札の『Liella!』のカードを1枚控え室に置く：以下から1つを選ぶ。これにより控え室に置いたカードがブレードハートを持たないメンバーカードの場合、代わりに1つ以上を選ぶ。\n・自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。\n・ライブ終了時まで、自分のステージにいるこのメンバー以外の『Liella!』のメンバー1人は、{{heart_06.png|heart06}}{{heart_06.png|heart06}}を得る。",
       "cost": "ターン1回手札の『Liella!』のカードを1枚控え室に置く",
@@ -30954,10 +30944,7 @@
           "kind": "cost.hand_to_waiting",
           "evidence": "手札の『Liella!』のカードを1枚控え室に置",
           "amount": 1,
-          "status": "mismatch",
-          "evaluations": [
-            "missing_field"
-          ]
+          "status": "matched"
         },
         {
           "kind": "effect.grant_heart",
@@ -31001,7 +30988,7 @@
           "requiresNoBladeHeart": true
         },
         "deckTopCount": null,
-        "handDiscardToWaiting": null,
+        "handDiscardToWaiting": 1,
         "deckDrawCount": null,
         "requiresOnStage": true,
         "requiresInWaiting": false,
@@ -31013,6 +31000,7 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
+        "handDiscardSeriesTag": "Liella!",
         "bladeGain": 0,
         "liveScoreGrant": 0,
         "requiredHeartSlot": 6,
@@ -31049,6 +31037,7 @@
             "costPickMemberWait": false,
             "costMandatoryWaitOtherMember": false,
             "costOrAlt": false,
+            "handDiscardSeriesTag": "Liella!",
             "bladeGain": 0,
             "abilityChoices": [],
             "choiceMin": 1,
@@ -31094,13 +31083,6 @@
         ]
       },
       "issues": [
-        {
-          "code": "contract_mismatch",
-          "severity": "suspect",
-          "kind": "cost.hand_to_waiting",
-          "evidence": "手札の『Liella!』のカードを1枚控え室に置",
-          "message": "分類結果がカード文の要求と一致しない: missing_field"
-        },
         {
           "code": "requirement_not_verified",
           "severity": "review",
@@ -31223,7 +31205,7 @@
       "trigger": "kidou",
       "segment_index": 0,
       "template": "ability_sequence",
-      "status": "suspect",
+      "status": "needs_review",
       "fingerprint": "c9bb9af901f6ba07d047",
       "text": "{{turn1.png|ターン1回}}手札の『Liella!』のカードを1枚控え室に置く：以下から1つを選ぶ。これにより控え室に置いたカードがブレードハートを持たないメンバーカードの場合、代わりに1つ以上を選ぶ。\n・自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。\n・ライブ終了時まで、自分のステージにいるこのメンバー以外の『Liella!』のメンバー1人は、{{heart_06.png|heart06}}{{heart_06.png|heart06}}を得る。",
       "cost": "ターン1回手札の『Liella!』のカードを1枚控え室に置く",
@@ -31232,10 +31214,7 @@
           "kind": "cost.hand_to_waiting",
           "evidence": "手札の『Liella!』のカードを1枚控え室に置",
           "amount": 1,
-          "status": "mismatch",
-          "evaluations": [
-            "missing_field"
-          ]
+          "status": "matched"
         },
         {
           "kind": "effect.grant_heart",
@@ -31279,7 +31258,7 @@
           "requiresNoBladeHeart": true
         },
         "deckTopCount": null,
-        "handDiscardToWaiting": null,
+        "handDiscardToWaiting": 1,
         "deckDrawCount": null,
         "requiresOnStage": true,
         "requiresInWaiting": false,
@@ -31291,6 +31270,7 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
+        "handDiscardSeriesTag": "Liella!",
         "bladeGain": 0,
         "liveScoreGrant": 0,
         "requiredHeartSlot": 6,
@@ -31327,6 +31307,7 @@
             "costPickMemberWait": false,
             "costMandatoryWaitOtherMember": false,
             "costOrAlt": false,
+            "handDiscardSeriesTag": "Liella!",
             "bladeGain": 0,
             "abilityChoices": [],
             "choiceMin": 1,
@@ -31372,13 +31353,6 @@
         ]
       },
       "issues": [
-        {
-          "code": "contract_mismatch",
-          "severity": "suspect",
-          "kind": "cost.hand_to_waiting",
-          "evidence": "手札の『Liella!』のカードを1枚控え室に置",
-          "message": "分類結果がカード文の要求と一致しない: missing_field"
-        },
         {
           "code": "requirement_not_verified",
           "severity": "review",
@@ -33452,10 +33426,7 @@
           "kind": "cost.hand_to_waiting",
           "evidence": "手札の『KALEIDOSCORE』のカードを1枚控え室に置",
           "amount": 1,
-          "status": "mismatch",
-          "evaluations": [
-            "missing_field"
-          ]
+          "status": "matched"
         },
         {
           "kind": "cost.optional",
@@ -33492,7 +33463,7 @@
           "minTotalNeedHeart": null
         },
         "deckTopCount": null,
-        "handDiscardToWaiting": null,
+        "handDiscardToWaiting": 1,
         "deckDrawCount": null,
         "requiresOnStage": true,
         "requiresInWaiting": false,
@@ -33504,6 +33475,7 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
+        "handDiscardSeriesTag": "KALEIDOSCORE",
         "bladeGain": 0,
         "energyWaitCount": 1,
         "energySkipNextActivate": false,
@@ -33511,7 +33483,7 @@
           {
             "trigger": "toujyou",
             "template": "energy_deck_to_wait",
-            "optional": true,
+            "optional": false,
             "filters": {
               "pickType": null,
               "maxCost": null,
@@ -33528,13 +33500,14 @@
             "requiresOnStage": true,
             "requiresInWaiting": false,
             "perTurnLimit": 0,
-            "hasOptionalCost": true,
+            "hasOptionalCost": false,
             "costEnergy": false,
             "costEnergyCount": 0,
             "costSelfWait": false,
             "costPickMemberWait": false,
             "costMandatoryWaitOtherMember": false,
             "costOrAlt": false,
+            "handDiscardSeriesTag": "KALEIDOSCORE",
             "bladeGain": 0,
             "energyWaitCount": 1,
             "energySkipNextActivate": false
@@ -33571,13 +33544,6 @@
         ]
       },
       "issues": [
-        {
-          "code": "contract_mismatch",
-          "severity": "suspect",
-          "kind": "cost.hand_to_waiting",
-          "evidence": "手札の『KALEIDOSCORE』のカードを1枚控え室に置",
-          "message": "分類結果がカード文の要求と一致しない: missing_field"
-        },
         {
           "code": "contract_mismatch",
           "severity": "suspect",
@@ -33718,10 +33684,7 @@
           "kind": "cost.hand_to_waiting",
           "evidence": "手札の『KALEIDOSCORE』のカードを1枚控え室に置",
           "amount": 1,
-          "status": "mismatch",
-          "evaluations": [
-            "missing_field"
-          ]
+          "status": "matched"
         },
         {
           "kind": "cost.optional",
@@ -33758,7 +33721,7 @@
           "minTotalNeedHeart": null
         },
         "deckTopCount": null,
-        "handDiscardToWaiting": null,
+        "handDiscardToWaiting": 1,
         "deckDrawCount": null,
         "requiresOnStage": true,
         "requiresInWaiting": false,
@@ -33770,6 +33733,7 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
+        "handDiscardSeriesTag": "KALEIDOSCORE",
         "bladeGain": 0,
         "energyWaitCount": 1,
         "energySkipNextActivate": false,
@@ -33777,7 +33741,7 @@
           {
             "trigger": "toujyou",
             "template": "energy_deck_to_wait",
-            "optional": true,
+            "optional": false,
             "filters": {
               "pickType": null,
               "maxCost": null,
@@ -33794,13 +33758,14 @@
             "requiresOnStage": true,
             "requiresInWaiting": false,
             "perTurnLimit": 0,
-            "hasOptionalCost": true,
+            "hasOptionalCost": false,
             "costEnergy": false,
             "costEnergyCount": 0,
             "costSelfWait": false,
             "costPickMemberWait": false,
             "costMandatoryWaitOtherMember": false,
             "costOrAlt": false,
+            "handDiscardSeriesTag": "KALEIDOSCORE",
             "bladeGain": 0,
             "energyWaitCount": 1,
             "energySkipNextActivate": false
@@ -33837,13 +33802,6 @@
         ]
       },
       "issues": [
-        {
-          "code": "contract_mismatch",
-          "severity": "suspect",
-          "kind": "cost.hand_to_waiting",
-          "evidence": "手札の『KALEIDOSCORE』のカードを1枚控え室に置",
-          "message": "分類結果がカード文の要求と一致しない: missing_field"
-        },
         {
           "code": "contract_mismatch",
           "severity": "suspect",
@@ -44862,7 +44820,7 @@
       "trigger": "live_start",
       "segment_index": 0,
       "template": "draw_from_deck",
-      "status": "suspect",
+      "status": "needs_review",
       "fingerprint": "60459ea72e2008a8d46f",
       "text": "手札の『DOLLCHESTRA』のカードを1枚控え室に置いてもよい：カードを1枚引き、ライブ終了時まで、自分のステージにいる『DOLLCHESTRA』のメンバー1人のコストを＋５する。",
       "cost": "手札の『DOLLCHESTRA』のカードを1枚控え室に置いてもよい",
@@ -44871,10 +44829,7 @@
           "kind": "cost.hand_to_waiting",
           "evidence": "手札の『DOLLCHESTRA』のカードを1枚控え室に置",
           "amount": 1,
-          "status": "mismatch",
-          "evaluations": [
-            "missing_field"
-          ]
+          "status": "matched"
         },
         {
           "kind": "cost.optional",
@@ -44908,7 +44863,7 @@
           "minTotalNeedHeart": null
         },
         "deckTopCount": null,
-        "handDiscardToWaiting": null,
+        "handDiscardToWaiting": 1,
         "deckDrawCount": 1,
         "requiresOnStage": true,
         "requiresInWaiting": false,
@@ -44920,16 +44875,10 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
+        "handDiscardSeriesTag": "DOLLCHESTRA",
         "bladeGain": 0
       },
       "issues": [
-        {
-          "code": "contract_mismatch",
-          "severity": "suspect",
-          "kind": "cost.hand_to_waiting",
-          "evidence": "手札の『DOLLCHESTRA』のカードを1枚控え室に置",
-          "message": "分類結果がカード文の要求と一致しない: missing_field"
-        },
         {
           "code": "requirement_not_verified",
           "severity": "review",
@@ -65682,7 +65631,7 @@
           "seriesTag": "DOLLCHESTRA"
         },
         "deckTopCount": null,
-        "handDiscardToWaiting": null,
+        "handDiscardToWaiting": 1,
         "deckDrawCount": null,
         "requiresOnStage": true,
         "requiresInWaiting": false,
@@ -65694,6 +65643,7 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
+        "handDiscardSeriesTag": "DOLLCHESTRA",
         "bladeGain": 0,
         "grantFollowupMinSelfPrintedCost": 10,
         "requiredHeartSlot": 5
@@ -65820,7 +65770,7 @@
           "seriesTag": "DOLLCHESTRA"
         },
         "deckTopCount": null,
-        "handDiscardToWaiting": null,
+        "handDiscardToWaiting": 1,
         "deckDrawCount": null,
         "requiresOnStage": true,
         "requiresInWaiting": false,
@@ -65832,6 +65782,7 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
+        "handDiscardSeriesTag": "DOLLCHESTRA",
         "bladeGain": 0,
         "grantFollowupMinSelfPrintedCost": 10,
         "requiredHeartSlot": 5
@@ -66148,7 +66099,7 @@
           "seriesTag": "DOLLCHESTRA"
         },
         "deckTopCount": null,
-        "handDiscardToWaiting": null,
+        "handDiscardToWaiting": 1,
         "deckDrawCount": null,
         "requiresOnStage": true,
         "requiresInWaiting": false,
@@ -66160,6 +66111,7 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
+        "handDiscardSeriesTag": "DOLLCHESTRA",
         "bladeGain": 0,
         "grantFollowupMinSelfPrintedCost": 10,
         "requiredHeartSlot": 5
@@ -85242,8 +85194,8 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
-        "bladeGain": 0,
-        "handDiscardSeriesTag": "蓮ノ空"
+        "handDiscardSeriesTag": "蓮ノ空",
+        "bladeGain": 0
       },
       "issues": []
     },
@@ -85775,7 +85727,7 @@
           "minTotalNeedHeart": null
         },
         "deckTopCount": null,
-        "handDiscardToWaiting": null,
+        "handDiscardToWaiting": 2,
         "deckDrawCount": null,
         "requiresOnStage": true,
         "requiresInWaiting": false,
@@ -85787,6 +85739,7 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
+        "handDiscardSeriesTag": "蓮ノ空",
         "bladeGain": 0,
         "heartPickSlots": [
           1,
@@ -85799,7 +85752,6 @@
         "grantToEnteredMembersThisTurn": false,
         "grantExcludeSeriesTag": null,
         "handDiscardExact": 2,
-        "handDiscardSeriesTag": "蓮ノ空",
         "grantHeartSlotCount": 2,
         "grantPickStageMembersMax": 1,
         "grantExcludeSelf": true,
@@ -172480,7 +172432,7 @@
       "trigger": "toujyou",
       "segment_index": 0,
       "template": "ability_pick_one",
-      "status": "suspect",
+      "status": "needs_review",
       "fingerprint": "2c26511956738d4a9b85",
       "text": "手札の『蓮ノ空』のカードを1枚控え室に置いてもよい：以下から1つを選ぶ。\n・{{heart_01.png|heart01}}か{{heart_04.png|heart04}}か{{heart_05.png|heart05}}か{{heart_06.png|heart06}}のうち、1つを選ぶ。ライブ終了時まで、選んだハートを1つ得る。\n・自分のデッキの上からカードを3枚見る。その中から好きな枚数を好きな順番でデッキの上に置き、残りを控え室に置く。",
       "cost": "手札の『蓮ノ空』のカードを1枚控え室に置いてもよい",
@@ -172489,10 +172441,7 @@
           "kind": "cost.hand_to_waiting",
           "evidence": "手札の『蓮ノ空』のカードを1枚控え室に置",
           "amount": 1,
-          "status": "mismatch",
-          "evaluations": [
-            "missing_field"
-          ]
+          "status": "matched"
         },
         {
           "kind": "cost.optional",
@@ -172530,7 +172479,7 @@
           "minTotalNeedHeart": null
         },
         "deckTopCount": null,
-        "handDiscardToWaiting": null,
+        "handDiscardToWaiting": 1,
         "deckDrawCount": null,
         "requiresOnStage": true,
         "requiresInWaiting": false,
@@ -172542,6 +172491,7 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
+        "handDiscardSeriesTag": "蓮ノ空",
         "bladeGain": 0,
         "abilityChoices": [
           "heart01かheart04かheart05かheart06のうち、1つを選ぶ。ライブ終了時まで、選んだハートを1つ得る。",
@@ -172551,13 +172501,6 @@
         "choiceMax": 1
       },
       "issues": [
-        {
-          "code": "contract_mismatch",
-          "severity": "suspect",
-          "kind": "cost.hand_to_waiting",
-          "evidence": "手札の『蓮ノ空』のカードを1枚控え室に置",
-          "message": "分類結果がカード文の要求と一致しない: missing_field"
-        },
         {
           "code": "requirement_not_verified",
           "severity": "review",
@@ -172616,7 +172559,7 @@
       "trigger": "toujyou",
       "segment_index": 0,
       "template": "ability_pick_one",
-      "status": "suspect",
+      "status": "needs_review",
       "fingerprint": "ec2d4490e6f44fe920ff",
       "text": "手札の『蓮ノ空』のカードを1枚控え室に置いてもよい：以下から1つを選ぶ。\n・{{heart_01.png|heart01}}か{{heart_04.png|heart04}}か{{heart_05.png|heart05}}か{{heart_06.png|heart06}}のうち、1つを選ぶ。ライブ終了時まで、選んだハートを1つ得る。\n・自分のデッキの上からカードを3枚見る。その中から好きな枚数を好きな順番でデッキの上に置き、残りを控え室に置く。",
       "cost": "手札の『蓮ノ空』のカードを1枚控え室に置いてもよい",
@@ -172625,10 +172568,7 @@
           "kind": "cost.hand_to_waiting",
           "evidence": "手札の『蓮ノ空』のカードを1枚控え室に置",
           "amount": 1,
-          "status": "mismatch",
-          "evaluations": [
-            "missing_field"
-          ]
+          "status": "matched"
         },
         {
           "kind": "cost.optional",
@@ -172666,7 +172606,7 @@
           "minTotalNeedHeart": null
         },
         "deckTopCount": null,
-        "handDiscardToWaiting": null,
+        "handDiscardToWaiting": 1,
         "deckDrawCount": null,
         "requiresOnStage": true,
         "requiresInWaiting": false,
@@ -172678,6 +172618,7 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
+        "handDiscardSeriesTag": "蓮ノ空",
         "bladeGain": 0,
         "abilityChoices": [
           "heart01かheart04かheart05かheart06のうち、1つを選ぶ。ライブ終了時まで、選んだハートを1つ得る。",
@@ -172687,13 +172628,6 @@
         "choiceMax": 1
       },
       "issues": [
-        {
-          "code": "contract_mismatch",
-          "severity": "suspect",
-          "kind": "cost.hand_to_waiting",
-          "evidence": "手札の『蓮ノ空』のカードを1枚控え室に置",
-          "message": "分類結果がカード文の要求と一致しない: missing_field"
-        },
         {
           "code": "requirement_not_verified",
           "severity": "review",
@@ -180031,7 +179965,7 @@
       "trigger": "live_start",
       "segment_index": 0,
       "template": "grant_jouji_session",
-      "status": "suspect",
+      "status": "checked_known_rules",
       "fingerprint": "e3d0d6b5e9c9647ee11f",
       "text": "手札の『虹ヶ咲』のカードを1枚控え室に置いてもよい：ライブ終了時まで、{{heart_03.png|heart03}}を得る。",
       "cost": "手札の『虹ヶ咲』のカードを1枚控え室に置いてもよい",
@@ -180040,10 +179974,7 @@
           "kind": "cost.hand_to_waiting",
           "evidence": "手札の『虹ヶ咲』のカードを1枚控え室に置",
           "amount": 1,
-          "status": "mismatch",
-          "evaluations": [
-            "missing_field"
-          ]
+          "status": "matched"
         },
         {
           "kind": "cost.optional",
@@ -180080,7 +180011,7 @@
           "minTotalNeedHeart": null
         },
         "deckTopCount": null,
-        "handDiscardToWaiting": null,
+        "handDiscardToWaiting": 1,
         "deckDrawCount": null,
         "requiresOnStage": true,
         "requiresInWaiting": false,
@@ -180092,21 +180023,14 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
+        "handDiscardSeriesTag": "虹ヶ咲",
         "bladeGain": 0,
         "liveScoreGrant": 0,
         "cardScoreGrant": 0,
         "grantToMovedMembersThisTurn": false,
         "requiredHeartSlot": 3
       },
-      "issues": [
-        {
-          "code": "contract_mismatch",
-          "severity": "suspect",
-          "kind": "cost.hand_to_waiting",
-          "evidence": "手札の『虹ヶ咲』のカードを1枚控え室に置",
-          "message": "分類結果がカード文の要求と一致しない: missing_field"
-        }
-      ]
+      "issues": []
     },
     {
       "card_no": "PL!N-bp8-024-N",
@@ -181132,7 +181056,7 @@
       ]
     }
   ],
-  "generated_at": "2026-11-18T08:10:17.167Z",
+  "generated_at": "2026-11-18T11:58:31.183Z",
   "inputs": [
     "data/cards.json",
     "data/ability-semantic-contracts.json",
@@ -181152,7 +181076,7 @@
   "input_sha256": {
     "data/cards.json": "5aa366e061aa8e27b94d7f1e154779157e0b10fe59acf12083becb7064bbccfe",
     "data/ability-semantic-contracts.json": "e2ef6d56dad7a5e08693ef40aee3bf739bc0d9c5e0572cbd857cbc4889e46907",
-    "js/abilityEffects.js": "88289f76518f75a9f4adc148a1012da890d6ab1a08826de1833f952b0ec749db",
+    "js/abilityEffects.js": "2764b139560e925e171aabcda40d9e0449433dbc8a6d68723c3b04de620776bb",
     "js/abilityCompletion.js": "5a3337a1f502c33b89a3fe82443f9a979c0e7bc85333ca463e8bf52cc3e39485",
     "js/versusEffectPatch.js": "51221f037a06bd7520ee48117fc6c4f6aa1e0e062f41c420ea75c696fda371f0",
     "js/opponentBoard.js": "83917668269fa3acae7e0e0efcc5b96d38f37e046b9d35dd67693e688bc115d0",
@@ -181163,6 +181087,6 @@
     "js/cardGroups.js": "c5e5b2834a7ce7548ef2fbd67b8999d27cca2fe788dd5520ef15664758b0085d",
     "scripts/lib/ability-semantic-audit.mjs": "eb2c284106eb6739aed5f2c25f8233f9abaedd02481d939e2be5d020910d2410",
     "scripts/audit-ability-semantics.mjs": "1b0dce666a89323385e4845c5d581efcdc2f4797c89b37a4e642264c45ff1b7b",
-    "js/simulator.js": "ccc4193f597cc54b5de236a037a78e02f37bc6bf65c20b0a20944573d5b5ea81"
+    "js/simulator.js": "85f9a268f311975ca2677cc3ec250734d2eed5911ec2af7988075f533149550d"
   }
 }

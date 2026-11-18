@@ -25,7 +25,13 @@ const CASES = [
     id: "PL!SP-pb2-002-R",
     trigger: "kidou",
     expectTemplate: "ability_sequence",
-    check: (cl) => ((cl.steps || []).length >= 2 ? [] : ["steps"]),
+    check: (cl) => {
+      const miss = [];
+      if ((cl.steps || []).length < 2) miss.push("steps");
+      if (cl.handDiscardToWaiting !== 1) miss.push("handDiscardToWaiting");
+      if (cl.handDiscardSeriesTag !== "Liella!") miss.push("handDiscardSeriesTag");
+      return miss;
+    },
   },
   { id: "PL!SP-pb2-003-R", trigger: "live_success", expectTemplate: "live_success_liella_effect_moved_score" },
   { id: "PL!SP-pb2-005-R", trigger: "toujyou", expectTemplate: "toujou_baton_discarded_under" },
