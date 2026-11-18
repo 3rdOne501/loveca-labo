@@ -1,7 +1,7 @@
 # カード能力・処理要素の静的照合レポート
 
-生成: 2026-11-12T08:16:53.837Z
-対象: full_catalog / 2881枚・2379能力セグメント
+生成: 2026-11-18T08:10:17.167Z
+対象: full_catalog / 2895枚・2381能力セグメント
 
 静的な既知ルールの照合のみ。checked_known_rulesも実プレイの正しさを保証しない。未知の文言・未登録契約は要確認。過去の修正履歴による除外なし。
 
@@ -9,7 +9,7 @@
 |---|---:|
 | unimplemented | 75 |
 | suspect | 47 |
-| needs_review | 1945 |
+| needs_review | 1947 |
 | checked_known_rules | 312 |
 
 ## 指摘一覧（同じ能力文・分類・指摘はレアリティ違いをまとめる）
@@ -848,7 +848,7 @@
 |---|---:|---:|---|
 | deck_top_pick_recover | 140 | 140 | PL!-pb2-013-P＋, PL!-pb2-013-R, PL!-pb2-026-N, PL!-pb2-032-N |
 | blade_conditional | 120 | 114 | PL!-bp4-020-SRL, PL!-pb2-004-PP, PL!-pb2-004-R, PL!-pb2-011-P＋ |
-| draw_then_hand_discard | 89 | 89 | PL!N-bp7-023-N, PL!SP-bp7-026-L, PL!SP-bp4-026-SRL, PL!SP-pb2-036-N |
+| draw_then_hand_discard | 90 | 90 | PL!N-bp7-023-N, PL!SP-bp7-026-L, PL!SP-bp4-026-SRL, PL!SP-pb2-036-N |
 | live_card_score_plus | 86 | 86 | PL!-bp3-019-SRL, PL!-bp3-025-SRL, PL!-bp3-024-SRL, PL!-bp3-026-SRL |
 | grant_jouji_session | 75 | 75 | PL!-pb2-005-PP, PL!-pb2-005-R, PL!N-bp7-024-N, PL!S-bp2-023-SECL |
 | draw_from_deck | 49 | 49 | PL!-pb1-032-SRL, PL!-pb2-018-P＋, PL!-pb2-018-R, PL!N-bp7-013-N |
@@ -900,6 +900,7 @@
 | grant_hand_series_cost_reduce | 5 | 5 | PL!-bp6-019-L, PL!SP-bp5-003-AR, PL!SP-bp5-003-P, PL!SP-bp5-003-SEC |
 | draw_then_hand_to_deck_top | 5 | 5 | PL!S-bp6-019-L, PL!S-sd1-004-SD, PL!N-bp4-009-P, PL!N-bp4-009-R |
 | toujou_deck_top_wait_if_all_heart | 5 | 5 | PL!HS-PR-019-RM, PL!HS-PR-021-RM, PL!HS-sd1-013-SD, PL!HS-PR-019-PR |
+| live_start_activate_all_stage_members | 5 | 5 | PL!-bp3-001-P, PL!-bp3-001-R, PL!-bp3-005-P, PL!-bp3-005-R |
 | toujou_deck_top_liella_live_pick | 4 | 4 | PL!-pb2-008-PP, PL!-pb2-008-R, PL!SP-bp4-002-P, PL!SP-bp4-002-R |
 | kidou_mill_waiting_under_copy_printed_hearts | 4 | 4 | PL!N-bp7-003-P, PL!N-bp7-003-P＋, PL!N-bp7-003-SEC, PL!N-bp7-003-R＋ |
 | deck_mill_conditional_pick_one | 4 | 4 | PL!N-bp7-006-P, PL!N-bp7-006-P＋, PL!N-bp7-006-R＋, PL!N-bp7-006-SEC |
@@ -953,7 +954,6 @@
 | live_success_deck_wait_pick_live | 4 | 4 | PL!N-bp4-011-P, PL!N-bp4-011-R＋, PL!N-bp4-011-SEC, PL!N-bp4-011-P＋ |
 | toujou_liella_double_baton_center | 4 | 4 | PL!SP-bp4-004-P, PL!SP-bp4-004-P＋, PL!SP-bp4-004-R＋, PL!SP-bp4-004-SEC |
 | toujou_bibi_wait_opp_active_wait | 4 | 2 | PL!-pb1-015-P＋, PL!-pb1-015-R |
-| live_start_activate_all_stage_members | 4 | 4 | PL!-bp3-001-P, PL!-bp3-001-R, PL!-bp3-005-P, PL!-bp3-005-R |
 | draw_per_stage_member_discard | 4 | 4 | PL!-bp3-004-P＋, PL!-bp3-004-SEC, PL!-bp3-004-P, PL!-bp3-004-R＋ |
 | toujou_success_live_pick_hand | 4 | 4 | PL!-bp3-004-P＋, PL!-bp3-004-SEC, PL!-bp3-004-P, PL!-bp3-004-R＋ |
 | jidou_stage_entry_draw_until | 4 | 4 | PL!N-bp3-005-P, PL!N-bp3-005-P＋, PL!N-bp3-005-R＋, PL!N-bp3-005-SEC |

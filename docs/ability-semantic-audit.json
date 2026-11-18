@@ -3,21 +3,21 @@
   "contract_version": 1,
   "scope": "full_catalog",
   "summary": {
-    "cards": 2881,
-    "without_ability": 1070,
-    "segments": 2379,
+    "cards": 2895,
+    "without_ability": 1083,
+    "segments": 2381,
     "statuses": {
       "unimplemented": 75,
       "suspect": 47,
-      "needs_review": 1945,
+      "needs_review": 1947,
       "checked_known_rules": 312
     },
     "issues": {
-      "requirement_not_verified": 2884,
-      "template_contract_missing": 1623,
-      "followup_needs_review": 1675,
-      "body_not_understood": 660,
-      "text_not_understood": 200,
+      "requirement_not_verified": 2885,
+      "template_contract_missing": 1625,
+      "followup_needs_review": 1676,
+      "body_not_understood": 661,
+      "text_not_understood": 201,
       "missing_processing_contract": 15,
       "contract_mismatch": 47,
       "amount_not_verified": 17,
@@ -112361,8 +112361,8 @@
       "segment_index": 0,
       "template": "draw_per_stage_member_discard",
       "status": "needs_review",
-      "fingerprint": "aaae5b11bc9f2797d116",
-      "text": "自分のステージにいるメンバー1人につき、カードを1枚引く。その後、手札を1枚控え室に置く。\n",
+      "fingerprint": "3596bb785bf60b50ab6c",
+      "text": "自分のステージにいるメンバー1人につき、カードを1枚引く。その後、手札を1枚控え室に置く。\r\n",
       "cost": "",
       "requirements": [
         {
@@ -180981,9 +180981,158 @@
           "message": "処理の存在は確認できるが、枚数・回数を契約で確認できない。"
         }
       ]
+    },
+    {
+      "card_no": "PL!-bp3-001-PR",
+      "name": "高坂穂乃果",
+      "type": "メンバー",
+      "trigger": "kidou",
+      "segment_index": 0,
+      "template": "draw_then_hand_discard",
+      "status": "needs_review",
+      "fingerprint": "c278100daf16624a6905",
+      "text": "{{turn1.png|ターン1回}}このメンバーをウェイトにする：カードを1枚引き、手札を1枚控え室に置く。（ウェイト状態のメンバーが持つ{{icon_blade.png|ブレード}}は、エールで公開する枚数を増やさない。）\r\n",
+      "cost": "ターン1回このメンバーをウェイトにする",
+      "requirements": [
+        {
+          "kind": "cost.self_wait",
+          "evidence": "このメンバーをウェイト",
+          "status": "matched"
+        },
+        {
+          "kind": "effect.draw",
+          "evidence": "カードを1枚引",
+          "amount": 1,
+          "status": "unverified"
+        },
+        {
+          "kind": "limit.per_turn",
+          "evidence": "ターン1回",
+          "amount": 1,
+          "status": "matched"
+        }
+      ],
+      "classification": {
+        "trigger": "kidou",
+        "template": "draw_then_hand_discard",
+        "optional": false,
+        "filters": {
+          "pickType": null,
+          "maxCost": null,
+          "minCost": null,
+          "seriesTag": null,
+          "minSuccessLiveCount": null,
+          "minNeedHeartSlot": null,
+          "minNeedHeartValue": null,
+          "minTotalNeedHeart": null
+        },
+        "deckTopCount": null,
+        "handDiscardToWaiting": null,
+        "deckDrawCount": 1,
+        "requiresOnStage": true,
+        "requiresInWaiting": false,
+        "perTurnLimit": 1,
+        "hasOptionalCost": false,
+        "costEnergy": false,
+        "costEnergyCount": 0,
+        "costSelfWait": true,
+        "costPickMemberWait": false,
+        "costMandatoryWaitOtherMember": false,
+        "costOrAlt": false,
+        "bladeGain": 0,
+        "effectDiscardCount": 1
+      },
+      "issues": [
+        {
+          "code": "requirement_not_verified",
+          "severity": "review",
+          "kind": "effect.draw",
+          "evidence": "カードを1枚引",
+          "message": "カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。"
+        },
+        {
+          "code": "template_contract_missing",
+          "severity": "review",
+          "kind": "contract",
+          "evidence": "ターン1回このメンバーをウェイトにする:カードを1枚引き、手札を1枚控え室に置く。",
+          "message": "未登録テンプレート。対応済みとは判定しない。"
+        }
+      ]
+    },
+    {
+      "card_no": "PL!-bp3-001-PR",
+      "name": "高坂穂乃果",
+      "type": "メンバー",
+      "trigger": "live_start",
+      "segment_index": 1,
+      "template": "live_start_activate_all_stage_members",
+      "status": "needs_review",
+      "fingerprint": "aff943f456be37d6a733",
+      "text": "自分のステージにいるメンバーを1人までアクティブにする。",
+      "cost": "",
+      "requirements": [],
+      "classification": {
+        "trigger": "live_start",
+        "template": "live_start_activate_all_stage_members",
+        "optional": false,
+        "filters": {
+          "pickType": null,
+          "maxCost": null,
+          "minCost": null,
+          "seriesTag": null,
+          "minSuccessLiveCount": null,
+          "minNeedHeartSlot": null,
+          "minNeedHeartValue": null,
+          "minTotalNeedHeart": null
+        },
+        "deckTopCount": null,
+        "handDiscardToWaiting": null,
+        "deckDrawCount": null,
+        "requiresOnStage": true,
+        "requiresInWaiting": false,
+        "perTurnLimit": 0,
+        "hasOptionalCost": false,
+        "costEnergy": false,
+        "costEnergyCount": 0,
+        "costSelfWait": false,
+        "costPickMemberWait": false,
+        "costMandatoryWaitOtherMember": false,
+        "costOrAlt": false,
+        "bladeGain": 0
+      },
+      "issues": [
+        {
+          "code": "template_contract_missing",
+          "severity": "review",
+          "kind": "contract",
+          "evidence": "自分のステージにいるメンバーを1人までアクティブにする。",
+          "message": "未登録テンプレート。対応済みとは判定しない。"
+        },
+        {
+          "code": "text_not_understood",
+          "severity": "review",
+          "kind": "text",
+          "evidence": "自分のステージにいるメンバーを1人までアクティブにする。",
+          "message": "この能力文から処理要素を抽出できない。"
+        },
+        {
+          "code": "body_not_understood",
+          "severity": "review",
+          "kind": "text.body",
+          "evidence": "自分のステージにいるメンバーを1人までアクティブにする。",
+          "message": "コストや条件だけが読めても、効果本文を確認できなければ合格にしない。"
+        },
+        {
+          "code": "followup_needs_review",
+          "severity": "review",
+          "kind": "text.followup",
+          "evidence": "自分のステージにいるメンバーを1人までアクティブにする",
+          "message": "後続処理は順序・条件を含めて確認する。単一の分類結果だけで完了扱いにしない。"
+        }
+      ]
     }
   ],
-  "generated_at": "2026-11-12T08:16:53.837Z",
+  "generated_at": "2026-11-18T08:10:17.167Z",
   "inputs": [
     "data/cards.json",
     "data/ability-semantic-contracts.json",
@@ -181001,7 +181150,7 @@
     "js/simulator.js"
   ],
   "input_sha256": {
-    "data/cards.json": "17a42b5f075a5c5e7d58e98863da7df46a7666ddcc0bd8ca0de68772c9cf9c7b",
+    "data/cards.json": "5aa366e061aa8e27b94d7f1e154779157e0b10fe59acf12083becb7064bbccfe",
     "data/ability-semantic-contracts.json": "e2ef6d56dad7a5e08693ef40aee3bf739bc0d9c5e0572cbd857cbc4889e46907",
     "js/abilityEffects.js": "88289f76518f75a9f4adc148a1012da890d6ab1a08826de1833f952b0ec749db",
     "js/abilityCompletion.js": "5a3337a1f502c33b89a3fe82443f9a979c0e7bc85333ca463e8bf52cc3e39485",
