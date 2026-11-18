@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-18T11:58:32.852Z",
+  "generated": "2026-11-18T12:22:41.521Z",
   "sample_size": 50,
   "cards": [
     {
@@ -304,6 +304,27 @@
             "minNeedHeartSlot": null,
             "minNeedHeartValue": null,
             "minTotalNeedHeart": null
+          }
+        }
+      ]
+    },
+    {
+      "card_no": "PL!SP-pb2-002-R",
+      "name": "唐 可可",
+      "entries": [
+        {
+          "trigger": "kidou",
+          "template": "ability_pick_one",
+          "filters": {
+            "pickType": null,
+            "maxCost": null,
+            "minCost": null,
+            "seriesTag": "Liella!",
+            "minSuccessLiveCount": null,
+            "minNeedHeartSlot": null,
+            "minNeedHeartValue": null,
+            "minTotalNeedHeart": null,
+            "requiresNoBladeHeart": true
           }
         }
       ]
@@ -1080,26 +1101,6 @@
             "minNeedHeartValue": null,
             "minTotalNeedHeart": null,
             "minStageMembers": 2
-          }
-        }
-      ]
-    },
-    {
-      "card_no": "PL!-bp8-004-P",
-      "name": "園田海未",
-      "entries": [
-        {
-          "trigger": "kidou",
-          "template": "guided_manual",
-          "filters": {
-            "pickType": "メンバー",
-            "maxCost": null,
-            "minCost": null,
-            "seriesTag": "μ's",
-            "minSuccessLiveCount": null,
-            "minNeedHeartSlot": null,
-            "minNeedHeartValue": null,
-            "minTotalNeedHeart": null
           }
         }
       ]

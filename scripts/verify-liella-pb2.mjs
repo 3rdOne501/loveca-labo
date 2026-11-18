@@ -24,12 +24,13 @@ const CASES = [
   {
     id: "PL!SP-pb2-002-R",
     trigger: "kidou",
-    expectTemplate: "ability_sequence",
+    expectTemplate: "ability_pick_one",
     check: (cl) => {
       const miss = [];
-      if ((cl.steps || []).length < 2) miss.push("steps");
+      if (!(cl.abilityChoices && cl.abilityChoices.length >= 2)) miss.push("abilityChoices");
       if (cl.handDiscardToWaiting !== 1) miss.push("handDiscardToWaiting");
       if (cl.handDiscardSeriesTag !== "Liella!") miss.push("handDiscardSeriesTag");
+      if (!cl.choiceBoostIfNonBhMemberCost) miss.push("choiceBoostIfNonBhMemberCost");
       return miss;
     },
   },

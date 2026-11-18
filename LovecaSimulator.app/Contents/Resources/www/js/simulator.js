@@ -18706,16 +18706,26 @@ export function mountSimulator(
             return c && catalogCardMatchesGroupTag(mergedCatalogCard(c), cl.handDiscardSeriesTag);
           });
         }
-        handCostPool.forEach(function (c) {
+        var handCostPickType =
+          Number(cl.handDiscardToWaiting) === 1 && !cl.costOrAlt ? "radio" : "checkbox";
+        handCostPool.forEach(function (c, hci) {
           var hmc = mergedCatalogCard(c);
           var lab = ((hmc.card_no != null ? String(hmc.card_no) + " " : "") + (hmc.name || "")).trim();
           appendDialogPickTile(grid, {
             cardId: c.id,
             groupName: "cost-pay-hand",
+            inputType: handCostPickType,
             label: lab,
             imgSrc: hmc.img || c.img || "",
+            checked: handCostPickType === "radio" && hci === 0 && handCostPool.length === 1,
           });
         });
+        if (!handCostPool.length) {
+          grid.innerHTML =
+            '<p class="muted">手札に『' +
+            (cl.handDiscardSeriesTag || "") +
+            "』のカードがありません。</p>";
+        }
       }
     }
     setEffectDialogResolveBtnLabel(btnPay);
@@ -32124,6 +32134,18 @@ export function mountSimulator(
       if (cl.choiceBoostSeriesTag && successfulLiveAreaHasSeriesTag(cl.choiceBoostSeriesTag)) {
         if (cl.choiceBoostMin != null) minC = cl.choiceBoostMin;
         if (cl.choiceBoostMax != null) maxC = cl.choiceBoostMax;
+      }
+      if (cl.choiceBoostIfNonBhMemberCost) {
+        var costDiscIds = state._lastCostPaidHandDiscardedIds || [];
+        var nonBhMemberDiscarded = costDiscIds.some(function (did) {
+          var discInst = findCardInstById(did);
+          if (!discInst || discInst.type !== T_MEMBER) return false;
+          return !cardHasBladeHeart(mergedCatalogCard(discInst));
+        });
+        if (nonBhMemberDiscarded) {
+          if (cl.choiceBoostMin != null) minC = cl.choiceBoostMin;
+          if (cl.choiceBoostMax != null) maxC = cl.choiceBoostMax;
+        }
       }
       var leadChoice =
         kind === "kidou"

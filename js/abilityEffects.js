@@ -442,6 +442,7 @@ const TRIGGER_CANON_KEYS = ["toujyou", "kidou", "live_start", "live_success", "j
  * @property {string | null} [choiceBoostSeriesTag]
  * @property {number} [choiceBoostMin]
  * @property {number} [choiceBoostMax]
+ * @property {boolean} [choiceBoostIfNonBhMemberCost] コストで捨てたメンバーがBHなしのとき選択数を増やす
  * @property {'left'|'center'|'right'|null} [stageArea]
  * @property {Array<'left'|'center'|'right'>} [stageAreas]
  * @property {Partial<AbilityPickFilters>} [energyOnPickedLiveFilters] kidou_stage_wait_pick_hand: 回収ライブが条件を満たすときのみエネルギーアクティブ
@@ -928,7 +929,7 @@ function parseHandDiscardCostFromCostPart(costPart) {
   if (!costPart) return null;
   if (/手札をすべて控え室/.test(costPart)) return null;
   if (/手札のライブカードを1枚控え室/.test(costPart)) return 1;
-  var seriesM = costPart.match(/手札の『[^』]+』のカードを([０-９\d]+)枚控え室に置く/);
+  var seriesM = costPart.match(/手札の『[^』]+』のカードを([０-９\d]+)枚控え室に置(く|いてもよい)/);
   if (seriesM) return Number(normalizeFwDigits(seriesM[1])) || 1;
   var m = costPart.match(/手札を(\d+)枚控え室に置/);
   if (m) return Number(m[1]) || null;
@@ -4514,6 +4515,28 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
     var millPickOneKd = classifyDeckMillConditionalPickOnePatch(p, segRaw);
     if (millPickOneKd) return kidouT(millPickOneKd);
 
+    if (/以下から1つを選ぶ/.test(p)) {
+      var kdChoicesEarly = parseAbilityBulletChoices(segRaw);
+      if (!kdChoicesEarly.length) kdChoicesEarly = parseAbilityBulletChoices(p);
+      var discBoostKdM = p.match(
+        /これにより控え室に置いたカードがブレードハートを持たないメンバーカードの場合、代わりに([０-９\d]+)つ以上を選ぶ/,
+      );
+      /** @type {Partial<ClassifiedAbility>} */
+      var kdPickPatch = {
+        template: "ability_pick_one",
+        abilityChoices: kdChoicesEarly,
+        choiceMin: 1,
+        choiceMax: 1,
+        filters: parseAbilityPickFilters(p),
+      };
+      if (discBoostKdM) {
+        kdPickPatch.choiceBoostIfNonBhMemberCost = true;
+        kdPickPatch.choiceBoostMin = Number(normalizeFwDigits(discBoostKdM[1])) || 1;
+        kdPickPatch.choiceBoostMax = Math.max(kdChoicesEarly.length, 2);
+      }
+      return kidouT(kdPickPatch);
+    }
+
     var deckMillBladeKd = p.match(/デッキの上からカードを(\d+)枚控え室に置/);
     var milledSeriesBladeKd = p.match(/控え室に置いた『([^』]+)』のメンバーカード1枚につき/);
     if (deckMillBladeKd && milledSeriesBladeKd && /ライブ終了時まで/.test(p + segRaw)) {
@@ -4542,17 +4565,6 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
           }),
         );
       }
-    }
-
-    if (/以下から1つを選ぶ/.test(p)) {
-      var kdChoices = parseAbilityBulletChoices(segRaw);
-      return kidouT({
-        template: "ability_pick_one",
-        abilityChoices: kdChoices.length ? kdChoices : parseAbilityBulletChoices(p),
-        choiceMin: 1,
-        choiceMax: 1,
-        filters: parseAbilityPickFilters(p),
-      });
     }
 
     if (/控え室にある場合のみ起動/.test(p) && /控え室からステージに登場/.test(p)) {

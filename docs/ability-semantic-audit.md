@@ -1,6 +1,6 @@
 # カード能力・処理要素の静的照合レポート
 
-生成: 2026-11-18T11:58:31.183Z
+生成: 2026-11-18T12:22:39.840Z
 対象: full_catalog / 2895枚・2381能力セグメント
 
 静的な既知ルールの照合のみ。checked_known_rulesも実プレイの正しさを保証しない。未知の文言・未登録契約は要確認。過去の修正履歴による除外なし。
@@ -792,16 +792,16 @@
 | toujou_wait_pick_hand | 39 | 39 | PL!N-bp7-002-P, PL!N-bp7-002-R, PL!S-bp7-007-P, PL!S-bp7-007-P＋ |
 | deck_top_look_reorder | 36 | 36 | PL!-sd1-019-SRL, PL!N-bp7-006-P, PL!N-bp7-006-P＋, PL!N-bp7-006-R＋ |
 | activate_energy | 36 | 36 | PL!SP-bp7-007-P, PL!SP-bp7-007-P＋, PL!SP-bp7-007-R＋, PL!SP-bp7-007-SEC |
+| ability_pick_one | 34 | 30 | PL!N-bp7-005-P, PL!N-bp7-005-R, PL!S-bp7-003-P, PL!S-bp7-003-R＋ |
 | optional_energy_blade_until_live_end | 33 | 33 | PL!N-sd2-004-SD2, PL!N-sd2-008-SD2, PL!SP-pb2-040-N, PL!HS-cl1-005-CL |
-| ability_pick_one | 32 | 28 | PL!N-bp7-005-P, PL!N-bp7-005-R, PL!S-bp7-003-P, PL!S-bp7-003-R＋ |
 | live_start_position_change | 30 | 30 | PL!-bp4-020-SRL, PL!SP-bp7-022-N, PL!SP-pb2-011-PP, PL!SP-pb2-011-R |
 | kidou_hand_cost_wait_pick_hand | 30 | 30 | PL!-pb2-012-P＋, PL!-pb2-012-R, PL!SP-sd2-006-SD2, PL!-bp5-009-R |
 | energy_deck_to_wait | 30 | 30 | PL!SP-bp7-007-P, PL!SP-bp7-007-P＋, PL!SP-bp7-007-R＋, PL!SP-bp7-007-SEC |
 | live_score_plus | 25 | 25 | PL!-pb2-038-L, PL!SP-bp7-003-P＋, PL!SP-bp7-003-P, PL!SP-bp7-003-R＋ |
 | kidou_wait_pick_hand | 22 | 22 | PL!N-sd2-001-SD2, PL!-bp3-008-P, PL!-bp3-008-R＋, PL!-bp3-008-SEC |
-| ability_sequence | 14 | 14 | PL!-pb2-007-PP, PL!-pb2-007-R, PL!SP-bp7-003-P＋, PL!SP-bp7-003-P |
 | optional_self_wait_opp_stage | 14 | 10 | PL!-pb2-029-N, PL!N-sd2-013-SD2, PL!S-bp6-001-P, PL!S-bp6-001-R |
 | live_start_need_heart_reduce_fixed | 13 | 13 | PL!-bp3-023-SRL, PL!-pb1-030-SRL, PL!S-bp7-020-L, PL!S-bp7-020-SECL |
+| ability_sequence | 12 | 12 | PL!-pb2-007-PP, PL!-pb2-007-R, PL!SP-bp7-003-P＋, PL!SP-bp7-003-P |
 | activate_stage_members_up_to | 11 | 11 | PL!-pb2-016-P＋, PL!-pb2-017-P＋, PL!-pb2-017-R, PL!-pb2-016-R |
 | toujou_hand_stage_enter | 11 | 11 | PL!N-pb1-013-P＋, PL!N-pb1-013-R, PL!N-pb1-015-P＋, PL!N-pb1-015-R |
 | jidou_area_move_grant_jouji | 10 | 10 | PL!SP-bp7-014-N, PL!SP-sd2-002-SD2, PL!SP-sd2-002-P, PL!SP-sd2-012-SD2 |

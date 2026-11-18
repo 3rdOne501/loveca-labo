@@ -57,7 +57,55 @@ export function splitAbilitySegmentClauses(segRaw) {
     }
   }
   if (acc) out.push(acc);
+  if (out.length > 1) {
+    out = coalescePickOneCostDiscardBoostClauses(out);
+  }
   return out.length > 1 ? out : [s];
+}
+
+/**
+ * 「以下から1つを選ぶ」と「これにより控え室に置いた…代わりに選ぶ」は同一の効果選択文。
+ * ここで分断すると bullet が次節に逃げて ability_pick_one の選択肢が空になる。
+ * @param {string[]} parts
+ * @returns {string[]}
+ */
+function coalescePickOneCostDiscardBoostClauses(parts) {
+  /** @type {string[]} */
+  var out = parts.slice();
+  for (var i = 0; i < out.length - 1; i++) {
+    var headPlain = segmentPlainText(out[i]);
+    var tailPlain = segmentPlainText(out[i + 1]);
+    if (
+      /以下から.*選ぶ/.test(headPlain) &&
+      /^これにより控え室に置いた/.test(tailPlain) &&
+      /代わりに/.test(tailPlain) &&
+      /選ぶ/.test(tailPlain)
+    ) {
+      out[i] = out[i] + out[i + 1];
+      out.splice(i + 1, 1);
+      return coalescePickOneCostDiscardBoostClauses(out);
+    }
+  }
+  return out;
+}
+
+/** @param {string} raw @returns {string[]} */
+function parseBulletsFromSegmentRaw(raw) {
+  /** @type {string[]} */
+  var choices = [];
+  String(raw || "")
+    .split(/\n/)
+    .forEach(function (line) {
+      var m = line.match(/^[・\u30fb]\s*(.+)/);
+      if (!m) return;
+      choices.push(
+        m[1]
+          .replace(/\{\{[^}]+\}\}/g, "")
+          .replace(/\s+/g, " ")
+          .trim(),
+      );
+    });
+  return choices;
 }
 
 /**
@@ -138,6 +186,35 @@ export function applyAbilityComposition(card, trigger, segRaw, primary, classify
   }
 
   /** @param {import('./abilityEffects.js').ClassifiedAbility[]} steps */
+  function fillEmptyPickOneChoicesFromSegment(steps, segRawFull) {
+    if (!steps || !steps.length || !segRawFull) return steps;
+    var bullets = parseBulletsFromSegmentRaw(segRawFull);
+    if (!bullets.length) return steps;
+    return steps.map(function (st) {
+      if (!st || st.template !== "ability_pick_one") return st;
+      if (st.abilityChoices && st.abilityChoices.length) return st;
+      return Object.assign({}, st, { abilityChoices: bullets });
+    });
+  }
+
+  /** @param {import('./abilityEffects.js').ClassifiedAbility[]} steps */
+  function dropGrantStepWhenPickOneHasChoices(steps) {
+    if (!steps || steps.length !== 2) return steps;
+    var pick = steps[0];
+    var grant = steps[1];
+    if (
+      !pick ||
+      pick.template !== "ability_pick_one" ||
+      !(pick.abilityChoices && pick.abilityChoices.length >= 2)
+    ) {
+      return steps;
+    }
+    if (!grant || grant.template !== "grant_jouji_session") return steps;
+    if (grant.deckTopCount || grant.deckDrawCount || grant.deckTopPickCount) return steps;
+    return [pick];
+  }
+
+  /** @param {import('./abilityEffects.js').ClassifiedAbility[]} steps */
   function stripStepCostsWhenParentPaid(steps, parent) {
     if (!steps || steps.length < 2 || !parent) return steps;
     var parentHasCost =
@@ -186,6 +263,8 @@ export function applyAbilityComposition(card, trigger, segRaw, primary, classify
     });
     usable = mergeDrawDiscardConditionalGrantSteps(usable, plain);
     usable = applyGrantIfRecoveredNames(usable, plain);
+    usable = fillEmptyPickOneChoicesFromSegment(usable, segRaw);
+    usable = dropGrantStepWhenPickOneHasChoices(usable);
     usable = stripStepCostsWhenParentPaid(usable, primary);
     if (usable.length === 1) return Object.assign({}, primary, usable[0]);
     if (usable.length < 2) return primary;

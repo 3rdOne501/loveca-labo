@@ -4,7 +4,7 @@
   "total": 350,
   "byTemplate": {
     "optional_self_wait_opp_stage": 2,
-    "ability_sequence": 8,
+    "ability_sequence": 6,
     "kidou_hand_cost_wait_pick_hand": 30,
     "kidou_stage_wait_pick_hand": 75,
     "deck_top_pick_recover": 7,
@@ -19,6 +19,7 @@
     "draw_from_deck": 23,
     "live_start_position_change": 9,
     "kidou_wait_pick_hand": 22,
+    "ability_pick_one": 2,
     "kidou_heart_color_deck_reveal_pick": 4,
     "kidou_self_wait_activate_other": 2,
     "kidou_self_to_wait_opp_wait": 1,
@@ -529,28 +530,20 @@
     {
       "card_no": "PL!SP-pb2-002-R",
       "name": "唐 可可",
-      "template": "ability_sequence",
+      "template": "ability_pick_one",
       "automated": true,
       "optional": false,
       "perTurn": 1,
-      "effect": "手札の『Liella!』のカードを1枚控え室に置く：以下から1つを選ぶ。これにより控え室に置いたカードがブレードハートを持たないメンバーカードの場合、代わりに1つ以上を選ぶ。 ・自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。 ・ライブ終了時まで、自分のステージにいるこのメンバー以外の『Liella!』のメンバー1人は、を得る。",
-      "steps": [
-        "ability_pick_one",
-        "grant_jouji_session"
-      ]
+      "effect": "手札の『Liella!』のカードを1枚控え室に置く：以下から1つを選ぶ。これにより控え室に置いたカードがブレードハートを持たないメンバーカードの場合、代わりに1つ以上を選ぶ。 ・自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。 ・ライブ終了時まで、自分のステージにいるこのメンバー以外の『Liella!』のメンバー1人は、を得る。"
     },
     {
       "card_no": "PL!SP-pb2-002-PP",
       "name": "唐 可可",
-      "template": "ability_sequence",
+      "template": "ability_pick_one",
       "automated": true,
       "optional": false,
       "perTurn": 1,
-      "effect": "手札の『Liella!』のカードを1枚控え室に置く：以下から1つを選ぶ。これにより控え室に置いたカードがブレードハートを持たないメンバーカードの場合、代わりに1つ以上を選ぶ。 ・自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。 ・ライブ終了時まで、自分のステージにいるこのメンバー以外の『Liella!』のメンバー1人は、を得る。",
-      "steps": [
-        "ability_pick_one",
-        "grant_jouji_session"
-      ]
+      "effect": "手札の『Liella!』のカードを1枚控え室に置く：以下から1つを選ぶ。これにより控え室に置いたカードがブレードハートを持たないメンバーカードの場合、代わりに1つ以上を選ぶ。 ・自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。 ・ライブ終了時まで、自分のステージにいるこのメンバー以外の『Liella!』のメンバー1人は、を得る。"
     },
     {
       "card_no": "PL!SP-pb2-012-P＋",

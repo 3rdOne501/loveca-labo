@@ -13,7 +13,7 @@
       "checked_known_rules": 314
     },
     "issues": {
-      "requirement_not_verified": 2885,
+      "requirement_not_verified": 2889,
       "template_contract_missing": 1625,
       "followup_needs_review": 1676,
       "body_not_understood": 661,
@@ -7410,7 +7410,6 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
-        "handDiscardSeriesTag": "μ's",
         "bladeGain": 0,
         "liveScoreGrant": 0,
         "cardScoreGrant": 0,
@@ -30934,7 +30933,7 @@
       "type": "メンバー",
       "trigger": "kidou",
       "segment_index": 0,
-      "template": "ability_sequence",
+      "template": "ability_pick_one",
       "status": "needs_review",
       "fingerprint": "e7895a15c34ec7f9a4bc",
       "text": "{{turn1.png|ターン1回}}手札の『Liella!』のカードを1枚控え室に置く：以下から1つを選ぶ。これにより控え室に置いたカードがブレードハートを持たないメンバーカードの場合、代わりに1つ以上を選ぶ。\n・自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。\n・ライブ終了時まで、自分のステージにいるこのメンバー以外の『Liella!』のメンバー1人は、{{heart_06.png|heart06}}{{heart_06.png|heart06}}を得る。",
@@ -30953,12 +30952,12 @@
           "hearts": {
             "heart06": 2
           },
-          "status": "matched"
+          "status": "unverified"
         },
         {
           "kind": "duration.live_end",
           "evidence": "ライブ終了時まで",
-          "status": "matched"
+          "status": "unverified"
         },
         {
           "kind": "condition.no_blade_heart",
@@ -30974,7 +30973,7 @@
       ],
       "classification": {
         "trigger": "kidou",
-        "template": "ability_sequence",
+        "template": "ability_pick_one",
         "optional": false,
         "filters": {
           "pickType": null,
@@ -31002,87 +31001,31 @@
         "costOrAlt": false,
         "handDiscardSeriesTag": "Liella!",
         "bladeGain": 0,
-        "liveScoreGrant": 0,
-        "requiredHeartSlot": 6,
-        "grantHeartSlotCount": 2,
-        "grantPickStageMembersMax": 1,
-        "grantExcludeSelf": true,
-        "grantToStageSeriesTag": "Liella!",
-        "grantToStageSeriesMax": 1,
-        "steps": [
-          {
-            "trigger": "kidou",
-            "template": "ability_pick_one",
-            "optional": false,
-            "filters": {
-              "pickType": null,
-              "maxCost": null,
-              "minCost": null,
-              "seriesTag": "Liella!",
-              "minSuccessLiveCount": null,
-              "minNeedHeartSlot": null,
-              "minNeedHeartValue": null,
-              "minTotalNeedHeart": null
-            },
-            "deckTopCount": null,
-            "handDiscardToWaiting": null,
-            "deckDrawCount": null,
-            "requiresOnStage": true,
-            "requiresInWaiting": false,
-            "perTurnLimit": 1,
-            "hasOptionalCost": false,
-            "costEnergy": false,
-            "costEnergyCount": 0,
-            "costSelfWait": false,
-            "costPickMemberWait": false,
-            "costMandatoryWaitOtherMember": false,
-            "costOrAlt": false,
-            "handDiscardSeriesTag": "Liella!",
-            "bladeGain": 0,
-            "abilityChoices": [],
-            "choiceMin": 1,
-            "choiceMax": 1
-          },
-          {
-            "trigger": "kidou",
-            "template": "grant_jouji_session",
-            "optional": false,
-            "filters": {
-              "pickType": null,
-              "maxCost": null,
-              "minCost": null,
-              "seriesTag": "Liella!",
-              "minSuccessLiveCount": null,
-              "minNeedHeartSlot": null,
-              "minNeedHeartValue": null,
-              "minTotalNeedHeart": null,
-              "requiresNoBladeHeart": true
-            },
-            "deckTopCount": null,
-            "handDiscardToWaiting": null,
-            "deckDrawCount": null,
-            "requiresOnStage": true,
-            "requiresInWaiting": false,
-            "perTurnLimit": 0,
-            "hasOptionalCost": false,
-            "costEnergy": false,
-            "costEnergyCount": 0,
-            "costSelfWait": false,
-            "costPickMemberWait": false,
-            "costMandatoryWaitOtherMember": false,
-            "costOrAlt": false,
-            "bladeGain": 0,
-            "liveScoreGrant": 0,
-            "requiredHeartSlot": 6,
-            "grantHeartSlotCount": 2,
-            "grantPickStageMembersMax": 1,
-            "grantExcludeSelf": true,
-            "grantToStageSeriesTag": "Liella!",
-            "grantToStageSeriesMax": 1
-          }
-        ]
+        "abilityChoices": [
+          "自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。",
+          "ライブ終了時まで、自分のステージにいるこのメンバー以外の『Liella!』のメンバー1人は、heart06heart06を得る。"
+        ],
+        "choiceMin": 1,
+        "choiceMax": 1,
+        "choiceBoostIfNonBhMemberCost": true,
+        "choiceBoostMin": 1,
+        "choiceBoostMax": 2
       },
       "issues": [
+        {
+          "code": "requirement_not_verified",
+          "severity": "review",
+          "kind": "effect.grant_heart",
+          "evidence": "heart06heart06を得る",
+          "message": "カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。"
+        },
+        {
+          "code": "requirement_not_verified",
+          "severity": "review",
+          "kind": "duration.live_end",
+          "evidence": "ライブ終了時まで",
+          "message": "カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。"
+        },
         {
           "code": "requirement_not_verified",
           "severity": "review",
@@ -31204,7 +31147,7 @@
       "type": "メンバー",
       "trigger": "kidou",
       "segment_index": 0,
-      "template": "ability_sequence",
+      "template": "ability_pick_one",
       "status": "needs_review",
       "fingerprint": "c9bb9af901f6ba07d047",
       "text": "{{turn1.png|ターン1回}}手札の『Liella!』のカードを1枚控え室に置く：以下から1つを選ぶ。これにより控え室に置いたカードがブレードハートを持たないメンバーカードの場合、代わりに1つ以上を選ぶ。\n・自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。\n・ライブ終了時まで、自分のステージにいるこのメンバー以外の『Liella!』のメンバー1人は、{{heart_06.png|heart06}}{{heart_06.png|heart06}}を得る。",
@@ -31223,12 +31166,12 @@
           "hearts": {
             "heart06": 2
           },
-          "status": "matched"
+          "status": "unverified"
         },
         {
           "kind": "duration.live_end",
           "evidence": "ライブ終了時まで",
-          "status": "matched"
+          "status": "unverified"
         },
         {
           "kind": "condition.no_blade_heart",
@@ -31244,7 +31187,7 @@
       ],
       "classification": {
         "trigger": "kidou",
-        "template": "ability_sequence",
+        "template": "ability_pick_one",
         "optional": false,
         "filters": {
           "pickType": null,
@@ -31272,87 +31215,31 @@
         "costOrAlt": false,
         "handDiscardSeriesTag": "Liella!",
         "bladeGain": 0,
-        "liveScoreGrant": 0,
-        "requiredHeartSlot": 6,
-        "grantHeartSlotCount": 2,
-        "grantPickStageMembersMax": 1,
-        "grantExcludeSelf": true,
-        "grantToStageSeriesTag": "Liella!",
-        "grantToStageSeriesMax": 1,
-        "steps": [
-          {
-            "trigger": "kidou",
-            "template": "ability_pick_one",
-            "optional": false,
-            "filters": {
-              "pickType": null,
-              "maxCost": null,
-              "minCost": null,
-              "seriesTag": "Liella!",
-              "minSuccessLiveCount": null,
-              "minNeedHeartSlot": null,
-              "minNeedHeartValue": null,
-              "minTotalNeedHeart": null
-            },
-            "deckTopCount": null,
-            "handDiscardToWaiting": null,
-            "deckDrawCount": null,
-            "requiresOnStage": true,
-            "requiresInWaiting": false,
-            "perTurnLimit": 1,
-            "hasOptionalCost": false,
-            "costEnergy": false,
-            "costEnergyCount": 0,
-            "costSelfWait": false,
-            "costPickMemberWait": false,
-            "costMandatoryWaitOtherMember": false,
-            "costOrAlt": false,
-            "handDiscardSeriesTag": "Liella!",
-            "bladeGain": 0,
-            "abilityChoices": [],
-            "choiceMin": 1,
-            "choiceMax": 1
-          },
-          {
-            "trigger": "kidou",
-            "template": "grant_jouji_session",
-            "optional": false,
-            "filters": {
-              "pickType": null,
-              "maxCost": null,
-              "minCost": null,
-              "seriesTag": "Liella!",
-              "minSuccessLiveCount": null,
-              "minNeedHeartSlot": null,
-              "minNeedHeartValue": null,
-              "minTotalNeedHeart": null,
-              "requiresNoBladeHeart": true
-            },
-            "deckTopCount": null,
-            "handDiscardToWaiting": null,
-            "deckDrawCount": null,
-            "requiresOnStage": true,
-            "requiresInWaiting": false,
-            "perTurnLimit": 0,
-            "hasOptionalCost": false,
-            "costEnergy": false,
-            "costEnergyCount": 0,
-            "costSelfWait": false,
-            "costPickMemberWait": false,
-            "costMandatoryWaitOtherMember": false,
-            "costOrAlt": false,
-            "bladeGain": 0,
-            "liveScoreGrant": 0,
-            "requiredHeartSlot": 6,
-            "grantHeartSlotCount": 2,
-            "grantPickStageMembersMax": 1,
-            "grantExcludeSelf": true,
-            "grantToStageSeriesTag": "Liella!",
-            "grantToStageSeriesMax": 1
-          }
-        ]
+        "abilityChoices": [
+          "自分のエネルギーデッキから、エネルギーカードを1枚ウェイト状態で置く。",
+          "ライブ終了時まで、自分のステージにいるこのメンバー以外の『Liella!』のメンバー1人は、heart06heart06を得る。"
+        ],
+        "choiceMin": 1,
+        "choiceMax": 1,
+        "choiceBoostIfNonBhMemberCost": true,
+        "choiceBoostMin": 1,
+        "choiceBoostMax": 2
       },
       "issues": [
+        {
+          "code": "requirement_not_verified",
+          "severity": "review",
+          "kind": "effect.grant_heart",
+          "evidence": "heart06heart06を得る",
+          "message": "カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。"
+        },
+        {
+          "code": "requirement_not_verified",
+          "severity": "review",
+          "kind": "duration.live_end",
+          "evidence": "ライブ終了時まで",
+          "message": "カード文の要求を、登録済みの処理契約で確認できない。実装漏れの疑い／契約追加の要確認。"
+        },
         {
           "code": "requirement_not_verified",
           "severity": "review",
@@ -33475,7 +33362,6 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
-        "handDiscardSeriesTag": "KALEIDOSCORE",
         "bladeGain": 0,
         "energyWaitCount": 1,
         "energySkipNextActivate": false,
@@ -33507,7 +33393,6 @@
             "costPickMemberWait": false,
             "costMandatoryWaitOtherMember": false,
             "costOrAlt": false,
-            "handDiscardSeriesTag": "KALEIDOSCORE",
             "bladeGain": 0,
             "energyWaitCount": 1,
             "energySkipNextActivate": false
@@ -33733,7 +33618,6 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
-        "handDiscardSeriesTag": "KALEIDOSCORE",
         "bladeGain": 0,
         "energyWaitCount": 1,
         "energySkipNextActivate": false,
@@ -33765,7 +33649,6 @@
             "costPickMemberWait": false,
             "costMandatoryWaitOtherMember": false,
             "costOrAlt": false,
-            "handDiscardSeriesTag": "KALEIDOSCORE",
             "bladeGain": 0,
             "energyWaitCount": 1,
             "energySkipNextActivate": false
@@ -44875,7 +44758,6 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
-        "handDiscardSeriesTag": "DOLLCHESTRA",
         "bladeGain": 0
       },
       "issues": [
@@ -65643,7 +65525,6 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
-        "handDiscardSeriesTag": "DOLLCHESTRA",
         "bladeGain": 0,
         "grantFollowupMinSelfPrintedCost": 10,
         "requiredHeartSlot": 5
@@ -65782,7 +65663,6 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
-        "handDiscardSeriesTag": "DOLLCHESTRA",
         "bladeGain": 0,
         "grantFollowupMinSelfPrintedCost": 10,
         "requiredHeartSlot": 5
@@ -66111,7 +65991,6 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
-        "handDiscardSeriesTag": "DOLLCHESTRA",
         "bladeGain": 0,
         "grantFollowupMinSelfPrintedCost": 10,
         "requiredHeartSlot": 5
@@ -85194,8 +85073,8 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
-        "handDiscardSeriesTag": "蓮ノ空",
-        "bladeGain": 0
+        "bladeGain": 0,
+        "handDiscardSeriesTag": "蓮ノ空"
       },
       "issues": []
     },
@@ -85739,7 +85618,6 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
-        "handDiscardSeriesTag": "蓮ノ空",
         "bladeGain": 0,
         "heartPickSlots": [
           1,
@@ -85752,6 +85630,7 @@
         "grantToEnteredMembersThisTurn": false,
         "grantExcludeSeriesTag": null,
         "handDiscardExact": 2,
+        "handDiscardSeriesTag": "蓮ノ空",
         "grantHeartSlotCount": 2,
         "grantPickStageMembersMax": 1,
         "grantExcludeSelf": true,
@@ -172491,7 +172370,6 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
-        "handDiscardSeriesTag": "蓮ノ空",
         "bladeGain": 0,
         "abilityChoices": [
           "heart01かheart04かheart05かheart06のうち、1つを選ぶ。ライブ終了時まで、選んだハートを1つ得る。",
@@ -172618,7 +172496,6 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
-        "handDiscardSeriesTag": "蓮ノ空",
         "bladeGain": 0,
         "abilityChoices": [
           "heart01かheart04かheart05かheart06のうち、1つを選ぶ。ライブ終了時まで、選んだハートを1つ得る。",
@@ -180023,7 +179900,6 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
-        "handDiscardSeriesTag": "虹ヶ咲",
         "bladeGain": 0,
         "liveScoreGrant": 0,
         "cardScoreGrant": 0,
@@ -181056,7 +180932,7 @@
       ]
     }
   ],
-  "generated_at": "2026-11-18T11:58:31.183Z",
+  "generated_at": "2026-11-18T12:22:39.840Z",
   "inputs": [
     "data/cards.json",
     "data/ability-semantic-contracts.json",
@@ -181076,17 +180952,17 @@
   "input_sha256": {
     "data/cards.json": "5aa366e061aa8e27b94d7f1e154779157e0b10fe59acf12083becb7064bbccfe",
     "data/ability-semantic-contracts.json": "e2ef6d56dad7a5e08693ef40aee3bf739bc0d9c5e0572cbd857cbc4889e46907",
-    "js/abilityEffects.js": "2764b139560e925e171aabcda40d9e0449433dbc8a6d68723c3b04de620776bb",
+    "js/abilityEffects.js": "83520a6eccb7e9278e43558a809566bd851b696ec72755b6bd16fb4c944538cd",
     "js/abilityCompletion.js": "5a3337a1f502c33b89a3fe82443f9a979c0e7bc85333ca463e8bf52cc3e39485",
     "js/versusEffectPatch.js": "51221f037a06bd7520ee48117fc6c4f6aa1e0e062f41c420ea75c696fda371f0",
     "js/opponentBoard.js": "83917668269fa3acae7e0e0efcc5b96d38f37e046b9d35dd67693e688bc115d0",
     "js/jidouAutoEffects.js": "39e0e94dc8d7a52a97b6820f276b95fc0bcba4498df643058c303c3f2776b25f",
     "js/joujiEffects.js": "ddff1b0ede586f6fde9e35453316eb0727f1e93970ef7d6f19d2d2ab1c1b5450",
-    "js/abilityComposition.js": "7e4271275ffcb21f7adc879e7ef2bae973b64860a5875e82263b63d3d44537fd",
+    "js/abilityComposition.js": "19dab6c92bd9f5abe387f855a437752822a5eb9227680ab5a76b19f23a9afe02",
     "js/abilityRuntimeMeta.js": "64e670faf4edd378186ccfb618930b6ae8aa5e9218455e0b4ec237fbb0d2a776",
     "js/cardGroups.js": "c5e5b2834a7ce7548ef2fbd67b8999d27cca2fe788dd5520ef15664758b0085d",
     "scripts/lib/ability-semantic-audit.mjs": "eb2c284106eb6739aed5f2c25f8233f9abaedd02481d939e2be5d020910d2410",
     "scripts/audit-ability-semantics.mjs": "1b0dce666a89323385e4845c5d581efcdc2f4797c89b37a4e642264c45ff1b7b",
-    "js/simulator.js": "85f9a268f311975ca2677cc3ec250734d2eed5911ec2af7988075f533149550d"
+    "js/simulator.js": "517aae263de0dc9246e058b2327496753c620802a00f5dcff2f046ceace8c530"
   }
 }
