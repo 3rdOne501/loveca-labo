@@ -26,13 +26,7 @@ const THRESHOLDS = {
  * 「既存商品の退行を検知する」というこのゲートの目的を守るために母数から外す。
  * 商品の監修が終わったらこの配列から削除し、除外 0 件に戻すこと。
  */
-const PENDING_PRODUCT_CARD_NO = [
-  /^PL!-bp8-/,
-  /^PL!N-bp8-/,
-  /^PL!HS-bp8-/,
-  /^LL-bp8-/,
-  /^LL!-bp8-/,
-];
+const PENDING_PRODUCT_CARD_NO = [];
 
 function isPendingProduct(cardNo) {
   const s = String(cardNo || "");

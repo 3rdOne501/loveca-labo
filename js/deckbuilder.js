@@ -550,7 +550,7 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
   };
   /** これ未満だと仮想化しないが、フル描画は重いので低めに保つ */
   const CARD_GRID_VIRTUAL_MIN = 36;
-  /** カード検索一覧に並べる上限（既定ソートは新着順なので「最新 N 件」） */
+  /** 未絞り込みの検索一覧に並べる上限（既定ソートは新着順なので「最新 N 件」） */
   const CATALOG_GRID_DISPLAY_CAP = 100;
   /** 登録デッキ一覧の「行の集合」が前回フル描画と同じか判定する（枚数だけの変更なら一覧は差分更新） */
   let lastDeckListActiveNosSig = "";
@@ -2927,9 +2927,8 @@ export function initDeckBuilder(root, { onStartGame, onNavigateDeckBrowse, onNav
     hit.textContent = line;
   }
 
-  /** 検索・商品など何らかの絞り込み中か（このとき一覧の 100 件上限は外す） */
+  /** 商品・コストなど絞り込み中か。テキスト検索だけでは最新 N 件のまま。 */
   function catalogHasActiveNarrowing() {
-    if (String(searchText || "").trim()) return true;
     if (filterProduct) return true;
     if (filterSeries) return true;
     if (filterUnit) return true;

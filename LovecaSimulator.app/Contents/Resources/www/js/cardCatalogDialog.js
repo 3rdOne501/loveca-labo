@@ -14,6 +14,7 @@ import {
   cardHasBladeHeart,
   isBladeHeartDoubleColorlessMarkerKey,
   isBladeHeartDrawMarkerKey,
+  isOrangeBladeHeartKey,
   parseBladeHeartSlotFromKey,
   parseHeartColorSlotFromKey,
 } from "./bladeHeart.js";
@@ -195,8 +196,10 @@ function formatBladeHeartStatusHtmlRow(bh) {
     var slot = parseBladeHeartSlotFromKey(k);
     var v = Number(bh[k]);
     if (!Number.isFinite(v) || v === 0) return;
-    var stem =
-      slot === 7
+    var orange = isOrangeBladeHeartKey(k);
+    var stem = orange
+      ? "blade_heart08"
+      : slot === 7
         ? "icon_all"
         : slot != null && slot >= 1 && slot <= 6
           ? "heart_" + String(slot).padStart(2, "0")
@@ -214,7 +217,7 @@ function formatBladeHeartStatusHtmlRow(bh) {
         : '<span class="dlg-status-icon-chip dlg-status-icon-chip--bh dlg-status-icon-chip--muted">' +
           escapeHtmlPlain("×" + v) +
           "</span>";
-    parts.push({ ord: slot == null ? 99 : slot, html: chip });
+    parts.push({ ord: orange ? 8 : slot == null ? 99 : slot, html: chip });
   });
   parts.sort(function (a, b) {
     return a.ord - b.ord;

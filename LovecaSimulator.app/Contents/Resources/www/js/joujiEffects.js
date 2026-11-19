@@ -797,6 +797,36 @@ export function classifyJoujiSegment(segRaw) {
     }
   }
 
+  if (
+    /成功ライブカード置き場にあるカードのスコアの合計が(\d+)以上であるかぎり/.test(p) &&
+    /ライブカード置き場にあるすべての元々のスコアが(\d+)以下/.test(p) &&
+    /必要ハート/.test(p) &&
+    /減らす/.test(p) &&
+    !/このカードが自分の成功ライブカード置き場にあるかぎり/.test(p)
+  ) {
+    var sumM = p.match(/スコアの合計が(\d+)以上/);
+    var maxScoreM = p.match(/元々のスコアが(\d+)以下/);
+    var liveSerM = p.match(/『([^』]+)』のライブカード/);
+    /** @type {Record<string, number>} */
+    var liveAreaReduce = {};
+    var liveAreaHearts = countHeartIconsBySlot(segRaw);
+    Object.keys(liveAreaHearts).forEach(function (sk) {
+      var slotN = Number(sk);
+      var cnt = Math.floor(Number(liveAreaHearts[sk]) || 0);
+      if (cnt <= 0) return;
+      var key = slotN === 0 ? "heart0" : slotN === 1 ? "heart01" : "heart0" + slotN;
+      liveAreaReduce[key] = (liveAreaReduce[key] || 0) + cnt;
+    });
+    return Object.assign({}, base, {
+      kind: "stage_live_area_need_heart_reduce",
+      requiresStageOnly: true,
+      minSuccessLiveScoreSum: sumM ? Number(sumM[1]) : 6,
+      maxLivePrintedScore: maxScoreM ? Number(maxScoreM[1]) : 4,
+      seriesTag: liveSerM ? normalizeQuotedSeriesTag(liveSerM[1]) : null,
+      needHeartReduceMap: liveAreaReduce,
+    });
+  }
+
   var bladeN = countBladeIcons(segRaw);
   var heartMapEarly = countHeartIconsBySlot(segRaw);
   var hasHeartReward = Object.keys(heartMapEarly).length > 0;
@@ -952,6 +982,20 @@ export function classifyJoujiSegment(segRaw) {
     }
     if (/成功ライブカード置き場にあるカードのスコアの合計が相手より高い/.test(p)) {
       bladeRule.ownSuccessScoreBeatsOpponent = true;
+    }
+    if (bladeRule.kind === "blade_conditional") {
+      var perOtherSeries = p.match(/ほかの『([^』]+)』のメンバー1人につき/);
+      if (perOtherSeries && bladeN > 0) {
+        bladeRule.kind = "blade_per_series_on_stage_except_self";
+        bladeRule.bladePer = bladeN;
+        bladeRule.bladeFlat = 0;
+        bladeRule.seriesTag = normalizeQuotedSeriesTag(perOtherSeries[1]);
+      }
+    }
+    if (/相手のステージにいるこのメンバーと名前の異なるメンバー1人につき/.test(p) && bladeN > 0) {
+      bladeRule.kind = "blade_per_opp_different_name";
+      bladeRule.bladePer = bladeN;
+      bladeRule.bladeFlat = 0;
     }
 
     var charM = p.match(/「([^」]+)」がいるかぎり/);
@@ -1159,6 +1203,7 @@ function evaluateJoujiRule(rule, inst, card, ctx) {
       return out;
     case "grant_hand_no_ability_cost_reduce":
     case "grant_hand_series_cost_reduce":
+    case "stage_live_area_need_heart_reduce":
       return out;
     default:
       break;
@@ -1318,6 +1363,17 @@ function scalingCount(rule, inst, card, ctx) {
       n++;
     });
     return n;
+  }
+  if (rule.kind === "blade_per_opp_different_name") {
+    var myName = String((ctx.mergedCatalog(inst) || {}).name || "").replace(/\s+/g, "");
+    var oppDiff = 0;
+    var oppList = typeof ctx.eachOpponentStageColumnMembers === "function" ? ctx.eachOpponentStageColumnMembers() : [];
+    oppList.forEach(function (m) {
+      if (!m) return;
+      var nm = String((ctx.mergedCatalog(m) || {}).name || "").replace(/\s+/g, "");
+      if (nm && nm !== myName) oppDiff++;
+    });
+    return oppDiff;
   }
   if (rule.kind === "blade_per_series_on_stage" || rule.kind === "blade_per_series_on_stage_except_self") {
     var cnt = 0;
@@ -1772,6 +1828,40 @@ export function computeSuccessLiveJoujiLiveNeedHeartReduceForCard(liveTargetInst
       });
     }
   }
+  return totalReduce;
+}
+
+/**
+ * ステージメンバーの常時: ライブカード置き場の対象ライブの必要ハートを減らす。
+ * @param {*} liveTargetInst
+ * @param {JoujiBoardContext} ctx
+ * @returns {Record<string, number>}
+ */
+export function computeStageMemberLiveAreaNeedHeartReduceForCard(liveTargetInst, ctx) {
+  if (!liveTargetInst || !ctx) return {};
+  var targetCard = ctx.mergedCatalog(liveTargetInst);
+  if (!targetCard || targetCard.type !== "ライブ") return {};
+  var targetScore = Number(targetCard.score) || 0;
+  /** @type {Record<string, number>} */
+  var totalReduce = {};
+  var members = typeof ctx.eachStageColumnMembers === "function" ? ctx.eachStageColumnMembers() : [];
+  members.forEach(function (memberInst) {
+    if (!memberInst) return;
+    if (typeof ctx.memberIsOpponentProxy === "function" && ctx.memberIsOpponentProxy(memberInst)) return;
+    var memberCard = ctx.mergedCatalog(memberInst);
+    listNativeJoujiSegmentRaws(memberCard).forEach(function (raw) {
+      var rule = classifyJoujiSegment(raw);
+      if (!rule || rule.kind !== "stage_live_area_need_heart_reduce") return;
+      if (rule.requiresStageOnly && typeof ctx.memberOnStageOnly === "function" && !ctx.memberOnStageOnly(memberInst)) return;
+      if (rule.minSuccessLiveScoreSum != null && ctx.ownSuccessLiveScoreSum() < rule.minSuccessLiveScoreSum) return;
+      if (rule.seriesTag && !catalogCardMatchesGroupTag(targetCard, rule.seriesTag)) return;
+      if (rule.maxLivePrintedScore != null && targetScore > rule.maxLivePrintedScore) return;
+      Object.keys(rule.needHeartReduceMap || {}).forEach(function (k) {
+        var n = Math.floor(Number(rule.needHeartReduceMap[k]) || 0);
+        if (n > 0) totalReduce[k] = (totalReduce[k] || 0) + n;
+      });
+    });
+  });
   return totalReduce;
 }
 

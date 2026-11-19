@@ -8,10 +8,10 @@ export const COMPLETION_ACTIVE_TEMPLATES = ['toujou_waiting_members_under_self',
   'deck_top_peek_under_optional', 'waiting_to_deck_bottom_cost_boost', 'kidou_hand_member_under', 'waiting_to_deck_bottom_ordered', 'live_start_yell_grant_heart_filtered', 'live_start_named_triple_most_score',
   'live_start_cost_boost_activate_draw', 'toujou_both_trim_hand_to', 'live_start_return_boost_other_live', 'waiting_all_shuffle_deck_bottom', 'live_start_wait_members_need_reduce', 'live_start_bounce_enter_same_cost',
   'toujou_energy_under_self_and_other', 'kidou_hand_reveal_deck_bottom_opp_wait', 'live_start_bottom_mill_swap_live', 'yell_reveal_nobh_series_total_score_plus', 'kidou_live_from_waiting_if_empty', 'deck_mill_heart_color_need_reduce',
-  'yell_reveal_blade_heart_key_score_plus', 'deck_mill_check_score_plus', 'deck_mill_all_series_activate_energy', 'kidou_member_to_waiting_reenter', 'live_success_energy_under_to_area_draw_discard', 'live_start_series_cost_boost_sum_score',
-  'live_success_opp_yell_count_score'];
+  'yell_reveal_blade_heart_key_score_plus', 'deck_mill_check_score_plus', 'deck_mill_all_series_activate_energy', 'kidou_member_to_waiting_reenter', 'live_success_energy_under_to_area_draw_discard', 'live_start_series_cost_boost_sum_score', 'grant_hearts_if_bottom_series',
+  'live_success_opp_yell_count_score', 'deck_mill_if_match_blade', 'optional_waiting_bottom_then_draw', 'live_start_activate_named_then_opp_wait', 'draw_extra_if_baton_from_named', 'kidou_copy_discarded_toujou', 'optional_discard_if_cost_sum_recover', 'live_start_score_if_series_and_deck', 'live_start_score_and_need_per_success_series', 'live_start_rewrite_member_hearts_score', 'live_start_blade_per_opp_different_name', 'draw_per_series_energy_under', 'live_success_grant_score_jouji_most_hearts', 'live_start_optional_opp_draw_grant_heart', 'live_start_reveal_hand_bottom_then_opp_wait'];
 /** Templates whose cost is not the generic cost dialog (paid inside the handler). */
-export const COMPLETION_OWN_COST_TEMPLATES = ['waiting_to_deck_bottom_cost_boost', 'live_start_wait_members_need_reduce', 'kidou_hand_reveal_deck_bottom_opp_wait', 'live_start_bottom_mill_swap_live'];
+export const COMPLETION_OWN_COST_TEMPLATES = ['waiting_to_deck_bottom_cost_boost', 'live_start_wait_members_need_reduce', 'kidou_hand_reveal_deck_bottom_opp_wait', 'live_start_bottom_mill_swap_live', 'optional_waiting_bottom_then_draw', 'kidou_copy_discarded_toujou', 'optional_discard_if_cost_sum_recover', 'live_start_optional_opp_draw_grant_heart', 'live_start_reveal_hand_bottom_then_opp_wait'];
 export const COMPLETION_JIDOU_TEMPLATES = ['jidou_yell_score_group_extra', 'jidou_opp_wait_under_group', 'jidou_opp_wait_group_activate_choice', 'jidou_self_wait_activate_blade', 'jidou_any_member_wait_blade', 'jidou_leave_baton_min_cost_blade', 'jidou_leave_baton_max_cost_blade', 'jidou_waiting_entry_draw', 'jidou_yell_named_center_opp_wait',
   'jidou_leave_optional_deck_bottom_opp_wait', 'jidou_success_placed_effect', 'jidou_waiting_to_deck_blade', 'jidou_alone_series_to_waiting', 'jidou_leave_stage_hand_discard', 'jidou_yell_moved_score_plus', 'jidou_refresh_draw_discard', 'jidou_waiting_to_live_need_reduce'];
 export function classifyCompletionActive(raw, trigger) {
@@ -40,7 +40,44 @@ export function classifyCompletionActive(raw, trigger) {
   return classifyCompletionActiveMore(p, raw, trigger);
 }
 
+function heartTokenMap(chunk) {
+  const map = {};
+  for (const m of String(chunk || '').matchAll(/heart0([1-6])|heart0(?![1-9])/g)) {
+    const key = m[1] ? 'heart0' + m[1] : 'heart0';
+    map[key] = (map[key] || 0) + 1;
+  }
+  return map;
+}
+
 function classifyCompletionActiveMore(p, raw, trigger) {
+  const millBlade = p.match(/^自分のデッキの上からカードを(\d+)枚控え室に置く。それらの中に『([^』]+)』の(メンバー|ライブ)カードがある場合、ライブ終了時まで、((?:ブレード)+)を得る/);
+  if (millBlade) return { template: 'deck_mill_if_match_blade', deckMillCount: Number(millBlade[1]), millMatchFilters: { pickType: millBlade[3] === 'ライブ' ? LIVE : MEMBER, seriesTag: millBlade[2] }, bladeGain: (millBlade[4].match(/ブレード/g) || []).length, requiresOnStage: true };
+  const bottomDraw = p.match(/^控え室にある(ブレードハートを持たない)?(?:『([^』]+)』の)?(メンバー|ライブ)カード(\d+)枚を好きな順番でデッキの下に置いてもよい:カードを(\d+)枚引く/);
+  if (bottomDraw) return { template: 'optional_waiting_bottom_then_draw', optional: true, hasOptionalCost: true, costWaitingToDeckBottomCount: Number(bottomDraw[4]), costWaitingFilters: { pickType: bottomDraw[3] === 'ライブ' ? LIVE : MEMBER, seriesTag: bottomDraw[2] || null, requiresNoBladeHeart: !!bottomDraw[1] }, deckDrawCount: Number(bottomDraw[5]), requiresOnStage: true };
+  const revealBottom = p.match(/^手札の(?:コスト(\d+)以上の)?(ブレードハートを持たない)?(?:『([^』]+)』の)?(メンバー|ライブ)?カードを1枚公開してもよい:これにより公開したカードをデッキの一番下に置く。その後、相手のステージにいるコスト(\d+)以下のメンバー1人をウェイトにする/);
+  if (revealBottom) return { template: 'live_start_reveal_hand_bottom_then_opp_wait', optional: true, hasOptionalCost: true, revealFilters: { pickType: revealBottom[4] === 'ライブ' ? LIVE : revealBottom[4] ? MEMBER : null, minCost: revealBottom[1] ? Number(revealBottom[1]) : null, seriesTag: revealBottom[3] || null, requiresNoBladeHeart: !!revealBottom[2] }, oppWaitMaxCost: Number(revealBottom[5]), oppWaitCount: 1 };
+  const activateNamed = p.match(/^自分のステージにいるウェイト状態の「([^」]+)」1人をアクティブにする。そうしたとき、相手のステージにいるコスト(\d+)以下のメンバー1人をウェイトにする/);
+  if (activateNamed) return { template: 'live_start_activate_named_then_opp_wait', namedMember: quotedNames(raw)[0] || activateNamed[1], oppWaitMaxCost: Number(activateNamed[2]), oppWaitCount: 1 };
+  const batonDraw = p.match(/^カードを(\d+)枚引く。「([^」]+)」とバトンタッチして登場した場合、さらにカードを(\d+)枚引く/);
+  if (trigger === 'toujyou' && batonDraw) return { template: 'draw_extra_if_baton_from_named', deckDrawCount: Number(batonDraw[1]), extraDrawCount: Number(batonDraw[3]), batonFromName: quotedNames(raw)[0] || batonDraw[2], requiresOnStage: true };
+  const copyToujou = p.match(/^(?:ターン(\d+)回)?手札を(\d+)枚控え室に置く:これにより控え室に置いたカードがコスト(\d+)以下の『([^』]+)』のメンバーカードの場合、ライブ終了時まで、このメンバーは、そのカードが持つ登場能力1つを得る。その登場能力をコストを支払わずに発動させる/);
+  if (trigger === 'kidou' && copyToujou) return { template: 'kidou_copy_discarded_toujou', perTurnLimit: copyToujou[1] ? Number(copyToujou[1]) : 0, handDiscardToWaiting: Number(copyToujou[2]), filters: { pickType: MEMBER, maxCost: Number(copyToujou[3]), seriesTag: copyToujou[4] }, requiresOnStage: true };
+  const costSumRecover = p.match(/^手札を(\d+)枚控え室に置いてもよい:自分のステージにいる『([^』]+)』のメンバーのコストが合計(\d+)以上の場合、自分の控え室から『([^』]+)』の(メンバー|ライブ)カード1枚を手札に加える/);
+  if (costSumRecover) return { template: 'optional_discard_if_cost_sum_recover', optional: true, hasOptionalCost: true, handDiscardToWaiting: Number(costSumRecover[1]), costSumSeriesTag: costSumRecover[2], minSeriesCostSum: Number(costSumRecover[3]), recoverPickFilters: { pickType: costSumRecover[5] === 'ライブ' ? LIVE : MEMBER, seriesTag: costSumRecover[4] } };
+  const deckScore = p.match(/^自分のステージに『([^』]+)』のメンバーがおり、かつ自分のデッキにカードが(\d+)枚以上ある場合、このカードのスコアを\+(\d+)する/);
+  if (deckScore) return { template: 'live_start_score_if_series_and_deck', filters: { seriesTag: deckScore[1] }, minDeckCount: Number(deckScore[2]), cardScoreGrant: Number(deckScore[3]) };
+  const perSuccess = p.match(/^自分の成功ライブカード置き場にある『([^』]+)』のカード1枚につき、このカードのスコアを\+(\d+)し、必要ハートを((?:heart0[1-6]|heart0(?![1-9]))+)増やす/);
+  if (perSuccess) return { template: 'live_start_score_and_need_per_success_series', successSeriesTag: perSuccess[1], cardScoreGrant: Number(perSuccess[2]), needHeartIncreaseMap: heartTokenMap(perSuccess[3]) };
+  const rewrite = p.match(/^自分のステージにいる『([^』]+)』のメンバー1人を選ぶ。ライブ終了時まで、そのメンバーが持つheart0([1-6])とheart0([1-6])は、すべてheart0([1-6])になる。これにより(\d+)つ以上のハートがheart0\4になった場合、このカードのスコアを\+(\d+)する/);
+  if (rewrite) return { template: 'live_start_rewrite_member_hearts_score', filters: { pickType: MEMBER, seriesTag: rewrite[1] }, rewriteFromSlots: [Number(rewrite[2]), Number(rewrite[3])], rewriteToSlot: Number(rewrite[4]), minRewrittenHearts: Number(rewrite[5]), cardScoreGrant: Number(rewrite[6]) };
+  const perOppName = p.match(/^自分のステージにいる『([^』]+)』のメンバー1人を選ぶ。ライブ終了時まで、そのメンバーは、相手のステージにいるそのメンバーと名前の異なるメンバー1人につき、ブレードを得る/);
+  if (perOppName) return { template: 'live_start_blade_per_opp_different_name', filters: { pickType: MEMBER, seriesTag: perOppName[1] }, bladePer: (p.match(/ブレード/g) || []).length || 1 };
+  const perUnder = p.match(/^自分のステージにいるエネルギーカードが下にある(?:『([^』]+)』の)?メンバー1人につき、カードを(\d+)枚引く/);
+  if (perUnder) return { template: 'draw_per_series_energy_under', filters: { seriesTag: perUnder[1] || null }, deckDrawCount: Number(perUnder[2]) };
+  const mostHearts = p.match(/^自分と相手のステージの中で、ほかのすべてのメンバーより多くのハートを持つメンバーは、ライブ終了時まで、「常時ライブの合計スコアを\+(\d+)する。」を得る/);
+  if (mostHearts) return { template: 'live_success_grant_score_jouji_most_hearts', liveScoreGrant: Number(mostHearts[1]) };
+  const oppDrawGrant = p.match(/^自分は、相手がカードを1枚引くことを選んでもよい。そうしたとき、ライブ終了時まで、自分のステージにいるコスト(\d+)以上の『([^』]+)』のメンバー1人は、heart0([1-6])を得る/);
+  if (oppDrawGrant) return { template: 'live_start_optional_opp_draw_grant_heart', optional: true, hasOptionalCost: true, grantMinCost: Number(oppDrawGrant[1]), filters: { pickType: MEMBER, seriesTag: oppDrawGrant[2], minCost: Number(oppDrawGrant[1]) }, requiredHeartSlot: Number(oppDrawGrant[3]) };
   const [costPart, effectPart] = p.includes(':') ? [p.slice(0, p.indexOf(':')), p.slice(p.indexOf(':') + 1)] : ['', p];
   const peekUnder = p.match(/デッキの上からカードを(\d+)枚見る。その中から(メンバー|ライブ)カードを1枚公開し、このメンバーの下に置いてもよい。残りを控え室に置く/);
   if (peekUnder) return { template: 'deck_top_peek_under_optional', deckTopCount: Number(peekUnder[1]), filters: { pickType: peekUnder[2] === 'ライブ' ? LIVE : MEMBER }, optional: true, requiresOnStage: true };
@@ -62,6 +99,12 @@ function classifyCompletionActiveMore(p, raw, trigger) {
   if (trim) return { template: 'toujou_both_trim_hand_to', targetHandSize: Number(trim[1]) };
   const retBoost = p.match(/自分のライブカード置き場にカードが(\d+)枚以上あり、かつ『([^』]+)』のみの場合、このカードを手札に戻し、手札を(\d+)枚控え室に置く。そうしたとき、自分のライブカード置き場にあるカード1枚のスコアを\+(\d+)し、必要ハートを((?:heart0)+)増やす/);
   if (trigger === 'live_start' && retBoost) return { template: 'live_start_return_boost_other_live', minLiveAreaCards: Number(retBoost[1]), liveAreaOnlySeriesTag: retBoost[2], effectDiscardCount: Number(retBoost[3]), cardScoreGrant: Number(retBoost[4]), needHeartIncreaseMap: { heart0: heart0Count(retBoost[5]) } };
+  const bottomSeriesHeart = p.match(/これにより『([^』]+)』の(?:メンバー|ライブ)カードが(\d+)枚以上デッキの下に置かれた場合、ライブ終了時まで、((?:heart0[1-6])+)を得る/);
+  if (bottomSeriesHeart) {
+    const heartSlots = {};
+    for (const m of bottomSeriesHeart[3].matchAll(/heart0([1-6])/g)) heartSlots[Number(m[1])] = (heartSlots[Number(m[1])] || 0) + 1;
+    return { template: 'grant_hearts_if_bottom_series', seriesTag: bottomSeriesHeart[1], minBottomSeriesCount: Number(bottomSeriesHeart[2]), grantHeartSlots: heartSlots, requiresOnStage: true };
+  }
   const shuffleAll = effectPart.match(/^自分の控え室にあるすべての(?:コスト(\d+)以下の)?(?:『([^』]+)』の)?(メンバー|ライブ)カードをシャッフルし、デッキの下に置く。?$/);
   if (shuffleAll) return { template: 'waiting_all_shuffle_deck_bottom', filters: { pickType: shuffleAll[3] === 'ライブ' ? LIVE : MEMBER, maxCost: shuffleAll[1] ? Number(shuffleAll[1]) : null, seriesTag: shuffleAll[2] || null } };
   const waitN = costPart.match(/^メンバー(\d+)人をウェイトにしてもよい$/);

@@ -21,25 +21,19 @@ const CASES = [
   {
     "id": "LL-bp8-001-R＋",
     "trigger": "toujyou",
-    "expectTemplate": "deck_top_to_waiting",
+    "expectTemplate": "deck_top_peek_under_optional",
     "hint": ""
   },
   {
     "id": "LL-bp8-001-R＋",
     "trigger": "live_success",
-    "expectTemplate": "deck_top_peek_optional_wait",
+    "expectTemplate": "deck_top_peek_under_optional",
     "hint": ""
   },
   {
     "id": "LL-bp8-001-R＋",
     "trigger": "jouji",
-    "expectTemplate": "jouji:unclassified",
-    "hint": ""
-  },
-  {
-    "id": "LL-bp8-001-R＋",
-    "trigger": "live_start",
-    "expectTemplate": "guided_manual",
+    "expectTemplate": "jouji:mirror_under_card_kidou_live_start",
     "hint": ""
   },
   {
@@ -57,19 +51,19 @@ const CASES = [
   {
     "id": "PL!-bp8-001-P",
     "trigger": "jouji",
-    "expectTemplate": "jouji:blade_conditional",
+    "expectTemplate": "jouji:stage_live_area_need_heart_reduce",
     "hint": ""
   },
   {
     "id": "PL!-bp8-002-P",
     "trigger": "jidou",
-    "expectTemplate": "jidou_manual",
+    "expectTemplate": "jidou_leave_optional_deck_bottom_opp_wait",
     "hint": ""
   },
   {
     "id": "PL!-bp8-003-P",
     "trigger": "jouji",
-    "expectTemplate": "jouji:unclassified",
+    "expectTemplate": "jouji:stage_series_grant_quoted",
     "hint": ""
   },
   {
@@ -81,7 +75,7 @@ const CASES = [
   {
     "id": "PL!-bp8-004-P",
     "trigger": "kidou",
-    "expectTemplate": "guided_manual",
+    "expectTemplate": "waiting_to_deck_bottom_cost_boost",
     "hint": ""
   },
   {
@@ -105,7 +99,7 @@ const CASES = [
   {
     "id": "PL!-bp8-007-P",
     "trigger": "toujyou",
-    "expectTemplate": "grant_jouji_session",
+    "expectTemplate": "deck_mill_if_match_blade",
     "hint": ""
   },
   {
@@ -117,19 +111,19 @@ const CASES = [
   {
     "id": "PL!-bp8-009-P",
     "trigger": "jouji",
-    "expectTemplate": "jouji:blade_conditional",
+    "expectTemplate": "jouji:per_distinct_cost_under_cost_heart_blade",
     "hint": ""
   },
   {
     "id": "PL!-bp8-009-P",
     "trigger": "kidou",
-    "expectTemplate": "guided_manual",
+    "expectTemplate": "kidou_hand_member_under",
     "hint": ""
   },
   {
     "id": "PL!-bp8-010-N",
     "trigger": "kidou",
-    "expectTemplate": "guided_manual",
+    "expectTemplate": "waiting_to_deck_bottom_ordered",
     "hint": ""
   },
   {
@@ -147,13 +141,13 @@ const CASES = [
   {
     "id": "PL!-bp8-013-N",
     "trigger": "jouji",
-    "expectTemplate": "jouji:unclassified",
+    "expectTemplate": "jouji:success_live_score_total_plus",
     "hint": ""
   },
   {
     "id": "PL!-bp8-014-N",
     "trigger": "toujyou",
-    "expectTemplate": "draw_from_deck",
+    "expectTemplate": "optional_waiting_bottom_then_draw",
     "hint": ""
   },
   {
@@ -183,43 +177,43 @@ const CASES = [
   {
     "id": "PL!-bp8-020-L",
     "trigger": "live_start",
-    "expectTemplate": "live_start_opp_wait_max_cost",
+    "expectTemplate": "live_start_activate_named_then_opp_wait",
     "hint": ""
   },
   {
     "id": "PL!-bp8-021-L",
     "trigger": "jidou",
-    "expectTemplate": "jidou_manual",
+    "expectTemplate": "jidou_success_placed_effect",
     "hint": ""
   },
   {
     "id": "PL!-bp8-022-L",
     "trigger": "live_success",
-    "expectTemplate": "live_card_score_plus",
+    "expectTemplate": "yell_reveal_blade_heart_key_score_plus",
     "hint": ""
   },
   {
     "id": "PL!-bp8-023-L",
     "trigger": "live_start",
-    "expectTemplate": "guided_manual",
+    "expectTemplate": "live_start_yell_grant_heart_filtered",
     "hint": ""
   },
   {
     "id": "PL!-bp8-023-L",
     "trigger": "live_success",
-    "expectTemplate": "live_card_score_plus",
+    "expectTemplate": "yell_reveal_blade_heart_key_score_plus",
     "hint": ""
   },
   {
     "id": "PL!-bp8-024-L",
     "trigger": "live_start",
-    "expectTemplate": "grant_jouji_session",
+    "expectTemplate": "live_start_blade_per_opp_different_name",
     "hint": ""
   },
   {
     "id": "PL!-bp8-025-L",
     "trigger": "live_start",
-    "expectTemplate": "guided_manual",
+    "expectTemplate": "live_start_named_triple_most_score",
     "hint": ""
   },
   {
@@ -231,61 +225,61 @@ const CASES = [
   {
     "id": "PL!HS-bp8-001-P",
     "trigger": "toujyou",
-    "expectTemplate": "activate_energy",
+    "expectTemplate": "deck_mill_all_series_activate_energy",
     "hint": ""
   },
   {
     "id": "PL!HS-bp8-001-P",
     "trigger": "jidou",
-    "expectTemplate": "jidou_manual",
+    "expectTemplate": "jidou_waiting_to_deck_blade",
     "hint": ""
   },
   {
     "id": "PL!HS-bp8-002-P",
     "trigger": "jouji",
-    "expectTemplate": "jouji:blade_conditional",
+    "expectTemplate": "jouji:blade_per_self_cost",
     "hint": ""
   },
   {
     "id": "PL!HS-bp8-002-P",
     "trigger": "live_start",
-    "expectTemplate": "guided_manual",
+    "expectTemplate": "live_start_cost_boost_activate_draw",
     "hint": ""
   },
   {
     "id": "PL!HS-bp8-003-P",
     "trigger": "toujyou",
-    "expectTemplate": "guided_manual",
+    "expectTemplate": "toujou_both_trim_hand_to",
     "hint": ""
   },
   {
     "id": "PL!HS-bp8-003-P",
     "trigger": "jouji",
-    "expectTemplate": "jouji:blade_conditional",
+    "expectTemplate": "jouji:blade_per_hand_below",
     "hint": ""
   },
   {
     "id": "PL!HS-bp8-004-P",
     "trigger": "toujyou",
-    "expectTemplate": "draw_from_deck",
+    "expectTemplate": "draw_extra_if_baton_from_named",
     "hint": ""
   },
   {
     "id": "PL!HS-bp8-004-P",
     "trigger": "kidou",
-    "expectTemplate": "grant_jouji_session",
+    "expectTemplate": "kidou_copy_discarded_toujou",
     "hint": ""
   },
   {
     "id": "PL!HS-bp8-005-P",
     "trigger": "jouji",
-    "expectTemplate": "jouji:unclassified",
+    "expectTemplate": "jouji:cannot_play_without_series",
     "hint": ""
   },
   {
     "id": "PL!HS-bp8-005-P",
     "trigger": "jidou",
-    "expectTemplate": "jidou_manual",
+    "expectTemplate": "jidou_alone_series_to_waiting",
     "hint": ""
   },
   {
@@ -297,7 +291,7 @@ const CASES = [
   {
     "id": "PL!HS-bp8-007-P",
     "trigger": "jouji",
-    "expectTemplate": "jouji:unclassified",
+    "expectTemplate": "jouji:lock_kidou_while_named_active",
     "hint": ""
   },
   {
@@ -309,13 +303,13 @@ const CASES = [
   {
     "id": "PL!HS-bp8-008-P",
     "trigger": "jouji",
-    "expectTemplate": "jouji:unclassified",
+    "expectTemplate": "jouji:immune_opp_wait_while_named",
     "hint": ""
   },
   {
     "id": "PL!HS-bp8-008-P",
     "trigger": "kidou",
-    "expectTemplate": "kidou_self_to_wait_recover",
+    "expectTemplate": "kidou_member_to_waiting_reenter",
     "hint": ""
   },
   {
@@ -327,7 +321,7 @@ const CASES = [
   {
     "id": "PL!HS-bp8-010-N",
     "trigger": "live_start",
-    "expectTemplate": "toujou_wait_pick_hand",
+    "expectTemplate": "optional_discard_if_cost_sum_recover",
     "hint": ""
   },
   {
@@ -357,7 +351,7 @@ const CASES = [
   {
     "id": "PL!HS-bp8-014-N",
     "trigger": "jidou",
-    "expectTemplate": "jidou_manual",
+    "expectTemplate": "jidou_leave_stage_hand_discard",
     "hint": ""
   },
   {
@@ -369,55 +363,55 @@ const CASES = [
   {
     "id": "PL!HS-bp8-016-N",
     "trigger": "live_success",
-    "expectTemplate": "guided_manual",
+    "expectTemplate": "live_success_recover_from_waiting",
     "hint": ""
   },
   {
     "id": "PL!HS-bp8-017-L",
     "trigger": "live_start",
-    "expectTemplate": "guided_manual",
+    "expectTemplate": "live_start_return_boost_other_live",
     "hint": ""
   },
   {
     "id": "PL!HS-bp8-018-L",
     "trigger": "jidou",
-    "expectTemplate": "jidou_manual",
+    "expectTemplate": "jidou_yell_moved_score_plus",
     "hint": ""
   },
   {
     "id": "PL!HS-bp8-019-L",
     "trigger": "live_start",
-    "expectTemplate": "guided_manual",
+    "expectTemplate": "waiting_all_shuffle_deck_bottom",
     "hint": "支払ってもよい：自分の控え室にあるすべてのコスト9以下のメンバーカードをシャッフ"
   },
   {
     "id": "PL!HS-bp8-019-L",
     "trigger": "live_start",
-    "expectTemplate": "live_card_score_plus",
+    "expectTemplate": "live_start_score_if_series_and_deck",
     "hint": "自分のステージに『スリーズブーケ』のメンバーがおり、かつ自分のデッキにカードが3"
   },
   {
     "id": "PL!HS-bp8-020-L",
     "trigger": "live_start",
-    "expectTemplate": "guided_manual",
+    "expectTemplate": "live_start_wait_members_need_reduce",
     "hint": "メンバー2人をウェイトにしてもよい：このカードの必要ハートを減らす。これによりウ"
   },
   {
     "id": "PL!HS-bp8-020-L",
     "trigger": "live_start",
-    "expectTemplate": "live_card_score_plus",
+    "expectTemplate": "live_start_series_cost_boost_sum_score",
     "hint": "ライブ終了時まで、『DOLLCHESTRA』のメンバー1人のコストを＋５する。そ"
   },
   {
     "id": "PL!HS-bp8-021-L",
     "trigger": "live_start",
-    "expectTemplate": "guided_manual",
+    "expectTemplate": "live_start_bounce_enter_same_cost",
     "hint": ""
   },
   {
     "id": "PL!HS-bp8-022-L",
     "trigger": "live_start",
-    "expectTemplate": "grant_jouji_session",
+    "expectTemplate": "live_start_optional_opp_draw_grant_heart",
     "hint": ""
   },
   {
@@ -429,7 +423,7 @@ const CASES = [
   {
     "id": "PL!HS-bp8-023-L",
     "trigger": "live_start",
-    "expectTemplate": "live_card_score_plus",
+    "expectTemplate": "live_start_score_and_need_per_success_series",
     "hint": ""
   },
   {
@@ -441,13 +435,13 @@ const CASES = [
   {
     "id": "PL!N-bp8-001-P",
     "trigger": "toujyou",
-    "expectTemplate": "guided_manual",
+    "expectTemplate": "toujou_energy_under_self_and_other",
     "hint": ""
   },
   {
     "id": "PL!N-bp8-001-P",
     "trigger": "live_success",
-    "expectTemplate": "draw_then_hand_discard",
+    "expectTemplate": "live_success_energy_under_to_area_draw_discard",
     "hint": ""
   },
   {
@@ -477,13 +471,13 @@ const CASES = [
   {
     "id": "PL!N-bp8-005-P",
     "trigger": "jouji",
-    "expectTemplate": "jouji:unclassified",
+    "expectTemplate": "jouji:hand_cost_plus_per_energy_deck",
     "hint": "手札にあるこのメンバーカードのコストは、自分のエネルギーデッキのカード1枚につき"
   },
   {
     "id": "PL!N-bp8-005-P",
     "trigger": "jouji",
-    "expectTemplate": "jouji:blade_conditional",
+    "expectTemplate": "jouji:heart_grant_own_series_and_opponent_all",
     "hint": "自分のステージにいるすべての『虹ヶ咲』のメンバーと相手のステージにいるすべてのメ"
   },
   {
@@ -507,7 +501,7 @@ const CASES = [
   {
     "id": "PL!N-bp8-008-P",
     "trigger": "kidou",
-    "expectTemplate": "guided_manual",
+    "expectTemplate": "kidou_hand_reveal_deck_bottom_opp_wait",
     "hint": ""
   },
   {
@@ -519,19 +513,19 @@ const CASES = [
   {
     "id": "PL!N-bp8-009-P",
     "trigger": "live_start",
-    "expectTemplate": "guided_manual",
+    "expectTemplate": "live_start_bottom_mill_swap_live",
     "hint": ""
   },
   {
     "id": "PL!N-bp8-010-P",
     "trigger": "live_success",
-    "expectTemplate": "guided_manual",
+    "expectTemplate": "yell_reveal_nobh_series_total_score_plus",
     "hint": ""
   },
   {
     "id": "PL!N-bp8-011-P",
     "trigger": "jidou",
-    "expectTemplate": "jidou_manual",
+    "expectTemplate": "jidou_refresh_draw_discard",
     "hint": ""
   },
   {
@@ -567,7 +561,7 @@ const CASES = [
   {
     "id": "PL!N-bp8-018-N",
     "trigger": "live_start",
-    "expectTemplate": "live_start_opp_wait_max_cost",
+    "expectTemplate": "live_start_reveal_hand_bottom_then_opp_wait",
     "hint": ""
   },
   {
@@ -579,13 +573,13 @@ const CASES = [
   {
     "id": "PL!N-bp8-021-N",
     "trigger": "kidou",
-    "expectTemplate": "guided_manual",
+    "expectTemplate": "kidou_live_from_waiting_if_empty",
     "hint": ""
   },
   {
     "id": "PL!N-bp8-022-N",
     "trigger": "jouji",
-    "expectTemplate": "jouji:blade_conditional",
+    "expectTemplate": "jouji:blade_per_series_on_stage_except_self",
     "hint": ""
   },
   {
@@ -603,13 +597,13 @@ const CASES = [
   {
     "id": "PL!N-bp8-025-L",
     "trigger": "live_success",
-    "expectTemplate": "draw_from_deck",
+    "expectTemplate": "draw_per_series_energy_under",
     "hint": ""
   },
   {
     "id": "PL!N-bp8-026-L",
     "trigger": "live_start",
-    "expectTemplate": "live_card_score_plus",
+    "expectTemplate": "live_start_rewrite_member_hearts_score",
     "hint": ""
   },
   {
@@ -621,31 +615,31 @@ const CASES = [
   {
     "id": "PL!N-bp8-028-L",
     "trigger": "live_start",
-    "expectTemplate": "guided_manual",
+    "expectTemplate": "deck_mill_heart_color_need_reduce",
     "hint": ""
   },
   {
     "id": "PL!N-bp8-029-L",
     "trigger": "live_success",
-    "expectTemplate": "guided_manual",
+    "expectTemplate": "live_success_surplus_heart_score_plus",
     "hint": ""
   },
   {
     "id": "PL!N-bp8-030-L",
     "trigger": "jidou",
-    "expectTemplate": "jidou_manual",
+    "expectTemplate": "jidou_waiting_to_live_need_reduce",
     "hint": ""
   },
   {
     "id": "PL!N-bp8-030-L",
     "trigger": "live_success",
-    "expectTemplate": "deck_top_to_waiting",
+    "expectTemplate": "deck_mill_check_score_plus",
     "hint": ""
   },
   {
     "id": "PL!N-bp8-031-L",
     "trigger": "live_success",
-    "expectTemplate": "grant_jouji_session",
+    "expectTemplate": "live_success_grant_score_jouji_most_hearts",
     "hint": ""
   }
 ];

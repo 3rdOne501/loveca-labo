@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** ブースターパック まじかる♡とり～と: 全レアリティの分類診断。未対応は既知集合のみ許可。 */
+/** ブースターパック まじかる♡とり～と: 全レアリティが自動分類であること。新規の手動分類は失敗。 */
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -16,76 +16,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const cards = JSON.parse(fs.readFileSync(path.join(ROOT, "data/cards.json"), "utf8"));
 const PRODUCT = "ブースターパック まじかる♡とり～と";
 
-const KNOWN_UNIMPLEMENTED = new Set([
-  "LL-bp8-001-R＋",
-  "PL!-bp8-002-P",
-  "PL!-bp8-002-R",
-  "PL!-bp8-003-P",
-  "PL!-bp8-003-P＋",
-  "PL!-bp8-003-R＋",
-  "PL!-bp8-003-SEC",
-  "PL!-bp8-004-P",
-  "PL!-bp8-004-R",
-  "PL!-bp8-009-P",
-  "PL!-bp8-009-P＋",
-  "PL!-bp8-009-R＋",
-  "PL!-bp8-009-SEC",
-  "PL!-bp8-010-N",
-  "PL!-bp8-013-N",
-  "PL!-bp8-021-L",
-  "PL!-bp8-021-SECL",
-  "PL!-bp8-023-L",
-  "PL!-bp8-023-SECL",
-  "PL!-bp8-025-L",
-  "PL!HS-bp8-001-P",
-  "PL!HS-bp8-001-R",
-  "PL!HS-bp8-002-P",
-  "PL!HS-bp8-002-R",
-  "PL!HS-bp8-003-P",
-  "PL!HS-bp8-003-R",
-  "PL!HS-bp8-005-P",
-  "PL!HS-bp8-005-R",
-  "PL!HS-bp8-007-P",
-  "PL!HS-bp8-007-P＋",
-  "PL!HS-bp8-007-R＋",
-  "PL!HS-bp8-007-SEC",
-  "PL!HS-bp8-008-P",
-  "PL!HS-bp8-008-P＋",
-  "PL!HS-bp8-008-R＋",
-  "PL!HS-bp8-008-SEC",
-  "PL!HS-bp8-014-N",
-  "PL!HS-bp8-016-N",
-  "PL!HS-bp8-017-L",
-  "PL!HS-bp8-017-SECL",
-  "PL!HS-bp8-018-L",
-  "PL!HS-bp8-018-SECL",
-  "PL!HS-bp8-019-L",
-  "PL!HS-bp8-020-L",
-  "PL!HS-bp8-021-L",
-  "PL!HS-bp8-021-SECL",
-  "PL!N-bp8-001-P",
-  "PL!N-bp8-001-P＋",
-  "PL!N-bp8-001-R＋",
-  "PL!N-bp8-001-SEC",
-  "PL!N-bp8-005-P",
-  "PL!N-bp8-005-P＋",
-  "PL!N-bp8-005-R＋",
-  "PL!N-bp8-005-SEC",
-  "PL!N-bp8-008-P",
-  "PL!N-bp8-008-R",
-  "PL!N-bp8-009-P",
-  "PL!N-bp8-009-P＋",
-  "PL!N-bp8-009-R＋",
-  "PL!N-bp8-009-SEC",
-  "PL!N-bp8-010-P",
-  "PL!N-bp8-010-R",
-  "PL!N-bp8-011-P",
-  "PL!N-bp8-011-R",
-  "PL!N-bp8-021-N",
-  "PL!N-bp8-028-L",
-  "PL!N-bp8-029-L",
-  "PL!N-bp8-030-L"
-]);
+const KNOWN_UNIMPLEMENTED = new Set();
 
 function isManualSeg(card, seg) {
   if (seg.trigger === "jouji") return !classifyJoujiSegment(seg.text);

@@ -6,7 +6,7 @@
  */
 
 import { T_LIVE } from "./config.js";
-import { GAME_STATUS_ICON_ART_DIR, resolveGameStatusBundledHref, escapeAttrHtml } from "./gameStatusIcons.js";
+import { GAME_STATUS_ICON_ART_DIR, resolveGameStatusBundledHref, escapeAttrHtml, orangeHeartEmojiHtml } from "./gameStatusIcons.js";
 
 /**
  * loveca-data-1 内の対応するハート／ALL／スコアアイコン PNG の `<img>` HTML。
@@ -84,6 +84,15 @@ export function isBladeHeartDrawMarkerKey(key) {
  * blade_heart キーが「W無色」特殊 BH（エール時に無色ハート2つ分）か。
  * DB キーは b_heart07（通常の ALL は b_all）。
  */
+/** オレンジブレードハート（b_heart08）。色ハートではなく、エール公開時に無色側へ1つ足す特別なハート。 */
+export function isOrangeBladeHeartKey(key) {
+  const k = String(key || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\.(png|gif|webp|jpg|jpeg)$/i, "");
+  return k === "b_heart08" || k === "b_heart8" || k === "blade_heart08";
+}
+
 export function isBladeHeartDoubleColorlessMarkerKey(key) {
   const k = String(key || "")
     .trim()
@@ -279,6 +288,11 @@ export function addBladeHeartWeightsPerDisplaySlot(card, accum) {
       accum[7] = (accum[7] || 0) + Math.abs(n) * 2;
       return;
     }
+    if (isOrangeBladeHeartKey(ent[0])) {
+      /* 色としては選べない。総数と無色必要ハートにだけ数える（slot 8） */
+      accum[8] = (accum[8] || 0) + Math.abs(n);
+      return;
+    }
     var slot = parseBladeHeartSlotFromKey(ent[0]);
     var u = slot == null ? 99 : slot;
     accum[u] = (accum[u] || 0) + Math.abs(n);
@@ -288,6 +302,7 @@ export function addBladeHeartWeightsPerDisplaySlot(card, accum) {
 
 /** 1〜7 が色、99 はその他 */
 export function bladeHeartDisplaySlotLabel(slotNum) {
+  if (slotNum === 8) return "🧡";
   if (slotNum === 99) return "その他";
   var meta = SLOT[slotNum];
   return meta ? meta.name : "?";
@@ -300,6 +315,7 @@ export function formatBladeHeartSlotBreakdown(accum) {
     const v = accum[s];
     if (v && v > 0) parts.push(bladeHeartDisplaySlotLabel(s) + " " + v);
   }
+  if (accum[8] && accum[8] > 0) parts.push("🧡 " + accum[8]);
   if (accum[99] && accum[99] > 0) parts.push("その他 " + accum[99]);
   return parts.length ? parts.join("／") : "—";
 }
@@ -319,6 +335,13 @@ export function formatBladeHeartSlotBreakdownHtml(accum) {
         '<span class="heart-slot-breakdown-num">' + v + '</span></span>',
       );
     }
+  }
+  if (accum[8] && accum[8] > 0) {
+    parts.push(
+      '<span class="heart-slot-breakdown-item heart-slot-breakdown-item--orange">' +
+      orangeHeartEmojiHtml() +
+      '<span class="heart-slot-breakdown-num">' + accum[8] + '</span></span>',
+    );
   }
   if (accum[99] && accum[99] > 0) {
     parts.push(
@@ -456,6 +479,7 @@ export function evaluateNeedHeartFulfillment(supplyAccum, needAccum, options) {
   var pool = [1, 2, 3, 4, 5, 6].reduce(function (acc, slot) {
     return acc + Math.max(0, supply[slot] || 0);
   }, 0);
+  pool += Math.max(0, supply[8] || 0);
   pool += Math.max(0, supply[99] || 0);
   pool += bump;
   var genNeed = needAccum[0] || 0;
@@ -515,6 +539,7 @@ export function computeSurplusHeartsAfterFulfillment(supplyAccum, needAccum, opt
   var pool = [1, 2, 3, 4, 5, 6].reduce(function (acc, slot) {
     return acc + Math.max(0, supply[slot] || 0);
   }, 0);
+  pool += Math.max(0, supply[8] || 0);
   pool += Math.max(0, supply[99] || 0);
   pool += bump;
   var genNeed = needAccum[0] || 0;
@@ -559,6 +584,7 @@ export function listAllNeedHeartDeficitsSequential(supplyAccum, needAccum, optio
   var pool = [1, 2, 3, 4, 5, 6].reduce(function (acc, slot) {
     return acc + Math.max(0, supply[slot] || 0);
   }, 0);
+  pool += Math.max(0, supply[8] || 0);
   pool += Math.max(0, supply[99] || 0);
   pool += bump;
   var genNeed = needAccum[0] || 0;
@@ -595,6 +621,7 @@ export function formatHeartSlotAccumBreakdown(accum) {
   }
   const v7 = accum[7];
   if (v7 && v7 > 0) parts.push(bladeHeartDisplaySlotLabel(7) + " " + v7);
+  if (accum[8] && accum[8] > 0) parts.push("🧡 " + accum[8]);
   if (accum[99] && accum[99] > 0) parts.push("その他 " + accum[99]);
   return parts.length ? parts.join("／") : "—";
 }
@@ -621,6 +648,13 @@ export function formatHeartSlotAccumBreakdownHtml(accum) {
       '<span class="heart-slot-breakdown-item heart-slot-breakdown-item--s7">' +
       heartSlotArtIconHtml(7) +
       '<span class="heart-slot-breakdown-num">' + v7 + '</span></span>',
+    );
+  }
+  if (accum[8] && accum[8] > 0) {
+    parts.push(
+      '<span class="heart-slot-breakdown-item heart-slot-breakdown-item--orange">' +
+      orangeHeartEmojiHtml() +
+      '<span class="heart-slot-breakdown-num">' + accum[8] + '</span></span>',
     );
   }
   if (accum[99] && accum[99] > 0) {
@@ -678,6 +712,7 @@ function svgHeartAll(className) {
  */
 export function svgForBladeHeartKey(dbKey, className) {
   const slot = parseBladeHeartSlotFromKey(dbKey);
+  if (isOrangeBladeHeartKey(dbKey)) return orangeHeartEmojiHtml(className);
   if (slot === 7) return svgHeartAll(className + " blade-heart-svg");
   if (slot != null && slot >= 1 && slot <= 6) {
     const meta = SLOT[slot];
@@ -697,17 +732,22 @@ export function bladeHeartAggregatePillHtml(dbKey, quantity, additiveQty, opts) 
   const showScoreBadge = opts.showScoreBadge === true;
   const addP = typeof additiveQty === "number" && Number.isFinite(additiveQty) ? Math.max(0, additiveQty) : 0;
   const isDoubleColorless = isBladeHeartDoubleColorlessMarkerKey(dbKey);
+  const isOrange = isOrangeBladeHeartKey(dbKey);
   const isDrawMarker = isBladeHeartDrawMarkerKey(dbKey);
   const slot = parseBladeHeartSlotFromKey(dbKey);
   const slotClass = isDoubleColorless
     ? "bh-slot-double-colorless"
-    : isDrawMarker
+    : isOrange
+      ? "bh-slot-orange"
+      : isDrawMarker
       ? "bh-slot-draw"
       : slot != null
         ? "bh-slot-" + slot
         : "bh-slot-unknown";
   const labelText = isDoubleColorless
     ? "W無色"
+    : isOrange
+      ? "🧡"
     : isDrawMarker
       ? "ドロー"
       : slot != null

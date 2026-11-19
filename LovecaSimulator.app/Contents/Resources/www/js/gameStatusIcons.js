@@ -265,6 +265,18 @@ const SVG_BUILD = /** @type {Record<string, () => string>} */ ({
   },
 });
 
+/** オレンジブレードハート（b_heart08）の代用。公式アイコンが無いので絵文字で示す。 */
+export function orangeHeartEmojiHtml(extraClass) {
+  var cls = "orange-heart-emoji";
+  if (typeof extraClass === "string" && extraClass.trim() !== "") {
+    var parts = extraClass.trim().split(/\s+/).filter(function (t) {
+      return /^[\w-]+$/.test(t);
+    });
+    if (parts.length) cls += " " + parts.join(" ");
+  }
+  return '<span class="' + cls + '" role="img" aria-label="オレンジハート">🧡</span>';
+}
+
 export function escapeAttrHtml(s) {
   return String(s == null ? "" : s)
     .replace(/&/g, "&amp;")
@@ -330,6 +342,9 @@ export function htmlStatusGameIconImg(alt, href, extraClass) {
  */
 export function wikiAbilityFileStemToIconHtml(alt, stem) {
   var norm = wikiAbilityStemNormalize(stem);
+  if (norm === "blade_heart08" || norm === "b_heart08" || norm === "icon_blade_heart08") {
+    return orangeHeartEmojiHtml("status-inline-game-icon");
+  }
   var key = STEM_ALIAS[norm];
   if (!key) return null;
   var pill = !!PILL_ICON_KEYS[key];

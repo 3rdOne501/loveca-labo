@@ -45,7 +45,7 @@
 
 | 状態 | ID | 名前 | 主テンプレート | 備考 |
 |------|-----|------|----------------|------|
-| [ ] | LL-bp8-001-R＋ | 矢澤にこ&宮下 愛&セラス 柳田 リリエンフェルト | deck_top_to_waiting + deck_top_peek_optional_wait + jouji:unclassified + guided_manual | 未対応あり。詳細は [magical-treat-verification-list.md](./magical-treat-verification-list.md) |
+| [x] | LL-bp8-001-R＋ | 矢澤にこ&宮下 愛&セラス 柳田 リリエンフェルト | deck_top_peek_under_optional + jouji:mirror_under_card_kidou_live_start | 下置きカードの起動とライブ開始時を得る。詳細は [magical-treat-verification-list.md](./magical-treat-verification-list.md) |
 
 ## 2026-08-10 修正（LL-bp7 初回監修）
 

@@ -6,9 +6,9 @@
 
 | 商品 | メンバー | ライブ | エネルギー | 詳細 |
 |------|----------|--------|------------|------|
-| ブースターパック まじかる♡とり～と（bp8） | ⬜ μ's / 虹ヶ咲 / 蓮ノ空 / LL-bp8 | ⬜ | 能力なし | [検証リスト](./magical-treat-verification-list.md) |
+| ブースターパック まじかる♡とり～と（bp8） | ✅ μ's / 虹ヶ咲 / 蓮ノ空 / LL-bp8 | ✅ | 能力なし | [検証リスト](./magical-treat-verification-list.md) |
 
-2026-11-12 取り込み 172 枚。分類スナップショットを追加。代表 83（メンバー・ライブ）のうち既存テンプレ 50 / 未対応あり 33。商品の監修完了ではない。全体回帰では `PENDING_PRODUCT_CARD_NO` で bp8 を未監修として除外。
+2026-11-12 取り込み 172 枚。2026-11-20 に分類・ハンドラ接続を検証リストへ反映。代表 83 は自動分類。`PENDING_PRODUCT_CARD_NO` から bp8 を外した。実プレイの2回監修ではない。オレンジブレードハート、宮下愛の相手ハート、百生吟子の3枚条件はカード文に合わせた。
 
 ## 最新追加商品の初回監修（2026-11-03）
 
@@ -44,7 +44,7 @@
 |------|------------|----------|----------|
 | ブースター bp（行単位） | **13** | **6** | **55** |
 | プレミアム pb（行単位） | **11** | 0 | **0** |
-| アニバーサリー（13 区分） | **10**⭕️ + **1**✅ | 0 | **2**（#11 エネルギー対象外 / #13 LL-bp8 診断済・未監修） |
+| アニバーサリー（13 区分） | **10**⭕️ + **2**✅ | 0 | **1**（#11 エネルギー対象外） |
 | スタートデッキ（10 区分） | **6**⭕️ | 0 | **4** |
 | PR | **6**⭕️ | 0 | 0 |
 
@@ -73,7 +73,7 @@
 | bp5 | ⭕️ | ⭕️ | [muse-bp5-verification-list.md](./muse-bp5-verification-list.md) **2026-06-30 メンバー3回監修**（002/222 optional フラグ） |
 | bp6 | ⭕️ | ⭕️ | [muse-bp6-verification-list.md](./muse-bp6-verification-list.md) **2026-06-28 ライブ2回監修**（020 FAQ255 / 021任意確認） |
 | bp7 | — | — | MELLOWMOMENT に `PL!-bp7` なし（クロス `LL-bp7` はアニバ §3 で管理） |
-| bp8 | ⬜ | ⬜ | [magical-treat-verification-list.md](./magical-treat-verification-list.md) **2026-11-18 初回診断**（未対応あり。監修前） |
+| bp8 | ✅ | ✅ | [magical-treat-verification-list.md](./magical-treat-verification-list.md) **2026-11-20 初回**（自動分類。2回監修前） |
 
 ### Aqours（`PL!S-bp*` / クロス `LL-bp*`）
 
@@ -99,7 +99,7 @@
 | bp5 | ⭕️ | ⭕️ | [niji-bp5-verification-list.md](./niji-bp5-verification-list.md) **2026-06-30 メンバー3回監修**（011 2択前提 / 014 E2） |
 | bp6 | — | — | 実カード未発売 |
 | bp7 | ✅ | ✅ | [niji-bp7-verification-list.md](./niji-bp7-verification-list.md) **2026-08-10 メンバー+ライブ初回監修**（020/025–029 等） |
-| bp8 | ⬜ | ⬜ | [magical-treat-verification-list.md](./magical-treat-verification-list.md) **2026-11-18 初回診断**（未対応あり。監修前） |
+| bp8 | ✅ | ✅ | [magical-treat-verification-list.md](./magical-treat-verification-list.md) **2026-11-20 初回**（自動分類。2回監修前） |
 
 ### Liella!（`PL!SP-bp*` / クロス `LL-bp*`）
 
@@ -125,7 +125,7 @@
 | bp5 | ⭕️ | ⭕️ | [hasunosora-bp5-verification-list.md](./hasunosora-bp5-verification-list.md) **2026-06-30 2回監修完了**（001 ミル条件ブレード、003 同グループメンバー付与、005/022 他） |
 | bp6 | ⭕️ | ⭕️ | [hasunosora-bp6-verification-list.md](./hasunosora-bp6-verification-list.md) **2026-06-30 2回監修完了**（013 登場時 DOLLCHESTRA 除外） |
 | bp7 | — | — | MELLOWMOMENT に `PL!HS-bp7` なし |
-| bp8 | ⬜ | ⬜ | [magical-treat-verification-list.md](./magical-treat-verification-list.md) **2026-11-18 初回診断**（未対応あり。監修前） |
+| bp8 | ✅ | ✅ | [magical-treat-verification-list.md](./magical-treat-verification-list.md) **2026-11-20 初回**（自動分類。2回監修前） |
 
 ---
 
@@ -163,9 +163,9 @@
 | 10 | LL-PR | ライブ | ⭕️ | [ll-pr-verification-list.md](./ll-pr-verification-list.md) **2026-06-30 2回監修**（004 愛♡スクリ～ム！） |
 | 11 | LL-PR | エネルギー | — | 能力なし PR（検証対象外） |
 | 12 | LL-bp7 クロス | メンバー | ✅ | [ll-anniversary-member-verification-list.md](./ll-anniversary-member-verification-list.md) **2026-08-10 初回監修**（花丸&せつ菜&千砂都・修正なし） |
-| 13 | LL-bp8 クロス | メンバー | ⬜ | [magical-treat-verification-list.md](./magical-treat-verification-list.md) **2026-11-18 初回診断**（にこ&愛&セラス・未対応あり） |
+| 13 | LL-bp8 クロス | メンバー | ✅ | [magical-treat-verification-list.md](./magical-treat-verification-list.md) **2026-11-20 初回**（にこ&愛&セラス。下置きの起動・ライブ開始時） |
 
-> #11 LL-PR エネルギーは能力なし。#1–10 は **2026-06-30 2回監修完了**。#12 LL-bp7 は **2026-08-10 初回監修**。#13 LL-bp8 は **2026-11-18 初回診断**。
+> #11 LL-PR エネルギーは能力なし。#1–10 は **2026-06-30 2回監修完了**。#12 LL-bp7 は **2026-08-10 初回監修**。#13 LL-bp8 は **2026-11-20 初回**（2回監修前）。
 
 ---
 
@@ -220,8 +220,7 @@
 
 ## 6. 推奨作業順（2026-11-18）
 
-1. **まじかる♡とり～と（bp8）初回監修** — 診断済・未対応 33 代表。詳細 [magical-treat-verification-list.md](./magical-treat-verification-list.md)
-2. **2回監修（✅→⭕️）** — 例: 虹ヶ咲 sd2 cheer / bp7 各校
+1. **2回監修（✅→⭕️）** — まじかる♡とり～と、虹ヶ咲 sd2 cheer、bp7 各校
 3. **Aqours bp4** / **虹 bp2** / **Liella bp3** 等 — `cards.json` 未収録。追加後に verify/audit 新設
 
 > 未対応の内訳は `node scripts/check-new-cards.mjs --markdown docs/card-update-report.md` で再生成できる。

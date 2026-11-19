@@ -9508,6 +9508,16 @@ body.play-mode .play-undo-redo-cluster--under-prob .play-undo-redo {
   object-fit: contain;
   flex-shrink: 0;
 }
+.status-inline-game-icon.orange-heart-emoji,
+.orange-heart-emoji {
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
+  font-size: 1.05em;
+  line-height: 1;
+  vertical-align: -0.12em;
+}
 .status-inline-game-icon svg {
   width: 100%;
   height: 100%;

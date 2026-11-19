@@ -7,6 +7,7 @@ import { abilityEffectIsAutomated, cardAbilityRawText, classifyCardAbility, spli
 import { classifyJoujiSegment, listNativeJoujiSegmentRaws } from '../js/joujiEffects.js';
 import { classifyJidouAutoSegment, jidouEffectIsAutomated, listNativeJidouSegmentRaws } from '../js/jidouAutoEffects.js';
 import { catalogCardMatchesGroupTag } from '../js/cardGroups.js';
+import { addBladeHeartWeightsPerDisplaySlot, evaluateNeedHeartFulfillment } from '../js/bladeHeart.js';
 
 const db = JSON.parse(fs.readFileSync(new URL('../data/cards.json', import.meta.url), 'utf8'));
 const src = fs.readFileSync(new URL('../js/simulator.js', import.meta.url), 'utf8');
@@ -57,6 +58,10 @@ function harness() {
     whenOpponentPlayMode: (h) => h.solo(),
     shuffleCardsInPlace(arr) { arr.reverse(); },
     fireJidouAfterLivePlacedOnFrame(card, o) { log.livePlaced.push([card.id, !!(o && o.fromWaiting)]); },
+    grantHeartSlotUntilLiveEnd(inst, slot, count) {
+      if (!inst.playBonusHeartSlotsAlways) inst.playBonusHeartSlotsAlways = {};
+      inst.playBonusHeartSlotsAlways[slot] = (Number(inst.playBonusHeartSlotsAlways[slot]) || 0) + count;
+    },
     jidouPerTurnMark() {}, presentAbilityDrawsToHand() {},
   };
   vm.createContext(c);
@@ -167,6 +172,35 @@ for (const fromWaiting of [false, true]) test(`need-heart reduction only when pl
   assert.equal(handled, true);
   assert.equal(done, 1);
   assert.equal((source._needHeartDelta && source._needHeartDelta.heart0) || 0, fromWaiting ? -3 : 0);
+});
+
+test('orange blade heart counts toward colorless hearts and not a chosen color', () => {
+  const acc = {};
+  addBladeHeartWeightsPerDisplaySlot({ blade_heart: { b_heart08: 1 } }, acc);
+  assert.equal(acc[8], 1);
+  assert.equal(acc[1], undefined);
+  assert.equal(evaluateNeedHeartFulfillment({ 1: 1, 8: 1 }, { 1: 1, 0: 1 }).ok, true);
+  assert.equal(evaluateNeedHeartFulfillment({ 8: 1 }, { 1: 1 }).ok, false);
+});
+
+test('cerise bouquet hearts require 3 members put under the deck', () => {
+  const h = harness();
+  const seq = cl('PL!HS-bp8-012-N', 'toujyou');
+  const shuffle = seq.steps.find((s) => s.template === 'waiting_all_shuffle_deck_bottom');
+  const grant = seq.steps.find((s) => s.template === 'grant_hearts_if_bottom_series');
+  assert.equal(grant.minBottomSeriesCount, 3);
+  const cerise = (id) => member(id, { unit: 'スリーズブーケ' });
+  const source = inst('PL!HS-bp8-012-N');
+  h.state.waitingRoom = [cerise('a'), cerise('b'), member('c')];
+  h.state.deck = [];
+  h.run(source, shuffle, 'toujyou');
+  h.run(source, grant, 'toujyou');
+  assert.equal(source.playBonusHeartSlotsAlways, undefined);
+  h.state.waitingRoom = [cerise('d'), cerise('e'), cerise('f')];
+  h.state.deck = [];
+  h.run(source, shuffle, 'toujyou');
+  h.run(source, grant, 'toujyou');
+  assert.equal(source.playBonusHeartSlotsAlways[4], 2);
 });
 
 console.log(`PASS bp8 abilities: ${tests} tests`);
