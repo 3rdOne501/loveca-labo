@@ -15677,3 +15677,442 @@ body.tourney-deck-view-open {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ============================================================
+   平行四辺形（削除すると角丸に戻る）
+   角度は --para-skew。水平量は高さ約 22px で 12度になる固定値。
+   高さに比例させると、ボタンは size containment で潰れるか、
+   高い窓は左右が数十px以上削れてレイアウトが変わる。
+   窓は要素自体を clip しない（カード・スクロール・はみ出しを切らない）。
+   背景と枠線は ::before に描く。::before 使用中のプレビュー枠は対象外。
+   ============================================================ */
+@media not print {
+  :root {
+    --para-skew: 12deg;
+    --para-inset: 4.7px;
+    --para-inset: calc(tan(var(--para-skew)) * 22px);
+    --para-clip: polygon(
+      var(--para-inset) 0,
+      100% 0,
+      calc(100% - var(--para-inset)) 100%,
+      0 100%
+    );
+  }
+
+  /* --- ボタン（カード画像の button は除外） --- */
+  :is(button, .btn, a.btn, summary, [role="button"]):not(
+    .tierlist-card,
+    .tierlist-pick-card,
+    .sample-thumb-pick-card,
+    .bingo-card-pick-card,
+    .dlg-zone-bh-list__tile,
+    .energy-card-thumb-chip,
+    .dlg-proxy-print-drag,
+    .deck-peek-bh-pill-btn,
+    .deck-library-tile-thumb-btn
+  ) {
+    border-radius: 0 !important;
+    clip-path: var(--para-clip) !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    filter:
+      drop-shadow(0.8px 0 0 rgba(255, 186, 214, 0.8))
+      drop-shadow(-0.8px 0 0 rgba(255, 186, 214, 0.8))
+      drop-shadow(0 0.8px 0 rgba(255, 186, 214, 0.8))
+      drop-shadow(0 -0.8px 0 rgba(255, 186, 214, 0.8)) !important;
+  }
+  :is(button, .btn, a.btn, summary, [role="button"]):not(
+    .tierlist-card,
+    .tierlist-pick-card,
+    .sample-thumb-pick-card,
+    .bingo-card-pick-card,
+    .dlg-zone-bh-list__tile,
+    .energy-card-thumb-chip,
+    .dlg-proxy-print-drag,
+    .deck-peek-bh-pill-btn,
+    .deck-library-tile-thumb-btn
+  ):hover,
+  :is(button, .btn, a.btn, summary, [role="button"]):not(
+    .tierlist-card,
+    .tierlist-pick-card,
+    .sample-thumb-pick-card,
+    .bingo-card-pick-card,
+    .dlg-zone-bh-list__tile,
+    .energy-card-thumb-chip,
+    .dlg-proxy-print-drag,
+    .deck-peek-bh-pill-btn,
+    .deck-library-tile-thumb-btn
+  ):active,
+  :is(button, .btn, a.btn, summary, [role="button"]):not(
+    .tierlist-card,
+    .tierlist-pick-card,
+    .sample-thumb-pick-card,
+    .bingo-card-pick-card,
+    .dlg-zone-bh-list__tile,
+    .energy-card-thumb-chip,
+    .dlg-proxy-print-drag,
+    .deck-peek-bh-pill-btn,
+    .deck-library-tile-thumb-btn
+  ):disabled {
+    box-shadow: none !important;
+  }
+  :is(button, .btn, a.btn, summary, [role="button"]):not(
+    .tierlist-card,
+    .tierlist-pick-card,
+    .sample-thumb-pick-card,
+    .bingo-card-pick-card,
+    .dlg-zone-bh-list__tile,
+    .energy-card-thumb-chip,
+    .dlg-proxy-print-drag,
+    .deck-peek-bh-pill-btn,
+    .deck-library-tile-thumb-btn
+  ):focus-visible {
+    outline: none !important;
+    box-shadow: inset 0 0 0 2px rgba(255, 236, 170, 0.95) !important;
+  }
+  .card-thumb-fav {
+    width: auto;
+    min-width: calc(1.65rem + var(--para-inset));
+    height: 1.65rem;
+    padding-inline: calc(var(--para-inset) * 0.65);
+  }
+  .card-resolution-bh-btn {
+    padding-inline: calc(var(--para-inset) * 0.45);
+  }
+
+  /* --- ウインドウ（本体は切らない。塗りと枠は ::before） --- */
+  :is(
+    .search-panel,
+    .card-panel,
+    .deck-panel,
+    .app-dialog,
+    .app-boot-card,
+    .card-strip:not(.zone-preview-drop-catcher),
+    #zone-deck.deck-pile,
+    #zone-waiting.deck-pile,
+    .page-zoom-control,
+    .toast,
+    .sample-thumb-pick-dialog,
+    .versus-match-log-panel,
+    .cloud-auth-bar--corner,
+    .deck-recipe-panel
+  ) {
+    isolation: isolate;
+    border-radius: 0 !important;
+    border-color: transparent !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  :is(
+    .app-boot-card,
+    .card-strip:not(.zone-preview-drop-catcher),
+    #zone-deck.deck-pile,
+    #zone-waiting.deck-pile,
+    .sample-thumb-pick-dialog,
+    .versus-match-log-panel,
+    .deck-recipe-panel,
+    .toast:not(.toast--center)
+  ) {
+    position: relative;
+  }
+  .search-panel,
+  .card-panel,
+  .deck-panel {
+    --para-fill: linear-gradient(155deg, rgba(34, 20, 44, 0.82) 0%, rgba(18, 10, 28, 0.92) 100%);
+    --para-frame: var(--border);
+    --para-blur: 14px;
+  }
+  .app-dialog {
+    --para-fill: linear-gradient(152deg, rgba(42, 22, 48, 0.97), rgba(18, 8, 22, 0.99));
+    --para-frame: rgba(255, 150, 200, 0.45);
+    --para-blur: 14px;
+  }
+  .app-boot-card {
+    --para-fill: rgba(18, 10, 22, 0.92);
+    --para-frame: rgba(255, 140, 200, 0.55);
+    --para-blur: 0px;
+  }
+  .card-strip:not(.zone-preview-drop-catcher),
+  #zone-deck.deck-pile,
+  #zone-waiting.deck-pile {
+    --para-fill: var(--zone-frame-surface);
+    --para-frame: var(--zone-frame-border-strong);
+    --para-blur: 0px;
+  }
+  body.play-mode .card-strip:not(.zone-preview-drop-catcher) {
+    --para-fill: linear-gradient(168deg, rgba(255, 255, 255, 0.055) 0%, rgba(12, 8, 20, 0.62) 100%);
+  }
+  .page-zoom-control {
+    --para-fill: rgba(16, 8, 20, 0.78);
+    --para-frame: rgba(255, 140, 190, 0.55);
+    --para-blur: 8px;
+  }
+  .toast {
+    --para-fill: linear-gradient(135deg, rgba(40, 18, 38, 0.95), rgba(18, 10, 28, 0.96));
+    --para-frame: rgba(255, 140, 200, 0.55);
+    --para-blur: 0px;
+  }
+  .sample-thumb-pick-dialog {
+    --para-fill: linear-gradient(155deg, rgba(34, 20, 44, 0.96) 0%, rgba(16, 8, 22, 0.98) 100%);
+    --para-frame: rgba(255, 150, 200, 0.45);
+    --para-blur: 0px;
+  }
+  .versus-match-log-panel {
+    --para-fill: rgba(12, 16, 24, 0.72);
+    --para-frame: rgba(255, 255, 255, 0.28);
+    --para-blur: 0px;
+  }
+  .cloud-auth-bar--corner {
+    --para-fill: linear-gradient(135deg, rgba(32, 42, 72, 0.92), rgba(18, 26, 48, 0.96));
+    --para-frame: rgba(140, 170, 255, 0.55);
+    --para-blur: 0px;
+  }
+  .deck-recipe-panel {
+    --para-fill: linear-gradient(145deg, rgba(255, 80, 140, 0.06), rgba(100, 160, 255, 0.04));
+    --para-frame: rgba(255, 140, 200, 0.45);
+    --para-blur: 0px;
+  }
+  :is(
+    .search-panel,
+    .card-panel,
+    .deck-panel,
+    .app-dialog,
+    .app-boot-card,
+    .sample-thumb-pick-dialog,
+    .page-zoom-control,
+    .toast,
+    .versus-match-log-panel,
+    .cloud-auth-bar--corner,
+    .deck-recipe-panel,
+    .card-strip:not(.zone-preview-drop-catcher),
+    #zone-deck.deck-pile,
+    #zone-waiting.deck-pile
+  )::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    border-radius: 0;
+    background: var(--para-fill);
+    clip-path: var(--para-clip);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    filter:
+      drop-shadow(0 0 7px var(--para-glow, rgba(255, 150, 200, 0.28)))
+      drop-shadow(1px 0 0 var(--para-frame))
+      drop-shadow(-1px 0 0 var(--para-frame))
+      drop-shadow(0 1px 0 var(--para-frame))
+      drop-shadow(0 -1px 0 var(--para-frame));
+  }
+  :is(
+    .search-panel,
+    .card-panel,
+    .deck-panel,
+    .app-dialog,
+    .page-zoom-control
+  )::before {
+    backdrop-filter: blur(var(--para-blur));
+    -webkit-backdrop-filter: blur(var(--para-blur));
+  }
+
+  /* 光るボタンは、光も斜辺に沿わせる */
+  :is(.btn.primary, .btn.danger, .btn.btn--live-yell-glow, .btn-start-versus--glow, .card-effect-resolve-btn) {
+    filter:
+      drop-shadow(0 0 8px rgba(255, 120, 170, 0.72))
+      drop-shadow(0.8px 0 0 rgba(255, 220, 236, 0.9))
+      drop-shadow(-0.8px 0 0 rgba(255, 220, 236, 0.9))
+      drop-shadow(0 0.8px 0 rgba(255, 220, 236, 0.9))
+      drop-shadow(0 -0.8px 0 rgba(255, 220, 236, 0.9)) !important;
+  }
+  .btn.danger {
+    filter:
+      drop-shadow(0 0 8px rgba(255, 80, 70, 0.7))
+      drop-shadow(0.8px 0 0 rgba(255, 190, 180, 0.9))
+      drop-shadow(-0.8px 0 0 rgba(255, 190, 180, 0.9))
+      drop-shadow(0 0.8px 0 rgba(255, 190, 180, 0.9))
+      drop-shadow(0 -0.8px 0 rgba(255, 190, 180, 0.9)) !important;
+  }
+
+  /* 数字・残色・BH・ターン・先後。中身は起こし、枠と光は斜辺に沿う */
+  :is(
+    .deck-remain-bh-pill,
+    .deck-peek-bh-color-pill,
+    .play-turn-badge,
+    .first-player-badge
+  ) {
+    border-radius: 0 !important;
+    transform: skewX(-12deg);
+    transform-origin: center;
+  }
+  :is(
+    .deck-remain-bh-pill,
+    .deck-peek-bh-color-pill,
+    .play-turn-badge,
+    .first-player-badge
+  ) > * {
+    transform: skewX(12deg);
+    transform-origin: center;
+  }
+  .deck-remain-bh-pill:hover,
+  .deck-remain-bh-pill:focus-visible {
+    transform: skewX(-12deg) translateY(-1px) !important;
+  }
+  .deck-remain-bh-pill:active {
+    transform: skewX(-12deg) !important;
+  }
+  :is(.badge, .versus-turn-badge, .deck-odds-pct--hero, .versus-role-change-overlay__text, .thumb-deck-qty) {
+    border-radius: 0 !important;
+    clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+    padding-left: 0.72rem;
+    padding-right: 0.72rem;
+    box-shadow: none !important;
+    filter:
+      drop-shadow(0 0 7px rgba(255, 90, 160, 0.62))
+      drop-shadow(0.7px 0 0 rgba(255, 230, 246, 0.9))
+      drop-shadow(-0.7px 0 0 rgba(255, 230, 246, 0.9))
+      drop-shadow(0 0.7px 0 rgba(255, 230, 246, 0.9))
+      drop-shadow(0 -0.7px 0 rgba(255, 230, 246, 0.9)) !important;
+  }
+  .badge.badge--wait {
+    filter:
+      drop-shadow(0 0 7px rgba(80, 160, 255, 0.7))
+      drop-shadow(0.7px 0 0 rgba(190, 225, 255, 0.9))
+      drop-shadow(-0.7px 0 0 rgba(190, 225, 255, 0.9))
+      drop-shadow(0 0.7px 0 rgba(190, 225, 255, 0.9))
+      drop-shadow(0 -0.7px 0 rgba(190, 225, 255, 0.9)) !important;
+  }
+  .btn:hover,
+  .btn:focus-visible {
+    filter:
+      brightness(1.08)
+      drop-shadow(0.8px 0 0 rgba(255, 186, 214, 0.85))
+      drop-shadow(-0.8px 0 0 rgba(255, 186, 214, 0.85))
+      drop-shadow(0 0.8px 0 rgba(255, 186, 214, 0.85))
+      drop-shadow(0 -0.8px 0 rgba(255, 186, 214, 0.85)) !important;
+  }
+  :is(.btn.primary, .btn.btn--live-yell-glow, .btn-start-versus--glow):hover,
+  :is(.btn.primary, .btn.btn--live-yell-glow, .btn-start-versus--glow):focus-visible {
+    filter:
+      brightness(1.08)
+      drop-shadow(0 0 10px rgba(255, 120, 170, 0.8))
+      drop-shadow(0.8px 0 0 rgba(255, 220, 236, 0.95))
+      drop-shadow(-0.8px 0 0 rgba(255, 220, 236, 0.95))
+      drop-shadow(0 0.8px 0 rgba(255, 220, 236, 0.95))
+      drop-shadow(0 -0.8px 0 rgba(255, 220, 236, 0.95)) !important;
+  }
+
+  /* 残色・デッキ確率・保存デッキ・編集中デッキの枠 */
+  :is(
+    .deck-remain-bh-panel,
+    .live-deck-odds-panel,
+    .play-deck-preset-panel,
+    .deck-panel-sticky-head,
+    .deck-library-tile,
+    .card-deck-summary,
+    .deck-panel-section
+  ) {
+    --para-inset: 14px;
+    --para-clip: polygon(14px 0, 100% 0, calc(100% - 14px) 100%, 0 100%);
+    isolation: isolate;
+    border-radius: 0 !important;
+    border-color: transparent !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding-left: calc(14px + 0.4rem);
+    padding-right: calc(14px + 0.4rem);
+  }
+  :is(.deck-remain-bh-panel, .live-deck-odds-panel, .play-deck-preset-panel, .deck-library-tile, .card-deck-summary, .deck-panel-section) {
+    position: relative;
+  }
+  .deck-remain-bh-panel,
+  .live-deck-odds-panel {
+    --para-fill: rgba(0, 0, 0, 0.34);
+    --para-frame: rgba(255, 170, 210, 0.78);
+    --para-glow: rgba(255, 120, 180, 0.4);
+  }
+  .play-deck-preset-panel {
+    --para-fill: rgba(14, 18, 32, 0.96);
+    --para-frame: rgba(150, 190, 255, 0.8);
+    --para-glow: rgba(120, 170, 255, 0.38);
+  }
+  .deck-panel-sticky-head {
+    --para-fill: linear-gradient(155deg, rgba(34, 20, 44, 0.97) 0%, rgba(18, 10, 28, 0.98) 100%);
+    --para-frame: rgba(255, 150, 200, 0.7);
+    --para-glow: rgba(255, 120, 180, 0.32);
+  }
+  #view-deck .deck-panel-sticky-head {
+    padding-left: calc(14px + 0.45rem) !important;
+    padding-right: calc(14px + 0.45rem) !important;
+  }
+  .deck-library-tile {
+    --para-fill: rgba(4, 2, 12, 0.55);
+    --para-frame: rgba(150, 200, 255, 0.7);
+    --para-glow: rgba(120, 180, 255, 0.28);
+  }
+  .deck-panel-section {
+    --para-fill: rgba(0, 0, 0, 0.28);
+    --para-frame: rgba(255, 160, 210, 0.65);
+    --para-glow: rgba(255, 130, 180, 0.22);
+  }
+  .card-deck-summary {
+    --para-fill: rgba(8, 4, 14, 0.55);
+    --para-frame: rgba(255, 160, 210, 0.75);
+    --para-glow: rgba(255, 120, 180, 0.32);
+  }
+  .deck-peek-bar {
+    border-radius: 0 !important;
+    clip-path: polygon(7px 0, 100% 0, calc(100% - 7px) 100%, 0 100%);
+    box-shadow: none !important;
+    filter:
+      drop-shadow(0 0 6px rgba(255, 80, 140, 0.45))
+      drop-shadow(0.6px 0 0 rgba(255, 220, 236, 0.75))
+      drop-shadow(-0.6px 0 0 rgba(255, 220, 236, 0.75))
+      drop-shadow(0 0.6px 0 rgba(255, 220, 236, 0.75))
+      drop-shadow(0 -0.6px 0 rgba(255, 220, 236, 0.75));
+  }
+  .deck-library-tile.is-active {
+    --para-frame: rgba(255, 210, 120, 0.9);
+    --para-glow: rgba(255, 190, 80, 0.55);
+  }
+  :is(
+    .deck-remain-bh-panel,
+    .live-deck-odds-panel,
+    .play-deck-preset-panel,
+    .deck-panel-sticky-head,
+    .deck-library-tile,
+    .card-deck-summary,
+    .deck-panel-section
+  )::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: var(--para-fill);
+    clip-path: var(--para-clip);
+    filter:
+      drop-shadow(0 0 8px var(--para-glow))
+      drop-shadow(1px 0 0 var(--para-frame))
+      drop-shadow(-1px 0 0 var(--para-frame))
+      drop-shadow(0 1px 0 var(--para-frame))
+      drop-shadow(0 -1px 0 var(--para-frame));
+  }
+
+  /* カードが載っているステージは、平行四辺形の上辺と下辺を光らせる */
+  body.play-mode .stage-slot.card-strip:has(.card-item)::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    pointer-events: none;
+    clip-path: var(--para-clip);
+    background:
+      linear-gradient(to bottom, rgba(255, 236, 250, 0.95) 0, rgba(255, 150, 210, 0.28) 8px, transparent 18px),
+      linear-gradient(to top, rgba(255, 236, 250, 0.9) 0, rgba(255, 150, 210, 0.24) 8px, transparent 18px);
+    filter:
+      drop-shadow(0 -2px 7px rgba(255, 170, 220, 0.95))
+      drop-shadow(0 2px 7px rgba(255, 170, 220, 0.95));
+  }
+}
