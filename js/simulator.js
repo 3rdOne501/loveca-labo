@@ -2079,11 +2079,14 @@ export function mountSimulator(
   state.playLightweightMode = loadPlayLightweightModeFromStorage();
   syncPlayLightweightModeChrome();
 
-  /* 手札を中央下に固定（スマホ風ドック）。ソロ・対戦とも body クラスで制御 */
+  /* 手札を中央下に固定（スマホ風ドック）。ソロ・対戦とも body クラスで制御。既定は ON */
   function loadHandDockBottomFromStorage() {
     try {
       var saved = sessionStorage.getItem(STORAGE_HAND_DOCK_BOTTOM);
-      if (saved == null) return true;
+      if (saved == null) {
+        sessionStorage.setItem(STORAGE_HAND_DOCK_BOTTOM, "1");
+        return true;
+      }
       return saved === "1";
     } catch (_) {
       return true;
@@ -3927,6 +3930,7 @@ export function mountSimulator(
     placedInst._placedAsUnderMember = true;
     arr.splice(hostIdx, 0, placedInst);
     state.stage[col] = arr;
+    markUnderStackPlaceFx(hostInst, placedInst);
     try {
       syncJoujiPassiveEffectsAll();
     } catch (_) {
@@ -12678,6 +12682,45 @@ export function mountSimulator(
     }
   }
 
+  /** ステージ面メンバーの下にカードを敷いたときの光＋揺れ */
+  function markUnderStackPlaceFx(hostInst, placedInst) {
+    var now = Date.now();
+    if (hostInst) hostInst._underStackFxAt = now;
+    if (placedInst) placedInst._underStackFxAt = now;
+  }
+
+  function paintUnderStackFxClasses(hostInst, placedInst) {
+    if (isLightweightPlayMode()) return;
+    [hostInst, placedInst].forEach(function (inst) {
+      if (!inst || inst.id == null) return;
+      var sid = String(inst.id).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+      var el = document.querySelector('.card-item[data-id="' + sid + '"]');
+      if (!el || !el.classList) return;
+      el.classList.remove("card-item--under-stack-fx");
+      void el.offsetWidth;
+      el.classList.add("card-item--under-stack-fx");
+    });
+  }
+
+  function stampUnderStackFxFromSnap(snapBefore) {
+    if (!snapBefore || !snapBefore.stage) return;
+    ["left", "center", "right"].forEach(function (col) {
+      var top = stageColumnTopMember(col);
+      if (!top || top.id == null) return;
+      var beforeArr = snapBefore.stage[col] || [];
+      var beforeIds = Object.create(null);
+      beforeArr.forEach(function (c) {
+        if (c && c.id != null) beforeIds[String(c.id)] = true;
+      });
+      (state.stage[col] || []).forEach(function (c) {
+        if (!c || c.id == null) return;
+        if (String(c.id) === String(top.id)) return;
+        if (beforeIds[String(c.id)]) return;
+        markUnderStackPlaceFx(top, c);
+      });
+    });
+  }
+
   function placeEnergyUnderStageMember(memberInst, energyInst) {
     if (!memberInst || !energyInst) return false;
     var col = stageColumnKeyHostingMember(memberInst.id);
@@ -12704,6 +12747,7 @@ export function mountSimulator(
     }
     arr.splice(hostIdx, 0, en);
     state.stage[col] = arr;
+    markUnderStackPlaceFx(memberInst, en);
     try {
       fireJidouAfterEnergyPlacedUnderMember(memberInst);
     } catch (jErr) {
@@ -12737,6 +12781,7 @@ export function mountSimulator(
     en.lcActive = true;
     arr.splice(hostIdx, 0, en);
     state.stage[col] = arr;
+    markUnderStackPlaceFx(memberInst, en);
     return true;
   }
 
@@ -12763,6 +12808,7 @@ export function mountSimulator(
     moved._placedAsUnderMember = true;
     arr.splice(hostIdx, 0, moved);
     state.stage[col] = arr;
+    markUnderStackPlaceFx(hostInst, moved);
     return true;
   }
 
@@ -41748,6 +41794,11 @@ export function mountSimulator(
         if (riseElapsed >= 0 && riseElapsed < 980) div.classList.add("card-item--energy-rise");
         else delete c._energyRiseAt;
       }
+      if (c._underStackFxAt) {
+        var underFxElapsed = Date.now() - Number(c._underStackFxAt);
+        if (underFxElapsed >= 0 && underFxElapsed < 900) div.classList.add("card-item--under-stack-fx");
+        else delete c._underStackFxAt;
+      }
       var pfx = enterPfx || playFxInfo(c, Date.now(), false);
       if (pfx) {
         var pfxDur = pfx.durationMs;
@@ -42781,6 +42832,9 @@ export function mountSimulator(
           }
         }
         normalizeAfterDrop(dragUndoSnap, lastDraggedDomId);
+        try {
+          stampUnderStackFxFromSnap(dragUndoSnap);
+        } catch (_) {}
         syncPlayBonusesAfterStageMembershipChange(dragUndoSnap);
         lastDraggedDomId = "";
         maybeAutoDrawHandAfterLiveMemberSet(evt);
@@ -47349,6 +47403,13 @@ export function mountSimulator(
           } catch (_) {}
           if (real && real.isConnected) real.classList.remove("card-item--waiting-suck-hidden");
           waitingSuckHiddenIds.delete(String(item.id));
+          if (item.underMember) {
+            var placeCol = String(item.destZone || "").indexOf("stage-") === 0 ? item.destZone.slice(6) : "";
+            var placeHost = placeCol ? stageColumnTopMember(placeCol) : null;
+            var placeInst = findCardInstById(item.id);
+            markUnderStackPlaceFx(placeHost, placeInst);
+            paintUnderStackFxClasses(placeHost, placeInst);
+          }
         }, zoneMoveMs(760));
         return;
       }
@@ -47381,6 +47442,13 @@ export function mountSimulator(
         } catch (_) {}
         if (real && real.isConnected) real.classList.remove("card-item--waiting-suck-hidden");
         waitingSuckHiddenIds.delete(String(item.id));
+        if (item.underMember) {
+          var suckCol = String(item.destZone || "").indexOf("stage-") === 0 ? item.destZone.slice(6) : "";
+          var suckHost = suckCol ? stageColumnTopMember(suckCol) : null;
+          var suckInst = findCardInstById(item.id);
+          markUnderStackPlaceFx(suckHost, suckInst);
+          paintUnderStackFxClasses(suckHost, suckInst);
+        }
       }, zoneMoveMs(980));
     });
   }
