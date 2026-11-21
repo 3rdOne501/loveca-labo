@@ -181568,7 +181568,7 @@
       ]
     }
   ],
-  "generated_at": "2026-11-21T08:46:18.712Z",
+  "generated_at": "2026-11-21T21:54:31.247Z",
   "inputs": [
     "data/cards.json",
     "data/ability-semantic-contracts.json",
@@ -181599,6 +181599,6 @@
     "js/cardGroups.js": "c5e5b2834a7ce7548ef2fbd67b8999d27cca2fe788dd5520ef15664758b0085d",
     "scripts/lib/ability-semantic-audit.mjs": "eb2c284106eb6739aed5f2c25f8233f9abaedd02481d939e2be5d020910d2410",
     "scripts/audit-ability-semantics.mjs": "1b0dce666a89323385e4845c5d581efcdc2f4797c89b37a4e642264c45ff1b7b",
-    "js/simulator.js": "605b89f6bf58c2eb558a535566c25be3a9b8127897cb7ef3aa3a7628532cef0f"
+    "js/simulator.js": "0356cf22e143f743b4bdaf0e95a65a16eec9866b8ed4ffe36cdbc0897f826968"
   }
 }

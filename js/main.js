@@ -128,8 +128,8 @@ function stripHardReloadQueryFromUrl() {
 }
 stripHardReloadQueryFromUrl();
 
-/** 表示倍率: 75%〜150%、5%刻み。未設定は狭い画面の自動縮小。 */
-var PAGE_ZOOM_MIN = 0.75;
+/** 表示倍率: 50%〜150%、5%刻み。未設定は狭い画面の自動縮小。縦持ちのスマホは 50%。 */
+var PAGE_ZOOM_MIN = 0.5;
 var PAGE_ZOOM_MAX = 1.5;
 var PAGE_ZOOM_STEP = 0.05;
 
@@ -154,7 +154,14 @@ function savePageZoom(value) {
   }
 }
 
+function isPhonePortrait() {
+  var w = window.innerWidth;
+  var h = window.innerHeight;
+  return h > w && w <= 520;
+}
+
 function autoPageScaleForWidth(w) {
+  if (isPhonePortrait()) return 0.5;
   if (w < 360) return 0.86;
   if (w < 420) return 0.9;
   if (w < 520) return 0.94;
@@ -170,6 +177,7 @@ function applyPageAutoScale() {
     document.documentElement.style.setProperty("--ll-page-scale", String(s));
     document.body.classList.toggle("ll-page-auto-scaled", Math.abs(s - 1) > 0.001);
     syncPageZoomControlUi(saved, s);
+    window.dispatchEvent(new Event("llocg-page-scale"));
   } catch (_) {
     /* noop */
   }
@@ -182,7 +190,7 @@ function syncPageZoomControlUi(saved, effective) {
   if (label) {
     var pct = Math.round((effective || 1) * 100);
     label.textContent = pct + "%";
-    label.title = saved == null ? "自動（狭い画面は少し縮小）。タップで 100% に固定" : "表示倍率 " + pct + "%。タップで自動に戻す";
+    label.title = saved == null ? "自動（縦持ちのスマホは 50%）。タップで 100% に固定" : "表示倍率 " + pct + "%。タップで自動に戻す";
     label.setAttribute("aria-label", "表示倍率 " + pct + "%");
     label.classList.toggle("is-manual", saved != null);
   }
@@ -192,7 +200,7 @@ function syncPageZoomControlUi(saved, effective) {
 
 function bumpPageZoom(deltaSteps) {
   var cur = readSavedPageZoom();
-  if (cur == null) cur = 1;
+  if (cur == null) cur = autoPageScaleForWidth(window.innerWidth);
   var next = Math.round((cur + deltaSteps * PAGE_ZOOM_STEP) / PAGE_ZOOM_STEP) * PAGE_ZOOM_STEP;
   next = Math.min(PAGE_ZOOM_MAX, Math.max(PAGE_ZOOM_MIN, next));
   savePageZoom(next);
@@ -223,42 +231,6 @@ function wirePageZoomControl() {
 
 applyPageAutoScale();
 window.addEventListener("resize", applyPageAutoScale);
-
-var UI_THEME_IDS = ["sumi", "ai", "fuji", "midori", "kin", "bara"];
-var UI_THEME_KEY = "ll-ui-theme";
-
-function applyUiTheme(id) {
-  if (UI_THEME_IDS.indexOf(id) < 0) id = "sumi";
-  document.body.dataset.uiTheme = id;
-  try {
-    localStorage.setItem(UI_THEME_KEY, id);
-  } catch (_) {
-    /* noop */
-  }
-  document.querySelectorAll(".ui-theme-switch__btn").forEach(function (btn) {
-    btn.setAttribute("aria-pressed", btn.dataset.uiTheme === id ? "true" : "false");
-  });
-}
-
-function wireUiThemeSwitch() {
-  var root = document.getElementById("ui-theme-switch");
-  if (!root || root.dataset.wired === "1") return;
-  root.dataset.wired = "1";
-  var saved = "sumi";
-  try {
-    saved = localStorage.getItem(UI_THEME_KEY) || "sumi";
-  } catch (_) {
-    /* noop */
-  }
-  applyUiTheme(saved);
-  root.addEventListener("click", function (ev) {
-    var btn = ev.target.closest(".ui-theme-switch__btn");
-    if (!btn) return;
-    applyUiTheme(btn.dataset.uiTheme);
-  });
-}
-
-wireUiThemeSwitch();
 
 try {
   var buildMeta = document.querySelector('meta[name="loveca-build"]');

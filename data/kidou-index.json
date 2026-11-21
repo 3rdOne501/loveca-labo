@@ -1,7 +1,7 @@
 {
-  "generated": "2026-11-16",
+  "generated": "2026-11-21",
   "trigger": "kidou",
-  "total": 350,
+  "total": 351,
   "byTemplate": {
     "optional_self_wait_opp_stage": 2,
     "ability_sequence": 6,
@@ -13,7 +13,7 @@
     "deck_top_look_reorder": 4,
     "deck_mill_conditional_pick_one": 4,
     "kidou_energy_under_waiting_enter": 2,
-    "draw_then_hand_discard": 11,
+    "draw_then_hand_discard": 12,
     "kidou_self_and_other_resolve_toujou": 4,
     "deck_mill_conditional_grant": 1,
     "draw_from_deck": 23,
@@ -28,7 +28,7 @@
     "kidou_self_wait_stage_member_swap_recover": 6,
     "kidou_self_to_wait_recover": 5,
     "energy_deck_to_wait": 6,
-    "grant_jouji_session": 15,
+    "grant_jouji_session": 11,
     "kidou_hand_reveal_to_under": 2,
     "kidou_hand_discard_series_branch": 4,
     "kidou_opp_wait_group_discount_energy": 4,
@@ -57,6 +57,7 @@
     "waiting_to_deck_bottom_cost_boost": 2,
     "kidou_hand_member_under": 4,
     "waiting_to_deck_bottom_ordered": 1,
+    "kidou_copy_discarded_toujou": 4,
     "kidou_member_to_waiting_reenter": 4,
     "kidou_hand_reveal_deck_bottom_opp_wait": 2,
     "kidou_live_from_waiting_if_empty": 1
@@ -3005,7 +3006,7 @@
     {
       "card_no": "PL!HS-bp8-004-P",
       "name": "百生吟子",
-      "template": "grant_jouji_session",
+      "template": "kidou_copy_discarded_toujou",
       "automated": true,
       "optional": false,
       "perTurn": 1,
@@ -3014,7 +3015,7 @@
     {
       "card_no": "PL!HS-bp8-004-P＋",
       "name": "百生吟子",
-      "template": "grant_jouji_session",
+      "template": "kidou_copy_discarded_toujou",
       "automated": true,
       "optional": false,
       "perTurn": 1,
@@ -3023,7 +3024,7 @@
     {
       "card_no": "PL!HS-bp8-004-R＋",
       "name": "百生吟子",
-      "template": "grant_jouji_session",
+      "template": "kidou_copy_discarded_toujou",
       "automated": true,
       "optional": false,
       "perTurn": 1,
@@ -3032,7 +3033,7 @@
     {
       "card_no": "PL!HS-bp8-004-SEC",
       "name": "百生吟子",
-      "template": "grant_jouji_session",
+      "template": "kidou_copy_discarded_toujou",
       "automated": true,
       "optional": false,
       "perTurn": 1,
@@ -3235,6 +3236,15 @@
       "optional": false,
       "perTurn": 1,
       "effect": "手札を2枚控え室に置く：自分のライブカード置き場にカードがない場合、自分の控え室から『虹ヶ咲』のライブカードを1枚、表向きでライブカード置き場に置く。次のライブカードセットフェイズで自分がライブカード置き場に置けるカード枚数の上限が1枚減る。"
+    },
+    {
+      "card_no": "PL!-bp3-001-PR",
+      "name": "高坂穂乃果",
+      "template": "draw_then_hand_discard",
+      "automated": true,
+      "optional": false,
+      "perTurn": 1,
+      "effect": "このメンバーをウェイトにする：カードを1枚引き、手札を1枚控え室に置く。（ウェイト状態のメンバーが持つは、エールで公開する枚数を増やさない。）"
     }
   ]
 }

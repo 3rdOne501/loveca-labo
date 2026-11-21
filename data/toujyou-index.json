@@ -1,15 +1,15 @@
 {
-  "generated": "2026-11-16",
+  "generated": "2026-11-21",
   "trigger": "toujyou",
   "total": 669,
   "byTemplate": {
     "toujou_multi_baton_recover_score": 2,
-    "grant_jouji_session": 16,
+    "grant_jouji_session": 14,
     "toujou_deck_top_liella_live_pick": 4,
     "deck_top_pick_recover": 127,
     "toujou_success_live_hand_reveal_swap": 3,
     "toujou_waiting_members_under_self": 2,
-    "draw_from_deck": 44,
+    "draw_from_deck": 39,
     "optional_self_wait_opp_stage": 39,
     "toujou_wait_pick_hand": 76,
     "ability_pick_one": 24,
@@ -100,8 +100,11 @@
     "toujou_opp_emma_punch_answer": 1,
     "toujou_wait_to_member_under": 1,
     "deck_top_peek_under_optional": 1,
+    "deck_mill_if_match_blade": 2,
+    "optional_waiting_bottom_then_draw": 1,
     "deck_mill_all_series_activate_energy": 2,
     "toujou_both_trim_hand_to": 2,
+    "draw_extra_if_baton_from_named": 4,
     "toujou_energy_under_self_and_other": 4
   },
   "cards": [
@@ -5931,7 +5934,7 @@
     {
       "card_no": "PL!-bp8-007-P",
       "name": "東條 希",
-      "template": "grant_jouji_session",
+      "template": "deck_mill_if_match_blade",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -5940,7 +5943,7 @@
     {
       "card_no": "PL!-bp8-007-R",
       "name": "東條 希",
-      "template": "grant_jouji_session",
+      "template": "deck_mill_if_match_blade",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -5949,7 +5952,7 @@
     {
       "card_no": "PL!-bp8-014-N",
       "name": "星空 凛",
-      "template": "draw_from_deck",
+      "template": "optional_waiting_bottom_then_draw",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -6003,7 +6006,7 @@
     {
       "card_no": "PL!HS-bp8-004-P",
       "name": "百生吟子",
-      "template": "draw_from_deck",
+      "template": "draw_extra_if_baton_from_named",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -6012,7 +6015,7 @@
     {
       "card_no": "PL!HS-bp8-004-P＋",
       "name": "百生吟子",
-      "template": "draw_from_deck",
+      "template": "draw_extra_if_baton_from_named",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -6021,7 +6024,7 @@
     {
       "card_no": "PL!HS-bp8-004-R＋",
       "name": "百生吟子",
-      "template": "draw_from_deck",
+      "template": "draw_extra_if_baton_from_named",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -6030,7 +6033,7 @@
     {
       "card_no": "PL!HS-bp8-004-SEC",
       "name": "百生吟子",
-      "template": "draw_from_deck",
+      "template": "draw_extra_if_baton_from_named",
       "automated": true,
       "optional": false,
       "perTurn": 0,
@@ -6118,7 +6121,7 @@
       "effect": "自分の控え室にあるすべてのメンバーカードをシャッフルし、デッキの下に置く。これにより『スリーズブーケ』のメンバーカードが3枚以上デッキの下に置かれた場合、ライブ終了時まで、を得る。",
       "steps": [
         "waiting_all_shuffle_deck_bottom",
-        "grant_jouji_session"
+        "grant_hearts_if_bottom_series"
       ]
     },
     {

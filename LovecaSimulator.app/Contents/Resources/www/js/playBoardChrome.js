@@ -351,16 +351,9 @@ export function playPremiumBoardFx(type, opts) {
     overlay.classList.add("is-visible");
   });
 
-  var holdMs =
-    type === "coin_flip"
-      ? 1600
-      : type === "live_powerhouse"
-        ? 1800
-        : tier >= 2
-          ? 1800
-          : isMid
-            ? 1250
-            : 1500;
+  var liveStart = type === "live_powerhouse";
+  var holdMs = type === "coin_flip" ? 1600 : liveStart ? 1200 : tier >= 2 ? 1800 : isMid ? 1250 : 1500;
+  var fadeMs = liveStart ? 430 : 650;
   window.setTimeout(function () {
     overlay.classList.add("is-out");
     document.body.classList.remove("play-premium-fx-active", "play-premium-live-arena", "play-premium-enter-ultra");
@@ -368,6 +361,6 @@ export function playPremiumBoardFx(type, opts) {
       try {
         overlay.remove();
       } catch (_) {}
-    }, 650);
+    }, fadeMs);
   }, holdMs);
 }

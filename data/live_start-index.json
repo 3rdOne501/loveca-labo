@@ -1,13 +1,13 @@
 {
-  "generated": "2026-11-16",
+  "generated": "2026-11-21",
   "trigger": "live_start",
-  "total": 403,
+  "total": 404,
   "byTemplate": {
     "grant_jouji_session": 93,
     "optional_self_wait_opp_stage": 21,
     "live_start_group_activated_blade_per": 2,
     "activate_stage_members_up_to": 5,
-    "live_start_opp_wait_max_cost": 6,
+    "live_start_opp_wait_max_cost": 5,
     "heart_color_pick_grant": 37,
     "deck_peek_relocate": 5,
     "deck_top_look_reorder": 8,
@@ -53,7 +53,7 @@
     "waiting_to_deck_top_by_opp_wait_count": 4,
     "live_start_pick_live_frame_match_success_live_grant": 4,
     "toujou_bibi_wait_opp_active_wait": 2,
-    "live_start_activate_all_stage_members": 2,
+    "live_start_activate_all_stage_members": 3,
     "toujou_success_live_pick_hand": 4,
     "deck_top_pick_recover": 2,
     "live_start_hand_discard_activate_wait_grant": 4,
@@ -75,8 +75,9 @@
     "live_start_yell_from_bottom": 1,
     "live_start_yell_blade_remap_slot": 4,
     "live_start_cost_boost_activate_draw": 2,
-    "toujou_wait_pick_hand": 1,
-    "live_start_bottom_mill_swap_live": 4
+    "optional_discard_if_cost_sum_recover": 1,
+    "live_start_bottom_mill_swap_live": 4,
+    "live_start_reveal_hand_bottom_then_opp_wait": 1
   },
   "cards": [
     {
@@ -3585,7 +3586,7 @@
     {
       "card_no": "PL!HS-bp8-010-N",
       "name": "村野さやか",
-      "template": "toujou_wait_pick_hand",
+      "template": "optional_discard_if_cost_sum_recover",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -3702,7 +3703,7 @@
     {
       "card_no": "PL!N-bp8-018-N",
       "name": "近江彼方",
-      "template": "live_start_opp_wait_max_cost",
+      "template": "live_start_reveal_hand_bottom_then_opp_wait",
       "automated": true,
       "optional": true,
       "perTurn": 0,
@@ -3725,6 +3726,15 @@
       "optional": true,
       "perTurn": 0,
       "effect": "手札の『虹ヶ咲』のカードを1枚控え室に置いてもよい：ライブ終了時まで、を得る。"
+    },
+    {
+      "card_no": "PL!-bp3-001-PR",
+      "name": "高坂穂乃果",
+      "template": "live_start_activate_all_stage_members",
+      "automated": true,
+      "optional": false,
+      "perTurn": 0,
+      "effect": "自分のステージにいるメンバーを1人までアクティブにする。"
     }
   ]
 }
