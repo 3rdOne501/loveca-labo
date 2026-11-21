@@ -32,6 +32,11 @@
   /* 山札（プレイ）：1行の最大枚数・サムネ幅。開いているときは #deck-pile-host に JS が上書き */
   --deck-cards-per-row: 12;
   --deck-thumb-w-pile: 58px;
+  /* 情報パネル（編集中デッキ・確率・残色）の地色。初期は墨 */
+  --theme-fill: rgba(14, 12, 18, 0.9);
+  --theme-frame: rgba(176, 168, 186, 0.42);
+  --theme-glow: rgba(40, 36, 48, 0.18);
+  --theme-swatch: #8d8794;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -59,6 +64,77 @@ body.ll-page-auto-scaled {
   :root {
     --ll-svh: calc(1svh / var(--ll-page-scale, 1));
   }
+}
+
+body[data-ui-theme="ai"] {
+  --theme-fill: rgba(8, 16, 32, 0.9);
+  --theme-frame: rgba(130, 176, 240, 0.55);
+  --theme-glow: rgba(40, 80, 150, 0.2);
+  --theme-swatch: #6ea0e8;
+}
+body[data-ui-theme="fuji"] {
+  --theme-fill: rgba(18, 12, 32, 0.9);
+  --theme-frame: rgba(176, 150, 230, 0.55);
+  --theme-glow: rgba(90, 60, 150, 0.2);
+  --theme-swatch: #a78bfa;
+}
+body[data-ui-theme="midori"] {
+  --theme-fill: rgba(8, 22, 16, 0.9);
+  --theme-frame: rgba(120, 200, 160, 0.5);
+  --theme-glow: rgba(30, 110, 70, 0.2);
+  --theme-swatch: #5dbe8a;
+}
+body[data-ui-theme="kin"] {
+  --theme-fill: rgba(24, 18, 8, 0.9);
+  --theme-frame: rgba(220, 180, 100, 0.55);
+  --theme-glow: rgba(140, 100, 30, 0.2);
+  --theme-swatch: #e0b45a;
+}
+body[data-ui-theme="bara"] {
+  --theme-fill: rgba(28, 10, 18, 0.9);
+  --theme-frame: rgba(196, 110, 140, 0.5);
+  --theme-glow: rgba(120, 40, 70, 0.18);
+  --theme-swatch: #c46e8c;
+}
+
+.ui-theme-switch {
+  position: fixed;
+  z-index: 11000;
+  right: max(0.55rem, env(safe-area-inset-right));
+  bottom: calc(3.15rem + env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  gap: 0.28rem;
+  padding: 0.28rem 0.34rem;
+  background: rgba(12, 8, 16, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+.ui-theme-switch__btn {
+  width: 1.15rem;
+  height: 1.15rem;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: var(--theme-swatch, #8d8794);
+  cursor: pointer;
+}
+.ui-theme-switch__btn[data-ui-theme="sumi"] { --theme-swatch: #8d8794; background: #8d8794; }
+.ui-theme-switch__btn[data-ui-theme="ai"] { background: #6ea0e8; }
+.ui-theme-switch__btn[data-ui-theme="fuji"] { background: #a78bfa; }
+.ui-theme-switch__btn[data-ui-theme="midori"] { background: #5dbe8a; }
+.ui-theme-switch__btn[data-ui-theme="kin"] { background: #e0b45a; }
+.ui-theme-switch__btn[data-ui-theme="bara"] { background: #c46e8c; }
+.ui-theme-switch__btn[aria-pressed="true"] {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+body.play-mode .ui-theme-switch {
+  opacity: 0.72;
+}
+body.play-mode .ui-theme-switch:hover,
+body.play-mode .ui-theme-switch:focus-within {
+  opacity: 1;
 }
 
 /* サイト内表示倍率コントロール（全ビュー共通） */
@@ -128,7 +204,7 @@ body {
   font-family: var(--font);
   background-color: var(--bg-deep);
   background-image:
-    radial-gradient(ellipse 120% 55% at 50% -25%, rgba(255, 90, 154, 0.28), transparent 52%),
+    radial-gradient(ellipse 120% 55% at 50% -25%, rgba(255, 90, 154, 0.1), transparent 52%),
     radial-gradient(ellipse 70% 45% at 0% 30%, rgba(167, 139, 250, 0.12), transparent 45%),
     radial-gradient(ellipse 55% 40% at 100% 20%, rgba(110, 200, 255, 0.1), transparent 48%),
     radial-gradient(circle at 85% 85%, rgba(255, 90, 154, 0.06), transparent 35%),
@@ -15709,7 +15785,8 @@ body.tourney-deck-view-open {
     .energy-card-thumb-chip,
     .dlg-proxy-print-drag,
     .deck-peek-bh-pill-btn,
-    .deck-library-tile-thumb-btn
+    .deck-library-tile-thumb-btn,
+    .ui-theme-switch__btn
   ) {
     border-radius: 0 !important;
     clip-path: var(--para-clip) !important;
@@ -15730,7 +15807,8 @@ body.tourney-deck-view-open {
     .energy-card-thumb-chip,
     .dlg-proxy-print-drag,
     .deck-peek-bh-pill-btn,
-    .deck-library-tile-thumb-btn
+    .deck-library-tile-thumb-btn,
+    .ui-theme-switch__btn
   ):hover,
   :is(button, .btn, a.btn, summary, [role="button"]):not(
     .tierlist-card,
@@ -15741,7 +15819,8 @@ body.tourney-deck-view-open {
     .energy-card-thumb-chip,
     .dlg-proxy-print-drag,
     .deck-peek-bh-pill-btn,
-    .deck-library-tile-thumb-btn
+    .deck-library-tile-thumb-btn,
+    .ui-theme-switch__btn
   ):active,
   :is(button, .btn, a.btn, summary, [role="button"]):not(
     .tierlist-card,
@@ -15752,7 +15831,8 @@ body.tourney-deck-view-open {
     .energy-card-thumb-chip,
     .dlg-proxy-print-drag,
     .deck-peek-bh-pill-btn,
-    .deck-library-tile-thumb-btn
+    .deck-library-tile-thumb-btn,
+    .ui-theme-switch__btn
   ):disabled {
     box-shadow: none !important;
   }
@@ -15765,7 +15845,8 @@ body.tourney-deck-view-open {
     .energy-card-thumb-chip,
     .dlg-proxy-print-drag,
     .deck-peek-bh-pill-btn,
-    .deck-library-tile-thumb-btn
+    .deck-library-tile-thumb-btn,
+    .ui-theme-switch__btn
   ):focus-visible {
     outline: none !important;
     box-shadow: inset 0 0 0 2px rgba(255, 236, 170, 0.95) !important;
@@ -15900,7 +15981,7 @@ body.tourney-deck-view-open {
     clip-path: var(--para-clip);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
     filter:
-      drop-shadow(0 0 7px var(--para-glow, rgba(255, 150, 200, 0.28)))
+      drop-shadow(0 0 5px var(--para-glow, rgba(80, 40, 60, 0.18)))
       drop-shadow(1px 0 0 var(--para-frame))
       drop-shadow(-1px 0 0 var(--para-frame))
       drop-shadow(0 1px 0 var(--para-frame))
@@ -15918,13 +15999,20 @@ body.tourney-deck-view-open {
   }
 
   /* 光るボタンは、光も斜辺に沿わせる */
+  .btn.primary {
+    background: linear-gradient(135deg, #9a3d6a 0%, #6e274c 52%, #4a1834 100%) !important;
+    color: #fff7fb;
+  }
+  .btn-start-versus--glow {
+    background: linear-gradient(135deg, #4c3d8a 0%, #7a3478 55%, #8a4a3a 100%) !important;
+  }
   :is(.btn.primary, .btn.danger, .btn.btn--live-yell-glow, .btn-start-versus--glow, .card-effect-resolve-btn) {
     filter:
-      drop-shadow(0 0 8px rgba(255, 120, 170, 0.72))
-      drop-shadow(0.8px 0 0 rgba(255, 220, 236, 0.9))
-      drop-shadow(-0.8px 0 0 rgba(255, 220, 236, 0.9))
-      drop-shadow(0 0.8px 0 rgba(255, 220, 236, 0.9))
-      drop-shadow(0 -0.8px 0 rgba(255, 220, 236, 0.9)) !important;
+      drop-shadow(0 0 5px rgba(120, 40, 70, 0.35))
+      drop-shadow(0.8px 0 0 rgba(255, 210, 228, 0.55))
+      drop-shadow(-0.8px 0 0 rgba(255, 210, 228, 0.55))
+      drop-shadow(0 0.8px 0 rgba(255, 210, 228, 0.55))
+      drop-shadow(0 -0.8px 0 rgba(255, 210, 228, 0.55)) !important;
   }
   .btn.danger {
     filter:
@@ -15996,7 +16084,7 @@ body.tourney-deck-view-open {
   :is(.btn.primary, .btn.btn--live-yell-glow, .btn-start-versus--glow):focus-visible {
     filter:
       brightness(1.08)
-      drop-shadow(0 0 10px rgba(255, 120, 170, 0.8))
+      drop-shadow(0 0 6px rgba(160, 50, 90, 0.4))
       drop-shadow(0.8px 0 0 rgba(255, 220, 236, 0.95))
       drop-shadow(-0.8px 0 0 rgba(255, 220, 236, 0.95))
       drop-shadow(0 0.8px 0 rgba(255, 220, 236, 0.95))
@@ -16027,20 +16115,18 @@ body.tourney-deck-view-open {
     position: relative;
   }
   .deck-remain-bh-panel,
-  .live-deck-odds-panel {
-    --para-fill: rgba(0, 0, 0, 0.34);
-    --para-frame: rgba(255, 170, 210, 0.78);
-    --para-glow: rgba(255, 120, 180, 0.4);
-  }
+  .live-deck-odds-panel,
+  .deck-panel-section,
+  .card-deck-summary,
   .play-deck-preset-panel {
-    --para-fill: rgba(14, 18, 32, 0.96);
-    --para-frame: rgba(150, 190, 255, 0.8);
-    --para-glow: rgba(120, 170, 255, 0.38);
+    --para-fill: var(--theme-fill);
+    --para-frame: var(--theme-frame);
+    --para-glow: var(--theme-glow);
   }
   .deck-panel-sticky-head {
-    --para-fill: linear-gradient(155deg, rgba(34, 20, 44, 0.97) 0%, rgba(18, 10, 28, 0.98) 100%);
-    --para-frame: rgba(255, 150, 200, 0.7);
-    --para-glow: rgba(255, 120, 180, 0.32);
+    --para-fill: var(--theme-fill);
+    --para-frame: var(--theme-frame);
+    --para-glow: var(--theme-glow);
   }
   #view-deck .deck-panel-sticky-head {
     padding-left: calc(14px + 0.45rem) !important;
@@ -16052,14 +16138,14 @@ body.tourney-deck-view-open {
     --para-glow: rgba(120, 180, 255, 0.28);
   }
   .deck-panel-section {
-    --para-fill: rgba(0, 0, 0, 0.28);
-    --para-frame: rgba(255, 160, 210, 0.65);
-    --para-glow: rgba(255, 130, 180, 0.22);
+    --para-fill: var(--theme-fill);
+    --para-frame: var(--theme-frame);
+    --para-glow: var(--theme-glow);
   }
   .card-deck-summary {
-    --para-fill: rgba(8, 4, 14, 0.55);
-    --para-frame: rgba(255, 160, 210, 0.75);
-    --para-glow: rgba(255, 120, 180, 0.32);
+    --para-fill: var(--theme-fill);
+    --para-frame: var(--theme-frame);
+    --para-glow: var(--theme-glow);
   }
   .deck-peek-bar {
     border-radius: 0 !important;
@@ -16109,10 +16195,25 @@ body.tourney-deck-view-open {
     pointer-events: none;
     clip-path: var(--para-clip);
     background:
-      linear-gradient(to bottom, rgba(255, 236, 250, 0.95) 0, rgba(255, 150, 210, 0.28) 8px, transparent 18px),
-      linear-gradient(to top, rgba(255, 236, 250, 0.9) 0, rgba(255, 150, 210, 0.24) 8px, transparent 18px);
+      linear-gradient(to bottom, rgba(255, 220, 240, 0.55) 0, rgba(255, 140, 190, 0.16) 8px, transparent 16px),
+      linear-gradient(to top, rgba(255, 220, 240, 0.45) 0, rgba(255, 140, 190, 0.14) 8px, transparent 16px);
     filter:
       drop-shadow(0 -2px 7px rgba(255, 170, 220, 0.95))
-      drop-shadow(0 2px 7px rgba(255, 170, 220, 0.95));
+      drop-shadow(0 2px 6px rgba(180, 80, 130, 0.45));
+  }
+
+  /* カード詳細・拡大: 背面はぼかした透過 */
+  .dlg-card-catalog,
+  .dlg-card-zoom {
+    --para-fill: rgba(16, 8, 20, 0.84);
+    --para-frame: rgba(255, 180, 210, 0.35);
+    --para-glow: transparent;
+    --para-blur: 18px;
+  }
+  .dlg-card-catalog::backdrop,
+  .dlg-card-zoom::backdrop {
+    background: rgba(10, 6, 14, 0.22);
+    backdrop-filter: blur(16px) saturate(1.05);
+    -webkit-backdrop-filter: blur(16px) saturate(1.05);
   }
 }
