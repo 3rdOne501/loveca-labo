@@ -224,6 +224,42 @@ function wirePageZoomControl() {
 applyPageAutoScale();
 window.addEventListener("resize", applyPageAutoScale);
 
+var UI_THEME_IDS = ["sumi", "ai", "fuji", "midori", "kin", "bara"];
+var UI_THEME_KEY = "ll-ui-theme";
+
+function applyUiTheme(id) {
+  if (UI_THEME_IDS.indexOf(id) < 0) id = "sumi";
+  document.body.dataset.uiTheme = id;
+  try {
+    localStorage.setItem(UI_THEME_KEY, id);
+  } catch (_) {
+    /* noop */
+  }
+  document.querySelectorAll(".ui-theme-switch__btn").forEach(function (btn) {
+    btn.setAttribute("aria-pressed", btn.dataset.uiTheme === id ? "true" : "false");
+  });
+}
+
+function wireUiThemeSwitch() {
+  var root = document.getElementById("ui-theme-switch");
+  if (!root || root.dataset.wired === "1") return;
+  root.dataset.wired = "1";
+  var saved = "sumi";
+  try {
+    saved = localStorage.getItem(UI_THEME_KEY) || "sumi";
+  } catch (_) {
+    /* noop */
+  }
+  applyUiTheme(saved);
+  root.addEventListener("click", function (ev) {
+    var btn = ev.target.closest(".ui-theme-switch__btn");
+    if (!btn) return;
+    applyUiTheme(btn.dataset.uiTheme);
+  });
+}
+
+wireUiThemeSwitch();
+
 try {
   var buildMeta = document.querySelector('meta[name="loveca-build"]');
   var buildTag = buildMeta && buildMeta.content ? String(buildMeta.content).trim() : "";
