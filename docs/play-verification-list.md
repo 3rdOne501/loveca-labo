@@ -1,9 +1,9 @@
 # 実プレイ確認リスト
 
-総合ルール ver.1.06 を前提とした、シミュレータの手動確認用チェックリストです。  
-自動検証（`verify-ability-*` / `audit-behavioral-risks` / **`verify-play-checklist.mjs` 37カード**）は **2026-06-28 通過済み**です。実盤面での最終確認は任意です。
+現行の正本は総合ルール ver.1.09 です。このチェックリストの自動検証は **ver.1.06 時点**のものです。  
+自動検証（`verify-ability-*` / `audit-behavioral-risks` / **`verify-play-checklist.mjs` 37カード**）は **2026-06-28 通過済み**です。実盤面での最終確認は任意です。ver.1.09 への再照合はこの通過に含まれません。
 
-- 正本: [総合ルール PDF](https://llofficial-cardgame.com/wordpress/wp-content/uploads/2026/04/28140005/LoveLiveTCG_cr_1.06_260428.pdf)
+- 正本: [総合ルール ver.1.09 PDF](https://llofficial-cardgame.com/wordpress/wp-content/uploads/2026/11/11094626/LoveLiveTCG_cr_1.09_261111-1.pdf)
 - 複雑カード全件（108件）: [complex-risky-cards.md](./complex-risky-cards.md)
 - デュアル盤監査 JSON: [dual-mode-gap-audit.json](./dual-mode-gap-audit.json)
 - **相手盤面効果レジストリ（全件）**: [opponent-board-effects-registry.md](./opponent-board-effects-registry.md)（`node scripts/audit-opponent-board-effects.mjs` で再生成）

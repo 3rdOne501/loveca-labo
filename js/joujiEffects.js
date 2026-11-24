@@ -6,7 +6,7 @@ import { classifyCompletionJouji } from "./abilityCompletion.js";
 import { splitAbilityByTriggers, parseStageAreaConstraints } from "./abilityEffects.js";
 import { wikiAbilityStemToCanonical } from "./gameStatusIcons.js";
 import { catalogCardMatchesGroupTag, normalizeQuotedSeriesTag } from "./cardGroups.js";
-import { T_MEMBER } from "./config.js";
+import { T_MEMBER, T_LIVE } from "./config.js";
 
 /** @typedef {'left'|'center'|'right'} StageCol */
 

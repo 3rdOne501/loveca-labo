@@ -33,7 +33,7 @@
 | [x] | 019 | PL!-bp6-019-L | jouji grant_hand_series_cost_reduce | 成功ライブ在席時・手札µ's C17+登場コスト-2 **2回目: OK** |
 | [x] | 020 | PL!-bp6-020-L | jidou_center_muse_ability ×2 | LS解決時ポジチェン / 移動済みならスコア+1 **2026-06-28(2): FAQ255 センター離脱後も誘発** |
 | [x] | 021 | PL!-bp6-021-L | live_success_optional_stage_to_waiting_score_recover | 任意: メンバー退場→+1・控え室µ'sライブ回収 **2026-06-28(2): 任意確認** |
-| [x] | 022 | PL!-bp6-022-L | jouji success_live_live_need_heart_reduce | 成功ライブ在席・µ'sスコア5+ライブの必要heart0-2 **2回目: OK** |
+| [x] | 022 | PL!-bp6-022-L | jouji success_live_live_need_heart_reduce | 成功ライブ在席・µ'sスコア5+ライブの必要heart0-2 **2回目: OK** / **2026-11-23: T_LIVE未importで軽減無効→修正** |
 | [x] | 023 | PL!-bp6-023-L | draw_then_conditional_extra_draw | 1ドロー+成功ライブにµ'sカードで追加1ドロー **2回目: OK** |
 | [x] | 024 | PL!-bp6-024-L | jouji success_live_waiting_substitute | 成功ライブ置き場へ控え室µ'sライブ代置 **2回目: OK** |
 

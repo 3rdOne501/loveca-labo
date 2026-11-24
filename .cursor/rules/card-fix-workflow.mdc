@@ -8,28 +8,29 @@ alwaysApply: true
 ## 正本
 
 1. **カードテキスト**（`data/cards.json` の `ability` を必ず開いて読む）
-2. [総合ルール ver.1.06](https://llofficial-cardgame.com/wordpress/wp-content/uploads/2026/04/28140005/LoveLiveTCG_cr_1.06_260428.pdf)
-3. `docs/rules/LoveLiveTCG_comprehensive_rules_ver1.06.txt`
+2. [総合ルール ver.1.09](https://llofficial-cardgame.com/wordpress/wp-content/uploads/2026/11/11094626/LoveLiveTCG_cr_1.09_261111-1.pdf)
+3. `docs/rules/LoveLiveTCG_comprehensive_rules_ver1.09.txt`（関係する条文を修正前に読み、矛盾と読み飛ばしがないことを確認する。ver.1.06 の節番号は使わない）
 
 ## 「修正」の定義
 
 修正後にテキストを**読み返し**、以下がテキスト通りか確認してからシミュレーション検証する。ここまでで初めて「修正」。
 
 - 発動条件 / 効果処理 / 発動タイミング / 効果条件
-- 総合ルールとの整合（特に 5.9.1 E支払い、9.x 能力、11.x 登場・ライブ）
+- 総合ルール ver.1.09 との整合（特に 5.9.1 E支払い、9.6.2.3 コスト決定、11.5 登場、11.6 ライブ開始時、11.7 ライブ成功時）
 
 ## 1枚依頼時の必須手順（Auto 効率版）
 
 ```
-1. READ   cards.json で対象カードの ability 全文を読む
-2. CLASSIFY  classifyCardAbility → template / filters を node -e で確認
-3. ROOT     根因パターンを特定（誤テンプレ・コスト未処理・相手盤誤操作 等）
-4. SEARCH   cards.json 全体を同型テキスト・同型分類で grep
-5. FIX      分類器(js/abilityEffects.js) or 共通ハンドラで横展開。card_no 分岐は最後
-6. VERIFY   下記コマンドを実行し失敗があれば修正ループ
-7. RECORD   data/fix-notes/fixed-cards-registry.md + 該当 *-verification-list.md
-8. REPORT   指示カード以外に直したカード・横展開件数をユーザーに報告
-9. SYNC     abilityEffects.js / simulator.js 変更時は LovecaSimulator.app に同期
+1. READ     cards.json で対象カードの ability 全文を読む
+2. RULES    関係する総合ルール ver.1.09 の条文を docs/rules/LoveLiveTCG_comprehensive_rules_ver1.09.txt で読む。矛盾と読み飛ばしがないことを確認してから直す
+3. CLASSIFY classifyCardAbility → template / filters を node -e で確認
+4. ROOT     根因パターンを特定（誤テンプレ・コスト未処理・相手盤誤操作 等）
+5. SEARCH   cards.json 全体を同型テキスト・同型分類で grep
+6. FIX      分類器(js/abilityEffects.js) or 共通ハンドラで横展開。card_no 分岐は最後
+7. VERIFY   下記コマンドを実行し失敗があれば修正ループ
+8. RECORD   data/fix-notes/fixed-cards-registry.md + 該当 *-verification-list.md
+9. REPORT   指示カード以外に直したカード・横展開件数をユーザーに報告
+10. SYNC    abilityEffects.js / simulator.js 変更時は LovecaSimulator.app に同期
 ```
 
 ## 検証コマンド（毎回）

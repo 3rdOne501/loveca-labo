@@ -203,4 +203,46 @@ test('cerise bouquet hearts require 3 members put under the deck', () => {
   assert.equal(source.playBonusHeartSlotsAlways[4], 2);
 });
 
+function sunnyHarness({ dual, opp }) {
+  const h = harness();
+  const muse = (id, name, extra = {}) => member(id, { name, series: 'ラブライブ！', ...extra });
+  const top = muse('top', '小泉花陽');
+  const under = muse('under', '南 ことり');
+  const duo = muse('duo', '星空 凛&小泉花陽');
+  h.state.stage = { left: [under, top], center: [duo], right: [] };
+  const granted = {};
+  let offered = null;
+  Object.assign(h.c, {
+    eachStageColumnMemberInsts: () => Object.values(h.state.stage).flat(),
+    memberIsStageStackTop: (m) => Object.values(h.state.stage).some((col) => col[col.length - 1] === m),
+    opponentStageTopMembersReadOnly: () => opp,
+    versusOnlineActive: () => false,
+    isDualOpponentBoardMode: () => dual,
+    pushHistoryBefore() {},
+    addLiveSessionBladeBonus: (m, n) => { granted[m.id] = (granted[m.id] || 0) + n; },
+    openSoloOpponentNumberPickDialog: (text, done) => done(3),
+  });
+  const pickId = { v: 'top' };
+  h.c.openPickFromWaitingDialog = (pool, text, done) => { offered = pool.map((m) => m.id); done(pickId.v); };
+  return { h, granted, offered: () => offered, pick: (id) => { pickId.v = id; } };
+}
+
+test('SUNNY DAY SONG: target pool excludes members under another member (4.5.5.1)', () => {
+  const s = sunnyHarness({ dual: false, opp: [] });
+  s.h.run(inst('PL!-bp8-024-L'), cl('PL!-bp8-024-L', 'live_start'), 'live_start');
+  assert.deepEqual(s.offered().sort(), ['duo', 'top']);
+  assert.equal(s.granted.top, 3);
+});
+
+test('SUNNY DAY SONG dual: DUO counts as one name (FAQ Q331), opp DUO counted when any name differs', () => {
+  const oppRinHanayo = [member('o1', { name: '星空 凛' }), member('o2', { name: '小泉花陽' })];
+  const a = sunnyHarness({ dual: true, opp: oppRinHanayo });
+  a.pick('duo');
+  a.h.run(inst('PL!-bp8-024-L'), cl('PL!-bp8-024-L', 'live_start'), 'live_start');
+  assert.equal(a.granted.duo, 1);
+  const b = sunnyHarness({ dual: true, opp: [...oppRinHanayo, member('o3', { name: '小泉花陽' })] });
+  b.h.run(inst('PL!-bp8-024-L'), cl('PL!-bp8-024-L', 'live_start'), 'live_start');
+  assert.equal(b.granted.top, 1);
+});
+
 console.log(`PASS bp8 abilities: ${tests} tests`);

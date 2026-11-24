@@ -1,10 +1,12 @@
 /**
- * ソロプレイ中の盤面＋手札を記事用 PNG として出力。
- * 2列目（.col-center）をラブカラボの見た目のままキャプチャし、
- * Undo / スナップショット / 起動・ライブ開始ボタンは CSS で消す。
+ * ソロプレイ中の盤面＋手札を PNG として出力。
+ * 既定 mode=screenshot: ライブ／ステージ／エネ／手札＋区画枠（ボタンなし）。
+ * mode=article: 記事用（ライブ縦化など）。
  */
 
-const SCALE = 2;
+/** スクショは 3x。カード画質と文字の潰れにくさを優先 */
+const SCALE = 3;
+const EXPORT_CARD_IMG_W = 1600;
 
 /** @type {Map<string, HTMLImageElement>} */
 const imgCache = new Map();
@@ -34,27 +36,52 @@ function isSameOriginOrData(src) {
 }
 
 /** 外部カード画像のみ wsrv。ハート等の同一オリジン資産は直読み（wsrv は localhost を取れない）。 */
-function corsSafeImageUrl(src) {
+function corsSafeImageUrl(src, widthPx) {
   const raw = String(src || "").trim();
   if (!raw) return "";
   if (raw.startsWith("data:") || raw.startsWith("blob:")) return raw;
-  if (raw.includes("wsrv.nl")) return raw;
+  // widthPx <= 0: 既存 wsrv URL を改変しない（プレイ用サムネの縦スジ再発防止）
+  if (raw.includes("wsrv.nl") && !(widthPx > 0)) return raw;
+  const w = Math.max(320, Math.floor(widthPx > 0 ? widthPx : 840));
+  if (raw.includes("wsrv.nl")) {
+    try {
+      const u = new URL(raw);
+      const oldW = parseFloat(u.searchParams.get("w") || "") || 0;
+      const oldH = parseFloat(u.searchParams.get("h") || "") || 0;
+      // 旧バグ: w だけ 1600 にして h=172&fit=cover のまま → 超横長画像になり縦スジになる
+      u.searchParams.set("w", String(w));
+      if (oldW > 0 && oldH > 0) {
+        u.searchParams.set("h", String(Math.max(1, Math.round((w * oldH) / oldW))));
+      } else {
+        u.searchParams.delete("h");
+      }
+      u.searchParams.set("fit", "inside");
+      u.searchParams.set("q", "95");
+      if (!u.searchParams.get("output")) u.searchParams.set("output", "jpg");
+      return u.href;
+    } catch (_) {
+      return raw;
+    }
+  }
   try {
     const u = new URL(raw, typeof location !== "undefined" ? location.href : "https://local.invalid/");
     if (u.protocol !== "http:" && u.protocol !== "https:") return raw;
     if (typeof location !== "undefined" && u.origin === location.origin) return u.href;
+    // 公式原寸から縦横比維持で取得（h 固定しない）
     return (
       "https://wsrv.nl/?url=" +
       encodeURIComponent(u.href) +
-      "&w=840&fit=contain&q=90&output=jpg&n=-1"
+      "&w=" +
+      w +
+      "&fit=inside&q=95&output=jpg&n=-1"
     );
   } catch (_) {
     return raw;
   }
 }
 
-function loadImage(src) {
-  const fetchUrl = corsSafeImageUrl(src);
+function loadImage(src, widthPx) {
+  const fetchUrl = corsSafeImageUrl(src, widthPx);
   if (!fetchUrl) return Promise.reject(new Error("empty src"));
   if (imgCache.has(fetchUrl)) return Promise.resolve(imgCache.get(fetchUrl));
   return fetch(fetchUrl, { mode: "cors", cache: "force-cache", credentials: "omit" })
@@ -79,19 +106,42 @@ function loadImage(src) {
     });
 }
 
+function isCardFaceImg(imgEl) {
+  if (!imgEl || !imgEl.classList) return false;
+  return (
+    imgEl.classList.contains("card-img") ||
+    !!imgEl.closest(".card-item") ||
+    !!imgEl.closest(".card-art-wrap")
+  );
+}
+
 async function resolveImgBitmap(imgEl) {
   if (!imgEl) return null;
   const visible = imgEl.currentSrc || imgEl.src || "";
   const realFace = imgEl.getAttribute("data-ll-real-face-src") || "";
-  // 画面に出ている見た目を優先（ライブ裏向き含む）
-  const src =
-    visible && realFace && visible !== realFace ? visible : visible || realFace;
+  // 裏面（data URI）表示中は visible を使う。表向きは原寸 URL を優先（プレイ用 wsrv サムネは歪みやすい）
+  const showingBack = /^data:/i.test(visible);
+  const src = showingBack ? visible : realFace || visible || "";
   if (!src) return null;
-  if (imgEl.complete && imgEl.naturalWidth > 0 && isSameOriginOrData(src)) {
+  const hiRes = isCardFaceImg(imgEl) && !showingBack;
+  if (hiRes) {
+    try {
+      return await loadImage(src, EXPORT_CARD_IMG_W);
+    } catch (_) {
+      /* fall through — 画面のサムネへ */
+    }
+  }
+  const fallbackSrc = visible || realFace;
+  if (!fallbackSrc) return null;
+  if (imgEl.complete && imgEl.naturalWidth > 0 && isSameOriginOrData(fallbackSrc)) {
     return imgEl;
   }
   try {
-    return await loadImage(src);
+    // フォールバックで既存 wsrv サムネを使うときは解像度をいじらずそのまま（縦スジ再発防止）
+    if (fallbackSrc.includes("wsrv.nl")) {
+      return await loadImage(fallbackSrc, 0);
+    }
+    return await loadImage(fallbackSrc, hiRes ? EXPORT_CARD_IMG_W : 840);
   } catch (_) {
     if (imgEl.complete && imgEl.naturalWidth > 0) return imgEl;
     return null;
@@ -374,8 +424,9 @@ function drawBitmapFitted(ctx, bmp, dx, dy, dw, dh, fit) {
   ctx.drawImage(bmp, dx, dy, dw, dh);
 }
 
-/** ライブ開始後の横長公式画像を、メンバーと同じ縦スロットへ 90° して埋める */
+/** 記事用: ライブ開始後の横長公式画像を、メンバーと同じ縦スロットへ 90° して埋める（スクショモードではしない） */
 function liveFaceNeedsPortraitRotate(el, bmp, destW, destH) {
+  if (document.body.classList.contains("play-board-export-shot")) return false;
   if (el.classList.contains("rotated")) return false;
   const item = el.closest(".card-item");
   if (!item || item.classList.contains("card-item--live-h")) return false;
@@ -390,8 +441,69 @@ function liveFaceNeedsPortraitRotate(el, bmp, destW, destH) {
   return nw > nh * 1.05 && destH > destW * 1.05;
 }
 
+function isExportChromeNode(el) {
+  if (!el || el.nodeType !== 1) return false;
+  if (el.classList.contains("play-board-export-skip")) return true;
+  if (/^(BUTTON|SELECT|INPUT|TEXTAREA)$/.test(el.tagName)) return true;
+  if (el.getAttribute("role") === "button" && !el.classList.contains("card-item")) return true;
+  try {
+    return el.matches(
+      [
+        ".btn",
+        ".btn-row",
+        ".card-live-send",
+        ".card-effect-resolve-btn",
+        ".card-effect-resolve-btn-row",
+        ".card-effect-icon-host",
+        ".play-board-chrome-host",
+        ".live-phase-rail",
+        ".play-effect-chain-band",
+        ".hand-zone-actions",
+        ".play-undo-redo-cluster",
+        ".energy-fold__controls",
+        ".live-need-heart-adjust-btn",
+        ".live-score-bonus-controls",
+        ".live-blade-step",
+        ".first-player-badge",
+        ".hand-stick-fold__hint",
+        ".energy-fold__hint",
+      ].join(","),
+    );
+  } catch (_) {
+    return false;
+  }
+}
+
 function paintHtmlImage(ctx, el, bmp, origin, cs) {
-  const rect = el.getBoundingClientRect();
+  let rect = el.getBoundingClientRect();
+  // 手札スクショ: メンバー height:auto の個体差を潰し、幅×公式比で揃えて描く
+  if (
+    document.body.classList.contains("play-board-export-shot") &&
+    el.classList.contains("card-img")
+  ) {
+    const item = el.closest(".card-item");
+    const inHand = item && item.closest(".hand-zone, #play-board-export-hand, #hand-stick-fold");
+    if (inHand && item) {
+      const ir = item.getBoundingClientRect();
+      const playW =
+        parseFloat(getComputedStyle(document.body).getPropertyValue("--loveca-play-w")) ||
+        ir.width ||
+        rect.width;
+      const playH =
+        parseFloat(getComputedStyle(document.body).getPropertyValue("--loveca-play-h")) ||
+        playW * (88 / 63);
+      if (playW > 0.4 && playH > 0.4) {
+        rect = {
+          left: ir.left + Math.max(0, (ir.width - playW) / 2),
+          top: ir.top,
+          width: playW,
+          height: playH,
+          right: ir.left + playW,
+          bottom: ir.top + playH,
+        };
+      }
+    }
+  }
   const x = rect.left - origin.left;
   const y = rect.top - origin.top;
   const w = rect.width;
@@ -400,7 +512,13 @@ function paintHtmlImage(ctx, el, bmp, origin, cs) {
 
   const cx = x + w / 2;
   const cy = y + h / 2;
-  const fit = String(cs.objectFit || "fill");
+  let fit = String(cs.objectFit || "fill");
+  if (
+    document.body.classList.contains("play-board-export-shot") &&
+    el.closest(".hand-zone, #play-board-export-hand, #hand-stick-fold")
+  ) {
+    fit = "cover";
+  }
   const quarter = cssRotateQuarterTurns(el, cs);
   const rr = Math.min(6, Math.min(w, h) * 0.08);
 
@@ -451,13 +569,125 @@ async function paintSvg(ctx, el, origin) {
   } catch (_) {}
 }
 
+function paraInsetPx(cs, h) {
+  const raw = String(cs.getPropertyValue("--para-inset") || "").trim();
+  const n = parseFloat(raw);
+  if (Number.isFinite(n) && n > 0) return n;
+  return Math.max(4, Math.min(14, (h || 40) * 0.08));
+}
+
+function pathParaRect(ctx, x, y, w, h, inset) {
+  const i = Math.max(0, Math.min(inset || 0, w * 0.35));
+  ctx.beginPath();
+  ctx.moveTo(x + i, y);
+  ctx.lineTo(x + w, y);
+  ctx.lineTo(x + w - i, y + h);
+  ctx.lineTo(x, y + h);
+  ctx.closePath();
+}
+
+function isZonePartitionEl(el) {
+  try {
+    return el.matches(
+      ".live-slot.card-strip, .stage-slot.card-strip, .energy-zone.card-strip, .energy-deck-host",
+    );
+  } catch (_) {
+    return false;
+  }
+}
+
+function zoneBackdropUrl(el) {
+  if (el.classList.contains("live-slot")) {
+    return "assets/board/live-backdrop.jpg?v=2026112229";
+  }
+  if (el.classList.contains("stage-slot")) {
+    return "assets/board/stage-backdrop.jpg";
+  }
+  return "";
+}
+
+async function paintZonePartition(ctx, el, origin, imgMap) {
+  if (!isZonePartitionEl(el)) return;
+  const cs = getComputedStyle(el);
+  const rect = el.getBoundingClientRect();
+  const x = rect.left - origin.left;
+  const y = rect.top - origin.top;
+  const w = rect.width;
+  const h = rect.height;
+  if (w < 2 || h < 2) return;
+
+  const inset = paraInsetPx(cs, h);
+  const frame =
+    String(cs.getPropertyValue("--para-frame") || "").trim() ||
+    (el.classList.contains("energy-deck-host")
+      ? "rgba(255, 214, 90, 0.7)"
+      : "rgba(255, 160, 200, 0.55)");
+
+  ctx.save();
+  pathParaRect(ctx, x, y, w, h, inset);
+  ctx.clip();
+
+  const bgUrl = zoneBackdropUrl(el);
+  let drewBg = false;
+  if (bgUrl) {
+    let bmp = imgMap.get(bgUrl);
+    if (!bmp) {
+      try {
+        bmp = await loadImage(bgUrl);
+        imgMap.set(bgUrl, bmp);
+      } catch (_) {
+        bmp = null;
+      }
+    }
+    if (bmp) {
+      drawBitmapFitted(ctx, bmp, x, y, w, h, "cover");
+      ctx.fillStyle = el.classList.contains("live-slot")
+        ? "rgba(4, 8, 22, 0.28)"
+        : "rgba(8, 4, 16, 0.28)";
+      ctx.fillRect(x, y, w, h);
+      drewBg = true;
+    }
+  }
+  if (!drewBg) {
+    if (el.classList.contains("energy-deck-host")) {
+      ctx.fillStyle = "rgba(48, 36, 8, 0.72)";
+    } else if (el.classList.contains("energy-zone")) {
+      ctx.fillStyle = "rgba(12, 8, 20, 0.55)";
+    } else {
+      ctx.fillStyle = "rgba(12, 8, 20, 0.5)";
+    }
+    ctx.fillRect(x, y, w, h);
+  }
+  ctx.restore();
+
+  ctx.save();
+  pathParaRect(ctx, x, y, w, h, inset);
+  ctx.strokeStyle = frame;
+  ctx.lineWidth = 1.6;
+  ctx.stroke();
+  ctx.restore();
+
+  // 空スロットの「空」表示（::after はキャンバスに出ない）
+  if (
+    (el.classList.contains("stage-slot") || el.classList.contains("live-slot")) &&
+    !el.querySelector(".card-item")
+  ) {
+    ctx.save();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.26)";
+    ctx.font = "600 0.72rem " + (cs.fontFamily || "sans-serif");
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("空", x + w / 2, y + h / 2);
+    ctx.restore();
+  }
+}
+
 async function paintNode(ctx, el, origin, imgMap, zoom) {
   if (!el || el.nodeType !== 1) return;
-  if (el.classList.contains("play-board-export-skip")) return;
+  if (isExportChromeNode(el)) return;
   const cs = getComputedStyle(el);
   if (cs.display === "none" || cs.visibility === "hidden") return;
   if (parseFloat(cs.opacity) === 0) return;
-  if (/^(BUTTON|SELECT|INPUT|TEXTAREA)$/.test(el.tagName)) return;
   zoom = zoom || 1;
 
   const rect = el.getBoundingClientRect();
@@ -484,6 +714,9 @@ async function paintNode(ctx, el, origin, imgMap, zoom) {
     roundRect(ctx, x, y, w, h, rad);
     ctx.clip();
   }
+
+  // 平行四辺形の区画枠（画面の ::before は canvas に出ないので自前描画）
+  await paintZonePartition(ctx, el, origin, imgMap);
 
   const bgImg = cs.backgroundImage;
   if (bgImg && bgImg !== "none" && bgImg.indexOf("linear-gradient") !== -1) {
@@ -536,8 +769,19 @@ async function paintNode(ctx, el, origin, imgMap, zoom) {
   ctx.restore();
 }
 
-function hideChromeClass(on) {
+function boardHasLiveCard() {
+  return !!document.querySelector(
+    "#live-row .live-slot .card-item, #live-left .card-item, #live-center .card-item, #live-right .card-item",
+  );
+}
+
+function hideChromeClass(on, shot) {
   document.body.classList.toggle("play-board-exporting", !!on);
+  document.body.classList.toggle("play-board-export-shot", !!(on && shot));
+  document.body.classList.toggle(
+    "play-board-export-has-live",
+    !!(on && shot && boardHasLiveCard()),
+  );
 }
 
 function openFoldsForExport() {
@@ -559,12 +803,18 @@ function openFoldsForExport() {
 
 /**
  * @param {{
+ *   mode?: "screenshot" | "article",
  *   getMeta?: () => object,
- *   prepareDom?: () => (() => void) | void
+ *   prepareDom?: () => (() => void) | void,
+ *   beforePaint?: () => (() => void) | void
  * }} opts
+ * mode=screenshot（既定）: ライブ・ステージ・手札を画面どおり・ボタンなしで PNG
+ * mode=article: 従来の記事用（ライブ縦化など）
+ * beforePaint: 画像読込後・canvas 直前（遅延シミュが確率文言を戻す対策）
  */
 export async function exportPlayBoardImage(opts) {
   opts = opts || {};
+  const shot = opts.mode !== "article";
   const col =
     document.querySelector("#view-game .col.col-center") ||
     document.querySelector(".game-board .col.col-center");
@@ -575,14 +825,24 @@ export async function exportPlayBoardImage(opts) {
     overflow: col.style.overflow,
     maxHeight: col.style.maxHeight,
     height: col.style.height,
+    minWidth: col.style.minWidth,
+    width: col.style.width,
+    paddingLeft: col.style.paddingLeft,
+    paddingRight: col.style.paddingRight,
   };
   let handClone = null;
   let prepareRestore = null;
-  hideChromeClass(true);
+  let beforePaintRestore = null;
+  hideChromeClass(true, shot);
   try {
     if (typeof opts.prepareDom === "function") {
       prepareRestore = opts.prepareDom() || null;
     }
+    // ライブ有無は render 後に再判定（成功確率表示用）
+    document.body.classList.toggle(
+      "play-board-export-has-live",
+      !!(shot && boardHasLiveCard()),
+    );
     if (typeof document.fonts !== "undefined" && document.fonts.ready) {
       await document.fonts.ready.catch(function () {});
     }
@@ -594,15 +854,40 @@ export async function exportPlayBoardImage(opts) {
       handClone.id = "play-board-export-hand";
       handClone.classList.add("play-board-export-hand");
       handClone.open = true;
+      // クローン内の操作UIを除去（下固定手札のフェーズ帯・効果ボタン等）
+      handClone
+        .querySelectorAll(
+          ".play-board-chrome-host, .hand-zone-actions, .btn, button, select, input, textarea, .card-live-send, .card-effect-resolve-btn, .card-effect-resolve-btn-row, .card-effect-icon-host",
+        )
+        .forEach(function (n) {
+          if (n && n.parentNode) n.parentNode.removeChild(n);
+        });
       col.appendChild(handClone);
     }
 
     col.style.overflow = "visible";
     col.style.maxHeight = "none";
     col.style.height = "auto";
+    if (shot) {
+      // 横に余裕を持たせて文字・区画が潰れないようにする
+      col.style.minWidth = "820px";
+      col.style.width = "820px";
+      col.style.paddingLeft = "1.35rem";
+      col.style.paddingRight = "1.35rem";
+    }
     await waitFrame();
     await ensureImagesDecoded(col);
     await waitFrame();
+
+    // 遅延の山札シミュが確率を単一％に戻したあと、描画直前に差し直す
+    if (typeof opts.beforePaint === "function") {
+      try {
+        beforePaintRestore = opts.beforePaint() || null;
+      } catch (_) {
+        beforePaintRestore = null;
+      }
+      await waitFrame();
+    }
 
     const originRect = col.getBoundingClientRect();
     const zoom = originRect.width / Math.max(1, col.offsetWidth);
@@ -663,6 +948,11 @@ export async function exportPlayBoardImage(opts) {
       String(stamp.getMinutes()).padStart(2, "0");
     downloadBlob(blob, "loveca-board_" + ts + ".png");
   } finally {
+    if (typeof beforePaintRestore === "function") {
+      try {
+        beforePaintRestore();
+      } catch (_) {}
+    }
     if (typeof prepareRestore === "function") {
       try {
         prepareRestore();
@@ -672,9 +962,13 @@ export async function exportPlayBoardImage(opts) {
     col.style.overflow = styleBackup.overflow;
     col.style.maxHeight = styleBackup.maxHeight;
     col.style.height = styleBackup.height;
+    col.style.minWidth = styleBackup.minWidth;
+    col.style.width = styleBackup.width;
+    col.style.paddingLeft = styleBackup.paddingLeft;
+    col.style.paddingRight = styleBackup.paddingRight;
     foldRestore.forEach(function (item) {
       item.el.open = item.open;
     });
-    hideChromeClass(false);
+    hideChromeClass(false, false);
   }
 }

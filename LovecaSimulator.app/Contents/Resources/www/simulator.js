@@ -43236,7 +43236,7 @@ export function mountSimulator(
     var fp = firstPlayerRole === "guest" ? "guest" : "host";
     return {
       v: 1,
-      rulesVersion: "1.06",
+      rulesVersion: "1.09",
       status: "playing",
       firstPlayerRole: fp,
       activePlayerRole: fp,

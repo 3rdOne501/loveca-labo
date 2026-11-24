@@ -22,7 +22,7 @@ export function buildFixAgentPrompt(report) {
     "3. card_no 個別分岐は最後の手段。",
     "4. コミット・push・PR 作成は禁止。Git 操作は Discord Bot が後段で行う。",
     "5. js/abilityEffects.js / js/simulator.js / js/abilityRuntimeMeta.js を変えたら LovecaSimulator.app/Contents/Resources/www/js/ に同期。",
-    "6. 総合ルール ver.1.06（docs/rules）とカード文を照合。実行不能は可能な限り実行（1.3.2）。",
+    "6. 総合ルール ver.1.09（docs/rules/LoveLiveTCG_comprehensive_rules_ver1.09.txt）の関係条文を修正前に読む。カード文と矛盾させず、必要な条文を飛ばさない。カード文優先は 1.3.1。実行不能は可能な限り実行（1.3.2）。節番号は ver.1.09（登場 11.5、ライブ開始時 11.6、ライブ成功時 11.7）。",
     "",
     "## 必須手順",
     "1. READ 各カードの ability",

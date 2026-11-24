@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Loveca Labo" />
-    <meta name="loveca-build" content="2026112247" />
+    <meta name="loveca-build" content="2026112402" />
     <title>Loveca Labo</title>
     <!-- 万一以前のバージョンの Service Worker が登録された端末で取り残しが起きた場合に備え、
          先頭で SW 登録を一括解除する。SW 自体は本サイトでは使っていない。 -->
@@ -51,7 +51,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,500;0,9..40,700;1,9..40,500&family=M+PLUS+Rounded+1c:wght@500;700;800&family=Noto+Sans+JP:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=2026112247" />
+    <link rel="stylesheet" href="styles.css?v=2026112402" />
     <link rel="stylesheet" href="styles-perf.css?v=2026051910" />
   </head>
   <body>
@@ -1420,9 +1420,9 @@ python3 -m http.server 8080</pre>
             class="btn sm secondary"
             id="btn-export-play-board"
             hidden
-            title="盤面と手札だけを記事用 PNG で保存（操作ボタン・Undo 等は写りません）"
+            title="ライブ・ステージ・エネルギー・手札を画面どおりスクショ保存（区画枠あり／操作ボタンは写りません）"
           >
-            盤面画像を保存
+            盤面スクショ
           </button>
           <button type="button" class="btn sm secondary" id="btn-zone-hints" aria-pressed="false">
             ゾーン説明を表示
@@ -2089,14 +2089,6 @@ python3 -m http.server 8080</pre>
               class="zone-block zone-block-deck-live-sim zone-block-deck-live-sim-under-preview live-prob-always-visible"
             >
               <h3 class="deck-live-sim-heading-compact">ライブ成功確率</h3>
-              <div class="play-undo-redo-cluster play-undo-redo-cluster--under-prob">
-                <button type="button" class="btn sm play-undo-redo play-undo-redo--undo" id="btn-undo-under-prob" title="U キー">
-                  ひとつ戻す
-                </button>
-                <button type="button" class="btn sm play-undo-redo play-undo-redo--redo" id="btn-redo-under-prob" title="R キー">
-                  ひとつ進む
-                </button>
-              </div>
               <div class="deck-live-sim-shell">
                 <div class="deck-live-sim-toolbar">
                   <div class="deck-flip-k-row deck-flip-k-readout">
@@ -2405,7 +2397,7 @@ python3 -m http.server 8080</pre>
           メンバーまたはライブカードでは、ステージ等でカード下の <strong>W</strong>／<strong>A</strong> と（ステージまたはライブ枠に<strong>いて</strong><strong>表面が見える</strong>メンバーだけ）<strong>+H／B</strong> が使えます。<strong>+H／B</strong> では所持ハート（6色・ALL）・ブレードを<strong>DB値に加算してライブ計算へ反映</strong>します（非公式）。<strong>画像クリック</strong>は多くのゾーンで向きの切替です（<strong>手札・プレビュー</strong>では向きは変えません）。カード画像は<strong>ダブルクリック</strong>で拡大できます。<strong>通常時はライブの3枠にメンバーを置けず、ライブターンだけ置けます</strong>（非ライブターはライブカードのみドラッグ可）。ライブエリアは<strong>ライブターン中だけ</strong>裏・横向きにし、その後は<strong>メンバーと同じ縦・同サイズ</strong>です。<strong>メンバーが枠へ入った</strong>ときだけ<strong>ライブセット相当として手札へ 1 枚自動ドロー</strong>します。「<strong>成功ライブカード置き場</strong>」は<strong>通常の縦向きレイアウト</strong>です（W／A の補助表示あり）。各ライブスロットは<strong>カード合計 1 枚まで</strong>です。
         </p>
         <p>
-          ドラッグ中はカードを<strong>汎用の裏面イラスト（SVG）</strong>に差し替えて表示します（対面での操作イメージ用・公式イラストではありません）。
+          ドラッグ中・山札の裏向き表示などは、<strong>カード裏面画像</strong>（角丸）に差し替えて表示します。
         </p>
         <p>
           「<strong>ターン開始</strong>」はデッキ欄の 1枚ドロー行にあります。そのタイミングで<strong>解決エリア・ライブ枠のカードはすべて控え室</strong>へ移動します。続いて山札から<strong>手札に 1 枚ドロー</strong>し、ウェイト状態の側面エネ・メンバーを縦に立て、側面エネを <strong>1 枚増やします</strong>（上限 12）。画面上部の<strong>ゲーム情報</strong>行の「ゾーン説明を表示」で各ゾーン下の短文ヘルプの表示を切り替えできます。
@@ -2420,7 +2412,7 @@ python3 -m http.server 8080</pre>
         </p>
         <p><strong>HUD のターンカウント</strong>は <strong>0T</strong> から始まり、デッキ欄の「<strong>ターン開始</strong>」ごとに 1 ずつ増えます。ステージにいるメンバーは載せたターンよりカウントが進むと少し<strong>発光した見え方</strong>になります（補助用）。</p>
         <p>
-          <strong>対戦モード</strong>（ゲストログイン可・Google ログインはデッキ同期用）では、ルームコードで2人が接続し、成功ライブ枚数と投了を同期します（総合ルール 1.06 の勝敗条件）。
+          <strong>対戦モード</strong>（ゲストログイン可・Google ログインはデッキ同期用）では、ルームコードで2人が接続し、成功ライブ枚数と投了を同期します（総合ルール 1.09 の勝敗条件）。
           盤面の全カード操作のリアルタイム同期は今後拡張予定です。
         </p>
       </div>
@@ -2724,7 +2716,7 @@ python3 -m http.server 8080</pre>
 
     <dialog id="dlg-versus-lobby" class="app-dialog dlg-versus-lobby" aria-labelledby="dlg-versus-lobby-title">
       <div class="dlg-versus-lobby__header">
-        <h2 id="dlg-versus-lobby-title" class="app-dialog__title dlg-versus-lobby__title">対戦モード（総合ルール 1.06）</h2>
+        <h2 id="dlg-versus-lobby-title" class="app-dialog__title dlg-versus-lobby__title">対戦モード（総合ルール 1.09）</h2>
         <button type="button" class="dlg-versus-lobby-close-top" id="dlg-versus-lobby-close" aria-label="閉じる">×</button>
       </div>
       <details class="dlg-versus-solo-dual-wrap" open>
@@ -2832,10 +2824,18 @@ python3 -m http.server 8080</pre>
     </dialog>
 
     <dialog id="dlg-ability-guided" class="app-dialog dlg-ability-guided" aria-labelledby="dlg-ability-guided-title">
-      <h2 id="dlg-ability-guided-title" class="app-dialog__title">効果の確認</h2>
-      <p id="dlg-ability-guided-lead" class="hint zone-inline-help">
-        カードに書かれた効果どおり、盤面を整えてから「完了」を押してください。
-      </p>
+      <div class="dlg-effect-source-row">
+        <div id="dlg-ability-guided-source" class="dlg-effect-source" hidden>
+          <img id="dlg-ability-guided-source-img" class="dlg-effect-source__img" alt="" />
+          <span id="dlg-ability-guided-source-name" class="dlg-effect-source__name"></span>
+        </div>
+        <div class="dlg-effect-source-row__main">
+          <h2 id="dlg-ability-guided-title" class="app-dialog__title">効果の確認</h2>
+          <p id="dlg-ability-guided-lead" class="hint zone-inline-help">
+            カードに書かれた効果どおり、盤面を整えてから「完了」を押してください。
+          </p>
+        </div>
+      </div>
       <div id="dlg-ability-guided-body" class="dlg-ability-guided-body"></div>
       <div class="app-dialog__actions">
         <button type="button" class="btn secondary" id="dlg-ability-guided-cancel">あとで</button>
@@ -2844,8 +2844,16 @@ python3 -m http.server 8080</pre>
     </dialog>
 
     <dialog id="dlg-pick-kidou-waiting" class="app-dialog dlg-pick-kidou-waiting" aria-labelledby="dlg-pick-kidou-waiting-title">
-      <h2 id="dlg-pick-kidou-waiting-title" class="app-dialog__title">効果の対象カードを選ぶ</h2>
-      <p id="dlg-pick-kidou-waiting-lead" class="hint zone-inline-help"></p>
+      <div class="dlg-effect-source-row">
+        <div id="dlg-pick-kidou-waiting-source" class="dlg-effect-source" hidden>
+          <img id="dlg-pick-kidou-waiting-source-img" class="dlg-effect-source__img" alt="" />
+          <span id="dlg-pick-kidou-waiting-source-name" class="dlg-effect-source__name"></span>
+        </div>
+        <div class="dlg-effect-source-row__main">
+          <h2 id="dlg-pick-kidou-waiting-title" class="app-dialog__title">効果の対象カードを選ぶ</h2>
+          <p id="dlg-pick-kidou-waiting-lead" class="hint zone-inline-help"></p>
+        </div>
+      </div>
       <div id="dlg-pick-kidou-waiting-list" class="dlg-pick-kidou-waiting-list" role="list"></div>
       <div class="app-dialog__actions dlg-pick-kidou-waiting-actions">
         <button type="button" class="btn secondary" id="dlg-pick-kidou-waiting-cancel">キャンセル</button>

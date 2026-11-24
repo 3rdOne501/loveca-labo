@@ -199,6 +199,5 @@ export const DEFAULT_ENERGY_NAME = "エネルギー";
 export const DEFAULT_ENERGY_IMG =
   "https://llofficial-cardgame.com/wordpress/wp-content/images/cardlist/PLSD01/LL-E-001-SD.png";
 
-/** ドラッグ中の裏向きカード見た目（SVG data URL・著作物を含まない汎用裏） */
-export const CARD_BACK_DRAG_DATA_URI =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 88 126' preserveAspectRatio='xMidYMid meet'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' x2='100%25' y1='0%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23281830'/%3E%3Cstop offset='100%25' stop-color='%23401a42'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect rx='12' ry='12' fill='url(%23g)' stroke='rgba(255,150,210,0.25)' stroke-width='2.5' x='6' y='6' width='76' height='114'/%3E%3Crect rx='8' ry='8' fill='rgba(255,90,154,0.12)' stroke='rgba(255,180,210,0.2)' stroke-width='1.5' x='18' y='42' width='52' height='42'/%3E%3C/svg%3E";
+/** 裏向きカード見た目（山札一覧・ドラッグ中・ライブ枠の表面隠し・対戦相手山札など） */
+export const CARD_BACK_DRAG_DATA_URI = "assets/game-icons/card-back.png";

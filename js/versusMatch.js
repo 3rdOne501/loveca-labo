@@ -1,5 +1,5 @@
 /**
- * オンライン対戦ルーム（Firestore）。総合ルール ver.1.06 の 2 人対戦向け。
+ * オンライン対戦ルーム（Firestore）。総合ルール ver.1.09 の 2 人対戦向け。
  * Google ログイン（cloudAuth）必須。
  */
 import { LIVE_WINS, MAIN_SIZE } from "./config.js";
@@ -9,7 +9,7 @@ import { normalizeDeckMapCounts } from "./deckLibrary.js";
 import { buildVersusBoardFirestorePatch } from "./versusBoardSync.js";
 
 const COLLECTION = "versusMatches";
-const RULES_VERSION = "1.06";
+const RULES_VERSION = "1.09";
 const ROOM_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 /** @typedef {'host'|'guest'} VersusRole */

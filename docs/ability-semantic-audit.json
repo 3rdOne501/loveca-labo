@@ -181568,7 +181568,7 @@
       ]
     }
   ],
-  "generated_at": "2026-11-21T21:54:31.247Z",
+  "generated_at": "2026-11-24T08:10:09.045Z",
   "inputs": [
     "data/cards.json",
     "data/ability-semantic-contracts.json",
@@ -181593,12 +181593,12 @@
     "js/versusEffectPatch.js": "51221f037a06bd7520ee48117fc6c4f6aa1e0e062f41c420ea75c696fda371f0",
     "js/opponentBoard.js": "83917668269fa3acae7e0e0efcc5b96d38f37e046b9d35dd67693e688bc115d0",
     "js/jidouAutoEffects.js": "39e0e94dc8d7a52a97b6820f276b95fc0bcba4498df643058c303c3f2776b25f",
-    "js/joujiEffects.js": "eb0898d06af4dcd8314f4630e9bbbc751e2fe8af2a44ccde89f19f9bc417a561",
+    "js/joujiEffects.js": "125a55934f37a0f5295a466d08b6288b5d51d63ba889e0c99d92c429cbb928d1",
     "js/abilityComposition.js": "19dab6c92bd9f5abe387f855a437752822a5eb9227680ab5a76b19f23a9afe02",
     "js/abilityRuntimeMeta.js": "9929ab1a761fe202afa2950058fedc0501da961dbee6bc53d1ecb56ce644efb7",
     "js/cardGroups.js": "c5e5b2834a7ce7548ef2fbd67b8999d27cca2fe788dd5520ef15664758b0085d",
     "scripts/lib/ability-semantic-audit.mjs": "eb2c284106eb6739aed5f2c25f8233f9abaedd02481d939e2be5d020910d2410",
     "scripts/audit-ability-semantics.mjs": "1b0dce666a89323385e4845c5d581efcdc2f4797c89b37a4e642264c45ff1b7b",
-    "js/simulator.js": "0356cf22e143f743b4bdaf0e95a65a16eec9866b8ed4ffe36cdbc0897f826968"
+    "js/simulator.js": "bffe72ee2c810cb40f03d53d0d749b6f4a9a07a2f6aa76cd6f5465293d634453"
   }
 }

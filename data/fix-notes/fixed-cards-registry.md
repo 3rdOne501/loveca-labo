@@ -2,7 +2,7 @@
 
 カード効果修正の**正本記録**。前チャット [fb299c07](fb299c07-066c-458f-946b-4cf93726a9cc)・[d7ba868c](d7ba868c-2fb7-475a-98bb-ce2d64819f7e)・[cd299e25](cd299e25-5fbb-46e3-a736-63f87a9cbb25) の履歴を集約。以降の修正もここに追記する。
 
-- **正本ルール**: [総合ルール ver.1.06](https://llofficial-cardgame.com/wordpress/wp-content/uploads/2026/04/28140005/LoveLiveTCG_cr_1.06_260428.pdf)
+- **正本ルール**: [総合ルール ver.1.09](https://llofficial-cardgame.com/wordpress/wp-content/uploads/2026/11/11094626/LoveLiveTCG_cr_1.09_261111-1.pdf)（2026-11-22 から。それ以前の記録は当時の版）
 - **「修正」の定義**: テキスト読み返し + 条件・効果・タイミング・効果条件の一致 + シミュレーション検証
 - **自動化状態（2026-06-28）**: `guided_manual=0`, `jidou_manual=0`, `automated-bug-suspects=0`
 - **関連**: [実プレイ確認リスト](../../docs/play-verification-list.md)（**2026-06-28: 自動検証37/37 OK**）
@@ -13,6 +13,22 @@
 |------|------|
 | **コード** | 分類・ハンドラ・静的検証スクリプト通過 |
 | **プレイ** | 実盤面操作でユーザー確認済み |
+
+---
+
+## 0u. ソロで相手異名人数分ブレードが0のまま（2026-11-23）
+
+| カード番号 | 名前 | 根因 | 対応 | 横展開 |
+|-----------|------|------|------|--------|
+| PL!-bp8-024-L / SECL | SUNNY DAY SONG | 付与を常時扱い／ソロ刃0／下置きへ付与しても成功率不変／対戦異名の数え方 | ライブ終了付与＋ソロ0〜3選択＋チップ「終了まで:」。付与先は面のみ。対戦は面＋DUO(Q331)。必要14で刃9なら0%は正常 | 同テンプレは本カードのみ。表示分離は全メンバー |
+
+---
+
+## 0t. 成功ライブ常時の必要ハート軽減が例外で無効（2026-11-23）
+
+| カード番号 | 名前 | 根因 | 対応 | 横展開 |
+|-----------|------|------|------|--------|
+| PL!-bp6-022-L | Dreamin' Go! Go!! | `computeSuccessLiveJoujiLiveNeedHeartReduceForCard` が `T_LIVE` を参照するが `joujiEffects.js` で未 import → `ReferenceError` で軽減未適用 | `T_LIVE` を `config.js` から import | 同 kind は本カードのみ。成功ライブ置き場ソース→ライブ枠ターゲット経路を復旧 |
 
 ---
 
@@ -968,6 +984,7 @@ verify-ability-coverage OK / verify-ability-handlers OK / verify-ability-runtime
 | 2026-08-13 | 山上捜査ダイアログ: チェック可視化 + `deckLookPartialKeep` 分岐（代表 PL!N-bp1-002-SEC / PL!N-bp7-006-P＋） |
 | 2026-08-13 | 複数起動分離: 起動1/起動2ボタン + `kidou_seg_N` 回数（代表 PL!N-bp7-006-P＋、横展開8枚。bp1-006含む） |
 | 2026-08-10 | W無色特殊BH（`b_heart07`）: エール時に無色ハート×2。`special_heart.colorless`＋カード詳細「特殊BH」行（ドロー／スコア／W無色）。代表 PL!N-bp7-030-L / PL!SP-bp7-028-L / PL!S-bp7-022-L（SECL含む4枚）。`b_all` とは分離 |
+| 2026-11-23 | 同上の保存値 `2` をさらに×2してハート4個にしていた。`doubleColorlessHeartsFromStoredCount` で 2 のまま（アイコン数 `1` のときは 2 ハート）。 |
 | 2026-08-11 | 横断3件: ①カタログ検索 `normalizeCatalogSearchText`（空白/NFKC/ハイフン吸収・「南ことり」↔「南 ことり」）②PL!N-bp5-028-L `parseNeedHeartSetFixedMap`+`parseAbilityPickFilters` segRaw（必要ハートheart02×5固定・条件heart02×4）③エネ上限: 置き場+ステージ下合計12枚（`countOwnFieldEnergyTotal`/`remainingFieldEnergyCapacity`） |
 | 2026-08-11 | PL!N-bp7-011（ミア）控え室3件: ①`revealCardsSentFromDeckToWaiting` で控え室送り済みミルに `fireJidouAfterDeckMilledByAbility`（`deck_top_pick_recover` / `deck_top_look_reorder` 等・横展開多数。代表ミル源 018/bp5-009/030）②`_playCostReduce`/`_playCostSet` を登場後エネ支払いまで適用（手札限定ゲート外へ）③`play_cost_reduce_shuffle_waiting_members` は控え室のみデッキ下へ（バトン元は通常登場後に控え室へ残す） |
 | 2026-08-15 | PL!N-bp7-011（ミア）`play_cost_reduce_shuffle_waiting_members` のバトン先出しを撤回。シャッフルは控え室既存メンバーのみ→登場時バトンで控え室に置いたメンバーは効果解決後も控え室に残る |

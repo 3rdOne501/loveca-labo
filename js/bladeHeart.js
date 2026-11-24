@@ -122,7 +122,21 @@ export function bladeHeartHasDoubleColorlessMarker(card) {
 }
 
 /**
- * エール解決時に加算する無色ハート数（アイコン1つにつき2）。
+ * b_heart07 の保存値をエールで得る無色ハート数にする。
+ * 現行 cards.json は無色2アイコン1つを `2` と保存している（すでにハート数）。
+ * アイコン個数として `1` と書いた場合は 1個 = 2ハート（2.1.1.2.1）。
+ * @param {number} stored
+ * @returns {number}
+ */
+export function doubleColorlessHeartsFromStoredCount(stored) {
+  var v = Math.floor(Math.abs(Number(stored) || 0));
+  if (v <= 0) return 0;
+  if (v === 1) return 2;
+  return v;
+}
+
+/**
+ * エール解決時に加算する無色ハート数（無色2アイコン1つ = ハート2）。
  * @returns {number}
  */
 export function bladeHeartDoubleColorlessYellPoints(card) {
@@ -131,9 +145,7 @@ export function bladeHeartDoubleColorlessYellPoints(card) {
   var pts = 0;
   Object.keys(bh).forEach(function (k) {
     if (!isBladeHeartDoubleColorlessMarkerKey(k)) return;
-    var v = Number(bh[k]);
-    if (!Number.isFinite(v) || v <= 0) return;
-    pts += Math.floor(Math.abs(v)) * 2;
+    pts += doubleColorlessHeartsFromStoredCount(bh[k]);
   });
   return pts;
 }
@@ -284,8 +296,8 @@ export function addBladeHeartWeightsPerDisplaySlot(card, accum) {
     if (!Number.isFinite(n) || n === 0) return;
     if (isBladeHeartDrawMarkerKey(ent[0])) return;
     if (isBladeHeartDoubleColorlessMarkerKey(ent[0])) {
-      /* アイコン1つ = 無色ハート2つ分（slot7 = ALL ワイルドカード） */
-      accum[7] = (accum[7] || 0) + Math.abs(n) * 2;
+      /* 無色2はハート2個。保存値2をさらに×2しない（旧実装は4個になり必要14に届いていた） */
+      accum[7] = (accum[7] || 0) + doubleColorlessHeartsFromStoredCount(n);
       return;
     }
     if (isOrangeBladeHeartKey(ent[0])) {

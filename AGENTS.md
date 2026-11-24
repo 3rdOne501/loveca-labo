@@ -2,6 +2,13 @@
 
 This project uses custom instructions, capabilities and data to optimize work on ll-ocg-tools.
 
+## 総合ルール ver.1.09（絶対遵守・恒久）
+
+- 正本は公式総合ルール **ver.1.09**（2026-11-11）。PDF・検索用テキスト・差分は [docs/rules/README.md](docs/rules/README.md)。alwaysApply の詳細は `.cursor/rules/lovelive-tcg-comprehensive-rules.mdc`。
+- カード効果の実装・修正、ルール処理、バグ修正の前に、関係する条文を `docs/rules/LoveLiveTCG_comprehensive_rules_ver1.09.txt` で読む。実装が条文と矛盾しないこと、必要な条文を飛ばしていないことを確認してから書く。
+- カード文が総合ルールと矛盾する場合はカード文を優先する（1.3.1）。推測で条文を補わない。節番号は ver.1.09 を使う（登場は 11.5、ライブ開始時は 11.6、ライブ成功時は 11.7。旧 8.3.15 の必要ハートは 8.3.16）。
+- ver.1.06 の抽出と、それ以前の節番号を現行の根拠にしない。
+
 ## Cursor / GPT 共通の引き継ぎ（必須）
 
 - 作業開始時に `docs/HANDOFF.md` を読み、既存の変更と未完了項目を確認する。

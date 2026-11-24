@@ -1779,7 +1779,7 @@ body.play-versus-mode .versus-opp-deck-back {
   width: var(--versus-opp-card-w);
   aspect-ratio: 63 / 88;
   border-radius: 4px;
-  background: center / cover no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 63 88'%3E%3Crect fill='%23222840' width='63' height='88' rx='4'/%3E%3C/svg%3E");
+  background: center / cover no-repeat url("assets/game-icons/card-back.png");
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
 }
 body.play-versus-mode .versus-opp-energy-fold {
@@ -2196,13 +2196,13 @@ body.play-mode.play-hand-docked-bottom #hand-stick-fold.hand-stick-fold {
   z-index: 60;
   margin: 0;
   padding: 0.3rem 0.35rem max(0.4rem, env(safe-area-inset-bottom, 0px));
-  /* ぼかし＋半透明（完全透過にしない） */
-  background: rgba(10, 8, 18, 0.48) !important;
-  backdrop-filter: blur(16px) saturate(1.18) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(1.18) !important;
-  border: 1px solid rgba(255, 200, 230, 0.2) !important;
+  /* ごく薄いぼかし＋半透明（縁取りなし） */
+  background: rgba(10, 8, 18, 0.42) !important;
+  backdrop-filter: blur(3px) saturate(1.06) !important;
+  -webkit-backdrop-filter: blur(3px) saturate(1.06) !important;
+  border: none !important;
   border-radius: 0;
-  box-shadow: 0 -10px 32px rgba(0, 0, 0, 0.38) !important;
+  box-shadow: none !important;
   --para-fill: transparent;
   --para-frame: transparent;
   --para-glow: transparent;
@@ -2230,14 +2230,17 @@ body.play-mode.play-hand-docked-bottom #zone-hand.hand-zone {
   --para-frame: transparent;
   --para-glow: transparent;
 }
-/* 非ドック時の手札ゾーンもぼかし＋半透明 */
+/* 非ドック時の手札ゾーンもごく薄いぼかし＋半透明（縁取りなし） */
 body.play-mode:not(.play-hand-docked-bottom) #hand-stick-fold.hand-stick-fold,
 body.play-mode:not(.play-hand-docked-bottom) #zone-hand.hand-zone {
-  background: rgba(10, 8, 18, 0.4) !important;
-  backdrop-filter: blur(12px) saturate(1.12) !important;
-  -webkit-backdrop-filter: blur(12px) saturate(1.12) !important;
+  background: rgba(10, 8, 18, 0.36) !important;
+  backdrop-filter: blur(3px) saturate(1.06) !important;
+  -webkit-backdrop-filter: blur(3px) saturate(1.06) !important;
+  border: none !important;
+  box-shadow: none !important;
   --para-fill: rgba(10, 8, 18, 0.28);
-  --para-frame: rgba(255, 200, 230, 0.22);
+  --para-frame: transparent;
+  --para-glow: transparent;
 }
 /* ヘッダー行・アクションボタン群も折り返して横に溢れさせない */
 body.play-mode.play-hand-docked-bottom #hand-stick-fold.hand-stick-fold .zone-head--hand,
@@ -2302,7 +2305,6 @@ body.play-mode.play-hand-docked-bottom .btn-hand-dock-turn {
 /* 対戦モードのライブ成功確率パネルは「残りエール数」行だけ残す
    （ソロと同じ場所・同じ仕様で残りエールを表示。確率計算・操作系は隠す） */
 .zone-block-deck-live-sim.deck-live-sim--versus-yell-only .deck-live-sim-heading-compact,
-.zone-block-deck-live-sim.deck-live-sim--versus-yell-only .play-undo-redo-cluster--under-prob,
 .zone-block-deck-live-sim.deck-live-sim--versus-yell-only .deck-live-sim-controls,
 .zone-block-deck-live-sim.deck-live-sim--versus-yell-only #deck-flip-blade-note,
 .zone-block-deck-live-sim.deck-live-sim--versus-yell-only #deck-live-sim-block {
@@ -5074,20 +5076,6 @@ body.play-mode .zone-head--live-with-turn .play-undo-redo-cluster--live-header {
   gap: 0.45rem;
   margin-left: auto;
   flex-shrink: 0;
-}
-/* スマホ幅では、ライブエリア見出し横の Undo／Redo は隠す。
-   成功確率パネル下の `play-undo-redo-cluster--under-prob` が代わりに表示されているので、
-   操作はそちらから可能。 */
-@media (max-width: 720px) {
-  body.play-mode .zone-head--live-with-turn .play-undo-redo-cluster--live-header:not(.play-undo-redo-cluster--under-prob) {
-    display: none !important;
-  }
-  body.play-versus-mode.play-mode .zone-head--live-with-turn .play-undo-redo-cluster--live-header:not(.play-undo-redo-cluster--under-prob) {
-    display: inline-flex !important;
-  }
-  body.play-versus-mode.play-mode .play-undo-redo-cluster--under-prob {
-    display: none !important;
-  }
 }
 
 /* Undo / Redo ボタン: 中性的でモダンなガラス調の見た目。色は単色＋アクセント縁、
@@ -9492,21 +9480,6 @@ dialog.app-dialog:not([open]) {
   word-break: break-word;
 }
 
-/* ライブ成功確率セクション直下に置く Undo/Redo */
-.play-undo-redo-cluster--under-prob {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: center;
-  margin: 0.2rem 0 0.5rem;
-  flex-wrap: wrap;
-}
-body.play-mode .play-undo-redo-cluster--under-prob .play-undo-redo {
-  flex: 1 1 6rem;
-  min-width: 5.4rem;
-  padding: 0.4em 0.7em 0.4em 0.6em;
-  font-size: 0.82rem;
-  min-height: 2.1rem;
-}
 .zone-block-deck-live-sim.live-prob-always-visible {
   position: relative;
 }
@@ -10253,6 +10226,151 @@ body.play-mode .card-item.card-item--play-fx-live_success .card-art-wrap .card-i
 .play-fx-ring--jidou {
   border-color: rgba(140, 255, 190, 0.95);
   box-shadow: 0 0 26px rgba(100, 255, 180, 0.88), 0 0 50px rgba(60, 220, 120, 0.42);
+}
+/* 自動効果: 場のカードから広がる緑の波紋 */
+.play-fx-jidou-ripple {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 42%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 2px solid rgba(110, 255, 170, 0.92);
+  box-shadow: 0 0 12px rgba(80, 255, 160, 0.65), inset 0 0 10px rgba(140, 255, 190, 0.35);
+  pointer-events: none;
+  z-index: 10;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.55);
+  animation: playFxJidouRipple var(--play-fx-ms, 1100ms) ease-out both;
+}
+@keyframes playFxJidouRipple {
+  0% {
+    opacity: 0.95;
+    transform: translate(-50%, -50%) scale(0.45);
+  }
+  70% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(2.35);
+  }
+}
+/* 場外発動の自動効果アナウンス */
+.jidou-offfield-fx {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  z-index: 80;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  pointer-events: none;
+  animation: jidouOffFieldFade 1.35s ease-out both;
+}
+.jidou-offfield-fx__card {
+  position: relative;
+  width: min(22vw, 118px);
+  aspect-ratio: 63 / 88;
+  filter: drop-shadow(0 8px 22px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 18px rgba(80, 255, 160, 0.45));
+}
+.jidou-offfield-fx__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid rgba(140, 255, 190, 0.75);
+  display: block;
+}
+.jidou-offfield-fx__ripple {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 70%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 2px solid rgba(110, 255, 170, 0.9);
+  box-shadow: 0 0 14px rgba(80, 255, 160, 0.55);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.5);
+  animation: playFxJidouRipple 1.2s ease-out both;
+}
+.jidou-offfield-fx__cap {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #d8ffe8;
+  text-shadow: 0 0 8px rgba(80, 255, 160, 0.75);
+  padding: 0.18rem 0.55rem;
+  border: 1px solid rgba(120, 255, 180, 0.45);
+  background: rgba(8, 28, 18, 0.72);
+}
+@keyframes jidouOffFieldFade {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -46%) scale(0.92);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  72% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -54%) scale(1.04);
+  }
+}
+/* 効果ダイアログ: 発動元カード */
+.dlg-effect-source-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  margin: 0 0 0.35rem;
+}
+.dlg-effect-source-row__main {
+  flex: 1;
+  min-width: 0;
+}
+.dlg-effect-source-row__main .app-dialog__title {
+  margin-top: 0;
+}
+.dlg-effect-source {
+  flex-shrink: 0;
+  width: 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.28rem;
+}
+.dlg-effect-source[hidden] {
+  display: none !important;
+}
+.dlg-effect-source__img {
+  width: 72px;
+  aspect-ratio: 63 / 88;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 2px solid rgba(120, 255, 180, 0.55);
+  box-shadow: 0 0 12px rgba(80, 255, 160, 0.28);
+  background: rgba(0, 0, 0, 0.25);
+}
+.dlg-effect-source__name {
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  color: #d8ffe8;
+  max-width: 76px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  word-break: break-word;
 }
 .play-fx-ring--live_success {
   border-color: rgba(255, 100, 120, 0.95);
@@ -14576,12 +14694,16 @@ body.play-mode .card-item--energy-wait-flip .card-img {
   outline-offset: 2px;
 }
 
-/* 盤面画像保存: 2列目を記事用に撮るとき、操作UIだけ消す（フォント・盤面サイズはそのまま） */
+/* 盤面画像保存: 操作UIだけ消す（フォント・盤面サイズはそのまま） */
 body.play-board-exporting .play-undo-redo-cluster,
 body.play-board-exporting .zone-block-snapshots,
 body.play-board-exporting .card-effect-resolve-btn,
 body.play-board-exporting .card-effect-resolve-btn-row,
 body.play-board-exporting .card-effect-icon-host,
+body.play-board-exporting .card-live-send,
+body.play-board-exporting .play-board-chrome-host,
+body.play-board-exporting .live-phase-rail,
+body.play-board-exporting .play-effect-chain-band,
 body.play-board-exporting #btn-live-turn-primary,
 body.play-board-exporting #btn-live-turn-begin,
 body.play-board-exporting #btn-live-turn-end,
@@ -14604,6 +14726,68 @@ body.play-board-exporting .live-stats-zone-hint-block,
 body.play-board-exporting .play-top-success-live-hint {
   display: none !important;
 }
+
+/* スクショモード: 解決帯・長文ヒント等は畳む（エネ／ステージ／ライブ区画は残す） */
+body.play-board-exporting.play-board-export-shot #play-top-fixed-strip,
+body.play-board-exporting.play-board-export-shot .live-area-hint,
+body.play-board-exporting.play-board-export-shot #live-turn-stats-wrap,
+body.play-board-exporting.play-board-export-shot .stage-area-hint,
+body.play-board-exporting.play-board-export-shot .chrome-live-prob-mobile-slot,
+body.play-board-exporting.play-board-export-shot .live-prob-toolbar-inline {
+  display: none !important;
+}
+/* エネ区画は見えるが ± と説明文は出さない */
+body.play-board-exporting.play-board-export-shot #energy-fold .energy-fold__controls,
+body.play-board-exporting.play-board-export-shot #energy-fold .hint {
+  display: none !important;
+}
+
+/* スクショ: 横幅・カードサイズに余裕（文字潰れ防止） */
+body.play-board-exporting.play-board-export-shot {
+  --loveca-play-w: 112px;
+}
+body.play-board-exporting.play-board-export-shot #view-game .col.col-center {
+  min-width: 820px !important;
+  max-width: none !important;
+}
+body.play-board-exporting.play-board-export-shot #live-row.three-cols,
+body.play-board-exporting.play-board-export-shot .energy-under-stage {
+  transform: none !important;
+}
+body.play-board-exporting.play-board-export-shot #live-row.three-cols,
+body.play-board-exporting.play-board-export-shot .three-cols:has(.stage-slot) {
+  gap: 0.7rem !important;
+}
+body.play-board-exporting.play-board-export-shot .slot-label {
+  font-size: 0.82rem !important;
+  letter-spacing: 0.04em;
+}
+body.play-board-exporting.play-board-export-shot .live-area-col-heading,
+body.play-board-exporting.play-board-export-shot .stage-title-bar__h,
+body.play-board-exporting.play-board-export-shot .energy-fold__title {
+  font-size: 1.12rem !important;
+}
+
+/* ライブ配置時のみ成功確率を表示（モバイルレイアウトでもデスクトップ枠を強制表示） */
+body.play-board-exporting.play-board-export-shot:not(.play-board-export-has-live) .chrome-live-prob-desktop-inline {
+  display: none !important;
+}
+body.play-board-exporting.play-board-export-shot.play-board-export-has-live .chrome-live-prob-desktop-inline {
+  display: flex !important;
+  flex: 1 1 auto;
+  min-width: 12rem;
+  max-width: none;
+  justify-content: flex-start;
+  padding: 0.15rem 0.35rem;
+}
+body.play-board-exporting.play-board-export-shot.play-board-export-has-live .deck-live-sim-summary.deck-live-sim-summary--desktop-toolbar,
+body.play-board-exporting.play-board-export-shot.play-board-export-has-live .deck-live-sim-summary.deck-live-sim-summary--desktop-toolbar-muted {
+  margin: 0 !important;
+  font-size: 0.98rem !important;
+  line-height: 1.35 !important;
+  text-align: left;
+  white-space: normal;
+}
 body.play-board-exporting .card-item--play-kidou-glow,
 body.play-board-exporting .card-item--play-toujou-glow,
 body.play-board-exporting .card-item--play-live-start-glow,
@@ -14624,9 +14808,31 @@ body.play-board-exporting #play-board-export-hand {
   margin-top: 0.55rem;
 }
 
-/* スクショ時: ターン数字と成功確率％を同じディスプレイ書体・サイズ・発光に揃える */
+/*
+ * スクショ手札: メンバーは height:auto で画像ごとに高さが変わり、
+ * ライブは --card-h 固定のため左右だけ小さく見える。枠サイズを統一する。
+ */
+body.play-board-exporting.play-board-export-shot :is(#zone-hand, #play-board-export-hand) .card-item {
+  width: var(--loveca-play-w) !important;
+  height: var(--loveca-play-h) !important;
+  flex-shrink: 0 !important;
+}
+body.play-board-exporting.play-board-export-shot :is(#zone-hand, #play-board-export-hand) .card-item .card-img:not(.rotated) {
+  width: 100% !important;
+  height: var(--loveca-play-h) !important;
+  max-height: none !important;
+  object-fit: cover !important;
+  object-position: center center !important;
+}
+body.play-board-exporting.play-board-export-shot :is(#zone-hand, #play-board-export-hand) .card-item .card-img.rotated {
+  width: var(--loveca-play-h) !important;
+  height: var(--loveca-play-w) !important;
+  object-fit: cover !important;
+  object-position: center center !important;
+}
+
+/* スクショ時: ターン数字は従来サイズ、成功確率の数字・％は大きめピンク発光 */
 body.play-board-exporting .play-turn-badge__n,
-body.play-board-exporting .deck-odds-pct--hero,
 body.play-board-exporting .deck-live-sim-line-hit {
   font-family: var(--font-display) !important;
   font-size: 1.42rem !important;
@@ -14637,33 +14843,52 @@ body.play-board-exporting .deck-live-sim-line-hit {
   font-variant-numeric: tabular-nums;
   text-shadow: 0 0 14px rgba(255, 220, 255, 0.95) !important;
 }
+body.play-board-exporting .deck-odds-pct,
+body.play-board-exporting .deck-odds-pct--hero,
 body.play-board-exporting .deck-live-sim-summary.has-prob-color .deck-odds-pct,
-body.play-board-exporting .deck-live-sim-summary.has-prob-color .deck-odds-pct--hero {
-  text-shadow: 0 0 14px rgba(255, 220, 255, 0.95) !important;
+body.play-board-exporting .deck-live-sim-summary.has-prob-color .deck-odds-pct--hero,
+body.play-board-exporting.play-board-export-shot .chrome-live-prob-desktop-inline .deck-odds-pct,
+body.play-board-exporting.play-board-export-shot .chrome-live-prob-desktop-inline .deck-odds-pct--hero {
+  font-family: var(--font-display) !important;
+  font-size: 2.35rem !important;
+  font-weight: 900 !important;
+  font-style: normal !important;
+  line-height: 1.05 !important;
+  letter-spacing: 0.03em !important;
+  font-variant-numeric: tabular-nums;
+  color: #ffe6f4 !important;
+  -webkit-text-fill-color: #ffe6f4 !important;
+  text-shadow:
+    0 0 8px rgba(255, 230, 244, 1),
+    0 0 18px rgba(255, 200, 230, 0.9),
+    0 0 32px rgba(255, 180, 220, 0.65),
+    0 0 48px rgba(255, 160, 210, 0.4) !important;
+  clip-path: none !important;
+  filter: none !important;
 }
 
-/* スクショ時: ライブカードをステージメンバー相当の縦スロットへ（横長原画は export JS で 90°） */
-body.play-board-exporting #live-row .live-slot.card-strip {
+/* 記事用のみ: ライブカードをステージメンバー相当の縦スロットへ（横長原画は export JS で 90°）。スクショモードは画面どおり */
+body.play-board-exporting:not(.play-board-export-shot) #live-row .live-slot.card-strip {
   min-height: calc(var(--loveca-play-h) * 1.35 + 36px);
   padding: 10px 8px;
 }
-body.play-board-exporting #live-row .live-slot .card-item {
+body.play-board-exporting:not(.play-board-export-shot) #live-row .live-slot .card-item {
   width: calc(var(--loveca-play-w) * 1.35);
 }
-body.play-board-exporting #live-row .live-slot .card-item:not(.card-item--live-h) .card-img:not(.rotated) {
+body.play-board-exporting:not(.play-board-export-shot) #live-row .live-slot .card-item:not(.card-item--live-h) .card-img:not(.rotated) {
   width: calc(var(--loveca-play-w) * 1.35);
   height: calc(var(--loveca-play-h) * 1.35);
   object-fit: contain;
   object-position: center center;
 }
-body.play-board-exporting #live-row .live-slot .card-item.card-item--live-h .card-img.rotated {
+body.play-board-exporting:not(.play-board-export-shot) #live-row .live-slot .card-item.card-item--live-h .card-img.rotated {
   width: calc(var(--loveca-play-w) * 1.35);
   height: auto;
 }
-body.play-board-exporting #live-row .live-slot .card-item.card-item--live-h {
+body.play-board-exporting:not(.play-board-export-shot) #live-row .live-slot .card-item.card-item--live-h {
   width: calc(var(--loveca-play-w) * 1.35);
 }
-body.play-board-exporting .success-live-strip .card-item[data-type="ライブ"] .card-img:not(.rotated) {
+body.play-board-exporting:not(.play-board-export-shot) .success-live-strip .card-item[data-type="ライブ"] .card-img:not(.rotated) {
   width: var(--loveca-play-w);
   height: var(--loveca-play-h);
   object-fit: contain;
@@ -17215,5 +17440,137 @@ body.tourney-deck-view-open {
 @media print {
   .card-jouji-active-badge {
     display: none;
+  }
+}
+
+/* ============================================================
+   テキストウインドウ — フューチャーリスティック／フラット
+   平行四辺形を外し、面取りパネル＋ヘアライン枠にする。
+   ============================================================ */
+@media not print {
+  :root {
+    --fx-win-bg: #0a1018;
+    --fx-win-bg-2: #121a28;
+    --fx-win-line: rgba(120, 210, 255, 0.42);
+    --fx-win-line-soft: rgba(120, 210, 255, 0.18);
+    --fx-win-accent: rgba(255, 90, 170, 0.85);
+    --fx-win-text: #e8f2ff;
+    --fx-win-muted: rgba(180, 210, 235, 0.72);
+    --fx-win-chamfer: 10px;
+    --fx-win-clip: polygon(
+      var(--fx-win-chamfer) 0,
+      calc(100% - var(--fx-win-chamfer)) 0,
+      100% var(--fx-win-chamfer),
+      100% calc(100% - var(--fx-win-chamfer)),
+      calc(100% - var(--fx-win-chamfer)) 100%,
+      var(--fx-win-chamfer) 100%,
+      0 calc(100% - var(--fx-win-chamfer)),
+      0 var(--fx-win-chamfer)
+    );
+  }
+
+  :is(.app-dialog, .toast, .sample-thumb-pick-dialog, .versus-match-log-panel) {
+    --para-fill: transparent;
+    --para-frame: transparent;
+    --para-glow: transparent;
+    --para-blur: 0px;
+    isolation: isolate;
+    position: relative;
+    border-radius: 0 !important;
+    clip-path: var(--fx-win-clip);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 28%),
+      linear-gradient(180deg, rgba(18, 26, 40, 0.72) 0%, rgba(10, 16, 24, 0.78) 100%) !important;
+    border: 3px solid var(--fx-win-line) !important;
+    outline: 1px solid rgba(255, 90, 170, 0.45);
+    outline-offset: -4px;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.35),
+      0 0 0 1px rgba(10, 16, 24, 0.9) !important;
+    backdrop-filter: blur(6px) saturate(1.08) !important;
+    -webkit-backdrop-filter: blur(6px) saturate(1.08) !important;
+    color: var(--fx-win-text);
+  }
+  :is(.app-dialog, .toast, .sample-thumb-pick-dialog, .versus-match-log-panel)::before {
+    content: none !important;
+    display: none !important;
+  }
+  /* 上辺のアクセントライン（フラット HUD） */
+  :is(.app-dialog, .toast, .sample-thumb-pick-dialog, .versus-match-log-panel)::after {
+    content: "";
+    position: absolute;
+    left: var(--fx-win-chamfer);
+    right: var(--fx-win-chamfer);
+    top: 0;
+    height: 3px;
+    z-index: 1;
+    pointer-events: none;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--fx-win-accent) 18%,
+      var(--fx-win-line) 50%,
+      var(--fx-win-accent) 82%,
+      transparent 100%
+    );
+  }
+
+  .app-dialog {
+    max-width: min(34rem, calc(100vw - 2rem));
+    padding: 1.05rem 1.2rem 1.15rem;
+    letter-spacing: 0.01em;
+  }
+  .app-dialog::backdrop {
+    background: rgba(4, 8, 14, 0.28);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+  }
+  .app-dialog .app-dialog__title,
+  .app-dialog h2,
+  .app-dialog h3 {
+    margin-top: 0;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: none;
+    color: #f3f8ff;
+  }
+  .app-dialog .help-body p,
+  .app-dialog .hint,
+  .app-dialog p {
+    color: var(--fx-win-muted);
+  }
+  .app-dialog__actions {
+    border-top: 1px solid var(--fx-win-line-soft);
+    margin-top: 0.95rem;
+    padding-top: 0.75rem;
+  }
+
+  .toast {
+    max-width: min(92vw, 22rem);
+    padding: 0.55rem 0.9rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: #f2f8ff;
+  }
+  .toast--center {
+    max-width: min(92vw, 30rem);
+    padding: 0.85rem 1.15rem;
+    font-size: 0.94rem;
+    --fx-win-chamfer: 12px;
+  }
+
+  .sample-thumb-pick-dialog {
+    --fx-win-chamfer: 12px;
+  }
+
+  .versus-match-log-panel {
+    --fx-win-chamfer: 8px;
+    overflow: hidden;
+  }
+  .versus-match-log-panel__summary,
+  .versus-match-log-panel__list {
+    padding-inline: 0.7rem;
   }
 }

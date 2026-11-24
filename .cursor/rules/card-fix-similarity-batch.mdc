@@ -9,7 +9,7 @@ alwaysApply: true
 
 ## 手順
 
-1. **カード文を読み返す**（総合ルール ver.1.06 + カード文優先）— `data/cards.json` の `ability` を**必ず開いて読む**。他カードの備考・テンプレート名のコピー禁止。
+1. **カード文を読み返す**（総合ルール ver.1.09 + カード文優先）— `data/cards.json` の `ability` を**必ず開いて読む**。関係する条文を `docs/rules/LoveLiveTCG_comprehensive_rules_ver1.09.txt` で読み、矛盾した処理と無視した条文を残さない。他カードの備考・テンプレート名のコピー禁止。ver.1.06 の節番号は使わない。
 2. **根因パターンを特定**（例: `残りを控え室` なのに `deck_top_to_waiting`、手札コスト未処理の `grant_jouji_session`）
 3. **`data/cards.json` 全体を検索**して同型テキスト・同型分類を列挙
 4. **分類器（`js/abilityEffects.js`）または共通ハンドラ**で横展開修正（個別 card_no 分岐は最後の手段）
