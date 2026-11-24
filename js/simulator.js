@@ -2113,7 +2113,41 @@ export function mountSimulator(
     if (document.body) {
       document.body.classList.toggle("play-hand-docked-bottom", on);
     }
+    syncHandDockPortal();
     syncHandDockWidthToCenter();
+  }
+
+  /**
+   * スマホ横向きは盤面が縦スクロールの中にあり、position:fixed の手札が列の外に出ない。
+   * 下固定中はその手札を body 直下へ出して画面下に置く。
+   */
+  function handDockNeedsViewportPortal() {
+    if (!document.body || !document.body.classList.contains("play-hand-docked-bottom")) return false;
+    if (document.body.classList.contains("chrome-layout-play-mobile-portrait")) return false;
+    var w = Math.round(window.innerWidth || 0);
+    var h = Math.round(window.innerHeight || 0);
+    return w > h && w <= 900;
+  }
+
+  function syncHandDockPortal() {
+    var fold = document.getElementById("hand-stick-fold");
+    if (!fold || !document.body) return;
+    var marker = document.getElementById("hand-stick-fold-portal-marker");
+    if (handDockNeedsViewportPortal()) {
+      if (!marker) {
+        marker = document.createElement("div");
+        marker.id = "hand-stick-fold-portal-marker";
+        marker.hidden = true;
+        if (fold.parentNode) fold.parentNode.insertBefore(marker, fold);
+      }
+      if (fold.parentNode !== document.body) document.body.appendChild(fold);
+      fold.open = true;
+      return;
+    }
+    if (marker && marker.parentNode && fold.parentNode === document.body) {
+      marker.parentNode.insertBefore(fold, marker);
+      marker.remove();
+    }
   }
 
   function syncHandDockWidthToCenter() {
@@ -2163,7 +2197,10 @@ export function mountSimulator(
       handDockObserver.observe(handDockCenter);
     }
   }
-  window.addEventListener("resize", syncHandDockWidthToCenter);
+  window.addEventListener("resize", function () {
+    syncHandDockPortal();
+    syncHandDockWidthToCenter();
+  });
   window.addEventListener("llocg-page-scale", syncHandDockWidthToCenter);
   window.addEventListener("llocg-area-resize-end", syncHandDockWidthToCenter);
 
@@ -2298,6 +2335,7 @@ export function mountSimulator(
 
     document.body.classList.toggle("chrome-layout-play-mobile-portrait", mobile);
     document.body.classList.toggle("chrome-layout-play-desktop", !mobile);
+    syncHandDockPortal();
 
     function mountChildIfNeeded(child, parent) {
       if (!child || !parent || child.parentNode === parent) return;
