@@ -1,0 +1,971 @@
+import os
+import re
+import io
+import json
+import time
+import zipfile
+import random
+import threading
+import webbrowser
+from datetime import datetime
+from typing import List, Dict, Any
+
+import gradio as gr
+from PIL import Image, ImageDraw
+
+# =========================================================
+# 基本設定
+# =========================================================
+APP_TITLE = "Local Image Dashboard v10"
+BASE_DIR = os.path.expanduser("~/image-dashboard")
+PRESETS_FILE = os.path.join(BASE_DIR, "presets_v10.json")
+OUTPUT_ROOT = os.path.join(BASE_DIR, "outputs")
+DEFAULT_PORT = 7860
+
+# 初期表示は8枠（1ページ重視）
+VISIBLE_DIFF_SLOTS = 8
+# 内部上限（必要なら増やせる）
+MAX_DIFF_SLOTS = 20
+
+os.makedirs(BASE_DIR, exist_ok=True)
+os.makedirs(OUTPUT_ROOT, exist_ok=True)
+
+stop_flag = False
+
+# =========================================================
+# デフォルト
+# =========================================================
+default_presets = {
+    "Default": {
+        "api_token": "",
+        "character_name": "Sample Character",
+        "base_prompt": "masterpiece, best quality, detailed face, soft lighting, full color",
+        "negative_prompt": "low quality, blurry, bad anatomy, extra fingers, malformed hands",
+        "images_per_diff": 4,
+        "orientation": "縦型",
+        "steps": 28,
+        "seed_mode": "ランダム",
+        "fixed_seed": 123456,
+        "model_name": "Default Model",
+        "sampler_name": "Euler",
+        "differences": [
+            {"enabled": True, "name": f"差分 {i+1}", "prompt": ""} for i in range(MAX_DIFF_SLOTS)
+        ]
+    }
+}
+
+# =========================================================
+# CSS / JS
+# =========================================================
+CUSTOM_CSS = """
+:root {
+  --bg: #f5f8ff;
+  --bg2: #edf4ff;
+  --card: rgba(255,255,255,0.92);
+  --line: #d9e4f3;
+  --line2: #e7eef9;
+  --text: #111827;
+  --muted: #475569;
+  --title: #0f172a;
+  --sub: #334155;
+  --accent: #4f46e5;
+  --accent2: #7c3aed;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%) !important;
+}
+
+.gradio-container {
+  max-width: 100% !important;
+  width: 100% !important;
+  padding: 8px 10px 8px 10px !important;
+  background: transparent !important;
+  color: var(--text) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+}
+
+.gradio-container h1,
+.gradio-container h2,
+.gradio-container h3,
+.gradio-container h4,
+.gradio-container h5,
+.gradio-container h6,
+.gradio-container label,
+.gradio-container .prose h1,
+.gradio-container .prose h2,
+.gradio-container .prose h3,
+.gradio-container .prose p,
+.gradio-container .prose strong,
+.gradio-container .markdown,
+.gradio-container .md {
+  color: var(--text) !important;
+}
+
+.gradio-container h1 {
+  color: var(--title) !important;
+  font-size: 26px !important;
+  font-weight: 800 !important;
+  margin: 0 0 2px 0 !important;
+}
+
+.top-note {
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.panel {
+  background: var(--card) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06) !important;
+  padding: 8px !important;
+}
+
+.panel-tight {
+  background: rgba(255,255,255,0.88) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04) !important;
+  padding: 7px !important;
+}
+
+.section-title {
+  color: var(--sub);
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.page-shell {
+  height: calc(100vh - 70px);
+  min-height: calc(100vh - 70px);
+  max-height: calc(100vh - 70px);
+  overflow: hidden;
+}
+
+.left-col,
+.mid-col,
+.right-col {
+  height: calc(100vh - 90px);
+  min-height: calc(100vh - 90px);
+  max-height: calc(100vh - 90px);
+  overflow: hidden;
+}
+
+.left-scroll,
+.mid-scroll,
+.right-scroll {
+  height: 100%;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+/* ページ全体スクロール極小、内部だけ少し */
+.left-scroll::-webkit-scrollbar,
+.mid-scroll::-webkit-scrollbar,
+.right-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.left-scroll::-webkit-scrollbar-thumb,
+.mid-scroll::-webkit-scrollbar-thumb,
+.right-scroll::-webkit-scrollbar-thumb {
+  background: #dbe5f5;
+  border-radius: 10px;
+}
+
+.gradio-container textarea,
+.gradio-container input {
+  border-radius: 10px !important;
+  font-size: 12px !important;
+}
+
+.gradio-container button {
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+  min-height: 34px !important;
+}
+
+.main-btn button {
+  min-height: 48px !important;
+  font-size: 15px !important;
+  font-weight: 800 !important;
+}
+
+.stop-btn button {
+  min-height: 40px !important;
+  font-weight: 800 !important;
+}
+
+.compact-box textarea {
+  line-height: 1.28 !important;
+}
+
+.gallery-compact {
+  max-height: 230px;
+  overflow-y: auto;
+}
+
+.log-compact textarea {
+  height: 88px !important;
+  font-size: 11px !important;
+}
+
+.path-compact textarea,
+.path-compact input {
+  font-size: 11px !important;
+}
+
+.diff-card {
+  border: 1px solid var(--line2);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.95);
+  padding: 6px;
+  margin-bottom: 6px;
+}
+
+.diff-box textarea {
+  min-height: 58px !important;
+  max-height: 58px !important;
+  font-size: 11px !important;
+  line-height: 1.2 !important;
+}
+
+.small-note {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.footer-note {
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 4px;
+}
+"""
+
+CUSTOM_JS = """
+() => {
+  const bindHotkey = () => {
+    if (window.__image_dashboard_hotkey_bound_v10) return;
+    window.__image_dashboard_hotkey_bound_v10 = true;
+
+    document.addEventListener("keydown", (e) => {
+      const isCmdEnter = (e.key === "Enter") && (e.metaKey || e.ctrlKey);
+      if (!isCmdEnter) return;
+
+      const startBtn = document.querySelector("#start-generate-btn button");
+      if (startBtn) {
+        e.preventDefault();
+        startBtn.click();
+      }
+    });
+  };
+
+  setTimeout(bindHotkey, 500);
+  return [];
+}
+"""
+
+# =========================================================
+# ユーティリティ
+# =========================================================
+def safe_name(s: str) -> str:
+    s = (s or "").strip()
+    s = re.sub(r'[\\\\/:*?"<>|]+', "_", s)
+    return s or "untitled"
+
+def log_append(old: str, msg: str) -> str:
+    ts = datetime.now().strftime("%H:%M:%S")
+    line = f"[{ts}] {msg}"
+    if not old:
+        return line
+    return old + "\n" + line
+
+def load_presets() -> Dict[str, Any]:
+    if os.path.exists(PRESETS_FILE):
+        try:
+            with open(PRESETS_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    save_presets(default_presets)
+    return default_presets
+
+def save_presets(data: Dict[str, Any]):
+    with open(PRESETS_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+PRESETS = load_presets()
+
+def ensure_diff_len(diffs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    diffs = diffs or []
+    out = []
+    for i in range(MAX_DIFF_SLOTS):
+        if i < len(diffs):
+            d = diffs[i] or {}
+            out.append({
+                "enabled": bool(d.get("enabled", True)),
+                "name": d.get("name", f"差分 {i+1}"),
+                "prompt": d.get("prompt", "")
+            })
+        else:
+            out.append({"enabled": True, "name": f"差分 {i+1}", "prompt": ""})
+    return out
+
+def diff_state_to_outputs(diffs: List[Dict[str, Any]], visible_slots: int) -> List[Any]:
+    diffs = ensure_diff_len(diffs)
+    outs = []
+    for i in range(visible_slots):
+        d = diffs[i]
+        outs.extend([d["enabled"], d["name"], d["prompt"]])
+    return outs
+
+def build_diff_state_from_visible_inputs(values: List[Any], old_state: List[Dict[str, Any]], visible_slots: int):
+    diffs = ensure_diff_len(old_state)
+    for i in range(visible_slots):
+        diffs[i] = {
+            "enabled": bool(values[i * 3 + 0]),
+            "name": values[i * 3 + 1] or f"差分 {i+1}",
+            "prompt": values[i * 3 + 2] or ""
+        }
+    return diffs
+
+def get_resolution(orientation: str):
+    if orientation == "横型":
+        return (1216, 832)
+    return (832, 1216)
+
+def auto_open_browser():
+    def _open():
+        time.sleep(1.1)
+        try:
+            webbrowser.open(f"http://127.0.0.1:{DEFAULT_PORT}")
+        except Exception:
+            pass
+    threading.Thread(target=_open, daemon=True).start()
+
+# =========================================================
+# ダミー画像生成（ここを差し替えればOK）
+# =========================================================
+def fake_generate_image(
+    out_path: str,
+    width: int,
+    height: int,
+    character_name: str,
+    full_prompt: str,
+    seed: int,
+    index_text: str,
+    model_name: str,
+    sampler_name: str
+):
+    img = Image.new("RGB", (width, height), (
+        random.randint(215, 255),
+        random.randint(220, 255),
+        random.randint(225, 255),
+    ))
+    draw = ImageDraw.Draw(img)
+
+    lines = [
+        APP_TITLE,
+        f"Character: {character_name}",
+        f"Seed: {seed}",
+        f"Model: {model_name}",
+        f"Sampler: {sampler_name}",
+        f"Index: {index_text}",
+        "",
+        "Prompt preview:",
+        (full_prompt[:180] + "...") if len(full_prompt) > 180 else full_prompt
+    ]
+
+    y = 24
+    for line in lines:
+        draw.text((24, y), line, fill=(20, 30, 50))
+        y += 24
+
+    img.save(out_path, "PNG")
+
+# =========================================================
+# ZIP
+# =========================================================
+def make_zip(folder_path: str):
+    if not os.path.isdir(folder_path):
+        return None
+
+    zip_path = folder_path.rstrip("/\\") + ".zip"
+    if os.path.exists(zip_path):
+        os.remove(zip_path)
+
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+        for root, _, files in os.walk(folder_path):
+            for file in files:
+                abs_path = os.path.join(root, file)
+                arc_name = os.path.relpath(abs_path, folder_path)
+                zf.write(abs_path, arc_name)
+    return zip_path
+
+# =========================================================
+# 差分操作
+# =========================================================
+def duplicate_visible_diff(diffs: List[Dict[str, Any]], idx: int):
+    diffs = ensure_diff_len(diffs)
+    src = dict(diffs[idx])
+    insert_at = min(idx + 1, MAX_DIFF_SLOTS - 1)
+    new_list = diffs[:]
+    new_list.insert(insert_at, src)
+    new_list = new_list[:MAX_DIFF_SLOTS]
+    return new_list
+
+def move_visible_diff_up(diffs: List[Dict[str, Any]], idx: int):
+    diffs = ensure_diff_len(diffs)
+    if idx > 0:
+        diffs[idx - 1], diffs[idx] = diffs[idx], diffs[idx - 1]
+    return diffs
+
+def move_visible_diff_down(diffs: List[Dict[str, Any]], idx: int, visible_slots: int):
+    diffs = ensure_diff_len(diffs)
+    if idx < visible_slots - 1:
+        diffs[idx + 1], diffs[idx] = diffs[idx], diffs[idx + 1]
+    return diffs
+
+def set_all_visible_enabled(diffs: List[Dict[str, Any]], visible_slots: int, flag: bool):
+    diffs = ensure_diff_len(diffs)
+    for i in range(visible_slots):
+        diffs[i]["enabled"] = flag
+    return diffs
+
+def clear_all_visible(diffs: List[Dict[str, Any]], visible_slots: int):
+    diffs = ensure_diff_len(diffs)
+    for i in range(visible_slots):
+        diffs[i]["enabled"] = True
+        diffs[i]["name"] = f"差分 {i+1}"
+        diffs[i]["prompt"] = ""
+    return diffs
+
+# =========================================================
+# 停止
+# =========================================================
+def stop_generation():
+    global stop_flag
+    stop_flag = True
+    return "停止要求を受け付けました"
+
+# =========================================================
+# 生成
+# =========================================================
+def generate_images(
+    api_token: str,
+    character_name: str,
+    base_prompt: str,
+    negative_prompt: str,
+    images_per_diff: int,
+    orientation: str,
+    steps: int,
+    seed_mode: str,
+    fixed_seed: int,
+    model_name: str,
+    sampler_name: str,
+    visible_slots: int,
+    diffs: List[Dict[str, Any]],
+    current_log: str
+):
+    global stop_flag
+    stop_flag = False
+
+    # api_token は今は受け取るだけ（あとで本処理に差し込める）
+    _ = api_token
+
+    character_name = safe_name(character_name)
+    diffs = ensure_diff_len(diffs)
+
+    width, height = get_resolution(orientation)
+
+    run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+    out_dir = os.path.join(OUTPUT_ROOT, f"{character_name}_{run_id}")
+    os.makedirs(out_dir, exist_ok=True)
+
+    target_diffs = [d for d in diffs[:visible_slots] if d.get("enabled")]
+    if not target_diffs:
+        current_log = log_append(current_log, "有効な差分がありません。")
+        return [], out_dir, current_log, None
+
+    gallery = []
+    current_log = log_append(current_log, f"生成開始: {len(target_diffs)}差分 x {images_per_diff}枚")
+    current_log = log_append(current_log, f"出力先: {out_dir}")
+
+    count = 0
+    total = len(target_diffs) * images_per_diff
+
+    try:
+        for diff_idx, d in enumerate(target_diffs, start=1):
+            if stop_flag:
+                current_log = log_append(current_log, "停止されました。")
+                break
+
+            diff_name = safe_name(d.get("name", f"差分 {diff_idx}"))
+            diff_prompt = d.get("prompt", "").strip()
+
+            for i in range(images_per_diff):
+                if stop_flag:
+                    current_log = log_append(current_log, "停止されました。")
+                    break
+
+                seed = int(fixed_seed) if seed_mode == "固定" else random.randint(0, 4294967295)
+                count += 1
+
+                full_prompt = f"{base_prompt.strip()}, {character_name}, {diff_prompt}".strip(", ").strip()
+                filename = f"{count:04d}_{diff_name}.png"
+                out_path = os.path.join(out_dir, filename)
+
+                # ===== ここを本物の生成処理に差し替え =====
+                fake_generate_image(
+                    out_path=out_path,
+                    width=width,
+                    height=height,
+                    character_name=character_name,
+                    full_prompt=full_prompt,
+                    seed=seed,
+                    index_text=f"{count}/{total}",
+                    model_name=model_name,
+                    sampler_name=sampler_name
+                )
+                # =======================================
+
+                gallery.append(out_path)
+                current_log = log_append(current_log, f"生成 {count}/{total}: {filename}")
+
+        zip_path = make_zip(out_dir)
+        current_log = log_append(current_log, "ZIP作成完了")
+        return gallery, out_dir, current_log, zip_path
+
+    except Exception as e:
+        current_log = log_append(current_log, f"エラー: {e}")
+        return gallery, out_dir, current_log, None
+
+# =========================================================
+# プリセット
+# =========================================================
+def load_preset_to_ui(name: str, visible_slots: int):
+    p = PRESETS.get(name, PRESETS["Default"])
+    diffs = ensure_diff_len(p.get("differences", []))
+
+    outputs = [
+        p.get("api_token", ""),
+        p.get("character_name", ""),
+        p.get("base_prompt", ""),
+        p.get("negative_prompt", ""),
+        p.get("images_per_diff", 4),
+        p.get("orientation", "縦型"),
+        p.get("steps", 28),
+        p.get("seed_mode", "ランダム"),
+        p.get("fixed_seed", 123456),
+        p.get("model_name", "Default Model"),
+        p.get("sampler_name", "Euler"),
+        diffs
+    ]
+    outputs.extend(diff_state_to_outputs(diffs, visible_slots))
+    return outputs
+
+def save_current_preset(
+    preset_name: str,
+    api_token: str,
+    character_name: str,
+    base_prompt: str,
+    negative_prompt: str,
+    images_per_diff: int,
+    orientation: str,
+    steps: int,
+    seed_mode: str,
+    fixed_seed: int,
+    model_name: str,
+    sampler_name: str,
+    diffs: List[Dict[str, Any]]
+):
+    global PRESETS
+    preset_name = (preset_name or "").strip() or f"Preset_{datetime.now().strftime('%H%M%S')}"
+    diffs = ensure_diff_len(diffs)
+
+    PRESETS[preset_name] = {
+        "api_token": api_token,  # 保存したくないならここを "" にしてもいい
+        "character_name": character_name,
+        "base_prompt": base_prompt,
+        "negative_prompt": negative_prompt,
+        "images_per_diff": images_per_diff,
+        "orientation": orientation,
+        "steps": steps,
+        "seed_mode": seed_mode,
+        "fixed_seed": fixed_seed,
+        "model_name": model_name,
+        "sampler_name": sampler_name,
+        "differences": diffs
+    }
+    save_presets(PRESETS)
+    return gr.update(choices=list(PRESETS.keys()), value=preset_name)
+
+# =========================================================
+# UI
+# =========================================================
+with gr.Blocks(
+    title=APP_TITLE,
+    theme=gr.themes.Soft(),
+    css=CUSTOM_CSS,
+    js=CUSTOM_JS
+) as demo:
+
+    gr.Markdown(f"# {APP_TITLE}")
+    gr.Markdown("3面構成（左=実行 / 中=設定 / 右=差分）・Cmd+Enterで生成", elem_classes=["top-note"])
+
+    visible_slots_state = gr.State(VISIBLE_DIFF_SLOTS)
+    diff_state = gr.State(ensure_diff_len(PRESETS["Default"]["differences"]))
+
+    with gr.Row(elem_classes=["page-shell"], equal_height=True):
+
+        # =====================================================
+        # 左：実行 / プリセット / プレビュー（細め）
+        # =====================================================
+        with gr.Column(scale=2, elem_classes=["left-col"]):
+            with gr.Column(elem_classes=["left-scroll"]):
+
+                with gr.Group(elem_classes=["panel"]):
+                    gr.Markdown("実行", elem_classes=["section-title"])
+                    start_btn = gr.Button("🚀 生成開始", variant="primary", elem_id="start-generate-btn", elem_classes=["main-btn"])
+                    stop_btn = gr.Button("⛔ 生成停止", variant="stop", elem_classes=["stop-btn"])
+
+                with gr.Group(elem_classes=["panel-tight"]):
+                    gr.Markdown("プリセット", elem_classes=["section-title"])
+                    preset_dropdown = gr.Dropdown(
+                        choices=list(PRESETS.keys()),
+                        value="Default",
+                        label="読込"
+                    )
+                    preset_name_input = gr.Textbox(
+                        label="保存名",
+                        placeholder="プリセット名"
+                    )
+                    with gr.Row():
+                        save_preset_btn = gr.Button("💾 保存")
+                        load_preset_btn = gr.Button("📥 読込")
+
+                with gr.Group(elem_classes=["panel-tight"]):
+                    gr.Markdown("出力", elem_classes=["section-title"])
+                    save_path = gr.Textbox(label="保存先", interactive=False, elem_classes=["path-compact"])
+                    zip_file = gr.File(label="ZIP", interactive=False)
+
+                with gr.Group(elem_classes=["panel-tight"]):
+                    gr.Markdown("ログ", elem_classes=["section-title"])
+                    log_box = gr.Textbox(label="", lines=7, interactive=False, elem_classes=["log-compact"])
+
+                with gr.Group(elem_classes=["panel-tight"]):
+                    gr.Markdown("プレビュー", elem_classes=["section-title"])
+                    gallery = gr.Gallery(label="", height=220, preview=True, columns=2)
+
+                gr.Markdown("Cmd+Enter = 生成開始", elem_classes=["footer-note"])
+
+        # =====================================================
+        # 真ん中：基本設定（主役・広め）
+        # =====================================================
+        with gr.Column(scale=5, elem_classes=["mid-col"]):
+            with gr.Column(elem_classes=["mid-scroll"]):
+
+                with gr.Group(elem_classes=["panel"]):
+                    gr.Markdown("基本設定", elem_classes=["section-title"])
+
+                    api_token = gr.Textbox(
+                        label="APIトークン（必要なら貼る）",
+                        placeholder="ここにAPIトークンを貼り付け",
+                        type="password"
+                    )
+
+                    with gr.Row():
+                        character_name = gr.Textbox(
+                            label="キャラ名 / タグ",
+                            value=PRESETS["Default"]["character_name"],
+                            scale=3
+                        )
+                        orientation = gr.Radio(
+                            ["縦型", "横型"],
+                            value=PRESETS["Default"]["orientation"],
+                            label="向き",
+                            scale=2
+                        )
+
+                    base_prompt = gr.Textbox(
+                        label="ベースプロンプト",
+                        lines=6,
+                        value=PRESETS["Default"]["base_prompt"],
+                        elem_classes=["compact-box"]
+                    )
+
+                    negative_prompt = gr.Textbox(
+                        label="ネガティブ",
+                        lines=4,
+                        value=PRESETS["Default"]["negative_prompt"],
+                        elem_classes=["compact-box"]
+                    )
+
+                with gr.Group(elem_classes=["panel-tight"]):
+                    gr.Markdown("詳細設定", elem_classes=["section-title"])
+
+                    with gr.Row():
+                        images_per_diff = gr.Slider(
+                            minimum=1, maximum=100, step=1,
+                            value=PRESETS["Default"]["images_per_diff"],
+                            label="1差分あたり枚数",
+                            scale=3
+                        )
+                        steps = gr.Slider(
+                            minimum=1, maximum=60, step=1,
+                            value=PRESETS["Default"]["steps"],
+                            label="Steps",
+                            scale=2
+                        )
+
+                    with gr.Row():
+                        seed_mode = gr.Radio(
+                            ["ランダム", "固定"],
+                            value=PRESETS["Default"]["seed_mode"],
+                            label="Seed",
+                            scale=2
+                        )
+                        fixed_seed = gr.Number(
+                            value=PRESETS["Default"]["fixed_seed"],
+                            label="固定Seed",
+                            scale=3
+                        )
+
+                    with gr.Row():
+                        model_name = gr.Textbox(
+                            label="モデル名",
+                            value=PRESETS["Default"]["model_name"],
+                            scale=3
+                        )
+                        sampler_name = gr.Textbox(
+                            label="サンプラー",
+                            value=PRESETS["Default"]["sampler_name"],
+                            scale=2
+                        )
+
+                    gr.Markdown("※ 今はダミー生成。後で本物の生成処理に差し替え可。", elem_classes=["small-note"])
+
+        # =====================================================
+        # 右：差分（狭め）
+        # =====================================================
+        with gr.Column(scale=3, elem_classes=["right-col"]):
+            with gr.Column(elem_classes=["right-scroll"]):
+
+                with gr.Group(elem_classes=["panel"]):
+                    gr.Markdown("差分（初期8枠 / 右は細め）", elem_classes=["section-title"])
+
+                    with gr.Row():
+                        enable_all_btn = gr.Button("全ON")
+                        disable_all_btn = gr.Button("全OFF")
+                        clear_all_btn = gr.Button("クリア")
+
+                    diff_components = []
+
+                    for i in range(VISIBLE_DIFF_SLOTS):
+                        with gr.Group(elem_classes=["diff-card"]):
+                            with gr.Row():
+                                enabled = gr.Checkbox(value=True, label=f"{i+1}", scale=1)
+                                name = gr.Textbox(value=f"差分 {i+1}", label="名前", scale=4)
+
+                            prompt = gr.Textbox(
+                                value="",
+                                label="差分",
+                                lines=2,
+                                elem_classes=["diff-box"]
+                            )
+
+                            with gr.Row():
+                                dup_btn = gr.Button("複製")
+                                up_btn = gr.Button("↑")
+                                down_btn = gr.Button("↓")
+
+                            diff_components.extend([enabled, name, prompt])
+
+                            def _dup(idx=i):
+                                def inner(diffs, visible_slots):
+                                    new_diffs = duplicate_visible_diff(diffs, idx)
+                                    return [new_diffs] + diff_state_to_outputs(new_diffs, visible_slots)
+                                return inner
+
+                            def _up(idx=i):
+                                def inner(diffs, visible_slots):
+                                    new_diffs = move_visible_diff_up(diffs, idx)
+                                    return [new_diffs] + diff_state_to_outputs(new_diffs, visible_slots)
+                                return inner
+
+                            def _down(idx=i):
+                                def inner(diffs, visible_slots):
+                                    new_diffs = move_visible_diff_down(diffs, idx, visible_slots)
+                                    return [new_diffs] + diff_state_to_outputs(new_diffs, visible_slots)
+                                return inner
+
+                            dup_btn.click(
+                                fn=_dup(i),
+                                inputs=[diff_state, visible_slots_state],
+                                outputs=[diff_state] + diff_components
+                            )
+                            up_btn.click(
+                                fn=_up(i),
+                                inputs=[diff_state, visible_slots_state],
+                                outputs=[diff_state] + diff_components
+                            )
+                            down_btn.click(
+                                fn=_down(i),
+                                inputs=[diff_state, visible_slots_state],
+                                outputs=[diff_state] + diff_components
+                            )
+
+    # =====================================================
+    # 差分同期
+    # =====================================================
+    def sync_visible_diffs(old_state, visible_slots, *vals):
+        return build_diff_state_from_visible_inputs(list(vals), old_state, visible_slots)
+
+    for comp in diff_components:
+        comp.change(
+            fn=sync_visible_diffs,
+            inputs=[diff_state, visible_slots_state] + diff_components,
+            outputs=[diff_state]
+        )
+
+    # =====================================================
+    # 一括操作
+    # =====================================================
+    def do_enable_all(diffs, visible_slots):
+        new_diffs = set_all_visible_enabled(diffs, visible_slots, True)
+        return [new_diffs] + diff_state_to_outputs(new_diffs, visible_slots)
+
+    def do_disable_all(diffs, visible_slots):
+        new_diffs = set_all_visible_enabled(diffs, visible_slots, False)
+        return [new_diffs] + diff_state_to_outputs(new_diffs, visible_slots)
+
+    def do_clear_all(diffs, visible_slots):
+        new_diffs = clear_all_visible(diffs, visible_slots)
+        return [new_diffs] + diff_state_to_outputs(new_diffs, visible_slots)
+
+    enable_all_btn.click(
+        fn=do_enable_all,
+        inputs=[diff_state, visible_slots_state],
+        outputs=[diff_state] + diff_components
+    )
+    disable_all_btn.click(
+        fn=do_disable_all,
+        inputs=[diff_state, visible_slots_state],
+        outputs=[diff_state] + diff_components
+    )
+    clear_all_btn.click(
+        fn=do_clear_all,
+        inputs=[diff_state, visible_slots_state],
+        outputs=[diff_state] + diff_components
+    )
+
+    # =====================================================
+    # プリセット読込
+    # =====================================================
+    load_outputs = [
+        api_token,
+        character_name,
+        base_prompt,
+        negative_prompt,
+        images_per_diff,
+        orientation,
+        steps,
+        seed_mode,
+        fixed_seed,
+        model_name,
+        sampler_name,
+        diff_state
+    ] + diff_components
+
+    load_preset_btn.click(
+        fn=load_preset_to_ui,
+        inputs=[preset_dropdown, visible_slots_state],
+        outputs=load_outputs
+    )
+
+    preset_dropdown.change(
+        fn=load_preset_to_ui,
+        inputs=[preset_dropdown, visible_slots_state],
+        outputs=load_outputs
+    )
+
+    # =====================================================
+    # プリセット保存
+    # =====================================================
+    save_preset_btn.click(
+        fn=save_current_preset,
+        inputs=[
+            preset_name_input,
+            api_token,
+            character_name,
+            base_prompt,
+            negative_prompt,
+            images_per_diff,
+            orientation,
+            steps,
+            seed_mode,
+            fixed_seed,
+            model_name,
+            sampler_name,
+            diff_state
+        ],
+        outputs=[preset_dropdown]
+    )
+
+    # =====================================================
+    # 停止
+    # =====================================================
+    def stop_and_log(old_log):
+        msg = stop_generation()
+        return log_append(old_log, msg)
+
+    stop_btn.click(
+        fn=stop_and_log,
+        inputs=[log_box],
+        outputs=[log_box]
+    )
+
+    # =====================================================
+    # 生成
+    # =====================================================
+    start_btn.click(
+        fn=generate_images,
+        inputs=[
+            api_token,
+            character_name,
+            base_prompt,
+            negative_prompt,
+            images_per_diff,
+            orientation,
+            steps,
+            seed_mode,
+            fixed_seed,
+            model_name,
+            sampler_name,
+            visible_slots_state,
+            diff_state,
+            log_box
+        ],
+        outputs=[gallery, save_path, log_box, zip_file]
+    )
+
+# =========================================================
+# 起動
+# =========================================================
+if __name__ == "__main__":
+    auto_open_browser()
+    demo.launch(
+        share=False,
+        server_name="127.0.0.1",
+        server_port=DEFAULT_PORT,
+        inbrowser=False
+    )
