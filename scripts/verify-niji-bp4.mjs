@@ -167,6 +167,13 @@ const CASES = [
     id: "PL!N-bp4-011-P",
     trigger: "live_start",
     expectTemplate: "heart_color_pick_grant",
+    check: (cl) => {
+      const errs = [];
+      if (cl.handDiscardToWaiting !== 1) errs.push("discard 1");
+      if (cl.costHandDiscardPickType !== "ライブ") errs.push("live card cost");
+      if (!cl.hasOptionalCost) errs.push("optional cost");
+      return errs;
+    },
   },
   {
     id: "PL!N-bp4-012-P",

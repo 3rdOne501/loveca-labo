@@ -50,7 +50,19 @@ import {
   updateTierListTier,
   watchTierListEntries,
   watchTierListRoom,
+  createTierListRoomFromSnapshot,
 } from "./tierListRoomSync.js";
+import {
+  deleteLocalTierList,
+  deletePublicTierList,
+  linkLocalTierListPublicId,
+  listLocalTierLists,
+  listPublicTierLists,
+  publishTierListSnapshot,
+  saveLocalTierList,
+  snapshotFromTierListBoard,
+  tierListSnapshotAsRoom,
+} from "./tierListLibrary.js";
 
 const STORAGE_RECENT = "llocg.tierlist.recentRooms";
 const STORAGE_PICKER_FILTERS = "llocg.tierlist.pickerFilters";
@@ -135,6 +147,13 @@ const state = {
   lastMembersIdentitySig: "",
   /** @type {string} ティア行 DnD 中の tierId */
   draggingTierId: "",
+  /** 保存・公開リストの閲覧。ルーム同期しない */
+  viewOnly: false,
+  /** @type {{ source: 'local'|'public', localId: string, publicId: string, doc: object }|null} */
+  archive: null,
+  /** @type {object[]} */
+  publicLists: [],
+  publicListError: "",
   wired: false,
 };
 
@@ -561,6 +580,8 @@ function detachRoom() {
   state.selectedCardNo = "";
   state.lastRoomShellSig = "";
   state.lastMembersIdentitySig = "";
+  state.archive = null;
+  state.viewOnly = false;
 }
 
 function attachRoom(code) {
@@ -613,12 +634,13 @@ function renderAll() {
   renderBoard();
   renderMoveBar();
   renderHostTools();
+  renderArchiveTools();
 }
 
 function renderLobby() {
   const lobby = el("tierlist-lobby");
   const room = el("tierlist-room");
-  const inRoom = !!state.code;
+  const inRoom = (!!state.code && !!state.room) || !!state.archive;
   if (lobby) lobby.hidden = inRoom;
   if (room) room.hidden = !inRoom;
   const notice = el("tierlist-signin-notice");
@@ -646,6 +668,7 @@ function renderLobby() {
       })
       .join("");
   }
+  renderLibrary();
 }
 
 function renderRoomHeader() {
@@ -654,18 +677,31 @@ function renderRoomHeader() {
   const codeEl = el("tierlist-room-code");
   const leaveBtn = el("btn-tierlist-leave");
   const closeBtn = el("btn-tierlist-close");
-  const inRoom = !!state.code && !!state.room;
+  const viewing = !!state.archive;
+  const inRoom = (!!state.code && !!state.room) || viewing;
   if (meta) meta.hidden = !inRoom;
-  if (titleEl) titleEl.textContent = inRoom ? state.room.title || "ティアリスト" : "";
+  if (titleEl) titleEl.textContent = inRoom ? (state.room && state.room.title) || "ティアリスト" : "";
   const kindEl = el("tierlist-room-kind");
   if (kindEl) {
-    kindEl.hidden = !inRoom || !isCharacterRoom();
-    kindEl.textContent = inRoom && isCharacterRoom() ? "キャラティア" : "";
+    if (viewing) {
+      kindEl.hidden = false;
+      kindEl.textContent =
+        (isCharacterRoom() ? "キャラティア · " : "") +
+        (state.archive.source === "public" ? "公開リスト" : "この端末の保存");
+    } else {
+      kindEl.hidden = !inRoom || !isCharacterRoom();
+      kindEl.textContent = inRoom && isCharacterRoom() ? "キャラティア" : "";
+    }
   }
-  if (codeEl) codeEl.textContent = inRoom ? state.code : "";
-  if (leaveBtn) leaveBtn.hidden = !inRoom;
+  if (codeEl) codeEl.textContent = viewing ? "" : inRoom ? state.code : "";
+  const copyBtn = el("btn-tierlist-copy-link");
+  if (copyBtn) copyBtn.hidden = viewing || !inRoom;
+  if (leaveBtn) {
+    leaveBtn.hidden = !inRoom;
+    leaveBtn.textContent = viewing ? "一覧へ" : "退室";
+  }
   if (closeBtn) {
-    closeBtn.hidden = !inRoom || !isTierListHost(state.room, getTierListMyUid());
+    closeBtn.hidden = viewing || !inRoom || !isTierListHost(state.room, getTierListMyUid());
   }
 }
 
@@ -976,9 +1012,12 @@ function entryChipHtml(entry) {
 
 function renderRoomToolbar() {
   const addBtn = el("btn-tierlist-add-card");
-  if (addBtn && state.room) {
-    addBtn.textContent = isCharacterRoom() ? "キャラを追加" : "カードを追加";
+  if (addBtn) {
+    addBtn.hidden = !!state.viewOnly;
+    if (state.room) addBtn.textContent = isCharacterRoom() ? "キャラを追加" : "カードを追加";
   }
+  const saveTools = el("tierlist-save-tools");
+  if (saveTools) saveTools.hidden = !state.code || !!state.viewOnly;
   const faceLabel = el("tierlist-face-toggle");
   const faceChk = /** @type {HTMLInputElement|null} */ (el("tierlist-show-char-faces"));
   /* キャラ表のみ（カード表では使わない） */
@@ -1000,7 +1039,7 @@ function renderBoard() {
   const emptyTier = charMode ? "キャラを配置" : "カードを配置";
   const emptyPool = charMode ? "キャラを追加して配置" : "カードを追加して配置";
   const tiers = tierListSortedTiers(state.room);
-  const host = isTierListHost(state.room, getTierListMyUid());
+  const host = !state.viewOnly && isTierListHost(state.room, getTierListMyUid());
   /* 顔トグルは shellSig に入れない（チップ差し替えのみ） */
   const shellSig =
     (charMode ? "c" : "k") +
@@ -1152,7 +1191,7 @@ function renderBoard() {
 function renderMoveBar() {
   const bar = el("tierlist-move-bar");
   if (!bar) return;
-  if (!state.selectedCardNo || !state.room) {
+  if (state.viewOnly || !state.selectedCardNo || !state.room) {
     bar.hidden = true;
     bar.innerHTML = "";
     return;
@@ -1199,7 +1238,7 @@ function renderMoveBar() {
 function renderHostTools() {
   const tools = el("tierlist-host-tools");
   if (!tools) return;
-  const host = !!state.room && isTierListHost(state.room, getTierListMyUid());
+  const host = !state.viewOnly && !!state.room && isTierListHost(state.room, getTierListMyUid());
   tools.hidden = !host;
 }
 
@@ -1580,6 +1619,153 @@ function openCharacterPicker() {
   renderGrid();
 }
 
+function formatListWhen(iso) {
+  const t = Date.parse(iso || "");
+  if (!Number.isFinite(t)) return "";
+  const d = new Date(t);
+  const m = d.getMonth() + 1;
+  const day = d.getDate();
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return m + "/" + day + " " + hh + ":" + mm;
+}
+
+function renderLibrary() {
+  const savedHost = el("tierlist-saved-list");
+  if (savedHost) {
+    const saved = listLocalTierLists();
+    savedHost.innerHTML = saved.length
+      ? saved
+          .map(function (row) {
+            const n = Array.isArray(row.entries) ? row.entries.length : 0;
+            return (
+              '<button type="button" class="btn sm secondary tierlist-recent-item tierlist-library-item" data-saved-id="' +
+              escapeHtml(row.localId) +
+              '">' +
+              '<span class="tierlist-recent-title">' +
+              escapeHtml(row.title || "ティアリスト") +
+              "</span>" +
+              '<span class="tierlist-library-item__meta">' +
+              escapeHtml(
+                (row.kind === "character" ? "キャラ" : "カード") +
+                  " · " +
+                  n +
+                  " · " +
+                  formatListWhen(row.savedAt) +
+                  (row.publicId ? " · 公開中" : ""),
+              ) +
+              "</span></button>"
+            );
+          })
+          .join("")
+      : '<p class="hint muted">まだ保存していません。ルームの「この端末に保存」から残せます。</p>';
+  }
+  const publicHost = el("tierlist-public-list");
+  const note = el("tierlist-public-note");
+  if (note) {
+    note.textContent = state.publicListError
+      ? state.publicListError
+      : "公開中のティアリストです。閲覧にログインは不要です。";
+  }
+  if (!publicHost) return;
+  const lists = state.publicLists || [];
+  if (!lists.length) {
+    publicHost.innerHTML = state.publicListError
+      ? ""
+      : '<p class="hint muted">公開リストはまだありません。</p>';
+    return;
+  }
+  publicHost.innerHTML = lists
+    .map(function (row) {
+      const n = Array.isArray(row.entries) ? row.entries.length : 0;
+      return (
+        '<button type="button" class="btn sm secondary tierlist-recent-item tierlist-library-item" data-public-id="' +
+        escapeHtml(row.id) +
+        '">' +
+        '<span class="tierlist-recent-title">' +
+        escapeHtml(row.title || "ティアリスト") +
+        "</span>" +
+        '<span class="tierlist-library-item__meta">' +
+        escapeHtml(
+          (row.ownerName || "名無し") +
+            " · " +
+            (row.kind === "character" ? "キャラ" : "カード") +
+            " · " +
+            n +
+            " · " +
+            formatListWhen(row.updatedAt),
+        ) +
+        "</span></button>"
+      );
+    })
+    .join("");
+}
+
+function renderArchiveTools() {
+  const tools = el("tierlist-archive-tools");
+  if (!tools) return;
+  const arc = state.archive;
+  tools.hidden = !arc;
+  const publishBtn = el("btn-tierlist-archive-publish");
+  const deleteBtn = el("btn-tierlist-archive-delete");
+  if (!arc) return;
+  const mine =
+    arc.source === "local" ||
+    (arc.source === "public" && arc.doc && arc.doc.ownerUid && arc.doc.ownerUid === getTierListMyUid());
+  if (publishBtn) {
+    publishBtn.hidden = arc.source === "public" && !mine;
+    publishBtn.textContent = arc.publicId ? "公開を更新" : "サイトに公開";
+  }
+  if (deleteBtn) deleteBtn.hidden = !mine;
+}
+
+function openArchive(doc, source) {
+  detachRoom();
+  const view = tierListSnapshotAsRoom(doc);
+  state.archive = {
+    source: source,
+    localId: source === "local" ? String(doc.localId || "") : "",
+    publicId: source === "public" ? String(doc.id || "") : String(doc.publicId || ""),
+    doc: doc,
+  };
+  state.viewOnly = true;
+  state.room = view.room;
+  state.entries = view.entries;
+  state.lastRoomShellSig = "";
+  renderAll();
+}
+
+function currentSnapshot() {
+  if (!state.room) throw new Error("リストが開いていません。");
+  return snapshotFromTierListBoard(state.room, state.entries);
+}
+
+async function publishCurrentSnapshot() {
+  const snap = currentSnapshot();
+  const existing = state.archive && state.archive.publicId ? state.archive.publicId : "";
+  const published = await publishTierListSnapshot(snap, existing);
+  if (state.archive && state.archive.localId) {
+    linkLocalTierListPublicId(state.archive.localId, published.id);
+    state.archive.publicId = published.id;
+  }
+  showToast(existing ? "公開リストを更新しました" : "サイトに公開しました");
+  refreshPublicLists();
+}
+
+async function refreshPublicLists() {
+  try {
+    state.publicLists = await listPublicTierLists();
+    state.publicListError = "";
+  } catch (err) {
+    state.publicLists = [];
+    const msg = errorMessage(err);
+    state.publicListError = /権限|permission/i.test(msg)
+      ? "公開リストは、Firestore のルールに publicTierLists を反映すると表示されます。"
+      : msg;
+  }
+  if (!state.code && !state.archive) renderLibrary();
+}
+
 function wireLobby() {
   el("btn-tierlist-signin")?.addEventListener("click", async function () {
     try {
@@ -1631,6 +1817,35 @@ function wireLobby() {
       /* toast already */
     }
   });
+  el("tierlist-saved-list")?.addEventListener("click", function (ev) {
+    const btn = /** @type {HTMLElement} */ (ev.target).closest("[data-saved-id]");
+    if (!btn) return;
+    const id = btn.getAttribute("data-saved-id") || "";
+    const row = listLocalTierLists().find(function (r) {
+      return r.localId === id;
+    });
+    if (!row) {
+      showToast("保存が見つかりません");
+      return;
+    }
+    openArchive(row, "local");
+  });
+  el("tierlist-public-list")?.addEventListener("click", function (ev) {
+    const btn = /** @type {HTMLElement} */ (ev.target).closest("[data-public-id]");
+    if (!btn) return;
+    const id = btn.getAttribute("data-public-id") || "";
+    const row = (state.publicLists || []).find(function (r) {
+      return r.id === id;
+    });
+    if (!row) {
+      showToast("公開リストが見つかりません。更新してください");
+      return;
+    }
+    openArchive(row, "public");
+  });
+  el("btn-tierlist-public-refresh")?.addEventListener("click", function () {
+    refreshPublicLists();
+  });
 }
 
 function wireRoom() {
@@ -1648,6 +1863,82 @@ function wireRoom() {
   });
   el("btn-tierlist-leave")?.addEventListener("click", function () {
     leaveToLobby(true);
+  });
+  el("btn-tierlist-save")?.addEventListener("click", function () {
+    try {
+      saveLocalTierList(currentSnapshot());
+      showToast("この端末に保存しました");
+      renderLibrary();
+    } catch (err) {
+      showToast(errorMessage(err));
+    }
+  });
+  el("btn-tierlist-publish")?.addEventListener("click", async function () {
+    const btn = el("btn-tierlist-publish");
+    if (btn) btn.disabled = true;
+    try {
+      await publishCurrentSnapshot();
+    } catch (err) {
+      showToast(errorMessage(err));
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  });
+  el("btn-tierlist-archive-publish")?.addEventListener("click", async function () {
+    const btn = el("btn-tierlist-archive-publish");
+    if (btn) btn.disabled = true;
+    try {
+      await publishCurrentSnapshot();
+      renderArchiveTools();
+    } catch (err) {
+      showToast(errorMessage(err));
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  });
+  el("btn-tierlist-archive-fork")?.addEventListener("click", async function () {
+    if (!signedIn()) {
+      showToast("ルームを作るには Google ログインが必要です");
+      return;
+    }
+    const btn = el("btn-tierlist-archive-fork");
+    if (btn) btn.disabled = true;
+    try {
+      const snap = currentSnapshot();
+      const { code } = await createTierListRoomFromSnapshot(snap);
+      attachRoom(code);
+      showToast("この内容でルームを作りました");
+    } catch (err) {
+      showToast(errorMessage(err));
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  });
+  el("btn-tierlist-archive-delete")?.addEventListener("click", async function () {
+    const arc = state.archive;
+    if (!arc) return;
+    const label = arc.source === "public" ? "この公開リストを削除しますか？" : "この端末の保存を削除しますか？";
+    if (!window.confirm(label)) return;
+    try {
+      if (arc.source === "public") await deletePublicTierList(arc.publicId);
+      else {
+        deleteLocalTierList(arc.localId);
+        if (arc.publicId && window.confirm("サイトの公開も削除しますか？")) {
+          try {
+            await deletePublicTierList(arc.publicId);
+          } catch (err) {
+            showToast(errorMessage(err));
+          }
+        }
+      }
+      detachRoom();
+      setLocationHashCode("");
+      showToast("削除しました");
+      refreshPublicLists();
+      renderAll();
+    } catch (err) {
+      showToast(errorMessage(err));
+    }
   });
   el("btn-tierlist-close")?.addEventListener("click", async function () {
     if (!state.code) return;
@@ -1792,6 +2083,10 @@ function wireRoom() {
   }, true);
 
   board?.addEventListener("dragstart", function (ev) {
+    if (state.viewOnly) {
+      ev.preventDefault();
+      return;
+    }
     if (/** @type {HTMLElement} */ (ev.target).closest(".tierlist-row__title-input")) {
       ev.preventDefault();
       return;
@@ -2029,4 +2324,5 @@ export function initTierListMaker() {
   } else {
     renderAll();
   }
+  refreshPublicLists();
 }

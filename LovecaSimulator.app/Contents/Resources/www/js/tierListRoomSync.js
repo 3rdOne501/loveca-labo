@@ -791,3 +791,86 @@ export async function closeTierListRoom(code) {
     throw new Error(formatTierListFirestoreError(err));
   }
 }
+
+/**
+ * 保存・公開スナップショットのティアと配置で新しいルームを作る。
+ * @param {{ title?: string, kind?: string, tiers?: TierListTier[], entries?: object[] }} snapshot
+ * @returns {Promise<{ code: string, room: TierListRoomDoc }>}
+ */
+export async function createTierListRoomFromSnapshot(snapshot) {
+  const user = await requireUser();
+  const kind =
+    snapshot && snapshot.kind === TIERLIST_KIND_CHARACTER ? TIERLIST_KIND_CHARACTER : TIERLIST_KIND_CARD;
+  const title = trimText(snapshot && snapshot.title, TIERLIST_MAX_TITLE_LEN);
+  const created = await createTierListRoom(title, { kind: kind });
+  const tiers = {};
+  const list = Array.isArray(snapshot && snapshot.tiers) ? snapshot.tiers : [];
+  list.forEach(function (t) {
+    if (!t || !t.id || t.id === TIERLIST_POOL_ID) return;
+    tiers[t.id] = {
+      id: String(t.id),
+      label: trimText(t.label, TIERLIST_MAX_TIER_LABEL_LEN) || String(t.id),
+      order: Number(t.order) || 0,
+      color: String(t.color || "#888888"),
+    };
+  });
+  if (!Object.keys(tiers).length) return created;
+  const { db, api } = fs();
+  try {
+    await api.updateDoc(roomRef(created.code), {
+      tiers: tiers,
+      updatedAt: nowIso(),
+    });
+  } catch (err) {
+    throw new Error(formatTierListFirestoreError(err));
+  }
+  const entries = Array.isArray(snapshot.entries) ? snapshot.entries : [];
+  const name = myName(user);
+  const now = nowIso();
+  /** @type {{ ref: any, doc: TierListEntryDoc }[]} */
+  const writes = [];
+  entries.forEach(function (raw) {
+    if (!raw) return;
+    const tierId = String(raw.tierId || TIERLIST_POOL_ID);
+    if (tierId !== TIERLIST_POOL_ID && !tiers[tierId]) return;
+    const cardNo = String(raw.cardNo || "").trim();
+    const charId = sanitizeCharId(raw.charId || "");
+    const id = kind === TIERLIST_KIND_CHARACTER ? charId : sanitizeCardNo(cardNo);
+    if (!id) return;
+    /** @type {TierListEntryDoc} */
+    const doc = {
+      id: id,
+      v: 1,
+      kind: kind,
+      tierId: tierId,
+      orderInTier: Number.isFinite(Number(raw.orderInTier)) ? Number(raw.orderInTier) : writes.length * 1000,
+      byUid: user.uid,
+      byName: name,
+      byPhotoURL: user.photoURL || null,
+      placedAt: now,
+      movedAt: now,
+      movedByUid: user.uid,
+      movedByName: name,
+    };
+    if (kind === TIERLIST_KIND_CHARACTER) doc.charId = charId;
+    else doc.cardNo = cardNo;
+    writes.push({ ref: entryRef(created.code, id), doc: doc });
+  });
+  try {
+    if (typeof api.writeBatch === "function" && writes.length) {
+      const batch = api.writeBatch(db);
+      writes.forEach(function (w) {
+        batch.set(w.ref, w.doc);
+      });
+      await batch.commit();
+    } else {
+      for (let i = 0; i < writes.length; i++) {
+        await api.setDoc(writes[i].ref, writes[i].doc);
+      }
+    }
+  } catch (err) {
+    throw new Error(formatTierListFirestoreError(err));
+  }
+  created.room.tiers = tiers;
+  return created;
+}

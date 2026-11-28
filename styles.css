@@ -15962,8 +15962,37 @@ body.tourney-deck-view-open {
 .tierlist-move-bar[hidden],
 .tierlist-room[hidden],
 .tierlist-lobby[hidden],
-.tierlist-recent-panel[hidden] {
+.tierlist-recent-panel[hidden],
+.tierlist-save-tools[hidden],
+.tierlist-archive-tools[hidden],
+.tierlist-room-code-btn[hidden] {
   display: none !important;
+}
+.tierlist-library {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-top: 0.85rem;
+  padding: 1rem;
+}
+.tierlist-library .hint { margin: 0; }
+.tierlist-library__actions { display: flex; gap: 0.4rem; }
+.tierlist-save-tools,
+.tierlist-archive-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.tierlist-library-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  text-align: left;
+}
+.tierlist-library-item__meta {
+  font-size: 0.75rem;
+  color: var(--muted, rgba(255, 220, 236, 0.72));
 }
 .tierlist-bar {
   flex-shrink: 0;

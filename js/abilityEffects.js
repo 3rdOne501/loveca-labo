@@ -4192,7 +4192,10 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
     /ウェイトにするか/.test(costPart) ||
     (/手札.*控え室/.test(costPart) && /か/.test(costPart) && base.costSelfWait);
   base.handDiscardToWaiting = parseHandDiscardCostFromCostPart(costPart);
-  var handSeriesCostTagM = costPart.match(/手札の『([^』]+)』のカードを[０-９\d]+枚控え室に置く/);
+  // 「置く」「置いてもよい」の両方。任意コスト（9.7.3.1.1）でも支払うならシリーズはコストの対象。
+  var handSeriesCostTagM = costPart.match(
+    /手札の『([^』]+)』のカードを[０-９\d]+枚控え室に置(?:く|いてもよい)/,
+  );
   if (handSeriesCostTagM) {
     base.handDiscardSeriesTag = normalizeQuotedSeriesTag(handSeriesCostTagM[1]);
   }
@@ -7678,6 +7681,8 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
           /このターン中にエリアを移動/.test(p) && /ステージにいる/.test(p)
             ? "live_start_moved_members_blade_grant"
             : "grant_jouji_session";
+        // コスト（「：」より前）の『シリーズ』は捨てる対象であり、付与先フィルタではない（9.4.1）。
+        var grantEffectPart = p.indexOf("：") >= 0 ? p.split("：").slice(1).join("：") : p;
         return lsT(
           enrichGrantJoujiPatch(p, segRaw, {
             template: lsGrantTpl,
@@ -7686,7 +7691,10 @@ function _classifyCardAbilityCore(card, trigger, segmentRawOverride) {
             cardScoreGrant: grantCardScore,
             requiresOnStage: true,
             grantToMovedMembersThisTurn: /このターン中にエリアを移動/.test(p),
-            filters: mergeAbilityPickFilters(parseAbilityPickFilters(p), parseConditionalPrefixFilters(p)),
+            filters: mergeAbilityPickFilters(
+              parseAbilityPickFilters(grantEffectPart),
+              parseConditionalPrefixFilters(grantEffectPart),
+            ),
           }),
         );
       }

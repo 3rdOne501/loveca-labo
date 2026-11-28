@@ -586,7 +586,8 @@ const CASES = [
     "id": "PL!N-bp8-023-N",
     "trigger": "live_start",
     "expectTemplate": "grant_jouji_session",
-    "hint": ""
+    "hint": "",
+    "fields": { "handDiscardSeriesTag": "虹ヶ咲", "handDiscardToWaiting": 1, "requiredHeartSlot": 3 }
   },
   {
     "id": "PL!N-bp8-024-N",
@@ -668,7 +669,16 @@ for (const c of CASES) {
   } else if (c.trigger === "jidou") {
     actual = (classifyJidouAutoSegment(seg.text, card) || { template: "jidou_manual" }).template;
   } else {
-    actual = classifyCardAbility(card, c.trigger, seg.text).template;
+    const cl = classifyCardAbility(card, c.trigger, seg.text);
+    actual = cl.template;
+    if (c.fields) {
+      for (const [key, expected] of Object.entries(c.fields)) {
+        if (cl[key] !== expected) {
+          failed++;
+          console.error("FAIL", c.id, c.trigger, key, `expected ${expected} got ${cl[key]}`);
+        }
+      }
+    }
   }
   if (actual !== c.expectTemplate) {
     failed++;

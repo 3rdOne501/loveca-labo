@@ -7391,7 +7391,7 @@
           "pickType": null,
           "maxCost": null,
           "minCost": null,
-          "seriesTag": "μ's",
+          "seriesTag": null,
           "minSuccessLiveCount": null,
           "minNeedHeartSlot": null,
           "minNeedHeartValue": null,
@@ -7410,6 +7410,7 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
+        "handDiscardSeriesTag": "μ's",
         "bladeGain": 0,
         "liveScoreGrant": 0,
         "cardScoreGrant": 0,
@@ -33360,6 +33361,7 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
+        "handDiscardSeriesTag": "KALEIDOSCORE",
         "bladeGain": 0,
         "energyWaitCount": 1,
         "energySkipNextActivate": false,
@@ -33391,6 +33393,7 @@
             "costPickMemberWait": false,
             "costMandatoryWaitOtherMember": false,
             "costOrAlt": false,
+            "handDiscardSeriesTag": "KALEIDOSCORE",
             "bladeGain": 0,
             "energyWaitCount": 1,
             "energySkipNextActivate": false
@@ -33616,6 +33619,7 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
+        "handDiscardSeriesTag": "KALEIDOSCORE",
         "bladeGain": 0,
         "energyWaitCount": 1,
         "energySkipNextActivate": false,
@@ -33647,6 +33651,7 @@
             "costPickMemberWait": false,
             "costMandatoryWaitOtherMember": false,
             "costOrAlt": false,
+            "handDiscardSeriesTag": "KALEIDOSCORE",
             "bladeGain": 0,
             "energyWaitCount": 1,
             "energySkipNextActivate": false
@@ -44756,6 +44761,7 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
+        "handDiscardSeriesTag": "DOLLCHESTRA",
         "bladeGain": 0
       },
       "issues": [
@@ -65523,6 +65529,7 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
+        "handDiscardSeriesTag": "DOLLCHESTRA",
         "bladeGain": 0,
         "grantFollowupMinSelfPrintedCost": 10,
         "requiredHeartSlot": 5
@@ -65661,6 +65668,7 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
+        "handDiscardSeriesTag": "DOLLCHESTRA",
         "bladeGain": 0,
         "grantFollowupMinSelfPrintedCost": 10,
         "requiredHeartSlot": 5
@@ -65989,6 +65997,7 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
+        "handDiscardSeriesTag": "DOLLCHESTRA",
         "bladeGain": 0,
         "grantFollowupMinSelfPrintedCost": 10,
         "requiredHeartSlot": 5
@@ -85071,8 +85080,8 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
-        "bladeGain": 0,
-        "handDiscardSeriesTag": "蓮ノ空"
+        "handDiscardSeriesTag": "蓮ノ空",
+        "bladeGain": 0
       },
       "issues": []
     },
@@ -85616,6 +85625,7 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
+        "handDiscardSeriesTag": "蓮ノ空",
         "bladeGain": 0,
         "heartPickSlots": [
           1,
@@ -85628,7 +85638,6 @@
         "grantToEnteredMembersThisTurn": false,
         "grantExcludeSeriesTag": null,
         "handDiscardExact": 2,
-        "handDiscardSeriesTag": "蓮ノ空",
         "grantHeartSlotCount": 2,
         "grantPickStageMembersMax": 1,
         "grantExcludeSelf": true,
@@ -165722,7 +165731,7 @@
         "template": "grant_jouji_session",
         "optional": true,
         "filters": {
-          "pickType": "メンバー",
+          "pickType": null,
           "maxCost": null,
           "minCost": null,
           "seriesTag": null,
@@ -165798,7 +165807,7 @@
         "template": "grant_jouji_session",
         "optional": true,
         "filters": {
-          "pickType": "メンバー",
+          "pickType": null,
           "maxCost": null,
           "minCost": null,
           "seriesTag": null,
@@ -172749,6 +172758,7 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
+        "handDiscardSeriesTag": "蓮ノ空",
         "bladeGain": 0,
         "abilityChoices": [
           "heart01かheart04かheart05かheart06のうち、1つを選ぶ。ライブ終了時まで、選んだハートを1つ得る。",
@@ -172875,6 +172885,7 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
+        "handDiscardSeriesTag": "蓮ノ空",
         "bladeGain": 0,
         "abilityChoices": [
           "heart01かheart04かheart05かheart06のうち、1つを選ぶ。ライブ終了時まで、選んだハートを1つ得る。",
@@ -179871,7 +179882,7 @@
         "template": "grant_jouji_session",
         "optional": true,
         "filters": {
-          "pickType": "メンバー",
+          "pickType": null,
           "maxCost": null,
           "minCost": null,
           "seriesTag": null,
@@ -180401,7 +180412,7 @@
           "pickType": null,
           "maxCost": null,
           "minCost": null,
-          "seriesTag": "虹ヶ咲",
+          "seriesTag": null,
           "minSuccessLiveCount": null,
           "minNeedHeartSlot": null,
           "minNeedHeartValue": null,
@@ -180420,6 +180431,7 @@
         "costPickMemberWait": false,
         "costMandatoryWaitOtherMember": false,
         "costOrAlt": false,
+        "handDiscardSeriesTag": "虹ヶ咲",
         "bladeGain": 0,
         "liveScoreGrant": 0,
         "cardScoreGrant": 0,
@@ -181568,7 +181580,7 @@
       ]
     }
   ],
-  "generated_at": "2026-11-27T08:15:37.383Z",
+  "generated_at": "2026-11-28T07:26:26.968Z",
   "inputs": [
     "data/cards.json",
     "data/ability-semantic-contracts.json",
@@ -181588,7 +181600,7 @@
   "input_sha256": {
     "data/cards.json": "9d9b9647ca79619bfb19986c1b0ca796a26b1120cbeee244c67989537c06ef7c",
     "data/ability-semantic-contracts.json": "e2ef6d56dad7a5e08693ef40aee3bf739bc0d9c5e0572cbd857cbc4889e46907",
-    "js/abilityEffects.js": "d1590e9cf7f55b59a439fc76bb6eb18508f26a5215b6ae18680442df7fdaf348",
+    "js/abilityEffects.js": "9d8f2b764a88ca664ab58607744bad836db61371bd557b556319dc727ebe0a12",
     "js/abilityCompletion.js": "f28799e4f8e36c4c815ed4ea1524c01be10851f7730ed6dae486f271240afcda",
     "js/versusEffectPatch.js": "51221f037a06bd7520ee48117fc6c4f6aa1e0e062f41c420ea75c696fda371f0",
     "js/opponentBoard.js": "83917668269fa3acae7e0e0efcc5b96d38f37e046b9d35dd67693e688bc115d0",
@@ -181599,6 +181611,6 @@
     "js/cardGroups.js": "c5e5b2834a7ce7548ef2fbd67b8999d27cca2fe788dd5520ef15664758b0085d",
     "scripts/lib/ability-semantic-audit.mjs": "eb2c284106eb6739aed5f2c25f8233f9abaedd02481d939e2be5d020910d2410",
     "scripts/audit-ability-semantics.mjs": "1b0dce666a89323385e4845c5d581efcdc2f4797c89b37a4e642264c45ff1b7b",
-    "js/simulator.js": "cadd6be452b20eefae6e7b4fa7f4860a1d3920f745fe2b1a38a6784f1b3eed14"
+    "js/simulator.js": "3c5211e3bb55626b4190972f4862641b25e5748cdbf277ef67e955f647ac9337"
   }
 }

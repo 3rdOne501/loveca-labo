@@ -15010,6 +15010,93 @@ export function mountSimulator(
     return true;
   }
 
+  /**
+   * template が自前コスト扱いでも、手札捨て（9.4.1 の「：」より前）を本文の前に支払う。
+   * 任意コストは選ばなければ未支払い（9.4.2 / 9.7.3.1.1）で、効果は解決しない。
+   * @param {import('./abilityEffects.js').ClassifiedAbility} cl
+   * @returns {number}
+   */
+  function handDiscardCostCount(cl) {
+    if (!cl || cl.costHandDiscardOptional) return 0;
+    var n = cl.handDiscardToWaiting != null ? Math.floor(Number(cl.handDiscardToWaiting)) : 0;
+    if (!(n > 0) && cl.handDiscardSeriesTag && cl.handDiscardExact) {
+      n = Math.floor(Number(cl.handDiscardExact)) || 0;
+    }
+    return n > 0 ? n : 0;
+  }
+
+  /**
+   * @param {import('./abilityEffects.js').ClassifiedAbility} cl
+   * @param {*} card
+   */
+  function handDiscardCostEligible(cl, card) {
+    if (!card) return false;
+    var mc = mergedCatalogCard(card);
+    if (cl.costHandDiscardPickType && mc.type !== cl.costHandDiscardPickType) return false;
+    if (cl.handDiscardSeriesTag && !catalogCardMatchesGroupTag(mc, cl.handDiscardSeriesTag)) return false;
+    return true;
+  }
+
+  /**
+   * @param {*} inst
+   * @param {import('./abilityEffects.js').ClassifiedAbility} cl
+   * @param {(paid: boolean) => void} done
+   */
+  function payHandledHandDiscardCost(inst, cl, done) {
+    var need = handDiscardCostCount(cl);
+    if (!need) {
+      done(true);
+      return;
+    }
+    var eligible = (state.hand || []).filter(function (h) {
+      return handDiscardCostEligible(cl, h);
+    });
+    var series = cl.handDiscardSeriesTag;
+    var typeLabel =
+      cl.costHandDiscardPickType === T_LIVE
+        ? "ライブカード"
+        : cl.costHandDiscardPickType === T_MEMBER
+          ? "メンバーカード"
+          : "カード";
+    var dest = cl.costHandToDeckBottom ? "デッキの一番下" : "控え室";
+    var what = series ? "『" + series + "』の" + typeLabel : typeLabel;
+    if (eligible.length < need) {
+      showToast("手札に" + what + "が " + need + " 枚ないため、コストを支払えず効果は解決しません");
+      done(false);
+      return;
+    }
+    openPickHandOptionalMultiToWaiting(
+      "コスト: 手札の" + what + "を " + need + " 枚" + dest + "に置きます。支払わない場合はキャンセル。",
+      function (h) {
+        return handDiscardCostEligible(cl, h);
+      },
+      function (pickedIds) {
+        if (!pickedIds || pickedIds.length !== need) {
+          done(false);
+          return;
+        }
+        state._lastCostPaidHandDiscardedIds = cl.costHandToDeckBottom ? [] : pickedIds.slice();
+        pickedIds.forEach(function (hid) {
+          var hi = state.hand.findIndex(function (h) {
+            return h && String(h.id) === String(hid);
+          });
+          if (hi >= 0) {
+            var paidCard = state.hand.splice(hi, 1)[0];
+            (cl.costHandToDeckBottom ? state.deck : state.waitingRoom).push(paidCard);
+          }
+        });
+        render();
+        done(true);
+      },
+      {
+        dialogTitle: "コスト — 手札",
+        minPick: need,
+        maxPick: need,
+        sourceInst: inst,
+      },
+    );
+  }
+
   function moveHandInstIdsToWaiting(handIds) {
     /** @type {*[]} */
     var moved = [];
@@ -26444,44 +26531,17 @@ export function mountSimulator(
           cl.heartPickSlots,
         );
       };
-      if (cl.handDiscardSeriesTag && cl.handDiscardExact) {
-        var seriesDiscTag = cl.handDiscardSeriesTag;
-        var seriesDiscN = Math.max(1, Math.floor(Number(cl.handDiscardExact) || 2));
-        openAbilityConfirmDialog(
-          "手札の『" + seriesDiscTag + "』を " + seriesDiscN + " 枚捨てて効果を使いますか？",
-          function (okHeartCost) {
-            if (!okHeartCost) {
-              finishResolved();
-              return;
-            }
-            openPickHandOptionalMultiToWaiting(
-              "手札の『" + seriesDiscTag + "』のカードを " + seriesDiscN + " 枚控え室に置きます。",
-              function (h) {
-                return h && catalogCardMatchesGroupTag(mergedCatalogCard(h), seriesDiscTag);
-              },
-              function (pickedIds) {
-                if (pickedIds === null) {
-                  finishResolved();
-                  return;
-                }
-                if (pickedIds.length !== seriesDiscN) {
-                  showToast("ちょうど " + seriesDiscN + " 枚選んでください");
-                  finishResolved();
-                  return;
-                }
-                moveHandInstIdsToWaiting(pickedIds);
-                runHeartColorPickGrantBody();
-              },
-              {
-                dialogTitle: "ライブ開始 — 手札を捨ててハート付与",
-                okLabel: "選んだカードを捨てる",
-                minPick: seriesDiscN,
-                maxPick: seriesDiscN,
-                sourceInst: inst,
-              },
-            );
-          },
-        );
+      if (handDiscardCostCount(cl) > 0) {
+        payHandledHandDiscardCost(inst, cl, function (paidHeartCost) {
+          if (!paidHeartCost) {
+            if (kind === "live_start") inst._liveStartEffectDeclined = true;
+            else if (kind === "toujyou") inst._toujouEffectDeclined = true;
+            else if (kind === "live_success") inst._liveSuccessEffectDeclined = true;
+            finishResolved();
+            return;
+          }
+          runHeartColorPickGrantBody();
+        });
         return;
       }
       runHeartColorPickGrantBody();
@@ -32265,7 +32325,23 @@ export function mountSimulator(
         finishResolved();
         return;
       }
+      var grantJoujiHandCostSettled = false;
       var runGrantJoujiSessionCore = function () {
+      if (!grantJoujiHandCostSettled && handDiscardCostCount(cl) > 0) {
+        payHandledHandDiscardCost(inst, cl, function (paidGrantCost) {
+          if (!paidGrantCost) {
+            if (kind === "live_start") inst._liveStartEffectDeclined = true;
+            else if (kind === "toujyou") inst._toujouEffectDeclined = true;
+            else if (kind === "live_success") inst._liveSuccessEffectDeclined = true;
+            else if (kind === "kidou") inst._kidouEffectDeclined = true;
+            finishResolved();
+            return;
+          }
+          grantJoujiHandCostSettled = true;
+          runGrantJoujiSessionCore();
+        });
+        return;
+      }
       pushHistoryBefore("grant-jouji-session");
       if (cl.deckDrawCount && cl.deckDrawCount > 0) {
         var drawGj = Math.max(1, Math.floor(Number(cl.deckDrawCount)));

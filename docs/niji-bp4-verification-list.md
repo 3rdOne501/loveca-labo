@@ -21,7 +21,7 @@
 | [x] | 008 | PL!N-bp4-008-P | エマ・ヴェルデ | kidou_energy_or_activate_member | 起動: 手札1枚捨て→E1枚または虹ヶ咲1人アクティブ |
 | [x] | 009 | PL!N-bp4-009-P | 天王寺璃奈 | draw_then_hand_to_deck_top | 自ステージコスト合計<相手→2ドロー→手札1枚山札上 **2026-06-28: 手札→山札上が欠落** |
 | [x] | 010 | PL!N-bp4-010-P | 三船栞子 | success_live_waiting_swap / live_start_pick_live_frame_match_success_live_grant | 登場: 成功ライブ虹ヶ咲1枚↔控え室虹ヶ咲ライブ1枚 / LS: ライブ中虹ヶ咲1枚選び同名が成功ライブにあれば常時付与 |
-| [x] | 011 | PL!N-bp4-011-P | ミア・テイラー | heart_color_pick_grant / live_success_deck_wait_pick_live | LS: ハート色指定付与 / 成功: 山札上5枚控え→異名虹ヶ咲ライブ3+→1枚回収 **2026-06-28: 誤分類 deck_top_pick_recover を修正** |
+| [x] | 011 | PL!N-bp4-011-P | ミア・テイラー | heart_color_pick_grant / live_success_deck_wait_pick_live | LS: 手札のライブ1枚を控え室に置いてもよい：好きな色を1つ得る / 成功: 山札上5枚控え→異名虹ヶ咲ライブ3+→1枚回収 |
 | [x] | 012 | PL!N-bp4-012-P | 鐘嵐珠 | jouji passive (live_score_plus) | 常時: 相手成功ライブスコア合計6+→ライブ合計スコア+1 **対戦: 相手成功ライブ参照** |
 | [x] | 013 | PL!N-bp4-013-N | 上原歩夢 | optional_energy_blade_until_live_end | ライブ開始 E任意→ライブ終了までブレード2 |
 | [x] | 014 | PL!N-bp4-014-N | 中須かすみ | （能力なし） | |
