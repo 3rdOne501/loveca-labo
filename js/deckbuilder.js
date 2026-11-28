@@ -102,6 +102,7 @@ import {
 } from "./deckOddsMath.js";
 import {
   bladeHeartAggregatePillHtml,
+  bladeHeartListedCopyUnits,
   bladeHeartRowIconsHtml,
   bladeHeartDisplaySlotLabel,
   cardHasBladeHeart,
@@ -124,7 +125,8 @@ import { getCurrentCloudUser, onCloudUserChange } from "./cloudAuth.js";
 let deckBuilderStorageFlushHooked = false;
 
 /**
- * デッキ内の blade_heart について、キーごとに「カード DB の値 × 収録枚数」を足します。
+ * デッキ内の blade_heart について、キーごとに枚数係数 × 収録枚数を足します。
+ * 通常 BH の係数は保存値。W無色（b_heart07）は保存値 2 でもアイコン1つなので係数 1。
  * byKeyAdditive は<strong>ライブカード</strong>（種別がライブかつ blade_heart あり）貢献分のみ。
  * @param {Record<string, number>} deckMap
  * @returns {{ byKey: Record<string, number>, byKeyAdditive: Record<string, number>, totalWeighted: number }}
@@ -145,7 +147,7 @@ function accumulateBladeHeartWeighted(deckMap) {
     for (const [key, raw] of Object.entries(bh)) {
       const v = Number(raw);
       if (!Number.isFinite(v) || v === 0) continue;
-      const add = v * n;
+      const add = bladeHeartListedCopyUnits(key, v) * n;
       byKey[key] = (byKey[key] || 0) + add;
       if (scoreNote) byKeyAdditive[key] = (byKeyAdditive[key] || 0) + add;
       totalWeighted += add;

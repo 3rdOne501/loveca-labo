@@ -11,6 +11,7 @@ import { T_LIVE, T_MEMBER } from "./config.js";
 import { cardIsDrawYellLiveCatalog, cardIsNoteLiveCatalog } from "./cards.js";
 import {
   bladeHeartDisplaySlotLabel,
+  bladeHeartListedCopyUnits,
   cardHasBladeHeart,
   compareBladeHeartDbKeys,
   isBladeHeartDoubleColorlessMarkerKey,
@@ -867,7 +868,7 @@ export function buildDeckRecipeShareStats(deckMap, getCardFn) {
     Object.keys(bh).forEach(function (key) {
       const v = Number(bh[key]);
       if (!Number.isFinite(v) || v === 0) return;
-      const add = v * n;
+      const add = bladeHeartListedCopyUnits(key, v) * n;
       byKey[key] = (byKey[key] || 0) + add;
       totalBhWeighted += add;
     });

@@ -181568,7 +181568,7 @@
       ]
     }
   ],
-  "generated_at": "2026-11-24T08:10:09.045Z",
+  "generated_at": "2026-11-27T08:15:37.383Z",
   "inputs": [
     "data/cards.json",
     "data/ability-semantic-contracts.json",
@@ -181586,7 +181586,7 @@
     "js/simulator.js"
   ],
   "input_sha256": {
-    "data/cards.json": "5aa366e061aa8e27b94d7f1e154779157e0b10fe59acf12083becb7064bbccfe",
+    "data/cards.json": "9d9b9647ca79619bfb19986c1b0ca796a26b1120cbeee244c67989537c06ef7c",
     "data/ability-semantic-contracts.json": "e2ef6d56dad7a5e08693ef40aee3bf739bc0d9c5e0572cbd857cbc4889e46907",
     "js/abilityEffects.js": "d1590e9cf7f55b59a439fc76bb6eb18508f26a5215b6ae18680442df7fdaf348",
     "js/abilityCompletion.js": "f28799e4f8e36c4c815ed4ea1524c01be10851f7730ed6dae486f271240afcda",
@@ -181599,6 +181599,6 @@
     "js/cardGroups.js": "c5e5b2834a7ce7548ef2fbd67b8999d27cca2fe788dd5520ef15664758b0085d",
     "scripts/lib/ability-semantic-audit.mjs": "eb2c284106eb6739aed5f2c25f8233f9abaedd02481d939e2be5d020910d2410",
     "scripts/audit-ability-semantics.mjs": "1b0dce666a89323385e4845c5d581efcdc2f4797c89b37a4e642264c45ff1b7b",
-    "js/simulator.js": "bffe72ee2c810cb40f03d53d0d749b6f4a9a07a2f6aa76cd6f5465293d634453"
+    "js/simulator.js": "cadd6be452b20eefae6e7b4fa7f4860a1d3920f745fe2b1a38a6784f1b3eed14"
   }
 }

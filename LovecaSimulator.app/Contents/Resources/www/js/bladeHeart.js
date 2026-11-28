@@ -136,6 +136,20 @@ export function doubleColorlessHeartsFromStoredCount(stored) {
 }
 
 /**
+ * BH一覧に出す枚数の係数（これに収録枚数をかける）。
+ * 通常 BH の保存値はアイコン数。b_heart07 の 2 は無色ハート2個であり、カード2枚ではない（2.1.1.2.1）。
+ * @param {string} key
+ * @param {number} stored
+ * @returns {number}
+ */
+export function bladeHeartListedCopyUnits(key, stored) {
+  var v = Number(stored);
+  if (!Number.isFinite(v) || v === 0) return 0;
+  if (isBladeHeartDoubleColorlessMarkerKey(key)) return 1;
+  return Math.abs(v);
+}
+
+/**
  * エール解決時に加算する無色ハート数（無色2アイコン1つ = ハート2）。
  * @returns {number}
  */
